@@ -18,8 +18,16 @@ Offline-first field app and office web app for pool leak detection shops.
 - Sent reports and original photos are immutable.
 - Secrets come from environment variables listed in `.env.example`. Never commit keys.
 
+## Layout
+- `apps/mobile` Expo field app. Add native packages with `npx expo install <pkg>` (run inside `apps/mobile`), never plain `pnpm add`, so versions match the SDK. Read `apps/mobile/AGENTS.md`.
+- `apps/web` Next.js website: public pages, office view, customer pages, API. Read `apps/web/AGENTS.md`; this Next version differs from older training data.
+- `packages/core` domain logic (no I/O), `packages/sync` client sync engine, `packages/tokens` generated from `brand/tokens.json` (`pnpm tokens`).
+- `supabase/` migrations, `seed.sql`, pgTAP tests in `supabase/tests/`.
+
 ## Checks before every commit
-`pnpm lint && pnpm typecheck && pnpm test` (plus `pnpm test:db` once M1 exists). Do not commit with failing checks, and never skip or disable a test to get green.
+`pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:db`. Do not commit with failing checks, and never skip or disable a test to get green. CI (`.github/workflows/ci.yml`) runs the same, plus the web build.
+
+`pnpm test:db` uses real Supabase in Docker when available (CI), otherwise local Postgres 16 with the shim in `supabase/tests/shim/` (cloud sessions; `scripts/session-start.sh` installs pgTAP). Write SQL that works on both: only rely on `auth.uid()`, `auth.jwt()`, `auth.users`, and `storage.objects`/`storage.foldername()` from Supabase's schemas.
 
 ## Brand assets
 Logos and icons are generated: edit `brand/scripts/build_logo.py`, then run `python3 brand/scripts/build_logo.py` and `node brand/scripts/export_png.mjs`. Do not hand-edit files in `brand/logo/`.

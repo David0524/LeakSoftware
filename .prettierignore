@@ -1,0 +1,10 @@
+node_modules
+pnpm-lock.yaml
+.next
+dist
+brand/logo
+brand/fonts
+apps/mobile/.expo
+packages/tokens/src/generated.ts
+packages/tokens/tokens.css
+*.md

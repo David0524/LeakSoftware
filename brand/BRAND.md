@@ -47,6 +47,8 @@ Status is always shown with a text label too (HELD, FAIL, EXCLUDED), never by co
 - **Field app:** light theme by default. Dark screens wash out in direct sun.
 - **Office web app:** light and dark. Dark values are in `tokens.json` under `role.dark`.
 
+`tokens.json` is the source of truth. `packages/tokens` generates the TypeScript object and the web CSS/Tailwind theme from it (`pnpm tokens`).
+
 ## Type
 
 - **Barlow Semi Condensed** (600/700/800): headings, labels, buttons, status chips, wordmark.
@@ -76,6 +78,7 @@ node brand/scripts/export_png.mjs     # PNGs (needs Playwright + Chromium)
 | `leakbook-mark-black.svg` / `-white.svg` | One color: embroidery, vinyl decals. Dot and wave are cut out. |
 | `leakbook-app-icon.svg` | iOS / store icon (navy square, no rounded corners) |
 | `leakbook-adaptive-foreground.svg` | Android adaptive icon foreground. Background color: Navy. |
+| `leakbook-adaptive-monochrome.svg` | Android themed (monochrome) icon |
 | `leakbook-favicon.svg` | Browser tab. Uses the small-size cut. |
 | `png/` | Ready-made PNG exports of the above, including splash and email sizes |
 

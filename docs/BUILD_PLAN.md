@@ -1,6 +1,6 @@
 # LeakBook build plan
 
-Status: **draft for owner approval**. Source requirements: [`HANDOFF.md`](HANDOFF.md). Brand: [`../brand/BRAND.md`](../brand/BRAND.md).
+Status: **approved** (owner delegated the section 10 decisions; see `DECISIONS.md`). Source requirements: [`HANDOFF.md`](HANDOFF.md). Brand: [`../brand/BRAND.md`](../brand/BRAND.md).
 
 This plan takes the handoff's MVP loop to a sellable product. It keeps the handoff's stack with a few changes (section 2), defines the sync model before any screens (section 4), and orders the work into milestones that each end in a stop-and-review (section 8).
 
@@ -340,6 +340,7 @@ Each milestone ends with: all checks green (lint, typecheck, unit, pgTAP, Playwr
 
 ### M6 Web foundation and office view
 - Next.js app with Supabase SSR auth, Tailwind with brand tokens, light and dark.
+- Public home page (what LeakBook is, sign in, start trial) using the brand.
 - Jobs list with status filters, job detail (read-only inspection view, media gallery, timeline from the audit log), customers and properties with visit history, simple schedule (day and week list by tech).
 - Settings: company profile and branding (logo upload, colors with contrast preview), team and invites, price book, component types, test types, exclusion reasons, severities, report templates (text and tone only), deposit and tax rules.
 - **Done when:** Playwright covers sign in, invite tech, edit price book, view the M4 sample job. A tech account cannot reach settings.

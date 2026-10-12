@@ -16,6 +16,7 @@ const out = join(logo, "png");
 const jobs = [
   ["leakbook-app-icon.svg", "icon-1024.png", 1024],
   ["leakbook-adaptive-foreground.svg", "adaptive-foreground-1024.png", 1024],
+  ["leakbook-adaptive-monochrome.svg", "adaptive-monochrome-1024.png", 1024],
   ["leakbook-favicon.svg", "favicon-16.png", 16],
   ["leakbook-favicon.svg", "favicon-32.png", 32],
   ["leakbook-favicon.svg", "favicon-48.png", 48],
@@ -35,12 +36,15 @@ const page = await browser.newPage({ deviceScaleFactor: 1 });
 
 for (const [src, dest, width] of jobs) {
   const svg = await readFile(join(logo, src), "utf8");
-  const [, , vw, vh] = svg.match(/viewBox="([^"]+)"/)[1].split(" ").map(Number);
+  const [, , vw, vh] = svg
+    .match(/viewBox="([^"]+)"/)[1]
+    .split(" ")
+    .map(Number);
   const height = Math.round((width * vh) / vw);
   await page.setViewportSize({ width, height });
   const sized = svg.replace(/width="[^"]+" height="[^"]+"/, `width="${width}" height="${height}"`);
   await page.setContent(
-    `<html><body style="margin:0;background:transparent">${sized}</body></html>`
+    `<html><body style="margin:0;background:transparent">${sized}</body></html>`,
   );
   await page.locator("svg").screenshot({ path: join(out, dest), omitBackground: true });
   console.log("wrote", dest, `${width}x${height}`);

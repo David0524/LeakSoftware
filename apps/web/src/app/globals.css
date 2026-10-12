@@ -1,0 +1,20 @@
+@import "tailwindcss";
+@import "@leakbook/tokens/tokens.css";
+
+body {
+  background: var(--lb-bg);
+  color: var(--lb-text);
+  font-family: var(--lb-font-body);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--lb-font-display);
+}
+
+/* Use the bundled next/font faces first, then the token fallbacks. */
+:root {
+  --lb-font-display: var(--lb-font-display-face), "Arial Narrow", "Roboto Condensed", sans-serif;
+  --lb-font-body: var(--lb-font-body-face), "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}

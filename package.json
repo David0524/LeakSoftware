@@ -1,0 +1,28 @@
+{
+  "name": "leakbook",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "lint": "pnpm -r --if-present run lint",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "test": "pnpm -r --if-present run test",
+    "test:db": "node scripts/test-db.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "tokens": "pnpm --filter @leakbook/tokens run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9",
+    "@types/node": "^22.15.0",
+    "eslint": "^9",
+    "globals": "^16.5.0",
+    "prettier": "^3.9.10",
+    "supabase": "2.120.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.4"
+  }
+}

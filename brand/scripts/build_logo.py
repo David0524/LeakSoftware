@@ -308,6 +308,8 @@ def main():
         "leakbook-app-icon.svg": square_icon(1024, NAVY, WHITE, SAFETY, 0.62),
         # Android adaptive foreground: art inside the 66% safe zone, transparent.
         "leakbook-adaptive-foreground.svg": square_icon(1024, None, WHITE, SAFETY, 0.46),
+        # Android 13+ themed (monochrome) icon: one color, dot cut out, transparent.
+        "leakbook-adaptive-monochrome.svg": square_icon(1024, None, WHITE, None, 0.46),
         # Favicon: larger mark, small-size cut (thicker wave, bigger dot).
         "leakbook-favicon.svg": square_icon(64, NAVY, WHITE, SAFETY, 0.84, small=True),
     }
