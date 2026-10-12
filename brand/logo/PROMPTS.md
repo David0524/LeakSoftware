@@ -1,5 +1,7 @@
 # Logo prompts for ChatGPT image generation
 
+These prompts produced the approved concept in `concept/`. Kept for reference if the mark needs new variations.
+
 Tips:
 - Generate the **mark only**. Image generators often misspell lettering, so the "LeakBook" wordmark is typeset separately in Barlow Semi Condensed.
 - If it adds text, gradients, or shading, reply: "Remove all text. Flat solid colors only, no shading, no 3D."

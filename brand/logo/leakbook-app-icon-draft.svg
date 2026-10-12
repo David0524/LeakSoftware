@@ -1,9 +1,0 @@
-<!-- DRAFT app icon, 1024 square, no rounded corners (iOS masks it). Placeholder until the final mark is redrawn. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-  <rect width="1024" height="1024" fill="#12263A"/>
-  <g transform="translate(212 200) scale(6)">
-    <path d="M50 94 C50 94 20 60 20 40 A30 30 0 0 1 80 40 C80 60 50 94 50 94 Z" fill="#FFFFFF"/>
-    <path d="M30 44 q5 -6 10 0 t10 0 t10 0 t10 0" fill="none" stroke="#12263A" stroke-width="6" stroke-linecap="round"/>
-    <circle cx="50" cy="26" r="5" fill="#EE6A1F"/>
-  </g>
-</svg>
