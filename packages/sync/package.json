@@ -12,9 +12,11 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "test:integration": "vitest run --config vitest.integration.config.ts"
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:hosted": "vitest run --config vitest.hosted.config.ts"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.117.3",
     "@types/better-sqlite3": "^9.6.0",
     "@types/pg": "^8.23.1",
     "better-sqlite3": "^13.0.3",

@@ -34,3 +34,8 @@ Offline-first field app and office web app for pool leak detection shops.
 
 ## Brand assets
 Logos and icons are generated: edit `brand/scripts/build_logo.py`, then run `python3 brand/scripts/build_logo.py` and `node brand/scripts/export_png.mjs`. Do not hand-edit files in `brand/logo/`.
+
+## Hosted dev project
+`config/supabase-dev.json` holds the public settings of `leakbook-dev`. In cloud sessions a network secret attaches a Supabase access token to `api.supabase.com/v1/projects/<ref>/` requests; direct Postgres connections are not possible.
+- `pnpm db:deploy` applies pending migrations through the Management API (`-- --seed` also loads the demo data once). Run it after adding a migration, once local and CI checks pass.
+- `pnpm test:hosted` syncs two simulated devices against the dev project as the demo tech.

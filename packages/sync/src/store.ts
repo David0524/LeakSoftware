@@ -351,6 +351,19 @@ export class LocalStore {
     ]);
   }
 
+  /**
+   * Remove all synced data, pending changes, uploads, and the pull cursor (sign-out).
+   * Keeps the device id and clock. Callers must warn about unsent changes first.
+   */
+  clearAll(): void {
+    this.db.transaction(() => {
+      this.db.run("delete from sync_records");
+      this.db.run("delete from sync_outbox");
+      this.db.run("delete from upload_queue");
+      this.db.run("delete from sync_meta where key = 'pull_cursor'");
+    });
+  }
+
   /** Low-level access for the upload queue (same database, same transactions). */
   get database(): SqlDatabase {
     return this.db;

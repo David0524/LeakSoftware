@@ -27,6 +27,12 @@ jobs:
       - run: pnpm --filter @leakbook/web build
         env:
           NEXT_TELEMETRY_DISABLED: "1"
+      - name: Bundle the mobile app (catches broken imports and assets)
+        run: npx expo export --platform ios --output-dir /tmp/expo-check
+        working-directory: apps/mobile
+        env:
+          CI: "1"
+          EXPO_NO_TELEMETRY: "1"
 
   database:
     name: Database (Supabase + pgTAP)

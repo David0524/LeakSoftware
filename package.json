@@ -12,7 +12,9 @@
     "test:db": "node scripts/test-db.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "tokens": "pnpm --filter @leakbook/tokens run build"
+    "tokens": "pnpm --filter @leakbook/tokens run build",
+    "db:deploy": "NODE_USE_ENV_PROXY=1 node scripts/deploy-db.mjs",
+    "test:hosted": "NODE_USE_ENV_PROXY=1 pnpm --filter @leakbook/sync test:hosted"
   },
   "devDependencies": {
     "@eslint/js": "^9",
