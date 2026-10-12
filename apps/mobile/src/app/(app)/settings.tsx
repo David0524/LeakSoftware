@@ -11,11 +11,18 @@ export default function Settings() {
   const { sync, encrypted } = services;
 
   function confirmSignOut() {
-    const pending = status.pending + status.problems.length;
+    const changes = status.pending + status.problems.length;
+    const files = status.uploads.waiting;
+    const parts = [
+      changes > 0 ? `${changes} change${changes === 1 ? "" : "s"}` : null,
+      files > 0
+        ? `${files} photo${files === 1 ? "" : "s"} or recording${files === 1 ? "" : "s"}`
+        : null,
+    ].filter(Boolean);
     Alert.alert(
       "Sign out?",
-      pending > 0
-        ? `${pending} change${pending === 1 ? " hasn't" : "s haven't"} reached the office yet. Signing out deletes ${pending === 1 ? "it" : "them"} from this phone.`
+      parts.length > 0
+        ? `${parts.join(" and ")} haven’t reached the office yet. Signing out deletes them from this phone.`
         : "Your work is saved to the office. Signing out removes it from this phone.",
       [
         { text: "Stay Signed In", style: "cancel" },
@@ -49,10 +56,14 @@ export default function Settings() {
         <Card>
           <T variant="body">Last synced: {last}</T>
           <T variant="body">Waiting to sync: {status.pending}</T>
+          <T variant="body">Waiting to upload: {status.uploads.waiting}</T>
           {status.phase === "offline" ? (
             <T variant="muted">This phone is offline. Changes are saved here and sync later.</T>
           ) : null}
           {status.error ? <T variant="muted">Last error: {status.error}</T> : null}
+          {status.uploads.lastError ? (
+            <T variant="muted">Last upload error: {status.uploads.lastError}</T>
+          ) : null}
         </Card>
         {status.phase === "signed_out" ? (
           <Notice tone="warning">
@@ -65,7 +76,9 @@ export default function Settings() {
           <Button
             title="Sync Now"
             kind="secondary"
-            onPress={() => void sync.syncNow()}
+            onPress={() => {
+              sync.retryUploads();
+            }}
             loading={status.phase === "syncing"}
           />
         )}

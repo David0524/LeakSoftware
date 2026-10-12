@@ -7,6 +7,8 @@ export interface UploadJob {
   /** media/{company_id}/{job_id}/{media_id}.{ext} without the bucket name. */
   storagePath: string;
   mimeType: string;
+  /** Saved TUS upload URL from an earlier, interrupted attempt. */
+  resumeUrl: string | null;
 }
 
 /**
@@ -14,11 +16,16 @@ export interface UploadJob {
  * finished but the app died before recording it); that counts as success.
  */
 export interface Uploader {
-  upload(job: UploadJob): Promise<"uploaded" | "exists">;
+  upload(
+    job: UploadJob,
+    saveResumeUrl: (url: string | null) => void,
+  ): Promise<"uploaded" | "exists">;
 }
 
 export interface UploadSummary {
   uploaded: number;
+  /** Media ids confirmed in this run. */
+  uploadedIds: string[];
   failed: number;
   waiting: number;
 }
@@ -40,7 +47,7 @@ export class UploadQueue {
   ) {}
 
   /** Add a file. Safe to call twice for the same media id. */
-  enqueue(job: UploadJob): void {
+  enqueue(job: Omit<UploadJob, "resumeUrl">): void {
     this.store.database.run(
       `insert into upload_queue (media_id, company_id, local_path, storage_path, mime_type)
        values (?, ?, ?, ?, ?) on conflict (media_id) do nothing`,
@@ -50,6 +57,20 @@ export class UploadQueue {
 
   waitingCount(): number {
     return this.store.database.get<{ n: number }>("select count(*) as n from upload_queue")?.n ?? 0;
+  }
+
+  /** Files still waiting, oldest first, with the last error (for the sync screen). */
+  waiting(): { mediaId: string; attempts: number; lastError: string | null }[] {
+    return this.store.database
+      .all<{ media_id: string; attempts: number; last_error: string | null }>(
+        "select media_id, attempts, last_error from upload_queue order by rowid",
+      )
+      .map((r) => ({ mediaId: r.media_id, attempts: r.attempts, lastError: r.last_error }));
+  }
+
+  /** Try everything now, ignoring backoff (Retry button, reconnect). */
+  retryNow(): void {
+    this.store.database.run("update upload_queue set next_attempt_at = 0");
   }
 
   /** Upload everything that is due. One run at a time. */
@@ -67,10 +88,11 @@ export class UploadQueue {
       local_path: string;
       storage_path: string;
       mime_type: string;
+      resume_url: string | null;
       attempts: number;
     }>("select * from upload_queue where next_attempt_at <= ? order by rowid", [this.now()]);
 
-    let uploaded = 0;
+    const uploadedIds: string[] = [];
     let failed = 0;
     for (const row of due) {
       const job: UploadJob = {
@@ -79,9 +101,15 @@ export class UploadQueue {
         localPath: row.local_path,
         storagePath: row.storage_path,
         mimeType: row.mime_type,
+        resumeUrl: row.resume_url,
       };
       try {
-        await this.uploader.upload(job);
+        await this.uploader.upload(job, (url) =>
+          this.store.database.run("update upload_queue set resume_url = ? where media_id = ?", [
+            url,
+            job.mediaId,
+          ]),
+        );
         this.store.database.transaction(() => {
           this.store.write("media", job.mediaId, job.companyId, {
             upload_state: "uploaded",
@@ -89,7 +117,7 @@ export class UploadQueue {
           });
           this.store.database.run("delete from upload_queue where media_id = ?", [job.mediaId]);
         });
-        uploaded += 1;
+        uploadedIds.push(job.mediaId);
       } catch (e) {
         const delay = Math.min(BASE_DELAY_MS * 2 ** row.attempts, MAX_DELAY_MS);
         this.store.database.run(
@@ -99,6 +127,11 @@ export class UploadQueue {
         failed += 1;
       }
     }
-    return { uploaded, failed, waiting: this.waitingCount() };
+    return {
+      uploaded: uploadedIds.length,
+      uploadedIds,
+      failed,
+      waiting: this.waitingCount(),
+    };
   }
 }

@@ -7,3 +7,6 @@ import dev from "../../../../config/supabase-dev.json";
 export const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || dev.url;
 export const SUPABASE_PUBLISHABLE_KEY =
   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || dev.publishableKey;
+
+/** Web app base URL for server features (voice-note transcription). Unset until deployed. */
+export const API_URL = (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/$/, "") || null;

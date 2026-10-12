@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { LocalStore } from "@leakbook/sync";
+import { LocalStore, TusUploader } from "@leakbook/sync";
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./config";
 import { openLocalDatabase, type KeyValue } from "./database";
+import { fileSource } from "./media";
 import { createSupabase } from "./supabase";
 import { SyncService } from "./sync-service";
 
@@ -19,7 +21,14 @@ export function getServices(): Services {
     const { db, kv, encrypted } = openLocalDatabase();
     const store = LocalStore.open(db);
     const supabase = createSupabase(kv);
-    services = { supabase, sync: new SyncService(store, supabase, kv), kv, encrypted };
+    const uploader = new TusUploader({
+      supabaseUrl: SUPABASE_URL,
+      apiKey: SUPABASE_PUBLISHABLE_KEY,
+      accessToken: async () =>
+        (await supabase.auth.getSession()).data.session?.access_token ?? null,
+      files: fileSource,
+    });
+    services = { supabase, sync: new SyncService(store, supabase, kv, uploader), kv, encrypted };
   }
   return services;
 }

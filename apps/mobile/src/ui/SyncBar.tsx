@@ -9,6 +9,11 @@ function ago(ms: number): string {
   return `${Math.round(s / 3600)} h ago`;
 }
 
+function files(n: number, allPhotos: boolean): string {
+  const noun = allPhotos ? "photo" : "file";
+  return `${n} ${noun}${n === 1 ? "" : "s"}`;
+}
+
 /** One-line sync state under the header. Tapping it opens Settings for details. */
 export function SyncBar({ onPress }: { onPress: () => void }) {
   const s = useSyncStatus();
@@ -25,9 +30,13 @@ export function SyncBar({ onPress }: { onPress: () => void }) {
     label = "Syncing…";
   } else if (s.phase === "offline") {
     dot = color.warning;
+    const saved = [
+      s.pending > 0 ? `${s.pending} change${s.pending === 1 ? "" : "s"}` : null,
+      s.uploads.waiting > 0 ? files(s.uploads.waiting, s.uploads.allPhotos) : null,
+    ].filter(Boolean);
     label =
-      s.pending > 0
-        ? `Offline · ${s.pending} change${s.pending === 1 ? "" : "s"} saved on this phone`
+      saved.length > 0
+        ? `Offline · ${saved.join(" and ")} saved on this phone`
         : "Offline · working from this phone";
   } else if (s.phase === "signed_out") {
     dot = color.warning;
@@ -38,6 +47,9 @@ export function SyncBar({ onPress }: { onPress: () => void }) {
   } else if (s.pending > 0) {
     dot = color.warning;
     label = `${s.pending} change${s.pending === 1 ? "" : "s"} waiting to sync`;
+  } else if (s.uploads.waiting > 0) {
+    dot = color.warning;
+    label = `${files(s.uploads.waiting, s.uploads.allPhotos)} waiting to upload`;
   }
 
   return (

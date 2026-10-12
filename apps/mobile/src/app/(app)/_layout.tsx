@@ -18,6 +18,7 @@ export default function AppLayout() {
       <Stack.Screen name="jobs/[id]/component/[componentId]" options={{ title: "Component" }} />
       <Stack.Screen name="jobs/[id]/test/[testId]" options={{ title: "Test" }} />
       <Stack.Screen name="jobs/[id]/finding/[findingId]" options={{ title: "Finding" }} />
+      <Stack.Screen name="jobs/[id]/media/[mediaId]" options={{ title: "Photo" }} />
       <Stack.Screen name="settings" options={{ title: "Settings" }} />
       <Stack.Screen name="reauth" options={{ title: "Sign In Again", presentation: "modal" }} />
     </Stack>

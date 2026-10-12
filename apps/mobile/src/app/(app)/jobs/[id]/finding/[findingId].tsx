@@ -6,6 +6,7 @@ import type { JsonValue } from "@leakbook/sync";
 import { useRow } from "../../../../../data/hooks";
 import { useInspectionConfig, useJobInspection } from "../../../../../data/inspection";
 import { useCompany, useSession } from "../../../../../state/session";
+import { MediaSection } from "../../../../../features/media/MediaSection";
 import {
   Button,
   Choice,
@@ -174,6 +175,10 @@ export default function FindingScreen() {
         />
       ) : null}
       <Field label="Notes" value={notes} onChangeText={setNotes} multiline />
+      <MediaSection
+        target={{ jobId, findingId: existing?.id }}
+        disabledReason={existing ? undefined : "Save the finding first, then add photos."}
+      />
       {Object.keys(errors).length > 0 ? (
         <Notice tone="error">Fix the highlighted fields.</Notice>
       ) : null}

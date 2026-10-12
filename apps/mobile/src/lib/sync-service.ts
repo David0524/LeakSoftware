@@ -5,11 +5,15 @@ import {
   LocalStore,
   SupabaseTransport,
   SyncEngine,
+  UploadQueue,
   type JsonValue,
   type OutboxProblem,
   type Row,
+  type Uploader,
 } from "@leakbook/sync";
+import { API_URL } from "./config";
 import type { KeyValue } from "./database";
+import { deleteAllMedia } from "./media";
 
 export type SyncPhase = "idle" | "syncing" | "offline" | "signed_out" | "error";
 
@@ -21,6 +25,15 @@ export interface SyncStatus {
   /** Set once the first full download for this sign-in has finished. */
   initialSyncDone: boolean;
   error: string | null;
+  /** Captured files not yet in cloud storage. */
+  uploads: UploadStatus;
+}
+
+export interface UploadStatus {
+  waiting: number;
+  /** True when every waiting file is a photo (for "12 photos waiting to upload"). */
+  allPhotos: boolean;
+  lastError: string | null;
 }
 
 export interface TeamProfile {
@@ -40,6 +53,7 @@ const INTERVAL_MS = 60_000;
 export class SyncService {
   readonly store: LocalStore;
   private readonly engine: SyncEngine;
+  private readonly uploadQueue: UploadQueue;
   private listeners = new Set<() => void>();
   private dataVersion = 0;
   private statusValue: SyncStatus;
@@ -53,9 +67,11 @@ export class SyncService {
     store: LocalStore,
     private readonly supabase: SupabaseClient,
     private readonly kv: KeyValue,
+    uploader: Uploader,
   ) {
     this.store = store;
     this.engine = new SyncEngine(store, new SupabaseTransport(supabase));
+    this.uploadQueue = new UploadQueue(store, uploader);
     this.statusValue = {
       phase: "idle",
       pending: store.pendingCount(),
@@ -63,6 +79,7 @@ export class SyncService {
       lastSyncedAt: Number(kv.get("sync:last_synced_at")) || null,
       initialSyncDone: kv.get("sync:initial_done") === "1",
       error: null,
+      uploads: this.uploadStatus(),
     };
   }
 
@@ -89,8 +106,22 @@ export class SyncService {
       ...this.statusValue,
       pending: this.store.pendingCount(),
       problems: this.store.problems(),
+      uploads: this.uploadStatus(),
     };
     for (const fn of this.listeners) fn();
+  }
+
+  private uploadStatus(): UploadStatus {
+    const rows = this.store.database.all<{ kind: string | null; last_error: string | null }>(
+      `select json_extract(r.data, '$.kind') as kind, q.last_error
+         from upload_queue q left join sync_records r on r.table_name = 'media' and r.id = q.media_id
+        order by q.rowid`,
+    );
+    return {
+      waiting: rows.length,
+      allPhotos: rows.every((r) => r.kind === "photo"),
+      lastError: rows.find((r) => r.last_error)?.last_error ?? null,
+    };
   }
 
   private setStatus(patch: Partial<SyncStatus>) {
@@ -128,6 +159,29 @@ export class SyncService {
     return this.store.list<T>(table, companyId ? { companyId } : {});
   }
 
+  /**
+   * Save a capture: the media row and its upload ticket in one transaction, so a file is
+   * never queued without its row or the other way around.
+   */
+  addMedia(
+    id: string,
+    companyId: string,
+    values: Record<string, JsonValue>,
+    file: { localPath: string; storagePath: string; mimeType: string },
+  ) {
+    this.store.database.transaction(() => {
+      this.store.write("media", id, companyId, values);
+      this.uploadQueue.enqueue({ mediaId: id, companyId, ...file });
+    });
+    this.afterWrite();
+  }
+
+  /** Retry waiting uploads now (Settings button). */
+  retryUploads() {
+    this.uploadQueue.retryNow();
+    this.syncSoon(0);
+  }
+
   discardProblem(seq: number) {
     this.store.discardProblem(seq);
     this.emit(true);
@@ -153,7 +207,10 @@ export class SyncService {
       const cameBack = online && !this.online;
       this.online = online;
       if (!online) this.setStatus({ phase: "offline" });
-      if (cameBack) this.syncSoon(0);
+      if (cameBack) {
+        this.uploadQueue.retryNow();
+        this.syncSoon(0);
+      }
     });
     this.interval = setInterval(() => this.syncSoon(0), INTERVAL_MS);
     this.syncSoon(0);
@@ -207,6 +264,36 @@ export class SyncService {
     await this.refreshTeam();
     this.setStatus({ phase: "idle", lastSyncedAt: now, initialSyncDone: true, error: null });
     this.emit(summary.pulled > 0 || summary.pushed > 0);
+    await this.runUploads();
+  }
+
+  /** Upload due files; then push the "uploaded" marks and ask for transcripts. */
+  private async runUploads() {
+    if (this.uploadQueue.waitingCount() === 0) return;
+    const result = await this.uploadQueue.process();
+    this.emit(result.uploaded > 0);
+    if (result.uploaded === 0) return;
+    this.syncSoon(0);
+    for (const id of result.uploadedIds) {
+      const row = this.store.get("media", id);
+      if (row?.kind === "audio") void this.requestTranscript(id);
+    }
+  }
+
+  /** Ask the server to transcribe a voice note. Best effort; the office can retry. */
+  private async requestTranscript(mediaId: string) {
+    if (!API_URL) return;
+    const { data } = await this.supabase.auth.getSession();
+    if (!data.session) return;
+    try {
+      await fetch(`${API_URL}/api/media/${mediaId}/transcribe`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${data.session.access_token}` },
+      });
+      this.syncSoon(0);
+    } catch {
+      // Offline or server unavailable; the transcript stays "not yet".
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -234,6 +321,11 @@ export class SyncService {
   clearLocalData() {
     this.stop();
     this.store.clearAll();
+    try {
+      deleteAllMedia();
+    } catch {
+      // Files are inside the app's own folder; a leftover is overwritten by id next time.
+    }
     for (const key of [
       "sync:last_synced_at",
       "sync:initial_done",
@@ -249,6 +341,7 @@ export class SyncService {
       lastSyncedAt: null,
       initialSyncDone: false,
       error: null,
+      uploads: { waiting: 0, allPhotos: true, lastError: null },
     };
     this.emit(true);
   }

@@ -31,6 +31,7 @@ import { color } from "../../../../ui/theme";
 import { ChecklistTab } from "../../../../features/inspection/ChecklistTab";
 import { FindingsTab } from "../../../../features/inspection/FindingsTab";
 import { TestsTab } from "../../../../features/inspection/TestsTab";
+import { MediaSection } from "../../../../features/media/MediaSection";
 
 const ACTION_LABELS: Partial<Record<JobStatus, string>> = {
   in_progress: "Start Job",
@@ -197,6 +198,8 @@ export default function JobDetail() {
           </Card>
         ) : null}
       </Section>
+
+      <MediaSection target={{ jobId: job.id }} title="All Photos and Notes" />
 
       <Field
         label="Job notes"

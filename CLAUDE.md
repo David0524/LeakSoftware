@@ -44,4 +44,4 @@ Logos and icons are generated: edit `brand/scripts/build_logo.py`, then run `pyt
 ## Hosted dev project
 `config/supabase-dev.json` holds the public settings of `leakbook-dev`. In cloud sessions a network secret attaches a Supabase access token to `api.supabase.com/v1/projects/<ref>/` requests; direct Postgres connections are not possible.
 - `pnpm db:deploy` applies pending migrations through the Management API (`-- --seed` also loads the demo data once). Run it after adding a migration, once local and CI checks pass.
-- `pnpm test:hosted` syncs two simulated devices against the dev project as the demo tech.
+- `pnpm test:hosted` syncs two simulated devices against the dev project as the demo tech, and uploads 30 photos and 2 videos to its storage with a simulated kill (about 16 MB per run; originals cannot be deleted). Not part of `pnpm test` or CI.

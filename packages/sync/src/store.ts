@@ -17,7 +17,7 @@ export interface SqlDatabase {
  * Local tables. Every synced server table lives in sync_records as JSON, so a server schema
  * change never needs a device migration. Screens read through LocalStore.get/list.
  */
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 const SCHEMA = [
   `create table if not exists sync_records (
      table_name text not null,
@@ -49,7 +49,8 @@ const SCHEMA = [
      mime_type text not null,
      attempts integer not null default 0,
      next_attempt_at integer not null default 0,
-     last_error text)`,
+     last_error text,
+     resume_url text)`,
 ];
 
 /** Columns the server manages. Devices never send them. */
@@ -100,6 +101,10 @@ export class LocalStore {
   /** Create tables if needed and load the device id and clock. */
   static open(db: SqlDatabase, opts: { now?: () => number; deviceId?: string } = {}): LocalStore {
     for (const sql of SCHEMA) db.run(sql);
+    // Version 2: resumable uploads remember their upload URL.
+    const queueColumns = db.all<{ name: string }>("pragma table_info(upload_queue)");
+    if (!queueColumns.some((c) => c.name === "resume_url"))
+      db.run("alter table upload_queue add column resume_url text");
     const meta = (key: string) =>
       db.get<{ value: string }>("select value from sync_meta where key = ?", [key])?.value;
     const set = (key: string, value: string) =>

@@ -9,6 +9,7 @@ import {
   useJobInspection,
 } from "../../../../../data/inspection";
 import { useCompany, useSession } from "../../../../../state/session";
+import { MediaSection } from "../../../../../features/media/MediaSection";
 import {
   Button,
   Card,
@@ -147,6 +148,8 @@ export default function ComponentScreen() {
       />
       {error ? <Notice tone="error">{error}</Notice> : null}
       <Button title="Save" onPress={save} />
+
+      <MediaSection target={{ jobId, componentId }} />
 
       <Section title="Tests on this component">
         {tests.map((t) => (

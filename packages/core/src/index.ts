@@ -5,3 +5,4 @@ export * from "./models";
 export * from "./job-list";
 export * from "./forms";
 export * from "./inspection";
+export * from "./media";

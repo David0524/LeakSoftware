@@ -11,6 +11,7 @@ import {
 import type { JsonValue } from "@leakbook/sync";
 import { useInspectionConfig, useJobInspection } from "../../../../../data/inspection";
 import { useCompany, useSession } from "../../../../../state/session";
+import { MediaSection } from "../../../../../features/media/MediaSection";
 import {
   Button,
   Card,
@@ -174,6 +175,10 @@ export default function TestScreen() {
         <Notice tone="warning">You changed the suggested outcome. Add a note saying why.</Notice>
       ) : null}
       <Field label="Notes" value={notes} onChangeText={setNotes} multiline />
+      <MediaSection
+        target={{ jobId, testResultId: existing?.id }}
+        disabledReason={existing ? undefined : "Save the test first, then add photos."}
+      />
       {Object.keys(errors).length > 0 ? (
         <Notice tone="error">Fix the highlighted fields.</Notice>
       ) : null}

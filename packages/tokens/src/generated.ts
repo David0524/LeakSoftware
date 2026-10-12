@@ -27,6 +27,12 @@ export const tokens = {
       "warning": "#9A6210",
       "info": "#1F6FAE"
     },
+    "markup": {
+      "red": "#FF3B30",
+      "yellow": "#FFD60A",
+      "white": "#FFFFFF",
+      "outline": "#000000"
+    },
     "role": {
       "light": {
         "bg": "#E9ECEF",

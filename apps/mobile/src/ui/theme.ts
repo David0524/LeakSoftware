@@ -17,6 +17,9 @@ export const color = {
   controlBorder: tokens.color.neutral["500"],
 } as const;
 
+/** Photo markup colors (brand/tokens.json color.markup). */
+export const markupColor = tokens.color.markup;
+
 /** Font family names registered in src/app/_layout.tsx. */
 export const font = {
   displaySemiBold: "Barlow-SemiBold",
