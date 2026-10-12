@@ -30,7 +30,7 @@ test("owner views the M4 sample job", async ({ page }) => {
   const row = page.getByRole("row").filter({ hasText: "Sam Sample" });
   await row.getByRole("link").first().click();
   await expect(page.getByRole("heading", { name: /^Job #\d+/ })).toBeVisible();
-  await expect(page.getByText("9 Sample Way, Scottsdale, AZ 85251")).toBeVisible();
+  await expect(page.getByText("9 Sample Way, Scottsdale, AZ 85251").first()).toBeVisible();
 
   // Checklist: inspected lines and the excluded drain with its reason.
   const checklist = page.getByRole("table").first();
