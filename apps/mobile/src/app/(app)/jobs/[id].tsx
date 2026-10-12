@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, Linking, Pressable, View } from "react-native";
 import {
   JOB_STATUS_LABELS,
@@ -47,6 +47,23 @@ export default function JobDetail() {
   const customer = useRow<Customer>("customer", job?.bill_to_customer_id ?? property?.customer_id);
   const [tab, setTab] = useState<Tab>("checklist");
   const [notes, setNotes] = useState<string | null>(null);
+  // Notes save shortly after typing stops and when leaving the screen. Relying on blur
+  // alone lost edits on iPhone, where leaving the field often does not blur it.
+  const pendingNotes = useRef<string | null>(null);
+  const notesTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flushNotes = useRef(() => {});
+  useEffect(() => {
+    flushNotes.current = () => {
+      if (notesTimer.current) clearTimeout(notesTimer.current);
+      notesTimer.current = null;
+      const value = pendingNotes.current;
+      pendingNotes.current = null;
+      if (job && value !== null && value !== (job.summary_notes ?? "")) {
+        services.sync.write("job", job.id, company.id, { summary_notes: value });
+      }
+    };
+  });
+  useEffect(() => () => flushNotes.current(), []);
 
   if (!job) {
     return (
