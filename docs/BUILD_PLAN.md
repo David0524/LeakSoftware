@@ -34,7 +34,7 @@ A tech, with no signal at the pool, runs a full inspection (checklist, tests, ph
 | Area | Choice | Change? |
 |---|---|---|
 | Mobile | Expo (React Native, TypeScript), latest stable SDK, dev builds via EAS. iOS first. | Same |
-| Local storage | `expo-sqlite` with **SQLCipher encryption** and **Drizzle ORM** for typed schema and migrations | Adds encryption: a lost tech phone holds customer names, addresses, gate codes. |
+| Local storage | `expo-sqlite` with **SQLCipher encryption**; synced rows stored as JSON in one table (see DECISIONS, M2) | Adds encryption: a lost tech phone holds customer names, addresses, gate codes. |
 | Sync | **Hand-rolled** outbox and pull, specified in section 4 | Decided against PowerSync, Electric, and WatermelonDB. One tech per job keeps conflicts rare. A small custom engine avoids another paid service and is fully testable. |
 | Backend | Supabase: Postgres, Auth, Storage, RLS | Same. Sync runs as Postgres functions under RLS. **No Supabase Edge Functions.** All other server code lives in one place (the Next.js app). |
 | Web | Next.js (App Router) on **Vercel Pro** | Same. Vercel Hobby forbids commercial use, so plan on Pro. |

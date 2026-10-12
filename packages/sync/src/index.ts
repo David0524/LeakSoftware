@@ -1,2 +1,6 @@
-// Client sync engine (outbox, HLC, push/pull). Built in milestone M2; see docs/BUILD_PLAN.md section 4.
-export {};
+// Client sync engine (docs/BUILD_PLAN.md section 4).
+export * from "./hlc";
+export * from "./types";
+export * from "./store";
+export * from "./engine";
+export * from "./uploads";

@@ -20,6 +20,14 @@ function run(cmd, args, opts = {}) {
   if (r.status !== 0) process.exit(r.status ?? 1);
 }
 
+// Node integration tests (two simulated devices syncing through the real functions).
+function runIntegration(databaseUrl) {
+  console.log("\nsync integration tests");
+  run("pnpm", ["--filter", "@leakbook/sync", "run", "test:integration"], {
+    env: { ...process.env, SYNC_TEST_DATABASE_URL: databaseUrl },
+  });
+}
+
 function dockerAvailable() {
   return spawnSync("docker", ["info"], { stdio: "ignore" }).status === 0;
 }
@@ -32,6 +40,7 @@ if (mode === "docker") {
   run("pnpm", [...supabase, "db", "start"]);
   run("pnpm", [...supabase, "db", "reset", "--local"]);
   run("pnpm", [...supabase, "test", "db"]);
+  runIntegration("postgresql://postgres:postgres@127.0.0.1:54322/postgres");
   process.exit(0);
 }
 
@@ -108,4 +117,16 @@ for (const t of tests) {
   }
 }
 console.log(`\n${tests.length} files, ${total} assertions, ${failed} failing files`);
-process.exit(failed ? 1 : 0);
+if (failed) process.exit(1);
+
+let integrationUrl;
+if (adminUrl) {
+  const url = new URL(adminUrl);
+  url.pathname = `/${TEST_DB}`;
+  integrationUrl = url.toString();
+} else {
+  // The packaged cluster authenticates TCP connections by password.
+  psql(null, ["-o", "/dev/null", "-c", "alter user postgres password 'postgres'"]);
+  integrationUrl = `postgresql://postgres:postgres@127.0.0.1:5432/${TEST_DB}`;
+}
+runIntegration(integrationUrl);

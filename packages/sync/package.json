@@ -11,6 +11,16 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/pg": "^8.23.1",
+    "better-sqlite3": "^13.0.3",
+    "pg": "^8.23.1"
+  },
+  "dependencies": {
+    "@leakbook/core": "workspace:*"
   }
 }
