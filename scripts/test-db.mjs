@@ -74,18 +74,18 @@ if (!adminUrl) {
 
 psql(null, ["-c", `drop database if exists ${TEST_DB} with (force)`]);
 psql(null, ["-c", `create database ${TEST_DB}`]);
-psql(TEST_DB, ["-f", join(sb, "test-shim", "supabase_shim.sql")]);
+psql(TEST_DB, ["-o", "/dev/null", "-f", join(sb, "test-shim", "supabase_shim.sql")]);
 
 const migrations = readdirSync(join(sb, "migrations"))
   .filter((f) => f.endsWith(".sql"))
   .sort();
 for (const m of migrations) {
   console.log(`migrate ${m}`);
-  psql(TEST_DB, ["-f", join(sb, "migrations", m)]);
+  psql(TEST_DB, ["-o", "/dev/null", "-f", join(sb, "migrations", m)]);
 }
 if (existsSync(join(sb, "seed.sql"))) {
   console.log("seed");
-  psql(TEST_DB, ["-f", join(sb, "seed.sql")]);
+  psql(TEST_DB, ["-o", "/dev/null", "-f", join(sb, "seed.sql")]);
 }
 
 const tests = readdirSync(join(sb, "tests"))

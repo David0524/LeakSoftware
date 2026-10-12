@@ -12,7 +12,10 @@ Offline-first field app and office web app for pool leak detection shops.
 - Build one milestone at a time (BUILD_PLAN section 8). When a milestone's "Done when" passes, commit, then stop and report: what was built, what was verified (with command output), and decisions for the owner. Do not start the next milestone until the owner says go.
 - Do not build ahead of the current milestone or add features not in the plan. If the plan looks wrong, say so and propose the change instead of silently deviating.
 - Config, not code: checklist components, test types, severities, exclusion reasons, report templates, and the price book are database rows seeded in `supabase/seed.sql`.
-- Every business table has `company_id` and RLS. Every new table gets pgTAP isolation tests in the same change.
+- Every business table has `company_id` and RLS. To add one (see `supabase/migrations/20261012000100_foundation.sql` header):
+  1. Create it with `company_id` and composite foreign keys `(parent_id, company_id)`, then `select app.make_synced('public.<table>')`.
+  2. Register it in `app.sync_table` with read/write roles and client-writable columns, and generate its policies and grants the same way `20261012000600_access.sql` does. Never grant by hand.
+  3. Add a row for it in `tests.make_company()` (`supabase/tests/001_helpers.test.sql`). `010_tenant_isolation` then checks it for owners and techs automatically, and fails if a company table is unregistered.
 - The device's SQLite database is the UI's source of truth. Every local write goes through the sync layer (row + outbox in one transaction). Never call Supabase directly from screens for synced data.
 - Money is integer cents. IDs are UUIDv7 generated on the device.
 - Sent reports and original photos are immutable.
