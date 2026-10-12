@@ -1,9 +1,10 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
+import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   KeyboardAvoidingView,
@@ -11,15 +12,18 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Text,
   View,
   type GestureResponderEvent,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   MARKUP_COLORS,
   MEDIA_KIND_LABELS,
   formatBytes,
   formatDuration,
   parseMarkup,
+  shapeAtTap,
   shapeFromDrag,
   textShape,
   type Markup,
@@ -30,11 +34,11 @@ import {
 import type { JsonValue } from "@leakbook/sync";
 import { useJobInspection } from "../../../../../data/inspection";
 import { useRow } from "../../../../../data/hooks";
-import { useMediaUri } from "../../../../../data/media";
+import { useMediaSource, type MediaSourceState } from "../../../../../data/media";
 import { useCompany, useSession } from "../../../../../state/session";
 import { Button, Card, Field, Notice, Row, Segmented, T } from "../../../../../ui/components";
 import { MarkupLayer } from "../../../../../ui/MarkupLayer";
-import { color, markupColor, space } from "../../../../../ui/theme";
+import { color, font, markupColor, space } from "../../../../../ui/theme";
 
 type Tool = "arrow" | "circle" | "text";
 
@@ -47,13 +51,10 @@ export default function MediaScreen() {
   const { services } = useSession();
   const media = useRow<Media>("media", mediaId);
   const insp = useJobInspection(company.id, media?.job_id ?? "");
-  const uri = useMediaUri(media);
+  const source = useMediaSource(media);
+  const uri = source.uri;
 
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState<MarkupShape[]>([]);
-  const [tool, setTool] = useState<Tool>("arrow");
-  const [ink, setInk] = useState<MarkupColor>("red");
-  const [label, setLabel] = useState("");
 
   // Caption saves when leaving the field and when leaving the screen.
   const [caption, setCaption] = useState<string | null>(null);
@@ -74,38 +75,42 @@ export default function MediaScreen() {
     );
   }
   const saved = parseMarkup(media.markup).shapes;
+  const kindName = MEDIA_KIND_LABELS[media.kind].toLowerCase();
 
-  function startEditing() {
-    setDraft(saved);
-    setEditing(true);
-  }
-
-  function saveMarkup() {
-    const markup: Markup | null = draft.length > 0 ? { version: 1, shapes: draft } : null;
+  function saveMarkup(shapes: MarkupShape[]) {
+    const markup: Markup | null = shapes.length > 0 ? { version: 1, shapes } : null;
     services.sync.write("media", media!.id, company.id, {
       markup: markup as unknown as JsonValue,
     });
     setEditing(false);
   }
 
-  function remove() {
-    Alert.alert(
-      `Delete this ${MEDIA_KIND_LABELS[media!.kind].toLowerCase()}?`,
-      "It is removed from the job and its reports.",
-      [
-        { text: "Keep", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            services.sync.write("media", media!.id, company.id, {
-              deleted_at: new Date().toISOString(),
-            });
-            router.back();
-          },
-        },
-      ],
+  if (editing && media.kind === "photo" && uri) {
+    return (
+      <MarkupEditor
+        media={media}
+        uri={uri}
+        saved={saved}
+        onCancel={() => setEditing(false)}
+        onSave={saveMarkup}
+      />
     );
+  }
+
+  function remove() {
+    Alert.alert(`Delete this ${kindName}?`, "It is removed from the job and its reports.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          services.sync.write("media", media!.id, company.id, {
+            deleted_at: new Date().toISOString(),
+          });
+          router.back();
+        },
+      },
+    ]);
   }
 
   const attachedTo =
@@ -119,169 +124,84 @@ export default function MediaScreen() {
       style={styles.screen}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <Stack.Screen options={{ title: MEDIA_KIND_LABELS[media.kind] }} />
-      <ScrollView
-        contentContainerStyle={styles.content}
-        scrollEnabled={!editing}
-        keyboardShouldPersistTaps="handled"
-      >
-        {media.kind === "photo" ? (
-          <PhotoCanvas
-            media={media}
-            uri={uri}
-            shapes={editing ? draft : saved}
-            editing={editing}
-            tool={tool}
-            ink={ink}
-            label={label}
-            onAdd={(s) => setDraft((d) => [...d, s])}
-          />
+      <Stack.Screen
+        options={{
+          title: MEDIA_KIND_LABELS[media.kind],
+          headerLeft: undefined,
+          headerRight: undefined,
+          headerBackVisible: true,
+          gestureEnabled: true,
+        }}
+      />
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {source.state !== "ready" ? (
+          <SourceState state={source.state} kind={kindName} onRetry={source.retry} />
+        ) : media.kind === "photo" ? (
+          <PhotoView media={media} uri={uri!} shapes={saved} />
         ) : media.kind === "video" ? (
-          uri ? (
-            <VideoBox uri={uri} media={media} />
-          ) : (
-            <Unavailable />
-          )
-        ) : uri ? (
-          <AudioBox uri={uri} durationMs={media.duration_ms} />
+          <VideoBox uri={uri!} media={media} />
         ) : (
-          <Unavailable />
+          <AudioBox uri={uri!} durationMs={media.duration_ms} />
         )}
 
-        {media.kind === "photo" && !editing ? (
+        {media.kind === "photo" ? (
           <Button
             title={saved.length > 0 ? "Edit Markup" : "Mark Up"}
             kind="secondary"
-            onPress={startEditing}
+            onPress={() => setEditing(true)}
             disabled={!uri}
           />
         ) : null}
 
-        {editing ? (
-          <View style={styles.tools}>
-            <Segmented
-              options={[
-                { value: "arrow", label: "Arrow" },
-                { value: "circle", label: "Circle" },
-                { value: "text", label: "Text" },
-              ]}
-              value={tool}
-              onChange={setTool}
+        <>
+          {media.kind === "audio" ? <Transcript media={media} /> : null}
+          <Field
+            label="Caption"
+            value={caption ?? media.caption ?? ""}
+            onChangeText={setCaption}
+            onBlur={() => flushCaption.current()}
+            placeholder="What this shows"
+            multiline
+          />
+          <Card>
+            <Detail label="Attached to" value={attachedTo} />
+            <Detail
+              label="Captured"
+              value={media.captured_at ? new Date(media.captured_at).toLocaleString() : "Unknown"}
             />
-            <Row style={{ gap: space["3"] }}>
-              {MARKUP_COLORS.map((c) => (
-                <Pressable
-                  key={c}
-                  accessibilityRole="radio"
-                  accessibilityLabel={COLOR_NAMES[c]}
-                  accessibilityState={{ selected: ink === c }}
-                  onPress={() => setInk(c)}
-                  style={[styles.swatchHit]}
-                >
-                  <View
-                    style={[
-                      styles.swatch,
-                      { backgroundColor: markupColor[c] },
-                      ink === c && styles.swatchOn,
-                    ]}
-                  />
-                </Pressable>
-              ))}
-            </Row>
-            {tool === "text" ? (
-              <Field
-                label="Label"
-                value={label}
-                onChangeText={setLabel}
-                placeholder="Crack"
-                maxLength={80}
-                hint="Then tap the photo where it goes."
-              />
-            ) : (
-              <T variant="muted">
-                Drag on the photo to draw {tool === "arrow" ? "an arrow" : "a circle"}.
-              </T>
-            )}
-            <Row style={{ gap: space["3"] }}>
-              <Button
-                title="Undo"
-                kind="secondary"
-                onPress={() => setDraft((d) => d.slice(0, -1))}
-                disabled={draft.length === 0}
-                style={{ flex: 1 }}
-              />
-              <Button
-                title="Clear All"
-                kind="secondary"
-                onPress={() => setDraft([])}
-                disabled={draft.length === 0}
-                style={{ flex: 1 }}
-              />
-            </Row>
-            <Row style={{ gap: space["3"] }}>
-              <Button
-                title="Cancel"
-                kind="secondary"
-                onPress={() => setEditing(false)}
-                style={{ flex: 1 }}
-              />
-              <Button title="Save Markup" onPress={saveMarkup} style={{ flex: 1 }} />
-            </Row>
-            <T variant="muted">The original photo is never changed. Markup is drawn on top.</T>
-          </View>
-        ) : null}
-
-        {!editing ? (
-          <>
-            {media.kind === "audio" ? <Transcript media={media} /> : null}
-            <Field
-              label="Caption"
-              value={caption ?? media.caption ?? ""}
-              onChangeText={setCaption}
-              onBlur={() => flushCaption.current()}
-              placeholder="What this shows"
-              multiline
+            <Detail
+              label="Location"
+              value={
+                media.latitude != null && media.longitude != null
+                  ? `${media.latitude.toFixed(5)}, ${media.longitude.toFixed(5)}`
+                  : "Not recorded"
+              }
             />
-            <Card>
-              <Detail label="Attached to" value={attachedTo} />
-              <Detail
-                label="Captured"
-                value={media.captured_at ? new Date(media.captured_at).toLocaleString() : "Unknown"}
-              />
-              <Detail
-                label="Location"
-                value={
-                  media.latitude != null && media.longitude != null
-                    ? `${media.latitude.toFixed(5)}, ${media.longitude.toFixed(5)}`
-                    : "Not recorded"
-                }
-              />
-              <Detail
-                label="Size"
-                value={[
-                  formatBytes(media.size_bytes),
-                  media.width && media.height ? `${media.width} × ${media.height}` : null,
-                  media.duration_ms ? formatDuration(media.duration_ms) : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              />
-              <Detail
-                label="Upload"
-                value={
-                  media.upload_state === "uploaded"
-                    ? "Uploaded"
-                    : "Waiting to upload (saved on this phone)"
-                }
-              />
-              <Detail
-                label="Fingerprint"
-                value={media.sha256 ? `SHA-256 ${media.sha256.slice(0, 16)}…` : "None"}
-              />
-            </Card>
-            <Button title="Delete" kind="danger" onPress={remove} />
-          </>
-        ) : null}
+            <Detail
+              label="Size"
+              value={[
+                formatBytes(media.size_bytes),
+                media.width && media.height ? `${media.width} × ${media.height}` : null,
+                media.duration_ms ? formatDuration(media.duration_ms) : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            />
+            <Detail
+              label="Upload"
+              value={
+                media.upload_state === "uploaded"
+                  ? "Uploaded"
+                  : "Waiting to upload (saved on this phone)"
+              }
+            />
+            <Detail
+              label="Fingerprint"
+              value={media.sha256 ? `SHA-256 ${media.sha256.slice(0, 16)}…` : "None"}
+            />
+          </Card>
+          <Button title="Delete" kind="danger" onPress={remove} />
+        </>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -298,11 +218,30 @@ function Detail({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Unavailable() {
+function SourceState({
+  state,
+  kind,
+  onRetry,
+}: {
+  state: MediaSourceState;
+  kind: string;
+  onRetry: () => void;
+}) {
+  if (state === "loading") {
+    return (
+      <Card style={styles.sourceState}>
+        <ActivityIndicator color={color.navy} />
+        <T variant="muted">Loading the {kind}…</T>
+      </Card>
+    );
+  }
   return (
-    <Notice tone="warning">
-      This file isn’t on this phone and can’t be downloaded while offline.
-    </Notice>
+    <Card>
+      <T variant="body">
+        This {kind} isn’t on this phone. It downloads when you have a connection.
+      </T>
+      <Button title="Try Again" kind="secondary" onPress={onRetry} />
+    </Card>
   );
 }
 
@@ -310,27 +249,64 @@ function Unavailable() {
 // Photo with markup and drawing
 // ---------------------------------------------------------------------------
 
-function PhotoCanvas({
-  media,
-  uri,
-  shapes,
-  editing,
-  tool,
-  ink,
-  label,
-  onAdd,
-}: {
-  media: Media;
-  uri: string | null;
-  shapes: MarkupShape[];
-  editing: boolean;
-  tool: Tool;
-  ink: MarkupColor;
-  label: string;
-  onAdd: (s: MarkupShape) => void;
-}) {
+/** The photo with its markup. Pinch to zoom. */
+function PhotoView({ media, uri, shapes }: { media: Media; uri: string; shapes: MarkupShape[] }) {
   const [width, setWidth] = useState(0);
   const ratio = media.width && media.height ? media.height / media.width : 0.75;
+  const height = width * ratio;
+  return (
+    <View style={styles.photoFrame} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      {width > 0 ? (
+        <ScrollView
+          style={{ width, height }}
+          contentContainerStyle={{ width, height }}
+          maximumZoomScale={4}
+          minimumZoomScale={1}
+          centerContent
+          showsHorizontalScrollIndicator={false}
+          showsVerticalScrollIndicator={false}
+          accessibilityLabel={shapes.length > 0 ? "Photo with markup" : "Photo"}
+        >
+          <Image source={{ uri }} style={{ width, height }} resizeMode="contain" />
+          <MarkupLayer shapes={shapes} width={width} height={height} scale={width / 400} />
+        </ScrollView>
+      ) : null}
+    </View>
+  );
+}
+
+/**
+ * Full-screen markup editor. Cancel and Save sit in the header, the tools in a bar at the
+ * bottom, and the photo is fitted between them so everything is reachable at any shape.
+ */
+function MarkupEditor({
+  media,
+  uri,
+  saved,
+  onCancel,
+  onSave,
+}: {
+  media: Media;
+  uri: string;
+  saved: MarkupShape[];
+  onCancel: () => void;
+  onSave: (shapes: MarkupShape[]) => void;
+}) {
+  const insets = useSafeAreaInsets();
+  // Every change is a new entry, so Undo also brings back a Clear All.
+  const [history, setHistory] = useState<MarkupShape[][]>([saved]);
+  const draft = history[history.length - 1]!;
+  const dirty = history.length > 1;
+  const push = (next: MarkupShape[]) => setHistory((h) => [...h, next]);
+
+  const [tool, setTool] = useState<Tool>("arrow");
+  const [ink, setInk] = useState<MarkupColor>("red");
+  const [label, setLabel] = useState("");
+  const [labelError, setLabelError] = useState<string | undefined>();
+
+  const [area, setArea] = useState({ width: 0, height: 0 });
+  const ratio = media.width && media.height ? media.height / media.width : 0.75;
+  const width = Math.min(area.width, area.height / ratio);
   const height = width * ratio;
   const [live, setLive] = useState<MarkupShape | null>(null);
 
@@ -345,52 +321,158 @@ function PhotoCanvas({
 
   function release(e: GestureResponderEvent) {
     setLive(null);
+    if (tool === "text") {
+      const shape = textShape(ink, startPoint(), label);
+      if (shape) {
+        push([...draft, shape]);
+        setLabelError(undefined);
+      } else setLabelError("Type the label first.");
+      return;
+    }
+    // A drag draws to size; a tap places a default-sized shape.
     const shape =
-      tool === "text"
-        ? textShape(ink, startPoint(), label)
-        : shapeFromDrag(tool, ink, startPoint(), endPoint(e));
-    if (shape) onAdd(shape);
-    else if (tool === "text") Alert.alert("Type the label first, then tap the photo.");
+      shapeFromDrag(tool, ink, startPoint(), endPoint(e)) ??
+      shapeAtTap(tool, ink, startPoint(), 1 / ratio);
+    push([...draft, shape]);
+  }
+
+  function cancel() {
+    if (!dirty) return onCancel();
+    Alert.alert("Discard markup changes?", undefined, [
+      { text: "Keep Editing", style: "cancel" },
+      { text: "Discard", style: "destructive", onPress: onCancel },
+    ]);
   }
 
   return (
-    <View
-      style={[styles.photoFrame, editing && styles.photoEditing]}
-      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+    <KeyboardAvoidingView
+      style={styles.editor}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      {width > 0 ? (
-        <View
-          style={{ width, height }}
-          onStartShouldSetResponder={() => editing}
-          onMoveShouldSetResponder={() => editing}
-          onResponderTerminationRequest={() => false}
-          onResponderGrant={(e) => {
-            const n = e.nativeEvent;
-            start.current = { x: n.locationX, y: n.locationY, pageX: n.pageX, pageY: n.pageY };
-          }}
-          onResponderMove={(e) => {
-            if (tool !== "text") setLive(shapeFromDrag(tool, ink, startPoint(), endPoint(e)));
-          }}
-          onResponderRelease={release}
-          onResponderTerminate={() => setLive(null)}
-          accessibilityLabel={editing ? "Photo. Drag to draw." : "Photo with markup"}
-        >
-          {uri ? (
+      <Stack.Screen
+        options={{
+          title: "Mark Up",
+          headerBackVisible: false,
+          gestureEnabled: false,
+          headerLeft: () => <HeaderButton title="Cancel" onPress={cancel} />,
+          headerRight: () => <HeaderButton title="Save" strong onPress={() => onSave(draft)} />,
+        }}
+      />
+      <View
+        style={styles.canvasArea}
+        onLayout={(e) =>
+          setArea({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })
+        }
+      >
+        {width > 0 ? (
+          <View
+            style={{ width, height }}
+            onStartShouldSetResponder={() => true}
+            onMoveShouldSetResponder={() => true}
+            onResponderTerminationRequest={() => false}
+            onResponderGrant={(e) => {
+              const n = e.nativeEvent;
+              start.current = { x: n.locationX, y: n.locationY, pageX: n.pageX, pageY: n.pageY };
+            }}
+            onResponderMove={(e) => {
+              if (tool !== "text") setLive(shapeFromDrag(tool, ink, startPoint(), endPoint(e)));
+            }}
+            onResponderRelease={release}
+            onResponderTerminate={() => setLive(null)}
+            accessibilityLabel="Photo. Tap to place, or drag to draw."
+          >
             <Image source={{ uri }} style={{ width, height }} resizeMode="contain" />
-          ) : (
-            <View style={[styles.missing, { width, height }]}>
-              <Unavailable />
-            </View>
-          )}
-          <MarkupLayer
-            shapes={live ? [...shapes, live] : shapes}
-            width={width}
-            height={height}
-            scale={width / 400}
+            <MarkupLayer
+              shapes={live ? [...draft, live] : draft}
+              width={width}
+              height={height}
+              scale={width / 400}
+            />
+          </View>
+        ) : null}
+      </View>
+
+      <View style={[styles.toolbar, { paddingBottom: Math.max(insets.bottom, space["3"]) }]}>
+        <Segmented
+          options={[
+            { value: "arrow", label: "Arrow" },
+            { value: "circle", label: "Circle" },
+            { value: "text", label: "Text" },
+          ]}
+          value={tool}
+          onChange={setTool}
+        />
+        {tool === "text" ? (
+          <Field
+            label="Label"
+            value={label}
+            onChangeText={(v) => {
+              setLabel(v);
+              if (v.trim()) setLabelError(undefined);
+            }}
+            placeholder="Crack"
+            maxLength={80}
+            error={labelError}
+            hint="Then tap the photo where it goes."
           />
-        </View>
-      ) : null}
-    </View>
+        ) : (
+          <T variant="muted">
+            Tap to place {tool === "arrow" ? "an arrow" : "a circle"}, or drag to draw one.
+          </T>
+        )}
+        <Row style={{ gap: space["2"] }}>
+          {MARKUP_COLORS.map((c) => (
+            <Pressable
+              key={c}
+              accessibilityRole="radio"
+              accessibilityLabel={COLOR_NAMES[c]}
+              accessibilityState={{ selected: ink === c }}
+              onPress={() => setInk(c)}
+              style={styles.swatchHit}
+            >
+              <View
+                style={[
+                  styles.swatch,
+                  { backgroundColor: markupColor[c] },
+                  ink === c && styles.swatchOn,
+                ]}
+              />
+            </Pressable>
+          ))}
+          <View style={{ flex: 1 }} />
+          <Button
+            title="Undo"
+            kind="quiet"
+            onPress={() => setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h))}
+            disabled={!dirty}
+          />
+          <Button
+            title="Clear All"
+            kind="quiet"
+            onPress={() => push([])}
+            disabled={draft.length === 0}
+          />
+        </Row>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
+function HeaderButton({
+  title,
+  onPress,
+  strong = false,
+}: {
+  title: string;
+  onPress: () => void;
+  strong?: boolean;
+}) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} hitSlop={8} style={styles.headerButton}>
+      <Text style={[styles.headerButtonText, strong && { fontFamily: font.bodyBold }]}>
+        {title}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -414,6 +496,10 @@ function VideoBox({ uri, media }: { uri: string; media: Media }) {
 function AudioBox({ uri, durationMs }: { uri: string; durationMs: number | null }) {
   const player = useAudioPlayer(uri);
   const status = useAudioPlayerStatus(player);
+  // Voice notes play even with the ringer switch on silent.
+  useEffect(() => {
+    void setAudioModeAsync({ playsInSilentMode: true, allowsRecording: false });
+  }, []);
   const playing = status.playing;
   return (
     <Card>
@@ -465,9 +551,19 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.bg },
   content: { padding: space["4"], gap: space["4"], paddingBottom: space["7"] },
   photoFrame: { width: "100%", backgroundColor: color.navy, borderRadius: 10, overflow: "hidden" },
-  photoEditing: { borderWidth: 2, borderColor: color.primary },
-  missing: { justifyContent: "center", padding: space["4"] },
-  tools: { gap: space["3"] },
+  sourceState: { alignItems: "center", paddingVertical: space["6"] },
+  editor: { flex: 1, backgroundColor: color.navy },
+  canvasArea: { flex: 1, alignItems: "center", justifyContent: "center" },
+  toolbar: {
+    backgroundColor: color.surface,
+    paddingHorizontal: space["4"],
+    paddingTop: space["3"],
+    gap: space["2"],
+    borderTopWidth: 1,
+    borderTopColor: color.border,
+  },
+  headerButton: { minHeight: 44, minWidth: 44, justifyContent: "center", paddingHorizontal: 4 },
+  headerButtonText: { fontFamily: font.bodyMedium, fontSize: 17, color: color.onHeader },
   swatchHit: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
   swatch: {
     width: 32,

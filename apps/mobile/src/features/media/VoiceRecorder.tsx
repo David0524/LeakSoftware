@@ -6,7 +6,7 @@ import {
   useAudioRecorderState,
 } from "expo-audio";
 import { useEffect, useRef, useState } from "react";
-import { Alert, StyleSheet, View } from "react-native";
+import { Alert, Linking, StyleSheet, View } from "react-native";
 import { MEDIA_LIMITS, formatDuration } from "@leakbook/core";
 import { VOICE_MIME } from "../../lib/media";
 import { Button, Card, Row, T } from "../../ui/components";
@@ -29,13 +29,18 @@ export function VoiceRecorder({
   const [saving, setSaving] = useState(false);
   const startedAt = useRef<string | null>(null);
   const finished = useRef(false);
+  // Leaving the screen mid-recording keeps the recording rather than losing it.
+  const saveOnLeave = useRef<() => void>(() => {});
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       const perm = await requestRecordingPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert("Microphone access is off", "Turn it on in Settings to record voice notes.");
+        Alert.alert("Microphone access is off", "Turn it on in Settings to record voice notes.", [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open Settings", onPress: () => void Linking.openSettings() },
+        ]);
         onClose();
         return;
       }
@@ -47,7 +52,7 @@ export function VoiceRecorder({
     })();
     return () => {
       cancelled = true;
-      if (!finished.current && recorder.isRecording) void recorder.stop();
+      if (!finished.current && recorder.isRecording) saveOnLeave.current();
       void setAudioModeAsync({ allowsRecording: false });
     };
     // Runs once per recorder; onClose is stable for the life of this sheet.
@@ -78,6 +83,33 @@ export function VoiceRecorder({
     }
   }
 
+  useEffect(() => {
+    saveOnLeave.current = () => {
+      finished.current = true;
+      const duration = state.durationMillis;
+      void recorder.stop().then(() => {
+        if (!recorder.uri) return;
+        void onSaved({
+          kind: "audio",
+          uri: recorder.uri,
+          mime: VOICE_MIME,
+          width: null,
+          height: null,
+          durationMs: Math.round(duration),
+          capturedAt: startedAt.current ?? new Date().toISOString(),
+        });
+      });
+    };
+  });
+
+  function discard() {
+    if (state.durationMillis < 5_000) return void stop(false);
+    Alert.alert("Discard this voice note?", undefined, [
+      { text: "Keep Recording", style: "cancel" },
+      { text: "Discard", style: "destructive", onPress: () => void stop(false) },
+    ]);
+  }
+
   const limitMs = MEDIA_LIMITS.voiceMaxSeconds * 1000;
   useEffect(() => {
     if (state.isRecording && state.durationMillis >= limitMs) void stop(true);
@@ -96,9 +128,9 @@ export function VoiceRecorder({
       <T variant="muted">Up to {MEDIA_LIMITS.voiceMaxSeconds / 60} minutes. Works offline.</T>
       <Row style={{ gap: space["3"] }}>
         <Button
-          title="Cancel"
+          title="Discard"
           kind="secondary"
-          onPress={() => void stop(false)}
+          onPress={discard}
           disabled={saving}
           style={{ flex: 1 }}
         />

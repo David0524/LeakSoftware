@@ -1,7 +1,15 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, View } from "react-native";
+import {
+  Alert,
+  Image,
+  Linking,
+  Pressable,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { MEDIA_KIND_LABELS, formatDuration, parseMarkup, type Media } from "@leakbook/core";
 import {
   saveCapture,
@@ -41,6 +49,8 @@ export function MediaSection({
   const media = useJobMedia(company.id, target.jobId, target);
   const [busy, setBusy] = useState<"photo" | "video" | null>(null);
   const [recording, setRecording] = useState(false);
+  // At large text sizes the three buttons stack instead of squeezing their labels.
+  const stack = useWindowDimensions().fontScale >= 1.3;
 
   async function save(
     file: CapturedFile,
@@ -61,10 +71,14 @@ export function MediaSection({
       const file = await captureWithCamera(kind);
       if (file) await save(file, position);
     } catch (e) {
-      Alert.alert(
-        kind === "photo" ? "Couldn’t take the photo" : "Couldn’t record the video",
-        e instanceof MediaError ? e.message : e instanceof Error ? e.message : String(e),
-      );
+      const title = kind === "photo" ? "Couldn’t take the photo" : "Couldn’t record the video";
+      const message = e instanceof Error ? e.message : String(e);
+      if (e instanceof MediaError && e.needsSettings) {
+        Alert.alert(title, message, [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open Settings", onPress: () => void Linking.openSettings() },
+        ]);
+      } else Alert.alert(title, message);
     } finally {
       setBusy(null);
     }
@@ -80,14 +94,14 @@ export function MediaSection({
           onClose={() => setRecording(false)}
         />
       ) : (
-        <Row style={styles.buttons}>
+        <Row style={[styles.buttons, stack && { flexDirection: "column", alignItems: "stretch" }]}>
           <Button
             title="Photo"
             kind="secondary"
             onPress={() => void capture("photo")}
             loading={busy === "photo"}
             disabled={busy !== null}
-            style={styles.button}
+            style={stack ? undefined : styles.button}
           />
           <Button
             title="Video"
@@ -95,14 +109,14 @@ export function MediaSection({
             onPress={() => void capture("video")}
             loading={busy === "video"}
             disabled={busy !== null}
-            style={styles.button}
+            style={stack ? undefined : styles.button}
           />
           <Button
             title="Voice Note"
             kind="secondary"
             onPress={() => setRecording(true)}
             disabled={busy !== null}
-            style={styles.button}
+            style={stack ? undefined : styles.button}
           />
         </Row>
       )}

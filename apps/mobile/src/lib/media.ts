@@ -20,7 +20,15 @@ const FOLDER = "media";
 /** Supabase's per-file upload limit on the current plan. */
 export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 
-export class MediaError extends Error {}
+export class MediaError extends Error {
+  constructor(
+    message: string,
+    /** The fix is in the phone's Settings (a permission was turned off). */
+    readonly needsSettings = false,
+  ) {
+    super(message);
+  }
+}
 
 function folder(): Directory {
   const dir = new Directory(Paths.document, FOLDER);
@@ -129,7 +137,7 @@ export interface CapturedFile {
 export async function captureWithCamera(kind: "photo" | "video"): Promise<CapturedFile | null> {
   const perm = await ImagePicker.requestCameraPermissionsAsync();
   if (!perm.granted)
-    throw new MediaError("Camera access is off. Turn it on in Settings, then try again.");
+    throw new MediaError("Camera access is off. Turn it on in Settings, then try again.", true);
   const capturedAt = new Date().toISOString();
   const result = await ImagePicker.launchCameraAsync({
     mediaTypes: kind === "photo" ? ["images"] : ["videos"],

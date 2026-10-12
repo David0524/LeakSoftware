@@ -8,6 +8,7 @@ import {
   mediaStoragePath,
   mimeFromFileName,
   parseMarkup,
+  shapeAtTap,
   shapeFromDrag,
   textShape,
 } from "../src";
@@ -82,6 +83,30 @@ describe("markup", () => {
     });
     // A tap is not a shape.
     expect(shapeFromDrag("arrow", "red", { x: 0.5, y: 0.5 }, { x: 0.51, y: 0.505 })).toBeNull();
+  });
+
+  it("places a default shape on a tap", () => {
+    expect(shapeAtTap("circle", "red", { x: 0.5, y: 0.5 }, 0.75)).toEqual({
+      type: "circle",
+      color: "red",
+      cx: 0.5,
+      cy: 0.5,
+      rx: 0.08,
+      ry: 0.06,
+    });
+    // Points at the tap from up-left, or from the other side near the top-left edge.
+    expect(shapeAtTap("arrow", "red", { x: 0.5, y: 0.5 }, 1)).toMatchObject({
+      x1: 0.35,
+      y1: 0.35,
+      x2: 0.5,
+      y2: 0.5,
+    });
+    expect(shapeAtTap("arrow", "red", { x: 0.05, y: 0.05 }, 1)).toMatchObject({
+      x1: 0.2,
+      y1: 0.2,
+      x2: 0.05,
+      y2: 0.05,
+    });
   });
 
   it("limits text labels", () => {

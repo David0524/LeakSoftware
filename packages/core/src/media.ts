@@ -215,3 +215,26 @@ export function arrowHead(
     [x2 - size * Math.cos(angle + spread), y2 - size * Math.sin(angle + spread)],
   ];
 }
+
+/**
+ * A default shape for a tap (no drag): a circle around the tap, or an arrow pointing at it
+ * from up and to the left (from the other side when the tap is near that edge).
+ * `aspect` is the photo's width / height, so the circle is round on screen.
+ */
+export function shapeAtTap(
+  type: "arrow" | "circle",
+  color: MarkupColor,
+  at: { x: number; y: number },
+  aspect: number,
+): MarkupShape {
+  const x = clampUnit(at.x);
+  const y = clampUnit(at.y);
+  const dx = 0.15;
+  const dy = 0.15 * aspect;
+  if (type === "circle") {
+    return { type, color, cx: x, cy: y, rx: 0.08, ry: clampUnit(0.08 * aspect) };
+  }
+  const x1 = x - dx >= 0 ? x - dx : x + dx;
+  const y1 = y - dy >= 0 ? y - dy : y + dy;
+  return { type, color, x1: clampUnit(x1), y1: clampUnit(y1), x2: x, y2: y };
+}

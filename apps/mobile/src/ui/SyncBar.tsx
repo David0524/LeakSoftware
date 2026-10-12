@@ -10,8 +10,8 @@ function ago(ms: number): string {
 }
 
 function files(n: number, allPhotos: boolean): string {
-  const noun = allPhotos ? "photo" : "file";
-  return `${n} ${noun}${n === 1 ? "" : "s"}`;
+  if (allPhotos) return `${n} photo${n === 1 ? "" : "s"}`;
+  return `${n} photo${n === 1 ? "" : "s"} and recording${n === 1 ? "" : "s"}`;
 }
 
 /** One-line sync state under the header. Tapping it opens Settings for details. */
@@ -36,7 +36,7 @@ export function SyncBar({ onPress }: { onPress: () => void }) {
     ].filter(Boolean);
     label =
       saved.length > 0
-        ? `Offline · ${saved.join(" and ")} saved on this phone`
+        ? `Offline · ${saved.join(", ")} on this phone`
         : "Offline · working from this phone";
   } else if (s.phase === "signed_out") {
     dot = color.warning;
@@ -60,7 +60,7 @@ export function SyncBar({ onPress }: { onPress: () => void }) {
       style={styles.bar}
     >
       <View style={[styles.dot, { backgroundColor: dot }]} />
-      <Text style={styles.text} numberOfLines={1}>
+      <Text style={styles.text} numberOfLines={2}>
         {label}
       </Text>
     </Pressable>
@@ -77,8 +77,8 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
     borderBottomWidth: 1,
     borderBottomColor: color.border,
-    minHeight: 36,
+    minHeight: 44,
   },
   dot: { width: 10, height: 10, borderRadius: 5 },
-  text: { fontFamily: font.bodyMedium, fontSize: 14, color: color.text, flex: 1 },
+  text: { fontFamily: font.bodyMedium, fontSize: 15, lineHeight: 20, color: color.text, flex: 1 },
 });

@@ -96,30 +96,65 @@ export async function prepareLocation() {
 const signed = new Map<string, { url: string; expires: number }>();
 const SIGNED_SECONDS = 3600;
 
-export function useMediaUri(media: Media | undefined): string | null {
+export type MediaSourceState = "ready" | "loading" | "unavailable";
+
+/**
+ * Where to load a capture from, and whether it can be shown: "loading" while a download
+ * link is fetched, "unavailable" when the file is elsewhere and there is no connection.
+ * `retry` asks again.
+ */
+export function useMediaSource(media: Media | undefined): {
+  uri: string | null;
+  state: MediaSourceState;
+  retry: () => void;
+} {
   const local = media ? localMediaUri(media.id, media.mime_type) : null;
   const path = media?.upload_state === "uploaded" ? media.storage_path : null;
-  const cached = path ? signed.get(path) : undefined;
-  const [remote, setRemote] = useState<string | null>(() =>
-    cached && cached.expires > Date.now() ? cached.url : null,
-  );
+  const [attempt, setAttempt] = useState(0);
+  const [remote, setRemote] = useState<{ url: string | null; failed: boolean }>(() => {
+    const cached = path ? signed.get(path) : undefined;
+    return { url: cached && cached.expires > Date.now() ? cached.url : null, failed: false };
+  });
   useEffect(() => {
-    if (local || !path || remote) return;
+    if (local || !path || remote.url) return;
     let alive = true;
     void getServices()
       .supabase.storage.from("media")
       .createSignedUrl(path, SIGNED_SECONDS)
       .then(({ data }) => {
-        if (!data || !alive) return;
+        if (!alive) return;
+        if (!data) {
+          setRemote({ url: null, failed: true });
+          return;
+        }
         signed.set(path, {
           url: data.signedUrl,
           expires: Date.now() + (SIGNED_SECONDS - 60) * 1000,
         });
-        setRemote(data.signedUrl);
-      });
+        setRemote({ url: data.signedUrl, failed: false });
+      })
+      .catch(() => alive && setRemote({ url: null, failed: true }));
     return () => {
       alive = false;
     };
-  }, [local, path, remote]);
-  return local ?? remote;
+  }, [local, path, remote.url, attempt]);
+
+  const uri = local ?? remote.url;
+  const state: MediaSourceState = uri
+    ? "ready"
+    : path && !remote.failed
+      ? "loading"
+      : "unavailable";
+  return {
+    uri,
+    state,
+    retry: () => {
+      setRemote({ url: null, failed: false });
+      setAttempt((n) => n + 1);
+    },
+  };
+}
+
+export function useMediaUri(media: Media | undefined): string | null {
+  return useMediaSource(media).uri;
 }
