@@ -4,4 +4,6 @@ Field inspection, reporting, quoting and invoicing software for pool leak detect
 
 - `brand/` – brand guide (`BRAND.md`), design tokens, fonts, logo files and the scripts that build them.
 
-Product scope and build plan: see the project handoff (to be added under `docs/`).
+- `docs/` – requirements (`HANDOFF.md`), build plan (`BUILD_PLAN.md`), decisions log.
+
+Start with `CLAUDE.md` and `docs/BUILD_PLAN.md`.
