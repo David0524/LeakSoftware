@@ -15,9 +15,16 @@ Needs a computer with Node 22 and pnpm, on the same Wi-Fi as the phone.
    corepack enable
    pnpm install
    cd apps/mobile
-   npx expo start
+   npx expo start --lan
    ```
 3. Scan the QR code: iPhone camera app, or the scanner inside Expo Go on Android.
+
+**Windows notes**
+- Clone to a short path such as `C:\dev\LeakSoftware`; very long paths break some package installs.
+- If `corepack enable` fails with `EPERM` (it needs admin rights), skip it and prefix pnpm commands with `corepack`, for example `corepack pnpm install`.
+- `better-sqlite3` is only for tests. If it cannot build (no Visual Studio C++ tools), the install continues without it.
+- The first time Expo starts, Windows asks whether Node.js may use the network. Allow **private networks**, or the phone cannot connect.
+- If the phone still cannot connect over Wi-Fi, use a tunnel: run `npx expo login` once, then `EXPO_UNSTABLE_TUNNEL_V2=1 npx expo start --tunnel` (PowerShell: `$env:EXPO_UNSTABLE_TUNNEL_V2=1; npx expo start --tunnel`).
 
 Expo Go limits: the local database is **not encrypted** (encryption needs a real build), and the app cannot be fully closed and reopened offline because Expo Go reloads it from the computer. Step 5 below covers offline work within these limits.
 

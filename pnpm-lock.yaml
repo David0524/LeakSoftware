@@ -178,12 +178,13 @@ importers:
       '@types/pg':
         specifier: ^8.23.1
         version: 8.23.1
-      better-sqlite3:
-        specifier: ^13.0.3
-        version: 13.0.3
       pg:
         specifier: ^8.23.1
         version: 8.23.1
+    optionalDependencies:
+      better-sqlite3:
+        specifier: ^13.0.3
+        version: 13.0.3
 
   packages/tokens: {}
 
@@ -7157,6 +7158,7 @@ snapshots:
   better-sqlite3@13.0.3:
     dependencies:
       node-addon-api: 8.9.2
+    optional: true
 
   big-integer@1.6.52: {}
 
@@ -9252,7 +9254,8 @@ snapshots:
       - '@types/node'
       - babel-plugin-macros
 
-  node-addon-api@8.9.2: {}
+  node-addon-api@8.9.2:
+    optional: true
 
   node-exports-info@1.6.2:
     dependencies:
