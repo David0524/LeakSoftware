@@ -2,7 +2,7 @@
 //
 // Two modes:
 //   docker  Real Supabase via the CLI (`supabase db start/reset`, `supabase test db`). Used in CI.
-//   local   Plain Postgres + supabase/tests/shim (for environments without Docker).
+//   local   Plain Postgres + supabase/test-shim (for environments without Docker).
 //
 // Mode: DB_TEST_MODE=docker|local, default docker if `docker info` works, else local.
 // Local mode connects with TEST_DATABASE_URL (superuser, any database) if set; otherwise it
@@ -74,7 +74,7 @@ if (!adminUrl) {
 
 psql(null, ["-c", `drop database if exists ${TEST_DB} with (force)`]);
 psql(null, ["-c", `create database ${TEST_DB}`]);
-psql(TEST_DB, ["-f", join(sb, "tests", "shim", "supabase_shim.sql")]);
+psql(TEST_DB, ["-f", join(sb, "test-shim", "supabase_shim.sql")]);
 
 const migrations = readdirSync(join(sb, "migrations"))
   .filter((f) => f.endsWith(".sql"))
