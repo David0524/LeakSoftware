@@ -64,6 +64,7 @@ export interface Property extends Base {
   pool_type?: PoolType | null;
   has_pool: boolean;
   has_spa: boolean;
+  diagram_shape?: "rectangle" | "oval" | "kidney" | "l_shape" | "freeform" | null;
   access_notes?: string | null;
   notes?: string | null;
 }

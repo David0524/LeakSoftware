@@ -39,7 +39,8 @@ export const tokens = {
         "primary": "#EE6A1F",
         "onPrimary": "#12263A",
         "link": "#1F6FAE",
-        "focus": "#1F6FAE"
+        "focus": "#1F6FAE",
+        "diagramWater": "#CFE3F3"
       },
       "dark": {
         "bg": "#0E141A",
@@ -55,7 +56,8 @@ export const tokens = {
         "focus": "#6AAEE6",
         "pass": "#3FB36F",
         "fail": "#E5655F",
-        "excluded": "#8E9DAB"
+        "excluded": "#8E9DAB",
+        "diagramWater": "#1F3A52"
       }
     }
   },

@@ -7,6 +7,8 @@ import {
   localDate,
   newJobRecords,
   validateNewJob,
+  planComponents,
+  type ComponentType,
   type Customer,
   type NewJobInput,
   type PoolType,
@@ -34,6 +36,7 @@ export default function NewJob() {
   const { services, user } = useSession();
   const customers = useRows<Customer>("customer", company.id);
   const properties = useRows<Property>("property", company.id);
+  const componentTypes = useRows<ComponentType>("component_type", company.id);
 
   const [customerId, setCustomerId] = useState<string | undefined>();
   const [search, setSearch] = useState("");
@@ -106,17 +109,29 @@ export default function NewJob() {
             : { kind: "later" },
     });
     const { sync } = services;
-    // Customer, property, and job are saved together or not at all.
+    // Customer, property, job, and its checklist are saved together or not at all.
     const jobId = sync.batch(() => {
       const cust = customerId ?? sync.insert("customer", company.id, records.customer!);
       const prop =
         propertyId ??
         sync.insert("property", company.id, { ...records.property!, customer_id: cust });
-      return sync.insert("job", company.id, {
+      const job = sync.insert("job", company.id, {
         ...records.job,
         property_id: prop,
         bill_to_customer_id: cust,
       });
+      // The checklist is ready the moment the job opens, even offline.
+      const existingProperty = properties.find((p) => p.id === prop);
+      const spa = existingProperty ? existingProperty.has_spa : hasSpa;
+      for (const planned of planComponents(componentTypes, { has_pool: true, has_spa: spa })) {
+        const componentId = sync.insert("job_component", company.id, { job_id: job, ...planned });
+        sync.insert("checklist_item_result", company.id, {
+          job_id: job,
+          job_component_id: componentId,
+          status: "pending",
+        });
+      }
+      return job;
     });
     router.replace(`/jobs/${jobId}`);
   }

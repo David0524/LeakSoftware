@@ -13,8 +13,8 @@ import {
   type Property,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
-import { useRow } from "../../../data/hooks";
-import { useCompany, useSession } from "../../../state/session";
+import { useRow } from "../../../../data/hooks";
+import { useCompany, useSession } from "../../../../state/session";
 import {
   Button,
   Card,
@@ -26,8 +26,11 @@ import {
   Section,
   StatusChip,
   T,
-} from "../../../ui/components";
-import { color } from "../../../ui/theme";
+} from "../../../../ui/components";
+import { color } from "../../../../ui/theme";
+import { ChecklistTab } from "../../../../features/inspection/ChecklistTab";
+import { FindingsTab } from "../../../../features/inspection/FindingsTab";
+import { TestsTab } from "../../../../features/inspection/TestsTab";
 
 const ACTION_LABELS: Partial<Record<JobStatus, string>> = {
   in_progress: "Start job",
@@ -185,13 +188,14 @@ export default function JobDetail() {
           value={tab}
           onChange={setTab}
         />
-        <Card>
-          <T variant="muted">
-            {tab === "report"
-              ? "Reports arrive in a later update."
-              : "The inspection checklist, tests, and findings arrive in the next update."}
-          </T>
-        </Card>
+        {tab === "checklist" ? <ChecklistTab job={job} property={property} /> : null}
+        {tab === "tests" ? <TestsTab job={job} /> : null}
+        {tab === "findings" ? <FindingsTab job={job} property={property} /> : null}
+        {tab === "report" ? (
+          <Card>
+            <T variant="muted">Reports arrive in a later update.</T>
+          </Card>
+        ) : null}
       </Section>
 
       <Field
