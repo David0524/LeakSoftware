@@ -28,7 +28,7 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
       <Card>
         <T variant="body">No checklist yet for this job.</T>
         <Button
-          title="Set up checklist"
+          title="Set Up Checklist"
           onPress={() =>
             createChecklist(services.sync, job.company_id, job.id, config.componentTypes, {
               has_pool: property?.has_pool ?? true,
@@ -70,13 +70,14 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Add ${type.name.toLowerCase()}`}
-                hitSlop={10}
+                hitSlop={8}
+                style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 8 }}
                 onPress={() =>
                   addComponent(services.sync, job.company_id, job.id, type, insp.components)
                 }
               >
                 <T variant="strong" style={{ color: color.link }}>
-                  + Add {type.name.toLowerCase()}
+                  + Add {type.name}
                 </T>
               </Pressable>
             ) : null}

@@ -17,6 +17,7 @@ import {
   Notice,
   Screen,
   Section,
+  Segmented,
   T,
 } from "../../../../../ui/components";
 import { OutcomeChip } from "../../../../../features/inspection/OutcomeChip";
@@ -91,12 +92,12 @@ export default function ComponentScreen() {
   return (
     <Screen>
       <Stack.Screen options={{ title: comp.label }} />
-      <Choice
+      <Segmented
         label="Status"
         options={[
           { value: "inspected", label: "Inspected" },
-          { value: "excluded", label: "Not inspected" },
-          { value: "pending", label: "To do" },
+          { value: "excluded", label: "Excluded" },
+          { value: "pending", label: "To Do" },
         ]}
         value={status}
         onChange={(v) => {
@@ -117,7 +118,7 @@ export default function ComponentScreen() {
       {status === "excluded" ? (
         <>
           <Choice
-            label="Why not"
+            label="Reason"
             options={[
               ...presetReasons.map((r) => ({ value: r, label: r })),
               { value: OTHER, label: "Other" },
@@ -193,7 +194,7 @@ export default function ComponentScreen() {
           </Card>
         ))}
         <Button
-          title="+ Finding here"
+          title="+ Finding Here"
           kind="secondary"
           onPress={() => router.push(`/jobs/${jobId}/finding/new?component=${componentId}`)}
         />

@@ -33,7 +33,7 @@ export default function Reauth() {
         secureTextEntry
         onSubmitEditing={submit}
       />
-      <Button title="Sign in" onPress={submit} loading={busy} />
+      <Button title="Sign In" onPress={submit} loading={busy} />
     </Screen>
   );
 }

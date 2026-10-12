@@ -32,6 +32,12 @@ Offline-first field app and office web app for pool leak detection shops.
 
 `pnpm test:db` uses real Supabase in Docker when available (CI), otherwise local Postgres 16 with the shim in `supabase/test-shim/` (kept outside `supabase/tests/`, which `supabase test db` runs in full) (cloud sessions; `scripts/session-start.sh` installs pgTAP). Write SQL that works on both: only rely on `auth.uid()`, `auth.jwt()`, `auth.users`, and `storage.objects`/`storage.foldername()` from Supabase's schemas.
 
+## Design review (Apple Design skill)
+All app and website UI follows Apple's Human Interface Guidelines through the **apple-design** skill (`~/.claude/skills/apple-design`, installed by `scripts/session-start.sh` at a pinned commit; not committed because this repository is public and the skill reproduces Apple's text).
+- Before building or changing a screen, load the skill (or read `~/.claude/skills/apple-design/SKILL.md`) and its always-load references.
+- Before reporting a milestone with UI, review the new screens with it and fix Critical and High findings. Save the report in `docs/design/`.
+- House rules from the reviews: body text 17 pt, secondary 15 pt; 44 pt minimum tap targets; control outlines `color.controlBorder`; segmented control (`Segmented`) for 2 to 5 related views or states, `Choice` for longer lists; Title Case for buttons, segment labels, alert buttons, and screen titles, sentence case elsewhere; orange only for the primary action.
+
 ## Brand assets
 Logos and icons are generated: edit `brand/scripts/build_logo.py`, then run `python3 brand/scripts/build_logo.py` and `node brand/scripts/export_png.mjs`. Do not hand-edit files in `brand/logo/`.
 

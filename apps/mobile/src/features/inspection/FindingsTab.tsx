@@ -74,7 +74,7 @@ export function FindingsTab({ job, property }: { job: Job; property?: Property }
           );
         })
       )}
-      <Button title="Add finding" onPress={() => router.push(`/jobs/${job.id}/finding/new`)} />
+      <Button title="Add Finding" onPress={() => router.push(`/jobs/${job.id}/finding/new`)} />
     </View>
   );
 }

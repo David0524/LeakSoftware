@@ -58,8 +58,8 @@ export default function Setup() {
             </View>
           )}
           {status.error ? <Notice tone="error">{status.error}</Notice> : null}
-          <Button title="Try again" kind="secondary" onPress={() => void services.sync.syncNow()} />
-          <Button title="Sign out" kind="quiet" onPress={() => void signOut()} />
+          <Button title="Try Again" kind="secondary" onPress={() => void services.sync.syncNow()} />
+          <Button title="Sign Out" kind="quiet" onPress={() => void signOut()} />
         </Screen>
       </View>
     );
@@ -69,11 +69,11 @@ export default function Setup() {
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       <BrandHeader />
       <Screen>
-        <T variant="title">Set up your company</T>
+        <T variant="title">Set Up Your Company</T>
         <T variant="muted">Signed in as {user?.email}</T>
         {error ? <Notice tone="error">{error}</Notice> : null}
         <Card>
-          <T variant="heading">Start a new company</T>
+          <T variant="heading">Start a New Company</T>
           <T variant="muted">You’ll be the owner. You can invite your techs after.</T>
           <Field
             label="Company name"
@@ -82,13 +82,13 @@ export default function Setup() {
             autoCapitalize="words"
           />
           <Button
-            title="Create company"
+            title="Create Company"
             onPress={() => void call("create")}
             loading={busy === "create"}
           />
         </Card>
         <Card>
-          <T variant="heading">Join your team</T>
+          <T variant="heading">Join Your Team</T>
           <T variant="muted">Use the invite code your owner sent to {user?.email}.</T>
           <Field
             label="Invite code"
@@ -103,7 +103,7 @@ export default function Setup() {
             loading={busy === "join"}
           />
         </Card>
-        <Button title="Sign out" kind="quiet" onPress={() => void signOut()} />
+        <Button title="Sign Out" kind="quiet" onPress={() => void signOut()} />
       </Screen>
     </View>
   );

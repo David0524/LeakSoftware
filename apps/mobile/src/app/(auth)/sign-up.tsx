@@ -29,7 +29,7 @@ export default function SignUp() {
     <View style={{ flex: 1 }}>
       <BrandHeader />
       <Screen>
-        <T variant="title">Create an account</T>
+        <T variant="title">Create an Account</T>
         <T variant="muted">
           If your company already uses LeakBook, ask the owner to invite this email, then sign up
           here.
@@ -61,8 +61,8 @@ export default function SignUp() {
           textContentType="newPassword"
           hint="At least 10 characters."
         />
-        <Button title="Create account" onPress={submit} loading={busy} />
-        <Button title="I already have an account" kind="quiet" onPress={() => router.back()} />
+        <Button title="Create Account" onPress={submit} loading={busy} />
+        <Button title="I Already Have an Account" kind="quiet" onPress={() => router.back()} />
       </Screen>
     </View>
   );

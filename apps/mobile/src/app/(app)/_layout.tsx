@@ -13,13 +13,13 @@ export default function AppLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ title: "Jobs" }} />
-      <Stack.Screen name="jobs/new" options={{ title: "New job" }} />
+      <Stack.Screen name="jobs/new" options={{ title: "New Job" }} />
       <Stack.Screen name="jobs/[id]/index" options={{ title: "Job" }} />
       <Stack.Screen name="jobs/[id]/component/[componentId]" options={{ title: "Component" }} />
       <Stack.Screen name="jobs/[id]/test/[testId]" options={{ title: "Test" }} />
       <Stack.Screen name="jobs/[id]/finding/[findingId]" options={{ title: "Finding" }} />
       <Stack.Screen name="settings" options={{ title: "Settings" }} />
-      <Stack.Screen name="reauth" options={{ title: "Sign in again", presentation: "modal" }} />
+      <Stack.Screen name="reauth" options={{ title: "Sign In Again", presentation: "modal" }} />
     </Stack>
   );
 }

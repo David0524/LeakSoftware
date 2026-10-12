@@ -11,7 +11,16 @@ import {
 import type { JsonValue } from "@leakbook/sync";
 import { useInspectionConfig, useJobInspection } from "../../../../../data/inspection";
 import { useCompany, useSession } from "../../../../../state/session";
-import { Button, Card, Choice, Field, Notice, Screen, T } from "../../../../../ui/components";
+import {
+  Button,
+  Card,
+  Choice,
+  Field,
+  Notice,
+  Screen,
+  T,
+  Segmented,
+} from "../../../../../ui/components";
 import { OUTCOME_STYLE } from "../../../../../features/inspection/OutcomeChip";
 import { color } from "../../../../../ui/theme";
 
@@ -152,7 +161,7 @@ export default function TestScreen() {
         </Card>
       ) : null}
 
-      <Choice
+      <Segmented
         label="Outcome"
         options={testType.result_options.map((o) => ({
           value: o,
@@ -168,8 +177,8 @@ export default function TestScreen() {
       {Object.keys(errors).length > 0 ? (
         <Notice tone="error">Fix the highlighted fields.</Notice>
       ) : null}
-      <Button title="Save test" onPress={save} />
-      {existing ? <Button title="Delete test" kind="danger" onPress={remove} /> : null}
+      <Button title="Save Test" onPress={save} />
+      {existing ? <Button title="Delete Test" kind="danger" onPress={remove} /> : null}
     </Screen>
   );
 }

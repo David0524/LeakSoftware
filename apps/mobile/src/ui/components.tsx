@@ -52,10 +52,11 @@ const text = StyleSheet.create({
     textTransform: "uppercase",
     color: color.textMuted,
   },
-  body: { fontFamily: font.body, fontSize: 16, lineHeight: 22, color: color.text },
-  strong: { fontFamily: font.bodySemiBold, fontSize: 16, lineHeight: 22, color: color.text },
-  small: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: color.text },
-  muted: { fontFamily: font.body, fontSize: 14, lineHeight: 19, color: color.textMuted },
+  // Sizes follow iOS Dynamic Type defaults: Body 17/22, Subhead 15/20 (HIG typography.md).
+  body: { fontFamily: font.body, fontSize: 17, lineHeight: 22, color: color.text },
+  strong: { fontFamily: font.bodySemiBold, fontSize: 17, lineHeight: 22, color: color.text },
+  small: { fontFamily: font.body, fontSize: 15, lineHeight: 20, color: color.text },
+  muted: { fontFamily: font.body, fontSize: 15, lineHeight: 20, color: color.textMuted },
 });
 
 // ---------------------------------------------------------------------------
@@ -239,6 +240,50 @@ export function Choice<V extends string>({
   );
 }
 
+/**
+ * iOS-style segmented control: one row, equal-width segments, for switching between a few
+ * closely related views or states (HIG segmented-controls.md). Use Choice for longer lists.
+ */
+export function Segmented<V extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label?: string;
+  options: { value: V; label: string }[];
+  value: V | null;
+  onChange: (v: V) => void;
+}) {
+  return (
+    <View style={styles.field}>
+      {label ? <T variant="label">{label}</T> : null}
+      <View style={styles.segmented} accessibilityRole="tablist">
+        {options.map((o) => {
+          const on = o.value === value;
+          return (
+            <Pressable
+              key={o.value}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: on }}
+              onPress={() => onChange(o.value)}
+              style={[styles.segment, on && styles.segmentOn]}
+            >
+              <Text
+                style={[styles.segmentText, on && styles.segmentTextOn]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {o.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 export function Toggle({
   label,
   value,
@@ -305,7 +350,7 @@ const styles = StyleSheet.create({
     minHeight: touch + 4,
     backgroundColor: color.surface,
     borderWidth: 1.5,
-    borderColor: color.border,
+    borderColor: color.controlBorder,
     borderRadius: radius.md,
     paddingHorizontal: space["3"],
     fontFamily: font.body,
@@ -319,11 +364,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: space["4"],
     borderRadius: radius.md,
     borderWidth: 1.5,
-    borderColor: color.border,
+    borderColor: color.controlBorder,
     backgroundColor: color.surface,
     justifyContent: "center",
   },
   choiceOn: { backgroundColor: color.navy, borderColor: color.navy },
+  segmented: {
+    flexDirection: "row",
+    backgroundColor: color.neutral200,
+    borderRadius: radius.md,
+    padding: 3,
+    gap: 3,
+  },
+  segment: {
+    flex: 1,
+    minHeight: touch - 4,
+    borderRadius: radius.md - 2,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: space["2"],
+  },
+  segmentOn: { backgroundColor: color.surface, borderWidth: 1, borderColor: color.controlBorder },
+  segmentText: { fontFamily: font.bodyMedium, fontSize: 15, color: color.text },
+  segmentTextOn: { fontFamily: font.bodyBold },
   choiceText: { fontFamily: font.bodySemiBold, fontSize: 15, color: color.text },
   toggle: {
     minHeight: touch,

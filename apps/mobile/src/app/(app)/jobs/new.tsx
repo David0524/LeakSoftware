@@ -26,6 +26,7 @@ import {
   Section,
   T,
   Toggle,
+  Segmented,
 } from "../../../ui/components";
 import { color, space } from "../../../ui/theme";
 
@@ -144,7 +145,7 @@ export default function NewJob() {
             <T variant="strong">{selectedCustomer.name}</T>
             {selectedCustomer.phone ? <T variant="muted">{selectedCustomer.phone}</T> : null}
             <Button
-              title="Change customer"
+              title="Change Customer"
               kind="quiet"
               onPress={() => {
                 setCustomerId(undefined);
@@ -272,11 +273,11 @@ export default function NewJob() {
       </Section>
 
       <Section title="When">
-        <Choice
+        <Segmented
           options={[
-            { value: "now", label: "Start now" },
+            { value: "now", label: "Start Now" },
             { value: "scheduled", label: "Schedule" },
-            { value: "later", label: "Not scheduled" },
+            { value: "later", label: "Later" },
           ]}
           value={when}
           onChange={setWhen}
@@ -325,7 +326,7 @@ export default function NewJob() {
       {Object.keys(errors).length > 0 ? (
         <Notice tone="error">Fix the highlighted fields.</Notice>
       ) : null}
-      <Button title={when === "now" ? "Create and start job" : "Create job"} onPress={save} />
+      <Button title={when === "now" ? "Create and Start Job" : "Create Job"} onPress={save} />
     </Screen>
   );
 }

@@ -6,7 +6,16 @@ import type { JsonValue } from "@leakbook/sync";
 import { useRow } from "../../../../../data/hooks";
 import { useInspectionConfig, useJobInspection } from "../../../../../data/inspection";
 import { useCompany, useSession } from "../../../../../state/session";
-import { Button, Choice, Field, Notice, Screen, Section, T } from "../../../../../ui/components";
+import {
+  Button,
+  Choice,
+  Field,
+  Notice,
+  Screen,
+  Section,
+  T,
+  Segmented,
+} from "../../../../../ui/components";
 import { PoolDiagram } from "../../../../../ui/PoolDiagram";
 import { color } from "../../../../../ui/theme";
 
@@ -88,7 +97,7 @@ export default function FindingScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: existing ? "Finding" : "New finding" }} />
+      <Stack.Screen options={{ title: existing ? "Finding" : "New Finding" }} />
       <Field
         label="What did you find?"
         value={title}
@@ -96,7 +105,7 @@ export default function FindingScreen() {
         error={errors.title}
         placeholder="Return 3 line break"
       />
-      <Choice
+      <Segmented
         label="Severity"
         options={config.severities.map((s) => ({ value: s.key, label: s.name }))}
         value={severity || null}
@@ -126,7 +135,7 @@ export default function FindingScreen() {
       <Section
         title="Pin on the diagram"
         action={
-          pin ? <Button title="Clear pin" kind="quiet" onPress={() => setPin(null)} /> : undefined
+          pin ? <Button title="Clear Pin" kind="quiet" onPress={() => setPin(null)} /> : undefined
         }
       >
         <T variant="muted">{pin ? "Tap again to move the pin." : "Tap where the leak is."}</T>
@@ -152,7 +161,7 @@ export default function FindingScreen() {
       </Section>
 
       {existing ? (
-        <Choice
+        <Segmented
           label="Status"
           options={[
             { value: "open", label: "Open" },
@@ -168,8 +177,8 @@ export default function FindingScreen() {
       {Object.keys(errors).length > 0 ? (
         <Notice tone="error">Fix the highlighted fields.</Notice>
       ) : null}
-      <Button title="Save finding" onPress={save} />
-      {existing ? <Button title="Delete finding" kind="danger" onPress={remove} /> : null}
+      <Button title="Save Finding" onPress={save} />
+      {existing ? <Button title="Delete Finding" kind="danger" onPress={remove} /> : null}
     </Screen>
   );
 }

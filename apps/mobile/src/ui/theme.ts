@@ -13,6 +13,8 @@ export const color = {
   info: tokens.color.status.info,
   neutral100: tokens.color.neutral["100"],
   neutral200: tokens.color.neutral["200"],
+  /** Outlines of fields and choices: 5.7:1 on white, visible in direct sun. */
+  controlBorder: tokens.color.neutral["500"],
 } as const;
 
 /** Font family names registered in src/app/_layout.tsx. */

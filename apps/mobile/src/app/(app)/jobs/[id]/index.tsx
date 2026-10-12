@@ -18,7 +18,6 @@ import { useCompany, useSession } from "../../../../state/session";
 import {
   Button,
   Card,
-  Choice,
   Field,
   Notice,
   Row,
@@ -26,6 +25,7 @@ import {
   Section,
   StatusChip,
   T,
+  Segmented,
 } from "../../../../ui/components";
 import { color } from "../../../../ui/theme";
 import { ChecklistTab } from "../../../../features/inspection/ChecklistTab";
@@ -33,10 +33,10 @@ import { FindingsTab } from "../../../../features/inspection/FindingsTab";
 import { TestsTab } from "../../../../features/inspection/TestsTab";
 
 const ACTION_LABELS: Partial<Record<JobStatus, string>> = {
-  in_progress: "Start job",
-  scheduled: "Move back to scheduled",
-  unscheduled: "Reopen job",
-  canceled: "Cancel job",
+  in_progress: "Start Job",
+  scheduled: "Move Back to Scheduled",
+  unscheduled: "Reopen Job",
+  canceled: "Cancel Job",
 };
 
 type Tab = "checklist" | "tests" | "findings" | "report";
@@ -89,8 +89,8 @@ export default function JobDetail() {
     };
     if (to === "canceled") {
       Alert.alert("Cancel this job?", "You can reopen it later.", [
-        { text: "Keep job", style: "cancel" },
-        { text: "Cancel job", style: "destructive", onPress: apply },
+        { text: "Keep Job", style: "cancel" },
+        { text: "Cancel Job", style: "destructive", onPress: apply },
       ]);
     } else {
       apply();
@@ -101,7 +101,7 @@ export default function JobDetail() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: job.number ? `Job #${job.number}` : "New job" }} />
+      <Stack.Screen options={{ title: job.number ? `Job #${job.number}` : "New Job" }} />
 
       <Row>
         <StatusChip status={job.status} />
@@ -178,7 +178,7 @@ export default function JobDetail() {
       </View>
 
       <Section title="Inspection">
-        <Choice
+        <Segmented
           options={[
             { value: "checklist", label: "Checklist" },
             { value: "tests", label: "Tests" },

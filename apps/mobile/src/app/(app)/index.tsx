@@ -74,7 +74,7 @@ export default function Jobs() {
         }
       />
       <View style={[styles.footer, { paddingBottom: insets.bottom + space["3"] }]}>
-        <Button title="New job" onPress={() => router.push("/jobs/new")} />
+        <Button title="New Job" onPress={() => router.push("/jobs/new")} />
       </View>
     </View>
   );

@@ -12,7 +12,8 @@ Not "Leak Book", "Leakbook", or "Leak-Book". All caps (LEAKBOOK) only in small u
 - **Audience:** owners and techs at 1–5 truck pool leak detection shops.
 - **Promise:** the inspection is documented, defensible, and turns into paid repair work.
 - **Tone:** plain, sturdy, trade-literate. Like a good gauge or a work truck decal. No mascots, gradients, or startup gloss.
-- **Copy voice:** short sentences, trade terms techs actually use (held, dropped, excluded, isolate, plug). Buttons say exactly what happens ("Send report", "Add finding").
+- **Copy voice:** short sentences, trade terms techs actually use (held, dropped, excluded, isolate, plug). Buttons say exactly what happens ("Send Report", "Add Finding").
+- **Capitalization (iOS convention):** Title Case for buttons, segment labels, alert buttons, and screen titles; sentence case for everything else.
 
 ## White-label rule
 

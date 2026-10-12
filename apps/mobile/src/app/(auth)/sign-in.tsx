@@ -28,7 +28,7 @@ export default function SignIn() {
     <View style={{ flex: 1 }}>
       <BrandHeader />
       <Screen>
-        <T variant="title">Sign in</T>
+        <T variant="title">Sign In</T>
         {error ? <Notice tone="error">{error}</Notice> : null}
         <Field
           label="Email"
@@ -48,8 +48,8 @@ export default function SignIn() {
           textContentType="password"
           onSubmitEditing={submit}
         />
-        <Button title="Sign in" onPress={submit} loading={busy} />
-        <Button title="Create an account" kind="quiet" onPress={() => router.push("/sign-up")} />
+        <Button title="Sign In" onPress={submit} loading={busy} />
+        <Button title="Create an Account" kind="quiet" onPress={() => router.push("/sign-up")} />
         {__DEV__ ? (
           <Notice>
             Demo accounts (dev only): tech@demo.leakbook.test or owner@demo.leakbook.test, password

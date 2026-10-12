@@ -18,8 +18,8 @@ export default function Settings() {
         ? `${pending} change${pending === 1 ? " hasn't" : "s haven't"} reached the office yet. Signing out deletes ${pending === 1 ? "it" : "them"} from this phone.`
         : "Your work is saved to the office. Signing out removes it from this phone.",
       [
-        { text: "Stay signed in", style: "cancel" },
-        { text: "Sign out", style: "destructive", onPress: () => void signOut() },
+        { text: "Stay Signed In", style: "cancel" },
+        { text: "Sign Out", style: "destructive", onPress: () => void signOut() },
       ],
     );
   }
@@ -60,10 +60,10 @@ export default function Settings() {
           </Notice>
         ) : null}
         {status.phase === "signed_out" ? (
-          <Button title="Sign in again" onPress={() => router.push("/reauth")} />
+          <Button title="Sign In Again" onPress={() => router.push("/reauth")} />
         ) : (
           <Button
-            title="Sync now"
+            title="Sync Now"
             kind="secondary"
             onPress={() => void sync.syncNow()}
             loading={status.phase === "syncing"}
@@ -80,7 +80,7 @@ export default function Settings() {
               </T>
               <T variant="muted">{p.error}</T>
               <Button
-                title="Discard this change"
+                title="Discard This Change"
                 kind="danger"
                 onPress={() => sync.discardProblem(p.seq)}
               />
@@ -100,7 +100,7 @@ export default function Settings() {
       </Section>
 
       <View style={{ marginTop: 8 }}>
-        <Button title="Sign out" kind="danger" onPress={confirmSignOut} />
+        <Button title="Sign Out" kind="danger" onPress={confirmSignOut} />
       </View>
     </Screen>
   );
