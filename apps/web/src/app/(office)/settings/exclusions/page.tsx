@@ -19,7 +19,7 @@ export default async function ExclusionsPage() {
       />
       <div className="space-y-4">
         <Card>
-          <SettingsForm action={saveExclusionReason} submit="Add Reason">
+          <SettingsForm action={saveExclusionReason} submit="Add Reason" primary>
             <SField label="New reason" name="label" id="label-new" placeholder="Equipment locked" />
           </SettingsForm>
         </Card>
@@ -59,6 +59,7 @@ export default async function ExclusionsPage() {
                   action={removeConfigRow}
                   submit="Remove"
                   danger
+                  confirm="Remove this reason?"
                   inline
                   className="flex"
                 >

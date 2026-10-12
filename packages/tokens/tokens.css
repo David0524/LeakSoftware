@@ -32,6 +32,8 @@
   --lb-link: #1F6FAE;
   --lb-focus: #1F6FAE;
   --lb-diagram-water: #CFE3F3;
+  --lb-on-status: #FFFFFF;
+  --lb-control-border: #5A6875;
   --lb-font-display: "Barlow Semi Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
   --lb-font-body: "Public Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -52,6 +54,10 @@
   --lb-fail: #E5655F;
   --lb-excluded: #8E9DAB;
   --lb-diagram-water: #1F3A52;
+  --lb-on-status: #12263A;
+  --lb-control-border: #8A97A4;
+  --lb-warning: #D9A040;
+  --lb-info: #6AAEE6;
   color-scheme: dark;
 }
 
@@ -72,6 +78,10 @@
     --lb-fail: #E5655F;
     --lb-excluded: #8E9DAB;
     --lb-diagram-water: #1F3A52;
+    --lb-on-status: #12263A;
+    --lb-control-border: #8A97A4;
+    --lb-warning: #D9A040;
+    --lb-info: #6AAEE6;
     color-scheme: dark;
   }
 }
@@ -90,6 +100,8 @@
   --color-link: var(--lb-link);
   --color-focus: var(--lb-focus);
   --color-diagram-water: var(--lb-diagram-water);
+  --color-on-status: var(--lb-on-status);
+  --color-control-border: var(--lb-control-border);
   --color-navy: var(--lb-navy);
   --color-water: var(--lb-water);
   --color-safety: var(--lb-safety);

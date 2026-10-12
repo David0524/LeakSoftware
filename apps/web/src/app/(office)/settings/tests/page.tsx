@@ -109,7 +109,12 @@ export default async function TestTypesPage() {
             </SettingsForm>
             {!t.calculator ? (
               <div className="mt-4">
-                <SettingsForm action={removeConfigRow} submit="Remove Test Type" danger>
+                <SettingsForm
+                  action={removeConfigRow}
+                  submit="Remove Test Type"
+                  danger
+                  confirm="Remove this test type?"
+                >
                   <input type="hidden" name="table" value="test_type" />
                   <input type="hidden" name="id" value={t.id} />
                   <input type="hidden" name="path" value="/settings/tests" />
@@ -121,7 +126,7 @@ export default async function TestTypesPage() {
 
         <Card>
           <h2 className="mb-4 font-display text-xl font-bold">Add a test type</h2>
-          <SettingsForm action={saveTestType} submit="Add Test Type">
+          <SettingsForm action={saveTestType} submit="Add Test Type" primary>
             <div className="grid gap-4 sm:grid-cols-[1fr_120px]">
               <SField label="Name" name="name" id="name-new" placeholder="Thermal camera scan" />
               <SField

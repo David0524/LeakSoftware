@@ -67,7 +67,12 @@ export default async function SeveritiesPage() {
               <SeverityFields s={s} />
             </SettingsForm>
             <div className="mt-4">
-              <SettingsForm action={removeConfigRow} submit="Remove Severity" danger>
+              <SettingsForm
+                action={removeConfigRow}
+                submit="Remove Severity"
+                danger
+                confirm="Remove this severity?"
+              >
                 <input type="hidden" name="table" value="severity_level" />
                 <input type="hidden" name="id" value={s.id} />
                 <input type="hidden" name="path" value="/settings/severities" />
@@ -77,7 +82,7 @@ export default async function SeveritiesPage() {
         ))}
         <Card>
           <h2 className="mb-4 font-display text-xl font-bold">Add a severity</h2>
-          <SettingsForm action={saveSeverity} submit="Add Severity">
+          <SettingsForm action={saveSeverity} submit="Add Severity" primary>
             <SeverityFields />
           </SettingsForm>
         </Card>

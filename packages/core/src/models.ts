@@ -90,3 +90,8 @@ export const POOL_TYPE_LABELS: Record<PoolType, string> = {
   fiberglass: "Fiberglass",
   other: "Other",
 };
+
+export const JOB_TYPE_LABELS: Record<Job["type"], string> = {
+  detection: "Leak detection",
+  repair: "Repair",
+};

@@ -109,6 +109,13 @@ export interface ExclusionReason extends Base {
 
 export type FindingStatus = "open" | "quoted" | "repaired" | "monitor";
 
+export const FINDING_STATUS_LABELS: Record<FindingStatus, string> = {
+  open: "Open",
+  quoted: "Quoted",
+  repaired: "Repaired",
+  monitor: "Monitor",
+};
+
 export interface Finding extends Base {
   job_id: string;
   job_component_id?: string | null;

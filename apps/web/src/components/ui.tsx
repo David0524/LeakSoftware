@@ -13,8 +13,7 @@ type ButtonKind = "primary" | "secondary" | "quiet" | "danger";
 const BUTTON: Record<ButtonKind, string> = {
   // Navy on safety orange: white on orange is too faint (brand/BRAND.md).
   primary: "bg-primary text-on-primary hover:brightness-95",
-  secondary:
-    "border-2 border-navy text-navy bg-surface hover:bg-bg dark:border-text dark:text-text",
+  secondary: "border-2 border-text text-text bg-surface hover:bg-bg",
   quiet: "text-link hover:underline",
   danger: "border-2 border-status-fail text-status-fail bg-surface hover:bg-bg",
 };
@@ -93,7 +92,7 @@ export function SectionTitle({ children }: { children: ReactNode }) {
 }
 
 const INPUT =
-  "block w-full min-h-11 rounded-md border border-neutral-500 bg-surface px-3 py-2 text-text " +
+  "block w-full min-h-11 rounded-md border border-control-border bg-surface px-3 py-2 text-text " +
   "placeholder:text-text-muted focus:outline-3 focus:outline-offset-1 focus:outline-focus " +
   "aria-[invalid=true]:border-status-fail";
 
@@ -207,8 +206,8 @@ export function Notice({
 
 const STATUS_STYLE: Record<JobStatus, string> = {
   unscheduled: "bg-status-excluded",
-  scheduled: "bg-neutral-700",
-  in_progress: "bg-water",
+  scheduled: "bg-text",
+  in_progress: "bg-status-info",
   report_sent: "bg-status-info",
   quote_sent: "bg-status-info",
   quote_accepted: "bg-status-warning",
@@ -217,17 +216,22 @@ const STATUS_STYLE: Record<JobStatus, string> = {
   canceled: "bg-status-excluded",
 };
 
-export function StatusBadge({ status }: { status: JobStatus }) {
+/** A small status label. Fill colors come from the status tokens; text uses on-status. */
+export function Chip({ label, className }: { label: string; className: string }) {
   return (
     <span
       className={cx(
-        "inline-block rounded-sm px-2 py-0.5 font-display text-xs font-bold tracking-wider text-white uppercase",
-        STATUS_STYLE[status],
+        "inline-block rounded-sm px-2 py-0.5 font-display text-[13px] font-bold tracking-wider text-on-status uppercase",
+        className,
       )}
     >
-      {JOB_STATUS_LABELS[status]}
+      {label}
     </span>
   );
+}
+
+export function StatusBadge({ status }: { status: JobStatus }) {
+  return <Chip label={JOB_STATUS_LABELS[status]} className={STATUS_STYLE[status]} />;
 }
 
 export function Empty({ children }: { children: ReactNode }) {

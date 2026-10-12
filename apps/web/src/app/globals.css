@@ -5,6 +5,18 @@ body {
   background: var(--lb-bg);
   color: var(--lb-text);
   font-family: var(--lb-font-body);
+  /* House rule: 17 px body text (iOS Body size). */
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+/* One visible focus ring everywhere, in the brand focus color. */
+:focus-visible {
+  outline: 3px solid var(--lb-focus);
+  outline-offset: 2px;
+}
+header :focus-visible {
+  outline-color: var(--lb-on-header);
 }
 
 h1,

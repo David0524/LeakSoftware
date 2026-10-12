@@ -26,7 +26,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
           type="search"
           defaultValue={search}
           placeholder="Name, phone, or email"
-          className="min-h-11 flex-1 rounded-md border border-neutral-500 bg-surface px-3 focus:outline-3 focus:outline-focus"
+          className="min-h-11 flex-1 rounded-md border border-control-border bg-surface px-3 focus:outline-3 focus:outline-focus"
         />
         <Button type="submit" kind="secondary">
           Search

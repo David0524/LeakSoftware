@@ -28,6 +28,8 @@ export function SettingsForm({
   children,
   className,
   danger = false,
+  primary = false,
+  confirm,
   inline = false,
 }: {
   action: Action;
@@ -35,6 +37,10 @@ export function SettingsForm({
   children?: ReactNode;
   className?: string;
   danger?: boolean;
+  /** The page's main form. Orange is used once per page (house rule). */
+  primary?: boolean;
+  /** Ask before submitting, e.g. "Remove this item?". */
+  confirm?: string;
   inline?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
@@ -42,7 +48,14 @@ export function SettingsForm({
     <form action={formAction} className={cx(!inline && "space-y-4", className)}>
       <FieldErrors value={state.fields}>{children}</FieldErrors>
       <div className={cx("flex flex-wrap items-center gap-3", inline && "self-end")}>
-        <Button type="submit" kind={danger ? "danger" : "primary"} disabled={pending}>
+        <Button
+          type="submit"
+          kind={danger ? "danger" : primary ? "primary" : "secondary"}
+          disabled={pending}
+          onClick={(e) => {
+            if (confirm && !window.confirm(confirm)) e.preventDefault();
+          }}
+        >
           {pending ? "Saving…" : submit}
         </Button>
         <span aria-live="polite" className="text-[15px]">
@@ -100,7 +113,7 @@ export function ColorField({
           aria-label={`${label} picker`}
           value={valid ? value : NAVY}
           onChange={(e) => setValue(e.target.value.toUpperCase())}
-          className="h-11 w-14 cursor-pointer rounded-md border border-neutral-500 bg-surface"
+          className="h-11 w-14 cursor-pointer rounded-md border border-control-border bg-surface"
         />
         <input
           id={name}
@@ -109,7 +122,7 @@ export function ColorField({
           onChange={(e) => setValue(e.target.value)}
           placeholder={optional ? "None" : NAVY}
           aria-invalid={error ? true : undefined}
-          className="min-h-11 w-32 rounded-md border border-neutral-500 bg-surface px-3 font-mono uppercase"
+          className="min-h-11 w-32 rounded-md border border-control-border bg-surface px-3 font-mono uppercase"
         />
       </div>
       {valid ? (
@@ -147,7 +160,7 @@ export function CopyLink({ url }: { url: string }) {
         value={url}
         aria-label="Invite link"
         onFocus={(e) => e.target.select()}
-        className="min-h-11 min-w-0 flex-1 rounded-md border border-neutral-500 bg-bg px-3 font-mono text-[15px]"
+        className="min-h-11 min-w-0 flex-1 rounded-md border border-control-border bg-bg px-3 font-mono text-[15px]"
       />
       <Button
         type="button"

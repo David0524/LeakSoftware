@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { formatAddress, formatSchedule, type JobStatus } from "@leakbook/core";
+import { JOB_TYPE_LABELS, formatAddress, formatSchedule, type JobStatus } from "@leakbook/core";
 import { Empty, PageHeader, StatusBadge, cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { OPEN_STATUSES, listJobs } from "@/lib/data";
@@ -41,8 +41,8 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
             className={cx(
               "min-h-11 content-center rounded-md border px-3 font-medium",
               f === filter
-                ? "border-navy bg-navy text-white dark:border-text dark:bg-text dark:text-bg"
-                : "border-neutral-500 bg-surface hover:bg-bg",
+                ? "border-text bg-text text-bg"
+                : "border-control-border bg-surface hover:bg-bg",
             )}
           >
             {f.label}
@@ -84,7 +84,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
                     >
                       {j.number ? `#${j.number}` : "New job"}
                     </Link>
-                    <div className="text-[15px] text-text-muted capitalize">{j.type}</div>
+                    <div className="text-[15px] text-text-muted">{JOB_TYPE_LABELS[j.type]}</div>
                   </td>
                   <td className="px-4 py-3 align-top">
                     <div className="font-medium">{j.customer?.name ?? "Customer"}</div>

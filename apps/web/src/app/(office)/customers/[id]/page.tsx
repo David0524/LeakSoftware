@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { POOL_TYPE_LABELS, formatAddress, formatSchedule } from "@leakbook/core";
+import { JOB_TYPE_LABELS, POOL_TYPE_LABELS, formatAddress, formatSchedule } from "@leakbook/core";
 import { Card, Empty, PageHeader, SectionTitle, StatusBadge } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCustomer } from "@/lib/data";
@@ -28,7 +28,10 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
   return (
     <>
       <p className="mb-2">
-        <Link href="/customers" className="text-link underline-offset-4 hover:underline">
+        <Link
+          href="/customers"
+          className="inline-flex min-h-11 items-center gap-1 text-link underline-offset-4 hover:underline"
+        >
           ← Customers
         </Link>
       </p>
@@ -91,7 +94,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                         >
                           {j.number ? `Job #${j.number}` : "New job"}
                         </Link>
-                        <span className="capitalize">{j.type}</span>
+                        <span>{JOB_TYPE_LABELS[j.type]}</span>
                         <StatusBadge status={j.status} />
                         <span className="text-text-muted">
                           {formatSchedule(

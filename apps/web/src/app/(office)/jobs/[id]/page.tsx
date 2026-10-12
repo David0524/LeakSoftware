@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  FINDING_STATUS_LABELS,
+  JOB_TYPE_LABELS,
   MEDIA_KIND_LABELS,
   POOL_TYPE_LABELS,
   calculate,
@@ -14,9 +16,9 @@ import {
   type Media,
   type Outcome,
 } from "@leakbook/core";
-import { MarkupOverlay } from "@/components/markup";
+import { GalleryImage } from "@/components/gallery-image";
 import { PoolDiagram } from "@/components/pool-diagram";
-import { Card, Empty, PageHeader, SectionTitle, StatusBadge, cx } from "@/components/ui";
+import { Card, Chip, Empty, PageHeader, SectionTitle, StatusBadge } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { auditFor, getJob, getTeam, signedMediaUrls, type JobDetail } from "@/lib/data";
 
@@ -27,19 +29,6 @@ const OUTCOME: Record<Outcome, { label: string; className: string }> = {
   fail: { label: "Fail", className: "bg-status-fail" },
   inconclusive: { label: "Unclear", className: "bg-status-warning" },
 };
-
-function Chip({ label, className }: { label: string; className: string }) {
-  return (
-    <span
-      className={cx(
-        "inline-block rounded-sm px-2 py-0.5 font-display text-xs font-bold tracking-wider text-paper uppercase",
-        className,
-      )}
-    >
-      {label}
-    </span>
-  );
-}
 
 export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   const { id } = await params;
@@ -53,7 +42,10 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   return (
     <>
       <p className="mb-2">
-        <Link href="/jobs" className="text-link underline-offset-4 hover:underline">
+        <Link
+          href="/jobs"
+          className="inline-flex min-h-11 items-center gap-1 text-link underline-offset-4 hover:underline"
+        >
           ← Jobs
         </Link>
       </p>
@@ -62,7 +54,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
         subtitle={
           <span className="flex flex-wrap items-center gap-3">
             <StatusBadge status={job.status} />
-            <span className="capitalize">{job.type}</span>
+            <span>{JOB_TYPE_LABELS[job.type]}</span>
             <span>
               {job.started_at && job.status === "in_progress"
                 ? `Started ${formatSchedule(job.started_at, new Date(), tz)}`
@@ -217,7 +209,7 @@ function Checklist({ detail }: { detail: JobDetail }) {
                   ) : status === "excluded" ? (
                     <Chip label="Excluded" className="bg-status-excluded" />
                   ) : (
-                    <Chip label="To do" className="bg-neutral-500" />
+                    <Chip label="To do" className="bg-text-muted" />
                   )}
                 </td>
                 <td className="px-4 py-2">
@@ -320,7 +312,7 @@ function Findings({ detail }: { detail: JobDetail }) {
                     {[
                       sev?.name ?? f.severity_key,
                       f.job_component_id ? componentLabel.get(f.job_component_id) : null,
-                      f.status,
+                      FINDING_STATUS_LABELS[f.status],
                     ]
                       .filter(Boolean)
                       .join(" · ")}
@@ -364,18 +356,16 @@ async function Gallery({ detail, tz }: { detail: JobDetail; tz: string }) {
                 {MEDIA_KIND_LABELS[m.kind]} still uploading from the phone
               </div>
             ) : m.kind === "photo" ? (
-              <a href={url} target="_blank" rel="noreferrer" className="relative block bg-navy">
-                {/* eslint-disable-next-line @next/next/no-img-element -- signed storage URL */}
-                <img
-                  src={url}
-                  alt={m.caption ?? `Photo of ${attached(m)}`}
-                  width={w}
-                  height={h}
-                  className="h-auto w-full"
-                  loading="lazy"
-                />
-                <MarkupOverlay shapes={markup} width={w} height={h} />
-              </a>
+              <GalleryImage
+                url={url}
+                alt={
+                  m.caption ??
+                  `Photo of ${attached(m)}${m.captured_at ? `, ${formatSchedule(m.captured_at, new Date(), tz)}` : ""}`
+                }
+                width={w}
+                height={h}
+                shapes={markup}
+              />
             ) : m.kind === "video" ? (
               <video
                 src={url}

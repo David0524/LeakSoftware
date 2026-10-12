@@ -43,7 +43,7 @@ export default async function TeamSettingsPage() {
       <div className="space-y-6">
         <Card>
           <h2 className="mb-4 font-display text-xl font-bold">Invite someone</h2>
-          <SettingsForm action={inviteMember} submit="Create Invite">
+          <SettingsForm action={inviteMember} submit="Create Invite" primary>
             <div className="grid gap-4 sm:grid-cols-[1fr_200px]">
               <SField label="Email" name="email" type="email" autoComplete="off" required />
               <Select
@@ -80,7 +80,12 @@ export default async function TeamSettingsPage() {
                     <CopyLink url={`${origin}/invite/${i.token}`} />
                   </div>
                   <div className="mt-3">
-                    <SettingsForm action={revokeInvite} submit="Revoke Invite" danger>
+                    <SettingsForm
+                      action={revokeInvite}
+                      submit="Revoke Invite"
+                      danger
+                      confirm="Revoke this invite? The link will stop working."
+                    >
                       <input type="hidden" name="id" value={i.id} />
                     </SettingsForm>
                   </div>

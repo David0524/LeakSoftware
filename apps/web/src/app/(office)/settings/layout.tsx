@@ -27,7 +27,7 @@ async function OwnersOnly({ children }: { children: React.ReactNode }) {
     );
   }
   return (
-    <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
+    <div className="grid gap-8 md:grid-cols-[200px_1fr]">
       <aside>
         <NavLinks links={SETTINGS_SECTIONS} vertical label="Settings sections" />
       </aside>

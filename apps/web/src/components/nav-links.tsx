@@ -16,7 +16,7 @@ export function NavLinks({
   const path = usePathname();
   if (vertical) {
     return (
-      <nav aria-label={label} className="flex flex-col gap-1">
+      <nav aria-label={label} className="flex flex-row flex-wrap gap-1 md:flex-col">
         {links.map((l) => {
           const active = path === l.href || path.startsWith(`${l.href}/`);
           return (
@@ -26,7 +26,7 @@ export function NavLinks({
               aria-current={active ? "page" : undefined}
               className={cx(
                 "min-h-11 content-center rounded-md px-3 font-medium",
-                active ? "bg-navy text-paper dark:bg-surface dark:text-text" : "hover:bg-surface",
+                active ? "bg-text font-semibold text-bg" : "hover:bg-surface",
               )}
             >
               {l.label}

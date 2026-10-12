@@ -64,7 +64,7 @@ export default function Home() {
         <ol className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {STEPS.map((s, i) => (
             <li key={s.title} className="rounded-lg border border-border bg-surface p-5">
-              <span className="font-display text-3xl font-extrabold text-water">{i + 1}</span>
+              <span className="font-display text-3xl font-extrabold text-link">{i + 1}</span>
               <h3 className="mt-2 font-display text-xl font-bold">{s.title}</h3>
               <p className="mt-2 text-text-muted">{s.text}</p>
             </li>

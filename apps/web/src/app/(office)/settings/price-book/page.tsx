@@ -105,7 +105,7 @@ export default async function PriceBookPage() {
       <div className="space-y-6">
         <Card>
           <h2 className="mb-4 font-display text-xl font-bold">Add an item</h2>
-          <SettingsForm action={savePriceItem} submit="Add Item">
+          <SettingsForm action={savePriceItem} submit="Add Item" primary>
             <ItemFields types={types} />
           </SettingsForm>
         </Card>
@@ -139,7 +139,12 @@ export default async function PriceBookPage() {
                 <ItemFields item={item} types={types} />
               </SettingsForm>
               <div className="mt-4">
-                <SettingsForm action={removeConfigRow} submit="Remove Item" danger>
+                <SettingsForm
+                  action={removeConfigRow}
+                  submit="Remove Item"
+                  danger
+                  confirm="Remove this item from the price book?"
+                >
                   <input type="hidden" name="table" value="price_book_item" />
                   <input type="hidden" name="id" value={item.id} />
                   <input type="hidden" name="path" value="/settings/price-book" />

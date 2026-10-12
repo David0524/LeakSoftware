@@ -47,7 +47,7 @@ test("owner views the M4 sample job", async ({ page }) => {
   await expect(page.getByText(/0\.69 in lost beyond evaporation/)).toBeVisible();
 
   // Findings with pins on the diagram.
-  await expect(page.getByText("Return 3 line break")).toBeVisible();
+  await expect(page.getByText("Return 3 line break", { exact: true })).toBeVisible();
   await expect(page.getByRole("img", { name: /Pool diagram with 2 finding pins/ })).toBeVisible();
 
   // Owners see the timeline.
@@ -76,6 +76,7 @@ test("owner edits the price book", async ({ page }) => {
   // Clean up.
   const saved = page.getByTestId("price-item").filter({ hasText: name });
   await saved.locator("summary").click();
+  page.once("dialog", (d) => void d.accept());
   await saved.getByRole("button", { name: "Remove Item" }).click();
   await expect(page.getByTestId("price-item").filter({ hasText: name })).toHaveCount(0);
 });

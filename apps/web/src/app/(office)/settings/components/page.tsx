@@ -72,7 +72,7 @@ export default async function ComponentsPage() {
       <div className="space-y-6">
         <Card>
           <h2 className="mb-4 font-display text-xl font-bold">Add a component</h2>
-          <SettingsForm action={saveComponentType} submit="Add Component">
+          <SettingsForm action={saveComponentType} submit="Add Component" primary>
             <TypeFields />
           </SettingsForm>
         </Card>
@@ -87,7 +87,12 @@ export default async function ComponentsPage() {
               <TypeFields t={t} />
             </SettingsForm>
             <div className="mt-4">
-              <SettingsForm action={removeConfigRow} submit="Remove Component" danger>
+              <SettingsForm
+                action={removeConfigRow}
+                submit="Remove Component"
+                danger
+                confirm="Remove this component from new checklists?"
+              >
                 <input type="hidden" name="table" value="component_type" />
                 <input type="hidden" name="id" value={t.id} />
                 <input type="hidden" name="path" value="/settings/components" />

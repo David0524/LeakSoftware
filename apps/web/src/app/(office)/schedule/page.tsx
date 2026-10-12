@@ -50,7 +50,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <nav
           aria-label="View"
-          className="inline-flex rounded-md border border-neutral-500 bg-surface p-1"
+          className="inline-flex rounded-md border border-control-border bg-surface p-1"
         >
           {(["day", "week"] as const).map((v) => (
             <Link
@@ -58,8 +58,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
               href={href(date, v)}
               aria-current={v === view ? "page" : undefined}
               className={cx(
-                "min-h-9 min-w-20 content-center rounded px-3 text-center font-medium",
-                v === view && "bg-navy text-paper dark:bg-text dark:text-bg",
+                "min-h-11 min-w-20 content-center rounded px-3 text-center font-medium",
+                v === view && "bg-text text-bg",
               )}
             >
               {v === "day" ? "Day" : "Week"}
@@ -89,10 +89,10 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
 
       {view === "week" ? (
         <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-          <table className="w-full min-w-[900px] table-fixed text-left">
+          <table className="w-full min-w-[760px] table-fixed text-left">
             <thead className="border-b border-border">
               <tr>
-                <th scope="col" className="w-40 px-3 py-2 font-medium text-text-muted">
+                <th scope="col" className="w-32 px-3 py-2 font-medium text-text-muted">
                   Tech
                 </th>
                 {days.map((d) => (
@@ -101,11 +101,16 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                     scope="col"
                     className={cx(
                       "px-2 py-2 font-medium",
-                      d === today ? "text-water" : "text-text-muted",
+                      d === today ? "text-link" : "text-text-muted",
                     )}
                   >
-                    <Link href={href(d, "day")} className="underline-offset-4 hover:underline">
+                    <Link
+                      href={href(d, "day")}
+                      aria-current={d === today ? "date" : undefined}
+                      className="underline-offset-4 hover:underline"
+                    >
                       {formatDay(d)}
+                      {d === today ? " · Today" : ""}
                     </Link>
                   </th>
                 ))}
@@ -174,7 +179,7 @@ function JobChip({ job, tz, compact = false }: { job: JobRow; tz: string; compac
       href={`/jobs/${job.id}`}
       className="block rounded-md border border-border bg-surface p-2 hover:border-water"
     >
-      <span className="block font-semibold">
+      <span className="block font-semibold whitespace-nowrap">
         {formatTime(job.scheduled_start!, tz)} · {job.number ? `#${job.number}` : "New"}
       </span>
       <span className="block text-[15px]">{job.customer?.name ?? "Customer"}</span>

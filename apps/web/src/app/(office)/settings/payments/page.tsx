@@ -29,7 +29,7 @@ export default async function PaymentsSettingsPage() {
         subtitle="Defaults for new quotes and invoices. Techs can adjust a quote within these limits."
       />
       <Card className="max-w-2xl">
-        <SettingsForm action={savePayments}>
+        <SettingsForm action={savePayments} primary>
           <Select
             label="Deposit on accepted quotes"
             name="deposit_type"

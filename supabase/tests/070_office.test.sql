@@ -46,5 +46,21 @@ select lives_ok($$
   update membership set role = 'tech' where user_id = (select owner_a from ids)
 $$, 'with two owners, one can step down');
 
+-- Owners still see the name of someone whose access is turned off; techs don't.
+reset role;
+update membership set role = 'owner' where user_id = (select owner_a from ids);
+update membership set role = 'tech', status = 'disabled' where user_id = (select tech_a from ids);
+select tests.authenticate_as((select owner_a from ids));
+select is((select count(*) from profile where id = (select tech_a from ids)), 1::bigint,
+  'owner sees a turned-off member''s profile');
+reset role;
+create temp table t2 as select tests.create_user('second-tech@test.local') as id;
+grant select on t2 to authenticated;
+insert into membership (company_id, user_id, role)
+  values ((select ca from ids), (select id from t2), 'tech');
+select tests.authenticate_as((select id from t2));
+select is((select count(*) from profile where id = (select tech_a from ids)), 0::bigint,
+  'a tech does not see a turned-off member''s profile');
+
 select * from finish();
 rollback;

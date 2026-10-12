@@ -46,7 +46,9 @@ export const tokens = {
         "onPrimary": "#12263A",
         "link": "#1F6FAE",
         "focus": "#1F6FAE",
-        "diagramWater": "#CFE3F3"
+        "diagramWater": "#CFE3F3",
+        "onStatus": "#FFFFFF",
+        "controlBorder": "#5A6875"
       },
       "dark": {
         "bg": "#0E141A",
@@ -63,7 +65,11 @@ export const tokens = {
         "pass": "#3FB36F",
         "fail": "#E5655F",
         "excluded": "#8E9DAB",
-        "diagramWater": "#1F3A52"
+        "diagramWater": "#1F3A52",
+        "onStatus": "#12263A",
+        "controlBorder": "#8A97A4",
+        "warning": "#D9A040",
+        "info": "#6AAEE6"
       }
     }
   },
