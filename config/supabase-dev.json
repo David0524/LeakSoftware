@@ -1,0 +1,7 @@
+{
+  "$comment": "Public settings for the leakbook-dev Supabase project. Safe to commit: the publishable key ships inside the app and RLS protects the data. Never put secret or service_role keys here.",
+  "projectRef": "evmxdfasurkaxbwkceti",
+  "url": "https://evmxdfasurkaxbwkceti.supabase.co",
+  "publishableKey": "sb_publishable_O6weK1GnSFl-ogG6amRPlA_5rjPPitD",
+  "region": "us-west-2"
+}
