@@ -100,6 +100,17 @@
   --color-status-excluded: var(--lb-excluded);
   --color-status-warning: var(--lb-warning);
   --color-status-info: var(--lb-info);
+  --color-neutral-*: initial;
+  --color-neutral-50: var(--lb-neutral-50);
+  --color-neutral-100: var(--lb-neutral-100);
+  --color-neutral-200: var(--lb-neutral-200);
+  --color-neutral-300: var(--lb-neutral-300);
+  --color-neutral-400: var(--lb-neutral-400);
+  --color-neutral-500: var(--lb-neutral-500);
+  --color-neutral-600: var(--lb-neutral-600);
+  --color-neutral-700: var(--lb-neutral-700);
+  --color-neutral-800: var(--lb-neutral-800);
+  --color-neutral-900: var(--lb-neutral-900);
   --font-display: var(--lb-font-display);
   --font-sans: var(--lb-font-body);
   --radius-sm: 3px;

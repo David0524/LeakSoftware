@@ -1,0 +1,419 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import {
+  configKey,
+  isHexColor,
+  parseDollars,
+  parseFieldLines,
+  percentToBps,
+  uuidv7,
+  type TestFieldSchema,
+} from "@leakbook/core";
+import { requireOwner } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import type { FormState } from "./auth";
+
+// Owner-only settings changes. Every action checks the role itself (pages hide the forms,
+// but actions are callable directly), and RLS checks it again in the database.
+
+const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
+const optional = (f: FormData, k: string) => text(f, k) || null;
+const checked = (f: FormData, k: string) => f.get(k) === "on";
+const int = (f: FormData, k: string, fallback = 0) => {
+  const n = Number.parseInt(text(f, k), 10);
+  return Number.isFinite(n) ? n : fallback;
+};
+
+async function owner() {
+  const office = await requireOwner();
+  return { office, supabase: await createClient() };
+}
+
+function done(path: string, message = "Saved."): FormState {
+  revalidatePath(path);
+  return { message };
+}
+
+function failed(error: { message: string } | null, fallback = "Couldn’t save. Try again.") {
+  return { error: error?.message ?? fallback };
+}
+
+// ---------------------------------------------------------------------------
+// Company profile, branding, payments
+// ---------------------------------------------------------------------------
+
+export async function saveCompany(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const name = text(form, "name");
+  if (!name) return { fields: { name: "Enter the company name." } };
+  const timezone = text(form, "timezone");
+  if (!Intl.supportedValuesOf("timeZone").includes(timezone) && timezone !== "UTC")
+    return { fields: { timezone: "Pick a time zone." } };
+  const { error } = await supabase
+    .from("company")
+    .update({
+      name,
+      legal_name: optional(form, "legal_name"),
+      phone: optional(form, "phone"),
+      email: optional(form, "email"),
+      address_line1: optional(form, "address_line1"),
+      address_line2: optional(form, "address_line2"),
+      city: optional(form, "city"),
+      state: optional(form, "state"),
+      postal_code: optional(form, "postal_code"),
+      review_url: optional(form, "review_url"),
+      timezone,
+    })
+    .eq("id", office.company.id);
+  if (error) return failed(error);
+  revalidatePath("/", "layout");
+  return { message: "Saved." };
+}
+
+export async function saveBranding(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const primary = text(form, "brand_primary");
+  const secondary = text(form, "brand_secondary");
+  if (!isHexColor(primary)) return { fields: { brand_primary: "Use a color like #12263A." } };
+  if (secondary && !isHexColor(secondary))
+    return { fields: { brand_secondary: "Use a color like #EE6A1F." } };
+
+  const update: Record<string, string | null> = {
+    brand_primary: primary.toUpperCase(),
+    brand_secondary: secondary ? secondary.toUpperCase() : null,
+  };
+  const logo = form.get("logo");
+  if (logo instanceof File && logo.size > 0) {
+    const ext = { "image/png": "png", "image/jpeg": "jpg", "image/svg+xml": "svg" }[logo.type];
+    if (!ext) return { fields: { logo: "Use a PNG, JPEG, or SVG file." } };
+    if (logo.size > 2 * 1024 * 1024) return { fields: { logo: "Use a file under 2 MB." } };
+    // A new name each time, so reports already sent keep pointing at the old logo.
+    const path = `${office.company.id}/logo-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage
+      .from("company-assets")
+      .upload(path, logo, { contentType: logo.type, upsert: false });
+    if (error) return failed(error);
+    update.logo_path = path;
+  }
+  const { error } = await supabase.from("company").update(update).eq("id", office.company.id);
+  if (error) return failed(error);
+  return done("/settings/company");
+}
+
+export async function savePayments(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const { data: company, error: readError } = await supabase
+    .from("company")
+    .select("settings")
+    .eq("id", office.company.id)
+    .single();
+  if (readError) return failed(readError);
+
+  const fields: Record<string, string> = {};
+  const depositType = text(form, "deposit_type") === "fixed" ? "fixed" : "percent";
+  const depositPercent = percentToBps(text(form, "deposit_percent") || "0");
+  const depositFixed = parseDollars(text(form, "deposit_fixed") || "0");
+  const minimum = parseDollars(text(form, "deposit_minimum") || "0");
+  const tax = percentToBps(text(form, "tax_rate") || "0");
+  const discount = percentToBps(text(form, "tech_discount_limit") || "0");
+  if (depositType === "percent" && depositPercent === null)
+    fields.deposit_percent = "Enter a percentage from 0 to 100.";
+  if (depositType === "fixed" && (depositFixed === null || depositFixed < 0))
+    fields.deposit_fixed = "Enter a dollar amount.";
+  if (minimum === null || minimum < 0) fields.deposit_minimum = "Enter a dollar amount.";
+  if (tax === null) fields.tax_rate = "Enter a percentage, like 8.6.";
+  if (discount === null) fields.tech_discount_limit = "Enter a percentage from 0 to 100.";
+  if (Object.keys(fields).length) return { fields };
+
+  const settings = {
+    ...(company.settings as Record<string, unknown>),
+    deposit:
+      depositType === "percent"
+        ? { type: "percent", value_bps: depositPercent, minimum_cents: minimum }
+        : { type: "fixed", value_cents: depositFixed, minimum_cents: minimum },
+    tax_rate_bps: tax,
+    tech_discount_limit_bps: discount,
+  };
+  const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
+  if (error) return failed(error);
+  return done("/settings/payments");
+}
+
+// ---------------------------------------------------------------------------
+// Team and invites
+// ---------------------------------------------------------------------------
+
+export async function inviteMember(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const email = text(form, "email").toLowerCase();
+  const role = text(form, "role") === "owner" ? "owner" : "tech";
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { fields: { email: "Enter a valid email." } };
+  const { error } = await supabase.rpc("create_invite", {
+    target_company: office.company.id,
+    invite_email: email,
+    invite_role: role,
+  });
+  if (error) return failed(error);
+  return done("/settings/team", `Invite created for ${email}. Copy the link below and send it.`);
+}
+
+export async function revokeInvite(_: FormState, form: FormData): Promise<FormState> {
+  const { supabase } = await owner();
+  const { error } = await supabase.rpc("revoke_invite", { invite_id: text(form, "id") });
+  if (error) return failed(error);
+  return done("/settings/team", "Invite revoked.");
+}
+
+export async function updateMember(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const role = text(form, "role") === "owner" ? "owner" : "tech";
+  const status = text(form, "status") === "disabled" ? "disabled" : "active";
+  const { error } = await supabase
+    .from("membership")
+    .update({ role, status })
+    .eq("company_id", office.company.id)
+    .eq("id", text(form, "id"));
+  if (error)
+    return {
+      error: error.message.includes("at least one owner")
+        ? "The company needs at least one active owner."
+        : error.message,
+    };
+  return done("/settings/team");
+}
+
+// ---------------------------------------------------------------------------
+// Configuration rows (soft delete only, so phones see the change)
+// ---------------------------------------------------------------------------
+
+const ARCHIVABLE = new Set([
+  "price_book_item",
+  "component_type",
+  "test_type",
+  "exclusion_reason",
+  "severity_level",
+]);
+
+export async function removeConfigRow(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const table = text(form, "table");
+  if (!ARCHIVABLE.has(table)) return { error: "That can’t be removed." };
+  const { error } = await supabase
+    .from(table)
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("company_id", office.company.id)
+    .eq("id", text(form, "id"));
+  if (error) return failed(error);
+  return done(text(form, "path") || "/settings", "Removed.");
+}
+
+async function upsert(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  table: string,
+  companyId: string,
+  id: string,
+  values: Record<string, unknown>,
+  insertOnly: Record<string, unknown> = {},
+) {
+  if (id) {
+    return supabase.from(table).update(values).eq("company_id", companyId).eq("id", id);
+  }
+  return supabase
+    .from(table)
+    .insert({ id: uuidv7(), company_id: companyId, ...insertOnly, ...values });
+}
+
+async function takenKeys(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  table: string,
+  companyId: string,
+) {
+  const { data } = await supabase
+    .from(table)
+    .select("key")
+    .eq("company_id", companyId)
+    .is("deleted_at", null);
+  return (data ?? []).map((r: { key: string }) => r.key);
+}
+
+export async function savePriceItem(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const name = text(form, "name");
+  const price = parseDollars(text(form, "price"));
+  const fields: Record<string, string> = {};
+  if (!name) fields.name = "Enter a name.";
+  if (price === null || price < 0) fields.price = "Enter a price, like 185 or 185.50.";
+  const warranty = text(form, "warranty_months");
+  if (warranty && !/^\d+$/.test(warranty)) fields.warranty_months = "Whole months only.";
+  if (Object.keys(fields).length) return { fields };
+  const { error } = await upsert(supabase, "price_book_item", office.company.id, text(form, "id"), {
+    name,
+    description: optional(form, "description"),
+    category: optional(form, "category"),
+    component_type_key: optional(form, "component_type_key"),
+    unit: text(form, "unit") || "each",
+    price_cents: price,
+    taxable: checked(form, "taxable"),
+    warranty_months: warranty ? Number(warranty) : null,
+    sort_order: int(form, "sort_order"),
+    active: text(form, "id") ? checked(form, "active") : true,
+  });
+  if (error) return failed(error);
+  return done("/settings/price-book", text(form, "id") ? "Saved." : `Added ${name}.`);
+}
+
+export async function saveComponentType(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const id = text(form, "id");
+  const name = text(form, "name");
+  if (!name) return { fields: { name: "Enter a name." } };
+  const count = int(form, "default_count", 1);
+  if (count < 0 || count > 50) return { fields: { default_count: "Use 0 to 50." } };
+  const appliesTo = ["pool", "spa", "both"].includes(text(form, "applies_to"))
+    ? text(form, "applies_to")
+    : "pool";
+  const values = {
+    name,
+    allows_multiple: checked(form, "allows_multiple"),
+    default_count: count,
+    applies_to: appliesTo,
+    methods: text(form, "methods")
+      .split(",")
+      .map((m) => m.trim())
+      .filter(Boolean),
+    sort_order: int(form, "sort_order"),
+    active: id ? checked(form, "active") : true,
+  };
+  const { error } = await upsert(
+    supabase,
+    "component_type",
+    office.company.id,
+    id,
+    values,
+    id
+      ? {}
+      : { key: configKey(name, await takenKeys(supabase, "component_type", office.company.id)) },
+  );
+  if (error) return failed(error);
+  return done("/settings/components", id ? "Saved." : `Added ${name}.`);
+}
+
+/** Thresholds for built-in calculators, and fields for custom test types. */
+export async function saveTestType(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const id = text(form, "id");
+  const name = text(form, "name");
+  if (!name) return { fields: { name: "Enter a name." } };
+  const outcomes = ["pass", "fail", "inconclusive"].filter((o) => checked(form, `outcome_${o}`));
+  if (outcomes.length < 2) return { error: "Offer at least two outcomes." };
+
+  const values: Record<string, unknown> = {
+    name,
+    result_options: outcomes,
+    sort_order: int(form, "sort_order"),
+    active: id ? checked(form, "active") : true,
+  };
+
+  let current: {
+    field_schema: TestFieldSchema;
+    calculator: string | null;
+    schema_version: number;
+  } | null = null;
+  if (id) {
+    const { data, error } = await supabase
+      .from("test_type")
+      .select("field_schema, calculator, schema_version")
+      .eq("company_id", office.company.id)
+      .eq("id", id)
+      .single();
+    if (error) return failed(error);
+    current = data;
+  }
+
+  if (current?.calculator) {
+    // Built-in calculators: only their thresholds are editable.
+    const options: Record<string, number> = { ...(current.field_schema.options ?? {}) };
+    for (const key of Object.keys(options)) {
+      const raw = text(form, `option_${key}`);
+      const n = Number(raw);
+      if (raw === "" || !Number.isFinite(n) || n < 0)
+        return { fields: { [`option_${key}`]: "Enter a number, 0 or more." } };
+      options[key] = n;
+    }
+    values.field_schema = { ...current.field_schema, options };
+  } else {
+    const { fields, errors } = parseFieldLines(text(form, "fields"));
+    if (errors.length) return { fields: { fields: errors.join(" ") } };
+    const schema: TestFieldSchema = { fields };
+    const changed = JSON.stringify(current?.field_schema.fields) !== JSON.stringify(fields);
+    values.field_schema = schema;
+    // Results keep the schema version they were recorded with.
+    if (current && changed) values.schema_version = current.schema_version + 1;
+  }
+
+  const { error } = await upsert(
+    supabase,
+    "test_type",
+    office.company.id,
+    id,
+    values,
+    id ? {} : { key: configKey(name, await takenKeys(supabase, "test_type", office.company.id)) },
+  );
+  if (error) return failed(error);
+  return done("/settings/tests", id ? "Saved." : `Added ${name}.`);
+}
+
+export async function saveExclusionReason(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const id = text(form, "id");
+  const label = text(form, "label");
+  if (!label) return { fields: { label: "Enter a reason." } };
+  const { error } = await upsert(supabase, "exclusion_reason", office.company.id, id, {
+    label,
+    sort_order: int(form, "sort_order"),
+    active: id ? checked(form, "active") : true,
+  });
+  if (error) return failed(error);
+  return done("/settings/exclusions", id ? "Saved." : "Added.");
+}
+
+export async function saveSeverity(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const id = text(form, "id");
+  const name = text(form, "name");
+  const color = text(form, "color");
+  if (!name) return { fields: { name: "Enter a name." } };
+  if (!isHexColor(color)) return { fields: { color: "Use a color like #C62F2B." } };
+  const { error } = await upsert(
+    supabase,
+    "severity_level",
+    office.company.id,
+    id,
+    {
+      name,
+      color: color.toUpperCase(),
+      must_mention: checked(form, "must_mention"),
+      sort_order: int(form, "sort_order"),
+      active: id ? checked(form, "active") : true,
+    },
+    id
+      ? {}
+      : { key: configKey(name, await takenKeys(supabase, "severity_level", office.company.id)) },
+  );
+  if (error) return failed(error);
+  return done("/settings/severities", id ? "Saved." : `Added ${name}.`);
+}
+
+export async function saveReportTemplate(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const name = text(form, "name");
+  if (!name) return { fields: { name: "Enter a name." } };
+  const { error } = await supabase
+    .from("report_template")
+    .update({ name, tone: text(form, "tone"), enabled: checked(form, "enabled") })
+    .eq("company_id", office.company.id)
+    .eq("id", text(form, "id"));
+  if (error) return failed(error);
+  return done("/settings/reports");
+}

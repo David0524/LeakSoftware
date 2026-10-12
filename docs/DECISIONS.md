@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-12 (M5 accepted)
+- **Owner accepted M5 without the device checklist** and asked to continue. The phone flows (camera, markup, voice notes, killed uploads) were verified only by automated tests and the hosted upload test; `docs/testing/M5-device-checklist.md` stays for a later pass.
+
 ## 2026-10-12 (M5 media)
 - **Uploads are resumable (TUS) for every file**, not only those over 6 MB. One code path; the upload URL is saved on the phone, so an app killed mid-upload continues from the last confirmed 6 MB chunk. Uploads never overwrite: if an earlier attempt finished but the phone did not hear back, the server answers "already exists" and that counts as done. Verified against the dev project's real storage (`pnpm test:hosted`, which leaves about 16 MB per run in the dev bucket because app users cannot delete originals).
 - **Video quality: the camera's medium preset for now** instead of `react-native-compressor` (BUILD_PLAN 4.5). The compressor needs a development build; Expo Go (how the owner tests today) cannot load it, and full-quality iPhone video passes Supabase's 50 MB per-file limit in well under a minute. Medium keeps a 60-second clip far below the limit, at visibly lower resolution. **Revisit when we switch to a development build** (also needed for encrypted storage): compress to 720p with the compressor. Files over 50 MB are refused at capture with a message.

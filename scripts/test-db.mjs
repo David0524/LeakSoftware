@@ -95,6 +95,7 @@ for (const m of migrations) {
 if (existsSync(join(sb, "seed.sql"))) {
   console.log("seed");
   psql(TEST_DB, ["-o", "/dev/null", "-f", join(sb, "seed.sql")]);
+  psql(TEST_DB, ["-o", "/dev/null", "-f", join(sb, "seed_sample_job.sql")]);
 }
 
 const tests = readdirSync(join(sb, "tests"))

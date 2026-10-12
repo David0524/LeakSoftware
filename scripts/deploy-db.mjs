@@ -75,5 +75,8 @@ if (flag("--seed") && !flag("--dry-run")) {
     await query(readFileSync(join(root, "supabase", "seed.sql"), "utf8"));
     console.log("seed: applied");
   }
+  // Idempotent: adds the sample inspection once.
+  await query(readFileSync(join(root, "supabase", "seed_sample_job.sql"), "utf8"));
+  console.log("seed: sample inspection checked");
 }
 console.log("done");

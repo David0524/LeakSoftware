@@ -60,6 +60,11 @@ export function render() {
     ...Object.keys(light).map((k) => `  --color-${kebab(k)}: var(--lb-${kebab(k)});`),
     ...Object.keys(brand).map((k) => `  --color-${kebab(k)}: var(--lb-${kebab(k)});`),
     ...Object.keys(status).map((k) => `  --color-status-${kebab(k)}: var(--lb-${kebab(k)});`),
+    // Brand neutrals replace Tailwind's default gray scale.
+    "  --color-neutral-*: initial;",
+    ...Object.keys(clean.color.neutral).map(
+      (k) => `  --color-neutral-${k}: var(--lb-neutral-${k});`,
+    ),
     "  --font-display: var(--lb-font-display);",
     "  --font-sans: var(--lb-font-body);",
     ...Object.entries(clean.radius).map(([k, v]) => `  --radius-${k}: ${v}px;`),
