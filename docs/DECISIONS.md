@@ -2,6 +2,17 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-12 (M6 office web app)
+- **The website talks to Supabase only from the server** (Server Components and Server Actions, as the signed-in user so RLS applies). The browser never holds a Supabase client. Sessions are cookies refreshed by `proxy.ts`. Office edits go straight to the database (no outbox): the office is online by nature, and the database triggers stamp field clocks and the audit log, so phones pick the changes up through normal sync.
+- **Sign in:** email and password, or an emailed sign-in link (existing accounts only). **Start a trial** creates the account and the company in one form; if email confirmation is on (production), the company is created after the person confirms, on `/setup`.
+- **Invites are links the owner copies and sends** until email arrives in M7. A link works once, for the invited email, for 14 days. Signed-out invitees see the company name and role first (`invite_details`), then create an account or sign in. Owners can revoke invites and change roles or turn off access; **a company always keeps at least one active owner** (database trigger).
+- **Techs can use the office view** (jobs, schedule, customers) but not settings; settings show an "owners only" message, and every settings action checks the role on the server (RLS checks it again).
+- **The timeline is built from the audit log** and shown to owners only (the log holds every field change, including notes and prices).
+- **Test types:** built-in pressure and bucket tests expose only their thresholds; custom test types are defined one field per line (`Label (unit)`, `: notes`, choices with `/`). Changing a custom type's fields bumps its schema version, so earlier results keep their own fields.
+- **Sample inspection seed:** `supabase/seed_sample_job.sql` adds an inspected job (Sam Sample, 9 Sample Way) to the demo company. It is idempotent and also applied to the hosted dev project by `pnpm db:deploy -- --seed`.
+- **End-to-end tests** (`pnpm --filter @leakbook/web test:e2e`) run in CI against Supabase in Docker. They also run against the hosted dev project; each run adds one disabled test tech account there.
+- **Fixed:** Tailwind's default grays are replaced by the brand neutrals in the token theme, so `neutral-*` classes stay on brand.
+
 ## 2026-10-12 (M5 accepted)
 - **Owner accepted M5 without the device checklist** and asked to continue. The phone flows (camera, markup, voice notes, killed uploads) were verified only by automated tests and the hosted upload test; `docs/testing/M5-device-checklist.md` stays for a later pass.
 
