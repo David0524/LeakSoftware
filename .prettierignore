@@ -8,3 +8,5 @@ apps/mobile/.expo
 packages/tokens/src/generated.ts
 packages/tokens/tokens.css
 *.md
+apps/web/test-results
+apps/web/playwright-report
