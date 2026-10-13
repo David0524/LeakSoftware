@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   allowedNumbers,
+  leaksNoted,
   narrativeFacts,
   narrativeUserPrompt,
   plainNarrative,
+  reportChecklist,
+  snapshotTally,
   textOnBrand,
   toFinalSections,
   validateNarrative,
@@ -311,5 +314,65 @@ describe("textOnBrand", () => {
     expect(textOnBrand("#12263A")).toBe("#FFFFFF");
     expect(textOnBrand("#FFD60A")).toBe("#12263A");
     expect(textOnBrand("#EE6A1F")).toBe("#12263A");
+  });
+});
+
+describe("reportChecklist", () => {
+  const verdicts: ReportSnapshot = {
+    ...SNAPSHOT,
+    components: [
+      comp("eq", "Equipment area", "equipment_area", "Equipment area", {
+        section: "visual",
+        outcome: "ok",
+      }),
+      comp("vs", "If vinyl, is vinyl stretched?", "vinyl_stretched", "Vinyl stretched", {
+        section: "visual",
+        answer: "yes_no",
+        outcome: "attention",
+      }),
+      comp("sk", "Skimmer seam 1", "skimmer_seam", "Skimmer seam", {
+        section: "plumbing",
+        outcome: "leaking",
+        location_text: " Seam at the throat ",
+      }),
+      comp("md", "Main drain 1", "main_drain", "Main drain", {
+        section: "plumbing",
+        status: "excluded",
+        exclusion_reason: null,
+      }),
+      comp("af", "Autofill", "autofill", "Autofill", { section: "bond_beam", status: "pending" }),
+    ],
+  };
+
+  it("lists every item with its badge, by section in checklist order", () => {
+    const sections = reportChecklist(verdicts)!;
+    expect(sections.map((x) => x.title)).toEqual([
+      "Visual Leak Inspection",
+      "Plumbing Static Test",
+      "Bond Beam",
+    ]);
+    expect(sections.flatMap((x) => x.items.map((i) => [i.label, i.verdict, i.tone]))).toEqual([
+      ["Equipment area", "Not leaking", "pass"],
+      ["If vinyl, is vinyl stretched?", "Yes", "attention"],
+      ["Skimmer seam 1", "Leaking", "leaking"],
+      ["Main drain 1", "Not applicable", "not_applicable"],
+      ["Autofill", "Not checked", "pending"],
+    ]);
+    expect(sections[1]!.items[0]!.where).toBe("Seam at the throat");
+  });
+
+  it("notes the leaks and counts the tiles", () => {
+    expect(leaksNoted(verdicts)).toEqual(["Skimmer seam 1 (Seam at the throat)"]);
+    expect(snapshotTally(verdicts)).toEqual({
+      pass: 1,
+      attention: 1,
+      leaking: 1,
+      notApplicable: 1,
+      pending: 1,
+    });
+  });
+
+  it("leaves reports frozen before verdicts as they were", () => {
+    expect(reportChecklist(SNAPSHOT)).toBeNull();
   });
 });

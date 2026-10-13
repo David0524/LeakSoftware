@@ -65,6 +65,8 @@ export interface Customer extends Base {
   name: string;
   company_name?: string | null;
   email?: string | null;
+  /** Other addresses that also get reports (M8.5). */
+  cc_emails?: string[];
   phone?: string | null;
   notes?: string | null;
 }

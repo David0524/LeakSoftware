@@ -2,17 +2,22 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  CHECKLIST_SECTION_LABELS,
   FINDING_STATUS_LABELS,
   JOB_TYPE_LABELS,
   MEDIA_KIND_LABELS,
   POOL_TYPE_LABELS,
   calculate,
-  checklistProgress,
+  checklistTally,
+  formatCents,
   formatAddress,
   formatDuration,
   formatSchedule,
   parseMarkup,
   timeline,
+  verdictLabel,
+  type ChecklistSection,
+  type CompanySettings,
   type Media,
   type Outcome,
 } from "@leakbook/core";
@@ -22,6 +27,7 @@ import { Card, Chip, Empty, Notice, PageHeader, SectionTitle, StatusBadge } from
 import { getOffice } from "@/lib/auth";
 import {
   auditFor,
+  getCompany,
   getJob,
   getPaymentAccount,
   getQuotes,
@@ -51,7 +57,13 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   if (!detail) notFound();
   const { job } = detail;
   const tz = office.company.timezone;
-  const progress = checklistProgress(detail.components, [...detail.results.values()]);
+  const tally = checklistTally(detail.components, [...detail.results.values()]);
+  const total = detail.components.length;
+  const questions =
+    ((await getCompany(office)).settings as Partial<CompanySettings>).intake_questions ?? [];
+  const answers = questions
+    .map((q) => ({ q, a: job.intake?.[q.key] }))
+    .filter(({ a }) => (Array.isArray(a) ? a.length > 0 : !!a));
 
   return (
     <>
@@ -130,6 +142,23 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
         <Card>
           <SectionTitle>Assigned to</SectionTitle>
           <p className="text-xl font-semibold">{job.techName ?? "Nobody yet"}</p>
+          {job.secondTechName ? <p>With {job.secondTechName}</p> : null}
+          {job.fee_cents != null || job.location_marked != null ? (
+            <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3">
+              {job.fee_cents != null ? (
+                <>
+                  <dt className="text-text-muted">Detection fee</dt>
+                  <dd>{formatCents(job.fee_cents)}</dd>
+                </>
+              ) : null}
+              {job.location_marked != null ? (
+                <>
+                  <dt className="text-text-muted">Location marked</dt>
+                  <dd>{job.location_marked ? "Yes" : "No"}</dd>
+                </>
+              ) : null}
+            </dl>
+          ) : null}
           {job.summary_notes ? (
             <>
               <SectionTitle>
@@ -140,6 +169,20 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
           ) : null}
         </Card>
       </div>
+
+      {answers.length ? (
+        <Card className="mt-5">
+          <SectionTitle>When they booked</SectionTitle>
+          <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-[auto_1fr]">
+            {answers.map(({ q, a }) => (
+              <div key={q.key} className="contents">
+                <dt className="text-text-muted">{q.label}</dt>
+                <dd>{Array.isArray(a) ? a.join(", ") : a}</dd>
+              </div>
+            ))}
+          </dl>
+        </Card>
+      ) : null}
 
       {job.type === "repair" || ["unscheduled", "scheduled"].includes(job.status) ? (
         <section className="mt-8" aria-labelledby="schedule">
@@ -157,9 +200,15 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
           Checklist
         </h2>
         <p className="mb-3 text-text-muted">
-          {progress.total === 0
+          {total === 0
             ? "No checklist yet."
-            : `${progress.inspected} inspected · ${progress.excluded} excluded · ${progress.pending} to do`}
+            : [
+                `${tally.pass} not leaking`,
+                `${tally.attention} attention`,
+                `${tally.leaking} leaking`,
+                `${tally.notApplicable} not applicable`,
+                `${tally.pending} to do`,
+              ].join(" · ")}
         </p>
         {detail.components.length > 0 ? <Checklist detail={detail} /> : null}
       </section>
@@ -217,7 +266,23 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   );
 }
 
+const VERDICT_CLASS = {
+  pass: "bg-status-pass",
+  attention: "bg-status-warning",
+  leaking: "bg-status-fail",
+  not_applicable: "bg-status-excluded",
+  pending: "bg-text-muted",
+} as const;
+
 function Checklist({ detail }: { detail: JobDetail }) {
+  const sectionOf = (componentTypeId: string): ChecklistSection =>
+    detail.componentTypes.get(componentTypeId)?.section ?? "other";
+  const sections = (Object.keys(CHECKLIST_SECTION_LABELS) as ChecklistSection[])
+    .map((section) => ({
+      section,
+      rows: detail.components.filter((c) => sectionOf(c.component_type_id) === section),
+    }))
+    .filter((x) => x.rows.length > 0);
   return (
     <div className="overflow-x-auto rounded-lg border border-border bg-surface">
       <table className="w-full text-left">
@@ -227,40 +292,54 @@ function Checklist({ detail }: { detail: JobDetail }) {
               Component
             </th>
             <th scope="col" className="px-4 py-2 font-medium">
-              Status
+              Result
             </th>
             <th scope="col" className="px-4 py-2 font-medium">
-              How, or why not
+              Where, how, or why not
             </th>
             <th scope="col" className="px-4 py-2 font-medium">
               Notes
             </th>
           </tr>
         </thead>
-        <tbody>
-          {detail.components.map((c) => {
-            const r = detail.results.get(c.id);
-            const status = r?.status ?? "pending";
-            return (
-              <tr key={c.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-2 font-medium">{c.label}</td>
-                <td className="px-4 py-2">
-                  {status === "inspected" ? (
-                    <Chip label="Inspected" className="bg-status-pass" />
-                  ) : status === "excluded" ? (
-                    <Chip label="Excluded" className="bg-status-excluded" />
-                  ) : (
-                    <Chip label="To do" className="bg-text-muted" />
-                  )}
-                </td>
-                <td className="px-4 py-2">
-                  {status === "excluded" ? r?.exclusion_reason : (r?.method ?? "")}
-                </td>
-                <td className="px-4 py-2 text-text-muted">{r?.notes}</td>
-              </tr>
-            );
-          })}
-        </tbody>
+        {sections.map(({ section, rows }) => (
+          <tbody key={section}>
+            <tr className="border-b border-border bg-bg">
+              <th scope="colgroup" colSpan={4} className="px-4 py-2 font-display font-bold">
+                {CHECKLIST_SECTION_LABELS[section]}
+              </th>
+            </tr>
+            {rows.map((c) => {
+              const r = detail.results.get(c.id);
+              const status = r?.status ?? "pending";
+              const answer = detail.componentTypes.get(c.component_type_id)?.answer;
+              const tone =
+                status === "pending"
+                  ? "pending"
+                  : status === "excluded"
+                    ? "not_applicable"
+                    : r?.outcome === "leaking"
+                      ? "leaking"
+                      : r?.outcome === "attention"
+                        ? "attention"
+                        : "pass";
+              return (
+                <tr key={c.id} className="border-b border-border last:border-0">
+                  <td className="px-4 py-2 font-medium">{c.label}</td>
+                  <td className="px-4 py-2">
+                    <Chip label={verdictLabel(r, answer)} className={VERDICT_CLASS[tone]} />
+                  </td>
+                  <td className="px-4 py-2">
+                    {status === "excluded"
+                      ? r?.exclusion_reason
+                      : [r?.location_text, r?.method].filter(Boolean).join(" · ")}
+                  </td>
+                  <td className="px-4 py-2 text-text-muted">{r?.notes}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        ))}
       </table>
     </div>
   );

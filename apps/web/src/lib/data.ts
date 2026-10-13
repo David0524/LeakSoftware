@@ -84,6 +84,7 @@ export interface JobRow extends Job {
   property: Property | null;
   customer: Customer | null;
   techName: string | null;
+  secondTechName: string | null;
 }
 
 async function attach(office: Office, jobs: Job[]): Promise<JobRow[]> {
@@ -116,6 +117,7 @@ async function attach(office: Office, jobs: Job[]): Promise<JobRow[]> {
         custById.get(j.bill_to_customer_id ?? "") ??
         (property ? (custById.get(property.customer_id) ?? null) : null),
       techName: j.assigned_user_id ? (techById.get(j.assigned_user_id) ?? "Teammate") : null,
+      secondTechName: j.second_tech_id ? (techById.get(j.second_tech_id) ?? "Teammate") : null,
     };
   });
 }

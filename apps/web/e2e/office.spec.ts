@@ -32,15 +32,18 @@ test("owner views the M4 sample job", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /^Job #\d+/ })).toBeVisible();
   await expect(page.getByText("9 Sample Way, Scottsdale, AZ 85251").first()).toBeVisible();
 
-  // Checklist: inspected lines and the excluded drain with its reason.
+  // Checklist: verdicts by section, the leaking line with where, the drain with its reason.
   const checklist = page.getByRole("table").first();
+  await expect(checklist.getByRole("row").filter({ hasText: "Return 3" })).toContainText("Leaking");
   await expect(checklist.getByRole("row").filter({ hasText: "Return 3" })).toContainText(
-    "Inspected",
+    "Under the deck",
   );
   await expect(checklist.getByRole("row").filter({ hasText: "Main drain 1" })).toContainText(
     "No diver on site",
   );
-  await expect(page.getByText(/inspected · 1 excluded · 0 to do/)).toBeVisible();
+  await expect(
+    page.getByText(/\d+ not leaking · 1 attention · 1 leaking · 1 not applicable · 0 to do/),
+  ).toBeVisible();
 
   // Tests: the failing pressure test and the bucket test, worked out from the readings.
   await expect(page.getByText("Dropped 8 PSI in 15 min")).toBeVisible();

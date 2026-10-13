@@ -71,6 +71,34 @@ export async function saveCompany(_: FormState, form: FormData): Promise<FormSta
   return { message: "Saved." };
 }
 
+/** The shop's own legal text, printed at the end of every report (M8.5). */
+export async function saveReportText(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const disclaimer = text(form, "report_disclaimer");
+  if (disclaimer.length > 20_000)
+    return { fields: { report_disclaimer: "Keep it under 20,000 characters." } };
+  const { error } = await supabase
+    .from("company")
+    .update({ report_disclaimer: disclaimer || null })
+    .eq("id", office.company.id);
+  if (error) return failed(error);
+  return done("/settings/company");
+}
+
+/** Continue job numbers from the shop's old system. Numbers only go up. */
+export async function saveNextJobNumber(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const next = Number(text(form, "next_job_number"));
+  if (!Number.isInteger(next) || next < 1 || next > 2_000_000_000)
+    return { fields: { next_job_number: "Enter a whole number, like 10450." } };
+  const { error } = await supabase.rpc("set_next_job_number", {
+    target_company: office.company.id,
+    next_number: next,
+  });
+  if (error) return { fields: { next_job_number: error.message } };
+  return done("/settings/company", `The next job will be #${next}.`);
+}
+
 export async function saveBranding(_: FormState, form: FormData): Promise<FormState> {
   const { office, supabase } = await owner();
   const primary = text(form, "brand_primary");
