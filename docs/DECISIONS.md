@@ -2,6 +2,16 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (M8 quotes and deposits)
+- **Totals are recomputed by the database when a quote is sent or accepted,** with the same rules as `packages/core/src/quote.ts` (tests check the same figures). The discount comes off before tax, shared between taxable and untaxed lines. Sent quotes and their lines are frozen.
+- **Quotes are built on the phone; the office sends them and sees status.** A tech's discount over the company limit is refused when sent; owners can give any discount.
+- **On-site acceptance is a `quote_acceptance` signature with the quote id.** When it syncs, the server accepts the quote; if that fails (for example, a discount over the limit), the signature still syncs and the quote waits for the office.
+- **Accepting creates the repair job** (unscheduled, same pool and customer, pointing at the detection job). The office schedules it from the job page.
+- **Stripe:** Standard connected accounts, Checkout Sessions on the shop's account (card and US bank account). Webhooks are verified and applied once per event id; a payment never moves back to pending, so out-of-order events change nothing. Card = paid at checkout; bank = pending until `async_payment_succeeded`.
+- **Server-only writes use the service-role key** (webhooks, connected accounts), through functions only the service role may call. Payments need both `STRIPE_SECRET_KEY` and `SUPABASE_SERVICE_ROLE_KEY`.
+- **Verified with signed simulated webhook events** in CI (bank and card deposits, replay). A real Stripe test-mode run waits for the owner's Stripe keys.
+- **Not yet:** rate limiting on the customer endpoints (plan section 7) moves to M11 hardening; a customer can't decline online (the office can mark it later).
+
 ## 2026-10-13 (design reviews)
 - **Owner: per-milestone Apple Design reviews cost more than they find.** The skill is now used when planning new screens; one full review of every screen happens before the pilot (M11 accessibility pass). The house rules in CLAUDE.md still apply to all UI.
 
