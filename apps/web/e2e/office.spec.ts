@@ -319,6 +319,9 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   // saves and refreshes the page, one at a time, so wait for each to land.
   const tally = tech.getByText(/ to do$/);
   const toDo = async () => Number(/(\d+) to do/.exec(await tally.innerText())![1]);
+  // .all() doesn't wait, so wait for the whole checklist to be on screen first.
+  await expect(tech.getByRole("radiogroup", { name: itemName, exact: true })).toBeVisible();
+  await expect.poll(() => tech.getByRole("radiogroup").count()).toBeGreaterThan(1);
   for (const group of await tech.getByRole("radiogroup").all()) {
     if (await group.locator('[aria-checked="true"]').count()) continue;
     const before = await toDo();
