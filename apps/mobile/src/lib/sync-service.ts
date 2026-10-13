@@ -197,14 +197,12 @@ export class SyncService {
     this.afterWrite();
   }
 
-  /** True while local edits to this row have not reached the server. */
-  hasPendingWrites(table: string, id: string): boolean {
-    return (
-      (this.store.database.get<{ n: number }>(
-        "select count(*) as n from sync_outbox where table_name = ? and row_id = ? and status = 'pending'",
-        [table, id],
-      )?.n ?? 0) > 0
-    );
+  /** True while local edits to this row (or, without an id, this table) are unsent. */
+  hasPendingWrites(table: string, id?: string): boolean {
+    const sql =
+      "select count(*) as n from sync_outbox where table_name = ? and status = 'pending'" +
+      (id ? " and row_id = ?" : "");
+    return (this.store.database.get<{ n: number }>(sql, id ? [table, id] : [table])?.n ?? 0) > 0;
   }
 
   /** The signed-in user's access token, for calls to the LeakBook server. */

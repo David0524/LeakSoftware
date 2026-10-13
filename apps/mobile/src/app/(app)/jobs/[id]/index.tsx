@@ -32,6 +32,7 @@ import { ChecklistTab } from "../../../../features/inspection/ChecklistTab";
 import { FindingsTab } from "../../../../features/inspection/FindingsTab";
 import { TestsTab } from "../../../../features/inspection/TestsTab";
 import { MediaSection } from "../../../../features/media/MediaSection";
+import { QuoteTab } from "../../../../features/quote/QuoteTab";
 import { ReportTab } from "../../../../features/report/ReportTab";
 
 const ACTION_LABELS: Partial<Record<JobStatus, string>> = {
@@ -41,7 +42,7 @@ const ACTION_LABELS: Partial<Record<JobStatus, string>> = {
   canceled: "Cancel Job",
 };
 
-type Tab = "checklist" | "tests" | "findings" | "report";
+type Tab = "checklist" | "tests" | "findings" | "report" | "quote";
 
 export default function JobDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -186,6 +187,7 @@ export default function JobDetail() {
             { value: "tests", label: "Tests" },
             { value: "findings", label: "Findings" },
             { value: "report", label: "Report" },
+            ...(job.type === "detection" ? [{ value: "quote" as const, label: "Quote" }] : []),
           ]}
           value={tab}
           onChange={setTab}
@@ -194,6 +196,7 @@ export default function JobDetail() {
         {tab === "tests" ? <TestsTab job={job} /> : null}
         {tab === "findings" ? <FindingsTab job={job} property={property} /> : null}
         {tab === "report" ? <ReportTab job={job} customer={customer} /> : null}
+        {tab === "quote" ? <QuoteTab job={job} /> : null}
       </Section>
 
       <MediaSection target={{ jobId: job.id }} title="All Photos and Notes" />

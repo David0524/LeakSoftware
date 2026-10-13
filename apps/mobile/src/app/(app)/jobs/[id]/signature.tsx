@@ -22,13 +22,16 @@ import { SignaturePad } from "../../../../ui/SignaturePad";
 
 /** Capture a customer's signature on the job. Works offline; the drawing uploads later. */
 export default function SignatureScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // ?quote={id}: the customer accepts that quote on site.
+  const { id, quote: quoteId } = useLocalSearchParams<{ id: string; quote?: string }>();
   const company = useCompany();
   const { services } = useSession();
   const job = useRow<Job>("job", id);
   const property = useRow<Property>("property", job?.property_id);
   const customer = useRow<Customer>("customer", job?.bill_to_customer_id ?? property?.customer_id);
-  const purposes = enabledSignaturePurposes(company.settings);
+  const purposes: { value: SignaturePurpose; label: string }[] = quoteId
+    ? [{ value: "quote_acceptance", label: "Quote accepted" }]
+    : enabledSignaturePurposes(company.settings);
   const [purpose, setPurpose] = useState<SignaturePurpose | null>(purposes[0]?.value ?? null);
   const [name, setName] = useState<string | null>(null);
   const [role, setRole] = useState("");
@@ -69,6 +72,7 @@ export default function SignatureScreen() {
         company.id,
         {
           job_id: job!.id,
+          quote_id: quoteId ?? null,
           purpose,
           signer_name: signer,
           signer_role: role.trim() || null,
