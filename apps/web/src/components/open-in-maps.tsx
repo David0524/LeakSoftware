@@ -72,7 +72,10 @@ export function OpenRouteInMaps({
       target="_blank"
       rel="noopener noreferrer"
       aria-label={compact ? full : undefined}
-      className={cx(buttonClass("secondary"), className)}
+      className={cx(
+        buttonClass("secondary", compact ? "px-3 whitespace-nowrap" : undefined),
+        className,
+      )}
     >
       {PIN}
       {compact ? (app === "google" ? "Google Maps" : "Apple Maps") : full}

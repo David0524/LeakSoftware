@@ -16,7 +16,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
             </Link>
             <Link
               href="/sign-up"
-              className="hidden min-h-11 content-center rounded-md border-2 border-text px-4 font-display font-bold sm:block"
+              className="hidden min-h-11 content-center rounded-full border border-control-border px-5 font-display font-bold sm:block"
             >
               Start Free Trial
             </Link>

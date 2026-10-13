@@ -77,7 +77,7 @@ export default async function TeamSettingsPage() {
           ) : (
             <ul className="space-y-4">
               {open.map((i) => (
-                <li key={i.id} className="rounded-md border border-border p-4" data-testid="invite">
+                <li key={i.id} className="well p-4" data-testid="invite">
                   <p className="font-semibold">
                     {i.email}{" "}
                     <span className="font-normal text-text-muted">

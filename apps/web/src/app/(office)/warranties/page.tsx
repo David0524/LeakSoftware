@@ -8,7 +8,7 @@ import {
   warrantyState,
   type WarrantyState,
 } from "@leakbook/core";
-import { Chip, Empty, PageHeader, cx } from "@/components/ui";
+import { Chip, Empty, PageHeader, cx, SEGMENT_TRACK, segmentClass } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getWarranties } from "@/lib/data";
 
@@ -49,19 +49,13 @@ export default async function WarrantiesPage({ searchParams }: PageProps<"/warra
         title="Warranties"
         subtitle="Recorded when a repair is paid, from the quote lines with a warranty term."
       />
-      <nav
-        aria-label="Show"
-        className="mb-5 inline-flex max-w-full rounded-md border border-control-border bg-surface p-1"
-      >
+      <nav aria-label="Show" className={cx(SEGMENT_TRACK, "mb-5")}>
         {VIEWS.map((v) => (
           <Link
             key={v}
             href={`/warranties?show=${v}`}
             aria-current={v === view ? "page" : undefined}
-            className={cx(
-              "min-h-11 content-center rounded px-3 text-center font-medium whitespace-nowrap",
-              v === view && "bg-text text-bg",
-            )}
+            className={segmentClass(v === view)}
           >
             {v === "expiring" ? "Expiring Soon" : WARRANTY_STATE_LABELS[v]} ({count(v)})
           </Link>
@@ -78,7 +72,7 @@ export default async function WarrantiesPage({ searchParams }: PageProps<"/warra
       ) : (
         <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {list.map((w) => (
-            <li key={w.id} className="rounded-lg border border-border bg-surface p-4">
+            <li key={w.id} className="card p-4">
               <div className="flex items-start justify-between gap-3">
                 <p className="font-semibold">{w.description}</p>
                 <Chip label={WARRANTY_STATE_LABELS[w.state]} className={CHIP[w.state]} />

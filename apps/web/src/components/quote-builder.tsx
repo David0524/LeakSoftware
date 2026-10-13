@@ -46,7 +46,7 @@ function ErrorText({ error }: { error: string | null }) {
 export function StartQuote({ jobId }: { jobId: string }) {
   const { pending, error, run } = useRun();
   return (
-    <div className="space-y-2 rounded-lg border border-dashed border-border p-6">
+    <div className="space-y-2 rounded-2xl bg-text/[0.04] p-6">
       <p className="text-text-muted">
         No quote yet. Start one to price the repairs for these findings.
       </p>
@@ -127,7 +127,7 @@ export function QuoteBuilder({
                             }),
                           )
                         }
-                        className="min-h-11 rounded-md border border-control-border bg-surface px-3 text-[15px] disabled:opacity-50"
+                        className="min-h-11 rounded-xl border border-control-border bg-surface px-3 text-[15px] disabled:opacity-50"
                       >
                         {added ? "✓ " : "+ "}
                         {item.name} · {formatCents(item.price_cents)}
@@ -297,11 +297,7 @@ function QuoteLineRow({
   const set = (k: keyof typeof values) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setValues((v) => ({ ...v, [k]: e.target.value }));
   return (
-    <li
-      aria-label={line.description}
-      className="space-y-2 rounded-md border border-border p-3"
-      data-testid="quote-line"
-    >
+    <li aria-label={line.description} className="well space-y-2 p-3" data-testid="quote-line">
       <Field
         label="Description"
         name={`desc-${line.id}`}

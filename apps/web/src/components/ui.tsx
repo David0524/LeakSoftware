@@ -10,17 +10,18 @@ export function cx(...parts: (string | false | null | undefined)[]) {
 
 type ButtonKind = "primary" | "secondary" | "quiet" | "danger";
 
+// Pills (owner, 2026-10-13: "utilize more pills"). Outlines stay in color.controlBorder.
 const BUTTON: Record<ButtonKind, string> = {
   // Navy on safety orange: white on orange is too faint (brand/BRAND.md).
-  primary: "bg-primary text-on-primary hover:brightness-95",
-  secondary: "border-2 border-text text-text bg-surface hover:bg-bg",
-  quiet: "text-link hover:underline",
-  danger: "border-2 border-status-fail text-status-fail bg-surface hover:bg-bg",
+  primary: "bg-primary text-on-primary shadow-sm hover:brightness-95",
+  secondary: "border border-control-border text-text bg-surface hover:bg-bg",
+  quiet: "text-link hover:bg-link/10",
+  danger: "border border-status-fail text-status-fail bg-surface hover:bg-status-fail/10",
 };
 
 export function buttonClass(kind: ButtonKind = "primary", extra?: string) {
   return cx(
-    "inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 font-display text-[17px] font-bold tracking-wide",
+    "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 font-display text-[17px] font-bold tracking-wide transition-colors",
     "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus",
     "disabled:cursor-not-allowed disabled:opacity-50",
     BUTTON[kind],
@@ -55,11 +56,37 @@ export function ButtonLink({
 }
 
 export function Card({ className, ...props }: ComponentProps<"section">) {
-  return (
-    <section
-      {...props}
-      className={cx("rounded-lg border border-border bg-surface p-5", className)}
-    />
+  return <section {...props} className={cx("card p-5", className)} />;
+}
+
+/** A segmented control's track and its segments (Segmented, the schedule's Day/Week/Month). */
+export const SEGMENT_TRACK =
+  "inline-flex max-w-full flex-wrap gap-0.5 rounded-[1.5rem] bg-text/[0.07] p-1";
+export function segmentClass(active: boolean, extra?: string) {
+  return cx(
+    "min-h-11 content-center rounded-full px-4 text-center font-medium whitespace-nowrap transition-colors",
+    active ? "bg-text text-bg shadow-sm" : "text-text hover:bg-text/[0.06]",
+    extra,
+  );
+}
+
+/** A choice in a sideways row of pills (filters, whose day): navy when chosen. */
+export function pillClass(active: boolean, extra?: string) {
+  return cx(
+    "inline-flex min-h-11 shrink-0 items-center rounded-full px-4 font-medium whitespace-nowrap transition-colors",
+    active ? "bg-text text-bg" : "bg-surface text-text shadow-sm hover:bg-text/[0.06]",
+    extra,
+  );
+}
+
+/**
+ * A round icon-only button or link (call, text, email, directions): 44 pt, tinted, and
+ * always named for screen readers.
+ */
+export function iconButtonClass(extra?: string) {
+  return cx(
+    "inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-link/10 text-link transition-colors hover:bg-link/20",
+    extra,
   );
 }
 
@@ -92,7 +119,7 @@ export function SectionTitle({ children }: { children: ReactNode }) {
 }
 
 const INPUT =
-  "block w-full min-h-11 rounded-md border border-control-border bg-surface px-3 py-2 text-text " +
+  "block w-full min-h-11 rounded-xl border border-control-border bg-surface px-3 py-2 text-text " +
   "placeholder:text-text-muted focus:outline-3 focus:outline-offset-1 focus:outline-focus " +
   "aria-[invalid=true]:border-status-fail";
 
@@ -188,16 +215,19 @@ export function Notice({
   tone?: "info" | "warning" | "error" | "success";
   children: ReactNode;
 }) {
-  const border = {
-    info: "border-status-info",
-    warning: "border-status-warning",
-    error: "border-status-fail",
-    success: "border-status-pass",
+  const style = {
+    info: "bg-status-info/10 before:bg-status-info",
+    warning: "bg-status-warning/10 before:bg-status-warning",
+    error: "bg-status-fail/10 before:bg-status-fail",
+    success: "bg-status-pass/10 before:bg-status-pass",
   }[tone];
   return (
     <div
       role={tone === "error" ? "alert" : "status"}
-      className={cx("rounded-md border-l-4 bg-surface px-4 py-3", border)}
+      className={cx(
+        "relative rounded-2xl py-3 pr-4 pl-6 before:absolute before:inset-y-3 before:left-2.5 before:w-1 before:rounded-full",
+        style,
+      )}
     >
       {children}
     </div>
@@ -222,7 +252,7 @@ export function Chip({ label, className }: { label: string; className: string })
   return (
     <span
       className={cx(
-        "inline-block rounded-sm px-2 py-0.5 font-display text-[13px] font-bold tracking-wider text-on-status uppercase",
+        "inline-block rounded-full px-2.5 py-0.5 text-[13px] font-semibold whitespace-nowrap text-on-status",
         className,
       )}
     >
@@ -236,7 +266,5 @@ export function StatusBadge({ status }: { status: JobStatus }) {
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return (
-    <p className="rounded-lg border border-dashed border-border p-6 text-text-muted">{children}</p>
-  );
+  return <p className="rounded-2xl bg-text/[0.04] p-6 text-center text-text-muted">{children}</p>;
 }

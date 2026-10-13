@@ -131,11 +131,7 @@ export function InvoicePanel({
   };
 
   return (
-    <section
-      aria-labelledby={`invoice-${invoice.id}`}
-      className="rounded-lg border border-border bg-surface p-5"
-      data-testid="invoice"
-    >
+    <section aria-labelledby={`invoice-${invoice.id}`} className="card p-5" data-testid="invoice">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h3 id={`invoice-${invoice.id}`} className="font-display text-xl font-bold">
           Invoice{invoice.number ? ` #${invoice.number}` : ""} ·{" "}

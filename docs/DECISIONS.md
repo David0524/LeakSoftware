@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (owner: "still feels super boxy"; more pills, phone as an icon)
+- **Pills:** every button is a pill (orange still only for the primary action; secondary and danger keep a 1 px outline in `color.controlBorder`). Status labels are solid pills in sentence case. Filters and "whose day" chips are pills; segmented controls are a pill track with a navy thumb. The app follows the same shapes (`radius.pill`, `radius.xl` added to `brand/tokens.json`).
+- **Soft cards:** content sits on raised surfaces with a faint shadow and no outline (`.card`); groups inside a card use a quiet inset well (`.well`). Increase Contrast brings the outlines back. The job's customer, pool, and tech are one grouped card instead of three.
+- **Icons for contact:** call, text, and email are round icon buttons (named for screen readers; the number shows beside them). Today's Call is the same.
+- Text fields are rounded (12 px) and keep their outline.
+
 ## 2026-10-13 (owner: show the customer the report, then get the signature)
 - **Review with Customer replaces the bare signature sheet.** After writing the draft, the tech hands over the phone: the customer reads the report exactly as they will get it (the website renders the real report; the app shows the same content from the phone's data) and signs at the bottom, under the sentence they confirm.
 - **Signing finishes the report.** That version locks, so what they read is what they get; later changes go out as a new version, and the signature shows as "signed on version N" there. Signatures are tied to the version they were finished with (`signature.report_id`).

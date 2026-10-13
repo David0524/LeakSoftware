@@ -112,11 +112,7 @@ export default async function PriceBookPage() {
 
         {items.length === 0 ? <Empty>No items yet.</Empty> : null}
         {items.map((item) => (
-          <details
-            key={item.id}
-            className="group rounded-lg border border-border bg-surface"
-            data-testid="price-item"
-          >
+          <details key={item.id} className="group card" data-testid="price-item">
             <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 px-5 py-3">
               <span>
                 <span className="font-semibold">{item.name}</span>

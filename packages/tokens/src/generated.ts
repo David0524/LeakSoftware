@@ -99,7 +99,9 @@ export const tokens = {
   "radius": {
     "sm": 3,
     "md": 6,
-    "lg": 10
+    "lg": 10,
+    "xl": 20,
+    "pill": 999
   },
   "space": {
     "1": 4,

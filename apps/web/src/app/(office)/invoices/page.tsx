@@ -50,10 +50,7 @@ export default async function InvoicesPage() {
           <ul className="space-y-3 sm:hidden">
             {invoices.map((i) => (
               <li key={i.id}>
-                <Link
-                  href={`/jobs/${i.job_id}#invoice`}
-                  className="block rounded-lg border border-border bg-surface p-4 active:bg-bg"
-                >
+                <Link href={`/jobs/${i.job_id}#invoice`} className="block card p-4 active:bg-bg">
                   <span className="flex items-baseline justify-between gap-3">
                     <span className="font-semibold text-link">
                       #{i.number}
@@ -75,7 +72,7 @@ export default async function InvoicesPage() {
               </li>
             ))}
           </ul>
-          <div className="hidden overflow-x-auto rounded-lg border border-border bg-surface sm:block">
+          <div className="hidden overflow-x-auto card sm:block">
             <table className="w-full text-left">
               <thead className="border-b border-border text-[15px] text-text-muted">
                 <tr>

@@ -26,7 +26,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
           type="search"
           defaultValue={search}
           placeholder="Name, phone, or email"
-          className="min-h-11 flex-1 rounded-md border border-control-border bg-surface px-3 focus:outline-3 focus:outline-focus"
+          className="min-h-11 flex-1 rounded-xl border border-control-border bg-surface px-3 focus:outline-3 focus:outline-focus"
         />
         <Button type="submit" kind="secondary">
           Search
@@ -39,7 +39,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
             : "No customers yet. They’re added when a job is created on the phone."}
         </Empty>
       ) : (
-        <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
+        <ul className="divide-y divide-border card">
           {customers.map((c) => (
             <li key={c.id}>
               <Link href={`/customers/${c.id}`} className="block px-4 py-3 hover:bg-bg">

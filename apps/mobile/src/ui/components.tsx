@@ -179,12 +179,12 @@ const buttonKinds = {
   // Navy on safety orange: white on orange is too faint in sun (brand/BRAND.md).
   primary: { box: { backgroundColor: color.primary }, text: { color: color.onPrimary } },
   secondary: {
-    box: { backgroundColor: color.surface, borderWidth: 2, borderColor: color.navy },
+    box: { backgroundColor: color.surface, borderWidth: 1, borderColor: color.controlBorder },
     text: { color: color.navy },
   },
   quiet: { box: { backgroundColor: "transparent" }, text: { color: color.link } },
   danger: {
-    box: { backgroundColor: color.surface, borderWidth: 2, borderColor: color.fail },
+    box: { backgroundColor: color.surface, borderWidth: 1, borderColor: color.fail },
     text: { color: color.fail },
   },
 } as const;
@@ -322,7 +322,7 @@ export function Toggle({
 export function StatusChip({ status }: { status: JobStatus }) {
   return (
     <View style={[styles.chip, { backgroundColor: JOB_STATUS_COLOR[status] }]}>
-      <Text style={styles.chipText}>{JOB_STATUS_LABELS[status].toUpperCase()}</Text>
+      <Text style={styles.chipText}>{JOB_STATUS_LABELS[status]}</Text>
     </View>
   );
 }
@@ -334,25 +334,29 @@ export function Row({ children, style }: { children: ReactNode; style?: StylePro
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: color.bg },
   screenContent: { padding: space["4"], gap: space["4"], paddingBottom: space["7"] },
+  // Soft raised cards, not outlined boxes (owner, 2026-10-13: "still feels super boxy").
   card: {
     backgroundColor: color.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: color.border,
+    borderRadius: radius.xl,
     padding: space["4"],
     gap: space["2"],
+    shadowColor: "#12263A",
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 1,
   },
   section: { gap: space["2"] },
   sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   notice: {
     backgroundColor: color.surface,
     borderLeftWidth: 4,
-    borderRadius: radius.md,
+    borderRadius: radius.xl,
     padding: space["3"],
   },
   button: {
     minHeight: touch + 4,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     paddingHorizontal: space["5"],
     alignItems: "center",
     justifyContent: "center",
@@ -364,7 +368,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.surface,
     borderWidth: 1.5,
     borderColor: color.controlBorder,
-    borderRadius: radius.md,
+    borderRadius: 12,
     paddingHorizontal: space["3"],
     fontFamily: font.body,
     fontSize: 17,
@@ -375,8 +379,8 @@ const styles = StyleSheet.create({
   choice: {
     minHeight: touch,
     paddingHorizontal: space["4"],
-    borderRadius: radius.md,
-    borderWidth: 1.5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
     borderColor: color.controlBorder,
     backgroundColor: color.surface,
     justifyContent: "center",
@@ -385,21 +389,21 @@ const styles = StyleSheet.create({
   segmented: {
     flexDirection: "row",
     backgroundColor: color.neutral200,
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     padding: 3,
     gap: 3,
   },
   segment: {
     flex: 1,
     minHeight: touch - 4,
-    borderRadius: radius.md - 2,
+    borderRadius: radius.pill,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: space["2"],
   },
-  segmentOn: { backgroundColor: color.surface, borderWidth: 1, borderColor: color.controlBorder },
+  segmentOn: { backgroundColor: color.navy },
   segmentText: { fontFamily: font.bodyMedium, fontSize: 15, color: color.text },
-  segmentTextOn: { fontFamily: font.bodyBold },
+  segmentTextOn: { fontFamily: font.bodyBold, color: color.onHeader },
   choiceText: { fontFamily: font.bodySemiBold, fontSize: 15, color: color.text },
   toggle: {
     minHeight: touch,
@@ -409,11 +413,11 @@ const styles = StyleSheet.create({
     gap: space["3"],
   },
   chip: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 3,
-    borderRadius: radius.sm,
+    borderRadius: radius.pill,
     alignSelf: "flex-start",
   },
-  chipText: { fontFamily: font.displayBold, fontSize: 12, letterSpacing: 0.6, color: "#FFFFFF" },
+  chipText: { fontFamily: font.bodySemiBold, fontSize: 13, color: "#FFFFFF" },
   row: { flexDirection: "row", alignItems: "center", gap: space["3"] },
 });

@@ -131,7 +131,7 @@ export function ColorField({
           aria-label={`${label} picker`}
           value={valid ? value : NAVY}
           onChange={(e) => setValue(e.target.value.toUpperCase())}
-          className="h-11 w-14 cursor-pointer rounded-md border border-control-border bg-surface"
+          className="h-11 w-14 cursor-pointer rounded-xl border border-control-border bg-surface"
         />
         <input
           id={name}
@@ -140,7 +140,7 @@ export function ColorField({
           onChange={(e) => setValue(e.target.value)}
           placeholder={optional ? "None" : NAVY}
           aria-invalid={error ? true : undefined}
-          className="min-h-11 w-32 rounded-md border border-control-border bg-surface px-3 font-mono uppercase"
+          className="min-h-11 w-32 rounded-xl border border-control-border bg-surface px-3 font-mono uppercase"
         />
       </div>
       {valid ? (
@@ -186,7 +186,7 @@ export function CopyLink({
         value={url}
         aria-label={label}
         onFocus={(e) => e.target.select()}
-        className="min-h-11 min-w-0 flex-1 rounded-md border border-control-border bg-bg px-3 font-mono text-[15px]"
+        className="min-h-11 min-w-0 flex-1 rounded-xl border border-control-border bg-bg px-3 font-mono text-[15px]"
       />
       <Button
         type="button"

@@ -267,7 +267,7 @@ export function RouteBoard({
 
       <DragOverlay dropAnimation={null}>
         {dragging ? (
-          <div className="rounded-md border-2 border-link bg-surface p-2 shadow-lg">
+          <div className="rounded-2xl bg-surface p-3 shadow-xl ring-2 ring-link">
             <span className="block font-semibold">{dragging.customer}</span>
             <span className="block text-[15px] text-text-muted">{dragging.address}</span>
           </div>
@@ -324,10 +324,7 @@ function DayColumn({
     <section
       aria-label={c.title}
       data-testid="route"
-      className={cx(
-        "flex flex-col rounded-lg border bg-surface p-4",
-        isOver ? "border-link" : "border-border",
-      )}
+      className={cx("card flex flex-col p-4", isOver && "ring-2 ring-link")}
     >
       <h2 className="font-display text-xl font-bold">{c.title}</h2>
       {summary ? <p className="text-[15px] text-text-muted">{summary}</p> : null}
@@ -343,7 +340,7 @@ function DayColumn({
       >
         <ol ref={setNodeRef} className="mt-3 min-h-16 flex-1 space-y-1">
           {stops.length === 0 ? (
-            <li className="rounded-md border border-dashed border-border p-4 text-center text-text-muted">
+            <li className="rounded-2xl bg-text/[0.04] p-4 text-center text-text-muted">
               {c.open ? "Nothing scheduled. Drop a job here." : "Nothing scheduled."}
             </li>
           ) : null}
@@ -436,10 +433,7 @@ function StopCard({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
       style={{ transform: CSS.Translate.toString(transform), transition }}
       data-testid="stop"
       aria-label={`${s.time ?? "No time"}, ${s.customer}`}
-      className={cx(
-        "flex gap-1 rounded-md border border-border bg-surface p-2",
-        isDragging && "opacity-40",
-      )}
+      className={cx("well flex gap-1 p-2", isDragging && "opacity-40")}
     >
       {s.draggable ? (
         <Grip
@@ -504,7 +498,7 @@ function WeekGrid({
 }) {
   const rows = [...new Map(columns.map((c) => [c.techId, c.title])).entries()];
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+    <div className="overflow-x-auto card">
       <table className="w-full min-w-[880px] table-fixed text-left">
         <thead className="border-b border-border">
           <tr>
@@ -607,10 +601,7 @@ function WeekChip({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       data-testid="stop"
-      className={cx(
-        "flex items-start rounded-md border border-border bg-surface",
-        isDragging && "opacity-40",
-      )}
+      className={cx("well flex items-start", isDragging && "opacity-40")}
     >
       {s.draggable ? <Grip label={`Drag ${s.customer}`} {...attributes} {...listeners} /> : null}
       <Link href={`/jobs/${s.id}`} className="min-w-0 flex-1 py-1.5 pr-1.5 hover:underline">
@@ -646,10 +637,7 @@ function Tray({
       ref={setNodeRef}
       aria-labelledby="tray-title"
       data-testid="tray"
-      className={cx(
-        "mb-6 rounded-lg border bg-surface p-4",
-        isOver ? "border-link" : "border-border",
-      )}
+      className={cx("card mb-6 p-4", isOver && "ring-2 ring-link")}
     >
       <h2 id="tray-title" className="font-display text-xl font-bold">
         Needs a Time{jobs.length ? ` (${jobs.length})` : ""}
@@ -696,7 +684,7 @@ function TrayCard({
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       data-testid="tray-job"
-      className={cx("flex gap-1 rounded-md border border-border p-2", isDragging && "opacity-40")}
+      className={cx("well flex gap-1 p-2", isDragging && "opacity-40")}
     >
       <Grip label={`Drag ${j.customer}`} ref={setActivatorNodeRef} {...attributes} {...listeners} />
       <div className="min-w-0 flex-1">
@@ -852,7 +840,7 @@ function MoveSheet({
             <select
               value={tech}
               onChange={(e) => setTech(e.target.value)}
-              className="mt-1 min-h-11 w-full rounded-md border border-control-border bg-surface px-3"
+              className="mt-1 min-h-11 w-full rounded-xl border border-control-border bg-surface px-3"
               autoFocus
             >
               {techs.length > 1 ? (
@@ -872,7 +860,7 @@ function MoveSheet({
               value={date}
               min={today}
               onChange={(e) => setDate(e.target.value)}
-              className="mt-1 min-h-11 w-full rounded-md border border-control-border bg-surface px-3"
+              className="mt-1 min-h-11 w-full rounded-xl border border-control-border bg-surface px-3"
             />
           </label>
           {tech && known && others.length ? (
@@ -881,7 +869,7 @@ function MoveSheet({
               <select
                 value={Math.min(place, others.length)}
                 onChange={(e) => setPlace(Number(e.target.value))}
-                className="mt-1 min-h-11 w-full rounded-md border border-control-border bg-surface px-3"
+                className="mt-1 min-h-11 w-full rounded-xl border border-control-border bg-surface px-3"
               >
                 <option value={0}>First stop</option>
                 {others.map((s, i) => (

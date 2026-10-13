@@ -1,6 +1,6 @@
 "use client";
 
-import { cx } from "./ui";
+import { SEGMENT_TRACK, segmentClass } from "./ui";
 
 /** Two to five related choices, as a segmented control (house rule). Posts as `name`. */
 export function Segmented<T extends string>({
@@ -22,11 +22,7 @@ export function Segmented<T extends string>({
         {label}
       </p>
       <input type="hidden" name={name} value={value} />
-      <div
-        role="radiogroup"
-        aria-labelledby={`${name}-label`}
-        className="inline-flex max-w-full flex-wrap rounded-md border border-control-border bg-surface p-0.5"
-      >
+      <div role="radiogroup" aria-labelledby={`${name}-label`} className={SEGMENT_TRACK}>
         {options.map((o) => (
           <button
             key={o.value}
@@ -34,10 +30,7 @@ export function Segmented<T extends string>({
             role="radio"
             aria-checked={value === o.value}
             onClick={() => onChange(o.value)}
-            className={cx(
-              "min-h-11 rounded px-4 font-medium",
-              value === o.value ? "bg-text text-surface" : "text-text hover:bg-bg",
-            )}
+            className={segmentClass(value === o.value)}
           >
             {o.label}
           </button>

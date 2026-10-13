@@ -221,7 +221,7 @@ export function MediaCapture({
   });
 
   return (
-    <div className="space-y-3 rounded-lg border border-border bg-surface p-4">
+    <div className="space-y-3 card p-4">
       {targets.length ? (
         <Select
           label="Attach to"
@@ -293,8 +293,8 @@ export function MediaCapture({
 // Add Photo, Add Video, and Voice Note sit in one row of equal tiles (icon over label), so
 // they fit a phone's width without wrapping to three rows.
 const TILE = cx(
-  "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-md border-2 border-text bg-surface px-1 py-1.5",
-  "text-center font-display text-[15px] leading-tight font-bold tracking-wide hover:bg-bg",
+  "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-2xl bg-link/10 px-1 py-1.5 text-link transition-colors hover:bg-link/20",
+  "text-center font-display text-[15px] leading-tight font-bold tracking-wide",
   "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus",
 );
 const CAMERA =

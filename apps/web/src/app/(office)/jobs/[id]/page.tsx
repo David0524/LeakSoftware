@@ -23,6 +23,7 @@ import {
   seesAllJobs,
 } from "@leakbook/core";
 import { GalleryImage } from "@/components/gallery-image";
+import { ContactButtons } from "@/components/contact-buttons";
 import { JobSections } from "@/components/job-sections";
 import { MediaActions, MediaCapture, SignatureForm } from "@/components/media-work";
 import {
@@ -119,8 +120,9 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
             label: "Details",
             content: (
               <>
-                <div className="grid gap-5 lg:grid-cols-3">
-                  <Card>
+                {/* One grouped card: customer, pool, and tech as rows (columns on wide screens). */}
+                <section className="card grid divide-y divide-border lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+                  <div className="p-5">
                     <SectionTitle>Customer</SectionTitle>
                     {job.customer ? (
                       <Link
@@ -132,22 +134,13 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                     ) : (
                       <p>Customer</p>
                     )}
-                    {job.customer?.phone ? (
-                      <p>
-                        <a href={`tel:${job.customer.phone}`} className="text-link">
-                          {job.customer.phone}
-                        </a>
-                      </p>
-                    ) : null}
-                    {job.customer?.email ? (
-                      <p>
-                        <a href={`mailto:${job.customer.email}`} className="text-link">
-                          {job.customer.email}
-                        </a>
-                      </p>
-                    ) : null}
-                  </Card>
-                  <Card>
+                    <ContactButtons
+                      name={job.customer?.name ?? "the customer"}
+                      phone={job.customer?.phone}
+                      email={job.customer?.email}
+                    />
+                  </div>
+                  <div className="p-5">
                     <SectionTitle>Pool</SectionTitle>
                     {job.property ? (
                       <>
@@ -183,8 +176,8 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                         )}
                       </>
                     ) : null}
-                  </Card>
-                  <Card>
+                  </div>
+                  <div className="p-5">
                     <SectionTitle>Assigned to</SectionTitle>
                     <p className="text-xl font-semibold">{job.techName ?? "Nobody yet"}</p>
                     {job.secondTechName ? <p>With {job.secondTechName}</p> : null}
@@ -194,8 +187,8 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                         <dd>{formatCents(job.fee_cents)}</dd>
                       </dl>
                     ) : null}
-                  </Card>
-                </div>
+                  </div>
+                </section>
 
                 <Card className="mt-5 max-w-3xl" aria-labelledby="on-site">
                   <h2 id="on-site" className="mb-3 font-display text-xl font-bold">
@@ -489,7 +482,7 @@ async function Gallery({ detail, tz }: { detail: JobDetail; tz: string }) {
             const h = m.height ?? 3;
             const label = `${MEDIA_KIND_LABELS[m.kind]} · ${attached(m)}`;
             return (
-              <li key={m.id} className="overflow-hidden rounded-lg border border-border bg-surface">
+              <li key={m.id} className="overflow-hidden card">
                 {!url ? (
                   <div className="flex aspect-[4/3] items-center justify-center bg-bg p-4 text-center text-text-muted">
                     {MEDIA_KIND_LABELS[m.kind]} still uploading from the phone
@@ -574,7 +567,7 @@ async function Signatures({ detail, tz }: { detail: JobDetail; tz: string }) {
           {signatures.map((s) => {
             const url = s.image_path ? urls.get(s.image_path) : undefined;
             return (
-              <li key={s.id} className="rounded-lg border border-border bg-surface p-4">
+              <li key={s.id} className="card p-4">
                 {url ? (
                   // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
                   <img

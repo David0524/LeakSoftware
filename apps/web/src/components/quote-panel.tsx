@@ -32,11 +32,7 @@ export function QuotePanel({
   const link = state.link ?? (quote.token ? `${origin}/q/${quote.token}` : null);
   const deposit = quote.payments.find((p) => p.status === "succeeded" || p.status === "pending");
   return (
-    <section
-      aria-labelledby={`quote-${quote.id}`}
-      className="rounded-lg border border-border bg-surface p-5"
-      data-testid="quote"
-    >
+    <section aria-labelledby={`quote-${quote.id}`} className="card p-5" data-testid="quote">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h3 id={`quote-${quote.id}`} className="font-display text-xl font-bold">
           Quote{quote.number ? ` #${quote.number}` : ""} · {QUOTE_STATUS_LABELS[quote.status]}

@@ -61,6 +61,36 @@ header :focus-visible {
   }
 }
 
+/*
+ * Content cards: soft raised surfaces, not outlined boxes (owner, 2026-10-13: "still feels
+ * super boxy"). The page background already separates them; a faint shadow adds lift. With
+ * Increase Contrast they get an outline back.
+ */
+@layer components {
+  .card {
+    border-radius: 1.25rem;
+    background: var(--lb-surface);
+    box-shadow:
+      0 1px 2px rgb(18 38 58 / 0.06),
+      0 6px 20px rgb(18 38 58 / 0.05);
+  }
+  [data-theme="dark"] .card {
+    box-shadow: none;
+  }
+  /* A group inside a card (a list row, a version, a signature): a quiet inset well. */
+  .well {
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--lb-text) 4%, var(--lb-surface));
+  }
+}
+@media (prefers-contrast: more) {
+  .card,
+  .well {
+    box-shadow: none;
+    border: 1px solid var(--lb-control-border);
+  }
+}
+
 h1,
 h2,
 h3 {

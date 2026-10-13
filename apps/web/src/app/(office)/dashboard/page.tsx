@@ -209,7 +209,7 @@ export default async function DashboardPage() {
 
 function Stat({ label, value, note }: { label: string; value: string; note: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-border bg-surface p-4">
+    <div className="card p-4">
       <dt className="text-[15px] text-text-muted">{label}</dt>
       <dd className="font-display text-3xl font-extrabold tabular-nums">{value}</dd>
       <dd className="text-[15px] text-text-muted">{note}</dd>

@@ -24,7 +24,16 @@ import {
   type TrayJob,
 } from "@/components/route-board";
 import { DateJump } from "@/components/date-jump";
-import { Notice, PageHeader, StatusBadge, buttonClass, cx } from "@/components/ui";
+import {
+  Notice,
+  PageHeader,
+  StatusBadge,
+  buttonClass,
+  cx,
+  SEGMENT_TRACK,
+  segmentClass,
+  pillClass,
+} from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { mapsAppForRequest } from "@/lib/maps";
 import type { JobRow } from "@/lib/data";
@@ -186,19 +195,13 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
     <>
       <PageHeader title="Schedule" subtitle={title} />
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <nav
-          aria-label="View"
-          className="inline-flex rounded-md border border-control-border bg-surface p-1"
-        >
+        <nav aria-label="View" className={SEGMENT_TRACK}>
           {(["day", "week", "month"] as const).map((v) => (
             <Link
               key={v}
               href={href(date, v)}
               aria-current={v === view ? "page" : undefined}
-              className={cx(
-                "min-h-11 min-w-16 content-center rounded px-3 text-center font-medium",
-                v === view && "bg-text text-bg",
-              )}
+              className={segmentClass(v === view, "min-w-16")}
             >
               {v === "day" ? "Day" : v === "week" ? "Week" : "Month"}
             </Link>
@@ -244,10 +247,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
               key={t.id}
               href={href(date, view, t.id)}
               aria-current={t.id === tech ? "page" : undefined}
-              className={cx(
-                "min-h-11 shrink-0 content-center rounded-full border border-control-border px-4 font-medium whitespace-nowrap",
-                t.id === tech && "bg-text text-bg",
-              )}
+              className={pillClass(t.id === tech)}
             >
               {t.name}
             </Link>
@@ -362,7 +362,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                         <li key={s.id}>
                           <Link
                             href={`/jobs/${s.id}`}
-                            className="block rounded-md border border-border bg-surface p-2 hover:border-water"
+                            className="well block p-2 hover:bg-text/[0.08]"
                           >
                             <span className="block font-semibold">
                               {s.time} · {s.number ? `#${s.number}` : "New"}
@@ -431,7 +431,7 @@ function MonthCalendar({
   href: (d: string) => string;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-surface p-2">
+    <div className="card p-2">
       <div
         className="grid grid-cols-7 text-center text-[13px] font-semibold text-text-muted"
         aria-hidden="true"

@@ -157,4 +157,6 @@
   --radius-sm: 3px;
   --radius-md: 6px;
   --radius-lg: 10px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
 }

@@ -10,7 +10,7 @@ import {
 import { reviewWithCustomer } from "@/app/actions/sign-off";
 import type { ReportRow } from "@/lib/data";
 import { CopyLink } from "./settings-forms";
-import { Button, Notice, cx } from "./ui";
+import { Button, Notice, buttonClass, cx } from "./ui";
 
 function Status({ state }: { state: ReportFormState }) {
   if (state.error) return <Notice tone="error">{state.error}</Notice>;
@@ -57,7 +57,7 @@ export function ReportPanel({
   return (
     <section
       aria-labelledby={`report-${template}`}
-      className="rounded-lg border border-border bg-surface p-5"
+      className="card p-5"
       data-testid={`report-${template}`}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -165,7 +165,7 @@ export function ReportPanel({
                   name="text"
                   defaultValue={s.text}
                   rows={Math.min(12, Math.max(3, s.text.split("\n").length + 2))}
-                  className="block w-full rounded-md border border-control-border bg-surface px-3 py-2"
+                  className="block w-full rounded-xl border border-control-border bg-surface px-3 py-2"
                 />
               </div>
             ))}
@@ -259,7 +259,7 @@ export function ReportPanel({
               href={`/r/${latestSent.token}/pdf`}
               target="_blank"
               rel="noreferrer"
-              className="mt-2 inline-flex min-h-11 items-center font-semibold text-link underline"
+              className={buttonClass("quiet", "mt-2 -ml-3 px-3")}
             >
               Download PDF
             </a>
@@ -270,34 +270,43 @@ export function ReportPanel({
       {sent.length ? (
         <div className="mt-6 border-t border-border pt-4">
           <h4 className="font-medium">Versions</h4>
-          <ul className="mt-2 text-[15px]">
+          <ul className="mt-1 divide-y divide-border">
             {sent.map((r) => (
-              <li key={r.id}>
-                Version {r.version} · {r.sent_at ? new Date(r.sent_at).toLocaleString() : ""}
-                {r.status === "superseded" ? " · replaced" : ""}
-                {r.token ? (
-                  <>
+              <li key={r.id} className="flex flex-wrap items-center justify-between gap-x-3 py-1">
+                <span className="text-[15px]">
+                  Version {r.version}
+                  <span className="text-text-muted">
                     {" · "}
+                    {r.sent_at
+                      ? new Date(r.sent_at).toLocaleString("en-US", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })
+                      : ""}
+                    {r.status === "superseded" ? " · replaced" : ""}
+                  </span>
+                </span>
+                {r.token ? (
+                  <span className="flex gap-1">
                     <a
                       href={`/r/${r.token}`}
                       target="_blank"
                       rel="noreferrer"
                       aria-label={`Version ${r.version} report`}
-                      className="inline-flex min-h-11 items-center text-link underline"
+                      className={buttonClass("quiet", "px-3 text-[15px]")}
                     >
                       Report
                     </a>
-                    {" · "}
                     <a
                       href={`/r/${r.token}/pdf`}
                       target="_blank"
                       rel="noreferrer"
                       aria-label={`Version ${r.version} PDF`}
-                      className="inline-flex min-h-11 items-center text-link underline"
+                      className={buttonClass("quiet", "px-3 text-[15px]")}
                     >
                       PDF
                     </a>
-                  </>
+                  </span>
                 ) : null}
               </li>
             ))}
@@ -336,7 +345,7 @@ function SendControls({
             name="to"
             type="email"
             defaultValue={customerEmail ?? ""}
-            className="block min-h-11 w-full rounded-md border border-control-border bg-surface px-3"
+            className="block min-h-11 w-full rounded-xl border border-control-border bg-surface px-3"
           />
         </div>
         <Button

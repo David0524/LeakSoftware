@@ -12,10 +12,11 @@ import {
   dayDirections,
 } from "@leakbook/core";
 import { Suspense } from "react";
+import { PhoneIcon } from "@/components/icons";
 import { OnMyWay } from "@/components/on-my-way";
 import { WeatherBadge } from "@/components/weather-badge";
 import { AddressLink, OpenRouteInMaps } from "@/components/open-in-maps";
-import { Empty, PageHeader, StatusBadge, buttonClass, cx } from "@/components/ui";
+import { Empty, PageHeader, StatusBadge, cx, iconButtonClass, pillClass } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { mapsAppForRequest } from "@/lib/maps";
 import { loadRoutes, routeContext, routeKey } from "@/server/route-days";
@@ -80,10 +81,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
               key={t.user_id}
               href={`/today?tech=${t.user_id}`}
               aria-current={t.user_id === techId ? "page" : undefined}
-              className={cx(
-                "min-h-11 shrink-0 content-center rounded-full border border-control-border px-4 font-medium",
-                t.user_id === techId && "bg-text text-bg",
-              )}
+              className={pillClass(t.user_id === techId)}
             >
               {t.user_id === office.user.id ? "Me" : t.name}
             </Link>
@@ -132,7 +130,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                   <section
                     aria-label={`Stop ${i + 1}: ${j.customer?.name ?? "Customer"}`}
                     className={cx(
-                      "relative rounded-lg border border-border bg-surface p-3",
+                      "relative card p-3",
                       isNext && "border-2 border-link",
                       done && "opacity-70",
                     )}
@@ -163,7 +161,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                             <a
                               href={`tel:${j.customer.phone}`}
                               aria-label={`Call ${j.customer.name ?? "the customer"}`}
-                              className={buttonClass("secondary", "w-11 px-0")}
+                              className={iconButtonClass()}
                             >
                               <PhoneIcon />
                             </a>
@@ -219,22 +217,5 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
         </>
       )}
     </>
-  );
-}
-
-function PhoneIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="size-6 shrink-0"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z" />
-    </svg>
   );
 }

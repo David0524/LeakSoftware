@@ -17,7 +17,7 @@ export default async function MorePage() {
   return (
     <>
       <PageHeader title="More" />
-      <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
+      <ul className="divide-y divide-border overflow-hidden card">
         {rest.map((l) => (
           <li key={l.href}>
             <Link
@@ -32,7 +32,7 @@ export default async function MorePage() {
           </li>
         ))}
       </ul>
-      <div className="mt-6 rounded-lg border border-border bg-surface px-4 py-1.5">
+      <div className="mt-6 card px-4 py-1.5">
         <MapsChoice initial={maps} />
       </div>
     </>

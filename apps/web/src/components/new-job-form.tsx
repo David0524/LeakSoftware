@@ -22,7 +22,7 @@ interface CustomerOption {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-4 rounded-lg border border-border bg-surface p-5">
+    <section className="space-y-4 card p-5">
       <h2 className="font-display text-xl font-bold">{title}</h2>
       {children}
     </section>

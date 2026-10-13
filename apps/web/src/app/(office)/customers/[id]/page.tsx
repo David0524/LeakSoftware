@@ -13,6 +13,7 @@ import { saveCustomerEmails } from "@/app/actions/jobs";
 import { DeleteCustomerForm } from "@/components/delete-customer";
 import { MaintenancePlans } from "@/components/maintenance-plans";
 import { SField, SettingsForm } from "@/components/settings-forms";
+import { ContactButtons } from "@/components/contact-buttons";
 import { Card, Checkbox, Empty, PageHeader, SectionTitle, StatusBadge } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany, getCustomer, getTeam } from "@/lib/data";
@@ -62,20 +63,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
       <div className="grid gap-5 lg:grid-cols-3">
         <Card>
           <SectionTitle>Contact</SectionTitle>
-          {customer.phone ? (
-            <p>
-              <a href={`tel:${customer.phone}`} className="text-link">
-                {customer.phone}
-              </a>
-            </p>
-          ) : null}
-          {customer.email ? (
-            <p>
-              <a href={`mailto:${customer.email}`} className="text-link">
-                {customer.email}
-              </a>
-            </p>
-          ) : null}
+          <ContactButtons name={customer.name} phone={customer.phone} email={customer.email} />
           {!customer.phone && !customer.email ? (
             <p className="text-text-muted">No contact details.</p>
           ) : null}

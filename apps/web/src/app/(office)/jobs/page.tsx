@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { JOB_TYPE_LABELS, formatAddress, formatSchedule, type JobStatus } from "@leakbook/core";
-import { ButtonLink, Empty, PageHeader, StatusBadge, cx } from "@/components/ui";
+import { ButtonLink, Empty, PageHeader, StatusBadge, pillClass } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { OPEN_STATUSES, listJobs } from "@/lib/data";
 
@@ -46,12 +46,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
             key={f.key}
             href={f.key === "open" ? "/jobs" : `/jobs?status=${f.key}`}
             aria-current={f === filter ? "page" : undefined}
-            className={cx(
-              "min-h-11 shrink-0 content-center rounded-md border px-3 font-medium",
-              f === filter
-                ? "border-text bg-text text-bg"
-                : "border-control-border bg-surface hover:bg-bg",
-            )}
+            className={pillClass(f === filter)}
           >
             {f.label}
           </Link>
@@ -66,10 +61,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
           <ul className="space-y-3 sm:hidden">
             {jobs.map((j) => (
               <li key={j.id}>
-                <Link
-                  href={`/jobs/${j.id}`}
-                  className="block rounded-lg border border-border bg-surface p-4 active:bg-bg"
-                >
+                <Link href={`/jobs/${j.id}`} className="block card p-4 active:bg-bg">
                   <span className="flex items-start justify-between gap-3">
                     <span className="font-semibold text-link">
                       {j.number ? `#${j.number}` : "New job"}
@@ -97,7 +89,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
               </li>
             ))}
           </ul>
-          <div className="hidden overflow-x-auto rounded-lg border border-border bg-surface sm:block">
+          <div className="hidden overflow-x-auto card sm:block">
             <table className="w-full text-left">
               <thead className="border-b border-border text-[15px] text-text-muted">
                 <tr>

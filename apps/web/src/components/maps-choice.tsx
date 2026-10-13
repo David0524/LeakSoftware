@@ -20,7 +20,7 @@ export function MapsChoice({ initial }: { initial: Choice }) {
           setChoice(v);
           document.cookie = `lb_maps=${v}; path=/; max-age=31536000; samesite=lax`;
         }}
-        className="min-h-11 rounded-md border border-control-border bg-surface px-2 text-link"
+        className="min-h-11 rounded-xl border border-control-border bg-surface px-2 text-link"
       >
         <option value="auto">Automatic</option>
         <option value="apple">Apple Maps</option>

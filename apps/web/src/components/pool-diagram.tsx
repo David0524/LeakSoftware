@@ -26,7 +26,7 @@ export function PoolDiagram({
       viewBox={`0 0 ${d.width} ${d.height}`}
       role="img"
       aria-label={title}
-      className="w-full rounded-lg border border-border bg-surface"
+      className="w-full rounded-2xl border border-border bg-surface"
     >
       <path d={d.pool} className="fill-diagram-water stroke-water" strokeWidth={2} />
       {d.spa ? (

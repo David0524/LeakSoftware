@@ -457,7 +457,7 @@ function WhereField({
           if (e.target.value.trim() !== (value ?? ""))
             run(saveWhere, { job: jobId, result: resultId, where: e.target.value });
         }}
-        className="block min-h-11 w-full rounded-lg border border-control-border bg-bg px-3 py-2"
+        className="block min-h-11 w-full rounded-xl border border-control-border bg-bg px-3 py-2"
       />
       <ErrorText error={error} />
     </div>
@@ -521,7 +521,7 @@ export function TestsEditor({
           const calc = type ? calculate(type, t.data) : null;
           const outcome = t.outcome ? OUTCOME[t.outcome] : null;
           return (
-            <li key={t.id} className="rounded-lg border border-border bg-surface p-4">
+            <li key={t.id} className="card p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-semibold">{type?.name ?? "Test"}</p>
@@ -613,7 +613,7 @@ function TestForm({
   const calc = type ? calculate(type, normalizeTestData(type.field_schema, values)) : null;
   const set = (k: string, v: string) => setValues((old) => ({ ...old, [k]: v }));
   return (
-    <div className="rounded-lg border border-border bg-surface p-4">
+    <div className="card p-4">
       <h3 className="mb-3 font-display text-lg font-bold">
         {test ? `Edit ${type?.name ?? "Test"}` : "Add Test"}
       </h3>
@@ -792,7 +792,7 @@ export function FindingsEditor({
               editing === f.id ? (
                 <li key={f.id}>{form(f)}</li>
               ) : (
-                <li key={f.id} className="rounded-lg border border-border bg-surface p-4">
+                <li key={f.id} className="card p-4">
                   <div className="flex items-start gap-3">
                     <span
                       className="inline-flex size-7 shrink-0 items-center justify-center rounded-full font-display font-bold text-paper"
@@ -880,7 +880,7 @@ function FindingForm({
     finding?.pinX != null && finding.pinY != null ? { x: finding.pinX, y: finding.pinY } : null,
   );
   return (
-    <div className="rounded-lg border border-border bg-surface p-4">
+    <div className="card p-4">
       <h3 className="mb-3 font-display text-lg font-bold">
         {finding ? "Edit Finding" : "Add Finding"}
       </h3>
