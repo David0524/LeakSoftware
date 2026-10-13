@@ -400,7 +400,7 @@ Added 2026-10-13 (owner: "This company does regular pool cleaning too... regular
 - Maintenance plans on a customer's pool (owners): tech, first visit (the weekday), every 1 to 4 weeks, optional set time (otherwise route planning picks it), visit length (30 minutes by default), price per visit, last visit, notes for the tech. Pause, resume, or end.
 - Visits are jobs of type Maintenance, made a few weeks ahead (Settings › Scheduling) when a plan is saved and every morning; they go on routes, Today, and phones like any job. A visit has the service checklist (skim, brush, vacuum, baskets, filter pressure, water, equipment) and ends with Mark Done.
 - **Done when:** in Playwright, an owner adds a weekly plan, its 30-minute visit is on the tech's route the next day, the visit is started, its checklist done, and it is marked Done, and pausing the plan takes the upcoming visits off the schedule.
-- Not yet: billing maintenance (monthly invoices), water-chemistry readings, a service summary emailed to the customer.
+- Not yet: monthly billing for maintenance (owner: one invoice per customer per month for the visits done); water-chemistry readings and a service summary email (on hold, ask the cousin).
 
 ### M11 Launch hardening
 - Sentry, error boundaries, offline edge cases (full disk, revoked session, app update with pending outbox), accessibility pass, performance with 1,000 jobs and 10,000 photos on the device.
@@ -438,6 +438,8 @@ Please answer these before or during the milestone listed. The **recommendation*
 | 9 | App Store: publish under your own Apple Developer account (individual or company)? | Company account (needs a D-U-N-S number, which takes days, so start early) | M11 |
 
 Open questions for the cousin, from the handoff, still apply: checklist items and procedures, current report examples and readers, typical repair items and prices, insurance frequency and adjuster needs, job sources and who pays. Each lands as seed or config data.
+
+Added 2026-10-13 (maintenance): should cleaning visits record water-chemistry readings (chlorine, pH, alkalinity, ...), and should customers get a short service summary email after each visit?
 
 ---
 

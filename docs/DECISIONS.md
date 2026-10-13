@@ -7,7 +7,8 @@ Newest first. Each entry: date, decision, reason.
 - **Visits are made four weeks ahead** (Settings › Scheduling, 1 to 12) when a plan is saved and topped up every morning. Changing, pausing, or ending a plan replaces its upcoming visits that haven't started; started and finished visits are kept. A visit moved by hand keeps its plan date, so it isn't made twice.
 - **30 minutes by default** (Settings › Scheduling; each plan can differ). A visit without a set time goes after the tech's last job that day and Plan Route places it properly; a set time is kept like a promised time.
 - **Service checklist** (configurable rows like the leak checklist): skim, brush, vacuum, empty baskets, filter pressure, test and balance water, equipment for leaks or noise. Each is Done, Needs Attention, or Skipped. A visit ends with the new status Done (only maintenance visits offer it).
-- **Price per visit** is saved on the plan and the visit, but **billing isn't built yet**. Owner to decide: monthly invoice per customer (common for pool service) or per visit.
+- **Price per visit** is saved on the plan and the visit. **Billing is monthly** (owner, 2026-10-13): one invoice per customer per month for the visits done. Not built yet.
+- **Water-chemistry readings and a service summary email to the customer:** on hold; ask the cousin (BUILD_PLAN section 10).
 - **Demo:** the demo shop's techs have cleaning plans too (`supabase/seed_demo_maintenance.sql`), so each route mixes leak jobs and 30-minute cleanings (four to six stops a day).
 
 ## 2026-10-13 (owner: techs seeing other techs' schedules and jobs)
