@@ -66,3 +66,7 @@ Plan: `docs/BUILD_PLAN.md` § M8.5. Background: `docs/research/2026-10-13-curren
   - `SUPABASE_SERVICE_ROLE_KEY`;
   - `EXPO_PUBLIC_API_URL`.
 - **Demo sign-ins:** `owner@demo.leakbook.test` / `tech@demo.leakbook.test`, password `leakbook-demo`.
+
+## Also requested
+
+Route optimization with scheduling has its own handoff: `docs/ROUTE_OPTIMIZATION_HANDOFF.md`.
