@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { zonedTimeToIso, type JobStatus } from "@leakbook/core";
+import { splitEmails, zonedTimeToIso, type JobStatus } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { FormState } from "./auth";
@@ -37,4 +37,26 @@ export async function scheduleJob(_: FormState, form: FormData): Promise<FormSta
   revalidatePath(`/jobs/${id}`);
   revalidatePath("/schedule");
   return { message: "Scheduled." };
+}
+
+/** Office: the customer's email and the other addresses that also get reports (M8.5). */
+export async function saveCustomerEmails(_: FormState, form: FormData): Promise<FormState> {
+  const office = await getOffice();
+  const id = text(form, "customer");
+  const email = text(form, "email");
+  if (email && !/^\S+@\S+\.\S+$/.test(email))
+    return { fields: { email: "Enter an email like name@example.com." } };
+  const raw = text(form, "cc_emails");
+  const cc = splitEmails(raw);
+  if (raw.split(/[\s,;]+/).filter(Boolean).length !== cc.length)
+    return { fields: { cc_emails: "One of these isn’t an email address." } };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("customer")
+    .update({ email: email || null, cc_emails: cc })
+    .eq("id", id)
+    .eq("company_id", office.company.id);
+  if (error) return { error: error.message };
+  revalidatePath(`/customers/${id}`);
+  return { message: "Saved." };
 }

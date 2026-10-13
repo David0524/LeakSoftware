@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JOB_TYPE_LABELS, POOL_TYPE_LABELS, formatAddress, formatSchedule } from "@leakbook/core";
+import { saveCustomerEmails } from "@/app/actions/jobs";
+import { SField, SettingsForm } from "@/components/settings-forms";
 import { Card, Empty, PageHeader, SectionTitle, StatusBadge } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCustomer } from "@/lib/data";
@@ -60,6 +62,17 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
             <p className="text-text-muted">No contact details.</p>
           ) : null}
           {customer.notes ? <p className="mt-3 whitespace-pre-line">{customer.notes}</p> : null}
+          <h3 className="mt-5 mb-2 font-display text-lg font-bold">Report emails</h3>
+          <SettingsForm action={saveCustomerEmails}>
+            <input type="hidden" name="customer" value={customer.id} />
+            <SField label="Email" name="email" type="email" defaultValue={customer.email ?? ""} />
+            <SField
+              label="Other emails"
+              name="cc_emails"
+              defaultValue={(customer.cc_emails ?? []).join(" ")}
+              hint="They get reports too. Separate with spaces."
+            />
+          </SettingsForm>
         </Card>
         <div className="space-y-5 lg:col-span-2">
           {properties.length === 0 ? <Empty>No properties.</Empty> : null}

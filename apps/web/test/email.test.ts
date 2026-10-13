@@ -32,12 +32,15 @@ describe("sendEmail", () => {
       sent = { url, init };
       return Response.json({ id: "email_1" });
     }) as unknown as typeof fetch;
-    expect(await sendEmail(email, fake)).toEqual({ id: "email_1" });
+    expect(await sendEmail({ ...email, cc: ["pat@example.com"] }, fake)).toEqual({
+      id: "email_1",
+    });
     const body = JSON.parse(String(sent!.init.body));
     expect(sent!.url).toBe("https://api.resend.com/emails");
     expect(new Headers(sent!.init.headers).get("authorization")).toBe("Bearer re_test");
     expect(body).toMatchObject({
       to: ["sam@example.com"],
+      cc: ["pat@example.com"],
       reply_to: "office@demo.test",
       subject: "Your report",
     });

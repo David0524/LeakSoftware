@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Alert, Linking, Pressable, Share, View } from "react-native";
 import {
   SIGNATURE_PURPOSE_LABELS,
+  splitEmails,
   type Customer,
   type FinalSection,
   type Job,
@@ -60,6 +61,17 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
   const [message, setMessage] = useState<string | null>(null);
   const [to, setTo] = useState<string | null>(null);
   const email = (to ?? customer?.email ?? "").trim();
+  const [otherEmails, setOtherEmails] = useState<string | null>(null);
+
+  /** Other emails are saved on the customer, so later reports and quotes use them too. */
+  function saveOtherEmails() {
+    if (!customer || otherEmails === null) return;
+    const next = splitEmails(otherEmails);
+    if (next.join(" ") !== (customer.cc_emails ?? []).join(" ")) {
+      services.sync.write("customer", customer.id, company.id, { cc_emails: next });
+    }
+    setOtherEmails(null);
+  }
 
   const sections = draft?.final_sections ?? [];
   const problems = draft?.ai_draft?.problems ?? [];
@@ -104,6 +116,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
         );
       } else {
         saveEdits();
+        saveOtherEmails();
         if (kind === "email" && !/^\S+@\S+\.\S+$/.test(email))
           throw new Error("Enter the customer’s email.");
         const r = await sendReportFromPhone(
@@ -219,6 +232,17 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
               autoCapitalize="none"
               textContentType="emailAddress"
             />
+            {customer ? (
+              <Field
+                label="Other emails (optional)"
+                value={otherEmails ?? (customer.cc_emails ?? []).join(" ")}
+                onChangeText={setOtherEmails}
+                onBlur={saveOtherEmails}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                hint="They get the report too. Separate with spaces."
+              />
+            ) : null}
             <Button
               title="Send by Email"
               loading={busy === "email"}

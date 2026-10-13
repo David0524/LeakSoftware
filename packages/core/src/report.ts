@@ -2,6 +2,7 @@
 // narrative validator, and a plain no-AI draft. No I/O.
 
 import {
+  CHECKLIST_SECTION_LABELS,
   calculate,
   verdictLabel,
   type Calculator,
@@ -240,6 +241,69 @@ export function snapshotTally(s: ReportSnapshot): ChecklistTally {
     else t.pass += 1;
   }
   return t;
+}
+
+/** How a checklist badge reads on the report. */
+export type VerdictTone = "pass" | "attention" | "leaking" | "not_applicable" | "pending";
+
+export interface ReportChecklistItem {
+  id: string;
+  label: string;
+  /** Badge text: Not leaking, Leaking, Attention, Not applicable, Yes, No, Not checked. */
+  verdict: string;
+  tone: VerdictTone;
+  where: string | null;
+  /** Why it was not applicable, when the tech gave a reason. */
+  reason: string | null;
+}
+
+export interface ReportChecklistSection {
+  section: ChecklistSection;
+  title: string;
+  items: ReportChecklistItem[];
+}
+
+const SECTION_ORDER: ChecklistSection[] = ["visual", "plumbing", "bond_beam", "other"];
+
+/**
+ * Every item with its verdict, grouped by section in checklist order (M8.5). Null for
+ * snapshots frozen before verdicts existed; those keep the older "what we checked" text.
+ */
+export function reportChecklist(s: ReportSnapshot): ReportChecklistSection[] | null {
+  if (!s.components.some((c) => c.section !== undefined)) return null;
+  return SECTION_ORDER.map((section) => ({
+    section,
+    title: CHECKLIST_SECTION_LABELS[section],
+    items: s.components
+      .filter((c) => (c.section ?? "other") === section)
+      .map((c): ReportChecklistItem => {
+        const tone: VerdictTone =
+          c.status === "pending"
+            ? "pending"
+            : c.status === "excluded"
+              ? "not_applicable"
+              : c.outcome === "leaking"
+                ? "leaking"
+                : c.outcome === "attention"
+                  ? "attention"
+                  : "pass";
+        return {
+          id: c.id,
+          label: c.label,
+          verdict: tone === "pending" ? "Not checked" : verdictLabel(c, c.answer),
+          tone,
+          where: c.location_text?.trim() || null,
+          reason: c.status === "excluded" ? c.exclusion_reason?.trim() || null : null,
+        };
+      }),
+  })).filter((x) => x.items.length > 0);
+}
+
+/** "Leaks noted": the leaking items, with where when the tech gave it. */
+export function leaksNoted(s: ReportSnapshot): string[] {
+  return s.components
+    .filter((c) => c.status === "inspected" && c.outcome === "leaking")
+    .map((c) => (c.location_text?.trim() ? `${c.label} (${c.location_text.trim()})` : c.label));
 }
 
 export function testSummary(t: SnapshotTest): string | null {
@@ -547,7 +611,7 @@ export function plainNarrative(s: ReportSnapshot, template: "homeowner" | "partn
     text:
       s.findings.length === 0 && leakingItems.length === 0
         ? `We checked ${inspected.length} of ${s.components.length} items and did not find a leak.`
-        : `We checked ${inspected.length} of ${s.components.length} items: ${tally.pass} passed, ${tally.attention} need attention, and ${tally.leaking} ${tally.leaking === 1 ? "is" : "are"} leaking.${s.findings.length ? ` We recorded ${s.findings.length} finding${s.findings.length === 1 ? "" : "s"}.` : ""}`,
+        : `We checked ${inspected.length} of ${s.components.length} items: ${tally.pass} passed, ${tally.attention} ${tally.attention === 1 ? "needs" : "need"} attention, and ${tally.leaking} ${tally.leaking === 1 ? "is" : "are"} leaking.${s.findings.length ? ` We recorded ${s.findings.length} finding${s.findings.length === 1 ? "" : "s"}.` : ""}`,
     source_ids: [...s.findings.map((f) => f.id), ...leakingItems.map((c) => c.result_id ?? c.id)],
   };
 

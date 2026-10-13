@@ -2,6 +2,21 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (M8.5 report, made for now; owner can change)
+- **"Items Pass" counts only "Not leaking" (and "No" on yes/no items).** Not applicable items are listed with their badge but not counted as passing. The partner's old tool appears to count them as passing (27 items: 26 pass, 1 failed).
+- **Extra customer emails are copied (cc) on the report email,** so the household sees who got it.
+- **Reports sent before M8.5 keep their old "what we checked" text;** sent reports are frozen.
+
+## 2026-10-13 (route optimization, requested; not built yet)
+- **Route optimization folded into scheduling is in scope**, reversing "Dispatch/routing is out" (2026-10-12). It waits until M8.5 is finished. Its milestone placement (suggested: right after M9) is still to be confirmed. Plan: `docs/ROUTE_OPTIMIZATION_HANDOFF.md`.
+- **Provider: Mapbox** ("fine for now, but the goal is to sell this elsewhere"). All calls go through one server module so the provider can be swapped, and usage is counted per company.
+- **Routes start and end at the shop**, so the company address must be geocoded.
+- **Two-tech jobs are sometimes routed together**: same slot, or the same route when the office chooses "ride together".
+- **Still open:** arrival windows (built as a company setting, off by default), automatic assignment across techs, lunch break or end-of-day limits.
+
+## 2026-10-13 (hosting)
+- **The website is on Vercel** at `leaksoftware-web.vercel.app`. Production currently builds from `claude/cool-keller-efjc00`; a dedicated production branch is suggested.
+
 ## 2026-10-13 (M8 quotes and deposits)
 - **Totals are recomputed by the database when a quote is sent or accepted,** with the same rules as `packages/core/src/quote.ts` (tests check the same figures). The discount comes off before tax, shared between taxable and untaxed lines. Sent quotes and their lines are frozen.
 - **Quotes are built on the phone; the office sends them and sees status.** A tech's discount over the company limit is refused when sent; owners can give any discount.

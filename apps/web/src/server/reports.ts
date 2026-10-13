@@ -162,10 +162,16 @@ export async function sendReport(
   }
   const attach = pdf && pdf.length < 5 * 1024 * 1024;
   const greeting = snapshot.customer?.name ? `Hi ${snapshot.customer.name},` : "Hello,";
+  // The customer's other addresses get the report too, once each.
+  const cc = [
+    ...new Set((snapshot.customer?.cc_emails ?? []).map((e) => e.trim().toLowerCase())),
+  ].filter((e) => e && e !== to!.toLowerCase());
+  const sentTo = [to!, ...cc].join(", ");
   try {
     const sent = await sendEmail({
       from: fromAddress(shop),
       to: to!,
+      cc,
       replyTo: snapshot.company.email,
       subject: `Your leak detection report from ${shop}`,
       text: `${greeting}\n\nYour leak detection report for ${snapshot.property.address} is ready:\n${link}\n\n${shop}${snapshot.company.phone ? `\n${snapshot.company.phone}` : ""}`,
@@ -175,7 +181,7 @@ export async function sendReport(
     await db.rpc("log_message", {
       target_job: report.job_id,
       via: "email",
-      sent_to: to,
+      sent_to: sentTo,
       template_key: `report_${report.template_key}`,
       delivery: "sent",
       provider: sent.id,
@@ -184,7 +190,7 @@ export async function sendReport(
     await db.rpc("log_message", {
       target_job: report.job_id,
       via: "email",
-      sent_to: to,
+      sent_to: sentTo,
       template_key: `report_${report.template_key}`,
       delivery: "failed",
       failure: e instanceof Error ? e.message : String(e),

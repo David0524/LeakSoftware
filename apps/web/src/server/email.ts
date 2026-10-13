@@ -7,6 +7,8 @@ import { join } from "node:path";
 export interface Email {
   from: string;
   to: string;
+  /** The customer's other addresses (M8.5); they see each other, like a family email. */
+  cc?: string[];
   replyTo?: string | null;
   subject: string;
   html: string;
@@ -56,6 +58,7 @@ export async function sendEmail(email: Email, fetchImpl: typeof fetch = fetch): 
     body: JSON.stringify({
       from: email.from,
       to: [email.to],
+      cc: email.cc?.length ? email.cc : undefined,
       reply_to: email.replyTo || undefined,
       subject: email.subject,
       html: email.html,

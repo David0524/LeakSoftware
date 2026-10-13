@@ -2,13 +2,18 @@ import {
   POOL_TYPE_LABELS,
   REPORT_BLOCKS,
   SIGNATURE_PURPOSE_LABELS,
+  formatCents,
+  leaksNoted,
   narrativeTemplate,
+  reportChecklist,
+  snapshotTally,
   testSummary,
   textOnBrand,
   type FinalSection,
   type PoolType,
   type ReportSnapshot,
   type ReportTemplateKey,
+  type VerdictTone,
 } from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import type { ReactNode } from "react";
@@ -30,6 +35,41 @@ export interface ReportViewProps {
 }
 
 const NEUTRAL = tokens.color.neutral;
+const STATUS = tokens.color.status;
+
+/** Badge colors; the badge text always names the verdict, so color is never the only cue. */
+const TONE_COLOR: Record<VerdictTone, string> = {
+  pass: STATUS.pass,
+  attention: STATUS.warning,
+  leaking: STATUS.fail,
+  not_applicable: STATUS.excluded,
+  pending: NEUTRAL["500"],
+};
+
+function Badge({ tone, children }: { tone: VerdictTone; children: ReactNode }) {
+  return (
+    <span
+      className="inline-block shrink-0 rounded px-2 py-0.5 text-[15px] font-semibold whitespace-nowrap"
+      style={{ backgroundColor: TONE_COLOR[tone], color: tokens.color.role.light.onStatus }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function Tile({ count, label, tone }: { count: number; label: string; tone: VerdictTone }) {
+  return (
+    <div
+      className="rounded-lg border border-l-8 px-4 py-3"
+      style={{ borderColor: NEUTRAL["200"], borderLeftColor: TONE_COLOR[tone] }}
+    >
+      <p className="font-display text-3xl font-extrabold" style={{ color: TONE_COLOR[tone] }}>
+        {count}
+      </p>
+      <p className="font-semibold">{label}</p>
+    </div>
+  );
+}
 
 function formatDate(iso: string | null, timeZone: string) {
   if (!iso) return "";
@@ -74,6 +114,11 @@ export function ReportView(p: ReportViewProps) {
   const section = (key: string) => p.sections.find((x) => x.key === key);
   const labelOf = new Map(s.components.map((c) => [c.id, c.label]));
   const blocks = REPORT_BLOCKS[narrativeTemplate(p.templateKey)];
+  const checklist = reportChecklist(s);
+  const tally = snapshotTally(s);
+  const leaks = leaksNoted(s);
+  const techs = [s.job.tech_name, s.job.second_tech_name].filter((x): x is string => !!x);
+  const performed = s.job.completed_at ?? s.job.started_at ?? s.job.scheduled_start;
   const inspected = s.components.filter((c) => c.status === "inspected");
   const excluded = s.components.filter((c) => c.status === "excluded");
   const photos = s.media.filter((m) => m.kind === "photo" && p.urls.has(m.storage_path));
@@ -118,6 +163,21 @@ export function ReportView(p: ReportViewProps) {
             {section("summary")?.title ?? "Summary"}
           </h2>
           <Paragraphs text={section("summary")?.text ?? ""} />
+          {checklist ? (
+            <div className="report-tally mt-5 grid grid-cols-3 gap-3">
+              <Tile
+                count={tally.pass}
+                label={tally.pass === 1 ? "Item Passes" : "Items Pass"}
+                tone="pass"
+              />
+              <Tile
+                count={tally.attention}
+                label={tally.attention === 1 ? "Needs Attention" : "Need Attention"}
+                tone="attention"
+              />
+              <Tile count={tally.leaking} label="Leaking" tone="leaking" />
+            </div>
+          ) : null}
         </div>
         <dl className="rounded-lg border p-4 text-[15px]" style={{ borderColor: NEUTRAL["200"] }}>
           <dt className="text-text-muted">Property</dt>
@@ -137,10 +197,22 @@ export function ReportView(p: ReportViewProps) {
               .filter(Boolean)
               .join(", ") || "Pool"}
           </dd>
-          {s.job.tech_name ? (
+          {performed && checklist ? (
             <>
-              <dt className="text-text-muted">Technician</dt>
-              <dd className="mb-2">{s.job.tech_name}</dd>
+              <dt className="text-text-muted">Date performed</dt>
+              <dd className="mb-2">{formatDate(performed, tz)}</dd>
+            </>
+          ) : null}
+          {techs.length ? (
+            <>
+              <dt className="text-text-muted">{techs.length > 1 ? "Technicians" : "Technician"}</dt>
+              <dd className="mb-2">{techs.join(" and ")}</dd>
+            </>
+          ) : null}
+          {s.job.fee_cents != null ? (
+            <>
+              <dt className="text-text-muted">Leak detection fee</dt>
+              <dd className="mb-2">{formatCents(s.job.fee_cents)}</dd>
             </>
           ) : null}
           {s.job.number ? (
@@ -171,6 +243,7 @@ export function ReportView(p: ReportViewProps) {
                 <span>
                   <strong>{f.title}</strong> · {f.severity_name}
                   {f.component_id ? ` · ${labelOf.get(f.component_id)}` : ""}
+                  {f.status === "repaired" ? " · Repaired on site" : ""}
                   {f.location_text ? (
                     <span className="block text-[15px]">{f.location_text}</span>
                   ) : null}
@@ -246,34 +319,67 @@ export function ReportView(p: ReportViewProps) {
         ) : null}
       </Block>
     ),
-    coverage: () => (
-      <Block title="What we checked">
-        <p>
-          Inspected:{" "}
-          {inspected
-            .map((c) => (c.method ? `${c.label} (${c.method.toLowerCase()})` : c.label))
-            .join(", ") || "none"}
-          .
-        </p>
-        {excluded.length ? (
-          <div className="mt-3">
-            <p className="font-semibold">Not inspected</p>
-            <ul className="mt-1 list-disc pl-6">
-              {excluded.map((c) => (
-                <li key={c.id}>
-                  {c.label}: {c.exclusion_reason}
-                </li>
-              ))}
-            </ul>
+    coverage: () =>
+      checklist ? (
+        <Block title="What we checked">
+          <div className="report-checklist">
+            {checklist.map((sec) => (
+              <div key={sec.section} className="mt-4 first:mt-0">
+                <h3 className="font-display text-xl font-bold">{sec.title}</h3>
+                <ul className="mt-1">
+                  {sec.items.map((item) => (
+                    <li
+                      key={item.id}
+                      className="flex items-start justify-between gap-3 border-b py-2 break-inside-avoid"
+                      style={{ borderColor: NEUTRAL["200"] }}
+                    >
+                      <span>
+                        {item.label}
+                        {item.where || item.reason ? (
+                          <span className="block text-[15px] text-text-muted">
+                            {item.where ?? item.reason}
+                          </span>
+                        ) : null}
+                      </span>
+                      <Badge tone={item.tone}>{item.verdict}</Badge>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
-        ) : null}
-      </Block>
-    ),
+          <p className="mt-4">
+            <strong>Leaks noted:</strong> {leaks.length ? leaks.join(", ") : "None"}.
+          </p>
+        </Block>
+      ) : (
+        <Block title="What we checked">
+          <p>
+            Inspected:{" "}
+            {inspected
+              .map((c) => (c.method ? `${c.label} (${c.method.toLowerCase()})` : c.label))
+              .join(", ") || "none"}
+            .
+          </p>
+          {excluded.length ? (
+            <div className="mt-3">
+              <p className="font-semibold">Not inspected</p>
+              <ul className="mt-1 list-disc pl-6">
+                {excluded.map((c) => (
+                  <li key={c.id}>
+                    {c.label}: {c.exclusion_reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </Block>
+      ),
     photos: () =>
       photos.length ? (
         <Block title="Photos">
           <ul className="grid gap-4 sm:grid-cols-2">
-            {photos.map((m) => {
+            {photos.map((m, i) => {
               const w = m.width ?? 4;
               const h = m.height ?? 3;
               const where =
@@ -281,7 +387,7 @@ export function ReportView(p: ReportViewProps) {
                 (m.component_id && labelOf.get(m.component_id)) ||
                 null;
               return (
-                <li key={m.id} className="break-inside-avoid">
+                <li key={m.id} className={`break-inside-avoid ${i === 0 ? "sm:col-span-2" : ""}`}>
                   <div className="relative">
                     {/* eslint-disable-next-line @next/next/no-img-element -- signed storage URL */}
                     <img
@@ -328,13 +434,23 @@ export function ReportView(p: ReportViewProps) {
         </Block>
       ) : null,
     footer: () => (
-      <footer className="mt-10 border-t pt-4 text-[15px]" style={{ borderColor: NEUTRAL["200"] }}>
-        <p>
-          {s.company.legal_name ?? s.company.name}
-          {s.company.address ? ` · ${s.company.address}` : ""}
-        </p>
-        <p className="mt-1 text-text-muted">Powered by LeakBook</p>
-      </footer>
+      <>
+        {s.company.disclaimer ? (
+          <section
+            className="report-disclaimer mt-10 text-[15px] whitespace-pre-line text-text-muted"
+            aria-label="Terms"
+          >
+            {s.company.disclaimer}
+          </section>
+        ) : null}
+        <footer className="mt-10 border-t pt-4 text-[15px]" style={{ borderColor: NEUTRAL["200"] }}>
+          <p>
+            {s.company.legal_name ?? s.company.name}
+            {s.company.address ? ` · ${s.company.address}` : ""}
+          </p>
+          <p className="mt-1 text-text-muted">Powered by LeakBook</p>
+        </footer>
+      </>
     ),
   };
 

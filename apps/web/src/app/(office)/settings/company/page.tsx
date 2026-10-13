@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
-import { saveBranding, saveCompany } from "@/app/actions/settings";
+import {
+  saveBranding,
+  saveCompany,
+  saveNextJobNumber,
+  saveReportText,
+} from "@/app/actions/settings";
 import { ColorField, FieldError, SField, SettingsForm } from "@/components/settings-forms";
-import { Card, PageHeader, Select } from "@/components/ui";
+import { Card, PageHeader, Select, TextArea } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
@@ -30,6 +35,17 @@ export default async function CompanySettingsPage() {
       .createSignedUrl(company.logo_path, 3600);
     logoUrl = data?.signedUrl ?? null;
   }
+  const { data: lastJob } = await (
+    await createClient()
+  )
+    .from("job")
+    .select("number")
+    .eq("company_id", office.company.id)
+    .not("number", "is", null)
+    .order("number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const lastNumber = (lastJob?.number as number | undefined) ?? 0;
   const zones = US_ZONES.includes(company.timezone) ? US_ZONES : [company.timezone, ...US_ZONES];
 
   return (
@@ -78,6 +94,39 @@ export default async function CompanySettingsPage() {
                 hint="Your Google or Yelp page. Used for review requests later."
               />
             </div>
+          </SettingsForm>
+        </Card>
+
+        <Card>
+          <h2 className="mb-4 font-display text-xl font-bold">Report terms</h2>
+          <SettingsForm action={saveReportText}>
+            <TextArea
+              label="Disclaimer"
+              name="report_disclaimer"
+              rows={8}
+              defaultValue={str("report_disclaimer")}
+              hint="Printed at the end of every report, as written. Reports already sent keep the text they were sent with."
+            />
+            <FieldError name="report_disclaimer" />
+          </SettingsForm>
+        </Card>
+
+        <Card>
+          <h2 className="mb-4 font-display text-xl font-bold">Job numbers</h2>
+          <SettingsForm action={saveNextJobNumber}>
+            <SField
+              label="Next job number"
+              name="next_job_number"
+              type="number"
+              inputMode="numeric"
+              min={lastNumber + 1}
+              defaultValue={String(lastNumber + 1)}
+              hint={
+                lastNumber
+                  ? `The last job is #${lastNumber}. To continue from your old system, enter a higher number.`
+                  : "To continue from your old system, enter your next number."
+              }
+            />
           </SettingsForm>
         </Card>
 

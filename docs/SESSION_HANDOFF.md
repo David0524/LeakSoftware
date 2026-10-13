@@ -10,7 +10,7 @@ Branch `claude/cool-keller-efjc00`. Read `CLAUDE.md`, `docs/BUILD_PLAN.md`, and 
 | M7 Reports | Done and deployed to the dev project. Email and AI wait for the owner's keys (`docs/testing/M7-checklist.md`). |
 | Website light/dark switch | Done (Auto / Light / Dark). |
 | M8 Quotes and deposits | Done. CI run 28 green, including e2e at phone width with signed simulated Stripe webhooks (bank and card deposits, replay). Migration `20261012001300_quotes.sql` is deployed to the dev project. Real Stripe test mode waits for the owner's keys (`docs/testing/M8-checklist.md`). No formal M8 report was given to the owner yet. |
-| M8.5 Field parity | **In progress** (approved by the owner). See below. |
+| M8.5 Field parity | **Built; CI green** (run 39, branch `claude/vercel-site-review-mnu97q`). Waiting on the dev deploy and the owner's acceptance. See below. |
 
 ## M8.5: what's done
 
@@ -36,21 +36,17 @@ Plan: `docs/BUILD_PLAN.md` § M8.5. Background: `docs/research/2026-10-13-curren
 
 ## M8.5: what's left
 
-1. **Website report** (`apps/web/src/components/report-view.tsx`):
-   - pass / attention / leaking tiles (`snapshotTally`);
-   - every item with a verdict badge, grouped by section;
-   - "Leaks noted", fee, both techs, date performed, a large first photo;
-   - "repaired on site" wording on findings;
-   - the disclaimer before the footer;
-   - booking answers (optional).
-   - Keep the reports e2e strings working, or update `e2e/reports.spec.ts`: it checks "Not inspected" and "No diver on site".
-2. **Settings**:
-   - disclaimer textarea and "next job number" (`set_next_job_number`) on Company settings;
-   - editing booking questions can wait.
-3. **Office job page**: show the fee, second tech, booking answers, and verdicts in the checklist table (it still shows the old inspected/excluded wording).
-4. **Report email** goes to `cc_emails` too (`apps/web/src/server/reports.ts`), and the phone/office customer edit for extra emails.
-5. **A second sample job** in `supabase/seed_sample_job.sql`, entered the partner's way: two techs, the 27 items, one leaking skimmer seam repaired on site, a fee. Keep the M4 sample job unchanged, because e2e depends on it. Add an e2e for it as the M8.5 "done when" (web page and PDF show the counts, itemized verdicts, fee, and disclaimer).
-6. Run all checks; wait for green CI; `pnpm db:deploy`; run the e2e against the dev project (`NODE_USE_ENV_PROXY=1 PW_CHROMIUM_PATH=/opt/pw-browsers/chromium`); report M8.5 to the owner, then M9.
+Built in commit `58a3d72`: the report page (tiles, every item by section, fee, both techs,
+disclaimer, "repaired on site"), company settings (disclaimer, next job number), the office job
+page (verdicts, second tech, fee, booking answers), report emails to `cc_emails` (editable on the
+office customer page and by the phone's send button), the second sample job, and its e2e.
+
+1. **Deploy:** `pnpm db:deploy -- --seed` applies `20261012001400_field_parity.sql` to the dev
+   project, adds the second sample job, and gives the M4 sample its Return 3 and light
+   verdicts. It needs the Supabase access token in the session's network secrets; the session
+   that built this did not have it (HTTP 401). The website on Vercel uses the dev project, and
+   the migration only adds columns, so the code already live keeps working.
+2. Then run the e2e against the dev project and report M8.5 to the owner.
 
 ## Things to know
 
@@ -58,8 +54,9 @@ Plan: `docs/BUILD_PLAN.md` § M8.5. Background: `docs/research/2026-10-13-curren
 - **Pushing:** each push cancels the in-progress CI run (concurrency). Don't push while waiting on a result you need.
 - **Deploying:** `pnpm db:deploy` applies every pending migration in the folder. Move unfinished migrations aside if you deploy early.
 - **Repo is public:** never commit customer details or the partner's disclaimer text from his sample report.
+- **Hosting:** the website is live on Vercel at https://leaksoftware-web.vercel.app. Production builds from `claude/cool-keller-efjc00`, so every push there goes live. Report PDFs need files that Next's tracing misses; `apps/web/next.config.ts` adds them for the PDF routes.
 - **Owner setup still pending:**
-  - hosting on Vercel;
+  - `APP_BASE_URL` in Vercel (the site address, for links in emails);
   - `ANTHROPIC_API_KEY`;
   - Resend and a verified domain;
   - a Stripe test account, Connect, and keys;
