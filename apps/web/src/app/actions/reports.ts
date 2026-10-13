@@ -1,12 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { FinalSection, ReportTemplateKey } from "@leakbook/core";
+import type { ReportTemplateKey } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 import { draftReport, saveReportText, sendReport, type Channel } from "@/server/reports";
 import type { FormState } from "./auth";
+import { sectionsOf } from "./report-form";
 
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 
@@ -30,14 +31,6 @@ export async function writeDraft(_: ReportFormState, form: FormData): Promise<Re
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
   }
-}
-
-/** The edited sections in a report form, in order. */
-function sectionsOf(form: FormData): FinalSection[] {
-  const keys = form.getAll("key").map(String);
-  const titles = form.getAll("title").map(String);
-  const texts = form.getAll("text").map(String);
-  return keys.map((key, i) => ({ key, title: titles[i] ?? key, text: (texts[i] ?? "").trim() }));
 }
 
 export async function saveText(_: ReportFormState, form: FormData): Promise<ReportFormState> {

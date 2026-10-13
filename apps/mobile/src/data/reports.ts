@@ -19,6 +19,8 @@ export interface ReportRecord {
 export interface SignatureRecord {
   id: string;
   job_id: string;
+  /** The report version it was finished with; null until then. */
+  report_id: string | null;
   purpose: string;
   signer_name: string;
   signer_role: string | null;
@@ -109,6 +111,24 @@ export async function sendReportFromPhone(
     `/api/reports/${reportId}/send`,
     { channel, to },
   );
+  await sync.syncNow();
+  return result;
+}
+
+/**
+ * Finishes a report after the customer signed on this phone (or with Customer Not Here).
+ * The signature and any edits must reach the server first, so the report carries them.
+ */
+export async function finishReportFromPhone(reportId: string, customerAway: boolean) {
+  const { sync } = getServices();
+  await sync.syncNow();
+  if (sync.hasPendingWrites("report", reportId) || sync.hasPendingWrites("signature"))
+    throw new ReportServerError(
+      "The signature or your edits haven’t reached the server yet. Finish when you have signal.",
+    );
+  const result = await call<{ token: string }>(`/api/reports/${reportId}/finish`, {
+    customerAway,
+  });
   await sync.syncNow();
   return result;
 }

@@ -113,6 +113,46 @@ function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
+/**
+ * Finishes a draft: locks it with the signatures taken since the last version, or with the
+ * reason nobody signed. Returns the customer link token.
+ */
+export async function finishReport(
+  db: SupabaseClient,
+  reportId: string,
+  unsignedReason: string | null = null,
+): Promise<string> {
+  const { data, error } = await db.rpc("send_report", {
+    target_report: reportId,
+    unsigned_reason: unsignedReason,
+  });
+  if (error) throw new Error(error.message);
+  return (data as { token: string }).token;
+}
+
+/** The link of a report to send: a draft is finished first; a finished one is sent as is. */
+async function finishedToken(db: SupabaseClient, reportId: string): Promise<string> {
+  const { data: report, error } = await db
+    .from("report")
+    .select("status")
+    .eq("id", reportId)
+    .single();
+  if (error) throw new Error(error.message);
+  if (report.status === "draft") return finishReport(db, reportId);
+  if (report.status !== "sent") throw new Error("A newer version of this report has been sent.");
+  const { data: link } = await db
+    .from("share_link")
+    .select("token")
+    .eq("report_id", reportId)
+    .is("revoked_at", null)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!link) throw new Error("This report’s link was turned off.");
+  return link.token as string;
+}
+
 export async function sendReport(
   db: SupabaseClient,
   reportId: string,
@@ -124,9 +164,7 @@ export async function sendReport(
     if (!emailConfigured()) throw new EmailNotConfigured();
   }
 
-  const { data, error } = await db.rpc("send_report", { target_report: reportId });
-  if (error) throw new Error(error.message);
-  const token = (data as { token: string }).token;
+  const token = await finishedToken(db, reportId);
   const link = `${opts.origin}/r/${token}`;
 
   const { data: report, error: readError } = await db

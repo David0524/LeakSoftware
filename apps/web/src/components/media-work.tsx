@@ -705,6 +705,37 @@ function MarkupEditor({
 // Signatures
 // ---------------------------------------------------------------------------
 
+/** Uploads a drawn signature and records it on the job (the web's sign-off and sheet). */
+export async function uploadSignature(input: {
+  jobId: string;
+  purpose: SignaturePurpose;
+  strokes: SignatureStroke[];
+  name: string;
+  role: string;
+}): Promise<void> {
+  const svg = new Blob([signatureSvg(input.strokes)], { type: "image/svg+xml" });
+  const start = await startUpload({ jobId: input.jobId, kind: "signature", mime: "image/svg+xml" });
+  if (!start.ok) throw new Error(start.error);
+  const put = await fetch(start.value.url, {
+    method: "PUT",
+    headers: { "content-type": "image/svg+xml", "x-upsert": "false" },
+    body: svg,
+  });
+  if (!put.ok) throw new Error(`Upload failed (${put.status}). Try again.`);
+  const where = await position();
+  const done = await finishSignature({
+    id: start.value.id,
+    jobId: input.jobId,
+    path: start.value.path,
+    purpose: input.purpose,
+    signerName: input.name,
+    signerRole: input.role,
+    latitude: where?.latitude ?? null,
+    longitude: where?.longitude ?? null,
+  });
+  if (!done.ok) throw new Error(done.error);
+}
+
 /**
  * The customer's sign-off (apple-design: sheets.md, modality.md). The tech hands the phone
  * over: a full-screen sheet with one task, the statement in plain words, the customer's
@@ -745,8 +776,7 @@ export function SignatureForm({
     };
   }, [open]);
 
-  if (purposes.length === 0)
-    return <p className="text-text-muted">Signatures are turned off in your company settings.</p>;
+  if (purposes.length === 0) return null;
 
   async function save() {
     if (!purpose) return setError("Choose what this signature is for.");
@@ -755,27 +785,7 @@ export function SignatureForm({
     setSaving(true);
     setError(null);
     try {
-      const svg = new Blob([signatureSvg(strokes)], { type: "image/svg+xml" });
-      const start = await startUpload({ jobId, kind: "signature", mime: "image/svg+xml" });
-      if (!start.ok) throw new Error(start.error);
-      const put = await fetch(start.value.url, {
-        method: "PUT",
-        headers: { "content-type": "image/svg+xml", "x-upsert": "false" },
-        body: svg,
-      });
-      if (!put.ok) throw new Error(`Upload failed (${put.status}). Try again.`);
-      const where = await position();
-      const done = await finishSignature({
-        id: start.value.id,
-        jobId,
-        path: start.value.path,
-        purpose,
-        signerName: name,
-        signerRole: role,
-        latitude: where?.latitude ?? null,
-        longitude: where?.longitude ?? null,
-      });
-      if (!done.ok) throw new Error(done.error);
+      await uploadSignature({ jobId, purpose, strokes, name, role });
       setStrokes([]);
       setRole("");
       setOpen(false);
@@ -881,7 +891,7 @@ export function SignatureForm({
   );
 }
 
-function SignaturePad({
+export function SignaturePad({
   strokes,
   onChange,
 }: {

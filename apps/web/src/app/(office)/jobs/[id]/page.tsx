@@ -322,18 +322,18 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
             label: "Wrap-Up",
             content: (
               <>
-                <section aria-labelledby="signatures">
-                  <h2 id="signatures" className="mb-3 font-display text-2xl font-bold">
-                    Customer Sign-Off
-                  </h2>
-                  <Signatures detail={detail} tz={tz} />
-                </section>
-
-                <section className="mt-8" aria-labelledby="reports">
+                <section aria-labelledby="reports">
                   <h2 id="reports" className="mb-3 font-display text-2xl font-bold">
-                    Reports
+                    Report and Sign-Off
                   </h2>
                   <Reports detail={detail} />
+                </section>
+
+                <section className="mt-8" aria-labelledby="signatures">
+                  <h2 id="signatures" className="mb-3 font-display text-2xl font-bold">
+                    Signatures
+                  </h2>
+                  <Signatures detail={detail} tz={tz} />
                 </section>
 
                 {job.type === "detection" ? (
@@ -566,8 +566,8 @@ async function Signatures({ detail, tz }: { detail: JobDetail; tz: string }) {
     <div className="space-y-4">
       {signatures.length === 0 ? (
         <p className="text-text-muted">
-          Before you leave, hand the phone to the customer to confirm the visit. Their signature
-          goes on the report.
+          None yet. The customer signs at the end of the report: write the draft, then Review with
+          Customer.
         </p>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -598,9 +598,12 @@ async function Signatures({ detail, tz }: { detail: JobDetail; tz: string }) {
           })}
         </ul>
       )}
+      {/* Work authorization comes before the work, so it is signed on its own. */}
       <SignatureForm
         jobId={detail.job.id}
-        purposes={enabledSignaturePurposes(company.settings)}
+        purposes={enabledSignaturePurposes(company.settings).filter(
+          (p) => p.value === "work_authorization",
+        )}
         signer={detail.job.customer?.name ?? ""}
         shop={company.name}
         address={detail.job.property ? formatAddress(detail.job.property) : null}

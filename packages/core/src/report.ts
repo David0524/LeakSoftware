@@ -92,6 +92,8 @@ export interface SnapshotSignature {
   signer_role: string | null;
   signed_at: string;
   image_path: string | null;
+  /** The report version it was given on (null until a version is finished). */
+  report_version?: number | null;
 }
 
 export interface ReportSnapshot {
@@ -141,6 +143,8 @@ export interface ReportSnapshot {
   findings: SnapshotFinding[];
   media: SnapshotMedia[];
   signatures: SnapshotSignature[];
+  /** Set when this version was finished without a signature, with the tech's reason. */
+  sign_off?: { unsigned_reason: string } | null;
   /** All of the company's component types, so the validator can spot invented ones. */
   component_types: { key: string; name: string }[];
 }

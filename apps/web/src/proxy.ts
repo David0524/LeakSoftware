@@ -6,7 +6,7 @@ const url = process.env.SUPABASE_URL || dev.url;
 const key = process.env.SUPABASE_ANON_KEY || dev.publishableKey;
 
 /** Office pages need a session; everything else is public. */
-const OFFICE = ["/jobs", "/customers", "/schedule", "/today", "/settings", "/setup"];
+const OFFICE = ["/jobs", "/customers", "/schedule", "/today", "/settings", "/setup", "/sign-off"];
 
 /**
  * Refreshes the Supabase session cookie on every page request and sends signed-out visitors

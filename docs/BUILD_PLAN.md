@@ -262,6 +262,7 @@ Changes from the handoff's rough model, with reasons:
 
 - One Next.js page renders a report from its frozen `data snapshot` and `final sections`, using the template's ordered blocks: header (shop branding), summary, findings (with diagram and pins), tests table, checklist coverage (inspected and **not inspected with reasons**), photos (with markup drawn on top), signature, quote (if any), footer ("Powered by Tidemark").
 - The PDF is that same page printed by headless Chromium, stored in Storage, and regenerated only when a new version is sent.
+- Sign-off (owner, 2026-10-13): the customer reads the report on the tech's phone ("Review with Customer") and signs at the bottom. Signing finishes and locks that version; "Customer Not Here" finishes it unsigned and the report says so. Finishing never waits for a signature, and every finished version has its PDF.
 - **Shop colors:** pick the text color automatically (white or near-black) for contrast against the shop's brand color. Never assume the shop chose an accessible color.
 - **Insurance slot:** the template row exists (disabled), the block system supports it, and settings show it as "Coming soon". Enabling it later is a seed and template change, not code.
 

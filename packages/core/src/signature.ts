@@ -16,9 +16,12 @@ const PURPOSES: SignaturePurpose[] = [
   "completion",
 ];
 
+/** What the report says when the tech finishes it with Customer Not Here. */
+export const UNSIGNED_CUSTOMER_AWAY = "Customer not present";
+
 /**
- * The purposes the shop turned on in settings, in a fixed order. Quote acceptance needs a
- * quote (M8), so it is left out until quotes exist.
+ * The purposes the shop turned on in settings, in a fixed order. Quote acceptance is signed
+ * from the quote itself, so it is left out here.
  */
 export function enabledSignaturePurposes(
   settings: unknown,
@@ -29,6 +32,14 @@ export function enabledSignaturePurposes(
     value: p,
     label: SIGNATURE_PURPOSE_LABELS[p] ?? p,
   }));
+}
+
+/**
+ * Signed at the end of the report, after the customer reads it: the visit's sign-off. Work
+ * authorization comes before the work, so it stays a signature of its own.
+ */
+export function reportSignOffPurposes(settings: unknown) {
+  return enabledSignaturePurposes(settings).filter((p) => p.value !== "work_authorization");
 }
 
 /** media/{company_id}/{job_id}/signature-{id}.svg (immutable, like photos). */

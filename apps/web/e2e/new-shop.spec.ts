@@ -100,12 +100,26 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await page.locator("form").getByRole("button", { name: "Add Finding" }).click();
   await expect(page.getByText("Cracked skimmer throat", { exact: true })).toBeVisible();
 
-  // 5. Report, sent by text.
+  // 5. Report: nobody home to sign, so it is finished with Customer Not Here, then texted.
   const report = page.getByTestId("report-homeowner");
   await report.getByRole("button", { name: "Write Draft" }).click();
   await expect(report.getByText(/^Draft written\./)).toBeVisible();
-  await report.getByRole("button", { name: "Send by Text" }).click();
+  await report.getByRole("button", { name: "Review with Customer" }).click();
+  await page.getByRole("button", { name: "Customer Not Here" }).click();
+  await page.waitForURL(/\/jobs\/[^/]+#wrap-up$/);
+  const finished = report.getByTestId("finished-report");
+  await finished.getByRole("button", { name: "Send by Text" }).click();
   await expect(report.getByText("Report sent. Copy the message below.")).toBeVisible();
+  const reportHref = await report
+    .getByRole("link", { name: /^View version \d+$/ })
+    .getAttribute("href");
+  const customerPage = await page.context().newPage();
+  await customerPage.goto(reportHref!);
+  await expect(customerPage.getByTestId("unsigned")).toHaveText(
+    "Not signed: customer not present.",
+  );
+  await expect((await customerPage.request.get(`${reportHref}/pdf`)).status()).toBe(200);
+  await customerPage.close();
 
   // 6. Quote from the finding's suggested price, sent.
   await page.getByRole("button", { name: "Start Quote" }).click();

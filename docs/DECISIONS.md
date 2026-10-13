@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (owner: show the customer the report, then get the signature)
+- **Review with Customer replaces the bare signature sheet.** After writing the draft, the tech hands over the phone: the customer reads the report exactly as they will get it (the website renders the real report; the app shows the same content from the phone's data) and signs at the bottom, under the sentence they confirm.
+- **Signing finishes the report.** That version locks, so what they read is what they get; later changes go out as a new version, and the signature shows as "signed on version N" there. Signatures are tied to the version they were finished with (`signature.report_id`).
+- **Customer Not Here** finishes the report without a signature, and it says "Not signed: customer not present." The tech can also still send without a signature from the report panel. A finished version can be sent by email or text, or downloaded as a PDF, signed or not.
+- **Offline (app):** the customer can read and sign without signal; the written summary appears once the draft is written, and the report is finished from the Report tab (Finish Report) when the phone is back online.
+- **Work authorization** comes before the work, so it is still signed on its own. The visit's sign-off (inspection acknowledged, work completed) is at the end of the report.
+- **The checklist must be done before the customer signs**, as before sending.
+
 ## 2026-10-13 (owner: no way to add a maintenance job; schedule and Today feedback)
 - **New Job books maintenance too.** A Job switch (Leak Detection / Maintenance). Maintenance can be Just Once (one visit with the service checklist) or, for owners, a plan (Weekly, Every 2 Weeks, Every 4 Weeks) started for a new or existing customer in one step; the owner lands on the customer's page with the plan. Maintenance hides the second tech, the detection price, and the intake questions.
 - **The schedule shows one person at a time by default**, picked from a sideways row of chips like Today's (Me first, Everyone last). It opens on the first person with work in view. Month view added: a calendar with each day's job and cleaning counts, tapping a day opens it.

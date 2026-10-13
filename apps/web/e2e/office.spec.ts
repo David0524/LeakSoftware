@@ -379,13 +379,22 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   await editor.getByRole("button", { name: "Save" }).click();
   await expect(tech.getByRole("button", { name: /^Edit Markup: Photo/ })).toBeVisible();
 
-  // Wrap-up: the tech hands the phone over and the customer signs.
+  // Wrap-up: the report is written, then the customer reads it on the phone and signs at
+  // the bottom; signing finishes it.
   await jobSection(tech, "Wrap-Up");
-  await tech.getByRole("button", { name: "Hand to Customer to Sign" }).click();
-  const sheet = tech.getByRole("dialog", { name: "Please Sign" });
-  await expect(sheet).toContainText("inspected the pool at 40 Phone Lane");
-  await expect(sheet.getByLabel("Your name")).toHaveValue(name);
-  const pad = await sheet.getByTestId("signature-pad").boundingBox();
+  const report = tech.getByTestId("report-homeowner");
+  await report.getByRole("button", { name: "Write Draft" }).click();
+  await expect(report.getByText(/^Draft written\./)).toBeVisible();
+  await report.getByRole("button", { name: "Review with Customer" }).click();
+  await tech.waitForURL(/\/sign-off\//);
+  await expect(tech.getByText(`Line break ${RUN}`).first()).toBeVisible();
+  const sign = tech.locator("#sign");
+  await expect(sign).toContainText("inspected the pool at 40 Phone Lane");
+  await expect(sign.getByLabel("Your name")).toHaveValue(name);
+  expect(await wide()).toBeLessThanOrEqual(390);
+  const padBox = sign.getByTestId("signature-pad");
+  await padBox.scrollIntoViewIfNeeded();
+  const pad = await padBox.boundingBox();
   await tech.mouse.move(pad!.x + 30, pad!.y + 100);
   await tech.mouse.down();
   for (const [x, y] of [
@@ -396,18 +405,23 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   ])
     await tech.mouse.move(pad!.x + x, pad!.y + y, { steps: 4 });
   await tech.mouse.up();
-  await sheet.getByRole("button", { name: "Sign", exact: true }).click();
-  await expect(tech.getByText("Signature saved.")).toBeVisible();
+  await sign.getByRole("button", { name: "Sign", exact: true }).click();
+  await tech.waitForURL(/\/jobs\/[^/]+#wrap-up$/);
   await expect(tech.getByRole("img", { name: `Signature of ${name}` })).toBeVisible();
   await expect(tech.getByText(/Inspection acknowledged ·/)).toBeVisible();
-  expect(await wide()).toBeLessThanOrEqual(390);
 
-  // The homeowner report, written and sent from the phone.
-  const report = tech.getByTestId("report-homeowner");
-  await report.getByRole("button", { name: "Write Draft" }).click();
-  await expect(report.getByText(/^Draft written\./)).toBeVisible();
-  await report.getByRole("button", { name: "Send by Text" }).click();
+  // The finished version goes out by text, and the customer's page carries the signature.
+  const finished = report.getByTestId("finished-report");
+  await expect(finished).toContainText("Version 1 is finished");
+  await finished.getByRole("button", { name: "Send by Text" }).click();
   await expect(report.getByText("Report sent. Copy the message below.")).toBeVisible();
+  const reportHref = await report
+    .getByRole("link", { name: /^View version \d+$/ })
+    .getAttribute("href");
+  const customerPage = await phone.newPage();
+  await customerPage.goto(reportHref!);
+  await expect(customerPage.getByRole("img", { name: `Signature of ${name}` })).toBeVisible();
+  await customerPage.close();
 
   // A quote built on the phone from the price book and a custom line, then sent.
   await tech.getByRole("button", { name: "Start Quote" }).click();

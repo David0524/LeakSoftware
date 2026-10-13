@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Page, type Locator } from "@playwright/test";
 
 export const OWNER = { email: "owner@demo.leakbook.test", password: "leakbook-demo" };
 export const TECH = { email: "tech@demo.leakbook.test", password: "leakbook-demo" };
@@ -46,4 +46,11 @@ export async function finishChecklist(page: Page) {
       .click();
     await expect.poll(toDo).toBeLessThan(before);
   }
+}
+
+/** Sends a report draft without the customer's signature (Send Without a Signature). */
+export async function sendUnsigned(panel: Locator, via: "Send by Email" | "Send by Text") {
+  const unsigned = panel.getByTestId("send-unsigned");
+  await unsigned.getByText("Send Without a Signature").click();
+  await unsigned.getByRole("button", { name: via }).click();
 }

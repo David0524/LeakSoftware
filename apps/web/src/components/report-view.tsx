@@ -150,7 +150,7 @@ export function ReportView(p: ReportViewProps) {
         <div className="text-right text-[15px]">
           <h1 className="font-display text-xl font-bold">{title}</h1>
           <p>
-            {formatDate(p.sentAt, tz)}
+            {p.sentAt ? formatDate(p.sentAt, tz) : "Draft"}
             {p.version > 1 ? ` · version ${p.version}` : ""}
           </p>
         </div>
@@ -409,28 +409,41 @@ export function ReportView(p: ReportViewProps) {
         </Block>
       ) : null,
     signature: () =>
-      s.signatures.length ? (
+      s.signatures.length || s.sign_off?.unsigned_reason ? (
         <Block title="Signatures">
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {s.signatures.map((sig) => (
-              <li key={sig.id} className="break-inside-avoid">
-                {sig.image_path && p.urls.get(sig.image_path) ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
-                  <img
-                    src={p.urls.get(sig.image_path)}
-                    alt={`Signature of ${sig.signer_name}`}
-                    className="h-20 w-auto border-b"
-                    style={{ borderColor: NEUTRAL["500"] }}
-                  />
-                ) : null}
-                <p className="font-medium">{sig.signer_name}</p>
-                <p className="text-[15px]">
-                  {SIGNATURE_PURPOSE_LABELS[sig.purpose] ?? sig.purpose} ·{" "}
-                  {formatDate(sig.signed_at, tz)}
-                </p>
-              </li>
-            ))}
-          </ul>
+          {s.signatures.length ? (
+            <ul className="grid gap-4 sm:grid-cols-2">
+              {s.signatures.map((sig) => (
+                <li key={sig.id} className="break-inside-avoid">
+                  {sig.image_path && p.urls.get(sig.image_path) ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
+                    <img
+                      src={p.urls.get(sig.image_path)}
+                      alt={`Signature of ${sig.signer_name}`}
+                      className="h-20 w-auto border-b"
+                      style={{ borderColor: NEUTRAL["500"] }}
+                    />
+                  ) : null}
+                  <p className="font-medium">{sig.signer_name}</p>
+                  <p className="text-[15px]">
+                    {SIGNATURE_PURPOSE_LABELS[sig.purpose] ?? sig.purpose} ·{" "}
+                    {formatDate(sig.signed_at, tz)}
+                    {sig.report_version && sig.report_version !== p.version
+                      ? ` · signed on version ${sig.report_version}`
+                      : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {s.sign_off?.unsigned_reason ? (
+            <p className={s.signatures.length ? "mt-3" : undefined} data-testid="unsigned">
+              {s.signatures.length ? "This version was not signed: " : "Not signed: "}
+              {s.sign_off.unsigned_reason.charAt(0).toLowerCase() +
+                s.sign_off.unsigned_reason.slice(1)}
+              .
+            </p>
+          ) : null}
         </Block>
       ) : null,
     footer: () => (

@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Alert, Linking, Pressable, Share, View } from "react-native";
 import {
   SIGNATURE_PURPOSE_LABELS,
+  enabledSignaturePurposes,
   splitEmails,
   type Customer,
   type FinalSection,
@@ -11,6 +12,7 @@ import {
 import type { JsonValue } from "@leakbook/sync";
 import { useRows } from "../../data/hooks";
 import {
+  finishReportFromPhone,
   reportsOnline,
   sendReportFromPhone,
   useJobReports,
@@ -53,11 +55,19 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
   const [template, setTemplate] = useState<Template>("homeowner");
   const draft = reports.find((r) => r.template_key === template && r.status === "draft");
   const sent = reports.filter((r) => r.template_key === template && r.status !== "draft");
+  const finished = sent.find((r) => r.status === "sent");
+  // Signed on this phone but not yet part of a finished version (signed offline).
+  const waiting = signatures.filter((s) => !s.report_id && s.purpose !== "quote_acceptance");
+  const ownSheet = enabledSignaturePurposes(company.settings).some(
+    (p) => p.value === "work_authorization",
+  );
 
   const [edits, setEdits] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState<"draft" | "email" | "text" | null>(null);
+  const [busy, setBusy] = useState<"draft" | "email" | "text" | "finish" | null>(null);
   // Where an error shows: next to the button that caused it, so it is on screen.
-  const [error, setError] = useState<{ at: "draft" | "send"; text: string } | null>(null);
+  const [error, setError] = useState<{ at: "draft" | "send" | "finish"; text: string } | null>(
+    null,
+  );
   const [message, setMessage] = useState<string | null>(null);
   const [to, setTo] = useState<string | null>(null);
   const email = (to ?? customer?.email ?? "").trim();
@@ -101,7 +111,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
     );
   }
 
-  async function run(kind: "draft" | "email" | "text") {
+  async function run(kind: "draft" | "email" | "text" | "finish", reportId = draft?.id) {
     setBusy(kind);
     setError(null);
     setMessage(null);
@@ -114,13 +124,17 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
             ? `Draft written. ${r.problems.length} thing${r.problems.length === 1 ? "" : "s"} to check below.`
             : "Draft written. Read it over and edit anything before sending.",
         );
+      } else if (kind === "finish") {
+        saveEdits();
+        await finishReportFromPhone(reportId!, false);
+        setMessage("Report finished. Send it to the customer below.");
       } else {
         saveEdits();
         saveOtherEmails();
         if (kind === "email" && !/^\S+@\S+\.\S+$/.test(email))
           throw new Error("Enter the customer’s email.");
         const r = await sendReportFromPhone(
-          draft!.id,
+          reportId!,
           kind === "email" ? "email" : "sms_device",
           kind === "email" ? email : (customer?.phone ?? null),
         );
@@ -133,7 +147,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
       }
     } catch (e) {
       setError({
-        at: kind === "draft" ? "draft" : "send",
+        at: kind === "draft" ? "draft" : kind === "finish" ? "finish" : "send",
         text: e instanceof Error ? e.message : String(e),
       });
     } finally {
@@ -141,13 +155,37 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
     }
   }
 
+  // The email fields, shared by sending a draft and sending a finished version.
+  const sendFields = () => (
+    <>
+      <Field
+        label="Customer email"
+        value={to ?? customer?.email ?? ""}
+        onChangeText={setTo}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        textContentType="emailAddress"
+      />
+      {customer ? (
+        <Field
+          label="Other emails (optional)"
+          value={otherEmails ?? (customer.cc_emails ?? []).join(" ")}
+          onChangeText={setOtherEmails}
+          onBlur={saveOtherEmails}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          hint="They get the report too. Separate with spaces."
+        />
+      ) : null}
+    </>
+  );
+
   return (
     <View style={{ gap: 16 }}>
       <Card>
         <Row style={{ justifyContent: "space-between" }}>
           <T variant="heading">Signatures</T>
         </Row>
-        {signatures.length === 0 ? <T variant="muted">No signatures yet.</T> : null}
         {signatures.map((s) => (
           <View key={s.id}>
             <T variant="strong">{s.signer_name}</T>
@@ -157,11 +195,16 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
             </T>
           </View>
         ))}
-        <Button
-          title="Add Signature"
-          kind="secondary"
-          onPress={() => router.push(`/jobs/${job.id}/signature`)}
-        />
+        {signatures.length === 0 ? (
+          <T variant="muted">The customer signs at the end of the report: Review with Customer.</T>
+        ) : null}
+        {ownSheet ? (
+          <Button
+            title="Sign Work Authorization"
+            kind="secondary"
+            onPress={() => router.push(`/jobs/${job.id}/signature`)}
+          />
+        ) : null}
       </Card>
 
       {templates.length > 1 ? (
@@ -193,6 +236,14 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
           onPress={writeDraft}
         />
       )}
+      {!draft?.final_sections ? (
+        <Button
+          title="Review with Customer"
+          kind="secondary"
+          disabled={busy !== null}
+          onPress={() => router.push(`/jobs/${job.id}/review?template=${template}`)}
+        />
+      ) : null}
       {draft?.final_sections && draft.model && draft.model !== PLAIN_MODEL ? (
         <T variant="muted">
           AI wrote this draft from the job’s checklist, tests, and findings. It can get details
@@ -220,31 +271,44 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
             />
           ))}
           <Card>
-            <T variant="heading">Send version {draft.version}</T>
-            <T variant="muted">
-              Sending locks this version. Changes after that go out as a new version.
-            </T>
-            <Field
-              label="Customer email"
-              value={to ?? customer?.email ?? ""}
-              onChangeText={setTo}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              textContentType="emailAddress"
-            />
-            {customer ? (
-              <Field
-                label="Other emails (optional)"
-                value={otherEmails ?? (customer.cc_emails ?? []).join(" ")}
-                onChangeText={setOtherEmails}
-                onBlur={saveOtherEmails}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                hint="They get the report too. Separate with spaces."
-              />
-            ) : null}
+            <T variant="heading">Finish version {draft.version}</T>
+            {waiting.length ? (
+              <>
+                <T variant="muted">
+                  {`Signed by ${waiting.map((w) => w.signer_name).join(", ")}. Finish the report to lock this version with the signature.`}
+                </T>
+                <Button
+                  title="Finish Report"
+                  loading={busy === "finish"}
+                  disabled={busy !== null || !reportsOnline}
+                  onPress={() => void run("finish")}
+                />
+              </>
+            ) : (
+              <>
+                <T variant="muted">
+                  Hand the phone to the customer: they read the report and sign at the bottom.
+                  Signing locks this version.
+                </T>
+                <Button
+                  title="Review with Customer"
+                  disabled={busy !== null}
+                  onPress={() => {
+                    saveEdits();
+                    router.push(`/jobs/${job.id}/review?template=${template}`);
+                  }}
+                />
+              </>
+            )}
+            {error?.at === "finish" ? <Notice tone="error">{error.text}</Notice> : null}
+          </Card>
+          <Card>
+            <T variant="heading">Send Without a Signature</T>
+            <T variant="muted">Sending locks this version.</T>
+            {sendFields()}
             <Button
               title="Send by Email"
+              kind="secondary"
               loading={busy === "email"}
               disabled={busy !== null || !reportsOnline}
               onPress={() => void run("email")}
@@ -256,14 +320,44 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
               disabled={busy !== null || !reportsOnline}
               onPress={() => void run("text")}
             />
-            {error?.at === "send" ? <Notice tone="error">{error.text}</Notice> : null}
+            {error?.at === "send" && !finished ? <Notice tone="error">{error.text}</Notice> : null}
           </Card>
         </>
       ) : null}
 
+      {finished ? (
+        <Card>
+          <T variant="heading">{`Version ${finished.version} is finished`}</T>
+          <T variant="muted">Send it to the customer, or open the PDF.</T>
+          {sendFields()}
+          <Button
+            title="Send by Email"
+            kind={draft?.final_sections ? "secondary" : "primary"}
+            loading={busy === "email"}
+            disabled={busy !== null || !reportsOnline}
+            onPress={() => void run("email", finished.id)}
+          />
+          <Button
+            title="Send by Text"
+            kind="secondary"
+            loading={busy === "text"}
+            disabled={busy !== null || !reportsOnline}
+            onPress={() => void run("text", finished.id)}
+          />
+          {finished.token && API_URL ? (
+            <Button
+              title="Open PDF"
+              kind="quiet"
+              onPress={() => void Linking.openURL(`${API_URL}/r/${finished.token}/pdf`)}
+            />
+          ) : null}
+          {error?.at === "send" && finished ? <Notice tone="error">{error.text}</Notice> : null}
+        </Card>
+      ) : null}
+
       {sent.length ? (
         <Card>
-          <T variant="heading">Sent</T>
+          <T variant="heading">Versions</T>
           {sent.map((r) => (
             <Row key={r.id} style={{ justifyContent: "space-between" }}>
               <T variant="small">

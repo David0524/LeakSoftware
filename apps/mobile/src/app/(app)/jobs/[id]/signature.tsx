@@ -31,7 +31,8 @@ export default function SignatureScreen() {
   const customer = useRow<Customer>("customer", job?.bill_to_customer_id ?? property?.customer_id);
   const purposes: { value: SignaturePurpose; label: string }[] = quoteId
     ? [{ value: "quote_acceptance", label: "Quote accepted" }]
-    : enabledSignaturePurposes(company.settings);
+    : // The visit's sign-off is signed at the end of the report (review.tsx).
+      enabledSignaturePurposes(company.settings).filter((p) => p.value === "work_authorization");
   const [purpose, setPurpose] = useState<SignaturePurpose | null>(purposes[0]?.value ?? null);
   const [name, setName] = useState<string | null>(null);
   const [role, setRole] = useState("");

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { OWNER, RUN, openChecklist, signIn } from "./helpers";
+import { OWNER, RUN, openChecklist, sendUnsigned, signIn } from "./helpers";
 import { lastEmailTo } from "./outbox";
 
 // M7 "Done when": both templates as a web page and a PDF on the sample job, and the email a
@@ -11,7 +11,7 @@ async function openSampleJob(page: Page, customer = "Sam Sample") {
   await signIn(page, OWNER);
   await page.goto("/jobs?status=all");
   await page.getByRole("row").filter({ hasText: customer }).getByRole("link").first().click();
-  await expect(page.getByRole("heading", { name: "Reports" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Report and Sign-Off" })).toBeVisible();
 }
 
 async function writeDraft(page: Page, template: "homeowner" | "partner") {
@@ -50,8 +50,10 @@ test("homeowner report: draft, edit, email, and the customer's link", async ({ p
   await expect(summary).toHaveValue(new RegExp(note.replace(/[.]/g, "\\.")));
 
   const to = `customer-${RUN}@example.com`;
-  await panel.getByLabel("Customer email").fill(to);
-  await panel.getByRole("button", { name: "Send by Email" }).click();
+  const unsigned = panel.getByTestId("send-unsigned");
+  await unsigned.getByText("Send Without a Signature").click();
+  await unsigned.getByLabel("Customer email").fill(to);
+  await unsigned.getByRole("button", { name: "Send by Email" }).click();
   await expect(panel.getByText(`Sent to ${to}.`)).toBeVisible();
 
   await expect.poll(() => lastEmailTo(to)).not.toBeNull();
@@ -78,10 +80,10 @@ test("homeowner report: draft, edit, email, and the customer's link", async ({ p
 test("partner report: draft, send by text, technical page and PDF", async ({ page }) => {
   await openSampleJob(page);
   const panel = await writeDraft(page, "partner");
-  await panel.getByRole("button", { name: "Send by Text" }).click();
+  await sendUnsigned(panel, "Send by Text");
   await expect(panel.getByText("Report sent. Copy the message below.")).toBeVisible();
 
-  const sentLink = panel.getByRole("link", { name: /^View sent version \d+$/ });
+  const sentLink = panel.getByRole("link", { name: /^View version \d+$/ });
   await expect(sentLink).toBeVisible();
   const href = await sentLink.getAttribute("href");
   const token = href!.split("/").pop()!;
@@ -114,11 +116,9 @@ test("field parity report: counts, verdicts, fee, and disclaimer", async ({ page
   await expect(page.getByLabel("Skimmer seam", { exact: true })).toHaveValue("leaking");
 
   const panel = await writeDraft(page, "homeowner");
-  await panel.getByRole("button", { name: "Send by Text" }).click();
+  await sendUnsigned(panel, "Send by Text");
   await expect(panel.getByText("Report sent. Copy the message below.")).toBeVisible();
-  const href = await panel
-    .getByRole("link", { name: /^View sent version \d+$/ })
-    .getAttribute("href");
+  const href = await panel.getByRole("link", { name: /^View version \d+$/ }).getAttribute("href");
   const token = href!.split("/").pop()!;
 
   await page.context().clearCookies();
