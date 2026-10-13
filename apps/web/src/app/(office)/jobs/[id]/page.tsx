@@ -2,28 +2,31 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  CHECKLIST_SECTION_LABELS,
-  FINDING_STATUS_LABELS,
   JOB_TYPE_LABELS,
   MEDIA_KIND_LABELS,
   POOL_TYPE_LABELS,
-  calculate,
   checklistTally,
+  componentApplies,
   formatCents,
   formatAddress,
   formatDuration,
   formatSchedule,
   parseMarkup,
   timeline,
-  verdictLabel,
-  type ChecklistSection,
   type CompanySettings,
   type Media,
-  type Outcome,
 } from "@leakbook/core";
 import { GalleryImage } from "@/components/gallery-image";
-import { PoolDiagram } from "@/components/pool-diagram";
-import { Card, Chip, Empty, Notice, PageHeader, SectionTitle, StatusBadge } from "@/components/ui";
+import {
+  ChecklistEditor,
+  FindingsEditor,
+  JobDetailsForm,
+  JobStatusActions,
+  SetUpChecklist,
+  TestsEditor,
+  type ChecklistRow,
+} from "@/components/job-work";
+import { Card, Empty, Notice, PageHeader, SectionTitle, StatusBadge } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import {
   auditFor,
@@ -45,12 +48,6 @@ import { ScheduleForm } from "@/components/schedule-form";
 import { emailConfigured } from "@/server/email";
 
 export const metadata: Metadata = { title: "Job · Tidemark" };
-
-const OUTCOME: Record<Outcome, { label: string; className: string }> = {
-  pass: { label: "Pass", className: "bg-status-pass" },
-  fail: { label: "Fail", className: "bg-status-fail" },
-  inconclusive: { label: "Unclear", className: "bg-status-warning" },
-};
 
 export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   const { id } = await params;
@@ -90,6 +87,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
             </span>
           </span>
         }
+        actions={<JobStatusActions jobId={job.id} status={job.status} />}
       />
 
       <div className="grid gap-5 lg:grid-cols-3">
@@ -145,32 +143,26 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
           <SectionTitle>Assigned to</SectionTitle>
           <p className="text-xl font-semibold">{job.techName ?? "Nobody yet"}</p>
           {job.secondTechName ? <p>With {job.secondTechName}</p> : null}
-          {job.fee_cents != null || job.location_marked != null ? (
+          {job.fee_cents != null ? (
             <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3">
-              {job.fee_cents != null ? (
-                <>
-                  <dt className="text-text-muted">Detection fee</dt>
-                  <dd>{formatCents(job.fee_cents)}</dd>
-                </>
-              ) : null}
-              {job.location_marked != null ? (
-                <>
-                  <dt className="text-text-muted">Location marked</dt>
-                  <dd>{job.location_marked ? "Yes" : "No"}</dd>
-                </>
-              ) : null}
+              <dt className="text-text-muted">Detection fee</dt>
+              <dd>{formatCents(job.fee_cents)}</dd>
             </dl>
-          ) : null}
-          {job.summary_notes ? (
-            <>
-              <SectionTitle>
-                <span className="mt-4 block">Job notes</span>
-              </SectionTitle>
-              <p className="whitespace-pre-line">{job.summary_notes}</p>
-            </>
           ) : null}
         </Card>
       </div>
+
+      <Card className="mt-5 max-w-3xl" aria-labelledby="on-site">
+        <h2 id="on-site" className="mb-3 font-display text-xl font-bold">
+          On Site
+        </h2>
+        <JobDetailsForm
+          jobId={job.id}
+          fee={job.fee_cents ?? null}
+          locationMarked={job.location_marked ?? false}
+          notes={job.summary_notes ?? ""}
+        />
+      </Card>
 
       {answers.length ? (
         <Card className="mt-5">
@@ -212,18 +204,18 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                 `${tally.pending} to do`,
               ].join(" · ")}
         </p>
-        {detail.components.length > 0 ? <Checklist detail={detail} /> : null}
+        {detail.components.length > 0 ? (
+          <Checklist detail={detail} />
+        ) : (
+          <SetUpChecklist jobId={job.id} />
+        )}
       </section>
 
       <section className="mt-8" aria-labelledby="tests">
         <h2 id="tests" className="mb-3 font-display text-2xl font-bold">
           Tests
         </h2>
-        {detail.tests.length === 0 ? (
-          <Empty>No tests recorded.</Empty>
-        ) : (
-          <Tests detail={detail} tz={tz} />
-        )}
+        <Tests detail={detail} tz={tz} />
       </section>
 
       <section className="mt-8" aria-labelledby="findings">
@@ -275,186 +267,100 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   );
 }
 
-const VERDICT_CLASS = {
-  pass: "bg-status-pass",
-  attention: "bg-status-warning",
-  leaking: "bg-status-fail",
-  not_applicable: "bg-status-excluded",
-  pending: "bg-text-muted",
-} as const;
-
 function Checklist({ detail }: { detail: JobDetail }) {
-  const sectionOf = (componentTypeId: string): ChecklistSection =>
-    detail.componentTypes.get(componentTypeId)?.section ?? "other";
-  const sections = (Object.keys(CHECKLIST_SECTION_LABELS) as ChecklistSection[])
-    .map((section) => ({
-      section,
-      rows: detail.components.filter((c) => sectionOf(c.component_type_id) === section),
-    }))
-    .filter((x) => x.rows.length > 0);
-  return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-      <table className="w-full text-left">
-        <thead className="border-b border-border text-[15px] text-text-muted">
-          <tr>
-            <th scope="col" className="px-4 py-2 font-medium">
-              Component
-            </th>
-            <th scope="col" className="px-4 py-2 font-medium">
-              Result
-            </th>
-            <th scope="col" className="px-4 py-2 font-medium">
-              Where, how, or why not
-            </th>
-            <th scope="col" className="px-4 py-2 font-medium">
-              Notes
-            </th>
-          </tr>
-        </thead>
-        {sections.map(({ section, rows }) => (
-          <tbody key={section}>
-            <tr className="border-b border-border bg-bg">
-              <th scope="colgroup" colSpan={4} className="px-4 py-2 font-display font-bold">
-                {CHECKLIST_SECTION_LABELS[section]}
-              </th>
-            </tr>
-            {rows.map((c) => {
-              const r = detail.results.get(c.id);
-              const status = r?.status ?? "pending";
-              const answer = detail.componentTypes.get(c.component_type_id)?.answer;
-              const tone =
-                status === "pending"
-                  ? "pending"
-                  : status === "excluded"
-                    ? "not_applicable"
-                    : r?.outcome === "leaking"
-                      ? "leaking"
-                      : r?.outcome === "attention"
-                        ? "attention"
-                        : "pass";
-              return (
-                <tr key={c.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-2 font-medium">{c.label}</td>
-                  <td className="px-4 py-2">
-                    <Chip label={verdictLabel(r, answer)} className={VERDICT_CLASS[tone]} />
-                  </td>
-                  <td className="px-4 py-2">
-                    {status === "excluded"
-                      ? r?.exclusion_reason
-                      : [r?.location_text, r?.method].filter(Boolean).join(" · ")}
-                  </td>
-                  <td className="px-4 py-2 text-text-muted">{r?.notes}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        ))}
-      </table>
-    </div>
-  );
+  const property = detail.job.property;
+  const rows: ChecklistRow[] = detail.components.flatMap((c) => {
+    const type = detail.componentTypes.get(c.component_type_id);
+    if (!type) return [];
+    const r = detail.results.get(c.id);
+    return [
+      {
+        id: c.id,
+        label: c.label,
+        type: {
+          id: type.id,
+          name: type.name,
+          answer: type.answer,
+          allows_multiple: type.allows_multiple,
+          section: type.section ?? "other",
+        },
+        result: r
+          ? {
+              id: r.id,
+              status: r.status,
+              outcome: r.outcome ?? null,
+              location_text: r.location_text ?? null,
+              method: r.method ?? null,
+              exclusion_reason: r.exclusion_reason ?? null,
+              notes: r.notes ?? null,
+            }
+          : null,
+      },
+    ];
+  });
+  const present = new Set(detail.components.map((c) => c.component_type_id));
+  const addable = [...detail.componentTypes.values()]
+    .filter(
+      (t) =>
+        t.active &&
+        !t.deleted_at &&
+        !present.has(t.id) &&
+        (!property || componentApplies(t, { ...property, has_pool: true })),
+    )
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((t) => ({ id: t.id, name: t.name }));
+  return <ChecklistEditor jobId={detail.job.id} rows={rows} addable={addable} />;
 }
 
 function Tests({ detail, tz }: { detail: JobDetail; tz: string }) {
-  const componentLabel = new Map(detail.components.map((c) => [c.id, c.label]));
+  const now = new Date();
   return (
-    <ul className="grid gap-3 md:grid-cols-2">
-      {detail.tests.map((t) => {
-        const type = detail.testTypes.get(t.test_type_id);
-        const calc = type ? calculate(type, t.data) : null;
-        const outcome = t.outcome ? OUTCOME[t.outcome] : null;
-        return (
-          <li key={t.id} className="rounded-lg border border-border bg-surface p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="font-semibold">{type?.name ?? "Test"}</p>
-                <p className="text-[15px] text-text-muted">
-                  {[
-                    t.job_component_id ? componentLabel.get(t.job_component_id) : null,
-                    t.performed_at ? formatSchedule(t.performed_at, new Date(), tz) : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-              </div>
-              {outcome ? <Chip label={outcome.label} className={outcome.className} /> : null}
-            </div>
-            {calc?.summary ? <p className="mt-2 font-medium">{calc.summary}</p> : null}
-            {type && !type.calculator ? (
-              <dl className="mt-2 text-[15px]">
-                {type.field_schema.fields
-                  .filter((f) => t.data[f.key] !== undefined && t.data[f.key] !== "")
-                  .map((f) => (
-                    <div key={f.key} className="flex gap-2">
-                      <dt className="text-text-muted">{f.label}:</dt>
-                      <dd>{String(t.data[f.key])}</dd>
-                    </div>
-                  ))}
-              </dl>
-            ) : null}
-            {t.notes ? <p className="mt-2 text-[15px]">{t.notes}</p> : null}
-          </li>
-        );
-      })}
-    </ul>
+    <TestsEditor
+      jobId={detail.job.id}
+      tests={detail.tests.map((t) => ({
+        id: t.id,
+        typeId: t.test_type_id,
+        componentId: t.job_component_id ?? null,
+        data: t.data,
+        outcome: t.outcome ?? null,
+        notes: t.notes ?? null,
+        when: t.performed_at ? formatSchedule(t.performed_at, now, tz) : null,
+      }))}
+      types={[...detail.testTypes.values()]
+        .filter(
+          (t) => (t.active && !t.deleted_at) || detail.tests.some((x) => x.test_type_id === t.id),
+        )
+        .sort((a, b) => a.sort_order - b.sort_order)}
+      components={detail.components.map((c) => ({ id: c.id, label: c.label }))}
+    />
   );
 }
 
 function Findings({ detail }: { detail: JobDetail }) {
   const property = detail.job.property;
-  if (detail.findings.length === 0) return <Empty>No findings recorded.</Empty>;
-  const componentLabel = new Map(detail.components.map((c) => [c.id, c.label]));
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
-      {property ? (
-        <PoolDiagram
-          shape={property.diagram_shape}
-          hasSpa={property.has_spa}
-          title={`Pool diagram with ${detail.findings.length} finding pins`}
-          pins={detail.findings
-            .map((f, i) => ({ f, n: i + 1 }))
-            .filter(({ f }) => f.pin_x != null && f.pin_y != null)
-            .map(({ f, n }) => ({
-              id: f.id,
-              x: Number(f.pin_x),
-              y: Number(f.pin_y),
-              color: detail.severities.get(f.severity_key)?.color ?? "currentColor",
-              label: String(n),
-            }))}
-        />
-      ) : null}
-      <ol className="space-y-3">
-        {detail.findings.map((f, i) => {
-          const sev = detail.severities.get(f.severity_key);
-          return (
-            <li key={f.id} className="rounded-lg border border-border bg-surface p-4">
-              <div className="flex items-start gap-3">
-                <span
-                  className="inline-flex size-7 shrink-0 items-center justify-center rounded-full font-display font-bold text-paper"
-                  style={{ backgroundColor: sev?.color }}
-                  aria-hidden="true"
-                >
-                  {i + 1}
-                </span>
-                <div>
-                  <p className="font-semibold">{f.title}</p>
-                  <p className="text-[15px] text-text-muted">
-                    {[
-                      sev?.name ?? f.severity_key,
-                      f.job_component_id ? componentLabel.get(f.job_component_id) : null,
-                      FINDING_STATUS_LABELS[f.status],
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                  {f.location_text ? <p className="mt-1">{f.location_text}</p> : null}
-                  {f.notes ? <p className="mt-1 text-[15px]">{f.notes}</p> : null}
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-    </div>
+    <FindingsEditor
+      jobId={detail.job.id}
+      findings={detail.findings.map((f) => ({
+        id: f.id,
+        title: f.title,
+        severity: f.severity_key,
+        componentId: f.job_component_id ?? null,
+        location: f.location_text ?? null,
+        status: f.status,
+        notes: f.notes ?? null,
+        pinX: f.pin_x != null ? Number(f.pin_x) : null,
+        pinY: f.pin_y != null ? Number(f.pin_y) : null,
+      }))}
+      severities={[...detail.severities.values()]
+        .filter((s) => s.active || detail.findings.some((f) => f.severity_key === s.key))
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((s) => ({ key: s.key, name: s.name, color: s.color }))}
+      components={detail.components.map((c) => ({ id: c.id, label: c.label }))}
+      diagram={
+        property ? { shape: property.diagram_shape ?? null, hasSpa: property.has_spa } : null
+      }
+    />
   );
 }
 

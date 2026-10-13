@@ -4,58 +4,14 @@ import { useState } from "react";
 import { POOL_TYPE_LABELS, type IntakeQuestion, type PoolType } from "@leakbook/core";
 import { createJobAction } from "@/app/actions/jobs";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
-import { Checkbox, Select, cx } from "./ui";
+import { Segmented } from "./segmented";
+import { Checkbox, Select } from "./ui";
 
 interface CustomerOption {
   id: string;
   name: string;
   detail: string;
   pools: { id: string; label: string }[];
-}
-
-/** Two related choices, as a segmented control (house rule for 2 to 5 options). */
-function Segmented<T extends string>({
-  label,
-  name,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  name: string;
-  value: T;
-  options: { value: T; label: string }[];
-  onChange: (v: T) => void;
-}) {
-  return (
-    <div className="space-y-1">
-      <p className="font-medium" id={`${name}-label`}>
-        {label}
-      </p>
-      <input type="hidden" name={name} value={value} />
-      <div
-        role="radiogroup"
-        aria-labelledby={`${name}-label`}
-        className="inline-flex rounded-md border border-control-border bg-surface p-0.5"
-      >
-        {options.map((o) => (
-          <button
-            key={o.value}
-            type="button"
-            role="radio"
-            aria-checked={value === o.value}
-            onClick={() => onChange(o.value)}
-            className={cx(
-              "min-h-11 rounded px-4 font-medium",
-              value === o.value ? "bg-text text-surface" : "text-text hover:bg-bg",
-            )}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

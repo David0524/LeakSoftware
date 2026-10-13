@@ -294,6 +294,58 @@ export function verdictLabel(
       : "Not leaking";
 }
 
+/** One tap per item: the four verdicts the shop uses (yes/no items: No, Yes, N/A). */
+export type Verdict = ChecklistOutcome | "na";
+
+export function verdictOptions(type: Pick<ComponentType, "answer"> | undefined) {
+  return type?.answer === "yes_no"
+    ? [
+        { value: "ok" as Verdict, label: "No" },
+        { value: "attention" as Verdict, label: "Yes" },
+        { value: "na" as Verdict, label: "N/A" },
+      ]
+    : [
+        { value: "ok" as Verdict, label: "Not Leaking" },
+        { value: "leaking" as Verdict, label: "Leaking" },
+        { value: "attention" as Verdict, label: "Attention" },
+        { value: "na" as Verdict, label: "N/A" },
+      ];
+}
+
+export function currentVerdict(
+  r: Pick<ChecklistItemResult, "status" | "outcome"> | undefined,
+): Verdict | null {
+  if (!r || r.status === "pending") return null;
+  if (r.status === "excluded") return "na";
+  return r.outcome ?? "ok";
+}
+
+/** The checklist row values for a verdict. "Where" only stays for Leaking and Attention. */
+export function verdictValues(
+  v: Verdict | null,
+  userId: string | null,
+  now: Date = new Date(),
+): Record<string, string | null> {
+  const at = now.toISOString();
+  if (v === null)
+    return { status: "pending", outcome: null, inspected_at: null, inspected_by: null };
+  if (v === "na")
+    return {
+      status: "excluded",
+      outcome: null,
+      location_text: null,
+      inspected_at: at,
+      inspected_by: userId,
+    };
+  return {
+    status: "inspected",
+    outcome: v,
+    ...(v === "ok" ? { location_text: null } : {}),
+    inspected_at: at,
+    inspected_by: userId,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------

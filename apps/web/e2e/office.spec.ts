@@ -34,14 +34,15 @@ test("owner views the M4 sample job", async ({ page }) => {
   await expect(page.getByText("9 Sample Way, Scottsdale, AZ 85251").first()).toBeVisible();
 
   // Checklist: verdicts by section, the leaking line with where, the drain with its reason.
-  const checklist = page.getByRole("table").first();
-  await expect(checklist.getByRole("row").filter({ hasText: "Return 3" })).toContainText("Leaking");
-  await expect(checklist.getByRole("row").filter({ hasText: "Return 3" })).toContainText(
-    "Under the deck",
-  );
-  await expect(checklist.getByRole("row").filter({ hasText: "Main drain 1" })).toContainText(
-    "No diver on site",
-  );
+  const item = (label: string) =>
+    page
+      .getByRole("listitem")
+      .filter({ has: page.getByRole("radiogroup", { name: label, exact: true }) });
+  await expect(
+    item("Return 3").getByRole("radio", { name: "Leaking", exact: true }),
+  ).toHaveAttribute("aria-checked", "true");
+  await expect(item("Return 3").getByLabel("Where")).toHaveValue(/Under the deck/);
+  await expect(item("Main drain 1")).toContainText("No diver on site");
   await expect(
     page.getByText(/\d+ not leaking · 1 attention · 1 leaking · 1 not applicable · 0 to do/),
   ).toBeVisible();
@@ -252,5 +253,95 @@ test("on a phone: a tab bar moves between sections and nothing scrolls sideways"
     .click();
   await expect(page.getByRole("heading", { name: /^Job #\d+$/ })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await phone.close();
+});
+
+// M9.5 step 2: a tech works a job from the website on a phone, the same way as in the app.
+test("on a phone: a tech starts a job, fills the checklist, and records a test and a pinned finding", async ({
+  page,
+  browser,
+}) => {
+  // The office books it for Tony Tech.
+  await signIn(page, OWNER, "/jobs/new");
+  const name = `Phone Work ${RUN}`;
+  await page.getByRole("radio", { name: "New Customer" }).click();
+  await page.getByLabel("Name").fill(name);
+  await page.getByLabel("Street address").fill("40 Phone Lane");
+  await page.getByLabel("City").fill("Mesa");
+  await page.getByLabel("State").fill("AZ");
+  await page.getByLabel("Date").fill(new Date().toISOString().slice(0, 10));
+  await page.getByLabel("Tech", { exact: true }).selectOption({ label: "Tony Tech" });
+  await page.getByRole("button", { name: "Create Job" }).click();
+  await expect(page.getByRole("heading", { name: /^Job #\d+$/ })).toBeVisible();
+  const jobUrl = new URL(page.url()).pathname;
+
+  const phone = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  });
+  const tech = await phone.newPage();
+  await signIn(tech, TECH, jobUrl);
+  const wide = () => tech.evaluate(() => document.documentElement.scrollWidth);
+
+  // Start Job.
+  await tech.getByRole("button", { name: "Start Job" }).click();
+  await expect(tech.getByText("In progress", { exact: true }).first()).toBeVisible();
+  await expect(tech.getByRole("button", { name: "Move Back to Scheduled" })).toBeVisible();
+
+  // Checklist: one item leaking with where, everything else not leaking or N/A.
+  const leaking = tech
+    .getByRole("radiogroup")
+    .filter({ has: tech.getByRole("radio", { name: "Leaking", exact: true }) })
+    .first();
+  const itemName = await tech
+    .locator(`#${await leaking.getAttribute("aria-labelledby")}`)
+    .innerText();
+  await leaking.getByRole("radio", { name: "Leaking", exact: true }).click();
+  await expect(leaking.getByRole("radio", { name: "Leaking", exact: true })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  const where = tech.getByLabel("Where", { exact: true });
+  await where.fill("Under the deck by the steps");
+  await where.blur();
+  await expect(tech.getByText(/0 not leaking · 0 attention · 1 leaking/)).toBeVisible();
+  await tech.reload();
+  await expect(tech.getByLabel("Where", { exact: true })).toHaveValue(
+    "Under the deck by the steps",
+  );
+  expect(await wide()).toBeLessThanOrEqual(390);
+
+  // A pressure test: the calculator works it out as it's typed.
+  await tech.getByRole("button", { name: "Add Test" }).click();
+  await tech.getByLabel("Test", { exact: true }).selectOption({ label: "Pressure test" });
+  await tech.getByLabel("Line", { exact: true }).fill(itemName);
+  await tech.getByLabel("Start pressure (PSI)").fill("20");
+  await tech.getByLabel("End pressure (PSI)").fill("12");
+  await tech.getByLabel("Duration (min)").fill("15");
+  await expect(tech.getByText("Dropped 8 PSI in 15 min").first()).toBeVisible();
+  await tech.locator("form").getByRole("button", { name: "Add Test" }).click();
+  await expect(tech.getByRole("button", { name: "Edit Pressure test" })).toBeVisible();
+  await expect(tech.getByText("Fail", { exact: true })).toBeVisible();
+
+  // A finding, pinned on the pool diagram.
+  await tech.getByRole("button", { name: "Add Finding" }).click();
+  await tech.getByLabel("What").fill(`Line break ${RUN}`);
+  await tech.getByLabel("Severity").selectOption({ label: "Major" });
+  await tech.getByLabel("Where (optional)").fill("Return line under the deck");
+  await tech.getByTestId("pin-picker").click({ position: { x: 60, y: 40 } });
+  await expect(tech.getByText("Pin placed.")).toBeVisible();
+  await tech.locator("form").getByRole("button", { name: "Add Finding" }).click();
+  await expect(tech.getByText(`Line break ${RUN}`, { exact: true })).toBeVisible();
+  await expect(tech.getByText(/Major · Open · Pinned on the diagram/)).toBeVisible();
+  await expect(tech.getByRole("img", { name: "Pool diagram with 1 finding pins" })).toBeVisible();
+  expect(await wide()).toBeLessThanOrEqual(390);
+
+  // Job notes.
+  await tech.getByLabel("Job notes").fill("Gate code 1234 worked.");
+  await tech.getByLabel("Leak location marked").check();
+  const onSite = tech.locator("form").filter({ has: tech.getByLabel("Job notes") });
+  await onSite.getByRole("button", { name: "Save" }).click();
+  await expect(onSite.getByText("Saved.")).toBeVisible();
   await phone.close();
 });

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  currentVerdict,
+  verdictOptions,
+  verdictValues,
   bucketEvaporation,
   calculate,
   checklistProgress,
@@ -307,5 +310,43 @@ describe("findings and diagram", () => {
     }
     expect(poolDiagram("kidney", true).spa).not.toBeNull();
     expect(poolDiagram(null, false)).toMatchObject({ width: 160, height: 100, spa: null });
+  });
+});
+
+describe("verdicts", () => {
+  const now = new Date("2026-10-13T16:00:00Z");
+
+  it("offers four verdicts, or three for yes/no items", () => {
+    expect(verdictOptions({ answer: "leak" }).map((o) => o.label)).toEqual([
+      "Not Leaking",
+      "Leaking",
+      "Attention",
+      "N/A",
+    ]);
+    expect(verdictOptions({ answer: "yes_no" }).map((o) => o.label)).toEqual(["No", "Yes", "N/A"]);
+  });
+
+  it("reads the verdict back from the row", () => {
+    expect(currentVerdict(undefined)).toBeNull();
+    expect(currentVerdict({ status: "pending" })).toBeNull();
+    expect(currentVerdict({ status: "excluded" })).toBe("na");
+    expect(currentVerdict({ status: "inspected", outcome: null })).toBe("ok");
+    expect(currentVerdict({ status: "inspected", outcome: "leaking" })).toBe("leaking");
+  });
+
+  it("keeps where only for leaking and attention", () => {
+    expect(verdictValues("leaking", "u1", now)).toEqual({
+      status: "inspected",
+      outcome: "leaking",
+      inspected_at: now.toISOString(),
+      inspected_by: "u1",
+    });
+    expect(verdictValues("ok", "u1", now).location_text).toBeNull();
+    expect(verdictValues("na", "u1", now)).toMatchObject({
+      status: "excluded",
+      outcome: null,
+      location_text: null,
+    });
+    expect(verdictValues(null, "u1", now)).toMatchObject({ status: "pending", inspected_at: null });
   });
 });

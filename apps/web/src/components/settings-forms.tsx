@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, use, useActionState, useState, type ReactNode } from "react";
+import {
+  createContext,
+  use,
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { contrastGrade, contrastRatio, isHexColor } from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import type { FormState } from "@/app/actions/auth";
@@ -31,6 +39,7 @@ export function SettingsForm({
   primary = false,
   confirm,
   inline = false,
+  onSaved,
 }: {
   action: Action;
   submit?: string;
@@ -42,8 +51,17 @@ export function SettingsForm({
   /** Ask before submitting, e.g. "Remove this item?". */
   confirm?: string;
   inline?: boolean;
+  /** Called after a save that succeeded, e.g. to close the form. */
+  onSaved?: () => void;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
+  const saved = useRef(onSaved);
+  useEffect(() => {
+    saved.current = onSaved;
+  });
+  useEffect(() => {
+    if (state.message && !state.error) saved.current?.();
+  }, [state]);
   return (
     <form action={formAction} className={cx(!inline && "space-y-4", className)}>
       <FieldErrors value={state.fields}>{children}</FieldErrors>
