@@ -225,7 +225,7 @@ test("the office adds a job for a new customer, with its checklist ready", async
   await page.getByRole("button", { name: "Create Job" }).click();
 
   await expect(page.getByRole("heading", { name: /^Job #\d+$/ })).toBeVisible();
-  await expect(page.getByRole("link", { name })).toBeVisible();
+  await expect(page.getByRole("link", { name, exact: true })).toBeVisible();
   await expect(page.getByText("12 Office Way, Tempe, AZ").first()).toBeVisible();
   await expect(page.getByText("Tony Tech").first()).toBeVisible();
   // The checklist is ready for the tech, every item to do.
