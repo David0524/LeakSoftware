@@ -448,7 +448,7 @@ Create these before M0 (Supabase), M7 (AI, email), and M8 (Stripe). Add keys to 
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CONNECT_CLIENT_ID` | Stripe test mode with Connect enabled | M8 |
 | `SENTRY_DSN` (mobile, web) | Sentry | M11 (can be earlier) |
 | `APP_BASE_URL` | Vercel deployment URL | M7 |
-| `MAPBOX_TOKEN` (secret token, server only), `ROUTING_DAILY_LIMIT` (optional) | Mapbox | M10.5 (works without it, with estimated drive times) |
+| `MAPBOX_TOKEN` (default scopes, no URL restrictions; server only), `ROUTING_DAILY_LIMIT` (optional) | Mapbox | M10.5 (works without it, with estimated drive times) |
 
 The environment's network policy must allow outbound traffic to Supabase, Stripe, Anthropic, Deepgram, Resend, Mapbox, Expo, and npm.
 
