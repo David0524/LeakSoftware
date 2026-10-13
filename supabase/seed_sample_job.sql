@@ -208,7 +208,7 @@ begin
     cross join lateral jsonb_array_elements(d.rows) r
     join public.component_type t
       on t.company_id = co and t.key = r ->> 'key' and t.deleted_at is null
-    where d.key = 'component_type'
+    where d.key = 'component_type' and t.job_type = 'detection'
     order by t.sort_order
   loop
     insert into public.job_component

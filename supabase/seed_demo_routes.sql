@@ -141,6 +141,7 @@ begin
         cross join lateral generate_series(
           1, case when ty.allows_multiple then greatest(ty.default_count, 1) else 1 end) as g(k)
         where ty.company_id = co and ty.active and ty.deleted_at is null
+          and ty.job_type = 'detection'
           and (ty.applies_to <> 'spa' or spas[ci])
           and (ty.applies_to_pool_type is null or ty.applies_to_pool_type = types[ci]);
         insert into public.checklist_item_result (company_id, job_id, job_component_id, status)
