@@ -21,6 +21,7 @@ const nextConfig: NextConfig = {
   // Every route that can render a report PDF (sending from the office job page included).
   outputFileTracingIncludes: {
     "/r/\\[token\\]/pdf": pdfFiles,
+    "/i/\\[token\\]/pdf": pdfFiles,
     "/api/reports/\\[id\\]/send": pdfFiles,
     "/jobs/\\[id\\]": pdfFiles,
   },

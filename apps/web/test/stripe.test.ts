@@ -6,6 +6,7 @@ import {
   CheckoutRefused,
   applyEvent,
   depositCheckoutUrl,
+  invoiceCheckoutUrl,
   verifyEvent,
 } from "../src/server/stripe";
 
@@ -34,7 +35,21 @@ function fakeDb(details: Record<string, unknown> | null = null) {
           payments.set(args.session_id as string, next);
           return { data: next, error: null };
         }
+        case "stripe_record_invoice_payment": {
+          const before = payments.get(args.session_id as string);
+          const next =
+            !before || (before === "pending" && args.pay_status !== "pending")
+              ? (args.pay_status as string)
+              : before;
+          payments.set(args.session_id as string, next);
+          const paidNow = next === "succeeded" && before !== "succeeded";
+          return {
+            data: { payment: next, status: paidNow ? "paid" : "sent", paid_now: paidNow },
+            error: null,
+          };
+        }
         case "quote_checkout_details":
+        case "invoice_checkout_details":
           return { data: details, error: null };
         default:
           return { data: null, error: null };
@@ -50,7 +65,13 @@ function signed(event: object) {
   return verifyEvent(payload, header, [SECRET]);
 }
 
-const session = (id: string, payment_status: string, type: string, eventId: string) =>
+const session = (
+  id: string,
+  payment_status: string,
+  type: string,
+  eventId: string,
+  metadata: Record<string, string> = { kind: "quote_deposit", quote_id: "q1", company_id: "c1" },
+) =>
   signed({
     id: eventId,
     object: "event",
@@ -63,7 +84,7 @@ const session = (id: string, payment_status: string, type: string, eventId: stri
         payment_status,
         amount_total: 65_730,
         payment_intent: "pi_1",
-        metadata: { kind: "quote_deposit", quote_id: "q1", company_id: "c1" },
+        metadata,
       },
     },
   });
@@ -107,6 +128,32 @@ describe("Stripe webhooks", () => {
     expect(await applyEvent(completed, db)).toBe("duplicate");
     expect(calls.slice(before).map((c) => c.fn)).toEqual(["stripe_event_seen"]);
     expect(payments.get("cs_ach")).toBe("succeeded");
+  });
+
+  it("records an invoice payment and asks for the receipt once, when it is paid in full", async () => {
+    const { db, calls, payments } = fakeDb();
+    const paid: string[] = [];
+    const onPaid = async (id: string) => paid.push(id);
+    const meta = { kind: "invoice_payment", invoice_id: "i1", company_id: "c1" };
+    await applyEvent(
+      session("cs_inv", "unpaid", "checkout.session.completed", "evt_i1", meta),
+      db,
+      onPaid,
+    );
+    expect(payments.get("cs_inv")).toBe("pending");
+    expect(paid).toEqual([]);
+    await applyEvent(
+      session("cs_inv", "paid", "checkout.session.async_payment_succeeded", "evt_i2", meta),
+      db,
+      onPaid,
+    );
+    expect(paid).toEqual(["i1"]);
+    expect(calls.find((c) => c.fn === "stripe_record_invoice_payment")?.args).toMatchObject({
+      target_invoice: "i1",
+      session_id: "cs_inv",
+      pay_method: "ach",
+    });
+    expect(calls.some((c) => c.fn === "stripe_record_quote_payment")).toBe(false);
   });
 
   it("saves a connected account's state from account.updated", async () => {
@@ -195,6 +242,62 @@ describe("deposit checkout", () => {
     for (const over of [{ status: "sent" }, { deposit_paid: true }, { charges_enabled: false }]) {
       await expect(
         depositCheckoutUrl("tok", "https://app.test", stripe, fakeDb({ ...details, ...over }).db),
+      ).rejects.toBeInstanceOf(CheckoutRefused);
+    }
+  });
+});
+
+describe("invoice checkout", () => {
+  const details = {
+    invoice_id: "i1",
+    company_id: "c1",
+    number: 2001,
+    status: "partially_paid",
+    balance_cents: 45_730,
+    company_name: "Demo Leak Co.",
+    customer_email: "sam@example.com",
+    stripe_account_id: "acct_shop",
+    charges_enabled: true,
+    payment_pending: false,
+  };
+
+  function fakeStripe() {
+    const created: Stripe.Checkout.SessionCreateParams[] = [];
+    const stripe = {
+      checkout: {
+        sessions: {
+          async create(params: Stripe.Checkout.SessionCreateParams) {
+            created.push(params);
+            return { url: "https://checkout.stripe.test/cs_2" };
+          },
+        },
+      },
+    };
+    return { stripe: stripe as unknown as Stripe, created };
+  }
+
+  it("charges what is still owed", async () => {
+    const { stripe, created } = fakeStripe();
+    await invoiceCheckoutUrl("tok", "https://app.test", stripe, fakeDb(details).db);
+    expect(created[0]!.line_items?.[0]?.price_data?.unit_amount).toBe(45_730);
+    expect(created[0]!.metadata).toEqual({
+      kind: "invoice_payment",
+      invoice_id: "i1",
+      company_id: "c1",
+    });
+    expect(created[0]!.success_url).toBe("https://app.test/i/tok?paid=1");
+  });
+
+  it("refuses when paid, void, processing, or the shop can't take payments", async () => {
+    const { stripe } = fakeStripe();
+    for (const over of [
+      { status: "paid", balance_cents: 0 },
+      { status: "void" },
+      { payment_pending: true },
+      { charges_enabled: false },
+    ]) {
+      await expect(
+        invoiceCheckoutUrl("tok", "https://app.test", stripe, fakeDb({ ...details, ...over }).db),
       ).rejects.toBeInstanceOf(CheckoutRefused);
     }
   });

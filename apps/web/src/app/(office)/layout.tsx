@@ -34,6 +34,7 @@ async function OfficeNav() {
     { href: "/jobs", label: "Jobs" },
     { href: "/schedule", label: "Schedule" },
     { href: "/customers", label: "Customers" },
+    { href: "/invoices", label: "Invoices" },
     ...(office.isOwner ? [{ href: "/settings", label: "Settings" }] : []),
   ];
   return (

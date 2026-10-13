@@ -5,6 +5,7 @@ import type {
   Customer,
   ExclusionReason,
   Finding,
+  InvoiceStatus,
   Job,
   JobComponent,
   JobStatus,
@@ -529,4 +530,135 @@ export async function getPaymentAccount(office: Office): Promise<PaymentAccountS
     .eq("company_id", office.company.id)
     .maybeSingle();
   return (data as PaymentAccountState | null) ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Invoices (M9)
+// ---------------------------------------------------------------------------
+
+export interface InvoiceLineRow {
+  id: string;
+  kind: "item" | "deposit_credit";
+  description: string;
+  quantity: number;
+  unit_price_cents: number;
+  taxable: boolean;
+  sort_order: number;
+}
+
+export interface InvoiceRow {
+  id: string;
+  job_id: string;
+  number: number | null;
+  status: InvoiceStatus;
+  subtotal_cents: number;
+  discount_cents: number;
+  tax_cents: number;
+  credit_cents: number;
+  total_cents: number;
+  amount_paid_cents: number;
+  due_date: string | null;
+  notes: string | null;
+  sent_at: string | null;
+  paid_at: string | null;
+  lines: InvoiceLineRow[];
+  payments: QuoteRow["payments"];
+  token: string | null;
+}
+
+const INVOICE_COLUMNS =
+  "id, job_id, number, status, subtotal_cents, discount_cents, tax_cents, credit_cents, total_cents, amount_paid_cents, due_date, notes, sent_at, paid_at";
+
+/** A job's invoices, newest first, with lines, payments, and the customer link. */
+export async function getInvoices(office: Office, jobId: string): Promise<InvoiceRow[]> {
+  const supabase = await db();
+  const invoices = must(
+    await supabase
+      .from("invoice")
+      .select(INVOICE_COLUMNS)
+      .eq("company_id", office.company.id)
+      .eq("job_id", jobId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false }),
+  ) as Omit<InvoiceRow, "lines" | "payments" | "token">[];
+  if (invoices.length === 0) return [];
+  const ids = invoices.map((i) => i.id);
+  const [lines, payments, links] = await Promise.all([
+    supabase
+      .from("invoice_line_item")
+      .select("id, invoice_id, kind, description, quantity, unit_price_cents, taxable, sort_order")
+      .in("invoice_id", ids)
+      .is("deleted_at", null)
+      .order("sort_order"),
+    supabase
+      .from("payment")
+      .select("id, invoice_id, amount_cents, method, status, paid_at")
+      .in("invoice_id", ids)
+      .is("deleted_at", null)
+      .order("created_at"),
+    supabase
+      .from("share_link")
+      .select("token, invoice_id")
+      .in("invoice_id", ids)
+      .is("revoked_at", null),
+  ]);
+  const by = <T extends { invoice_id: string | null }>(rows: T[], id: string) =>
+    rows.filter((r) => r.invoice_id === id);
+  return invoices.map((i) => ({
+    ...i,
+    lines: by(must(lines) as (InvoiceLineRow & { invoice_id: string })[], i.id).map((l) => ({
+      ...l,
+      quantity: Number(l.quantity),
+    })),
+    payments: by(must(payments) as (QuoteRow["payments"][number] & { invoice_id: string })[], i.id),
+    token:
+      (must(links) as { token: string; invoice_id: string }[]).find((l) => l.invoice_id === i.id)
+        ?.token ?? null,
+  }));
+}
+
+export interface InvoiceListRow {
+  id: string;
+  job_id: string;
+  number: number | null;
+  status: InvoiceStatus;
+  total_cents: number;
+  amount_paid_cents: number;
+  due_date: string | null;
+  sent_at: string | null;
+  paid_at: string | null;
+  jobNumber: number | null;
+  customer: string | null;
+}
+
+/** Every invoice in the company, newest first, with its job number and customer. */
+export async function listInvoices(office: Office): Promise<InvoiceListRow[]> {
+  const supabase = await db();
+  const invoices = must(
+    await supabase
+      .from("invoice")
+      .select(
+        "id, job_id, number, status, total_cents, amount_paid_cents, due_date, sent_at, paid_at",
+      )
+      .eq("company_id", office.company.id)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(500),
+  ) as Omit<InvoiceListRow, "jobNumber" | "customer">[];
+  const jobIds = [...new Set(invoices.map((i) => i.job_id))];
+  const jobs = jobIds.length
+    ? (must(
+        await supabase
+          .from("job")
+          .select("id, number, property_id, bill_to_customer_id, status")
+          .in("id", jobIds),
+      ) as Job[])
+    : [];
+  const rows = await attach(office, jobs);
+  const byId = new Map(rows.map((j) => [j.id, j]));
+  return invoices.map((i) => ({
+    ...i,
+    jobNumber: byId.get(i.job_id)?.number ?? null,
+    customer: byId.get(i.job_id)?.customer?.name ?? null,
+  }));
 }

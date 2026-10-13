@@ -61,7 +61,8 @@ export const reportsOnline = Boolean(API_URL);
 
 export class ReportServerError extends Error {}
 
-async function call<T>(path: string, body: unknown): Promise<T> {
+/** POST to the LeakBook server as the signed-in user. */
+export async function call<T>(path: string, body: unknown): Promise<T> {
   if (!API_URL) throw new ReportServerError("This app isn’t connected to the LeakBook server.");
   const token = await getServices().sync.accessToken();
   if (!token) throw new ReportServerError("Sign in again to continue.");

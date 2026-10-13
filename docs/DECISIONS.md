@@ -2,6 +2,16 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (M9 invoicing, made for now; owner can change)
+- **One invoice per job.** A detection job's invoice bills its detection fee (untaxed, like the price book's detection items). A repair job's invoice copies the accepted quote's lines and discount and credits the deposit paid, after tax. The office can edit a draft (lines, discount, due date, note); the phone creates and sends it as built. To bill the fee and the repair together, the office adds the fee line to the repair invoice.
+- **No invoice while a bank deposit is still clearing,** so the credit is never wrong.
+- **Due on receipt** unless the office sets a due date.
+- **Paying:** Stripe Checkout for the whole balance (card or bank), on the shop's account like deposits. Owners record checks and cash ("Record Payment"), which allows partial payment. The job becomes Paid when the balance reaches zero.
+- **Receipts:** a paid invoice's page becomes the receipt (with a PDF), and the customer and their other emails get a receipt email.
+- **Void:** an owner can void a sent invoice with no payments; any member can delete a draft. The link then says it was canceled, and the job can be invoiced again.
+- **CSV export** of invoices and payments for owners (Invoices page), for the books or a QuickBooks import.
+- **Invoice is its own section on the phone's job screen,** not a sixth tab (house rule: segmented controls hold 2 to 5 views).
+
 ## 2026-10-13 (M8.5 report, made for now; owner can change)
 - **"Items Pass" counts only "Not leaking" (and "No" on yes/no items).** Not applicable items are listed with their badge but not counted as passing. The partner's old tool appears to count them as passing (27 items: 26 pass, 1 failed).
 - **Extra customer emails are copied (cc) on the report email,** so the household sees who got it.

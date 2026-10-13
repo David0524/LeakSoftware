@@ -10,7 +10,8 @@ Branch `claude/cool-keller-efjc00`. Read `CLAUDE.md`, `docs/BUILD_PLAN.md`, and 
 | M7 Reports | Done and deployed to the dev project. Email and AI wait for the owner's keys (`docs/testing/M7-checklist.md`). |
 | Website light/dark switch | Done (Auto / Light / Dark). |
 | M8 Quotes and deposits | Done. CI run 28 green, including e2e at phone width with signed simulated Stripe webhooks (bank and card deposits, replay). Migration `20261012001300_quotes.sql` is deployed to the dev project. Real Stripe test mode waits for the owner's keys (`docs/testing/M8-checklist.md`). No formal M8 report was given to the owner yet. |
-| M8.5 Field parity | **Built; CI green** (run 39, branch `claude/vercel-site-review-mnu97q`). Waiting on the dev deploy and the owner's acceptance. See below. |
+| M8.5 Field parity | **Built; CI green.** Waiting on the dev deploy and the owner's acceptance. See below. |
+| M9 Invoicing | **Built** on `claude/cool-keller-efjc00` (migration `20261012001500_invoices.sql`, not deployed). Device and Stripe test-mode steps: `docs/testing/M9-checklist.md`. |
 
 ## M8.5: what's done
 
@@ -41,7 +42,7 @@ disclaimer, "repaired on site"), company settings (disclaimer, next job number),
 page (verdicts, second tech, fee, booking answers), report emails to `cc_emails` (editable on the
 office customer page and by the phone's send button), the second sample job, and its e2e.
 
-1. **Deploy:** `pnpm db:deploy -- --seed` applies `20261012001400_field_parity.sql` to the dev
+1. **Deploy:** `pnpm db:deploy -- --seed` applies `20261012001400_field_parity.sql` and `20261012001500_invoices.sql` to the dev
    project, adds the second sample job, and gives the M4 sample its Return 3 and light
    verdicts. It needs the Supabase access token in the session's network secrets; the session
    that built this did not have it (HTTP 401). The website on Vercel uses the dev project, and

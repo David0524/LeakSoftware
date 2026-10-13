@@ -28,6 +28,7 @@ import { getOffice } from "@/lib/auth";
 import {
   auditFor,
   getCompany,
+  getInvoices,
   getJob,
   getPaymentAccount,
   getQuotes,
@@ -37,6 +38,7 @@ import {
   type JobDetail,
 } from "@/lib/data";
 import { siteOrigin } from "@/lib/origin";
+import { CreateInvoice, InvoicePanel } from "@/components/invoice-panel";
 import { QuotePanel } from "@/components/quote-panel";
 import { ReportPanel } from "@/components/report-panel";
 import { ScheduleForm } from "@/components/schedule-form";
@@ -253,6 +255,13 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
           <Quotes detail={detail} />
         </section>
       ) : null}
+
+      <section className="mt-8" aria-labelledby="invoice">
+        <h2 id="invoice" className="mb-3 font-display text-2xl font-bold">
+          Invoice
+        </h2>
+        <Invoices detail={detail} />
+      </section>
 
       {office.isOwner ? (
         <section className="mt-8" aria-labelledby="timeline">
@@ -612,6 +621,63 @@ async function Quotes({ detail }: { detail: JobDetail }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+const INVOICEABLE = ["in_progress", "report_sent", "quote_sent", "quote_accepted", "invoiced"];
+
+async function Invoices({ detail }: { detail: JobDetail }) {
+  const office = await getOffice();
+  const { job } = detail;
+  const [invoices, company, origin] = await Promise.all([
+    // Until the invoices migration reaches a database, the rest of the page still works.
+    getInvoices(office, job.id).catch(() => null),
+    getCompany(office),
+    siteOrigin(),
+  ]);
+  if (!invoices) {
+    return <Notice tone="warning">Invoicing isn’t available until the database is updated.</Notice>;
+  }
+  const current = invoices.find((i) => i.status !== "void");
+  const voided = invoices.filter((i) => i.status === "void");
+  const rate = Number((company.settings as { tax_rate_bps?: number }).tax_rate_bps ?? 0);
+  return (
+    <div className="space-y-4">
+      {current ? (
+        <div className="max-w-3xl">
+          <InvoicePanel
+            invoice={current}
+            jobId={job.id}
+            origin={origin}
+            taxRateBps={rate}
+            customerEmail={job.customer?.email ?? null}
+            emailReady={emailConfigured()}
+            isOwner={office.isOwner}
+          />
+        </div>
+      ) : INVOICEABLE.includes(job.status) ? (
+        <Card className="max-w-3xl">
+          <CreateInvoice
+            jobId={job.id}
+            hint={
+              job.type === "repair"
+                ? "Copies the accepted quote and credits the deposit already paid. You can change it before sending."
+                : job.fee_cents
+                  ? `Bills the detection fee of ${formatCents(job.fee_cents)}. You can add lines before sending.`
+                  : "Starts an empty invoice. Add the lines before sending."
+            }
+          />
+        </Card>
+      ) : (
+        <Empty>Start the job before invoicing it.</Empty>
+      )}
+      {voided.length ? (
+        <p className="text-[15px] text-text-muted">
+          Voided:{" "}
+          {voided.map((i) => `#${i.number ?? ""} (${formatCents(i.total_cents)})`).join(", ")}
+        </p>
+      ) : null}
     </div>
   );
 }

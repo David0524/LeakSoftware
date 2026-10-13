@@ -34,6 +34,7 @@ import { ChecklistTab } from "../../../../features/inspection/ChecklistTab";
 import { FindingsTab } from "../../../../features/inspection/FindingsTab";
 import { TestsTab } from "../../../../features/inspection/TestsTab";
 import { MediaSection } from "../../../../features/media/MediaSection";
+import { InvoiceSection } from "../../../../features/invoice/InvoiceSection";
 import { QuoteTab } from "../../../../features/quote/QuoteTab";
 import { ReportTab } from "../../../../features/report/ReportTab";
 
@@ -225,6 +226,8 @@ export default function JobDetail() {
         {tab === "report" ? <ReportTab job={job} customer={customer} /> : null}
         {tab === "quote" ? <QuoteTab job={job} /> : null}
       </Section>
+
+      <InvoiceSection job={job} customer={customer} />
 
       <MediaSection target={{ jobId: job.id }} title="All Photos and Notes" />
 

@@ -11,3 +11,4 @@ export * from "./settings";
 export * from "./report";
 export * from "./signature";
 export * from "./quote";
+export * from "./invoice";

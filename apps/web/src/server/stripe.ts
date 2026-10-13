@@ -173,6 +173,72 @@ export async function depositCheckoutUrl(
 }
 
 // ---------------------------------------------------------------------------
+// Invoice checkout (customers, from the invoice page)
+// ---------------------------------------------------------------------------
+
+interface InvoiceCheckoutDetails {
+  invoice_id: string;
+  company_id: string;
+  number: number | null;
+  status: string;
+  balance_cents: number;
+  company_name: string;
+  customer_email: string | null;
+  stripe_account_id: string | null;
+  charges_enabled: boolean;
+  payment_pending: boolean;
+}
+
+/** A Checkout Session for what is still owed on an invoice, on the shop's account. */
+export async function invoiceCheckoutUrl(
+  token: string,
+  origin: string,
+  stripe?: Stripe | null,
+  db?: SupabaseClient | null,
+): Promise<string> {
+  const d = deps(stripe, db);
+  const i = await rpc<InvoiceCheckoutDetails | null>(d.db, "invoice_checkout_details", {
+    link_token: token,
+  });
+  if (!i) throw new CheckoutRefused("This link is not valid.");
+  if (i.status === "void") throw new CheckoutRefused("This invoice was canceled.");
+  if (i.status === "paid" || i.balance_cents <= 0)
+    throw new CheckoutRefused("This invoice is already paid.");
+  if (i.status !== "sent" && i.status !== "partially_paid")
+    throw new CheckoutRefused("This invoice can’t be paid online.");
+  if (i.payment_pending) throw new CheckoutRefused("A payment is already processing.");
+  if (!i.stripe_account_id || !i.charges_enabled)
+    throw new CheckoutRefused(`${i.company_name} can’t take online payments yet.`);
+  const metadata = { kind: "invoice_payment", invoice_id: i.invoice_id, company_id: i.company_id };
+  const session = await d.stripe.checkout.sessions.create(
+    {
+      mode: "payment",
+      payment_method_types: ["card", "us_bank_account"],
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: "usd",
+            unit_amount: i.balance_cents,
+            product_data: {
+              name: `Invoice${i.number ? ` #${i.number}` : ""} · ${i.company_name}`,
+            },
+          },
+        },
+      ],
+      customer_email: i.customer_email ?? undefined,
+      metadata,
+      payment_intent_data: { metadata },
+      success_url: `${origin}/i/${token}?paid=1`,
+      cancel_url: `${origin}/i/${token}`,
+    },
+    { stripeAccount: i.stripe_account_id },
+  );
+  if (!session.url) throw new Error("Stripe did not return a checkout page.");
+  return session.url;
+}
+
+// ---------------------------------------------------------------------------
 // Webhooks
 // ---------------------------------------------------------------------------
 
@@ -213,6 +279,8 @@ const sessionStatus = (event: Stripe.Event, s: Stripe.Checkout.Session) => {
 export async function applyEvent(
   event: Stripe.Event,
   db?: SupabaseClient | null,
+  /** Called once when a payment makes an invoice paid in full (the receipt email). */
+  onInvoicePaid?: (invoiceId: string) => Promise<unknown>,
 ): Promise<WebhookOutcome> {
   const d = db === undefined ? adminClient() : db;
   if (!d) throw new PaymentsNotConfigured();
@@ -224,23 +292,34 @@ export async function applyEvent(
     case "checkout.session.async_payment_succeeded":
     case "checkout.session.async_payment_failed": {
       const s = event.data.object as Stripe.Checkout.Session;
-      if (s.metadata?.kind !== "quote_deposit" || !s.metadata.quote_id) break;
       const status = sessionStatus(event, s);
       // Bank payments are the ones that settle later; cards are paid at once.
       const method =
         s.payment_status === "unpaid" || event.type !== "checkout.session.completed"
           ? "ach"
           : "card";
-      await rpc(d, "stripe_record_quote_payment", {
-        target_quote: s.metadata.quote_id,
+      const payment = {
         session_id: s.id,
         intent_id:
           typeof s.payment_intent === "string" ? s.payment_intent : (s.payment_intent?.id ?? null),
         amount: s.amount_total ?? 0,
         pay_method: method,
         pay_status: status,
-      });
-      outcome = "applied";
+      };
+      if (s.metadata?.kind === "quote_deposit" && s.metadata.quote_id) {
+        await rpc(d, "stripe_record_quote_payment", {
+          target_quote: s.metadata.quote_id,
+          ...payment,
+        });
+        outcome = "applied";
+      } else if (s.metadata?.kind === "invoice_payment" && s.metadata.invoice_id) {
+        const r = await rpc<{ paid_now: boolean }>(d, "stripe_record_invoice_payment", {
+          target_invoice: s.metadata.invoice_id,
+          ...payment,
+        });
+        if (r.paid_now && onInvoicePaid) await onInvoicePaid(s.metadata.invoice_id);
+        outcome = "applied";
+      }
       break;
     }
     case "account.updated": {

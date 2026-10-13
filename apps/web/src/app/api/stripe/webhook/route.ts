@@ -1,3 +1,5 @@
+import { siteOrigin } from "@/lib/origin";
+import { sendReceipt } from "@/server/invoices";
 import { BadSignature, PaymentsNotConfigured, applyEvent, verifyEvent } from "@/server/stripe";
 
 /** Stripe webhooks (platform and Connect events). Verified, and each event applies once. */
@@ -11,7 +13,10 @@ export async function POST(request: Request) {
     throw e;
   }
   try {
-    const outcome = await applyEvent(event);
+    const origin = await siteOrigin();
+    const outcome = await applyEvent(event, undefined, (invoiceId) =>
+      sendReceipt(invoiceId, origin),
+    );
     return Response.json({ received: true, outcome });
   } catch (e) {
     // A 500 makes Stripe retry later; nothing was claimed, so the retry applies it.
