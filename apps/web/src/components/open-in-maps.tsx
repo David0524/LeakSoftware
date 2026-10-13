@@ -1,19 +1,8 @@
-"use client";
-
-import { useSyncExternalStore } from "react";
-import { mapsLinks, type LatLng } from "@leakbook/core";
+import { directionsHref, type LatLng } from "@leakbook/core";
 import { buttonClass, cx } from "./ui";
 
-/** iPhone, iPad, and Mac open Apple Maps; everything else opens Google Maps. */
-function useAppleMaps(): boolean {
-  return useSyncExternalStore(
-    () => () => {},
-    () =>
-      /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent) ||
-      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1),
-    () => false,
-  );
-}
+// Directions links. Plain links (no browser code): /maps picks Apple Maps or Google Maps on
+// the server, so the same tap always opens the same app.
 
 const PIN = (
   <svg
@@ -32,8 +21,9 @@ const PIN = (
 );
 
 /**
- * The address itself as the link to directions in the phone's maps app: Apple Maps on Apple
- * devices, Google Maps elsewhere. Opens in a new tab on a computer.
+ * The address itself as the link to directions in the phone's maps app (the device's choice
+ * under More, otherwise Apple Maps on Apple devices and Google Maps elsewhere). Opens in a new
+ * tab on a computer.
  */
 export function AddressLink({
   address,
@@ -44,11 +34,9 @@ export function AddressLink({
   location?: LatLng | null;
   className?: string;
 }) {
-  const apple = useAppleMaps();
-  const links = mapsLinks({ address, location });
   return (
     <a
-      href={apple ? links.apple : links.google}
+      href={directionsHref({ address, location })}
       target="_blank"
       rel="noopener noreferrer"
       aria-label={`${address}, directions in Maps`}
@@ -60,7 +48,10 @@ export function AddressLink({
   );
 }
 
-/** A whole day's stops in Google Maps (Apple Maps links take one stop at a time). */
+/**
+ * A whole day's stops in Google Maps, always (Apple Maps links take one stop at a time), so
+ * the button says so.
+ */
 export function OpenRouteInMaps({ href, className }: { href: string; className?: string }) {
   return (
     <a
@@ -70,7 +61,7 @@ export function OpenRouteInMaps({ href, className }: { href: string; className?:
       className={cx(buttonClass("secondary"), className)}
     >
       {PIN}
-      Open Route in Maps
+      Open Route in Google Maps
     </a>
   );
 }

@@ -6,6 +6,8 @@ import {
   durationLabel,
   estimateDriveMinutes,
   haversineMeters,
+  directionsHref,
+  mapsAppFor,
   mapsLinks,
   nativeMapsUrl,
   minutesLabel,
@@ -272,6 +274,25 @@ describe("maps", () => {
     expect(mapsLinks({ address: "1 E Main St, Mesa" }).google).toContain(
       "destination=1%20E%20Main%20St%2C%20Mesa",
     );
+  });
+
+  it("picks the maps app from the saved choice, then the device", () => {
+    const iphone = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15";
+    const mac = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15";
+    const android = "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 Chrome/131";
+    expect(mapsAppFor(iphone)).toBe("apple");
+    expect(mapsAppFor(mac, "auto")).toBe("apple");
+    expect(mapsAppFor(android)).toBe("google");
+    expect(mapsAppFor(iphone, "google")).toBe("google");
+    expect(mapsAppFor(android, "apple")).toBe("apple");
+    expect(mapsAppFor(android, "waze")).toBe("google");
+  });
+
+  it("links addresses through /maps, with the spot when known", () => {
+    expect(directionsHref({ address: "455 N Galvin Pkwy, Phoenix", location: ZOO })).toBe(
+      "/maps?to=455+N+Galvin+Pkwy%2C+Phoenix&lat=33.44962&lng=-111.94637",
+    );
+    expect(directionsHref({ address: "1 E Main St, Mesa" })).toBe("/maps?to=1+E+Main+St%2C+Mesa");
   });
 
   it("opens the phone's own maps app", () => {

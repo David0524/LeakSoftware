@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { MapsChoice } from "@/components/maps-choice";
 import { PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { officeLinks } from "@/lib/nav";
@@ -10,6 +12,8 @@ export const metadata: Metadata = { title: "More · Tidemark" };
 export default async function MorePage() {
   const office = await getOffice();
   const rest = officeLinks(office.isOwner).slice(4);
+  const saved = (await cookies()).get("lb_maps")?.value;
+  const maps = saved === "apple" || saved === "google" ? saved : "auto";
   return (
     <>
       <PageHeader title="More" />
@@ -28,6 +32,9 @@ export default async function MorePage() {
           </li>
         ))}
       </ul>
+      <section className="mt-6 rounded-lg border border-border bg-surface p-4">
+        <MapsChoice initial={maps} />
+      </section>
     </>
   );
 }

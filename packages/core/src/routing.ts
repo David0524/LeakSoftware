@@ -444,6 +444,30 @@ export function mapsLinks(p: MapPlace): { apple: string; google: string } {
   };
 }
 
+export type MapsApp = "apple" | "google";
+
+/** Values of the per-device choice (the `lb_maps` cookie); anything else means automatic. */
+export const MAPS_CHOICES = ["auto", "apple", "google"] as const;
+
+/**
+ * Which maps app directions open in: the device's saved choice, else Apple Maps on iPhone,
+ * iPad, and Mac (iPads report themselves as Macs), else Google Maps.
+ */
+export function mapsAppFor(userAgent: string, choice?: string | null): MapsApp {
+  if (choice === "apple" || choice === "google") return choice;
+  return /iPhone|iPad|iPod|Macintosh/.test(userAgent) ? "apple" : "google";
+}
+
+/** The link every address uses: the server picks the app, so it never changes after load. */
+export function directionsHref(p: MapPlace): string {
+  const q = new URLSearchParams({ to: p.address });
+  if (p.location) {
+    q.set("lat", String(p.location.lat));
+    q.set("lng", String(p.location.lng));
+  }
+  return `/maps?${q.toString()}`;
+}
+
 /**
  * Directions from the phone app: Apple Maps on iPhone; on Android a geo: link, which opens
  * the phone's own maps app (Google Maps, Waze, …) at the pool.

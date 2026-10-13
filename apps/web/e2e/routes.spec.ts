@@ -96,6 +96,13 @@ async function makeJob(
   return id as string;
 }
 
+/** Where an address link's /maps redirect sends this device. */
+async function mapsTarget(page: Page, href: string, headers: Record<string, string> = {}) {
+  const res = await page.request.get(href, { maxRedirects: 0, headers });
+  expect(res.status()).toBe(302);
+  return res.headers()["location"] ?? "";
+}
+
 /** Customer names on a tech's route, in order. */
 async function routeNames(page: Page, tech: string) {
   const labels = await page
@@ -154,7 +161,7 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   const planned = await routeNames(page, "Priya Shah");
   expect(planned).toHaveLength(3);
   expect(planned.indexOf(name("goodyear"))).not.toBe(1);
-  await expect(route.getByRole("link", { name: "Open Route in Maps" })).toHaveAttribute(
+  await expect(route.getByRole("link", { name: "Open Route in Google Maps" })).toHaveAttribute(
     "href",
     /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1/,
   );
@@ -203,7 +210,21 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   await page.goto(`/jobs/${zoo}`);
   await expect(
     page.getByRole("link", { name: /^455 N Galvin Pkwy.*directions in Maps$/ }),
-  ).toHaveAttribute("href", /google\.com\/maps\/dir\/\?api=1&destination=33\.45006%2C-111\.94886/);
+  ).toHaveAttribute("href", /^\/maps\?to=455\+N\+Galvin/);
+  const href = (await page
+    .getByRole("link", { name: /^455 N Galvin Pkwy.*directions in Maps$/ })
+    .getAttribute("href"))!;
+  expect(await mapsTarget(page, href)).toMatch(
+    /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&destination=33\.45006%2C-111\.94886/,
+  );
+  // An iPhone gets Apple Maps; a device set to Google Maps (More) gets Google, every time.
+  const IPHONE = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15";
+  expect(await mapsTarget(page, href, { "user-agent": IPHONE })).toMatch(
+    /^https:\/\/maps\.apple\.com\/\?daddr=33\.45006%2C-111\.94886/,
+  );
+  expect(await mapsTarget(page, href, { "user-agent": IPHONE, cookie: "lb_maps=google" })).toMatch(
+    /^https:\/\/www\.google\.com\/maps\//,
+  );
 });
 
 test("Today shows a tech's route with directions", async ({ page }) => {
@@ -234,9 +255,7 @@ test("Today shows a tech's route with directions", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Today · Priya Shah" })).toBeVisible();
   await expect(page.getByTestId("today-summary")).toContainText(/stops? · .* driving/);
   const stop = page.getByTestId("today-stop").filter({ hasText: name("scottsdale") });
-  await expect(stop.getByTestId("address-link")).toHaveAttribute(
-    "href",
-    /destination=33\.4919%2C-111\.9236/,
-  );
-  await expect(page.getByRole("link", { name: "Open Route in Maps" })).toBeVisible();
+  const href = (await stop.getByTestId("address-link").getAttribute("href"))!;
+  expect(await mapsTarget(page, href)).toMatch(/destination=33\.4919%2C-111\.9236/);
+  await expect(page.getByRole("link", { name: "Open Route in Google Maps" })).toBeVisible();
 });
