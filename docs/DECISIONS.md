@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (owner: appearance and deleting customers)
+- **The website is light by default** with one sun/moon button for dark. It no longer follows the device's setting (no "Auto"). Replaces the Auto / Light / Dark switch.
+- **Owners can delete customers.** Only when every job is paid or canceled and no invoice is waiting for money; the customer and their pools are soft-deleted, and finished jobs, reports, quotes, invoices, and payments keep their history.
+
 ## 2026-10-13 (M9 invoicing, made for now; owner can change)
 - **One invoice per job.** A detection job's invoice bills its detection fee (untaxed, like the price book's detection items). A repair job's invoice copies the accepted quote's lines and discount and credits the deposit paid, after tax. The office can edit a draft (lines, discount, due date, note); the phone creates and sends it as built. To bill the fee and the repair together, the office adds the fee line to the repair invoice.
 - **No invoice while a bank deposit is still clearing,** so the credit is never wrong.

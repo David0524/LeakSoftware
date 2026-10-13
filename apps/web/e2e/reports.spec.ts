@@ -102,7 +102,7 @@ test("field parity report: counts, verdicts, fee, and disclaimer", async ({ page
   await page.goto("/jobs?status=all");
   await page.getByRole("row").filter({ hasText: "Riley Rivera" }).getByRole("link").first().click();
   await expect(page.getByText("With Dana Owner")).toBeVisible();
-  await expect(page.getByText("$649.00")).toBeVisible();
+  await expect(page.getByText("$649.00", { exact: true })).toBeVisible();
   await expect(page.getByText("Pool water level dropping")).toBeVisible();
   await expect(
     page.getByRole("table").first().getByRole("row").filter({ hasText: "Skimmer seam" }),

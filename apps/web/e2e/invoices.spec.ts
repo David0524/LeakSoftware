@@ -57,7 +57,8 @@ test("a repair is invoiced with its deposit credited, paid by check and card, wi
   await tech.from("job").update({ status: "in_progress" }).eq("id", repairJob);
 
   // The office invoices it: the quote's work, the deposit credited, one more line.
-  await signIn(page, OWNER, `/jobs/${repairJob}`);
+  // Still signed in as the owner from sending the quote.
+  await page.goto(`/jobs/${repairJob}`);
   await page.getByRole("button", { name: "Create Invoice" }).click();
   const panel = page.getByTestId("invoice");
   await expect(panel).toContainText("Draft");

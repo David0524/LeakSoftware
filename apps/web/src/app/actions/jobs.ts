@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { splitEmails, zonedTimeToIso, type JobStatus } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -59,4 +60,17 @@ export async function saveCustomerEmails(_: FormState, form: FormData): Promise<
   if (error) return { error: error.message };
   revalidatePath(`/customers/${id}`);
   return { message: "Saved." };
+}
+
+/** Owners: delete a customer with no open work (the database checks). */
+export async function deleteCustomer(_: FormState, form: FormData): Promise<FormState> {
+  await getOffice();
+  const { error } = await (
+    await createClient()
+  ).rpc("delete_customer", {
+    target_customer: text(form, "customer"),
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/customers");
+  redirect("/customers");
 }

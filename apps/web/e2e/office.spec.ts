@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { OWNER, RUN, TECH, signIn, signOut } from "./helpers";
+import { signedInClient } from "./backend";
 
 test.describe.configure({ mode: "serial" });
 
@@ -140,29 +141,52 @@ test("the demo tech cannot reach settings", async ({ page }) => {
   }
 });
 
-test("the appearance switch picks light or dark and remembers it", async ({ page }) => {
+test("the site starts light; the sun/moon button switches it and remembers", async ({ page }) => {
+  // The device's dark setting is not followed: light by default (owner, 2026-10-13).
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/");
   const html = page.locator("html");
-  const appearance = page.getByRole("radiogroup", { name: "Appearance" });
-  // Auto follows the device.
-  await expect(appearance.getByRole("radio", { name: "Auto" })).toBeChecked();
-  await expect(html).toHaveAttribute("data-theme", "dark");
+  await expect(html).toHaveAttribute("data-theme", "light");
 
-  await appearance.getByRole("radio", { name: "Light" }).click();
-  await expect(html).toHaveAttribute("data-theme", "light");
+  await page.getByRole("button", { name: "Dark mode" }).click();
+  await expect(html).toHaveAttribute("data-theme", "dark");
   await page.reload();
-  await expect(html).toHaveAttribute("data-theme", "light");
+  await expect(html).toHaveAttribute("data-theme", "dark");
   await expect(page.getByRole("img", { name: "LeakBook" }).first()).toBeVisible();
 
-  // The office header has the switch too.
+  // The office header has the button too.
   await signIn(page, OWNER);
-  const office = page.getByRole("radiogroup", { name: "Appearance" });
-  await expect(office.getByRole("radio", { name: "Light" })).toBeChecked();
-  await office.getByRole("radio", { name: "Dark" }).click();
   await expect(html).toHaveAttribute("data-theme", "dark");
-  await office.getByRole("radio", { name: "Auto" }).click();
-  await page.emulateMedia({ colorScheme: "light" });
+  await page.getByRole("button", { name: "Light mode" }).click();
   await expect(html).toHaveAttribute("data-theme", "light");
   await signOut(page);
+});
+
+test("owners delete a customer only when no work is open", async ({ page }) => {
+  // A customer with no jobs, added the way the phone adds one.
+  const tech = await signedInClient(TECH.email, TECH.password);
+  const { data: job } = await tech
+    .from("job")
+    .select("company_id")
+    .eq("id", "00000000-0000-4000-8000-00000000e001")
+    .single();
+  const name = `Delete Me ${RUN}`;
+  const { data: added } = await tech
+    .from("customer")
+    .insert({ company_id: job!.company_id, name })
+    .select("id")
+    .single();
+
+  await signIn(page, OWNER, "/customers/00000000-0000-4000-8000-00000000c003");
+  page.once("dialog", (d) => void d.accept());
+  await page.getByRole("button", { name: "Delete Customer" }).click();
+  await expect(
+    page.getByText(/^Sam Sample has \d+ open jobs?\. Finish or cancel them first\.$/),
+  ).toBeVisible();
+
+  await page.goto(`/customers/${added!.id}`);
+  page.once("dialog", (d) => void d.accept());
+  await page.getByRole("button", { name: "Delete Customer" }).click();
+  await page.waitForURL((url) => url.pathname === "/customers");
+  await expect(page.getByText(name)).toHaveCount(0);
 });

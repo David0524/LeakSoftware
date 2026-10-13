@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JOB_TYPE_LABELS, POOL_TYPE_LABELS, formatAddress, formatSchedule } from "@leakbook/core";
-import { saveCustomerEmails } from "@/app/actions/jobs";
+import { deleteCustomer, saveCustomerEmails } from "@/app/actions/jobs";
 import { SField, SettingsForm } from "@/components/settings-forms";
 import { Card, Empty, PageHeader, SectionTitle, StatusBadge } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
@@ -128,6 +128,25 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
           })}
         </div>
       </div>
+      {office.isOwner ? (
+        <section className="mt-10 border-t border-border pt-6" aria-labelledby="delete-customer">
+          <h2 id="delete-customer" className="mb-2 font-display text-xl font-bold">
+            Delete Customer
+          </h2>
+          <p className="mb-3 text-text-muted">
+            Removes {customer.name} and their pools from LeakBook. Only possible when every job is
+            paid or canceled; finished jobs, reports, and invoices are kept.
+          </p>
+          <SettingsForm
+            action={deleteCustomer}
+            submit="Delete Customer"
+            danger
+            confirm={`Delete ${customer.name}? This can't be undone from LeakBook.`}
+          >
+            <input type="hidden" name="customer" value={customer.id} />
+          </SettingsForm>
+        </section>
+      ) : null}
     </>
   );
 }
