@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { splitEmails, zonedTimeToIso, type JobStatus } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -72,5 +71,7 @@ export async function deleteCustomer(_: FormState, form: FormData): Promise<Form
   });
   if (error) return { error: error.message };
   revalidatePath("/customers");
-  redirect("/customers");
+  // The page goes to the list itself (DeleteCustomerForm): a redirect from this action left
+  // the deleted customer's page on screen.
+  return { message: "deleted" };
 }

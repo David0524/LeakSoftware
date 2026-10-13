@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JOB_TYPE_LABELS, POOL_TYPE_LABELS, formatAddress, formatSchedule } from "@leakbook/core";
-import { deleteCustomer, saveCustomerEmails } from "@/app/actions/jobs";
+import { saveCustomerEmails } from "@/app/actions/jobs";
+import { DeleteCustomerForm } from "@/components/delete-customer";
 import { SField, SettingsForm } from "@/components/settings-forms";
 import { Card, Empty, PageHeader, SectionTitle, StatusBadge } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
@@ -137,14 +138,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
             Removes {customer.name} and their pools from Tidemark. Only possible when every job is
             paid or canceled; finished jobs, reports, and invoices are kept.
           </p>
-          <SettingsForm
-            action={deleteCustomer}
-            submit="Delete Customer"
-            danger
-            confirm={`Delete ${customer.name}? This can't be undone from Tidemark.`}
-          >
-            <input type="hidden" name="customer" value={customer.id} />
-          </SettingsForm>
+          <DeleteCustomerForm id={customer.id} name={customer.name} />
         </section>
       ) : null}
     </>
