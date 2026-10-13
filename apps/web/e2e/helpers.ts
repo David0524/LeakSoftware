@@ -27,16 +27,15 @@ export async function jobSection(page: Page, name: string) {
 
 /** Unfold every checklist section (finished ones start folded). */
 export async function openChecklist(page: Page) {
-  await expect(page.getByText(/ to do$/)).toBeVisible();
-  for (const button of await page
-    .locator('button[aria-controls^="checklist-"][aria-expanded="false"]')
-    .all())
-    await button.click();
+  await expect(page.getByText(/not leaking · .* to do$/)).toBeVisible();
+  // Each click takes a section out of the set, so always open the first one left.
+  const folded = page.locator('button[aria-controls^="checklist-"][aria-expanded="false"]');
+  while ((await folded.count()) > 0) await folded.first().click();
 }
 
 /** Answer everything still to do with each section's "Mark … Remaining" shortcut. */
 export async function finishChecklist(page: Page) {
-  const tally = page.getByText(/ to do$/);
+  const tally = page.getByText(/not leaking · .* to do$/);
   const toDo = async () => Number(/(\d+) to do/.exec(await tally.innerText())![1]);
   for (;;) {
     const before = await toDo();
