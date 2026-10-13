@@ -371,7 +371,32 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   await expect(tech.getByText(/Inspection acknowledged ·/)).toBeVisible();
   expect(await wide()).toBeLessThanOrEqual(390);
 
-  // Job notes.
+  // The homeowner report, written and sent from the phone.
+  const report = tech.getByTestId("report-homeowner");
+  await report.getByRole("button", { name: "Write Draft" }).click();
+  await expect(report.getByText(/^Draft written\./)).toBeVisible();
+  await report.getByRole("button", { name: "Send by Text" }).click();
+  await expect(report.getByText("Report sent. Copy the message below.")).toBeVisible();
+
+  // A quote built on the phone from the price book and a custom line, then sent.
+  await tech.getByRole("button", { name: "Start Quote" }).click();
+  const quote = tech.getByTestId("quote");
+  await quote.getByLabel("Add from the price book").selectOption({ index: 1 });
+  await quote.getByRole("button", { name: "Add Item" }).click();
+  await expect(quote.getByTestId("quote-line")).toHaveCount(1);
+  await quote.getByLabel("Custom line").fill(`Haul away debris ${RUN}`);
+  await quote.getByLabel("Price ($)", { exact: true }).fill("40");
+  await quote.getByRole("button", { name: "Add Line" }).click();
+  await expect(quote.getByTestId("quote-line")).toHaveCount(2);
+  const line = quote.getByRole("listitem", { name: `Haul away debris ${RUN}` });
+  await line.getByLabel("Qty").fill("2");
+  await line.getByLabel("Qty").blur();
+  await expect(line).toContainText("$80.00");
+  expect(await wide()).toBeLessThanOrEqual(390);
+  await quote.getByRole("button", { name: "Send Quote" }).click();
+  await expect(quote.getByLabel("Customer link")).toHaveValue(/\/q\//);
+  await expect(quote).toContainText("Sent");
+
   await tech.getByLabel("Job notes").fill("Gate code 1234 worked.");
   await tech.getByLabel("Leak location marked").check();
   const onSite = tech.locator("form").filter({ has: tech.getByLabel("Job notes") });

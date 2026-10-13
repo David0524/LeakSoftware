@@ -1,0 +1,353 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import {
+  formatCents,
+  lineTotal,
+  quoteTotals,
+  type CompanySettings,
+  type QuoteLine,
+} from "@leakbook/core";
+import {
+  addCustomLine,
+  addPriceBookLine,
+  removeQuoteLine,
+  setQuoteDiscount,
+  startQuote,
+  updateQuoteLine,
+} from "@/app/actions/quote-draft";
+import type { QuoteRow } from "@/lib/data";
+import { Button, Field, Select } from "./ui";
+
+// The phone's Quote tab for a browser (M9.5): price the findings from the price book, add
+// custom lines, adjust quantities and prices, and give a discount. Sending is in QuotePanel.
+
+type Run = (work: () => Promise<{ ok: true } | { ok: false; error: string }>) => void;
+
+function useRun(): { pending: boolean; error: string | null; run: Run } {
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const run: Run = (work) =>
+    start(async () => {
+      const r = await work();
+      setError(r.ok ? null : r.error);
+    });
+  return { pending, error, run };
+}
+
+function ErrorText({ error }: { error: string | null }) {
+  return error ? (
+    <p role="alert" className="text-[15px] text-status-fail">
+      {error}
+    </p>
+  ) : null;
+}
+
+export function StartQuote({ jobId }: { jobId: string }) {
+  const { pending, error, run } = useRun();
+  return (
+    <div className="space-y-2 rounded-lg border border-dashed border-border p-6">
+      <p className="text-text-muted">
+        No quote yet. Start one to price the repairs for these findings.
+      </p>
+      <Button
+        type="button"
+        kind="secondary"
+        disabled={pending}
+        onClick={() => run(() => startQuote(jobId))}
+      >
+        Start Quote
+      </Button>
+      <ErrorText error={error} />
+    </div>
+  );
+}
+
+interface Item {
+  id: string;
+  name: string;
+  price_cents: number;
+}
+
+export function QuoteBuilder({
+  quote,
+  findings,
+  priceBook,
+  settings,
+  isOwner,
+}: {
+  quote: QuoteRow;
+  /** Open findings with the price book items suggested for their component. */
+  findings: { id: string; title: string; items: Item[] }[];
+  priceBook: Item[];
+  settings: Pick<CompanySettings, "tax_rate_bps" | "deposit" | "tech_discount_limit_bps">;
+  isOwner: boolean;
+}) {
+  const { pending, error, run } = useRun();
+  const [itemId, setItemId] = useState("");
+  const [custom, setCustom] = useState({ description: "", price: "" });
+  const totals = quoteTotals(
+    quote.lines.map((l) => ({ ...l, quantity: Number(l.quantity) })) as QuoteLine[],
+    quote.discount_cents,
+    settings.tax_rate_bps,
+    settings.deposit,
+  );
+  const onQuote = new Set(quote.lines.map((l) => l.price_book_item_id).filter(Boolean));
+
+  return (
+    <div className="mt-4 space-y-5">
+      {findings.length ? (
+        <section aria-labelledby={`from-findings-${quote.id}`} className="space-y-3">
+          <h4 id={`from-findings-${quote.id}`} className="font-display text-lg font-bold">
+            Add From Findings
+          </h4>
+          {findings.map((f) => (
+            <div key={f.id} className="space-y-2">
+              <p className="font-semibold">{f.title}</p>
+              {f.items.length === 0 ? (
+                <p className="text-[15px] text-text-muted">
+                  No price book items for this component. Add a custom line.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {f.items.map((item) => {
+                    const added = onQuote.has(item.id);
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        disabled={added || pending}
+                        aria-label={`Add ${item.name}, ${formatCents(item.price_cents)}`}
+                        onClick={() =>
+                          run(() =>
+                            addPriceBookLine({
+                              quoteId: quote.id,
+                              itemId: item.id,
+                              findingId: f.id,
+                            }),
+                          )
+                        }
+                        className="min-h-11 rounded-md border border-control-border bg-surface px-3 text-[15px] disabled:opacity-50"
+                      >
+                        {added ? "✓ " : "+ "}
+                        {item.name} · {formatCents(item.price_cents)}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
+        </section>
+      ) : null}
+
+      <section aria-labelledby={`lines-${quote.id}`} className="space-y-3">
+        <h4 id={`lines-${quote.id}`} className="font-display text-lg font-bold">
+          Lines
+        </h4>
+        {quote.lines.length === 0 ? <p className="text-text-muted">No lines yet.</p> : null}
+        <ul className="space-y-3">
+          {quote.lines.map((l) => (
+            <QuoteLineRow key={l.id} quoteId={quote.id} line={l} run={run} pending={pending} />
+          ))}
+        </ul>
+      </section>
+
+      {priceBook.length ? (
+        <div className="flex flex-wrap items-end gap-3">
+          <Select
+            label="Add from the price book"
+            name={`item-${quote.id}`}
+            value={itemId}
+            onChange={(e) => setItemId(e.target.value)}
+            className="min-w-0 flex-1"
+            options={[
+              { value: "", label: "Choose…" },
+              ...priceBook.map((i) => ({
+                value: i.id,
+                label: `${i.name} (${formatCents(i.price_cents)})`,
+              })),
+            ]}
+          />
+          <Button
+            type="button"
+            kind="secondary"
+            disabled={!itemId || pending}
+            onClick={() => {
+              const id = itemId;
+              setItemId("");
+              run(() => addPriceBookLine({ quoteId: quote.id, itemId: id, findingId: null }));
+            }}
+          >
+            Add Item
+          </Button>
+        </div>
+      ) : null}
+
+      <div className="grid gap-3 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
+        <Field
+          label="Custom line"
+          name={`custom-${quote.id}`}
+          placeholder="Replace skimmer lid"
+          value={custom.description}
+          onChange={(e) => setCustom((c) => ({ ...c, description: e.target.value }))}
+        />
+        <Field
+          label="Price ($)"
+          name={`custom-price-${quote.id}`}
+          inputMode="decimal"
+          value={custom.price}
+          onChange={(e) => setCustom((c) => ({ ...c, price: e.target.value }))}
+        />
+        <Button
+          type="button"
+          kind="secondary"
+          disabled={pending}
+          onClick={() =>
+            run(async () => {
+              const r = await addCustomLine({ quoteId: quote.id, ...custom });
+              if (r.ok) setCustom({ description: "", price: "" });
+              return r;
+            })
+          }
+        >
+          Add Line
+        </Button>
+      </div>
+
+      <div className="max-w-xs">
+        <Field
+          label="Discount ($)"
+          name={`discount-${quote.id}`}
+          inputMode="decimal"
+          key={quote.discount_cents}
+          defaultValue={quote.discount_cents ? (quote.discount_cents / 100).toFixed(2) : ""}
+          hint={
+            isOwner
+              ? undefined
+              : `Techs can give up to ${settings.tech_discount_limit_bps / 100}% off.`
+          }
+          onBlur={(e) => {
+            const value = e.target.value;
+            const now = quote.discount_cents ? (quote.discount_cents / 100).toFixed(2) : "";
+            if (value.trim() !== now)
+              run(() => setQuoteDiscount({ quoteId: quote.id, discount: value }));
+          }}
+        />
+      </div>
+
+      <ErrorText error={error} />
+
+      <dl className="grid max-w-sm grid-cols-[1fr_auto] gap-x-6 gap-y-1 tabular-nums">
+        <dt className="text-text-muted">Subtotal</dt>
+        <dd className="text-right">{formatCents(totals.subtotal_cents)}</dd>
+        {totals.discount_cents ? (
+          <>
+            <dt className="text-text-muted">Discount</dt>
+            <dd className="text-right">−{formatCents(totals.discount_cents)}</dd>
+          </>
+        ) : null}
+        <dt className="text-text-muted">Tax</dt>
+        <dd className="text-right">{formatCents(totals.tax_cents)}</dd>
+        <dt className="font-semibold">Total</dt>
+        <dd className="text-right font-semibold">{formatCents(totals.total_cents)}</dd>
+        <dt className="text-text-muted">Deposit</dt>
+        <dd className="text-right">{formatCents(totals.deposit_cents)}</dd>
+      </dl>
+    </div>
+  );
+}
+
+function QuoteLineRow({
+  quoteId,
+  line,
+  run,
+  pending,
+}: {
+  quoteId: string;
+  line: QuoteRow["lines"][number];
+  run: Run;
+  pending: boolean;
+}) {
+  const saved = {
+    description: line.description,
+    quantity: String(Number(line.quantity)),
+    price: (line.unit_price_cents / 100).toFixed(2),
+  };
+  const [values, setValues] = useState(saved);
+  const [base, setBase] = useState(saved);
+  // A save elsewhere (or by another device) changes the line: show the new values.
+  if (
+    base.description !== saved.description ||
+    base.quantity !== saved.quantity ||
+    base.price !== saved.price
+  ) {
+    setBase(saved);
+    setValues(saved);
+  }
+  const commit = () => {
+    if (
+      values.description === saved.description &&
+      values.quantity === saved.quantity &&
+      values.price === saved.price
+    )
+      return;
+    run(() => updateQuoteLine({ quoteId, lineId: line.id, ...values }));
+  };
+  const set = (k: keyof typeof values) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setValues((v) => ({ ...v, [k]: e.target.value }));
+  return (
+    <li
+      aria-label={line.description}
+      className="space-y-2 rounded-md border border-border p-3"
+      data-testid="quote-line"
+    >
+      <Field
+        label="Description"
+        name={`desc-${line.id}`}
+        value={values.description}
+        onChange={set("description")}
+        onBlur={commit}
+      />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-[8rem_10rem_1fr] sm:items-end">
+        <Field
+          label="Qty"
+          name={`qty-${line.id}`}
+          inputMode="decimal"
+          value={values.quantity}
+          onChange={set("quantity")}
+          onBlur={commit}
+        />
+        <Field
+          label="Price each ($)"
+          name={`price-${line.id}`}
+          inputMode="decimal"
+          value={values.price}
+          onChange={set("price")}
+          onBlur={commit}
+        />
+        <div className="col-span-2 flex items-center justify-between gap-3 sm:col-span-1">
+          <span className="font-semibold tabular-nums">
+            {formatCents(
+              lineTotal({
+                quantity: Number(line.quantity),
+                unit_price_cents: line.unit_price_cents,
+              }),
+            )}
+          </span>
+          <Button
+            type="button"
+            kind="quiet"
+            disabled={pending}
+            onClick={() => {
+              if (window.confirm(`Remove “${line.description}”?`))
+                run(() => removeQuoteLine({ quoteId, lineId: line.id }));
+            }}
+          >
+            Remove
+          </Button>
+        </div>
+      </div>
+    </li>
+  );
+}

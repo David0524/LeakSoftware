@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, type ReactNode } from "react";
 import { QUOTE_STATUS_LABELS, formatCents, lineTotal } from "@leakbook/core";
 import { sendQuoteAction } from "@/app/actions/quotes";
 import type { QuoteRow } from "@/lib/data";
@@ -20,10 +20,13 @@ export function QuotePanel({
   quote,
   jobId,
   origin,
+  children,
 }: {
   quote: QuoteRow;
   jobId: string;
   origin: string;
+  /** The line editor, for a draft. */
+  children?: ReactNode;
 }) {
   const [state, action, pending] = useActionState(sendQuoteAction, {});
   const link = state.link ?? (quote.token ? `${origin}/q/${quote.token}` : null);
@@ -40,21 +43,25 @@ export function QuotePanel({
         </h3>
         <p className="text-xl font-semibold tabular-nums">{formatCents(quote.total_cents)}</p>
       </div>
-      <ul className="mt-3 space-y-1 text-[15px]">
-        {quote.lines.map((l) => (
-          <li key={l.id} className="flex justify-between gap-4">
-            <span>
-              {l.description}
-              {Number(l.quantity) !== 1 ? ` × ${Number(l.quantity)}` : ""}
-            </span>
-            <span className="tabular-nums">
-              {formatCents(
-                lineTotal({ quantity: Number(l.quantity), unit_price_cents: l.unit_price_cents }),
-              )}
-            </span>
-          </li>
-        ))}
-      </ul>
+      {quote.status === "draft" && children ? (
+        children
+      ) : (
+        <ul className="mt-3 space-y-1 text-[15px]">
+          {quote.lines.map((l) => (
+            <li key={l.id} className="flex justify-between gap-4">
+              <span>
+                {l.description}
+                {Number(l.quantity) !== 1 ? ` × ${Number(l.quantity)}` : ""}
+              </span>
+              <span className="tabular-nums">
+                {formatCents(
+                  lineTotal({ quantity: Number(l.quantity), unit_price_cents: l.unit_price_cents }),
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
       {quote.status !== "draft" ? (
         <p className="mt-2 text-[15px] text-text-muted">
           Deposit {formatCents(quote.deposit_cents)}

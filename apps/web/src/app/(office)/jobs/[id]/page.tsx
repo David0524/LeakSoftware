@@ -14,8 +14,10 @@ import {
   formatDuration,
   formatSchedule,
   parseMarkup,
+  suggestItems,
   timeline,
   type CompanySettings,
+  type PriceBookItem,
   type Media,
 } from "@leakbook/core";
 import { GalleryImage } from "@/components/gallery-image";
@@ -40,12 +42,14 @@ import {
   getQuotes,
   getReports,
   getSignatures,
+  listConfig,
   getTeam,
   signedMediaUrls,
   type JobDetail,
 } from "@/lib/data";
 import { siteOrigin } from "@/lib/origin";
 import { CreateInvoice, InvoicePanel } from "@/components/invoice-panel";
+import { QuoteBuilder, StartQuote } from "@/components/quote-builder";
 import { QuotePanel } from "@/components/quote-panel";
 import { ReportPanel } from "@/components/report-panel";
 import { ScheduleForm } from "@/components/schedule-form";
@@ -589,11 +593,32 @@ async function Schedule({ detail, tz }: { detail: JobDetail; tz: string }) {
 
 async function Quotes({ detail }: { detail: JobDetail }) {
   const office = await getOffice();
-  const [quotes, account, origin] = await Promise.all([
+  const [quotes, account, origin, company, priceBook] = await Promise.all([
     getQuotes(office, detail.job.id),
     office.isOwner ? getPaymentAccount(office) : Promise.resolve(null),
     siteOrigin(),
+    getCompany(office),
+    listConfig<PriceBookItem>(office, "price_book_item"),
   ]);
+  const settings = company.settings as Partial<CompanySettings>;
+  const live = priceBook.filter((i) => i.active);
+  const typeKey = (componentId: string | null | undefined) => {
+    const comp = detail.components.find((c) => c.id === componentId);
+    return comp ? detail.componentTypes.get(comp.component_type_id)?.key : undefined;
+  };
+  const findings = detail.findings
+    .filter((f) => f.status !== "repaired")
+    .map((f) => ({
+      id: f.id,
+      title: f.title,
+      items: suggestItems(live, typeKey(f.job_component_id)).map((i) => ({
+        id: i.id,
+        name: i.name,
+        price_cents: i.price_cents,
+      })),
+    }));
+  const hasDraft = quotes.some((q) => q.status === "draft");
+  const hasAccepted = quotes.some((q) => q.status === "accepted");
   return (
     <div className="space-y-4">
       {office.isOwner && !account?.charges_enabled && quotes.some((q) => q.status !== "draft") ? (
@@ -604,15 +629,36 @@ async function Quotes({ detail }: { detail: JobDetail }) {
           </Link>
         </Notice>
       ) : null}
-      {quotes.length === 0 ? (
-        <Empty>No quotes yet. Techs build quotes from findings in the Tidemark app.</Empty>
-      ) : (
+      {!hasDraft && !hasAccepted ? <StartQuote jobId={detail.job.id} /> : null}
+      {quotes.length ? (
         <div className="grid gap-5 xl:grid-cols-2">
           {quotes.map((q) => (
-            <QuotePanel key={q.id} quote={q} jobId={detail.job.id} origin={origin} />
+            <QuotePanel key={q.id} quote={q} jobId={detail.job.id} origin={origin}>
+              {q.status === "draft" ? (
+                <QuoteBuilder
+                  quote={q}
+                  findings={findings}
+                  priceBook={live.map((i) => ({
+                    id: i.id,
+                    name: i.name,
+                    price_cents: i.price_cents,
+                  }))}
+                  settings={{
+                    tax_rate_bps: settings.tax_rate_bps ?? 0,
+                    deposit: settings.deposit ?? {
+                      type: "percent",
+                      value_bps: 0,
+                      minimum_cents: 0,
+                    },
+                    tech_discount_limit_bps: settings.tech_discount_limit_bps ?? 0,
+                  }}
+                  isOwner={office.isOwner}
+                />
+              ) : null}
+            </QuotePanel>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

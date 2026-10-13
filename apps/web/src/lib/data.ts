@@ -449,7 +449,15 @@ export interface QuoteRow {
   accepted_at: string | null;
   accepted_by_name: string | null;
   repair_job_id: string | null;
-  lines: { id: string; description: string; quantity: number; unit_price_cents: number }[];
+  lines: {
+    id: string;
+    description: string;
+    quantity: number;
+    unit_price_cents: number;
+    taxable: boolean;
+    finding_id: string | null;
+    price_book_item_id: string | null;
+  }[];
   payments: {
     id: string;
     amount_cents: number;
@@ -480,7 +488,9 @@ export async function getQuotes(office: Office, jobId: string): Promise<QuoteRow
   const [lines, payments, links, repairs] = await Promise.all([
     supabase
       .from("quote_line_item")
-      .select("id, quote_id, description, quantity, unit_price_cents, sort_order")
+      .select(
+        "id, quote_id, description, quantity, unit_price_cents, taxable, finding_id, price_book_item_id, sort_order",
+      )
       .in("quote_id", ids)
       .is("deleted_at", null)
       .order("sort_order"),
