@@ -356,6 +356,14 @@ Each milestone ends with: all checks green (lint, typecheck, unit, pgTAP, Playwr
 - Quote on the customer page, accept online or on site, Stripe Connect onboarding in settings, deposit via Checkout (card + ACH), webhooks, repair job creation, schedule the repair from the office.
 - **Done when:** in Stripe test mode a customer accepts and pays a deposit by card and by test ACH from a phone-sized browser. Statuses update through webhooks, and replaying a webhook changes nothing.
 
+### M8.5 Field parity with the design partner's current tool
+Added 2026-10-13 after reviewing his current reports (`docs/research/2026-10-13-current-report-system.md`).
+- Checklist verdicts per item: Not leaking, Leaking, Attention, Not applicable (no reason needed); "where" and photos per item; Leaking or Attention offers a finding.
+- Checklist sections (Visual inspection, Plumbing static test, Bond beam) and his item list as the default checklist; yes/no items for vinyl checks.
+- Report: pass / attention / leaking counts, every item with its verdict by section, leaks noted, detection fee, techs, date performed, large first photo, findings repaired on site.
+- Shop disclaimer setting printed on every report; detection fee on the job; a second tech per job; booking questions (why they called, pool and spa size); several emails per customer; report numbering continues from a starting number.
+- **Done when:** the sample job, entered the way he works (two techs, 27 items, one leaking item repaired on site), produces a report with the counts, the itemized verdicts, the fee, and the disclaimer, as a web page and PDF; the phone checklist works offline.
+
 ### M9 Invoicing and payment
 - Invoice from a completed job (detection fee and/or repair), deposit credited, send, pay via Checkout, statuses (`draft`, `sent`, `partially_paid`, `paid`, `void`), receipts, CSV export.
 - **Done when:** the full definition of done from the handoff passes end to end in test mode. Write it as a scripted Playwright + device checklist.

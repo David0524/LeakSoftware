@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (owner: match his current tool)
+- **Owner approved the 10 changes** proposed in `docs/research/2026-10-13-current-report-system.md`, as milestone M8.5 right after M8 and before invoicing.
+- Customer details and the shop's disclaimer text from his sample report are not committed (public repository); the owner enters the disclaimer in settings.
+
 ## 2026-10-13 (website appearance)
 - **Owner asked for light mode with a toggle.** The website has an Auto / Light / Dark switch (office header, public footer). Auto follows the device. The choice is kept in the browser and applied before the page draws. Customer reports and PDFs stay light whatever the setting.
 
