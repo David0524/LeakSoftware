@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (design reviews)
+- **Owner: per-milestone Apple Design reviews cost more than they find.** The skill is now used when planning new screens; one full review of every screen happens before the pilot (M11 accessibility pass). The house rules in CLAUDE.md still apply to all UI.
+
 ## 2026-10-13 (owner: match his current tool)
 - **Owner approved the 10 changes** proposed in `docs/research/2026-10-13-current-report-system.md`, as milestone M8.5 right after M8 and before invoicing.
 - Customer details and the shop's disclaimer text from his sample report are not committed (public repository); the owner enters the disclaimer in settings.
