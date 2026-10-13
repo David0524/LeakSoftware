@@ -225,8 +225,11 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                 ) : null}
 
                 {office.isOwner ? (
-                  <section className="mt-8" aria-labelledby="timeline">
-                    <h2 id="timeline" className="mb-3 font-display text-2xl font-bold">
+                  <section className="mt-6" aria-labelledby="timeline">
+                    <h2
+                      id="timeline"
+                      className="mb-2 font-display text-sm font-semibold tracking-widest text-text-muted uppercase"
+                    >
                       Timeline
                     </h2>
                     <Timeline detail={detail} tz={tz} />
@@ -822,18 +825,30 @@ async function Timeline({ detail, tz }: { detail: JobDetail; tz: string }) {
   );
   if (events.length === 0) return <Empty>No changes recorded yet.</Empty>;
   const who = new Map(team.map((t) => [t.user_id, t.name]));
+  const row = (e: (typeof events)[number], i: number) => (
+    <li key={i} className="flex gap-1.5 text-[15px]" title={e.text}>
+      <span className="min-w-0 truncate">{e.text}</span>
+      <span className="shrink-0 text-text-muted">
+        · {e.userId ? (who.get(e.userId) ?? "Teammate") : "System"} ·{" "}
+        {formatSchedule(e.at, new Date(), tz)}
+      </span>
+    </li>
+  );
+  // The latest few, newest first; the rest fold away (it ran to dozens of lines).
+  const SHOWN = 3;
+  const rest = events.slice(SHOWN, 200);
   return (
-    <ol className="space-y-2 border-l-2 border-border pl-4">
-      {events.slice(0, 200).map((e, i) => (
-        <li key={i}>
-          <span className="font-medium">{e.text}</span>
-          <span className="text-[15px] text-text-muted">
-            {" "}
-            · {e.userId ? (who.get(e.userId) ?? "Teammate") : "System"} ·{" "}
-            {formatSchedule(e.at, new Date(), tz)}
-          </span>
-        </li>
-      ))}
-    </ol>
+    <div className="border-l-2 border-border pl-3">
+      <ol className="space-y-1">{events.slice(0, SHOWN).map(row)}</ol>
+      {rest.length ? (
+        <details className="group">
+          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center font-semibold text-link [&::-webkit-details-marker]:hidden">
+            <span className="group-open:hidden">Show {rest.length} More</span>
+            <span className="hidden group-open:inline">Show Less</span>
+          </summary>
+          <ol className="space-y-1">{rest.map((e, i) => row(e, i + SHOWN))}</ol>
+        </details>
+      ) : null}
+    </div>
   );
 }

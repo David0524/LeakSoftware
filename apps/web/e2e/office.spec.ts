@@ -62,8 +62,13 @@ test("owner views the M4 sample job", async ({ page }) => {
   await expect(page.getByText("Return 3 line break", { exact: true })).toBeVisible();
   await expect(page.getByRole("img", { name: /Pool diagram with 2 finding pins/ })).toBeVisible();
 
-  // Owners see the timeline.
+  // Owners see the timeline: the latest three changes, the rest behind Show More.
   await expect(page.getByRole("heading", { name: "Timeline" })).toBeVisible();
+  const timeline = page.getByRole("region", { name: "Timeline" });
+  await expect(timeline.getByRole("listitem").filter({ visible: true })).toHaveCount(3);
+  await timeline.getByText(/^Show \d+ More$/).click();
+  expect(await timeline.getByRole("listitem").filter({ visible: true }).count()).toBeGreaterThan(3);
+  await expect(timeline.getByText("Show Less")).toBeVisible();
 });
 
 test("owner edits the price book", async ({ page }) => {
