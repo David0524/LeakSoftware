@@ -313,6 +313,14 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   );
   expect(await wide()).toBeLessThanOrEqual(390);
 
+  // The rest of the checklist: not leaking (or "No"), so the report can be sent.
+  for (const group of await tech.getByRole("radiogroup").all()) {
+    if (await group.locator('[aria-checked="true"]').count()) continue;
+    await group.getByRole("radio").first().click();
+    await expect(group.getByRole("radio").first()).toHaveAttribute("aria-checked", "true");
+  }
+  await expect(tech.getByText(/ · 1 leaking · 0 not applicable · 0 to do/)).toBeVisible();
+
   // A pressure test: the calculator works it out as it's typed.
   await tech.getByRole("button", { name: "Add Test" }).click();
   await tech.getByLabel("Test", { exact: true }).selectOption({ label: "Pressure test" });
