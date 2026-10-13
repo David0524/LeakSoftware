@@ -66,3 +66,37 @@ Plan: `docs/BUILD_PLAN.md` § M8.5. Background: `docs/research/2026-10-13-curren
   - `SUPABASE_SERVICE_ROLE_KEY`;
   - `EXPO_PUBLIC_API_URL`.
 - **Demo sign-ins:** `owner@demo.leakbook.test` / `tech@demo.leakbook.test`, password `leakbook-demo`.
+
+## New request from the owner (not started): route optimization with scheduling
+
+The owner asked for route optimization, folded into scheduling. `docs/BUILD_PLAN.md` line 28
+lists "Dispatch/routing" as out of scope, so the next session should:
+
+1. Log the change in `docs/DECISIONS.md` (owner, 2026-10-13: add route optimization and
+   scheduling).
+2. Propose where it goes in the plan. Suggested: a new milestone right after M9 (invoicing), so
+   the pilot is not held up. Agree it with the owner, then add it to BUILD_PLAN section 8.
+
+Suggested scope, to confirm with the owner:
+
+- **Geocode properties** on save: `property.latitude/longitude` already exist.
+- **Office "Plan Day"** on `/schedule`:
+  - pick a date and a tech;
+  - order that tech's jobs by drive time from the shop address, or from the tech's start
+    point;
+  - respect fixed appointment times;
+  - set arrival windows.
+  - Drag to reorder by hand.
+- **Fill gaps:** suggest unscheduled jobs (including repair jobs from accepted quotes) that fit
+  between booked jobs near the route.
+- **Phone:**
+  - a "Today" route list in order, with drive times;
+  - Navigate opens Apple or Google Maps;
+  - "On My Way" texts the customer an ETA from the tech's phone, like reports are texted.
+- **Provider:** a routing/optimization API, which is a new fixed cost and a new key in
+  `.env.example`. Options: Mapbox Optimization, Google Route Optimization, OpenRouteService
+  (free tier). The owner picks; small shops fit free tiers.
+- **Open questions for the owner:**
+  - Does each tech start from home or the shop?
+  - Do customers get arrival windows (for example 2 hours)?
+  - Are two-tech jobs routed together?
