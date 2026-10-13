@@ -164,6 +164,24 @@ export async function jobsBetween(office: Office, fromIso: string, toIso: string
   return attach(office, jobs);
 }
 
+/** Booked jobs with nobody assigned, from `fromIso` on (they wait in Needs a Time). */
+export async function unassignedFrom(office: Office, fromIso: string): Promise<JobRow[]> {
+  const supabase = await db();
+  const jobs = must(
+    await supabase
+      .from("job")
+      .select("*")
+      .eq("company_id", office.company.id)
+      .is("deleted_at", null)
+      .eq("status", "scheduled")
+      .is("assigned_user_id", null)
+      .gte("scheduled_start", fromIso)
+      .order("scheduled_start")
+      .limit(200),
+  ) as Job[];
+  return attach(office, jobs);
+}
+
 export interface JobDetail {
   job: JobRow;
   components: JobComponent[];

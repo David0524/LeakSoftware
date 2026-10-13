@@ -193,6 +193,20 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   await expect(route.getByTestId("stop")).toHaveCount(3);
   await expect(tray.getByTestId("tray-job").filter({ hasText: name("tempe") })).toHaveCount(1);
 
+  // 3b. Taking a job away from its tech puts it in Needs a Time, keeping its booked time.
+  await route
+    .getByRole("article", { name: new RegExp(name("zoo")) })
+    .getByRole("button", { name: "Move…" })
+    .click();
+  const zooSheet = page.getByRole("dialog", { name: `Move ${name("zoo")}` });
+  await zooSheet.getByLabel("Tech").selectOption({ label: "Nobody yet (waits in Needs a Time)" });
+  await zooSheet.getByRole("button", { name: "Move", exact: true }).click();
+  await expect(page.getByText(/^No tech yet, so it’s in Needs a Time/)).toBeVisible();
+  await expect(route.getByTestId("stop")).toHaveCount(2);
+  await expect(tray.getByTestId("tray-job").filter({ hasText: name("zoo") })).toContainText(
+    /No tech yet · booked .* at \d/,
+  );
+
   // 4. Suggest Times fits it into the routes already planned this week; pick the best.
   const card = tray.getByTestId("tray-job").filter({ hasText: name("tempe") });
   await card.getByRole("button", { name: "Suggest Times" }).click();

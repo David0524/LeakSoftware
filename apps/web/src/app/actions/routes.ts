@@ -235,7 +235,9 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
     if (error) return { error };
     if (from?.tech) await renumber(db, office, ctx, from.tech, from.date, jobId);
     refresh();
-    return { message: "Moved to Unassigned." };
+    return {
+      message: `No tech yet, so it’s in Needs a Time, still booked for ${minutesLabel(startMin)}.`,
+    };
   }
 
   // On a tech's day, at the chosen place.

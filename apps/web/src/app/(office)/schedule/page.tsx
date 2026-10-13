@@ -7,6 +7,7 @@ import {
   formatDay,
   formatTime,
   isDateString,
+  localDate,
   lockReason,
   minutesLabel,
   propertyLocation,
@@ -14,7 +15,12 @@ import {
   scheduleDays,
   type ScheduleView,
 } from "@leakbook/core";
-import { RouteBoard, type BoardColumn, type BoardStop } from "@/components/route-board";
+import {
+  RouteBoard,
+  type BoardColumn,
+  type BoardStop,
+  type TrayJob,
+} from "@/components/route-board";
 import { Notice, PageHeader, StatusBadge, buttonClass, cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import type { JobRow } from "@/lib/data";
@@ -22,7 +28,7 @@ import {
   loadRoutes,
   routeContext,
   routeKey,
-  unscheduledJobs,
+  needsScheduling,
   type DayRoute,
   type RouteContext,
 } from "@/server/route-days";
@@ -54,17 +60,23 @@ function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardSto
   };
 }
 
+/** A job in Needs a Time; a booked one without a tech shows when it's booked. */
+function trayStop(j: JobRow, ctx: RouteContext): TrayJob {
+  const booked = j.scheduled_start
+    ? `No tech yet · booked ${formatDay(localDate(new Date(j.scheduled_start), ctx.timeZone))} at ${formatTime(j.scheduled_start, ctx.timeZone)}`
+    : null;
+  const stop = toStop(j, ctx);
+  return { ...stop, note: [booked, stop.note].filter(Boolean).join(" · ") || null, kind: j.type };
+}
+
 function column(
   ctx: RouteContext,
-  techId: string | null,
+  techId: string,
   title: string,
   date: string,
   route: DayRoute | undefined,
-  unassigned: JobRow[],
 ): BoardColumn {
-  const stops = route
-    ? route.jobs.map((j, i) => toStop(j, ctx, route, i))
-    : unassigned.map((j) => toStop(j, ctx));
+  const stops = route ? route.jobs.map((j, i) => toStop(j, ctx, route, i)) : [];
   const legs = route?.summary.legs.reduce((a, b) => a + b, 0) ?? 0;
   const origin =
     ctx.depot || ctx.depotAddress ? { address: ctx.depotAddress, location: ctx.depot } : null;
@@ -98,21 +110,19 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   const days = scheduleDays(view, date);
   const [{ routes, unassigned, team }, tray] = await Promise.all([
     loadRoutes(office, ctx, days),
-    unscheduledJobs(office),
+    needsScheduling(office, ctx),
   ]);
+  const trayJobs = tray.map((j) => trayStop(j, ctx));
 
-  // Every active tech gets a route, plus anyone with work these days, plus Unassigned.
+  // Every active tech gets a route, plus anyone with work these days. Jobs with no tech are
+  // in Needs a Time.
   const techs = team.filter(
     (t) => t.status === "active" || days.some((d) => routes.has(routeKey(t.user_id, d))),
   );
-  const anyUnassigned = days.some((d) => unassigned.has(d));
   const columns: BoardColumn[] = [];
   for (const t of techs)
     for (const d of days)
-      columns.push(column(ctx, t.user_id, t.name, d, routes.get(routeKey(t.user_id, d)), []));
-  if (anyUnassigned)
-    for (const d of days)
-      columns.push(column(ctx, null, "Unassigned", d, undefined, unassigned.get(d) ?? []));
+      columns.push(column(ctx, t.user_id, t.name, d, routes.get(routeKey(t.user_id, d))));
   const unlocated = columns.some((c) => c.stops.some((s) => !s.location));
 
   const step = view === "day" ? 1 : 7;
@@ -121,7 +131,9 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
     view === "day"
       ? formatDay(date, "long")
       : `${formatDay(days[0]!)} – ${formatDay(days[days.length - 1]!)}`;
-  const jobsShown = columns.reduce((n, c) => n + c.stops.length, 0);
+  const jobsShown =
+    columns.reduce((n, c) => n + c.stops.length, 0) +
+    days.reduce((n, d) => n + (unassigned.get(d)?.length ?? 0), 0);
 
   return (
     <>
@@ -199,6 +211,12 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                   c.stops
                     .filter((s) => !s.note?.startsWith("Second tech"))
                     .map((s) => ({ s, tech: c.title })),
+                )
+                .concat(
+                  (unassigned.get(d) ?? []).map((j) => ({
+                    s: toStop(j, ctx),
+                    tech: "No tech yet",
+                  })),
                 );
               return (
                 <section key={d} aria-label={formatDay(d, "long")}>
@@ -246,7 +264,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
             <RouteBoard
               mode="week"
               columns={columns}
-              tray={tray.map((j) => ({ ...toStop(j, ctx), kind: j.type }))}
+              tray={trayJobs}
               techs={team
                 .filter((t) => t.status === "active")
                 .map((t) => ({ id: t.user_id, name: t.name }))}
@@ -259,7 +277,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
         <RouteBoard
           mode="day"
           columns={columns}
-          tray={tray.map((j) => ({ ...toStop(j, ctx), kind: j.type }))}
+          tray={trayJobs}
           techs={team
             .filter((t) => t.status === "active")
             .map((t) => ({ id: t.user_id, name: t.name }))}

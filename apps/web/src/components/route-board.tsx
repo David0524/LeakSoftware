@@ -62,9 +62,9 @@ export interface BoardStop {
 }
 
 export interface BoardColumn {
-  /** "techId|date", "none|date" for Unassigned. */
+  /** "techId|date" */
   key: string;
-  techId: string | null;
+  techId: string;
   title: string;
   date: string;
   stops: BoardStop[];
@@ -173,8 +173,10 @@ export function RouteBoard({
       setResult({ error: "Pick today or a later day.", at: Date.now() });
       return;
     }
-    run({ job, to, index }, () =>
-      moveJob({ job, tech: tech === "none" ? null : tech, date: date!, index }),
+    // No tech: the job keeps its time and waits in Needs a Time.
+    const none = tech === "none";
+    run({ job, to: none ? TRAY : to, index: none ? 0 : index }, () =>
+      moveJob({ job, tech: none ? null : tech, date: date!, index }),
     );
   }
 
@@ -841,7 +843,7 @@ function MoveSheet({
               className="mt-1 min-h-11 w-full rounded-md border border-control-border bg-surface px-3"
               autoFocus
             >
-              <option value="">Nobody yet</option>
+              <option value="">Nobody yet (waits in Needs a Time)</option>
               {techs.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}

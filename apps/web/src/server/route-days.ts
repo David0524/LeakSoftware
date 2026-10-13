@@ -9,6 +9,7 @@ import {
   routingSettings,
   scheduleBounds,
   workDay,
+  zonedTimeToIso,
   type DaySummary,
   type DriveFn,
   type LatLng,
@@ -20,6 +21,7 @@ import {
   getTeam,
   jobsBetween,
   listJobs,
+  unassignedFrom,
   type JobRow,
   type TeamMember,
 } from "@/lib/data";
@@ -128,10 +130,20 @@ export async function loadRoutes(
   return { routes, unassigned, team, drive };
 }
 
-/** Jobs waiting for a time, oldest first (repairs from accepted quotes land here). */
-export async function unscheduledJobs(office: Office): Promise<JobRow[]> {
-  const jobs = await listJobs(office, ["unscheduled"]);
-  return jobs.sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""));
+/**
+ * Needs a Time: every job that isn't on someone's route. Jobs without a time, oldest
+ * first (repairs from accepted quotes land here), then booked jobs with nobody assigned
+ * (taken off a tech, or booked before choosing one), soonest first.
+ */
+export async function needsScheduling(office: Office, ctx: RouteContext): Promise<JobRow[]> {
+  const [waiting, untech] = await Promise.all([
+    listJobs(office, ["unscheduled"]),
+    unassignedFrom(office, zonedTimeToIso(ctx.today, "00:00", ctx.timeZone)),
+  ]);
+  return [
+    ...waiting.sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? "")),
+    ...untech,
+  ];
 }
 
 /**
