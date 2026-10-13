@@ -2,6 +2,16 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (M7 reports)
+- **Server writes to reports go through database functions** (`prepare_report`, `save_report_draft`, `send_report`, `log_message`), called as the signed-in member so membership checks apply. Freezing the snapshot, superseding the previous version, creating the customer link, and moving the job to "report sent" happen in one transaction. Clients can only edit `final_sections` on a draft; sent reports never change.
+- **The snapshot is built in SQL** (`app.report_snapshot`), so the website, the phone API, and the tests all freeze the same facts. Signatures for quote acceptance are left out of reports.
+- **AI narrative:** Claude through the Anthropic API, model from `ANTHROPIC_MODEL` (default `claude-opus-5-5`), structured output, medium effort, with server-side fallback to another model if the first declines. The validator gets one retry with its problems listed; anything still wrong is shown to the tech above the text. **Without `ANTHROPIC_API_KEY` the draft is a plain summary built from the job data** (labeled `leakbook-plain`), so reports work before the key is set.
+- **PDF:** the customer page printed by headless Chromium. It is stored at a fixed path (`documents/{company}/{job}/report-{id}.pdf`) only when the server has the service-role key; otherwise it is rendered on request. The email attaches it when under 5 MB.
+- **Customer link files:** signed-out visitors can read only the files listed in the snapshot of a report with a live link (photos, signatures, logo, PDF).
+- **Email:** Resend. Sender "{Shop} via LeakBook" from `EMAIL_FROM_DOMAIN`, replies to the shop's email. Without a key the office shows Send by Text only. Tests write emails to `EMAIL_OUTBOX_DIR`.
+- **Signatures** are drawn strokes saved as an SVG beside the job's photos (crisp in the PDF, tiny, works offline) and uploaded through the photo queue. Quote acceptance is hidden until quotes exist (M8).
+- **Writing and sending from the phone need a connection and `EXPO_PUBLIC_API_URL`**; editing the text works offline and syncs. Sending first pushes edits and refuses if they have not reached the server, so the customer gets what the tech approved.
+
 ## 2026-10-12 (M6 accepted)
 - **Owner opened the website and accepted M6** without running the checklist, and asked to continue with M7.
 
