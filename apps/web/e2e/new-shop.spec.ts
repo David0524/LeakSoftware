@@ -96,7 +96,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   // 4. Inspect: start, one leak with where, the rest not leaking; a finding.
   await page.getByRole("button", { name: "Start Job" }).click();
   await expect(page.getByRole("button", { name: "Move Back to Scheduled" })).toBeVisible();
-  const skimmer = page.getByRole("radiogroup", { name: "Skimmer 1", exact: true });
+  const skimmer = page.getByRole("radiogroup", { name: "Skimmer", exact: true });
   await skimmer.getByRole("radio", { name: "Leaking", exact: true }).click();
   const where = page.getByLabel("Where", { exact: true });
   await where.fill("Throat seam");
@@ -110,7 +110,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await page.getByRole("button", { name: "Add Finding" }).click();
   await page.getByLabel("What").fill("Cracked skimmer throat");
   await page.getByLabel("Severity").selectOption({ label: "Major" });
-  await page.locator("form").getByLabel("Item (optional)").selectOption({ label: "Skimmer 1" });
+  await page.locator("form").getByLabel("Item (optional)").selectOption({ label: "Skimmer" });
   await page.locator("form").getByRole("button", { name: "Add Finding" }).click();
   await expect(page.getByText("Cracked skimmer throat", { exact: true })).toBeVisible();
 
@@ -124,7 +124,10 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   // 6. Quote from the finding's suggested price, sent.
   await page.getByRole("button", { name: "Start Quote" }).click();
   const quotePanel = page.getByTestId("quote");
-  await quotePanel.getByRole("button", { name: "Add Skimmer throat repair, $225.00" }).click();
+  await quotePanel
+    .getByLabel("Add from the price book")
+    .selectOption({ label: "Skimmer throat repair ($225.00)" });
+  await quotePanel.getByRole("button", { name: "Add Item" }).click();
   await expect(quotePanel.getByTestId("quote-line")).toHaveCount(1);
   await quotePanel.getByRole("button", { name: "Send Quote" }).click();
   const quoteLink = await quotePanel.getByLabel("Customer link").inputValue();

@@ -26,6 +26,8 @@ export default defineConfig({
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL,
+    // Fail a step that can't find its element in 30 s, not at the end of the whole test.
+    actionTimeout: 30_000,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     ...devices["Desktop Chrome"],
