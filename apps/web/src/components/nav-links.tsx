@@ -35,46 +35,52 @@ export function TabBar({ links: all }: { links: { href: string; label: string }[
   const overflow = all.length > 5 ? all.slice(4) : [];
   const links = overflow.length ? [...all.slice(0, 4), { href: "/more", label: "More" }] : all;
   return (
-    <nav
-      aria-label="Main"
-      className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 rounded-[28px] px-1 sm:hidden"
+    // The full-width layer under the floating bar catches taps that miss it (the margins
+    // beside it and the strip below it), so they never reach the page underneath. Its own
+    // compositing layer keeps iOS Safari hit-testing the bar where it is drawn while the
+    // page is still scrolling or the browser's toolbar is moving.
+    <div
+      data-testid="tab-bar-layer"
+      className="fixed inset-x-0 bottom-0 z-30 transform-gpu touch-manipulation px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:hidden"
     >
-      <ul className="flex">
-        {links.map((l) => {
-          const active =
-            path === l.href ||
-            path.startsWith(`${l.href}/`) ||
-            (l.href === "/more" &&
-              overflow.some((o) => path === o.href || path.startsWith(`${o.href}/`)));
-          return (
-            <li key={l.href} className="flex-1">
-              <Link
-                href={l.href}
-                aria-current={active ? "page" : undefined}
-                className={cx(
-                  "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-3xl text-[11px] font-semibold",
-                  active ? "bg-link/10 text-link" : "text-text",
-                )}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  className="size-6"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
+      <nav aria-label="Main" className="glass rounded-[28px] px-1">
+        <ul className="flex">
+          {links.map((l) => {
+            const active =
+              path === l.href ||
+              path.startsWith(`${l.href}/`) ||
+              (l.href === "/more" &&
+                overflow.some((o) => path === o.href || path.startsWith(`${o.href}/`)));
+            return (
+              <li key={l.href} className="flex-1">
+                <Link
+                  href={l.href}
+                  aria-current={active ? "page" : undefined}
+                  className={cx(
+                    "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-3xl text-[11px] font-semibold",
+                    active ? "bg-link/10 text-link" : "text-text",
+                  )}
                 >
-                  {ICONS[l.href]}
-                </svg>
-                {l.label}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="size-6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    {ICONS[l.href]}
+                  </svg>
+                  {l.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </div>
   );
 }
 

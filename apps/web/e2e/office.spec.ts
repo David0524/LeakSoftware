@@ -253,6 +253,12 @@ test("on a phone: a tab bar moves between sections and nothing scrolls sideways"
       390,
     );
   }
+  // A tap just beside or below the floating bar lands on the bar's layer, not on the
+  // page underneath (the Jobs list's cards run under it).
+  const before = page.url();
+  await page.touchscreen.tap(4, 844 - 40);
+  await page.touchscreen.tap(195, 844 - 4);
+  await expect(page).toHaveURL(before);
   // Invoices, Warranties, and Settings are under More.
   await tabs.getByRole("link", { name: "More" }).click();
   await page.getByRole("main").getByRole("link", { name: "Invoices" }).click();
