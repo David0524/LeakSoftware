@@ -262,6 +262,8 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   page,
   browser,
 }) => {
+  // The whole visit, start to quote: longer than one page test.
+  test.setTimeout(300_000);
   // The office books it for Tony Tech.
   await signIn(page, OWNER, "/jobs/new");
   const name = `Phone Work ${RUN}`;
@@ -313,11 +315,15 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   );
   expect(await wide()).toBeLessThanOrEqual(390);
 
-  // The rest of the checklist: not leaking (or "No"), so the report can be sent.
+  // The rest of the checklist: not leaking (or "No"), so the report can be sent. Each tap
+  // saves and refreshes the page, one at a time, so wait for each to land.
+  const tally = tech.getByText(/ to do$/);
+  const toDo = async () => Number(/(\d+) to do/.exec(await tally.innerText())![1]);
   for (const group of await tech.getByRole("radiogroup").all()) {
     if (await group.locator('[aria-checked="true"]').count()) continue;
+    const before = await toDo();
     await group.getByRole("radio").first().click();
-    await expect(group.getByRole("radio").first()).toHaveAttribute("aria-checked", "true");
+    await expect.poll(toDo).toBe(before - 1);
   }
   await expect(tech.getByText(/ · 1 leaking · 0 not applicable · 0 to do/)).toBeVisible();
 
