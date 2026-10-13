@@ -58,8 +58,9 @@ Plan: `docs/BUILD_PLAN.md` § M8.5. Background: `docs/research/2026-10-13-curren
 - **Pushing:** each push cancels the in-progress CI run (concurrency). Don't push while waiting on a result you need.
 - **Deploying:** `pnpm db:deploy` applies every pending migration in the folder. Move unfinished migrations aside if you deploy early.
 - **Repo is public:** never commit customer details or the partner's disclaimer text from his sample report.
+- **Hosting:** the website is live on Vercel at https://leaksoftware-web.vercel.app. Production builds from `claude/cool-keller-efjc00`, so every push there goes live. Report PDFs need files that Next's tracing misses; `apps/web/next.config.ts` adds them for the PDF routes.
 - **Owner setup still pending:**
-  - hosting on Vercel;
+  - `APP_BASE_URL` in Vercel (the site address, for links in emails);
   - `ANTHROPIC_API_KEY`;
   - Resend and a verified domain;
   - a Stripe test account, Connect, and keys;
