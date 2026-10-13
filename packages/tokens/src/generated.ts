@@ -48,7 +48,8 @@ export const tokens = {
         "focus": "#1F6FAE",
         "diagramWater": "#CFE3F3",
         "onStatus": "#FFFFFF",
-        "controlBorder": "#5A6875"
+        "controlBorder": "#5A6875",
+        "chart": "#1F6FAE"
       },
       "dark": {
         "bg": "#0E141A",
@@ -69,7 +70,8 @@ export const tokens = {
         "onStatus": "#12263A",
         "controlBorder": "#8A97A4",
         "warning": "#D9A040",
-        "info": "#6AAEE6"
+        "info": "#6AAEE6",
+        "chart": "#4A93D0"
       }
     }
   },

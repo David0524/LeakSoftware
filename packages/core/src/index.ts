@@ -14,3 +14,4 @@ export * from "./quote";
 export * from "./invoice";
 export * from "./followups";
 export * from "./warranty";
+export * from "./dashboard";

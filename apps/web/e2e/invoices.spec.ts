@@ -196,3 +196,17 @@ test("owners see every invoice and export them as CSV", async ({ page }) => {
   const payments = await page.request.get("/invoices/export?kind=payments");
   expect(await payments.text()).toMatch(/^Date,For,Number,Amount,Method,Status,/);
 });
+
+test("the owner's dashboard shows money collected; techs can't open it", async ({ page }) => {
+  await signIn(page, OWNER, "/dashboard");
+  await expect(page.getByRole("heading", { level: 1, name: "Dashboard" })).toBeVisible();
+  const collected = page.locator("dl > div").filter({ hasText: "Collected" });
+  await expect(collected).not.toContainText("$0.00");
+  await expect(page.getByRole("heading", { name: "Jobs by Status" })).toBeVisible();
+  await expect(page.getByRole("table")).toContainText("Collected");
+
+  await page.context().clearCookies();
+  await signIn(page, TECH, "/jobs");
+  await page.goto("/dashboard");
+  await expect(page).toHaveURL(/\/jobs$/);
+});

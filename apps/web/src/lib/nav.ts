@@ -5,6 +5,7 @@ export function officeLinks(isOwner: boolean) {
     { href: "/schedule", label: "Schedule" },
     { href: "/customers", label: "Customers" },
     { href: "/invoices", label: "Invoices" },
+    ...(isOwner ? [{ href: "/dashboard", label: "Dashboard" }] : []),
     { href: "/warranties", label: "Warranties" },
     ...(isOwner ? [{ href: "/settings", label: "Settings" }] : []),
   ];

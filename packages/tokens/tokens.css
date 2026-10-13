@@ -34,6 +34,7 @@
   --lb-diagram-water: #CFE3F3;
   --lb-on-status: #FFFFFF;
   --lb-control-border: #5A6875;
+  --lb-chart: #1F6FAE;
   --lb-font-display: "Barlow Semi Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
   --lb-font-body: "Public Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -58,6 +59,7 @@
   --lb-control-border: #8A97A4;
   --lb-warning: #D9A040;
   --lb-info: #6AAEE6;
+  --lb-chart: #4A93D0;
   color-scheme: dark;
 }
 
@@ -82,6 +84,7 @@
     --lb-control-border: #8A97A4;
     --lb-warning: #D9A040;
     --lb-info: #6AAEE6;
+    --lb-chart: #4A93D0;
     color-scheme: dark;
   }
 }
@@ -107,6 +110,7 @@
   --lb-diagram-water: #CFE3F3;
   --lb-on-status: #FFFFFF;
   --lb-control-border: #5A6875;
+  --lb-chart: #1F6FAE;
   color-scheme: light;
 }
 
@@ -126,6 +130,7 @@
   --color-diagram-water: var(--lb-diagram-water);
   --color-on-status: var(--lb-on-status);
   --color-control-border: var(--lb-control-border);
+  --color-chart: var(--lb-chart);
   --color-navy: var(--lb-navy);
   --color-water: var(--lb-water);
   --color-safety: var(--lb-safety);
