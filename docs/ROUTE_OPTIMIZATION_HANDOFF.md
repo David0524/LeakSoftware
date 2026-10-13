@@ -11,8 +11,9 @@ owner says otherwise.
 2. Add it as its own milestone in BUILD_PLAN section 8, with a "Done when". The suggested
    placement is right after M9 (invoicing), so the pilot is not held up. Confirm the placement
    with the owner.
-3. The owner picks a routing provider (see Cost below). Add its key to `.env.example` and the
-   hosting settings, never to chat or the repo.
+3. **Provider: Mapbox** (owner, 2026-10-13: "fine for now, but the goal is to sell this
+   elsewhere"). Add `MAPBOX_TOKEN` (server-side secret token) to `.env.example` and the hosting
+   settings, never to chat or the repo.
 4. Plan the screens with the apple-design skill before building them (CLAUDE.md).
 
 ## The owner's answers so far
@@ -24,6 +25,35 @@ owner says otherwise.
 - **Two-tech jobs routed together:** sometimes. When a job has a `second_tech_id` (added in
   M8.5), plan the two techs together that day: same time slot, or the same whole route if the
   office chooses "ride together". Otherwise route each tech separately.
+
+## Built to sell to many shops
+
+LeakBook is meant to be sold to other shops, so routing must keep working, and stay affordable,
+at hundreds of shops:
+
+- **Provider behind one interface.** Put all routing calls behind a small server module (for
+  example `apps/web/src/server/routing.ts`: `geocode`, `driveTimes`, `orderStops`) with a Mapbox
+  implementation. Screens and the database never know which provider is used, so switching to
+  Google or self-hosted routing later is one file. Keep the pure parts in `packages/core`: time
+  windows, fixed appointments, and fitting a gap. Unit test them without network access.
+- **All calls from the server.** The token never ships in the phone app or the browser. One
+  LeakBook key serves all shops, so shops have nothing to set up.
+- **Count usage per company.** Log each routing call with `company_id` (for example in an
+  `app.routing_usage` table with a daily count). This shows the cost per shop and lets LeakBook
+  cap or price heavy users later. Add a per-company daily limit in config.
+- **Cache.** Geocode each address once (only when it changes). Cache drive times between the
+  same two points for a day. Never re-plan automatically on every edit; plan when the office
+  presses Plan Day.
+- **Mapbox terms to check before building:**
+  - Storing geocoding results (saving latitude and longitude on the property) needs Mapbox's
+    *permanent* geocoding, which is priced separately from the free temporary geocoding.
+    Confirm its price and terms at mapbox.com/pricing.
+  - Alternative for coordinates: take them from the phone's GPS at the pool. That is free and
+    stored by us.
+  - The Optimization API takes up to 12 stops per request. Days with more stops need splitting
+    (or ordering by the Matrix API plus our own solver in core).
+- **Works without a key.** With no `MAPBOX_TOKEN`, scheduling still works by hand (drag to
+  order), and Plan Day says routing isn't set up. The same pattern as email and AI in M7.
 
 ## Suggested scope
 
@@ -65,7 +95,7 @@ day, or under 1,000 a month. Geocoding adds about 100–300 new addresses a mont
 | Google Route Optimization | Billed per shipment (stop), with single-vehicle and fleet SKUs. There is a free threshold since March 2025; current amounts not confirmed. | Probably a few dollars a month or less per shop. Best quality, most setup (Google Cloud billing). |
 | OpenRouteService | Free plan: 500 optimization requests a day. Commercial use on the free plan is unclear; self-hosting does not include optimization. | $0, but risky for a paid product. Fine for prototyping. |
 
-Recommendation: **Mapbox.** It is free at this size, has one key for geocoding, drive times and
+Chosen: **Mapbox** (owner, 2026-10-13). It is free at this size, has one key for geocoding, drive times and
 optimization, and is simple to call from the server. Its 12-stop limit per request is enough for
 one tech's day. Revisit Google if multi-tech fleet planning (assigning jobs across techs
 automatically) becomes important.

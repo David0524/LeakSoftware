@@ -12,6 +12,10 @@ Newest first. Each entry: date, decision, reason.
 - **Verified with signed simulated webhook events** in CI (bank and card deposits, replay). A real Stripe test-mode run waits for the owner's Stripe keys.
 - **Not yet:** rate limiting on the customer endpoints (plan section 7) moves to M11 hardening; a customer can't decline online (the office can mark it later).
 
+## 2026-10-13 (route optimization)
+- **Owner asked for route optimization folded into scheduling** (was out of scope in BUILD_PLAN). Techs start and end at the shop. Arrival windows undecided (setting, off by default). Two-tech jobs are sometimes routed together.
+- **Provider: Mapbox for now.** LeakBook will be sold to other shops, so routing sits behind one server interface (swappable), is called only from the server with LeakBook's key, and is counted per company. Plan: `docs/ROUTE_OPTIMIZATION_HANDOFF.md`.
+
 ## 2026-10-13 (design reviews)
 - **Owner: per-milestone Apple Design reviews cost more than they find.** The skill is now used when planning new screens; one full review of every screen happens before the pilot (M11 accessibility pass). The house rules in CLAUDE.md still apply to all UI.
 
