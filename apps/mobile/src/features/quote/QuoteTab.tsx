@@ -301,7 +301,7 @@ function DraftQuote({ job, quote }: { job: Job; quote: JobQuote }) {
           onPress={() => void send()}
         />
         {!reportsOnline ? (
-          <T variant="muted">This app isn’t connected to the LeakBook server, so it can’t send.</T>
+          <T variant="muted">This app isn’t connected to the Tidemark server, so it can’t send.</T>
         ) : null}
       </Card>
     </View>

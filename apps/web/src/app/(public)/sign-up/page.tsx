@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AuthCard } from "@/components/auth-card";
 import { TrialForm } from "@/components/auth-forms";
 
-export const metadata: Metadata = { title: "Start Free Trial · LeakBook" };
+export const metadata: Metadata = { title: "Start Free Trial · Tidemark" };
 
 export default function SignUpPage() {
   return (

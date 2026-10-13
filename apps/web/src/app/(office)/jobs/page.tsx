@@ -5,7 +5,7 @@ import { Empty, PageHeader, StatusBadge, cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { OPEN_STATUSES, listJobs } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Jobs · LeakBook" };
+export const metadata: Metadata = { title: "Jobs · Tidemark" };
 
 const FILTERS: { key: string; label: string; statuses: JobStatus[] | null }[] = [
   { key: "open", label: "Open", statuses: OPEN_STATUSES },

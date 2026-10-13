@@ -8,7 +8,7 @@ import { getCompany, getPaymentAccount } from "@/lib/data";
 import { PaymentsSetupButton } from "@/components/payments-setup";
 import { paymentsConfigured, refreshAccount } from "@/server/stripe";
 
-export const metadata: Metadata = { title: "Payments and Deposits · LeakBook" };
+export const metadata: Metadata = { title: "Payments and Deposits · Tidemark" };
 
 interface Settings {
   deposit?: { type?: string; value_bps?: number; value_cents?: number; minimum_cents?: number };
@@ -44,7 +44,7 @@ export default async function PaymentsSettingsPage({
         <SectionTitle>Online payments</SectionTitle>
         {!paymentsConfigured() ? (
           <Notice tone="warning">
-            Online payments aren’t set up on this LeakBook server yet. Customers can still accept
+            Online payments aren’t set up on this Tidemark server yet. Customers can still accept
             quotes.
           </Notice>
         ) : account?.charges_enabled ? (

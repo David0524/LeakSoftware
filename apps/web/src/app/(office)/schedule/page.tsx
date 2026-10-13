@@ -15,7 +15,7 @@ import { PageHeader, StatusBadge, buttonClass, cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getTeam, jobsBetween, type JobRow } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Schedule · LeakBook" };
+export const metadata: Metadata = { title: "Schedule · Tidemark" };
 
 export default async function SchedulePage({ searchParams }: PageProps<"/schedule">) {
   const office = await getOffice();

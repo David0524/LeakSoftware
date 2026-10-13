@@ -84,7 +84,7 @@ export function InvoiceSection({ job, customer }: { job: Job; customer: Customer
             disabled={busy !== null || !reportsOnline}
             onPress={() => void run("create")}
           />
-          {!reportsOnline ? <Notice>Invoices need the LeakBook server.</Notice> : null}
+          {!reportsOnline ? <Notice>Invoices need the Tidemark server.</Notice> : null}
           {error ? <Notice tone="error">{error}</Notice> : null}
         </Card>
       </Section>

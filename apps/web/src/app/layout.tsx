@@ -4,7 +4,7 @@ import { body, display } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "LeakBook",
+  title: "Tidemark",
   description: "Inspection reports, repair quotes, and invoicing for pool leak detection shops.",
 };
 

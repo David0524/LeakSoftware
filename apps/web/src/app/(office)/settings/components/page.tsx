@@ -5,7 +5,7 @@ import { Card, Checkbox, PageHeader, Select } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listConfig, type ComponentType } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Checklist Components · LeakBook" };
+export const metadata: Metadata = { title: "Checklist Components · Tidemark" };
 
 const APPLIES = [
   { value: "pool", label: "Pool" },

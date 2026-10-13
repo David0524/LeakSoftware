@@ -21,10 +21,10 @@ afterEach(() => {
 });
 
 describe("sendEmail", () => {
-  it("sends from the shop via LeakBook with replies to the shop", async () => {
+  it("sends from the shop via Tidemark with replies to the shop", async () => {
     process.env.EMAIL_FROM_DOMAIN = "send.example.com";
     expect(fromAddress("Demo Leak Co.")).toBe(
-      '"Demo Leak Co. via LeakBook" <reports@send.example.com>',
+      '"Demo Leak Co. via Tidemark" <reports@send.example.com>',
     );
     process.env.RESEND_API_KEY = "re_test";
     let sent: { url: string; init: RequestInit } | null = null;
@@ -44,7 +44,7 @@ describe("sendEmail", () => {
       reply_to: "office@demo.test",
       subject: "Your report",
     });
-    expect(body.from).toBe('"Demo Leak Co. via LeakBook" <reports@send.leakbook.com>');
+    expect(body.from).toBe('"Demo Leak Co. via Tidemark" <reports@send.tidemark.app>');
     expect(body.attachments[0]).toEqual({
       filename: "r.pdf",
       content: Buffer.from("%PDF-1.7").toString("base64"),

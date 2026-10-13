@@ -1,4 +1,4 @@
-"""Generate LeakBook logo SVGs from exact geometry.
+"""Generate Tidemark logo SVGs from exact geometry.
 
 The drop-pin mark was measured from the approved ChatGPT concept and rebuilt
 as clean geometry: a circle head, curved sides to the tip, a constant-width
@@ -229,7 +229,7 @@ def mark_group(pin_fill, dot_fill=None, tx=0.0, ty=0.0, scale=1.0, small=False):
     )
 
 
-def svg(w, h, body, bg=None, title="LeakBook"):
+def svg(w, h, body, bg=None, title="Tidemark"):
     rect = f'<rect width="{f(w)}" height="{f(h)}" fill="{bg}"/>' if bg else ""
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {f(w)} {f(h)}" '
@@ -277,12 +277,12 @@ def wordmark_paths(text_parts, cap_height):
     return "".join(out), x
 
 
-def lockup(leak_fill, book_fill, pin_fill, dot_fill, bg=None, pad=0.0):
+def lockup(tide_fill, mark_fill, pin_fill, dot_fill, bg=None, pad=0.0):
     """Horizontal lockup: mark, gap, wordmark. Cap height ~= 46% of mark height."""
     mark_h = MARK_H
     cap_h = mark_h * 0.46
     gap = mark_h * 0.2
-    words, words_w = wordmark_paths([("Leak", leak_fill), ("Book", book_fill)], cap_h)
+    words, words_w = wordmark_paths([("Tide", tide_fill), ("mark", mark_fill)], cap_h)
     w = MARK_W + gap + words_w + 2 * pad
     h = mark_h + 2 * pad
     mark = mark_group(pin_fill, dot_fill, tx=R + pad, ty=R + pad)
@@ -296,22 +296,22 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     files = {
         # Mark only
-        "leakbook-mark.svg": mark_svg(WATER, SAFETY),
-        "leakbook-mark-reverse.svg": mark_svg(WHITE, SAFETY),
-        "leakbook-mark-black.svg": mark_svg(BLACK, None),
-        "leakbook-mark-white.svg": mark_svg(WHITE, None),
+        "tidemark-mark.svg": mark_svg(WATER, SAFETY),
+        "tidemark-mark-reverse.svg": mark_svg(WHITE, SAFETY),
+        "tidemark-mark-black.svg": mark_svg(BLACK, None),
+        "tidemark-mark-white.svg": mark_svg(WHITE, None),
         # Horizontal lockups
-        "leakbook-logo.svg": lockup(NAVY, WATER, WATER, SAFETY),
-        "leakbook-logo-reverse.svg": lockup(WHITE, WHITE, WHITE, SAFETY),
-        "leakbook-logo-black.svg": lockup(BLACK, BLACK, BLACK, None),
+        "tidemark-logo.svg": lockup(NAVY, WATER, WATER, SAFETY),
+        "tidemark-logo-reverse.svg": lockup(WHITE, WHITE, WHITE, SAFETY),
+        "tidemark-logo-black.svg": lockup(BLACK, BLACK, BLACK, None),
         # App icons
-        "leakbook-app-icon.svg": square_icon(1024, NAVY, WHITE, SAFETY, 0.62),
+        "tidemark-app-icon.svg": square_icon(1024, NAVY, WHITE, SAFETY, 0.62),
         # Android adaptive foreground: art inside the 66% safe zone, transparent.
-        "leakbook-adaptive-foreground.svg": square_icon(1024, None, WHITE, SAFETY, 0.46),
+        "tidemark-adaptive-foreground.svg": square_icon(1024, None, WHITE, SAFETY, 0.46),
         # Android 13+ themed (monochrome) icon: one color, dot cut out, transparent.
-        "leakbook-adaptive-monochrome.svg": square_icon(1024, None, WHITE, None, 0.46),
+        "tidemark-adaptive-monochrome.svg": square_icon(1024, None, WHITE, None, 0.46),
         # Favicon: larger mark, small-size cut (thicker wave, bigger dot).
-        "leakbook-favicon.svg": square_icon(64, NAVY, WHITE, SAFETY, 0.84, small=True),
+        "tidemark-favicon.svg": square_icon(64, NAVY, WHITE, SAFETY, 0.84, small=True),
     }
     for name, content in files.items():
         (OUT / name).write_text(content)

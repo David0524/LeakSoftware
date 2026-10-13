@@ -6,7 +6,7 @@ import { Notice } from "@/components/ui";
 import { getUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Join Your Team · LeakBook" };
+export const metadata: Metadata = { title: "Join Your Team · Tidemark" };
 
 export default function InvitePage({ params }: PageProps<"/invite/[token]">) {
   return (
@@ -37,7 +37,7 @@ async function InviteBody({ params }: Pick<PageProps<"/invite/[token]">, "params
   return (
     <>
       <p className="mb-6">
-        <strong>{invite.company_name}</strong> invited you to LeakBook as{" "}
+        <strong>{invite.company_name}</strong> invited you to Tidemark as{" "}
         {invite.role === "owner" ? "an owner" : "a tech"}.
       </p>
       <InviteForm token={token} email={invite.email} signedInAs={user?.email ?? null} />

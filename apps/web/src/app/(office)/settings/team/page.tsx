@@ -7,7 +7,7 @@ import { getTeam } from "@/lib/data";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Team · LeakBook" };
+export const metadata: Metadata = { title: "Team · Tidemark" };
 
 interface Invite {
   id: string;

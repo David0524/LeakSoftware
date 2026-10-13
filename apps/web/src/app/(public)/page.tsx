@@ -41,7 +41,7 @@ export default function Home() {
             Find it, document it, quote it, get paid.
           </h1>
           <p className="mt-5 max-w-2xl text-lg text-neutral-200">
-            LeakBook is the field app and office for leak detection techs. Run the inspection on
+            Tidemark is the field app and office for leak detection techs. Run the inspection on
             your phone, hand the homeowner a report they understand, and send the repair quote
             before you leave the driveway.
           </p>

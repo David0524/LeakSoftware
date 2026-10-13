@@ -284,7 +284,7 @@ export function InvoicePanel({
                 name="amount"
                 inputMode="decimal"
                 defaultValue={dollars(balance)}
-                hint="A check, cash, or anything paid outside LeakBook."
+                hint="A check, cash, or anything paid outside Tidemark."
               />
             </SettingsForm>
           ) : null}

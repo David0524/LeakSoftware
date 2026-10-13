@@ -149,10 +149,10 @@ export function quoteLink(token: string | null): string | null {
   return token && API_URL ? `${API_URL}/q/${token}` : null;
 }
 
-/** Sends the quote through the LeakBook server; returns the link and a text message. */
+/** Sends the quote through the Tidemark server; returns the link and a text message. */
 export async function sendQuoteFromPhone(quote: JobQuote, shopName: string) {
   const quoteId = quote.id;
-  if (!API_URL) throw new ReportServerError("This app isn’t connected to the LeakBook server.");
+  if (!API_URL) throw new ReportServerError("This app isn’t connected to the Tidemark server.");
   const { sync } = getServices();
   await sync.syncNow();
   // Removed lines are no longer in quote.lines, so check every unsent line change.

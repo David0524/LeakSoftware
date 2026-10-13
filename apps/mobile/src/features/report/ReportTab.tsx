@@ -181,7 +181,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
 
       {!reportsOnline ? (
         <Notice tone="warning">
-          This app isn’t connected to the LeakBook server, so reports can’t be written here. Use the
+          This app isn’t connected to the Tidemark server, so reports can’t be written here. Use the
           office website.
         </Notice>
       ) : (

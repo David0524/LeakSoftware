@@ -6,7 +6,7 @@ import { AuthCard, FormSkeleton } from "@/components/auth-card";
 import { SignInForm } from "@/components/auth-forms";
 import { getUser } from "@/lib/auth";
 
-export const metadata: Metadata = { title: "Sign In · LeakBook" };
+export const metadata: Metadata = { title: "Sign In · Tidemark" };
 
 export default function SignInPage({ searchParams }: PageProps<"/sign-in">) {
   return (
@@ -14,7 +14,7 @@ export default function SignInPage({ searchParams }: PageProps<"/sign-in">) {
       title="Sign In"
       intro={
         <>
-          New to LeakBook?{" "}
+          New to Tidemark?{" "}
           <Link href="/sign-up" className="text-link underline">
             Start a free trial
           </Link>

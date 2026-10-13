@@ -56,14 +56,14 @@ export function useJobSignatures(companyId: string, jobId: string) {
   );
 }
 
-/** Writing and sending reports happen on the LeakBook server (AI, email, PDF). */
+/** Writing and sending reports happen on the Tidemark server (AI, email, PDF). */
 export const reportsOnline = Boolean(API_URL);
 
 export class ReportServerError extends Error {}
 
-/** POST to the LeakBook server as the signed-in user. */
+/** POST to the Tidemark server as the signed-in user. */
 export async function call<T>(path: string, body: unknown): Promise<T> {
-  if (!API_URL) throw new ReportServerError("This app isn’t connected to the LeakBook server.");
+  if (!API_URL) throw new ReportServerError("This app isn’t connected to the Tidemark server.");
   const token = await getServices().sync.accessToken();
   if (!token) throw new ReportServerError("Sign in again to continue.");
   let res: Response;

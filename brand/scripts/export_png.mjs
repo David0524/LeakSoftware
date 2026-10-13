@@ -1,4 +1,4 @@
-// Render LeakBook logo SVGs to PNG with headless Chromium (Playwright).
+// Render Tidemark logo SVGs to PNG with headless Chromium (Playwright).
 // Run: node brand/scripts/export_png.mjs
 // Uses require so a globally installed Playwright works via NODE_PATH.
 import { createRequire } from "node:module";
@@ -14,20 +14,20 @@ const out = join(logo, "png");
 
 // [source svg, output png, width in px]
 const jobs = [
-  ["leakbook-app-icon.svg", "icon-1024.png", 1024],
-  ["leakbook-adaptive-foreground.svg", "adaptive-foreground-1024.png", 1024],
-  ["leakbook-adaptive-monochrome.svg", "adaptive-monochrome-1024.png", 1024],
-  ["leakbook-favicon.svg", "favicon-16.png", 16],
-  ["leakbook-favicon.svg", "favicon-32.png", 32],
-  ["leakbook-favicon.svg", "favicon-48.png", 48],
-  ["leakbook-app-icon.svg", "apple-touch-icon-180.png", 180],
-  ["leakbook-mark.svg", "mark-512.png", 512],
-  ["leakbook-mark-reverse.svg", "mark-reverse-512.png", 512],
-  ["leakbook-mark-reverse.svg", "splash-mark-400.png", 400],
-  ["leakbook-mark-black.svg", "mark-black-512.png", 512],
-  ["leakbook-logo.svg", "logo-1200.png", 1200],
-  ["leakbook-logo-reverse.svg", "logo-reverse-1200.png", 1200],
-  ["leakbook-logo.svg", "logo-email-480.png", 480],
+  ["tidemark-app-icon.svg", "icon-1024.png", 1024],
+  ["tidemark-adaptive-foreground.svg", "adaptive-foreground-1024.png", 1024],
+  ["tidemark-adaptive-monochrome.svg", "adaptive-monochrome-1024.png", 1024],
+  ["tidemark-favicon.svg", "favicon-16.png", 16],
+  ["tidemark-favicon.svg", "favicon-32.png", 32],
+  ["tidemark-favicon.svg", "favicon-48.png", 48],
+  ["tidemark-app-icon.svg", "apple-touch-icon-180.png", 180],
+  ["tidemark-mark.svg", "mark-512.png", 512],
+  ["tidemark-mark-reverse.svg", "mark-reverse-512.png", 512],
+  ["tidemark-mark-reverse.svg", "splash-mark-400.png", 400],
+  ["tidemark-mark-black.svg", "mark-black-512.png", 512],
+  ["tidemark-logo.svg", "logo-1200.png", 1200],
+  ["tidemark-logo-reverse.svg", "logo-reverse-1200.png", 1200],
+  ["tidemark-logo.svg", "logo-email-480.png", 480],
 ];
 
 await mkdir(out, { recursive: true });

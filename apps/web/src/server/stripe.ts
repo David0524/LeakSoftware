@@ -10,7 +10,7 @@ import { adminClient } from "./admin";
 
 export class PaymentsNotConfigured extends Error {
   constructor() {
-    super("Online payments aren’t set up on this LeakBook server yet.");
+    super("Online payments aren’t set up on this Tidemark server yet.");
   }
 }
 

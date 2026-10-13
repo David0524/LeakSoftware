@@ -1,11 +1,12 @@
-# LeakBook brand guide
+# Tidemark brand guide
 
 Status: name, palette, type, and logo final.
 
 ## Name
 
-**LeakBook**: one word, capital L and capital B.
-Not "Leak Book", "Leakbook", or "Leak-Book". All caps (LEAKBOOK) only in small uppercase labels.
+**Tidemark**: one word, capital T only. Not "TideMark", "Tide Mark", or "Tide-Mark". All caps
+(TIDEMARK) only in small uppercase labels. A tidemark is the line water leaves where its level
+drops: what a leak shop finds. Renamed from LeakBook on 2026-10-13 (owner).
 
 ## Positioning
 
@@ -17,7 +18,7 @@ Not "Leak Book", "Leakbook", or "Leak-Book". All caps (LEAKBOOK) only in small u
 
 ## White-label rule
 
-Reports, quotes, invoices, and the customer payment page carry the **shop's** logo and colors. LeakBook appears there only as a small "Powered by LeakBook" line in the footer. LeakBook's own palette applies to the tech app, the office web app, sign-in, and marketing.
+Reports, quotes, invoices, and the customer payment page carry the **shop's** logo and colors. Tidemark appears there only as a small "Powered by Tidemark" line in the footer. Tidemark's own palette applies to the tech app, the office web app, sign-in, and marketing.
 
 ## Color ("Work Truck")
 
@@ -58,7 +59,7 @@ Status is always shown with a text label too (HELD, FAIL, EXCLUDED), never by co
 
 ## Logo ("Drop pin")
 
-A map pin drawn as an upside-down water drop, with a waterline across it and a safety-orange dot. It shows what the tech does: pins the leak on the pool diagram.
+A map pin drawn as an upside-down water drop, with a waterline (the tide mark) across it and a safety-orange dot. It shows what the tech does: pins the leak on the pool diagram.
 
 The mark was concepted in ChatGPT (`logo/concept/`) and rebuilt as exact vector geometry by `scripts/build_logo.py`. Edit the script, not the SVGs, then run:
 
@@ -71,25 +72,25 @@ node brand/scripts/export_png.mjs     # PNGs (needs Playwright + Chromium)
 
 | File | Use |
 |---|---|
-| `leakbook-logo.svg` | Horizontal logo on light backgrounds. Default. |
-| `leakbook-logo-reverse.svg` | Horizontal logo on navy or dark photos |
-| `leakbook-logo-black.svg` | One color: fax, stamps, engraving, single-color print |
-| `leakbook-mark.svg` | Mark only, full color, on light backgrounds |
-| `leakbook-mark-reverse.svg` | Mark only on navy or dark backgrounds |
-| `leakbook-mark-black.svg` / `-white.svg` | One color: embroidery, vinyl decals. Dot and wave are cut out. |
-| `leakbook-app-icon.svg` | iOS / store icon (navy square, no rounded corners) |
-| `leakbook-adaptive-foreground.svg` | Android adaptive icon foreground. Background color: Navy. |
-| `leakbook-adaptive-monochrome.svg` | Android themed (monochrome) icon |
-| `leakbook-favicon.svg` | Browser tab. Uses the small-size cut. |
+| `tidemark-logo.svg` | Horizontal logo on light backgrounds. Default. |
+| `tidemark-logo-reverse.svg` | Horizontal logo on navy or dark photos |
+| `tidemark-logo-black.svg` | One color: fax, stamps, engraving, single-color print |
+| `tidemark-mark.svg` | Mark only, full color, on light backgrounds |
+| `tidemark-mark-reverse.svg` | Mark only on navy or dark backgrounds |
+| `tidemark-mark-black.svg` / `-white.svg` | One color: embroidery, vinyl decals. Dot and wave are cut out. |
+| `tidemark-app-icon.svg` | iOS / store icon (navy square, no rounded corners) |
+| `tidemark-adaptive-foreground.svg` | Android adaptive icon foreground. Background color: Navy. |
+| `tidemark-adaptive-monochrome.svg` | Android themed (monochrome) icon |
+| `tidemark-favicon.svg` | Browser tab. Uses the small-size cut. |
 | `png/` | Ready-made PNG exports of the above, including splash and email sizes |
 
 ### Rules
 
 - **Clear space:** keep empty space around the logo at least the width of the orange dot.
 - **Minimum size:** horizontal logo 120 px wide (1 in printed); mark 16 px tall. Below 48 px use the favicon's small-size cut (thicker wave, bigger dot).
-- **Wordmark:** Barlow Semi Condensed ExtraBold, outlined. "Leak" navy, "Book" water blue on light; all white on dark; all black for one color.
+- **Wordmark:** Barlow Semi Condensed ExtraBold, outlined. "Tide" navy, "mark" water blue on light; all white on dark; all black for one color.
 - **Do not:** recolor the pin outside the brand colors, add shadows or gradients, outline the mark, stretch it, set the wordmark in another font, or put the full-color mark on a busy photo.
-- **Powered by:** customer documents use `leakbook-mark.svg` at 16–20 px next to "Powered by LeakBook" in Public Sans, in the footer only.
+- **Powered by:** customer documents use `tidemark-mark.svg` at 16–20 px next to "Powered by Tidemark" in Public Sans, in the footer only.
 
 ## Field usability
 

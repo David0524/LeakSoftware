@@ -5,7 +5,7 @@ import { Card, Checkbox, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listConfig } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Report Templates · LeakBook" };
+export const metadata: Metadata = { title: "Report Templates · Tidemark" };
 
 interface Template {
   id: string;

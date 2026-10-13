@@ -6,7 +6,7 @@ import { Card, Checkbox, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listConfig } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Exclusion Reasons · LeakBook" };
+export const metadata: Metadata = { title: "Exclusion Reasons · Tidemark" };
 
 export default async function ExclusionsPage() {
   const office = await getOffice();

@@ -128,7 +128,7 @@ export function TrialForm() {
         {pending ? "Setting Up…" : "Start Free Trial"}
       </Button>
       <p className="text-center text-text-muted">
-        Already using LeakBook?{" "}
+        Already using Tidemark?{" "}
         <Link href="/sign-in" className="text-link underline">
           Sign in
         </Link>

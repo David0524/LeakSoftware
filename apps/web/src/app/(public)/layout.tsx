@@ -7,7 +7,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
     <>
       <header className="border-b border-border bg-surface">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-          <Link href="/" aria-label="LeakBook home">
+          <Link href="/" aria-label="Tidemark home">
             <Logo />
           </Link>
           <nav className="flex items-center gap-2">
@@ -25,7 +25,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
       </header>
       <div className="flex flex-1 flex-col">{children}</div>
       <footer className="flex flex-col items-center gap-3 border-t border-border py-6 text-center text-[15px] text-text-muted">
-        <p>LeakBook · Field app and office for pool leak detection shops</p>
+        <p>Tidemark · Field app and office for pool leak detection shops</p>
         <ThemeToggle />
       </footer>
     </>

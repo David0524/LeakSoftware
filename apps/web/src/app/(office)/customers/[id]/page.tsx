@@ -8,7 +8,7 @@ import { Card, Empty, PageHeader, SectionTitle, StatusBadge } from "@/components
 import { getOffice } from "@/lib/auth";
 import { getCustomer } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Customer · LeakBook" };
+export const metadata: Metadata = { title: "Customer · Tidemark" };
 
 const KIND: Record<string, string> = {
   homeowner: "Homeowner",
@@ -134,14 +134,14 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
             Delete Customer
           </h2>
           <p className="mb-3 text-text-muted">
-            Removes {customer.name} and their pools from LeakBook. Only possible when every job is
+            Removes {customer.name} and their pools from Tidemark. Only possible when every job is
             paid or canceled; finished jobs, reports, and invoices are kept.
           </p>
           <SettingsForm
             action={deleteCustomer}
             submit="Delete Customer"
             danger
-            confirm={`Delete ${customer.name}? This can't be undone from LeakBook.`}
+            confirm={`Delete ${customer.name}? This can't be undone from Tidemark.`}
           >
             <input type="hidden" name="customer" value={customer.id} />
           </SettingsForm>

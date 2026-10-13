@@ -5,7 +5,7 @@ import { Button, Empty, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listCustomers } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Customers · LeakBook" };
+export const metadata: Metadata = { title: "Customers · Tidemark" };
 
 export default async function CustomersPage({ searchParams }: PageProps<"/customers">) {
   const office = await getOffice();

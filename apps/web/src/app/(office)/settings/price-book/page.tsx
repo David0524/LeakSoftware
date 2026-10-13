@@ -6,7 +6,7 @@ import { Card, Checkbox, Empty, PageHeader, Select } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listConfig, type ComponentType } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Price Book · LeakBook" };
+export const metadata: Metadata = { title: "Price Book · Tidemark" };
 
 interface PriceItem {
   id: string;

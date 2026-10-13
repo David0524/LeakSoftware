@@ -28,7 +28,7 @@ owner says otherwise.
 
 ## Built to sell to many shops
 
-LeakBook is meant to be sold to other shops, so routing must keep working, and stay affordable,
+Tidemark is meant to be sold to other shops, so routing must keep working, and stay affordable,
 at hundreds of shops:
 
 - **Provider behind one interface.** Put all routing calls behind a small server module (for
@@ -37,9 +37,9 @@ at hundreds of shops:
   Google or self-hosted routing later is one file. Keep the pure parts in `packages/core`: time
   windows, fixed appointments, and fitting a gap. Unit test them without network access.
 - **All calls from the server.** The token never ships in the phone app or the browser. One
-  LeakBook key serves all shops, so shops have nothing to set up.
+  Tidemark key serves all shops, so shops have nothing to set up.
 - **Count usage per company.** Log each routing call with `company_id` (for example in an
-  `app.routing_usage` table with a daily count). This shows the cost per shop and lets LeakBook
+  `app.routing_usage` table with a daily count). This shows the cost per shop and lets Tidemark
   cap or price heavy users later. Add a per-company daily limit in config.
 - **Cache.** Geocode each address once (only when it changes). Cache drive times between the
   same two points for a day. Never re-plan automatically on every edit; plan when the office
@@ -110,6 +110,6 @@ Sources:
 ## Still open for the owner
 
 - Arrival windows: on or off, and how long.
-- Should LeakBook assign jobs across techs automatically, or only order each tech's day?
+- Should Tidemark assign jobs across techs automatically, or only order each tech's day?
   Ordering is simpler and cheaper; assigning is "fleet routing".
 - Lunch break or end-of-day time limit per tech.

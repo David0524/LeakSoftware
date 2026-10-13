@@ -245,7 +245,7 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
           {c.legal_name ?? c.name}
           {c.address ? ` · ${c.address}` : ""}
         </p>
-        <p className="mt-1 text-text-muted">Powered by LeakBook</p>
+        <p className="mt-1 text-text-muted">Powered by Tidemark</p>
       </footer>
     </article>
   );

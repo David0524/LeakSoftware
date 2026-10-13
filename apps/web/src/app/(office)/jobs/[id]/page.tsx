@@ -44,7 +44,7 @@ import { ReportPanel } from "@/components/report-panel";
 import { ScheduleForm } from "@/components/schedule-form";
 import { emailConfigured } from "@/server/email";
 
-export const metadata: Metadata = { title: "Job · LeakBook" };
+export const metadata: Metadata = { title: "Job · Tidemark" };
 
 const OUTCOME: Record<Outcome, { label: string; className: string }> = {
   pass: { label: "Pass", className: "bg-status-pass" },
@@ -613,7 +613,7 @@ async function Quotes({ detail }: { detail: JobDetail }) {
         </Notice>
       ) : null}
       {quotes.length === 0 ? (
-        <Empty>No quotes yet. Techs build quotes from findings in the LeakBook app.</Empty>
+        <Empty>No quotes yet. Techs build quotes from findings in the Tidemark app.</Empty>
       ) : (
         <div className="grid gap-5 xl:grid-cols-2">
           {quotes.map((q) => (

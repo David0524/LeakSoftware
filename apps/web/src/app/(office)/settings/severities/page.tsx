@@ -5,7 +5,7 @@ import { Card, Checkbox, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listConfig, type SeverityLevel } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Severities · LeakBook" };
+export const metadata: Metadata = { title: "Severities · Tidemark" };
 
 function SeverityFields({ s }: { s?: SeverityLevel }) {
   const p = s?.id ?? "new";

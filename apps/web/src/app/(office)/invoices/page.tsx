@@ -5,7 +5,7 @@ import { ButtonLink, Empty, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listInvoices } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Invoices · LeakBook" };
+export const metadata: Metadata = { title: "Invoices · Tidemark" };
 
 export default async function InvoicesPage() {
   const office = await getOffice();

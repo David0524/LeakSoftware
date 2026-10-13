@@ -21,7 +21,7 @@ import { MarkupOverlay } from "./markup";
 import { PoolDiagram } from "./pool-diagram";
 
 // The customer-facing report, rendered from the frozen snapshot and the tech-approved text
-// (BUILD_PLAN 6.3). Shop branding, not LeakBook's; LeakBook appears only in the footer.
+// (BUILD_PLAN 6.3). Shop branding, not Tidemark's; Tidemark appears only in the footer.
 
 export interface ReportViewProps {
   templateKey: ReportTemplateKey;
@@ -448,7 +448,7 @@ export function ReportView(p: ReportViewProps) {
             {s.company.legal_name ?? s.company.name}
             {s.company.address ? ` · ${s.company.address}` : ""}
           </p>
-          <p className="mt-1 text-text-muted">Powered by LeakBook</p>
+          <p className="mt-1 text-text-muted">Powered by Tidemark</p>
         </footer>
       </>
     ),

@@ -31,7 +31,7 @@ export default function SignUp() {
       <Screen>
         <T variant="title">Create an Account</T>
         <T variant="muted">
-          If your company already uses LeakBook, ask the owner to invite this email, then sign up
+          If your company already uses Tidemark, ask the owner to invite this email, then sign up
           here.
         </T>
         {error ? <Notice tone="error">{error}</Notice> : null}

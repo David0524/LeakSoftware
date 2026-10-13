@@ -11,7 +11,7 @@ import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Company Settings · LeakBook" };
+export const metadata: Metadata = { title: "Company Settings · Tidemark" };
 
 const US_ZONES = [
   "America/New_York",
