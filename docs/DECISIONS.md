@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (M8.5 report, made for now; owner can change)
+- **"Items Pass" counts only "Not leaking" (and "No" on yes/no items).** Not applicable items are listed with their badge but not counted as passing. The partner's old tool appears to count them as passing (27 items: 26 pass, 1 failed).
+- **Extra customer emails are copied (cc) on the report email,** so the household sees who got it.
+- **Reports sent before M8.5 keep their old "what we checked" text;** sent reports are frozen.
+
 ## 2026-10-13 (route optimization, requested; not built yet)
 - **Route optimization folded into scheduling is in scope**, reversing "Dispatch/routing is out" (2026-10-12). It waits until M8.5 is finished. Its milestone placement (suggested: right after M9) is still to be confirmed. Plan: `docs/ROUTE_OPTIMIZATION_HANDOFF.md`.
 - **Provider: Mapbox** ("fine for now, but the goal is to sell this elsewhere"). All calls go through one server module so the provider can be swapped, and usage is counted per company.
