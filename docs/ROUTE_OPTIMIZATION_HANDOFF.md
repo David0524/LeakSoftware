@@ -1,8 +1,7 @@
 # Handoff: route optimization and scheduling (requested 2026-10-13)
 
-**Status:** requested by the owner; nothing has been built. This file is separate from the main
-handoff (`docs/SESSION_HANDOFF.md`). Finish the milestone in progress first (M8.5), unless the
-owner says otherwise.
+**Status:** built 2026-10-13 as milestone M10.5 (BUILD_PLAN section 8). What was decided is in
+`docs/DECISIONS.md`; this file keeps the original notes and cost estimate.
 
 ## Before building
 

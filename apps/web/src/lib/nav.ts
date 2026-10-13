@@ -1,6 +1,7 @@
 /** The office sections, in order. Phones show four and put the rest under More. */
 export function officeLinks(isOwner: boolean) {
   return [
+    { href: "/today", label: "Today" },
     { href: "/jobs", label: "Jobs" },
     { href: "/schedule", label: "Schedule" },
     { href: "/customers", label: "Customers" },

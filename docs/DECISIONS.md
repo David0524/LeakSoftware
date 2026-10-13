@@ -2,6 +2,16 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (owner: route optimization; my calls, adjust as needed)
+- **Routing is in scope now** (was "No" in BUILD_PLAN section 1), folded into scheduling as milestone M10.5. Ordering each tech's day and suggesting where a job fits; assigning jobs across techs automatically ("fleet routing") is not built.
+- **Mapbox** (owner's pick) behind one server module (`apps/web/src/server/routing.ts`): permanent geocoding and the Matrix API, one Tidemark key (`MAPBOX_TOKEN`, server only). Our own solver orders the stops (exact up to 8 stops, then improving swaps), so the 12-stop Optimization API limit doesn't apply. **Without a key everything still works**: drive times are estimated from distance (road factor 1.35, city and freeway speeds, 3 minutes to park). Each call is counted per shop per day (`ROUTING_DAILY_LIMIT`, default 300); drive times are kept for a day.
+- **Times decide a day's order.** Plan Route re-times a tech's day for the least driving. Started jobs, times the customer was told ("The customer was told this time", off by default), and two-tech jobs stay where they are; a two-tech job moves only by hand, which moves it for both techs. Moving one job never pulls anyone earlier: stops after it move later only if they must. Suggestions only use gaps, so they never move anyone.
+- **Where a pool is:** looked up from its address when a job is made (with a key), or marked exactly with Mark Location Here at the pool (phone GPS, free). Either is kept with the address it belongs to; a changed address is looked up again. The shop's location comes from its address or Use My Location at the shop.
+- **Working day** 8:00 AM to 5:00 PM, Monday to Friday, jobs 2.5 hours unless booked longer; arrival windows off (exact time). All in Settings › Scheduling. On My Way texts come from the tech's own phone with now plus the drive.
+- **Open in Maps** opens Apple Maps on iPhone, iPad, and Mac, Google Maps elsewhere, and the phone's default maps app on Android in the field app. A whole day opens in Google Maps (Apple Maps links take one stop).
+- **Today** is the first tab: the signed-in tech's route in order. Invoices moved under More on phones.
+- **Demo addresses** are real public places around Phoenix (parks, libraries, civic buildings, never homes) with coordinates from OpenStreetMap (ODbL), so maps and drive times are real.
+
 ## 2026-10-13 (owner: the mobile pages are too long; Apple, Liquid Glass feel)
 - **Job page on phones is in five parts** (Details, Checklist, Findings, Photos, Wrap-Up) with a segmented switcher pinned under the header. It was about 15 screens long. Wider screens keep one page. The part shown is in the URL (`#checklist`).
 - **Checklist rows:** one line per item with its verdict as a pull-down (the phone's own menu), instead of four buttons per item. Sections fold to a one-line summary ("All clear", "1 leaking · 1 attention") once done, and each has "Mark N Remaining Not Leaking" ("Answer N Remaining No" for yes/no questions). "Remove Item" is in the item's menu; adding another skimmer or return is in "Add an item".

@@ -11,6 +11,7 @@ import {
   componentApplies,
   formatCents,
   formatAddress,
+  propertyLocation,
   formatDuration,
   formatSchedule,
   parseMarkup,
@@ -53,6 +54,8 @@ import { CreateInvoice, InvoicePanel } from "@/components/invoice-panel";
 import { QuoteBuilder, StartQuote } from "@/components/quote-builder";
 import { QuotePanel } from "@/components/quote-panel";
 import { ReportPanel } from "@/components/report-panel";
+import { OpenInMaps } from "@/components/open-in-maps";
+import { MarkLocationHere } from "@/components/pool-location";
 import { ScheduleForm } from "@/components/schedule-form";
 import { emailConfigured } from "@/server/email";
 
@@ -154,6 +157,23 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                             {job.property.access_notes}
                           </p>
                         ) : null}
+                        <div className="mt-3">
+                          <OpenInMaps
+                            address={formatAddress(job.property)}
+                            location={propertyLocation(job.property)}
+                          />
+                        </div>
+                        <p className="mt-2 text-[15px] text-text-muted">
+                          {job.property.location_source === "gps"
+                            ? "Map location marked at the pool."
+                            : propertyLocation(job.property)
+                              ? "Map location from the address."
+                              : "No map location yet, so routes don’t count driving here."}
+                        </p>
+                        <MarkLocationHere
+                          target={{ property: job.property.id }}
+                          label="Mark Location Here"
+                        />
                       </>
                     ) : null}
                   </Card>
@@ -632,7 +652,14 @@ async function Schedule({ detail, tz }: { detail: JobDetail; tz: string }) {
       techs={team
         .filter((m) => m.status === "active")
         .map((m) => ({ value: m.user_id, label: m.name }))}
-      defaults={{ tech: job.assigned_user_id ?? "", date: start.date, time: start.time, hours }}
+      defaults={{
+        tech: job.assigned_user_id ?? "",
+        date: start.date,
+        time: start.time,
+        hours,
+        fixed: job.arrival_fixed ?? false,
+      }}
+      canSuggest={job.status === "scheduled" || job.status === "unscheduled"}
     />
   );
 }

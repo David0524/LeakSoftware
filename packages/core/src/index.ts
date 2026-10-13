@@ -16,3 +16,5 @@ export * from "./followups";
 export * from "./warranty";
 export * from "./dashboard";
 export * from "./billing";
+export * from "./routing";
+export * from "./route-plan";

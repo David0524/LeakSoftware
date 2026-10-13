@@ -25,7 +25,8 @@ A tech, with no signal at the pool, runs a full inspection (checklist, tests, ph
 | Insurance adjuster template | Wait | Needs the cousin's input. The template slot exists from day one (section 6.3). |
 | Partner portal | Wait | Depends on where jobs come from. The data model already supports partner customers and separate bill-to (section 5). |
 | QuickBooks sync | Later | Real demand, but Intuit app review and OAuth upkeep. Revisit after first paying shops. CSV export of invoices and payments now. |
-| Dispatch/routing, payroll, inventory, accounting | No | Other products do these. Stay narrow. |
+| Route planning (each tech's day, suggestions) | **Added 2026-10-13** (owner) | Milestone M10.5. Fleet dispatch (assigning across techs automatically) is still out. |
+| Payroll, inventory, accounting | No | Other products do these. Stay narrow. |
 
 ---
 
@@ -385,6 +386,15 @@ Built 2026-10-13: reminders and review requests (daily cron), warranties, owner 
 - Shop self-serve signup with trial and Tidemark subscription (Stripe Billing on the platform account), access locked gracefully when unpaid (read-only, never data loss).
 - **Done when:** each feature has tests, and a new shop can sign up, start a trial, onboard Stripe, and run the full loop without help.
 
+### M10.5 Routes and scheduling
+Added 2026-10-13 (owner: "assign routes to specific days and techs, suggestions based on existing routes, rearrange the schedule quickly, real addresses, Open in Maps"). Design notes: `docs/ROUTE_OPTIMIZATION_HANDOFF.md`. Checklist: `docs/testing/M10.5-checklist.md`.
+- Pools and the shop on the map: looked up from the address (Mapbox, when `MAPBOX_TOKEN` is set) or marked with the phone's GPS. Drive times from Mapbox's Matrix API, cached a day and counted per shop; an estimate from distance without a key.
+- Schedule: each tech's day as a route with drive times, short gaps, total driving, back-at-shop time, and overtime. Plan Route orders a day for the least driving, keeping started jobs, promised times, and two-tech jobs. Drag jobs between places, techs, and days (mouse, touch, keyboard) or use Move…; jobs without a time wait in a tray with Suggest Times. Week view drags between days.
+- Suggest Times on the job page, the schedule tray, and New Job (existing pools): the gaps in the next working days that add the least driving.
+- Open in Maps (job page, schedule, phone app), Open Route in Maps (a whole day), and Today: a tech's route with Navigate, On My Way (text from the tech's phone), and Call.
+- Settings › Scheduling: working day and days, usual job length, arrival windows, shop location, find pool locations.
+- **Done when:** in Playwright, a tech's badly ordered day is planned (less driving, the promised time kept), a job moves from the tray onto a day with Move… and back by dragging, a suggested time schedules it, and Open in Maps and Today give directions to the pool.
+
 ### M11 Launch hardening
 - Sentry, error boundaries, offline edge cases (full disk, revoked session, app update with pending outbox), accessibility pass, performance with 1,000 jobs and 10,000 photos on the device.
 - EAS production builds, TestFlight, App Store and Play listings (screenshots, demo account for review), privacy policy and terms (owner provides final legal text), support email, status page.
@@ -438,8 +448,9 @@ Create these before M0 (Supabase), M7 (AI, email), and M8 (Stripe). Add keys to 
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CONNECT_CLIENT_ID` | Stripe test mode with Connect enabled | M8 |
 | `SENTRY_DSN` (mobile, web) | Sentry | M11 (can be earlier) |
 | `APP_BASE_URL` | Vercel deployment URL | M7 |
+| `MAPBOX_TOKEN` (secret token, server only), `ROUTING_DAILY_LIMIT` (optional) | Mapbox | M10.5 (works without it, with estimated drive times) |
 
-The environment's network policy must allow outbound traffic to Supabase, Stripe, Anthropic, Deepgram, Resend, Expo, and npm.
+The environment's network policy must allow outbound traffic to Supabase, Stripe, Anthropic, Deepgram, Resend, Mapbox, Expo, and npm.
 
 ---
 

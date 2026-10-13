@@ -13,6 +13,7 @@ import {
 } from "@leakbook/core";
 import { requireOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { locateCompany } from "@/server/route-days";
 import type { FormState } from "./auth";
 
 // Owner-only settings changes. Every action checks the role itself (pages hide the forms,
@@ -68,6 +69,8 @@ export async function saveCompany(_: FormState, form: FormData): Promise<FormSta
     })
     .eq("id", office.company.id);
   if (error) return failed(error);
+  // Every route starts at the shop: find its coordinates when the address changed.
+  await locateCompany(office);
   revalidatePath("/", "layout");
   return { message: "Saved." };
 }

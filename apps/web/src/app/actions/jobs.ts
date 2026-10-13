@@ -16,6 +16,7 @@ import {
 import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
+import { locateProperty } from "@/server/route-days";
 import type { FormState } from "./auth";
 
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
@@ -41,6 +42,7 @@ export async function scheduleJob(_: FormState, form: FormData): Promise<FormSta
       assigned_user_id: text(form, "tech") || null,
       scheduled_start: start,
       scheduled_end: end,
+      arrival_fixed: form.get("fixed") === "on",
       ...(status === "unscheduled" ? { status: "scheduled" } : {}),
     })
     .eq("id", id)
@@ -48,6 +50,7 @@ export async function scheduleJob(_: FormState, form: FormData): Promise<FormSta
   if (error) return { error: error.message };
   revalidatePath(`/jobs/${id}`);
   revalidatePath("/schedule");
+  revalidatePath("/today");
   return { message: "Scheduled." };
 }
 
@@ -212,6 +215,13 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
     components,
   });
   if (error) return { error: error.message };
+  // Coordinates for routing, from the address (when the routing service is set up).
+  const { data: made } = await supabase
+    .from("job")
+    .select("property_id")
+    .eq("id", data as string)
+    .single();
+  if (made) await locateProperty(office, (made as { property_id: string }).property_id);
   revalidatePath("/jobs");
   revalidatePath("/schedule");
   redirect(`/jobs/${data as string}`);

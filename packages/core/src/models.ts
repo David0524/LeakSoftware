@@ -88,6 +88,11 @@ export interface Property extends Base {
   diagram_shape?: "rectangle" | "oval" | "kidney" | "l_shape" | "freeform" | null;
   access_notes?: string | null;
   notes?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  /** The address the coordinates were found for (routing). */
+  geocoded_address?: string | null;
+  location_source?: "geocoder" | "gps" | "manual" | null;
 }
 
 export interface Job extends Base {
@@ -107,6 +112,10 @@ export interface Job extends Base {
   second_tech_id?: string | null;
   intake?: Record<string, string | string[]> | null;
   location_marked?: boolean | null;
+  /** Place in the tech's route that day, 1 = first stop (routing). */
+  route_order?: number | null;
+  /** The customer was told this time: planning never moves it. */
+  arrival_fixed?: boolean;
   created_at?: string;
 }
 

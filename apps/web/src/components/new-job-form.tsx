@@ -1,9 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { POOL_TYPE_LABELS, type IntakeQuestion, type PoolType } from "@leakbook/core";
+import { useRef, useState } from "react";
+import {
+  POOL_TYPE_LABELS,
+  minutesToClock,
+  type IntakeQuestion,
+  type PoolType,
+} from "@leakbook/core";
 import { createJobAction } from "@/app/actions/jobs";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
+import { Suggestions } from "./route-board";
 import { Segmented } from "./segmented";
 import { Checkbox, Select } from "./ui";
 
@@ -41,6 +47,18 @@ export function NewJobForm({
   const [fee, setFee] = useState("");
   const customer = customers.find((c) => c.id === customerId);
   const newPool = mode === "new" || pool === "new";
+  const visit = useRef<HTMLDivElement>(null);
+  const [picked, setPicked] = useState("");
+
+  /** Fill the visit fields from a suggested slot. */
+  function fill(values: Record<string, string>) {
+    for (const [name, value] of Object.entries(values)) {
+      const el = visit.current?.querySelector<HTMLInputElement | HTMLSelectElement>(
+        `[name="${name}"]`,
+      );
+      if (el) el.value = value;
+    }
+  }
 
   return (
     <SettingsForm action={createJobAction} submit="Create Job" primary className="max-w-3xl">
@@ -142,71 +160,88 @@ export function NewJobForm({
       ) : null}
 
       <Section title="Visit">
-        <Segmented
-          label="When"
-          name="when"
-          value={when}
-          onChange={setWhen}
-          options={[
-            { value: "scheduled", label: "Scheduled" },
-            { value: "unscheduled", label: "Not Yet" },
-          ]}
-        />
-        {when === "scheduled" ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <SField label="Date" name="date" type="date" />
-            <SField label="Start" name="time" type="time" defaultValue="09:00" />
-            <SField label="Hours" name="hours" inputMode="decimal" defaultValue="2" />
-          </div>
-        ) : null}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Select
-            label="Tech"
-            name="tech"
-            defaultValue=""
+        <div ref={visit} className="space-y-4">
+          <Segmented
+            label="When"
+            name="when"
+            value={when}
+            onChange={setWhen}
             options={[
-              { value: "", label: "Nobody yet" },
-              ...team.map((t) => ({ value: t.id, label: t.name })),
+              { value: "scheduled", label: "Scheduled" },
+              { value: "unscheduled", label: "Not Yet" },
             ]}
           />
-          <div>
+          {when === "scheduled" && !newPool ? (
+            <div>
+              <Suggestions
+                target={{ property: pool }}
+                pickLabel="Use"
+                onPick={(s) => {
+                  fill({ date: s.date, time: minutesToClock(s.startMin), tech: s.techId });
+                  setPicked(`${s.dayLabel} at ${s.timeLabel} with ${s.techName}.`);
+                }}
+              />
+              <p role="status" className="text-[15px] text-status-pass">
+                {picked ? `Filled in: ${picked}` : ""}
+              </p>
+            </div>
+          ) : null}
+          {when === "scheduled" ? (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              <SField label="Date" name="date" type="date" />
+              <SField label="Start" name="time" type="time" defaultValue="09:00" />
+              <SField label="Hours" name="hours" inputMode="decimal" defaultValue="2" />
+            </div>
+          ) : null}
+          <div className="grid gap-4 sm:grid-cols-2">
             <Select
-              label="Second tech (optional)"
-              name="second_tech"
+              label="Tech"
+              name="tech"
               defaultValue=""
               options={[
-                { value: "", label: "None" },
+                { value: "", label: "Nobody yet" },
                 ...team.map((t) => ({ value: t.id, label: t.name })),
               ]}
             />
-            <FieldError name="second_tech" />
-          </div>
-          {fees.length ? (
-            <Select
-              label="Detection price"
-              name="fee_item"
-              defaultValue=""
-              onChange={(e) => {
-                const item = fees.find((f) => f.id === e.target.value);
-                if (item) setFee((item.cents / 100).toFixed(2));
-              }}
-              options={[
-                { value: "", label: "Pick from the price book…" },
-                ...fees.map((f) => ({
-                  value: f.id,
-                  label: `${f.name} ($${(f.cents / 100).toFixed(2)})`,
-                })),
-              ]}
+            <div>
+              <Select
+                label="Second tech (optional)"
+                name="second_tech"
+                defaultValue=""
+                options={[
+                  { value: "", label: "None" },
+                  ...team.map((t) => ({ value: t.id, label: t.name })),
+                ]}
+              />
+              <FieldError name="second_tech" />
+            </div>
+            {fees.length ? (
+              <Select
+                label="Detection price"
+                name="fee_item"
+                defaultValue=""
+                onChange={(e) => {
+                  const item = fees.find((f) => f.id === e.target.value);
+                  if (item) setFee((item.cents / 100).toFixed(2));
+                }}
+                options={[
+                  { value: "", label: "Pick from the price book…" },
+                  ...fees.map((f) => ({
+                    value: f.id,
+                    label: `${f.name} ($${(f.cents / 100).toFixed(2)})`,
+                  })),
+                ]}
+              />
+            ) : null}
+            <SField
+              label="Detection fee ($)"
+              name="fee"
+              inputMode="decimal"
+              value={fee}
+              onChange={(e) => setFee(e.target.value)}
+              hint="Shown on the report and billed on the invoice."
             />
-          ) : null}
-          <SField
-            label="Detection fee ($)"
-            name="fee"
-            inputMode="decimal"
-            value={fee}
-            onChange={(e) => setFee(e.target.value)}
-            hint="Shown on the report and billed on the invoice."
-          />
+          </div>
         </div>
       </Section>
 

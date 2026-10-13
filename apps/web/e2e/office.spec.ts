@@ -41,7 +41,7 @@ test("owner views the M4 sample job", async ({ page }) => {
   const row = page.getByRole("row").filter({ hasText: "Sam Sample" });
   await row.getByRole("link").first().click();
   await expect(page.getByRole("heading", { name: /^Job #\d+/ })).toBeVisible();
-  await expect(page.getByText("9 Sample Way, Scottsdale, AZ 85251").first()).toBeVisible();
+  await expect(page.getByText("7408 E Osborn Rd, Scottsdale, AZ 85251").first()).toBeVisible();
 
   // Checklist: verdicts by section, the leaking line with where, the drain with its reason.
   await openChecklist(page);
@@ -241,9 +241,9 @@ test("on a phone: a tab bar moves between sections and nothing scrolls sideways"
   await signIn(page, OWNER);
   const tabs = page.getByRole("navigation", { name: "Main" });
   for (const [label, heading] of [
+    ["Today", "Today"],
     ["Schedule", "Schedule"],
     ["Customers", "Customers"],
-    ["Invoices", "Invoices"],
     ["More", "More"],
     ["Jobs", "Jobs"],
   ] as const) {
@@ -253,7 +253,10 @@ test("on a phone: a tab bar moves between sections and nothing scrolls sideways"
       390,
     );
   }
-  // Warranties and Settings are under More.
+  // Invoices, Warranties, and Settings are under More.
+  await tabs.getByRole("link", { name: "More" }).click();
+  await page.getByRole("main").getByRole("link", { name: "Invoices" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Invoices" })).toBeVisible();
   await tabs.getByRole("link", { name: "More" }).click();
   await page.getByRole("link", { name: "Warranties" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Warranties" })).toBeVisible();

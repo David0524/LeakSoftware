@@ -1,0 +1,80 @@
+"use client";
+
+import { useSyncExternalStore } from "react";
+import { mapsLinks, type LatLng } from "@leakbook/core";
+import { buttonClass, cx } from "./ui";
+
+/** iPhone, iPad, and Mac open Apple Maps; everything else opens Google Maps. */
+function useAppleMaps(): boolean {
+  return useSyncExternalStore(
+    () => () => {},
+    () =>
+      /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1),
+    () => false,
+  );
+}
+
+const PIN = (
+  <svg
+    viewBox="0 0 24 24"
+    className="size-5 shrink-0"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 21s-7-6.1-7-11.5a7 7 0 0 1 14 0C19 14.9 12 21 12 21z" />
+    <circle cx="12" cy="9.5" r="2.5" />
+  </svg>
+);
+
+/**
+ * Directions to a pool in the phone's maps app: Apple Maps on Apple devices, Google Maps
+ * elsewhere. Opens in a new tab on a computer.
+ */
+export function OpenInMaps({
+  address,
+  location,
+  label = "Open in Maps",
+  kind = "secondary",
+  className,
+}: {
+  address: string;
+  location?: LatLng | null;
+  label?: string;
+  kind?: "primary" | "secondary" | "quiet";
+  className?: string;
+}) {
+  const apple = useAppleMaps();
+  const links = mapsLinks({ address, location });
+  return (
+    <a
+      href={apple ? links.apple : links.google}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cx(buttonClass(kind), className)}
+      data-testid="open-in-maps"
+    >
+      {PIN}
+      {label}
+    </a>
+  );
+}
+
+/** A whole day's stops in Google Maps (Apple Maps links take one stop at a time). */
+export function OpenRouteInMaps({ href, className }: { href: string; className?: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cx(buttonClass("secondary"), className)}
+    >
+      {PIN}
+      Open Route in Maps
+    </a>
+  );
+}

@@ -46,7 +46,10 @@ begin
 
   update public.company
   set phone = '(602) 555-0142', email = 'office@demo.leakbook.test',
-      address_line1 = '1200 W Example Rd', city = 'Phoenix', state = 'AZ', postal_code = '85001'
+      address_line1 = '200 W Washington St', city = 'Phoenix', state = 'AZ', postal_code = '85003',
+      -- A real place (Phoenix City Hall), so routes start somewhere real. © OpenStreetMap.
+      latitude = 33.44879, longitude = -112.07711,
+      geocoded_address = '200 W Washington St, Phoenix, AZ 85003'
   where id = demo_company;
   -- The demo shop never runs out of trial (M10 billing).
   update public.subscription set status = 'active', plan = 'demo' where company_id = demo_company;
@@ -58,10 +61,12 @@ begin
 
   insert into public.property
     (id, company_id, customer_id, address_line1, city, state, postal_code,
-     pool_type, has_pool, has_spa, diagram_shape, approx_gallons, access_notes)
+     pool_type, has_pool, has_spa, diagram_shape, approx_gallons, access_notes,
+     latitude, longitude, geocoded_address, location_source)
   values
-    (prop, demo_company, cust, '1423 Palm Ct', 'Phoenix', 'AZ', '85016',
-     'gunite_plaster', true, true, 'kidney', 18000, 'Side gate code 4821. Dog in yard.');
+    (prop, demo_company, cust, '300 E Indian School Rd', 'Phoenix', 'AZ', '85012',
+     'gunite_plaster', true, true, 'kidney', 18000, 'Side gate code 4821. Dog in yard.',
+     33.49488, -112.06928, '300 E Indian School Rd, Phoenix, AZ 85012', 'manual');
 
   insert into public.job
     (company_id, type, property_id, bill_to_customer_id, status, assigned_user_id,

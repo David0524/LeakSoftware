@@ -1,11 +1,13 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Alert, Linking, Pressable, View } from "react-native";
+import { Alert, Linking, Platform, Pressable, View } from "react-native";
 import {
   JOB_STATUS_LABELS,
   POOL_TYPE_LABELS,
   formatAddress,
   formatSchedule,
+  nativeMapsUrl,
+  propertyLocation,
   parseDollars,
   userTransitions,
   type Customer,
@@ -106,6 +108,11 @@ export default function JobDetail() {
   }
 
   const address = property ? formatAddress(property) : "";
+  // Directions in the phone's maps app (Apple Maps on iPhone, the default app on Android).
+  const openMaps = () =>
+    void Linking.openURL(
+      nativeMapsUrl({ address, location: propertyLocation(property) }, Platform.OS),
+    );
 
   return (
     <Screen>
@@ -140,16 +147,7 @@ export default function JobDetail() {
         <T variant="label">Pool</T>
         {property ? (
           <>
-            <Pressable
-              accessibilityRole="link"
-              onPress={() =>
-                void Linking.openURL(`https://maps.apple.com/?q=${encodeURIComponent(address)}`)
-              }
-            >
-              <T variant="strong" style={{ color: color.link }}>
-                {address}
-              </T>
-            </Pressable>
+            <T variant="strong">{address}</T>
             <T variant="small">
               {[
                 property.pool_type ? POOL_TYPE_LABELS[property.pool_type] : null,
@@ -159,6 +157,7 @@ export default function JobDetail() {
                 .join(" · ")}
             </T>
             {property.access_notes ? <Notice tone="warning">{property.access_notes}</Notice> : null}
+            <Button title="Open in Maps" kind="secondary" onPress={openMaps} />
           </>
         ) : (
           <T variant="muted">Address not on this phone yet.</T>

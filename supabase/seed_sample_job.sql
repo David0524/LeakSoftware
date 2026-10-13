@@ -42,10 +42,12 @@ begin
   on conflict (id) do nothing;
   insert into public.property
     (id, company_id, customer_id, address_line1, city, state, postal_code,
-     pool_type, has_pool, has_spa, diagram_shape, approx_gallons, access_notes)
+     pool_type, has_pool, has_spa, diagram_shape, approx_gallons, access_notes,
+     latitude, longitude, geocoded_address, location_source)
   values
-    (prop, co, cust, '9 Sample Way', 'Scottsdale', 'AZ', '85251',
-     'gunite_plaster', true, true, 'kidney', 20000, 'Front gate unlocked.')
+    (prop, co, cust, '7408 E Osborn Rd', 'Scottsdale', 'AZ', '85251',
+     'gunite_plaster', true, true, 'kidney', 20000, 'Front gate unlocked.',
+     33.48861, -111.92020, '7408 E Osborn Rd, Scottsdale, AZ 85251', 'manual')
   on conflict (id) do nothing;
 
   insert into public.job
@@ -180,10 +182,11 @@ begin
   on conflict (id) do nothing;
   insert into public.property
     (id, company_id, customer_id, address_line1, city, state, postal_code,
-     pool_type, has_pool, has_spa, diagram_shape)
+     pool_type, has_pool, has_spa, diagram_shape, latitude, longitude, geocoded_address,
+     location_source)
   values
-    (prop, co, cust, '41 Demo Lane', 'Mesa', 'AZ', '85201', 'gunite_plaster', true, true,
-     'rectangle')
+    (prop, co, cust, '401 E Jefferson St', 'Phoenix', 'AZ', '85004', 'gunite_plaster', true,
+     true, 'rectangle', 33.44604, -112.06765, '401 E Jefferson St, Phoenix, AZ 85004', 'manual')
   on conflict (id) do nothing;
 
   insert into public.job

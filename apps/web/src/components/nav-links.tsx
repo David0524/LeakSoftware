@@ -5,6 +5,9 @@ import { usePathname } from "next/navigation";
 import { cx } from "./ui";
 
 const ICONS: Record<string, React.ReactNode> = {
+  "/today": (
+    <path d="M12 21s-7-6.1-7-11.5a7 7 0 0 1 14 0C19 14.9 12 21 12 21zM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />
+  ),
   "/jobs": (
     <path d="M9 4h6M8 4H6a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-2M9 11h6M9 15h4" />
   ),
