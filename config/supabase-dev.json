@@ -3,5 +3,6 @@
   "projectRef": "evmxdfasurkaxbwkceti",
   "url": "https://evmxdfasurkaxbwkceti.supabase.co",
   "publishableKey": "sb_publishable_O6weK1GnSFl-ogG6amRPlA_5rjPPitD",
-  "region": "us-west-2"
+  "region": "us-west-2",
+  "webUrl": "https://leaksoftware-web.vercel.app"
 }

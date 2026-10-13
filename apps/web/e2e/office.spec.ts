@@ -190,3 +190,33 @@ test("owners delete a customer only when no work is open", async ({ page }) => {
   await page.waitForURL((url) => url.pathname === "/customers");
   await expect(page.getByText(name)).toHaveCount(0);
 });
+
+test("the office adds a job for a new customer, with its checklist ready", async ({ page }) => {
+  await signIn(page, OWNER);
+  await page.getByRole("link", { name: "New Job" }).click();
+  await expect(page.getByRole("heading", { name: "New Job" })).toBeVisible();
+
+  const name = `Web Customer ${RUN}`;
+  await page.getByRole("radio", { name: "New Customer" }).click();
+  await page.getByLabel("Name").fill(name);
+  await page.getByLabel("Phone").fill("(480) 555-0199");
+  await page.getByLabel("Street address").fill("12 Office Way");
+  await page.getByLabel("City").fill("Tempe");
+  await page.getByLabel("State").fill("az");
+  await page.getByLabel("Has a spa").check();
+  const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+  await page.getByLabel("Date").fill(tomorrow);
+  await page.getByLabel("Tech", { exact: true }).selectOption({ label: "Tony Tech" });
+  await page.getByLabel("Detection price").selectOption({ index: 1 });
+  await expect(page.getByLabel("Detection fee ($)")).not.toHaveValue("");
+  await page.getByRole("button", { name: "Create Job" }).click();
+
+  await expect(page.getByRole("heading", { name: /^Job #\d+$/ })).toBeVisible();
+  await expect(page.getByRole("link", { name })).toBeVisible();
+  await expect(page.getByText("12 Office Way, Tempe, AZ").first()).toBeVisible();
+  await expect(page.getByText("Tony Tech").first()).toBeVisible();
+  // The checklist is ready for the tech, every item to do.
+  await expect(
+    page.getByText(/0 not leaking · 0 attention · 0 leaking · 0 not applicable · \d+ to do/),
+  ).toBeVisible();
+});

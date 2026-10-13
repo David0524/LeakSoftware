@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { JOB_TYPE_LABELS, formatAddress, formatSchedule, type JobStatus } from "@leakbook/core";
-import { Empty, PageHeader, StatusBadge, cx } from "@/components/ui";
+import { ButtonLink, Empty, PageHeader, StatusBadge, cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { OPEN_STATUSES, listJobs } from "@/lib/data";
 
@@ -31,7 +31,11 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
 
   return (
     <>
-      <PageHeader title="Jobs" subtitle={office.company.name} />
+      <PageHeader
+        title="Jobs"
+        subtitle={office.company.name}
+        actions={<ButtonLink href="/jobs/new">New Job</ButtonLink>}
+      />
       <nav aria-label="Filter jobs by status" className="mb-5 flex flex-wrap gap-2">
         {FILTERS.map((f) => (
           <Link

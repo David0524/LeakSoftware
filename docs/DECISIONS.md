@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (owner: add jobs from the website)
+- **The office can add detection jobs** (Jobs → New Job): a new or existing customer and pool, scheduled or not, tech and second tech, detection fee from the price book, booking answers, notes. The same fields as the phone. The checklist is created with the job, so it is ready on the tech's phone. Saved in one transaction by `create_job`, which runs with the user's own access rules. Repair jobs still come from accepted quotes.
+- **The phone app uses the dev website by default** (`config/supabase-dev.json` → `webUrl`), so sending from the phone works without setting `EXPO_PUBLIC_API_URL`.
+
 ## 2026-10-13 (owner: the name is Tidemark)
 - **Renamed from LeakBook to Tidemark** everywhere people see it: website, phone app name and permission text, emails ("{Shop} via Tidemark"), the "Powered by" line, the logo wordmark ("Tide" navy, "mark" water blue; the drop-pin mark is unchanged), and the docs. Reason: a name not tied to leak detection, for selling to other pool shops. PoolDeck was considered and dropped (pool-deck contractors, Skimmer's "The Pool Deck").
 - **Kept as they are, because changing them would break things:** package names (`@leakbook/*`), phone storage keys (renaming would wipe phones' local data), the app's bundle id and URL scheme (`com.leakbook.app`, `leakbook`), the `leakbook-dev` Supabase project, and the demo sign-ins.

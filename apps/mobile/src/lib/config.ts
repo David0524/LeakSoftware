@@ -8,5 +8,6 @@ export const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || dev.url;
 export const SUPABASE_PUBLISHABLE_KEY =
   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || dev.publishableKey;
 
-/** Web app base URL for server features (voice-note transcription). Unset until deployed. */
-export const API_URL = (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/$/, "") || null;
+/** Website for server features (reports, quotes, invoices, transcription): the dev site. */
+export const API_URL =
+  (process.env.EXPO_PUBLIC_API_URL || dev.webUrl || "").replace(/\/$/, "") || null;

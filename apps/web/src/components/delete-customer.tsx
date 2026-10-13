@@ -1,16 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { deleteCustomer } from "@/app/actions/jobs";
 import { Button, Notice } from "./ui";
 
 /**
  * Owners: delete a customer, then go back to the list. The action is called directly and the
- * navigation happens here, because refreshing this page after the delete unmounts the form.
+ * list is loaded here once the delete succeeds.
  */
 export function DeleteCustomerForm({ id, name }: { id: string; name: string }) {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   return (
@@ -28,10 +26,10 @@ export function DeleteCustomerForm({ id, name }: { id: string; name: string }) {
             form.set("customer", id);
             const r = await deleteCustomer({}, form);
             if (r.error) setError(r.error);
-            else {
-              router.replace("/customers");
-              router.refresh();
-            }
+            // A full load on purpose: in-app navigation from this page kept showing the deleted
+            // customer (CI runs 44 and 45).
+            // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+            else window.location.assign("/customers");
           });
         }}
       >

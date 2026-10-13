@@ -19,6 +19,16 @@ Needs a computer with Node 22 and pnpm, on the same Wi-Fi as the phone.
    ```
 3. Scan the QR code: iPhone camera app, or the scanner inside Expo Go on Android.
 
+**Getting the latest version later:** stop Expo (Ctrl+C), then in the `LeakSoftware` folder:
+```sh
+git pull
+pnpm install
+cd apps/mobile
+npx expo start --lan --clear
+```
+Scan the new QR code. The app talks to the website at `https://leaksoftware-web.vercel.app` for
+sending reports, quotes, and invoices (set `EXPO_PUBLIC_API_URL` to use another).
+
 **Windows notes**
 - Clone to a short path such as `C:\dev\LeakSoftware`; very long paths break some package installs.
 - If `corepack enable` fails with `EPERM` (it needs admin rights), skip it and prefix pnpm commands with `corepack`, for example `corepack pnpm install`.
