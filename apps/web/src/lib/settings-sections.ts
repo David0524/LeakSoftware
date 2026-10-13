@@ -3,7 +3,7 @@ export const SETTINGS_SECTIONS = [
   { href: "/settings/company", label: "Company and Branding" },
   { href: "/settings/team", label: "Team" },
   { href: "/settings/price-book", label: "Price Book" },
-  { href: "/settings/payments", label: "Deposits and Tax" },
+  { href: "/settings/payments", label: "Payments and Deposits" },
   { href: "/settings/components", label: "Checklist Components" },
   { href: "/settings/tests", label: "Test Types" },
   { href: "/settings/severities", label: "Severities" },

@@ -10,6 +10,7 @@ import {
   type ReportTemplateKey,
 } from "@leakbook/core";
 import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase/config";
+import { adminClient } from "./admin";
 import { EmailNotConfigured, emailConfigured, fromAddress, sendEmail } from "./email";
 import { writeNarrative } from "./narrative";
 import { renderPdf, reportPdfPath } from "./pdf";
@@ -82,14 +83,6 @@ export interface SendResult {
   emailed: boolean;
 }
 
-/** Service-role client for storing PDFs, when the server has the key. */
-function admin(): SupabaseClient | null {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  return key
-    ? createSupabase(supabaseUrl, key, { auth: { persistSession: false, autoRefreshToken: false } })
-    : null;
-}
-
 /** Anonymous client: what a customer opening the link can see. */
 export function publicClient(): SupabaseClient {
   return createSupabase(supabaseUrl, supabaseAnonKey, {
@@ -107,7 +100,7 @@ export async function reportPdf(
   const stored = await publicClient().storage.from("documents").download(path);
   if (stored.data) return Buffer.from(await stored.data.arrayBuffer());
   const pdf = await renderPdf(`${origin}/r/${token}?print=1`);
-  const server = admin();
+  const server = adminClient();
   if (server) {
     await server.storage
       .from("documents")

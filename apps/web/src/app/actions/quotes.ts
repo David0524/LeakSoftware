@@ -1,0 +1,100 @@
+"use server";
+
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { getOffice, requireOwner } from "@/lib/auth";
+import { siteOrigin } from "@/lib/origin";
+import { createClient } from "@/lib/supabase/server";
+import { publicClient } from "@/server/reports";
+import {
+  CheckoutRefused,
+  PaymentsNotConfigured,
+  depositCheckoutUrl,
+  onboardingLink,
+  type PaymentAccount,
+} from "@/server/stripe";
+import { getCompany } from "@/lib/data";
+import type { FormState } from "./auth";
+
+const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
+
+// ---------------------------------------------------------------------------
+// Customer quote page (/q/{token}): no sign-in
+// ---------------------------------------------------------------------------
+
+export async function acceptQuote(_: FormState, form: FormData): Promise<FormState> {
+  const token = text(form, "token");
+  const h = await headers();
+  const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || null;
+  const { error } = await publicClient().rpc("accept_quote_by_link", {
+    link_token: token,
+    signer_name: text(form, "name"),
+    agreed: form.get("agree") === "on",
+    from_ip: ip,
+    user_agent: h.get("user-agent"),
+  });
+  if (error) return { error: error.message };
+  revalidatePath(`/q/${token}`);
+  return { message: "Accepted. Thank you!" };
+}
+
+export async function payDeposit(_: FormState, form: FormData): Promise<FormState> {
+  const token = text(form, "token");
+  let url: string;
+  try {
+    url = await depositCheckoutUrl(token, await siteOrigin());
+  } catch (e) {
+    if (e instanceof CheckoutRefused || e instanceof PaymentsNotConfigured)
+      return { error: e.message };
+    return { error: "Couldn’t start the payment. Please try again in a moment." };
+  }
+  redirect(url);
+}
+
+// ---------------------------------------------------------------------------
+// Office
+// ---------------------------------------------------------------------------
+
+export interface SendQuoteState extends FormState {
+  link?: string;
+}
+
+export async function sendQuoteAction(_: SendQuoteState, form: FormData): Promise<SendQuoteState> {
+  await getOffice();
+  const { data, error } = await (
+    await createClient()
+  ).rpc("send_quote", {
+    target_quote: text(form, "quote"),
+  });
+  if (error) return { error: error.message };
+  revalidatePath(`/jobs/${text(form, "job")}`);
+  return {
+    message: "Quote sent. Copy the link for the customer.",
+    link: `${await siteOrigin()}/q/${(data as { token: string }).token}`,
+  };
+}
+
+/** Owners: start or continue Stripe onboarding. */
+export async function setUpPayments(): Promise<FormState> {
+  const office = await requireOwner();
+  const company = await getCompany(office);
+  const { data } = await (
+    await createClient()
+  )
+    .from("stripe_account")
+    .select("stripe_account_id, charges_enabled, payouts_enabled, details_submitted")
+    .eq("company_id", office.company.id)
+    .maybeSingle();
+  let url: string;
+  try {
+    url = await onboardingLink(
+      { id: company.id, name: company.name, email: (company.email as string | null) ?? null },
+      (data as PaymentAccount | null) ?? null,
+      await siteOrigin(),
+    );
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+  redirect(url);
+}

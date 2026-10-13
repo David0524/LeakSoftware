@@ -427,3 +427,104 @@ export async function getReports(office: Office, jobId: string) {
 }
 
 export type { ComponentType, ExclusionReason, SeverityLevel, TestType };
+
+// ---------------------------------------------------------------------------
+// Quotes and payments
+// ---------------------------------------------------------------------------
+
+export interface QuoteRow {
+  id: string;
+  number: number | null;
+  status: "draft" | "sent" | "accepted" | "declined" | "expired";
+  subtotal_cents: number;
+  discount_cents: number;
+  tax_cents: number;
+  total_cents: number;
+  deposit_cents: number;
+  valid_until: string | null;
+  sent_at: string | null;
+  accepted_at: string | null;
+  accepted_by_name: string | null;
+  repair_job_id: string | null;
+  lines: { id: string; description: string; quantity: number; unit_price_cents: number }[];
+  payments: {
+    id: string;
+    amount_cents: number;
+    method: string;
+    status: string;
+    paid_at: string | null;
+  }[];
+  token: string | null;
+  repairNumber: number | null;
+}
+
+export async function getQuotes(office: Office, jobId: string): Promise<QuoteRow[]> {
+  const supabase = await db();
+  const quotes = must(
+    await supabase
+      .from("quote")
+      .select(
+        "id, number, status, subtotal_cents, discount_cents, tax_cents, total_cents, deposit_cents, valid_until, sent_at, accepted_at, accepted_by_name, repair_job_id",
+      )
+      .eq("company_id", office.company.id)
+      .eq("job_id", jobId)
+      .is("deleted_at", null)
+      .order("number", { ascending: false }),
+  ) as Omit<QuoteRow, "lines" | "payments" | "token" | "repairNumber">[];
+  if (quotes.length === 0) return [];
+  const ids = quotes.map((q) => q.id);
+  const repairIds = quotes.map((q) => q.repair_job_id).filter((x): x is string => !!x);
+  const [lines, payments, links, repairs] = await Promise.all([
+    supabase
+      .from("quote_line_item")
+      .select("id, quote_id, description, quantity, unit_price_cents, sort_order")
+      .in("quote_id", ids)
+      .is("deleted_at", null)
+      .order("sort_order"),
+    supabase
+      .from("payment")
+      .select("id, quote_id, amount_cents, method, status, paid_at")
+      .in("quote_id", ids)
+      .is("deleted_at", null),
+    supabase
+      .from("share_link")
+      .select("token, quote_id")
+      .in("quote_id", ids)
+      .is("revoked_at", null),
+    repairIds.length
+      ? supabase.from("job").select("id, number").in("id", repairIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  const by = <T extends { quote_id: string | null }>(rows: T[] | null, id: string) =>
+    (rows ?? []).filter((r) => r.quote_id === id);
+  return quotes.map((q) => ({
+    ...q,
+    lines: by(must(lines) as (QuoteRow["lines"][number] & { quote_id: string })[], q.id),
+    payments: by(must(payments) as (QuoteRow["payments"][number] & { quote_id: string })[], q.id),
+    token:
+      (must(links) as { token: string; quote_id: string }[]).find((l) => l.quote_id === q.id)
+        ?.token ?? null,
+    repairNumber:
+      (must(repairs) as { id: string; number: number | null }[]).find(
+        (j) => j.id === q.repair_job_id,
+      )?.number ?? null,
+  }));
+}
+
+export interface PaymentAccountState {
+  stripe_account_id: string;
+  charges_enabled: boolean;
+  payouts_enabled: boolean;
+  details_submitted: boolean;
+}
+
+/** The shop's Stripe account (owners only; techs get null). */
+export async function getPaymentAccount(office: Office): Promise<PaymentAccountState | null> {
+  const supabase = await db();
+  const { data } = await supabase
+    .from("stripe_account")
+    .select("stripe_account_id, charges_enabled, payouts_enabled, details_submitted")
+    .eq("company_id", office.company.id)
+    .maybeSingle();
+  return (data as PaymentAccountState | null) ?? null;
+}

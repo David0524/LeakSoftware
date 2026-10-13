@@ -18,10 +18,22 @@ import {
 } from "@leakbook/core";
 import { GalleryImage } from "@/components/gallery-image";
 import { PoolDiagram } from "@/components/pool-diagram";
-import { Card, Chip, Empty, PageHeader, SectionTitle, StatusBadge } from "@/components/ui";
+import { Card, Chip, Empty, Notice, PageHeader, SectionTitle, StatusBadge } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { auditFor, getJob, getReports, getTeam, signedMediaUrls, type JobDetail } from "@/lib/data";
+import {
+  auditFor,
+  getJob,
+  getPaymentAccount,
+  getQuotes,
+  getReports,
+  getTeam,
+  signedMediaUrls,
+  type JobDetail,
+} from "@/lib/data";
+import { siteOrigin } from "@/lib/origin";
+import { QuotePanel } from "@/components/quote-panel";
 import { ReportPanel } from "@/components/report-panel";
+import { ScheduleForm } from "@/components/schedule-form";
 import { emailConfigured } from "@/server/email";
 
 export const metadata: Metadata = { title: "Job · LeakBook" };
@@ -129,6 +141,17 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
         </Card>
       </div>
 
+      {job.type === "repair" || ["unscheduled", "scheduled"].includes(job.status) ? (
+        <section className="mt-8" aria-labelledby="schedule">
+          <h2 id="schedule" className="mb-3 font-display text-2xl font-bold">
+            Schedule
+          </h2>
+          <Card className="max-w-2xl">
+            <Schedule detail={detail} tz={tz} />
+          </Card>
+        </section>
+      ) : null}
+
       <section className="mt-8" aria-labelledby="checklist">
         <h2 id="checklist" className="font-display text-2xl font-bold">
           Checklist
@@ -172,6 +195,15 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
         </h2>
         <Reports detail={detail} />
       </section>
+
+      {job.type === "detection" ? (
+        <section className="mt-8" aria-labelledby="quotes">
+          <h2 id="quotes" className="mb-3 font-display text-2xl font-bold">
+            Quotes
+          </h2>
+          <Quotes detail={detail} />
+        </section>
+      ) : null}
 
       {office.isOwner ? (
         <section className="mt-8" aria-labelledby="timeline">
@@ -432,6 +464,75 @@ async function Reports({ detail }: { detail: JobDetail }) {
       <p className="text-[15px] text-text-muted xl:col-span-2">
         Insurance adjuster report: coming soon.
       </p>
+    </div>
+  );
+}
+
+async function Schedule({ detail, tz }: { detail: JobDetail; tz: string }) {
+  const office = await getOffice();
+  const team = await getTeam(office);
+  const { job } = detail;
+  const local = (iso: string) => {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: tz,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(new Date(iso));
+    const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+    return {
+      date: `${get("year")}-${get("month")}-${get("day")}`,
+      time: `${get("hour")}:${get("minute")}`,
+    };
+  };
+  const start = job.scheduled_start ? local(job.scheduled_start) : { date: "", time: "08:00" };
+  const hours =
+    job.scheduled_start && job.scheduled_end
+      ? String(
+          (new Date(job.scheduled_end).getTime() - new Date(job.scheduled_start).getTime()) /
+            3_600_000,
+        )
+      : "2";
+  return (
+    <ScheduleForm
+      jobId={job.id}
+      techs={team
+        .filter((m) => m.status === "active")
+        .map((m) => ({ value: m.user_id, label: m.name }))}
+      defaults={{ tech: job.assigned_user_id ?? "", date: start.date, time: start.time, hours }}
+    />
+  );
+}
+
+async function Quotes({ detail }: { detail: JobDetail }) {
+  const office = await getOffice();
+  const [quotes, account, origin] = await Promise.all([
+    getQuotes(office, detail.job.id),
+    office.isOwner ? getPaymentAccount(office) : Promise.resolve(null),
+    siteOrigin(),
+  ]);
+  return (
+    <div className="space-y-4">
+      {office.isOwner && !account?.charges_enabled && quotes.some((q) => q.status !== "draft") ? (
+        <Notice tone="warning">
+          Customers can accept quotes but can’t pay deposits online until payments are set up.{" "}
+          <Link href="/settings/payments" className="font-semibold text-link underline">
+            Set up payments
+          </Link>
+        </Notice>
+      ) : null}
+      {quotes.length === 0 ? (
+        <Empty>No quotes yet. Techs build quotes from findings in the LeakBook app.</Empty>
+      ) : (
+        <div className="grid gap-5 xl:grid-cols-2">
+          {quotes.map((q) => (
+            <QuotePanel key={q.id} quote={q} jobId={detail.job.id} origin={origin} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

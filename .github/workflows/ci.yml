@@ -67,8 +67,12 @@ jobs:
           pnpm exec supabase status -o env > /tmp/supabase.env
           url=$(grep '^API_URL=' /tmp/supabase.env | cut -d= -f2- | tr -d '"')
           key=$(grep '^ANON_KEY=' /tmp/supabase.env | cut -d= -f2- | tr -d '"')
+          service=$(grep '^SERVICE_ROLE_KEY=' /tmp/supabase.env | cut -d= -f2- | tr -d '"')
+          echo "::add-mask::$service"
           echo "SUPABASE_URL=$url" >> "$GITHUB_ENV"
           echo "SUPABASE_ANON_KEY=$key" >> "$GITHUB_ENV"
+          # Local Docker stack's well-known key: lets the app record Stripe webhooks.
+          echo "SUPABASE_SERVICE_ROLE_KEY=$service" >> "$GITHUB_ENV"
       - run: pnpm --filter @leakbook/web build
         env:
           NEXT_TELEMETRY_DISABLED: "1"

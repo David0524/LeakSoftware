@@ -1,0 +1,261 @@
+import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import Stripe from "stripe";
+import { adminClient } from "./admin";
+
+// Payments (BUILD_PLAN 6.4): Stripe Connect with Standard accounts and direct charges, so
+// the shop is the merchant of record. Deposits are Checkout Sessions on the shop's account
+// with card and US bank account (ACH). Webhooks update payments and accounts; each event
+// applies once.
+
+export class PaymentsNotConfigured extends Error {
+  constructor() {
+    super("Online payments aren’t set up on this LeakBook server yet.");
+  }
+}
+
+export function stripeClient(): Stripe | null {
+  const key = process.env.STRIPE_SECRET_KEY;
+  return key ? new Stripe(key) : null;
+}
+
+/** True when the server can take payments: Stripe key and service key both present. */
+export function paymentsConfigured(): boolean {
+  return Boolean(process.env.STRIPE_SECRET_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
+function deps(stripe?: Stripe | null, db?: SupabaseClient | null) {
+  const s = stripe === undefined ? stripeClient() : stripe;
+  const d = db === undefined ? adminClient() : db;
+  if (!s || !d) throw new PaymentsNotConfigured();
+  return { stripe: s, db: d };
+}
+
+async function rpc<T>(db: SupabaseClient, fn: string, args: Record<string, unknown>): Promise<T> {
+  const { data, error } = await db.rpc(fn, args);
+  if (error) throw new Error(error.message);
+  return data as T;
+}
+
+// ---------------------------------------------------------------------------
+// Connect onboarding (owners, from settings)
+// ---------------------------------------------------------------------------
+
+export interface PaymentAccount {
+  stripe_account_id: string;
+  charges_enabled: boolean;
+  payouts_enabled: boolean;
+  details_submitted: boolean;
+}
+
+/**
+ * Creates the shop's Standard account the first time, then returns a Stripe-hosted
+ * onboarding link. `existing` is the shop's saved account, if any.
+ */
+export async function onboardingLink(
+  company: { id: string; name: string; email?: string | null },
+  existing: PaymentAccount | null,
+  origin: string,
+  stripe?: Stripe | null,
+  db?: SupabaseClient | null,
+): Promise<string> {
+  const d = deps(stripe, db);
+  let accountId = existing?.stripe_account_id;
+  if (!accountId) {
+    const account = await d.stripe.accounts.create(
+      {
+        type: "standard",
+        email: company.email ?? undefined,
+        business_profile: { name: company.name },
+        metadata: { company_id: company.id },
+      },
+      { idempotencyKey: `account-${company.id}` },
+    );
+    accountId = account.id;
+    await rpc(d.db, "stripe_save_account", {
+      target_company: company.id,
+      account_id: accountId,
+      charges: account.charges_enabled ?? false,
+      payouts: account.payouts_enabled ?? false,
+      submitted: account.details_submitted ?? false,
+    });
+  }
+  const link = await d.stripe.accountLinks.create({
+    account: accountId,
+    type: "account_onboarding",
+    refresh_url: `${origin}/settings/payments?stripe=refresh`,
+    return_url: `${origin}/settings/payments?stripe=return`,
+  });
+  return link.url;
+}
+
+/** Reads the account's current state from Stripe and saves it (after onboarding). */
+export async function refreshAccount(
+  companyId: string,
+  accountId: string,
+  stripe?: Stripe | null,
+  db?: SupabaseClient | null,
+): Promise<void> {
+  const d = deps(stripe, db);
+  const account = await d.stripe.accounts.retrieve(accountId);
+  await rpc(d.db, "stripe_save_account", {
+    target_company: companyId,
+    account_id: account.id,
+    charges: account.charges_enabled ?? false,
+    payouts: account.payouts_enabled ?? false,
+    submitted: account.details_submitted ?? false,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Deposit checkout (customers, from the quote page)
+// ---------------------------------------------------------------------------
+
+interface CheckoutDetails {
+  quote_id: string;
+  company_id: string;
+  number: number | null;
+  status: string;
+  deposit_cents: number;
+  company_name: string;
+  customer_email: string | null;
+  stripe_account_id: string | null;
+  charges_enabled: boolean;
+  deposit_paid: boolean;
+}
+
+export class CheckoutRefused extends Error {}
+
+/** A Checkout Session for an accepted quote's deposit, on the shop's account. */
+export async function depositCheckoutUrl(
+  token: string,
+  origin: string,
+  stripe?: Stripe | null,
+  db?: SupabaseClient | null,
+): Promise<string> {
+  const d = deps(stripe, db);
+  const q = await rpc<CheckoutDetails | null>(d.db, "quote_checkout_details", {
+    link_token: token,
+  });
+  if (!q) throw new CheckoutRefused("This link is not valid.");
+  if (q.status !== "accepted") throw new CheckoutRefused("Accept the quote first.");
+  if (q.deposit_paid) throw new CheckoutRefused("The deposit is already paid or processing.");
+  if (q.deposit_cents <= 0) throw new CheckoutRefused("This quote has no deposit to pay.");
+  if (!q.stripe_account_id || !q.charges_enabled)
+    throw new CheckoutRefused(`${q.company_name} can’t take online payments yet.`);
+  const metadata = { kind: "quote_deposit", quote_id: q.quote_id, company_id: q.company_id };
+  const session = await d.stripe.checkout.sessions.create(
+    {
+      mode: "payment",
+      payment_method_types: ["card", "us_bank_account"],
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: "usd",
+            unit_amount: q.deposit_cents,
+            product_data: {
+              name: `Deposit for quote${q.number ? ` #${q.number}` : ""} · ${q.company_name}`,
+            },
+          },
+        },
+      ],
+      customer_email: q.customer_email ?? undefined,
+      metadata,
+      payment_intent_data: { metadata },
+      success_url: `${origin}/q/${token}?paid=1`,
+      cancel_url: `${origin}/q/${token}`,
+    },
+    { stripeAccount: q.stripe_account_id },
+  );
+  if (!session.url) throw new Error("Stripe did not return a checkout page.");
+  return session.url;
+}
+
+// ---------------------------------------------------------------------------
+// Webhooks
+// ---------------------------------------------------------------------------
+
+/** Secrets for the platform endpoint and (optionally) a separate Connect endpoint. */
+function webhookSecrets(): string[] {
+  return [process.env.STRIPE_WEBHOOK_SECRET, process.env.STRIPE_CONNECT_WEBHOOK_SECRET].filter(
+    (s): s is string => Boolean(s),
+  );
+}
+
+export class BadSignature extends Error {}
+
+export function verifyEvent(payload: string, signature: string | null, secrets = webhookSecrets()) {
+  if (!signature || secrets.length === 0) throw new BadSignature("Missing signature");
+  for (const secret of secrets) {
+    try {
+      return Stripe.webhooks.constructEvent(payload, signature, secret);
+    } catch {
+      // Try the next secret.
+    }
+  }
+  throw new BadSignature("Signature does not match");
+}
+
+export type WebhookOutcome = "applied" | "duplicate" | "ignored";
+
+const sessionStatus = (event: Stripe.Event, s: Stripe.Checkout.Session) => {
+  if (event.type === "checkout.session.async_payment_succeeded") return "succeeded";
+  if (event.type === "checkout.session.async_payment_failed") return "failed";
+  // completed: cards arrive paid; bank payments arrive unpaid and settle days later.
+  return s.payment_status === "unpaid" ? "pending" : "succeeded";
+};
+
+/**
+ * Applies one verified event. Replays (same event id) change nothing; so do events that
+ * arrive out of order, because a payment never goes back to pending.
+ */
+export async function applyEvent(
+  event: Stripe.Event,
+  db?: SupabaseClient | null,
+): Promise<WebhookOutcome> {
+  const d = db === undefined ? adminClient() : db;
+  if (!d) throw new PaymentsNotConfigured();
+  if (await rpc<boolean>(d, "stripe_event_seen", { event_id: event.id })) return "duplicate";
+
+  let outcome: WebhookOutcome = "ignored";
+  switch (event.type) {
+    case "checkout.session.completed":
+    case "checkout.session.async_payment_succeeded":
+    case "checkout.session.async_payment_failed": {
+      const s = event.data.object as Stripe.Checkout.Session;
+      if (s.metadata?.kind !== "quote_deposit" || !s.metadata.quote_id) break;
+      const status = sessionStatus(event, s);
+      // Bank payments are the ones that settle later; cards are paid at once.
+      const method =
+        s.payment_status === "unpaid" || event.type !== "checkout.session.completed"
+          ? "ach"
+          : "card";
+      await rpc(d, "stripe_record_quote_payment", {
+        target_quote: s.metadata.quote_id,
+        session_id: s.id,
+        intent_id:
+          typeof s.payment_intent === "string" ? s.payment_intent : (s.payment_intent?.id ?? null),
+        amount: s.amount_total ?? 0,
+        pay_method: method,
+        pay_status: status,
+      });
+      outcome = "applied";
+      break;
+    }
+    case "account.updated": {
+      const a = event.data.object as Stripe.Account;
+      await rpc(d, "stripe_save_account", {
+        target_company: null,
+        account_id: a.id,
+        charges: a.charges_enabled ?? false,
+        payouts: a.payouts_enabled ?? false,
+        submitted: a.details_submitted ?? false,
+      });
+      outcome = "applied";
+      break;
+    }
+  }
+  await rpc(d, "stripe_claim_event", { event_id: event.id, event_type: event.type });
+  return outcome;
+}

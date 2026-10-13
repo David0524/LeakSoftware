@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import { bpsToPercent } from "@leakbook/core";
 import { savePayments } from "@/app/actions/settings";
 import { SField, SettingsForm } from "@/components/settings-forms";
-import { Card, PageHeader, Select } from "@/components/ui";
+import { Card, Notice, PageHeader, SectionTitle, Select } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getCompany } from "@/lib/data";
+import { getCompany, getPaymentAccount } from "@/lib/data";
+import { PaymentsSetupButton } from "@/components/payments-setup";
+import { paymentsConfigured, refreshAccount } from "@/server/stripe";
 
-export const metadata: Metadata = { title: "Deposits and Tax · LeakBook" };
+export const metadata: Metadata = { title: "Payments and Deposits · LeakBook" };
 
 interface Settings {
   deposit?: { type?: string; value_bps?: number; value_cents?: number; minimum_cents?: number };
@@ -16,8 +18,18 @@ interface Settings {
 
 const dollars = (cents: number | undefined) => ((cents ?? 0) / 100).toFixed(2);
 
-export default async function PaymentsSettingsPage() {
+export default async function PaymentsSettingsPage({
+  searchParams,
+}: PageProps<"/settings/payments">) {
   const office = await getOffice();
+  const { stripe } = await searchParams;
+  let account = office.isOwner ? await getPaymentAccount(office) : null;
+  // Back from Stripe onboarding: read the account's state now rather than waiting for the
+  // account.updated webhook.
+  if (stripe === "return" && account && paymentsConfigured()) {
+    await refreshAccount(office.company.id, account.stripe_account_id).catch(() => undefined);
+    account = await getPaymentAccount(office);
+  }
   const company = await getCompany(office);
   const s = company.settings as Settings;
   const deposit = s.deposit ?? {};
@@ -25,9 +37,47 @@ export default async function PaymentsSettingsPage() {
   return (
     <>
       <PageHeader
-        title="Deposits and Tax"
-        subtitle="Defaults for new quotes and invoices. Techs can adjust a quote within these limits."
+        title="Payments and Deposits"
+        subtitle="How customers pay, and the defaults for new quotes and invoices."
       />
+      <Card className="mb-6 max-w-2xl space-y-3">
+        <SectionTitle>Online payments</SectionTitle>
+        {!paymentsConfigured() ? (
+          <Notice tone="warning">
+            Online payments aren’t set up on this LeakBook server yet. Customers can still accept
+            quotes.
+          </Notice>
+        ) : account?.charges_enabled ? (
+          <>
+            <p>
+              <strong>Ready.</strong> Customers can pay deposits and invoices by card or bank
+              account. Money goes to your Stripe account
+              {account.payouts_enabled ? "" : "; finish your Stripe details to receive payouts"}.
+            </p>
+            <a
+              href="https://dashboard.stripe.com"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex min-h-11 items-center font-semibold text-link underline"
+            >
+              Open Stripe Dashboard
+            </a>
+          </>
+        ) : (
+          <>
+            <p>
+              Connect a Stripe account so customers can pay deposits and invoices online by card or
+              bank account. Your shop is the seller; payments go straight to your account.
+            </p>
+            {account?.details_submitted ? (
+              <p className="text-[15px] text-text-muted">
+                Stripe is reviewing your details. This page updates when they finish.
+              </p>
+            ) : null}
+            <PaymentsSetupButton label={account ? "Continue Stripe Setup" : "Set Up Payments"} />
+          </>
+        )}
+      </Card>
       <Card className="max-w-2xl">
         <SettingsForm action={savePayments} primary>
           <Select
