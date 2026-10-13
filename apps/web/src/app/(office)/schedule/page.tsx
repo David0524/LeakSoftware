@@ -11,8 +11,9 @@ import {
   lockReason,
   minutesLabel,
   propertyLocation,
-  routeLink,
+  dayDirections,
   scheduleDays,
+  type MapsApp,
   type ScheduleView,
 } from "@leakbook/core";
 import {
@@ -23,6 +24,7 @@ import {
 } from "@/components/route-board";
 import { Notice, PageHeader, StatusBadge, buttonClass, cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
+import { mapsAppForRequest } from "@/lib/maps";
 import type { JobRow } from "@/lib/data";
 import {
   loadRoutes,
@@ -77,11 +79,23 @@ function column(
   title: string,
   date: string,
   route: DayRoute | undefined,
+  app: MapsApp,
 ): BoardColumn {
   const stops = route ? route.jobs.map((j, i) => toStop(j, ctx, route, i)) : [];
   const legs = route?.summary.legs.reduce((a, b) => a + b, 0) ?? 0;
   const origin =
     ctx.depot || ctx.depotAddress ? { address: ctx.depotAddress, location: ctx.depot } : null;
+  const directions = route
+    ? dayDirections(
+        app,
+        origin,
+        stops.map((s) => ({
+          address: s.address,
+          location: s.location,
+          done: s.status !== "scheduled" && s.status !== "in_progress",
+        })),
+      )
+    : null;
   return {
     key: routeKey(techId, date),
     techId,
@@ -92,12 +106,8 @@ function column(
     backLegMin: route && route.jobs.length ? route.summary.driveMin - legs : null,
     back: route?.summary.backMin != null ? minutesLabel(route.summary.backMin) : null,
     overtimeMin: route?.summary.overtimeMin ?? 0,
-    routeHref: route
-      ? routeLink(
-          origin,
-          stops.map((s) => ({ address: s.address, location: s.location })),
-        )
-      : null,
+    routeHref: directions?.href ?? null,
+    routeApp: app,
     open: date >= ctx.today,
   };
 }
@@ -105,7 +115,7 @@ function column(
 export default async function SchedulePage({ searchParams }: PageProps<"/schedule">) {
   const office = await getOffice();
   const params = await searchParams;
-  const ctx = await routeContext(office);
+  const [ctx, app] = await Promise.all([routeContext(office), mapsAppForRequest()]);
   const view: ScheduleView = params.view === "week" ? "week" : "day";
   const today = ctx.today;
   const date = isDateString(params.date) ? params.date : today;
@@ -131,7 +141,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   const columns: BoardColumn[] = [];
   for (const t of techs)
     for (const d of days)
-      columns.push(column(ctx, t.user_id, t.name, d, routes.get(routeKey(t.user_id, d))));
+      columns.push(column(ctx, t.user_id, t.name, d, routes.get(routeKey(t.user_id, d)), app));
   const unlocated = columns.some((c) => c.stops.some((s) => !s.location));
 
   const step = view === "day" ? 1 : 7;

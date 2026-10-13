@@ -49,29 +49,33 @@ export function AddressLink({
 }
 
 /**
- * A whole day's stops in Google Maps, always (Apple Maps links take one stop at a time), so
- * the button says so.
+ * A day's directions in the device's maps app: the whole route in Google Maps; in Apple Maps
+ * (whose links take one stop) the next stop. The button names the app.
  */
 export function OpenRouteInMaps({
   href,
+  app = "google",
   className,
   compact = false,
 }: {
   href: string;
+  /** The device's maps app: Google Maps opens the whole route, Apple Maps the next stop. */
+  app?: "apple" | "google";
   className?: string;
-  /** "Google Maps" only, to sit beside another button on a phone. */
+  /** Just the app's name, to sit beside another button on a phone. */
   compact?: boolean;
 }) {
+  const full = app === "google" ? "Open Route in Google Maps" : "Next Stop in Apple Maps";
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={compact ? "Open route in Google Maps" : undefined}
+      aria-label={compact ? full : undefined}
       className={cx(buttonClass("secondary"), className)}
     >
       {PIN}
-      {compact ? "Google Maps" : "Open Route in Google Maps"}
+      {compact ? (app === "google" ? "Google Maps" : "Apple Maps") : full}
     </a>
   );
 }

@@ -9,7 +9,7 @@ import {
   lockReason,
   minutesLabel,
   propertyLocation,
-  routeLink,
+  dayDirections,
 } from "@leakbook/core";
 import { Suspense } from "react";
 import { OnMyWay } from "@/components/on-my-way";
@@ -17,6 +17,7 @@ import { WeatherBadge } from "@/components/weather-badge";
 import { AddressLink, OpenRouteInMaps } from "@/components/open-in-maps";
 import { Card, Empty, PageHeader, StatusBadge, buttonClass, cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
+import { mapsAppForRequest } from "@/lib/maps";
 import { loadRoutes, routeContext, routeKey } from "@/server/route-days";
 
 export const metadata: Metadata = { title: "Today · Tidemark" };
@@ -43,11 +44,13 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   const next = jobs.find((j) => j.status === "scheduled" || j.status === "in_progress");
   const origin =
     ctx.depot || ctx.depotAddress ? { address: ctx.depotAddress, location: ctx.depot } : null;
-  const whole = routeLink(
+  const directions = dayDirections(
+    await mapsAppForRequest(),
     origin,
     jobs.map((j) => ({
       address: j.property ? formatAddress(j.property) : "",
       location: propertyLocation(j.property),
+      done: j.status !== "scheduled" && j.status !== "in_progress",
     })),
   );
   const legs = route?.summary.legs.reduce((a, b) => a + b, 0) ?? 0;
@@ -66,7 +69,9 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
             </Suspense>
           </span>
         }
-        actions={whole ? <OpenRouteInMaps href={whole} /> : null}
+        actions={
+          directions ? <OpenRouteInMaps href={directions.href} app={directions.app} /> : null
+        }
       />
       {office.isOwner && techs.length > 1 ? (
         <nav aria-label="Whose day" className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4">

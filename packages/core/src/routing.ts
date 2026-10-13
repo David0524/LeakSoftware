@@ -500,3 +500,21 @@ export function routeLink(origin: MapPlace | null, stops: MapPlace[]): string | 
   if (middle.length) params.set("waypoints", middle.map(destination).join("|"));
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
+
+/**
+ * The day's directions in the chosen maps app. Google Maps takes the whole route (from the
+ * shop, through the stops, and back). Apple Maps links take one destination, so Apple Maps
+ * opens the next stop not yet done; the others are a tap away on their addresses.
+ */
+export function dayDirections(
+  app: MapsApp,
+  origin: MapPlace | null,
+  stops: (MapPlace & { done?: boolean })[],
+): { href: string; app: MapsApp } | null {
+  if (app === "google") {
+    const href = routeLink(origin, stops);
+    return href ? { href, app } : null;
+  }
+  const next = stops.find((s) => !s.done);
+  return next ? { href: mapsLinks(next).apple, app } : null;
+}

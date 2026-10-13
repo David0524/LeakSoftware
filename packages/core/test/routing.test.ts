@@ -6,6 +6,7 @@ import {
   durationLabel,
   estimateDriveMinutes,
   haversineMeters,
+  dayDirections,
   directionsHref,
   mapsAppFor,
   mapsLinks,
@@ -305,6 +306,25 @@ describe("maps", () => {
       "geo:0,0?q=1%20E%20Main%20St%2C%20Mesa",
     );
     expect(nativeMapsUrl(pool, "web")).toBe(mapsLinks(pool).google);
+  });
+
+  it("gives a day's directions in the chosen app", () => {
+    const shop = { address: "Shop", location: SHOP };
+    const stops = [
+      { address: "Zoo", location: ZOO, done: true },
+      { address: "Tempe", location: TEMPE },
+    ];
+    expect(dayDirections("google", shop, stops)).toEqual({
+      app: "google",
+      href: routeLink(shop, stops),
+    });
+    // Apple Maps: the next stop not done yet.
+    expect(dayDirections("apple", shop, stops)).toEqual({
+      app: "apple",
+      href: mapsLinks({ address: "Tempe", location: TEMPE }).apple,
+    });
+    expect(dayDirections("apple", shop, [{ ...stops[0]! }])).toBeNull();
+    expect(dayDirections("google", shop, [])).toBeNull();
   });
 
   it("links a whole day, from the shop and back", () => {

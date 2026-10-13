@@ -73,6 +73,8 @@ export interface BoardColumn {
   back: string | null;
   overtimeMin: number;
   routeHref: string | null;
+  /** Which app routeHref opens (the device's choice). */
+  routeApp: "apple" | "google";
   /** Today or later: can be planned and dropped on. */
   open: boolean;
 }
@@ -371,7 +373,9 @@ function DayColumn({
               Plan Route
             </Button>
           ) : null}
-          {c.routeHref ? <OpenRouteInMaps href={c.routeHref} compact className="px-2" /> : null}
+          {c.routeHref ? (
+            <OpenRouteInMaps href={c.routeHref} app={c.routeApp} compact className="px-2" />
+          ) : null}
         </div>
       ) : null}
     </section>
