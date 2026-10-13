@@ -151,14 +151,14 @@ export function ColorField({
   );
 }
 
-export function CopyLink({ url }: { url: string }) {
+export function CopyLink({ url, label = "Invite link" }: { url: string; label?: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="flex flex-wrap items-center gap-2">
       <input
         readOnly
         value={url}
-        aria-label="Invite link"
+        aria-label={label}
         onFocus={(e) => e.target.select()}
         className="min-h-11 min-w-0 flex-1 rounded-md border border-control-border bg-bg px-3 font-mono text-[15px]"
       />

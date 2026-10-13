@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { OUTBOX } from "./e2e/outbox";
 
 /**
  * End-to-end tests for the office web app (M6 "Done when").
@@ -7,6 +8,8 @@ import { defineConfig, devices } from "@playwright/test";
  * hosted dev project (config/supabase-dev.json). CI runs them against Supabase in Docker.
  *   E2E_BASE_URL       use an already running app instead of starting one
  *   PW_CHROMIUM_PATH   a preinstalled Chromium (cloud sessions: /opt/pw-browsers/chromium)
+ * The started app writes emails to e2e/.outbox (EMAIL_OUTBOX_DIR) and prints PDFs with the
+ * same Chromium.
  */
 const port = 3200;
 const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${port}`;
@@ -36,6 +39,13 @@ export default defineConfig({
         url: baseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
-        env: { NEXT_TELEMETRY_DISABLED: "1" },
+        env: {
+          NEXT_TELEMETRY_DISABLED: "1",
+          EMAIL_OUTBOX_DIR: OUTBOX,
+          // Never send real email or call the AI from tests.
+          RESEND_API_KEY: "",
+          ANTHROPIC_API_KEY: "",
+          ...(process.env.PW_CHROMIUM_PATH ? { CHROMIUM_PATH: process.env.PW_CHROMIUM_PATH } : {}),
+        },
       },
 });

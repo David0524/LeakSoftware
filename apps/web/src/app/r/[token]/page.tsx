@@ -1,0 +1,95 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import type { FinalSection, ReportSnapshot, ReportTemplateKey } from "@leakbook/core";
+import { ReportView } from "@/components/report-view";
+import { publicClient } from "@/server/reports";
+
+export const metadata: Metadata = { title: "Leak Detection Report", robots: { index: false } };
+
+interface TokenReport {
+  report_id: string;
+  company_id: string;
+  job_id: string;
+  template_key: ReportTemplateKey;
+  version: number;
+  status: "sent" | "superseded";
+  sent_at: string | null;
+  final_sections: FinalSection[];
+  snapshot: ReportSnapshot;
+  newer_token: string | null;
+}
+
+/** The customer's report: no sign-in, only the unguessable link. */
+export default function CustomerReportPage({ params, searchParams }: PageProps<"/r/[token]">) {
+  return (
+    <main className="lb-light min-h-full flex-1 bg-paper text-text">
+      <Suspense fallback={<p className="p-8 text-center text-neutral-500">Loading your report…</p>}>
+        <Report params={params} searchParams={searchParams} />
+      </Suspense>
+    </main>
+  );
+}
+
+async function Report({ params, searchParams }: PageProps<"/r/[token]">) {
+  const { token } = await params;
+  const { print } = await searchParams;
+  const db = publicClient();
+  const { data } = await db.rpc("report_for_token", { link_token: token, count_view: !print });
+  const r = data as TokenReport | null;
+  if (!r) notFound();
+
+  const s = r.snapshot;
+  const paths = [
+    ...s.media.filter((m) => m.kind === "photo").map((m) => m.storage_path),
+    ...s.signatures.map((x) => x.image_path).filter((x): x is string => !!x),
+  ];
+  const [media, logo] = await Promise.all([
+    paths.length
+      ? db.storage.from("media").createSignedUrls(paths, 3600)
+      : Promise.resolve({ data: [] }),
+    s.company.logo_path
+      ? db.storage.from("company-assets").createSignedUrl(s.company.logo_path, 3600)
+      : Promise.resolve({ data: null }),
+  ]);
+  const urls = new Map(
+    (media.data ?? [])
+      .filter((d) => d.signedUrl && d.path)
+      .map((d) => [d.path as string, d.signedUrl as string]),
+  );
+
+  return (
+    <>
+      {!print ? (
+        <div className="report-actions mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 pt-4 sm:px-8 print:hidden">
+          {r.status === "superseded" && r.newer_token ? (
+            <p className="rounded-md border-l-4 border-status-warning bg-neutral-50 px-3 py-2 text-navy">
+              This report was updated.{" "}
+              <Link href={`/r/${r.newer_token}`} className="font-semibold text-water underline">
+                See the latest version
+              </Link>
+            </p>
+          ) : (
+            <span />
+          )}
+          <a
+            href={`/r/${token}/pdf`}
+            className="inline-flex min-h-11 items-center rounded-md border-2 border-navy px-4 font-display font-bold text-navy"
+          >
+            Download PDF
+          </a>
+        </div>
+      ) : null}
+      <ReportView
+        templateKey={r.template_key}
+        version={r.version}
+        sentAt={r.sent_at}
+        snapshot={s}
+        sections={r.final_sections ?? []}
+        urls={urls}
+        logoUrl={logo.data?.signedUrl ?? null}
+      />
+    </>
+  );
+}

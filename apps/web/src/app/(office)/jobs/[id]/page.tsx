@@ -20,7 +20,9 @@ import { GalleryImage } from "@/components/gallery-image";
 import { PoolDiagram } from "@/components/pool-diagram";
 import { Card, Chip, Empty, PageHeader, SectionTitle, StatusBadge } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { auditFor, getJob, getTeam, signedMediaUrls, type JobDetail } from "@/lib/data";
+import { auditFor, getJob, getReports, getTeam, signedMediaUrls, type JobDetail } from "@/lib/data";
+import { ReportPanel } from "@/components/report-panel";
+import { emailConfigured } from "@/server/email";
 
 export const metadata: Metadata = { title: "Job · LeakBook" };
 
@@ -162,6 +164,13 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
           Photos and Recordings
         </h2>
         <Gallery detail={detail} tz={tz} />
+      </section>
+
+      <section className="mt-8" aria-labelledby="reports">
+        <h2 id="reports" className="mb-3 font-display text-2xl font-bold">
+          Reports
+        </h2>
+        <Reports detail={detail} />
       </section>
 
       {office.isOwner ? (
@@ -396,6 +405,34 @@ async function Gallery({ detail, tz }: { detail: JobDetail; tz: string }) {
         );
       })}
     </ul>
+  );
+}
+
+async function Reports({ detail }: { detail: JobDetail }) {
+  const office = await getOffice();
+  const { reports, templates } = await getReports(office, detail.job.id);
+  const nameOf = new Map(templates.map((t) => [t.key, t.name]));
+  return (
+    <div className="grid gap-5 xl:grid-cols-2">
+      {(["homeowner", "partner"] as const)
+        .filter((key) => templates.find((t) => t.key === key)?.enabled !== false)
+        .map((key) => (
+          <ReportPanel
+            key={key}
+            jobId={detail.job.id}
+            template={key}
+            name={nameOf.get(key) ?? (key === "partner" ? "Partner report" : "Homeowner report")}
+            draft={reports.find((r) => r.template_key === key && r.status === "draft") ?? null}
+            sent={reports.filter((r) => r.template_key === key && r.status !== "draft")}
+            customerEmail={detail.job.customer?.email ?? null}
+            emailReady={emailConfigured()}
+            aiReady={Boolean(process.env.ANTHROPIC_API_KEY)}
+          />
+        ))}
+      <p className="text-[15px] text-text-muted xl:col-span-2">
+        Insurance adjuster report: coming soon.
+      </p>
+    </div>
   );
 }
 

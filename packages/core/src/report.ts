@@ -583,3 +583,34 @@ export const SIGNATURE_PURPOSE_LABELS: Record<string, string> = {
   quote_acceptance: "Quote accepted",
   completion: "Work completed",
 };
+
+/** The text a tech sends with the report link (6.5). */
+export function reportShareText(shopName: string, link: string, withQuote = false): string {
+  return `${shopName}: your leak detection report${withQuote ? " and repair estimate" : ""}: ${link}`;
+}
+
+/** Block order on the report page, per template (report_template.sections). */
+export const REPORT_BLOCKS: Record<"homeowner" | "partner", string[]> = {
+  homeowner: [
+    "header",
+    "summary",
+    "findings",
+    "diagram",
+    "next_steps",
+    "coverage",
+    "photos",
+    "signature",
+    "footer",
+  ],
+  partner: [
+    "header",
+    "summary",
+    "findings",
+    "diagram",
+    "tests",
+    "coverage",
+    "photos",
+    "signature",
+    "footer",
+  ],
+};

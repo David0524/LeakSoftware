@@ -359,4 +359,71 @@ export async function listConfig<T>(office: Office, table: string): Promise<T[]>
   return rows.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 }
 
+// ---------------------------------------------------------------------------
+// Reports
+// ---------------------------------------------------------------------------
+
+export interface ReportRow {
+  id: string;
+  template_key: "homeowner" | "partner" | "insurance";
+  version: number;
+  status: "draft" | "sent" | "superseded";
+  final_sections: { key: string; title: string; text: string }[] | null;
+  ai_draft: { problems?: { message: string; section?: string; match?: string }[] } | null;
+  model: string | null;
+  sent_at: string | null;
+  token: string | null;
+}
+
+export async function getReports(office: Office, jobId: string) {
+  const supabase = await db();
+  const [reports, links, templates, messages] = await Promise.all([
+    supabase
+      .from("report")
+      .select("id, template_key, version, status, final_sections, ai_draft, model, sent_at")
+      .eq("company_id", office.company.id)
+      .eq("job_id", jobId)
+      .is("deleted_at", null)
+      .order("version", { ascending: false }),
+    supabase
+      .from("share_link")
+      .select("token, report_id")
+      .eq("job_id", jobId)
+      .is("revoked_at", null),
+    supabase
+      .from("report_template")
+      .select("key, name, enabled")
+      .eq("company_id", office.company.id)
+      .is("deleted_at", null),
+    supabase
+      .from("message")
+      .select("id, channel, recipient, status, error, created_at, template")
+      .eq("job_id", jobId)
+      .order("created_at", { ascending: false })
+      .limit(50),
+  ]);
+  const tokenOf = new Map(
+    ((links.data ?? []) as { token: string; report_id: string | null }[]).map((l) => [
+      l.report_id,
+      l.token,
+    ]),
+  );
+  return {
+    reports: ((must(reports) ?? []) as Omit<ReportRow, "token">[]).map((r) => ({
+      ...r,
+      token: tokenOf.get(r.id) ?? null,
+    })) as ReportRow[],
+    templates: (templates.data ?? []) as { key: string; name: string; enabled: boolean }[],
+    messages: (messages.data ?? []) as {
+      id: string;
+      channel: string;
+      recipient: string;
+      status: string;
+      error: string | null;
+      created_at: string;
+      template: string;
+    }[],
+  };
+}
+
 export type { ComponentType, ExclusionReason, SeverityLevel, TestType };

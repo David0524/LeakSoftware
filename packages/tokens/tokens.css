@@ -86,6 +86,30 @@
   }
 }
 
+/* Always light, whatever the viewer's setting: printed and customer documents. */
+.lb-light {
+  --lb-pass: #1B7D45;
+  --lb-fail: #C62F2B;
+  --lb-excluded: #5B6B7A;
+  --lb-warning: #9A6210;
+  --lb-info: #1F6FAE;
+  --lb-bg: #E9ECEF;
+  --lb-surface: #FFFFFF;
+  --lb-text: #12263A;
+  --lb-text-muted: #5A6875;
+  --lb-border: #D3D9DF;
+  --lb-header: #12263A;
+  --lb-on-header: #FFFFFF;
+  --lb-primary: #EE6A1F;
+  --lb-on-primary: #12263A;
+  --lb-link: #1F6FAE;
+  --lb-focus: #1F6FAE;
+  --lb-diagram-water: #CFE3F3;
+  --lb-on-status: #FFFFFF;
+  --lb-control-border: #5A6875;
+  color-scheme: light;
+}
+
 /* Tailwind v4 theme: utilities like bg-surface, text-muted, bg-primary, font-display. */
 @theme inline {
   --color-bg: var(--lb-bg);

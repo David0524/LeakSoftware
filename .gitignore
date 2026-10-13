@@ -9,3 +9,6 @@ dist/
 coverage/
 *.tsbuildinfo
 .turbo/
+apps/web/e2e/.outbox/
+apps/web/test-results/
+apps/web/playwright-report/

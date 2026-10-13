@@ -246,7 +246,8 @@ $$;
 -- Customer link (/r/{token}): no sign-in. Returns the frozen report or nothing.
 -- ---------------------------------------------------------------------------
 
-create or replace function public.report_for_token(link_token text) returns jsonb
+create or replace function public.report_for_token(link_token text, count_view boolean default true)
+returns jsonb
 language plpgsql volatile security definer set search_path = public, pg_temp as $$
 declare
   sl public.share_link;
@@ -264,9 +265,11 @@ begin
   if rep.id is null then
     return null;
   end if;
-  update public.share_link
-  set view_count = view_count + 1, last_viewed_at = now()
-  where id = sl.id;
+  if count_view then
+    update public.share_link
+    set view_count = view_count + 1, last_viewed_at = now()
+    where id = sl.id;
+  end if;
   if rep.status = 'superseded' then
     select l.token into newest
     from public.report r join public.share_link l on l.report_id = r.id and l.revoked_at is null
@@ -275,7 +278,8 @@ begin
     order by r.version desc, l.id desc limit 1;
   end if;
   return jsonb_build_object(
-    'report_id', rep.id, 'template_key', rep.template_key, 'version', rep.version,
+    'report_id', rep.id, 'company_id', rep.company_id, 'job_id', rep.job_id,
+    'template_key', rep.template_key, 'version', rep.version,
     'status', rep.status, 'sent_at', rep.sent_at, 'final_sections', rep.final_sections,
     'snapshot', rep.data_snapshot, 'pdf_path', rep.pdf_path, 'newer_token', newest);
 end
@@ -283,11 +287,11 @@ $$;
 
 revoke all on function public.prepare_report(uuid, text), public.save_report_draft(uuid, jsonb, jsonb, text, text, jsonb),
   public.send_report(uuid),
-  public.log_message(uuid, text, text, text, text, text, text), public.report_for_token(text) from public;
+  public.log_message(uuid, text, text, text, text, text, text), public.report_for_token(text, boolean) from public;
 grant execute on function public.prepare_report(uuid, text), public.save_report_draft(uuid, jsonb, jsonb, text, text, jsonb),
   public.send_report(uuid),
   public.log_message(uuid, text, text, text, text, text, text) to authenticated;
-grant execute on function public.report_for_token(text) to anon, authenticated;
+grant execute on function public.report_for_token(text, boolean) to anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Storage for the customer page

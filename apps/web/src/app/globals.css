@@ -30,3 +30,16 @@ h3 {
   --lb-font-display: var(--lb-font-display-face), "Arial Narrow", "Roboto Condensed", sans-serif;
   --lb-font-body: var(--lb-font-body-face), "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
+
+/* Printed reports: no page background, keep the shop color bands. */
+@media print {
+  body {
+    background: white;
+  }
+  .report {
+    max-width: none;
+    padding: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
