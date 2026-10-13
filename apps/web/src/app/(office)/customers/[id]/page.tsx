@@ -5,7 +5,7 @@ import { JOB_TYPE_LABELS, POOL_TYPE_LABELS, formatAddress, formatSchedule } from
 import { saveCustomerEmails } from "@/app/actions/jobs";
 import { DeleteCustomerForm } from "@/components/delete-customer";
 import { SField, SettingsForm } from "@/components/settings-forms";
-import { Card, Empty, PageHeader, SectionTitle, StatusBadge } from "@/components/ui";
+import { Card, Checkbox, Empty, PageHeader, SectionTitle, StatusBadge } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCustomer } from "@/lib/data";
 
@@ -63,7 +63,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
             <p className="text-text-muted">No contact details.</p>
           ) : null}
           {customer.notes ? <p className="mt-3 whitespace-pre-line">{customer.notes}</p> : null}
-          <h3 className="mt-5 mb-2 font-display text-lg font-bold">Report emails</h3>
+          <h3 className="mt-5 mb-2 font-display text-lg font-bold">Emails</h3>
           <SettingsForm action={saveCustomerEmails}>
             <input type="hidden" name="customer" value={customer.id} />
             <SField label="Email" name="email" type="email" defaultValue={customer.email ?? ""} />
@@ -72,6 +72,11 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
               name="cc_emails"
               defaultValue={(customer.cc_emails ?? []).join(" ")}
               hint="They get reports too. Separate with spaces."
+            />
+            <Checkbox
+              name="no_followups"
+              label="No reminder or review emails"
+              defaultChecked={customer.marketing_opt_out ?? false}
             />
           </SettingsForm>
         </Card>

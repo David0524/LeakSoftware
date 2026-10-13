@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import {
   saveBranding,
   saveCompany,
+  saveFollowups,
   saveNextJobNumber,
   saveReportText,
 } from "@/app/actions/settings";
 import { ColorField, FieldError, SField, SettingsForm } from "@/components/settings-forms";
-import { Card, PageHeader, Select, TextArea } from "@/components/ui";
+import { Card, Checkbox, PageHeader, Select, TextArea } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
@@ -46,6 +47,10 @@ export default async function CompanySettingsPage() {
     .limit(1)
     .maybeSingle();
   const lastNumber = (lastJob?.number as number | undefined) ?? 0;
+  const settings = company.settings as {
+    reminders?: { quote_days?: number[]; invoice_days?: number[] };
+    review_requests?: boolean;
+  };
   const zones = US_ZONES.includes(company.timezone) ? US_ZONES : [company.timezone, ...US_ZONES];
 
   return (
@@ -91,9 +96,43 @@ export default async function CompanySettingsPage() {
                 name="review_url"
                 type="url"
                 defaultValue={str("review_url")}
-                hint="Your Google or Yelp page. Used for review requests later."
+                hint="Your Google or Yelp page. Review requests link here."
               />
             </div>
+          </SettingsForm>
+        </Card>
+
+        <Card>
+          <h2 className="mb-1 font-display text-xl font-bold">Reminders and Reviews</h2>
+          <p className="mb-4 text-text-muted">
+            Emails sent once a day, in the morning. They stop when a quote is accepted or an invoice
+            is paid, and customers can turn them off from any of them.
+          </p>
+          <SettingsForm action={saveFollowups}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <SField
+                label="Quote reminders (days after sending)"
+                name="quote_days"
+                defaultValue={(settings.reminders?.quote_days ?? [3, 7]).join(", ")}
+                hint="For quotes not yet accepted. Leave empty for none."
+              />
+              <SField
+                label="Invoice reminders (days after sending)"
+                name="invoice_days"
+                defaultValue={(settings.reminders?.invoice_days ?? [7, 14, 30]).join(", ")}
+                hint="For invoices not yet paid in full. Leave empty for none."
+              />
+            </div>
+            <Checkbox
+              name="review_requests"
+              label="Ask for a review after a job is paid"
+              defaultChecked={settings.review_requests ?? true}
+            />
+            {company.review_url ? null : (
+              <p className="text-[15px] text-text-muted">
+                Add your review link under Company profile to send review requests.
+              </p>
+            )}
           </SettingsForm>
         </Card>
 

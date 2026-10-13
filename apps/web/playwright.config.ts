@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import { E2E_WEBHOOK_SECRET } from "./e2e/backend";
+import { E2E_CRON_SECRET, E2E_WEBHOOK_SECRET } from "./e2e/backend";
 import { OUTBOX } from "./e2e/outbox";
 
 /**
@@ -48,6 +48,7 @@ export default defineConfig({
           ANTHROPIC_API_KEY: "",
           // Webhooks are signed by the tests themselves; no Stripe account is called.
           STRIPE_WEBHOOK_SECRET: E2E_WEBHOOK_SECRET,
+          CRON_SECRET: E2E_CRON_SECRET,
           STRIPE_CONNECT_WEBHOOK_SECRET: "",
           STRIPE_SECRET_KEY: "",
           ...(process.env.PW_CHROMIUM_PATH ? { CHROMIUM_PATH: process.env.PW_CHROMIUM_PATH } : {}),

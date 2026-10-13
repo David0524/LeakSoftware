@@ -21,3 +21,14 @@ export async function lastEmailTo(to: string): Promise<OutboxEmail | null> {
   }
   return null;
 }
+
+/** Every email in the outbox that matches, newest first. */
+export async function findEmails(match: (e: OutboxEmail) => boolean): Promise<OutboxEmail[]> {
+  const names = (await readdir(OUTBOX).catch(() => [] as string[])).sort().reverse();
+  const found: OutboxEmail[] = [];
+  for (const name of names) {
+    const email = JSON.parse(await readFile(join(OUTBOX, name), "utf8")) as OutboxEmail;
+    if (match(email)) found.push(email);
+  }
+  return found;
+}

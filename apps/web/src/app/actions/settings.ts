@@ -6,6 +6,7 @@ import {
   isHexColor,
   parseDollars,
   parseFieldLines,
+  parseReminderDays,
   percentToBps,
   uuidv7,
   type TestFieldSchema,
@@ -69,6 +70,30 @@ export async function saveCompany(_: FormState, form: FormData): Promise<FormSta
   if (error) return failed(error);
   revalidatePath("/", "layout");
   return { message: "Saved." };
+}
+
+/** Reminder emails and review requests (M10). Sent once a day by the server. */
+export async function saveFollowups(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const quoteDays = parseReminderDays(text(form, "quote_days"));
+  const invoiceDays = parseReminderDays(text(form, "invoice_days"));
+  const fields: Record<string, string> = {};
+  if (!quoteDays) fields.quote_days = "Enter days after sending, like 3, 7.";
+  if (!invoiceDays) fields.invoice_days = "Enter days after sending, like 7, 14, 30.";
+  if (Object.keys(fields).length) return { fields };
+  const { data: company } = await supabase
+    .from("company")
+    .select("settings")
+    .eq("id", office.company.id)
+    .single();
+  const settings = {
+    ...((company?.settings ?? {}) as Record<string, unknown>),
+    reminders: { quote_days: quoteDays, invoice_days: invoiceDays },
+    review_requests: checked(form, "review_requests"),
+  };
+  const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
+  if (error) return failed(error);
+  return done("/settings/company");
 }
 
 /** The shop's own legal text, printed at the end of every report (M8.5). */

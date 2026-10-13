@@ -65,7 +65,11 @@ export async function saveCustomerEmails(_: FormState, form: FormData): Promise<
   const supabase = await createClient();
   const { error } = await supabase
     .from("customer")
-    .update({ email: email || null, cc_emails: cc })
+    .update({
+      email: email || null,
+      cc_emails: cc,
+      marketing_opt_out: form.get("no_followups") === "on",
+    })
     .eq("id", id)
     .eq("company_id", office.company.id);
   if (error) return { error: error.message };
