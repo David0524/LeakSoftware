@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { Linking, Pressable, Share, View } from "react-native";
+import { Alert, Linking, Pressable, Share, View } from "react-native";
 import {
   SIGNATURE_PURPOSE_LABELS,
   type Customer,
@@ -22,6 +22,9 @@ import { Button, Card, Field, Notice, Row, Segmented, T } from "../../ui/compone
 import { color } from "../../ui/theme";
 
 type Template = "homeowner" | "partner";
+
+/** The server's model name for a draft written without AI (apps/web/src/server/narrative.ts). */
+const PLAIN_MODEL = "leakbook-plain";
 
 interface TemplateRow {
   key: string;
@@ -52,7 +55,8 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
 
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<"draft" | "email" | "text" | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // Where an error shows: next to the button that caused it, so it is on screen.
+  const [error, setError] = useState<{ at: "draft" | "send"; text: string } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [to, setTo] = useState<string | null>(null);
   const email = (to ?? customer?.email ?? "").trim();
@@ -60,15 +64,29 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
   const sections = draft?.final_sections ?? [];
   const problems = draft?.ai_draft?.problems ?? [];
 
-  function saveSection(key: string) {
-    if (!draft || edits[key] === undefined) return;
+  /** Saves every pending edit in one write, so no edit overwrites another. */
+  function saveEdits() {
+    if (!draft || Object.keys(edits).length === 0) return;
     const next: FinalSection[] = sections.map((s) =>
-      s.key === key ? { ...s, text: edits[key]!.trim() } : s,
+      edits[s.key] === undefined ? s : { ...s, text: edits[s.key]!.trim() },
     );
     services.sync.write("report", draft.id, company.id, {
       final_sections: next as unknown as JsonValue,
     });
-    setEdits(({ [key]: _, ...rest }) => rest);
+    setEdits({});
+  }
+
+  /** Writing again replaces the draft's text, so ask first when there is text to lose. */
+  function writeDraft() {
+    if (!draft?.final_sections) return void run("draft");
+    Alert.alert(
+      "Write the draft again?",
+      "The new draft replaces this one, including your edits.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Write Again", style: "destructive", onPress: () => void run("draft") },
+      ],
+    );
   }
 
   async function run(kind: "draft" | "email" | "text") {
@@ -85,7 +103,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
             : "Draft written. Read it over and edit anything before sending.",
         );
       } else {
-        for (const key of Object.keys(edits)) saveSection(key);
+        saveEdits();
         if (kind === "email" && !/^\S+@\S+\.\S+$/.test(email))
           throw new Error("Enter the customer’s email.");
         const r = await sendReportFromPhone(
@@ -101,7 +119,10 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
         }
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError({
+        at: kind === "draft" ? "draft" : "send",
+        text: e instanceof Error ? e.message : String(e),
+      });
     } finally {
       setBusy(null);
     }
@@ -136,6 +157,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
           options={templates}
           value={template}
           onChange={(v) => {
+            saveEdits();
             setTemplate(v);
             setEdits({});
             setMessage(null);
@@ -155,10 +177,16 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
           kind={draft?.final_sections ? "secondary" : "primary"}
           loading={busy === "draft"}
           disabled={busy !== null}
-          onPress={() => void run("draft")}
+          onPress={writeDraft}
         />
       )}
-      {error ? <Notice tone="error">{error}</Notice> : null}
+      {draft?.final_sections && draft.model && draft.model !== PLAIN_MODEL ? (
+        <T variant="muted">
+          AI wrote this draft from the job’s checklist, tests, and findings. It can get details
+          wrong, so read every word before sending.
+        </T>
+      ) : null}
+      {error?.at === "draft" ? <Notice tone="error">{error.text}</Notice> : null}
       {message ? <Notice>{message}</Notice> : null}
 
       {draft?.final_sections ? (
@@ -174,12 +202,12 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
               label={s.title}
               value={edits[s.key] ?? s.text}
               onChangeText={(v) => setEdits((e) => ({ ...e, [s.key]: v }))}
-              onBlur={() => saveSection(s.key)}
+              onBlur={saveEdits}
               multiline
             />
           ))}
           <Card>
-            <T variant="heading">Send Version {draft.version}</T>
+            <T variant="heading">Send version {draft.version}</T>
             <T variant="muted">
               Sending locks this version. Changes after that go out as a new version.
             </T>
@@ -204,6 +232,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
               disabled={busy !== null || !reportsOnline}
               onPress={() => void run("text")}
             />
+            {error?.at === "send" ? <Notice tone="error">{error.text}</Notice> : null}
           </Card>
         </>
       ) : null}
@@ -221,6 +250,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
               {r.token && API_URL ? (
                 <Pressable
                   accessibilityRole="link"
+                  accessibilityLabel={`View version ${r.version}`}
                   hitSlop={12}
                   style={{ minHeight: 44, justifyContent: "center" }}
                   onPress={() => void Linking.openURL(`${API_URL}/r/${r.token}`)}

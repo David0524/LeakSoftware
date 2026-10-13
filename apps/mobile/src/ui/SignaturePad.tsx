@@ -11,10 +11,13 @@ import { color, radius } from "./theme";
 export function SignaturePad({
   strokes,
   onChange,
+  onDrawing,
   height = 220,
 }: {
   strokes: SignatureStroke[];
   onChange: (strokes: SignatureStroke[]) => void;
+  /** True while a finger is down, so a scrolling screen can hold still. */
+  onDrawing?: (drawing: boolean) => void;
   height?: number;
 }) {
   const [live, setLive] = useState<SignatureStroke | null>(null);
@@ -34,6 +37,7 @@ export function SignaturePad({
         origin.current = { x: n.pageX - n.locationX, y: n.pageY - n.locationY };
         current.current = [[n.locationX, n.locationY]];
         setLive(current.current);
+        onDrawing?.(true);
       }}
       onResponderMove={(e) => {
         const n = e.nativeEvent;
@@ -47,10 +51,12 @@ export function SignaturePad({
         if (current.current.length) onChange([...strokes, current.current]);
         current.current = [];
         setLive(null);
+        onDrawing?.(false);
       }}
       onResponderTerminate={() => {
         current.current = [];
         setLive(null);
+        onDrawing?.(false);
       }}
       accessible
       accessibilityLabel="Signature box. Sign with your finger."

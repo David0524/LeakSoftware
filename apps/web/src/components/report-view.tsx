@@ -97,14 +97,14 @@ export function ReportView(p: ReportViewProps) {
           ) : null}
           <div>
             <p className="font-display text-2xl font-extrabold">{s.company.name}</p>
-            <p className="text-[15px] opacity-90">
+            <p className="text-[15px]">
               {[s.company.phone, s.company.email].filter(Boolean).join(" · ")}
             </p>
           </div>
         </div>
         <div className="text-right text-[15px]">
-          <p className="font-display text-xl font-bold">{title}</p>
-          <p className="opacity-90">
+          <h1 className="font-display text-xl font-bold">{title}</h1>
+          <p>
             {formatDate(p.sentAt, tz)}
             {p.version > 1 ? ` · version ${p.version}` : ""}
           </p>
@@ -211,34 +211,38 @@ export function ReportView(p: ReportViewProps) {
       <Block title={section("tests")?.title ?? "Test results"}>
         {section("tests")?.text ? <Paragraphs text={section("tests")!.text} /> : null}
         {s.tests.length ? (
-          <table className="mt-4 w-full text-left text-[15px]">
-            <thead>
-              <tr className="border-b" style={{ borderColor: NEUTRAL["300"] }}>
-                <th className="py-1 pr-3 font-semibold">Test</th>
-                <th className="py-1 pr-3 font-semibold">Where</th>
-                <th className="py-1 pr-3 font-semibold">Result</th>
-                <th className="py-1 font-semibold">Outcome</th>
-              </tr>
-            </thead>
-            <tbody>
-              {s.tests.map((t) => (
-                <tr
-                  key={t.id}
-                  className="border-b break-inside-avoid"
-                  style={{ borderColor: NEUTRAL["200"] }}
-                >
-                  <td className="py-1 pr-3">{t.type_name}</td>
-                  <td className="py-1 pr-3">{t.component_id ? labelOf.get(t.component_id) : ""}</td>
-                  <td className="py-1 pr-3">
-                    {testSummary(t) ?? Object.values(t.data).filter(Boolean).join(", ")}
-                  </td>
-                  <td className="py-1 capitalize">
-                    {t.outcome === "inconclusive" ? "Unclear" : t.outcome}
-                  </td>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-left text-[15px]">
+              <thead>
+                <tr className="border-b" style={{ borderColor: NEUTRAL["300"] }}>
+                  <th className="py-1 pr-3 font-semibold">Test</th>
+                  <th className="py-1 pr-3 font-semibold">Where</th>
+                  <th className="py-1 pr-3 font-semibold">Result</th>
+                  <th className="py-1 font-semibold">Outcome</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {s.tests.map((t) => (
+                  <tr
+                    key={t.id}
+                    className="border-b break-inside-avoid"
+                    style={{ borderColor: NEUTRAL["200"] }}
+                  >
+                    <td className="py-1 pr-3">{t.type_name}</td>
+                    <td className="py-1 pr-3">
+                      {t.component_id ? labelOf.get(t.component_id) : ""}
+                    </td>
+                    <td className="py-1 pr-3">
+                      {testSummary(t) ?? Object.values(t.data).filter(Boolean).join(", ")}
+                    </td>
+                    <td className="py-1 capitalize">
+                      {t.outcome === "inconclusive" ? "Unclear" : t.outcome}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : null}
       </Block>
     ),

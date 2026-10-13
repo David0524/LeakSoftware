@@ -32,16 +32,17 @@ export async function writeDraft(_: ReportFormState, form: FormData): Promise<Re
   }
 }
 
-export async function saveText(_: ReportFormState, form: FormData): Promise<ReportFormState> {
-  await getOffice();
+/** The edited sections in a report form, in order. */
+function sectionsOf(form: FormData): FinalSection[] {
   const keys = form.getAll("key").map(String);
   const titles = form.getAll("title").map(String);
   const texts = form.getAll("text").map(String);
-  const final: FinalSection[] = keys.map((key, i) => ({
-    key,
-    title: titles[i] ?? key,
-    text: (texts[i] ?? "").trim(),
-  }));
+  return keys.map((key, i) => ({ key, title: titles[i] ?? key, text: (texts[i] ?? "").trim() }));
+}
+
+export async function saveText(_: ReportFormState, form: FormData): Promise<ReportFormState> {
+  await getOffice();
+  const final = sectionsOf(form);
   if (final.every((s) => !s.text)) return { error: "The report has no text." };
   try {
     await saveReportText(await createClient(), text(form, "report"), final);
@@ -58,7 +59,11 @@ export async function sendReportAction(
 ): Promise<ReportFormState> {
   await getOffice();
   const channel = (text(form, "channel") === "sms_device" ? "sms_device" : "email") as Channel;
+  // The send buttons share the form with the text, so what is on screen is what gets sent.
+  const final = sectionsOf(form);
+  if (final.length && final.every((s) => !s.text)) return { error: "The report has no text." };
   try {
+    if (final.length) await saveReportText(await createClient(), text(form, "report"), final);
     const result = await sendReport(await createClient(), text(form, "report"), {
       channel,
       to: text(form, "to"),

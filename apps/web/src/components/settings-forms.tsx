@@ -151,7 +151,15 @@ export function ColorField({
   );
 }
 
-export function CopyLink({ url, label = "Invite link" }: { url: string; label?: string }) {
+export function CopyLink({
+  url,
+  label = "Invite link",
+  button = "Copy Link",
+}: {
+  url: string;
+  label?: string;
+  button?: string;
+}) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -171,7 +179,7 @@ export function CopyLink({ url, label = "Invite link" }: { url: string; label?: 
           setTimeout(() => setCopied(false), 2000);
         }}
       >
-        {copied ? "Copied" : "Copy Link"}
+        {copied ? "Copied" : button}
       </Button>
     </div>
   );

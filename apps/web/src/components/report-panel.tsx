@@ -58,14 +58,27 @@ export function ReportPanel({
             href={`/r/${latestSent.token}`}
             target="_blank"
             rel="noreferrer"
-            className="text-link underline"
+            className="inline-flex min-h-11 items-center text-link underline"
           >
             View sent version {latestSent.version}
           </a>
         ) : null}
       </div>
 
-      <form action={draftAction} className="mt-3 flex flex-wrap items-center gap-3">
+      <form
+        action={draftAction}
+        className="mt-3 flex flex-wrap items-center gap-3"
+        onSubmit={(e) => {
+          // Writing again replaces the draft's text, edits included.
+          if (
+            draft?.final_sections &&
+            !window.confirm(
+              "Write the draft again? The new draft replaces this one, including your edits.",
+            )
+          )
+            e.preventDefault();
+        }}
+      >
         <input type="hidden" name="job" value={jobId} />
         <input type="hidden" name="template" value={template} />
         <Button
@@ -77,7 +90,7 @@ export function ReportPanel({
         </Button>
         <span className="text-[15px] text-text-muted">
           {aiReady
-            ? "Written from this job’s checklist, tests, and findings. You approve every word."
+            ? "AI writes the draft from this job’s checklist, tests, and findings. It can get details wrong, so read every word before sending."
             : "AI writing isn’t set up yet; the draft is a plain summary of the job data."}
         </span>
       </form>
@@ -99,7 +112,8 @@ export function ReportPanel({
               </Notice>
             </div>
           ) : null}
-          <form action={saveAction} className="mt-4 space-y-4">
+          {/* One form: Save and Send both take the text on screen, so no edit is left behind. */}
+          <form className="mt-4 space-y-4">
             <input type="hidden" name="job" value={jobId} />
             <input type="hidden" name="report" value={draft.id} />
             {draft.final_sections.map((s) => (
@@ -119,7 +133,7 @@ export function ReportPanel({
               </div>
             ))}
             <div className="flex flex-wrap items-center gap-3">
-              <Button type="submit" kind="secondary" disabled={saving}>
+              <Button type="submit" formAction={saveAction} kind="secondary" disabled={saving}>
                 {saving ? "Saving…" : "Save Text"}
               </Button>
               <span
@@ -132,55 +146,55 @@ export function ReportPanel({
                 {saveState.error ?? saveState.message}
               </span>
             </div>
-          </form>
 
-          <div className="mt-6 border-t border-border pt-4">
-            <p className="font-medium">Send version {draft.version}</p>
-            <p className="text-[15px] text-text-muted">
-              Save your edits first. Sending locks this version; changes after that go out as a new
-              version.
-            </p>
-            <form action={sendAction} className="mt-3 flex flex-wrap items-end gap-3">
-              <input type="hidden" name="job" value={jobId} />
-              <input type="hidden" name="report" value={draft.id} />
-              <div className="min-w-64 flex-1 space-y-1">
-                <label htmlFor={`${draft.id}-to`} className="block font-medium">
-                  Customer email
-                </label>
-                <input
-                  id={`${draft.id}-to`}
-                  name="to"
-                  type="email"
-                  defaultValue={customerEmail ?? ""}
-                  className="block min-h-11 w-full rounded-md border border-control-border bg-surface px-3"
-                />
-              </div>
-              <Button
-                type="submit"
-                name="channel"
-                value="email"
-                disabled={sending || !emailReady}
-                title={emailReady ? undefined : "Email isn’t set up yet"}
-              >
-                {sending ? "Sending…" : "Send by Email"}
-              </Button>
-              <Button
-                type="submit"
-                name="channel"
-                value="sms_device"
-                kind="secondary"
-                disabled={sending}
-              >
-                Send by Text
-              </Button>
-            </form>
-            {!emailReady ? (
-              <p className="mt-2 text-[15px] text-text-muted">
-                Email isn’t set up yet. “Send by Text” gives you a link and message to text the
-                customer.
+            <div className="mt-6 border-t border-border pt-4">
+              <h4 className="font-medium">Send version {draft.version}</h4>
+              <p className="text-[15px] text-text-muted">
+                Sending saves your edits and locks this version; changes after that go out as a new
+                version.
               </p>
-            ) : null}
-          </div>
+              <div className="mt-3 flex flex-wrap items-end gap-3">
+                <div className="min-w-64 flex-1 space-y-1">
+                  <label htmlFor={`${draft.id}-to`} className="block font-medium">
+                    Customer email
+                  </label>
+                  <input
+                    id={`${draft.id}-to`}
+                    name="to"
+                    type="email"
+                    defaultValue={customerEmail ?? ""}
+                    className="block min-h-11 w-full rounded-md border border-control-border bg-surface px-3"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  formAction={sendAction}
+                  name="channel"
+                  value="email"
+                  disabled={sending || !emailReady}
+                  title={emailReady ? undefined : "Email isn’t set up yet"}
+                >
+                  {sending ? "Sending…" : "Send by Email"}
+                </Button>
+                <Button
+                  type="submit"
+                  formAction={sendAction}
+                  name="channel"
+                  value="sms_device"
+                  kind="secondary"
+                  disabled={sending}
+                >
+                  Send by Text
+                </Button>
+              </div>
+              {!emailReady ? (
+                <p className="mt-2 text-[15px] text-text-muted">
+                  Email isn’t set up yet. “Send by Text” gives you a link and message to text the
+                  customer.
+                </p>
+              ) : null}
+            </div>
+          </form>
         </>
       ) : null}
 
@@ -188,15 +202,19 @@ export function ReportPanel({
         <Status state={sendState} />
         {sendState.sms ? (
           <div className="space-y-2">
-            <CopyLink url={sendState.sms} label="Message to text the customer" />
+            <CopyLink
+              url={sendState.sms}
+              label="Message to text the customer"
+              button="Copy Message"
+            />
           </div>
         ) : null}
       </div>
 
       {sent.length ? (
         <div className="mt-6 border-t border-border pt-4">
-          <p className="font-medium">Sent</p>
-          <ul className="mt-2 space-y-1 text-[15px]">
+          <h4 className="font-medium">Sent</h4>
+          <ul className="mt-2 text-[15px]">
             {sent.map((r) => (
               <li key={r.id}>
                 Version {r.version} · {r.sent_at ? new Date(r.sent_at).toLocaleString() : ""}
@@ -208,7 +226,8 @@ export function ReportPanel({
                       href={`/r/${r.token}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-link underline"
+                      aria-label={`Version ${r.version} report`}
+                      className="inline-flex min-h-11 items-center text-link underline"
                     >
                       Report
                     </a>
@@ -217,7 +236,8 @@ export function ReportPanel({
                       href={`/r/${r.token}/pdf`}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-link underline"
+                      aria-label={`Version ${r.version} PDF`}
+                      className="inline-flex min-h-11 items-center text-link underline"
                     >
                       PDF
                     </a>

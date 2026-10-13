@@ -35,6 +35,7 @@ export default function SignatureScreen() {
   const [strokes, setStrokes] = useState<SignatureStroke[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [drawing, setDrawing] = useState(false);
 
   if (!job) {
     return (
@@ -85,11 +86,12 @@ export default function SignatureScreen() {
     }
   }
 
-  // No scrolling: a drag on the pad must draw, not move the page.
+  // The page scrolls (Save must stay reachable on small phones and with the keyboard up), but
+  // holds still while a finger is on the pad, so a drag draws instead of moving the page.
   return (
-    <Screen scroll={false}>
+    <Screen scrollEnabled={!drawing}>
       {purposes.length > 1 ? (
-        <Choice label="For" options={purposes} value={purpose} onChange={setPurpose} />
+        <Choice label="Signature for" options={purposes} value={purpose} onChange={setPurpose} />
       ) : (
         <T variant="strong">{purposes[0]!.label}</T>
       )}
@@ -110,6 +112,7 @@ export default function SignatureScreen() {
         <T variant="label">Signature</T>
         <SignaturePad
           strokes={strokes}
+          onDrawing={setDrawing}
           onChange={(s) => {
             setStrokes(s);
             setError(null);

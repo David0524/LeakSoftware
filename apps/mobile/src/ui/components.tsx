@@ -63,9 +63,22 @@ const text = StyleSheet.create({
 // Layout
 // ---------------------------------------------------------------------------
 
-export function Screen({ children, scroll = true }: { children: ReactNode; scroll?: boolean }) {
+export function Screen({
+  children,
+  scroll = true,
+  scrollEnabled = true,
+}: {
+  children: ReactNode;
+  scroll?: boolean;
+  /** Turn scrolling off for a moment, e.g. while a finger draws on a pad. */
+  scrollEnabled?: boolean;
+}) {
   const body = scroll ? (
-    <ScrollView contentContainerStyle={styles.screenContent} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={styles.screenContent}
+      keyboardShouldPersistTaps="handled"
+      scrollEnabled={scrollEnabled}
+    >
       {children}
     </ScrollView>
   ) : (
