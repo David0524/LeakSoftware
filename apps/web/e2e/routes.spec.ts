@@ -5,8 +5,8 @@ import { OWNER, RUN, signIn } from "./helpers";
 
 // Routing (owner request, 2026-10-13): Plan Route orders a tech's day for the least driving
 // and keeps a promised time; jobs move between the tray and a tech's day by Move… and by
-// dragging; Suggest Times fits a job into the routes already planned; Open in Maps and
-// Navigate give directions; Today shows a tech's route. No routing key in CI: drive times
+// dragging; Suggest Times fits a job into the routes already planned; addresses link to
+// directions; Today shows a tech's route. No routing key in CI: drive times
 // are the built-in estimate.
 //
 // Real public places (approximate coordinates), never homes.
@@ -198,12 +198,12 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   await expect(page.getByText(/^Moved to \d/)).toBeVisible();
   await expect(tray.getByTestId("tray-job").filter({ hasText: name("tempe") })).toHaveCount(0);
 
-  // 5. Open in Maps on the job: directions to the pool's spot (Google Maps off Apple devices).
+  // 5. The job's address links to directions to the pool's spot (Google Maps off Apple
+  //    devices).
   await page.goto(`/jobs/${zoo}`);
-  await expect(page.getByRole("link", { name: "Open in Maps" })).toHaveAttribute(
-    "href",
-    /google\.com\/maps\/dir\/\?api=1&destination=33\.45006%2C-111\.94886/,
-  );
+  await expect(
+    page.getByRole("link", { name: /^455 N Galvin Pkwy.*directions in Maps$/ }),
+  ).toHaveAttribute("href", /google\.com\/maps\/dir\/\?api=1&destination=33\.45006%2C-111\.94886/);
 });
 
 test("Today shows a tech's route with directions", async ({ page }) => {
@@ -234,7 +234,7 @@ test("Today shows a tech's route with directions", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Today · Priya Shah" })).toBeVisible();
   await expect(page.getByTestId("today-summary")).toContainText(/stops? · .* driving/);
   const stop = page.getByTestId("today-stop").filter({ hasText: name("scottsdale") });
-  await expect(stop.getByRole("link", { name: "Navigate" })).toHaveAttribute(
+  await expect(stop.getByTestId("address-link")).toHaveAttribute(
     "href",
     /destination=33\.4919%2C-111\.9236/,
   );

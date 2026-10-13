@@ -32,20 +32,16 @@ const PIN = (
 );
 
 /**
- * Directions to a pool in the phone's maps app: Apple Maps on Apple devices, Google Maps
- * elsewhere. Opens in a new tab on a computer.
+ * The address itself as the link to directions in the phone's maps app: Apple Maps on Apple
+ * devices, Google Maps elsewhere. Opens in a new tab on a computer.
  */
-export function OpenInMaps({
+export function AddressLink({
   address,
   location,
-  label = "Open in Maps",
-  kind = "secondary",
   className,
 }: {
   address: string;
   location?: LatLng | null;
-  label?: string;
-  kind?: "primary" | "secondary" | "quiet";
   className?: string;
 }) {
   const apple = useAppleMaps();
@@ -55,11 +51,11 @@ export function OpenInMaps({
       href={apple ? links.apple : links.google}
       target="_blank"
       rel="noopener noreferrer"
-      className={cx(buttonClass(kind), className)}
-      data-testid="open-in-maps"
+      aria-label={`${address}, directions in Maps`}
+      className={cx("text-link underline-offset-4 hover:underline", className)}
+      data-testid="address-link"
     >
-      {PIN}
-      {label}
+      {address}
     </a>
   );
 }

@@ -147,7 +147,15 @@ export default function JobDetail() {
         <T variant="label">Pool</T>
         {property ? (
           <>
-            <T variant="strong">{address}</T>
+            <Pressable
+              accessibilityRole="link"
+              accessibilityHint="Directions in Maps"
+              onPress={openMaps}
+            >
+              <T variant="strong" style={{ color: color.link }}>
+                {address}
+              </T>
+            </Pressable>
             <T variant="small">
               {[
                 property.pool_type ? POOL_TYPE_LABELS[property.pool_type] : null,
@@ -157,7 +165,6 @@ export default function JobDetail() {
                 .join(" · ")}
             </T>
             {property.access_notes ? <Notice tone="warning">{property.access_notes}</Notice> : null}
-            <Button title="Open in Maps" kind="secondary" onPress={openMaps} />
           </>
         ) : (
           <T variant="muted">Address not on this phone yet.</T>

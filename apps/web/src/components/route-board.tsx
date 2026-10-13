@@ -32,7 +32,7 @@ import {
   type RouteResult,
   type Suggestion,
 } from "@/app/actions/routes";
-import { OpenInMaps, OpenRouteInMaps } from "./open-in-maps";
+import { AddressLink, OpenRouteInMaps } from "./open-in-maps";
 import { Button, Notice, StatusBadge, buttonClass, cx } from "./ui";
 
 // The schedule as routes (routing, owner request 2026-10-13): each tech's day in order with
@@ -445,9 +445,11 @@ function StopCard({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
           <span className="text-text-muted">{s.number ? ` · #${s.number}` : ""}</span>
           <span className="block">{s.customer}</span>
         </Link>
-        <p className="truncate text-[15px] text-text-muted">{s.address}</p>
+        <p className="truncate text-[15px]">
+          <AddressLink address={s.address} location={s.location} />
+        </p>
         {s.note ? <p className="text-[15px] text-text-muted">{s.note}</p> : null}
-        <p className="mt-1 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2">
           <StatusBadge status={s.status} />
           {s.lock ? (
             <span className="rounded-sm border border-control-border px-1.5 text-[13px] font-semibold">
@@ -457,13 +459,10 @@ function StopCard({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
           {!s.location ? (
             <span className="text-[13px] text-status-warning">No map location</span>
           ) : null}
-        </p>
-        <div className="mt-1 -ml-2 flex flex-wrap gap-x-1">
-          <OpenInMaps address={s.address} location={s.location} kind="quiet" className="px-2" />
           {s.draggable ? (
             <button
               type="button"
-              className={buttonClass("quiet", "px-2")}
+              className={buttonClass("quiet", "ml-auto px-2")}
               onClick={() => onMove(s)}
             >
               Move…

@@ -12,7 +12,7 @@ import {
   routeLink,
 } from "@leakbook/core";
 import { OnMyWay } from "@/components/on-my-way";
-import { OpenInMaps, OpenRouteInMaps } from "@/components/open-in-maps";
+import { AddressLink, OpenRouteInMaps } from "@/components/open-in-maps";
 import { Card, Empty, PageHeader, StatusBadge, buttonClass, cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { loadRoutes, routeContext, routeKey } from "@/server/route-days";
@@ -131,35 +131,27 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                         {i + 1}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="font-display text-xl font-bold">
+                        <p className="flex flex-wrap items-center gap-x-2 font-display text-xl font-bold">
                           {j.scheduled_start ? formatTime(j.scheduled_start, ctx.timeZone) : ""}
+                          <StatusBadge status={j.status} />
                           {lock && lock !== "started" ? (
-                            <span className="ml-2 align-middle text-[13px] font-semibold text-text-muted">
+                            <span className="text-[13px] font-semibold text-text-muted">
                               {LOCK_LABELS[lock]}
                             </span>
                           ) : null}
                         </p>
                         <p className="font-semibold">{j.customer?.name ?? "Customer"}</p>
-                        <p className="text-[15px] text-text-muted">{address}</p>
+                        <p className="text-[15px]">
+                          <AddressLink address={address} location={propertyLocation(j.property)} />
+                        </p>
                         {j.property?.access_notes ? (
                           <p className="mt-1 border-l-4 border-status-warning pl-2 text-[15px]">
                             {j.property.access_notes}
                           </p>
                         ) : null}
-                        <p className="mt-1">
-                          <StatusBadge status={j.status} />
-                        </p>
                       </div>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {!done ? (
-                        <OpenInMaps
-                          address={address}
-                          location={propertyLocation(j.property)}
-                          label="Navigate"
-                          kind={isNext ? "primary" : "secondary"}
-                        />
-                      ) : null}
+                    <div className="mt-2 flex flex-wrap gap-2">
                       {!done && mine ? (
                         <OnMyWay
                           phone={j.customer?.phone ?? null}

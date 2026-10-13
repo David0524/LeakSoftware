@@ -391,9 +391,9 @@ Added 2026-10-13 (owner: "assign routes to specific days and techs, suggestions 
 - Pools and the shop on the map: looked up from the address (Mapbox, when `MAPBOX_TOKEN` is set) or marked with the phone's GPS. Drive times from Mapbox's Matrix API, cached a day and counted per shop; an estimate from distance without a key.
 - Schedule: each tech's day as a route with drive times, short gaps, total driving, back-at-shop time, and overtime. Plan Route orders a day for the least driving, keeping started jobs, promised times, and two-tech jobs. Drag jobs between places, techs, and days (mouse, touch, keyboard) or use Move…; jobs without a time wait in a tray with Suggest Times. Week view drags between days.
 - Suggest Times on the job page, the schedule tray, and New Job (existing pools): the gaps in the next working days that add the least driving.
-- Open in Maps (job page, schedule, phone app), Open Route in Maps (a whole day), and Today: a tech's route with Navigate, On My Way (text from the tech's phone), and Call.
+- Addresses link to directions in the phone's maps app (job page, schedule, Today, phone app); Open Route in Maps (a whole day); Today: a tech's route with On My Way (text from the tech's phone) and Call.
 - Settings › Scheduling: working day and days, usual job length, arrival windows, shop location, find pool locations.
-- **Done when:** in Playwright, a tech's badly ordered day is planned (less driving, the promised time kept), a job moves from the tray onto a day with Move… and back by dragging, a suggested time schedules it, and Open in Maps and Today give directions to the pool.
+- **Done when:** in Playwright, a tech's badly ordered day is planned (less driving, the promised time kept), a job moves from the tray onto a day with Move… and back by dragging, a suggested time schedules it, and the addresses on the job page and Today link to directions to the pool.
 
 ### M11 Launch hardening
 - Sentry, error boundaries, offline edge cases (full disk, revoked session, app update with pending outbox), accessibility pass, performance with 1,000 jobs and 10,000 photos on the device.
