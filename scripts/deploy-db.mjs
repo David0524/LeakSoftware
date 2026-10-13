@@ -81,5 +81,8 @@ if (flag("--seed") && !flag("--dry-run")) {
   // Idempotent: more techs, customers, and a two-week schedule, once.
   await query(readFileSync(join(root, "supabase", "seed_demo_schedule.sql"), "utf8"));
   console.log("seed: demo schedule checked");
+  // Idempotent: fuller routes (four or five stops a tech a weekday), once.
+  await query(readFileSync(join(root, "supabase", "seed_demo_routes.sql"), "utf8"));
+  console.log("seed: demo routes checked");
 }
 console.log("done");
