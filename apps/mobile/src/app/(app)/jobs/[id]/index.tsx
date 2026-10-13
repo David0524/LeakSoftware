@@ -6,6 +6,7 @@ import {
   POOL_TYPE_LABELS,
   formatAddress,
   formatSchedule,
+  parseDollars,
   userTransitions,
   type Customer,
   type Job,
@@ -26,6 +27,7 @@ import {
   StatusChip,
   T,
   Segmented,
+  Toggle,
 } from "../../../../ui/components";
 import { color } from "../../../../ui/theme";
 import { ChecklistTab } from "../../../../features/inspection/ChecklistTab";
@@ -53,6 +55,7 @@ export default function JobDetail() {
   const customer = useRow<Customer>("customer", job?.bill_to_customer_id ?? property?.customer_id);
   const [tab, setTab] = useState<Tab>("checklist");
   const [notes, setNotes] = useState<string | null>(null);
+  const [fee, setFee] = useState<string | null>(null);
   // Notes save shortly after typing stops and when leaving the screen. Relying on blur
   // alone lost edits on iPhone, where leaving the field often does not blur it.
   const pendingNotes = useRef<string | null>(null);
@@ -81,6 +84,7 @@ export default function JobDetail() {
 
   const team = services.sync.team();
   const assignee = team.find((p) => p.id === job.assigned_user_id);
+  const second = team.find((p) => p.id === job.second_tech_id);
   const update = (values: Record<string, JsonValue>) =>
     services.sync.write("job", job.id, company.id, values);
 
@@ -166,7 +170,30 @@ export default function JobDetail() {
           {assignee?.full_name ??
             assignee?.email ??
             (job.assigned_user_id ? "Teammate" : "Nobody yet")}
+          {second ? ` and ${second.full_name ?? second.email ?? "teammate"}` : ""}
         </T>
+      </Card>
+
+      <Card>
+        <Field
+          label="Detection fee ($)"
+          value={fee ?? (job.fee_cents != null ? (job.fee_cents / 100).toFixed(2) : "")}
+          onChangeText={setFee}
+          onBlur={() => {
+            if (fee === null) return;
+            const cents = fee.trim() ? parseDollars(fee) : null;
+            if (cents === null && fee.trim()) return setFee(null);
+            update({ fee_cents: cents });
+            setFee(null);
+          }}
+          keyboardType="decimal-pad"
+          hint="Shown on the report."
+        />
+        <Toggle
+          label="Leak location marked"
+          value={job.location_marked ?? false}
+          onChange={(v) => update({ location_marked: v })}
+        />
       </Card>
 
       <View style={{ gap: 8 }}>

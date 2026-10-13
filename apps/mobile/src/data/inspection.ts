@@ -91,7 +91,7 @@ export function createChecklist(
   companyId: string,
   jobId: string,
   types: ComponentType[],
-  property: Pick<Property, "has_pool" | "has_spa">,
+  property: Pick<Property, "has_pool" | "has_spa"> & { pool_type?: string | null },
 ) {
   sync.batch(() => {
     for (const planned of planComponents(types, property))

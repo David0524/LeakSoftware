@@ -20,6 +20,23 @@ export interface CompanySettings {
   tax_rate_bps: number;
   tech_discount_limit_bps: number;
   sync_window_days: number;
+  /** Questions asked when booking (M8.5). */
+  intake_questions?: IntakeQuestion[];
+}
+
+export interface IntakeQuestion {
+  key: string;
+  label: string;
+  type: "multi" | "single" | "text";
+  options?: string[];
+}
+
+/** Split "a@x.com b@y.com, c@z.com" into addresses. */
+export function splitEmails(text: string): string[] {
+  return text
+    .split(/[\s,;]+/)
+    .map((e) => e.trim())
+    .filter((e) => /^\S+@\S+\.\S+$/.test(e));
 }
 
 export interface Company extends Base {
@@ -81,6 +98,11 @@ export interface Job extends Base {
   started_at?: string | null;
   completed_at?: string | null;
   summary_notes?: string | null;
+  /** Detection fee in cents (M8.5). */
+  fee_cents?: number | null;
+  second_tech_id?: string | null;
+  intake?: Record<string, string | string[]> | null;
+  location_marked?: boolean | null;
   created_at?: string;
 }
 

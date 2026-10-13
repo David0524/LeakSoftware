@@ -1,7 +1,6 @@
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Alert, View } from "react-native";
-import { validateChecklistResult, type ChecklistStatus } from "@leakbook/core";
 import {
   removeComponent,
   saveChecklistResult,
@@ -13,7 +12,6 @@ import { MediaSection } from "../../../../../features/media/MediaSection";
 import {
   Button,
   Card,
-  Choice,
   Field,
   Notice,
   Screen,
@@ -22,10 +20,14 @@ import {
   T,
 } from "../../../../../ui/components";
 import { OutcomeChip } from "../../../../../features/inspection/OutcomeChip";
+import {
+  currentVerdict,
+  verdictOptions,
+  verdictValues,
+  type Verdict,
+} from "../../../../../features/inspection/verdict";
 
-const OTHER = "__other__";
-
-/** Mark one component instance inspected (with method) or excluded (with reason). */
+/** One checklist item: its verdict and where, notes, photos, tests, and findings. */
 export default function ComponentScreen() {
   const { id: jobId, componentId } = useLocalSearchParams<{ id: string; componentId: string }>();
   const company = useCompany();
@@ -36,43 +38,28 @@ export default function ComponentScreen() {
   const result = insp.resultByComponent.get(componentId);
   const type = component ? config.componentTypeById.get(component.component_type_id) : undefined;
 
-  const [status, setStatus] = useState<ChecklistStatus>(result?.status ?? "pending");
-  const [method, setMethod] = useState(result?.method ?? "");
-  const presetReasons = config.exclusionReasons.map((r) => r.label);
-  const savedReason = result?.exclusion_reason ?? "";
-  const [reasonChoice, setReasonChoice] = useState(
-    savedReason && !presetReasons.includes(savedReason) ? OTHER : savedReason,
-  );
-  const [otherReason, setOtherReason] = useState(
-    savedReason && !presetReasons.includes(savedReason) ? savedReason : "",
-  );
+  const [verdict, setVerdict] = useState<Verdict | null>(currentVerdict(result));
+  const [where, setWhere] = useState(result?.location_text ?? "");
   const [notes, setNotes] = useState(result?.notes ?? "");
-  const [error, setError] = useState<string | null>(null);
 
   if (!component || !type) {
     return (
       <Screen>
-        <Notice tone="warning">This component isn’t on this phone.</Notice>
+        <Notice tone="warning">This item isn’t on this phone.</Notice>
       </Screen>
     );
   }
   const comp = component;
   const tests = insp.tests.filter((t) => t.job_component_id === componentId);
   const findings = insp.findings.filter((f) => f.job_component_id === componentId);
-  const reason = reasonChoice === OTHER ? otherReason : reasonChoice;
+  const needsWhere = type.answer !== "yes_no" && (verdict === "leaking" || verdict === "attention");
 
   function save() {
-    const values = {
-      status,
-      method: status === "inspected" ? method : null,
-      exclusion_reason: status === "excluded" ? reason.trim() : null,
+    saveChecklistResult(services.sync, company.id, jobId, componentId, result, {
+      ...verdictValues(verdict, user?.id ?? null),
+      location_text: needsWhere ? where.trim() || null : null,
       notes: notes.trim() || null,
-      inspected_at: status === "pending" ? null : new Date().toISOString(),
-      inspected_by: status === "pending" ? null : (user?.id ?? null),
-    };
-    const problem = validateChecklistResult(values);
-    if (problem) return setError(problem);
-    saveChecklistResult(services.sync, company.id, jobId, componentId, result, values);
+    });
     router.back();
   }
 
@@ -94,49 +81,18 @@ export default function ComponentScreen() {
     <Screen>
       <Stack.Screen options={{ title: comp.label }} />
       <Segmented
-        label="Status"
-        options={[
-          { value: "inspected", label: "Inspected" },
-          { value: "excluded", label: "Excluded" },
-          { value: "pending", label: "To Do" },
-        ]}
-        value={status}
-        onChange={(v) => {
-          setStatus(v);
-          setError(null);
-        }}
+        label="Result"
+        options={verdictOptions(type)}
+        value={verdict}
+        onChange={setVerdict}
       />
-
-      {status === "inspected" ? (
-        <Choice
-          label="How"
-          options={type.methods.map((m) => ({ value: m, label: m }))}
-          value={method || null}
-          onChange={setMethod}
+      {needsWhere ? (
+        <Field
+          label="Where"
+          value={where}
+          onChangeText={setWhere}
+          placeholder="Where on the line or fitting"
         />
-      ) : null}
-
-      {status === "excluded" ? (
-        <>
-          <Choice
-            label="Reason"
-            options={[
-              ...presetReasons.map((r) => ({ value: r, label: r })),
-              { value: OTHER, label: "Other" },
-            ]}
-            value={reasonChoice || null}
-            onChange={setReasonChoice}
-          />
-          {reasonChoice === OTHER ? (
-            <Field
-              label="Reason"
-              value={otherReason}
-              onChangeText={setOtherReason}
-              placeholder="Why it wasn’t inspected"
-            />
-          ) : null}
-          <T variant="muted">Excluded items are listed on the report with this reason.</T>
-        </>
       ) : null}
 
       <Field
@@ -146,12 +102,11 @@ export default function ComponentScreen() {
         multiline
         placeholder="What you saw"
       />
-      {error ? <Notice tone="error">{error}</Notice> : null}
       <Button title="Save" onPress={save} />
 
       <MediaSection target={{ jobId, componentId }} />
 
-      <Section title="Tests on this component">
+      <Section title="Tests on this item">
         {tests.map((t) => (
           <Card key={t.id}>
             <View
@@ -185,7 +140,7 @@ export default function ComponentScreen() {
         </View>
       </Section>
 
-      <Section title="Findings on this component">
+      <Section title="Findings on this item">
         {findings.map((f) => (
           <Card key={f.id}>
             <T variant="strong">{f.title}</T>

@@ -8,7 +8,10 @@ import {
   newJobRecords,
   validateNewJob,
   planComponents,
+  parseDollars,
+  splitEmails,
   type ComponentType,
+  type PriceBookItem,
   type Customer,
   type NewJobInput,
   type PoolType,
@@ -38,6 +41,9 @@ export default function NewJob() {
   const customers = useRows<Customer>("customer", company.id);
   const properties = useRows<Property>("property", company.id);
   const componentTypes = useRows<ComponentType>("component_type", company.id);
+  const priceBook = useRows<PriceBookItem>("price_book_item", company.id);
+  const questions = company.settings.intake_questions ?? [];
+  const team = services.sync.team().filter((p) => p.id !== user?.id);
 
   const [customerId, setCustomerId] = useState<string | undefined>();
   const [search, setSearch] = useState("");
@@ -59,6 +65,20 @@ export default function NewJob() {
   const [when, setWhen] = useState<When>("now");
   const [assignToMe, setAssignToMe] = useState(true);
   const [errors, setErrors] = useState<ReturnType<typeof validateNewJob>>({});
+  const [otherEmails, setOtherEmails] = useState("");
+  const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
+  const [secondTech, setSecondTech] = useState<string>("none");
+  const [fee, setFee] = useState<string | null>(null);
+  const [feeError, setFeeError] = useState<string | undefined>();
+  // The detection fee starts from the price book (pool, or pool and spa).
+  const detection = priceBook
+    .filter((i) => i.active && i.category === "Detection")
+    .sort((a, b) => a.sort_order - b.sort_order);
+  const spaChosen = propertyId
+    ? (properties.find((p) => p.id === propertyId)?.has_spa ?? false)
+    : hasSpa;
+  const suggestedFee = (spaChosen ? detection[1] : detection[0]) ?? detection[0];
+  const feeText = fee ?? (suggestedFee ? (suggestedFee.price_cents / 100).toFixed(2) : "");
 
   const set = (k: keyof NewJobInput) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
   const selectedCustomer = customers.find((c) => c.id === customerId);
@@ -90,7 +110,10 @@ export default function NewJob() {
     const e = validateNewJob(input);
     if (when === "scheduled" && !input.scheduleDate) e.scheduleDate = "Pick a date.";
     setErrors(e);
-    if (Object.keys(e).length > 0) return;
+    const feeCents = feeText.trim() ? parseDollars(feeText) : null;
+    const badFee = Boolean(feeText.trim()) && (feeCents === null || feeCents < 0);
+    setFeeError(badFee ? "Enter a price like 649." : undefined);
+    if (Object.keys(e).length > 0 || badFee) return;
 
     const records = newJobRecords(input, {
       poolType,
@@ -112,7 +135,12 @@ export default function NewJob() {
     const { sync } = services;
     // Customer, property, job, and its checklist are saved together or not at all.
     const jobId = sync.batch(() => {
-      const cust = customerId ?? sync.insert("customer", company.id, records.customer!);
+      const cust =
+        customerId ??
+        sync.insert("customer", company.id, {
+          ...records.customer!,
+          cc_emails: splitEmails(otherEmails),
+        });
       const prop =
         propertyId ??
         sync.insert("property", company.id, { ...records.property!, customer_id: cust });
@@ -120,11 +148,19 @@ export default function NewJob() {
         ...records.job,
         property_id: prop,
         bill_to_customer_id: cust,
+        fee_cents: feeCents,
+        second_tech_id: secondTech === "none" ? null : secondTech,
+        intake: answers,
       });
       // The checklist is ready the moment the job opens, even offline.
       const existingProperty = properties.find((p) => p.id === prop);
       const spa = existingProperty ? existingProperty.has_spa : hasSpa;
-      for (const planned of planComponents(componentTypes, { has_pool: true, has_spa: spa })) {
+      const type = existingProperty ? (existingProperty.pool_type ?? null) : poolType;
+      for (const planned of planComponents(componentTypes, {
+        has_pool: true,
+        has_spa: spa,
+        pool_type: type,
+      })) {
         const componentId = sync.insert("job_component", company.id, { job_id: job, ...planned });
         sync.insert("checklist_item_result", company.id, {
           job_id: job,
@@ -203,9 +239,70 @@ export default function NewJob() {
               keyboardType="email-address"
               autoCapitalize="none"
             />
+            <Field
+              label="Other emails (optional)"
+              value={otherEmails}
+              onChangeText={setOtherEmails}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              hint="They get the report too. Separate with spaces."
+            />
           </>
         )}
       </Section>
+
+      {questions.length > 0 ? (
+        <Section title="Booking">
+          {questions.map((q) =>
+            q.type === "multi" ? (
+              <View key={q.key} style={{ gap: 4 }}>
+                <T variant="label">{q.label}</T>
+                {(q.options ?? []).map((o) => {
+                  const picked = ((answers[q.key] as string[] | undefined) ?? []).includes(o);
+                  return (
+                    <Toggle
+                      key={o}
+                      label={o}
+                      value={picked}
+                      onChange={(on) =>
+                        setAnswers((a) => {
+                          const list = ((a[q.key] as string[] | undefined) ?? []).filter(
+                            (x) => x !== o,
+                          );
+                          return { ...a, [q.key]: on ? [...list, o] : list };
+                        })
+                      }
+                    />
+                  );
+                })}
+              </View>
+            ) : q.type === "single" ? (
+              <Choice
+                key={q.key}
+                label={q.label}
+                options={(q.options ?? []).map((o) => ({ value: o, label: o }))}
+                value={(answers[q.key] as string | undefined) ?? null}
+                onChange={(v) => setAnswers((a) => ({ ...a, [q.key]: v }))}
+              />
+            ) : (
+              <Field
+                key={q.key}
+                label={q.label}
+                value={(answers[q.key] as string | undefined) ?? ""}
+                onChangeText={(v) => setAnswers((a) => ({ ...a, [q.key]: v }))}
+              />
+            ),
+          )}
+          <Field
+            label="Detection fee ($)"
+            value={feeText}
+            onChangeText={setFee}
+            keyboardType="decimal-pad"
+            error={feeError}
+            hint="Shown on the report."
+          />
+        </Section>
+      ) : null}
 
       <Section title="Pool address">
         {customerProperties.length > 0 ? (
@@ -321,6 +418,17 @@ export default function NewJob() {
           </>
         ) : null}
         <Toggle label="Assign to me" value={assignToMe} onChange={setAssignToMe} />
+        {team.length > 0 ? (
+          <Choice
+            label="Second tech"
+            options={[
+              { value: "none", label: "None" },
+              ...team.map((p) => ({ value: p.id, label: p.full_name ?? p.email ?? "Teammate" })),
+            ]}
+            value={secondTech}
+            onChange={setSecondTech}
+          />
+        ) : null}
       </Section>
 
       {Object.keys(errors).length > 0 ? (
