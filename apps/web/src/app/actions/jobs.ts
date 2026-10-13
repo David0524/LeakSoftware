@@ -70,8 +70,7 @@ export async function deleteCustomer(_: FormState, form: FormData): Promise<Form
     target_customer: text(form, "customer"),
   });
   if (error) return { error: error.message };
-  revalidatePath("/customers");
-  // The page goes to the list itself (DeleteCustomerForm): a redirect from this action left
-  // the deleted customer's page on screen.
+  // No revalidation here: it would re-render this customer's page, now "not found", under
+  // the button. The caller (DeleteCustomerForm) goes to the list and refreshes it.
   return { message: "deleted" };
 }
