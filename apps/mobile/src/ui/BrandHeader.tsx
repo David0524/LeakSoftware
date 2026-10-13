@@ -22,5 +22,5 @@ export function BrandHeader() {
 const styles = StyleSheet.create({
   header: { backgroundColor: color.header },
   inner: { paddingHorizontal: space["5"], paddingVertical: space["6"] },
-  logo: { width: 213, height: 62 },
+  logo: { width: 214, height: 62 },
 });

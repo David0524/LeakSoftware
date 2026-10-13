@@ -5,6 +5,7 @@ Newest first. Each entry: date, decision, reason.
 ## 2026-10-13 (owner: the name is Tidemark)
 - **Renamed from LeakBook to Tidemark** everywhere people see it: website, phone app name and permission text, emails ("{Shop} via Tidemark"), the "Powered by" line, the logo wordmark ("Tide" navy, "mark" water blue; the drop-pin mark is unchanged), and the docs. Reason: a name not tied to leak detection, for selling to other pool shops. PoolDeck was considered and dropped (pool-deck contractors, Skimmer's "The Pool Deck").
 - **Kept as they are, because changing them would break things:** package names (`@leakbook/*`), phone storage keys (renaming would wipe phones' local data), the app's bundle id and URL scheme (`com.leakbook.app`, `leakbook`), the `leakbook-dev` Supabase project, and the demo sign-ins.
+- **New mark (owner's concepts):** the same drop pin with two parallel wave lines (the tide mark) and a round dot; straight sides tangent to the head. On light backgrounds the pin is water blue with the dot and lines cut out; on navy (app icon, favicon, reverse logo) the pin is white with the orange dot and the lines filled water blue (owner asked for the light blue there). Rebuilt as geometry in `brand/scripts/build_logo.py`.
 - **Domain placeholder** is now `tidemark.app` (email from `send.tidemark.app`). Not bought; the owner checks the domain and trademark before buying. Older entries below say LeakBook; they were true when written.
 
 ## 2026-10-13 (owner: appearance and deleting customers)

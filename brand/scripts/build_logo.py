@@ -1,8 +1,9 @@
 """Generate Tidemark logo SVGs from exact geometry.
 
-The drop-pin mark was measured from the approved ChatGPT concept and rebuilt
-as clean geometry: a circle head, curved sides to the tip, a constant-width
-wave band cut through the pin, and a dot above the wave.
+The drop-pin mark was measured from the approved concept (logo/concept/tidemark-*.webp,
+2026-10-13) and rebuilt as clean geometry: a circle head, straight sides tangent to it
+down to the tip, two parallel wave lines (the tide mark) cut through the pin, and a dot
+above them. On navy the wave lines are filled water blue instead of cut out.
 
 Run:  python3 brand/scripts/build_logo.py
 Needs: fonttools (pip install fonttools) for the wordmark outlines.
@@ -25,20 +26,18 @@ SAFETY = "#EE6A1F"
 WHITE = "#FFFFFF"
 BLACK = "#000000"
 
-# Geometry, in mark units, fitted to the approved concept (RMS error < 0.1 unit).
+# Geometry, in mark units, fitted to the approved concept (wave RMS error ~0.2 unit).
 # Head circle is centered at (0, 0); the tip points down.
 R = 50.0  # head radius
-TIP_Y = 101.0  # tip of the pin
-SIDE_C1 = (50.0, 30.0)  # side curve handles (right side; left is mirrored)
-SIDE_C2 = (32.9, 54.0)
-DOT_CY, DOT_R = -19.4, 15.0
-WAVE_MID, WAVE_AMP = 6.67, 4.53  # wave centerline: mid height, amplitude
-WAVE_INNER = 32.0  # center trough to crest
-WAVE_OUTER = 27.0  # crest to outer trough (a little tighter, as drawn)
-BAND = 9.2  # wave band thickness, measured square to the wave
-ARC_K = 0.5522847498  # cubic handle length for a quarter circle
+TIP_Y = 96.3  # tip of the pin; the sides are straight lines tangent to the head
+DOT_CY, DOT_R = -20.8, 13.2
+WAVE_MID, WAVE_AMP = 2.1, 4.45  # upper wave centerline: mid height, amplitude
+WAVE_INNER = 28.5  # center trough to crest
+WAVE_OUTER = 29.5  # crest to outer trough
+BAND = 6.8  # wave line thickness, measured square to the wave
+GAP = 14.6  # second wave line, this far below the first (center to center)
 
-# Mark bounds: x -50..50, y -50..101.
+# Mark bounds: x -50..50, y -50..96.3.
 MARK_W, MARK_TOP, MARK_H = 2 * R, -R, TIP_Y + R
 
 
@@ -88,15 +87,31 @@ def segment(chain, u0, u1):
     return out
 
 
+def line(a, b):
+    return (a, lerp(a, b, 1 / 3), lerp(a, b, 2 / 3), b)
+
+
 def outline():
     """Pin outline as cubics: tip, up the right side, over the head, down the left side."""
     tip = (0.0, TIP_Y)
-    k = R * ARC_K
-    right = (tip, (SIDE_C2[0], SIDE_C2[1]), (SIDE_C1[0], SIDE_C1[1]), (R, 0.0))
-    q1 = ((R, 0.0), (R, -k), (k, -R), (0.0, -R))
-    q2 = ((0.0, -R), (-k, -R), (-R, -k), (-R, 0.0))
-    left = ((-R, 0.0), (-SIDE_C1[0], SIDE_C1[1]), (-SIDE_C2[0], SIDE_C2[1]), tip)
-    return [right, q1, q2, left]
+    # Where a straight side from the tip touches the head circle.
+    ty = R * R / TIP_Y
+    tx = math.sqrt(R * R - ty * ty)
+    start = math.atan2(ty, tx)  # angle of the right tangent point (y points down)
+    sweep = math.pi + 2 * start  # over the top to the left tangent point
+    arcs = []
+    n = 4
+    k = 4 / 3 * math.tan(sweep / n / 4) * R
+    for i in range(n):
+        a0 = start - sweep * i / n
+        a1 = start - sweep * (i + 1) / n
+        p0 = (R * math.cos(a0), R * math.sin(a0))
+        p3 = (R * math.cos(a1), R * math.sin(a1))
+        # Tangent direction of decreasing angle is (sin a, -cos a).
+        c1 = (p0[0] + k * math.sin(a0), p0[1] - k * math.cos(a0))
+        c2 = (p3[0] - k * math.sin(a1), p3[1] + k * math.cos(a1))
+        arcs.append((p0, c1, c2, p3))
+    return [line(tip, (tx, ty)), *arcs, line((-tx, ty), tip)]
 
 
 def wave_y(x):
@@ -108,8 +123,10 @@ def wave_y(x):
     return WAVE_MID + WAVE_AMP
 
 
-def wave_edge(side, band=BAND):
-    """Wave edge offset square to the centerline (side -1 = top, +1 = bottom), as cubics."""
+def wave_edge(side, band=BAND, shift=0.0):
+    """Wave edge offset square to the centerline (side -1 = top, +1 = bottom), as cubics.
+
+    shift moves the whole line down (the second wave line)."""
     h = 1e-4
     pts = []
     for i in range(-36, 37):
@@ -117,7 +134,9 @@ def wave_edge(side, band=BAND):
         dy = (wave_y(x + h) - wave_y(x - h)) / (2 * h)
         n = math.hypot(1, dy)
         # Unit normal pointing down (+y) is (-dy, 1)/n.
-        pts.append((x + side * (-dy) / n * band / 2, wave_y(x) + side * band / 2 / n))
+        pts.append(
+            (x + side * (-dy) / n * band / 2, wave_y(x) + shift + side * band / 2 / n)
+        )
     # Catmull-Rom through the samples, as cubics.
     segs = []
     for i in range(1, len(pts) - 2):
@@ -179,49 +198,60 @@ def reverse(segs):
 
 
 def mark_paths(dot_hole=False, small=False):
-    """Return (pin_path_d, dot_path_d). The dot is cut from the pin when dot_hole.
+    """Return (pin_path_d, dot_path_d, outline_d). The dot is cut from the pin when dot_hole.
 
-    small: favicon cut with a thicker wave and bigger dot so they survive 16-32 px.
+    The pin is three pieces: the head above the first wave line, the strip between the
+    lines, and the body below the second. small: favicon cut with thicker, wider-spaced
+    lines and a bigger dot so they survive 16-32 px.
     """
-    band, dot_r = (BAND * 1.6, DOT_R * 1.2) if small else (BAND, DOT_R)
+    band, gap, dot_r = (BAND * 1.45, GAP * 1.2, DOT_R * 1.15) if small else (BAND, GAP, DOT_R)
     out = outline()
     poly = [at(b, j / 200) for b in out for j in range(200)]
     n = len(out)
 
-    top, bot = wave_edge(-1, band), wave_edge(+1, band)
-    t_in, t_out = crossings(top, poly)
-    b_in, b_out = crossings(bot, poly)
-    top_in = segment(top, t_in, t_out)
-    bot_in = segment(bot, b_in, b_out)
+    def edge(side, shift):
+        e = wave_edge(side, band, shift)
+        a, b = crossings(e, poly)
+        seg = segment(e, a, b)
+        # Outline params where the edge meets it, left end then right end.
+        return seg, locate(out, seg[0][0]), locate(out, seg[-1][3])
 
-    # Outline params where each edge meets it.
-    ut_right = locate(out, top_in[-1][3])
-    ut_left = locate(out, top_in[0][0])
-    ub_right = locate(out, bot_in[-1][3])
-    ub_left = locate(out, bot_in[0][0])
+    t1, t1l, t1r = edge(-1, 0.0)
+    b1, b1l, b1r = edge(+1, 0.0)
+    t2, t2l, t2r = edge(-1, gap)
+    b2, b2l, b2r = edge(+1, gap)
 
-    # Head cap: outline from right over the top to left, then along the top edge back to the right.
-    cap_outline = segment(out, ut_right, ut_left)
-    cap = f"M{pt(top_in[-1][3])} {curves(cap_outline)} {curves(top_in)} Z"
-
-    # Body: bottom edge left to right, then the outline down the right side to the tip and up the left.
-    body_outline = reverse(segment(out, 0.0, ub_right)) + reverse(segment(out, ub_left, float(n)))
-    body = f"M{pt(bot_in[0][0])} {curves(bot_in)} {curves(body_outline)} Z"
+    # Head: outline from the right over the top to the left, then along the top edge back.
+    head = f"M{pt(t1[-1][3])} {curves(segment(out, t1r, t1l))} {curves(t1)} Z"
+    # Strip: first line's lower edge left to right, down the right side, second line's upper
+    # edge right to left, up the left side.
+    strip = (
+        f"M{pt(b1[0][0])} {curves(b1)} {curves(reverse(segment(out, t2r, b1r)))} "
+        f"{curves(reverse(t2))} {curves(reverse(segment(out, b1l, t2l)))} Z"
+    )
+    # Body: second line's lower edge left to right, down the right side to the tip, up the left.
+    body_outline = reverse(segment(out, 0.0, b2r)) + reverse(segment(out, b2l, float(n)))
+    body = f"M{pt(b2[0][0])} {curves(b2)} {curves(body_outline)} Z"
 
     dot = (
         f"M{f(-dot_r)} {f(DOT_CY)} a{f(dot_r)} {f(dot_r)} 0 1 0 {f(2 * dot_r)} 0 "
         f"a{f(dot_r)} {f(dot_r)} 0 1 0 {f(-2 * dot_r)} 0 Z"
     )
-    pin = f"{cap} {body}"
+    pin = f"{head} {strip} {body}"
     if dot_hole:
         pin = f"{pin} {dot}"
-    return pin, dot
+    silhouette = f"M{pt(out[0][0])} {curves(out)} Z"
+    return pin, dot, silhouette
 
 
-def mark_group(pin_fill, dot_fill=None, tx=0.0, ty=0.0, scale=1.0, small=False):
-    """SVG group for the mark. dot_fill=None cuts the dot out of the pin."""
-    pin, dot = mark_paths(dot_hole=dot_fill is None, small=small)
-    parts = [f'<path fill="{pin_fill}" fill-rule="evenodd" d="{pin}"/>']
+def mark_group(pin_fill, dot_fill=None, tx=0.0, ty=0.0, scale=1.0, small=False, line_fill=None):
+    """SVG group for the mark. dot_fill=None cuts the dot out of the pin; line_fill fills the
+    wave lines with a color instead of cutting them out."""
+    pin, dot, silhouette = mark_paths(dot_hole=dot_fill is None, small=small)
+    parts = []
+    if line_fill:
+        parts.append(f'<path fill="{line_fill}" d="{silhouette}"/>')
+    parts.append(f'<path fill="{pin_fill}" fill-rule="evenodd" d="{pin}"/>')
     if dot_fill:
         parts.append(f'<path fill="{dot_fill}" d="{dot}"/>')
     return (
@@ -238,18 +268,20 @@ def svg(w, h, body, bg=None, title="Tidemark"):
     )
 
 
-def mark_svg(pin_fill, dot_fill, pad=0.0):
+def mark_svg(pin_fill, dot_fill, pad=0.0, line_fill=None):
     w, h = MARK_W + 2 * pad, MARK_H + 2 * pad
-    g = mark_group(pin_fill, dot_fill, tx=R + pad, ty=R + pad)
+    g = mark_group(pin_fill, dot_fill, tx=R + pad, ty=R + pad, line_fill=line_fill)
     return svg(w, h, g)
 
 
-def square_icon(size, bg, pin_fill, dot_fill, mark_height_ratio, small=False):
+def square_icon(size, bg, pin_fill, dot_fill, mark_height_ratio, small=False, line_fill=None):
     """Mark centered in a square. Centers the head+tip box, nudged up so it sits optically centered."""
     scale = size * mark_height_ratio / MARK_H
     tx = size / 2
     ty = (size - MARK_H * scale) / 2 - MARK_TOP * scale - size * 0.01
-    group = mark_group(pin_fill, dot_fill, tx=tx, ty=ty, scale=scale, small=small)
+    group = mark_group(
+        pin_fill, dot_fill, tx=tx, ty=ty, scale=scale, small=small, line_fill=line_fill
+    )
     return svg(size, size, group, bg=bg)
 
 
@@ -277,7 +309,7 @@ def wordmark_paths(text_parts, cap_height):
     return "".join(out), x
 
 
-def lockup(tide_fill, mark_fill, pin_fill, dot_fill, bg=None, pad=0.0):
+def lockup(tide_fill, mark_fill, pin_fill, dot_fill, bg=None, pad=0.0, line_fill=None):
     """Horizontal lockup: mark, gap, wordmark. Cap height ~= 46% of mark height."""
     mark_h = MARK_H
     cap_h = mark_h * 0.46
@@ -285,7 +317,7 @@ def lockup(tide_fill, mark_fill, pin_fill, dot_fill, bg=None, pad=0.0):
     words, words_w = wordmark_paths([("Tide", tide_fill), ("mark", mark_fill)], cap_h)
     w = MARK_W + gap + words_w + 2 * pad
     h = mark_h + 2 * pad
-    mark = mark_group(pin_fill, dot_fill, tx=R + pad, ty=R + pad)
+    mark = mark_group(pin_fill, dot_fill, tx=R + pad, ty=R + pad, line_fill=line_fill)
     # Align caps to the visual middle of the head-and-body, slightly above center.
     wy = pad + (mark_h - cap_h) / 2 - mark_h * 0.06
     text = f'<g transform="translate({f(MARK_W + gap + pad)} {f(wy)})">{words}</g>'
@@ -295,23 +327,29 @@ def lockup(tide_fill, mark_fill, pin_fill, dot_fill, bg=None, pad=0.0):
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     files = {
-        # Mark only
-        "tidemark-mark.svg": mark_svg(WATER, SAFETY),
-        "tidemark-mark-reverse.svg": mark_svg(WHITE, SAFETY),
+        # Mark only. On light: water blue with the dot and lines cut out. On navy: white pin,
+        # orange dot, water-blue lines.
+        "tidemark-mark.svg": mark_svg(WATER, None),
+        "tidemark-mark-reverse.svg": mark_svg(WHITE, SAFETY, line_fill=WATER),
         "tidemark-mark-black.svg": mark_svg(BLACK, None),
         "tidemark-mark-white.svg": mark_svg(WHITE, None),
         # Horizontal lockups
-        "tidemark-logo.svg": lockup(NAVY, WATER, WATER, SAFETY),
-        "tidemark-logo-reverse.svg": lockup(WHITE, WHITE, WHITE, SAFETY),
+        "tidemark-logo.svg": lockup(NAVY, WATER, WATER, None),
+        "tidemark-logo-reverse.svg": lockup(WHITE, WHITE, WHITE, SAFETY, line_fill=WATER),
         "tidemark-logo-black.svg": lockup(BLACK, BLACK, BLACK, None),
         # App icons
-        "tidemark-app-icon.svg": square_icon(1024, NAVY, WHITE, SAFETY, 0.62),
-        # Android adaptive foreground: art inside the 66% safe zone, transparent.
-        "tidemark-adaptive-foreground.svg": square_icon(1024, None, WHITE, SAFETY, 0.46),
-        # Android 13+ themed (monochrome) icon: one color, dot cut out, transparent.
+        "tidemark-app-icon.svg": square_icon(1024, NAVY, WHITE, SAFETY, 0.62, line_fill=WATER),
+        # Android adaptive foreground: art inside the 66% safe zone, transparent (the
+        # launcher fills navy behind it).
+        "tidemark-adaptive-foreground.svg": square_icon(
+            1024, None, WHITE, SAFETY, 0.46, line_fill=WATER
+        ),
+        # Android 13+ themed (monochrome) icon: one color, dot and lines cut out, transparent.
         "tidemark-adaptive-monochrome.svg": square_icon(1024, None, WHITE, None, 0.46),
-        # Favicon: larger mark, small-size cut (thicker wave, bigger dot).
-        "tidemark-favicon.svg": square_icon(64, NAVY, WHITE, SAFETY, 0.84, small=True),
+        # Favicon: larger mark, small-size cut (thicker, wider-spaced lines, bigger dot).
+        "tidemark-favicon.svg": square_icon(
+            64, NAVY, WHITE, SAFETY, 0.84, small=True, line_fill=WATER
+        ),
     }
     for name, content in files.items():
         (OUT / name).write_text(content)

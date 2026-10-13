@@ -59,14 +59,28 @@ Status is always shown with a text label too (HELD, FAIL, EXCLUDED), never by co
 
 ## Logo ("Drop pin")
 
-A map pin drawn as an upside-down water drop, with a waterline (the tide mark) across it and a safety-orange dot. It shows what the tech does: pins the leak on the pool diagram.
+A map pin drawn as an upside-down water drop with two parallel wave lines across it (the
+tide mark, where the water level sits) and a round dot above them. It shows what the tech
+does: pins the leak on the pool diagram.
 
-The mark was concepted in ChatGPT (`logo/concept/`) and rebuilt as exact vector geometry by `scripts/build_logo.py`. Edit the script, not the SVGs, then run:
+- **On light backgrounds:** water-blue pin; the dot and the wave lines are cut out.
+- **On navy:** white pin, safety-orange dot, and the wave lines filled water blue.
+- **One color:** solid pin with the dot and lines cut out.
 
-```sh
-python3 brand/scripts/build_logo.py   # SVGs (needs: pip install fonttools)
-node brand/scripts/export_png.mjs     # PNGs (needs Playwright + Chromium)
+The mark was concepted as images (`logo/concept/tidemark-*.webp`, 2026-10-13; the earlier
+`chatgpt-*` files are the first LeakBook concept) and rebuilt as exact vector geometry by
+`scripts/build_logo.py`. Edit the script, not the SVGs, then run:
+
 ```
+python3 brand/scripts/build_logo.py   # SVGs (needs: pip install fonttools)
+node brand/scripts/export_png.mjs      # PNGs for the app, favicon, email
+```
+
+Copy the results into the apps: `apps/web/public/tidemark-{logo,logo-reverse,mark}.svg`,
+`apps/web/src/app/icon.svg` (favicon) and `apple-icon.png`, and `apps/mobile/assets/`
+(`icon.png` ← `icon-1024.png`, `android-icon-foreground.png` ← `adaptive-foreground-1024.png`,
+`android-icon-monochrome.png` ← `adaptive-monochrome-1024.png`, `favicon.png` ←
+`favicon-48.png`, `splash-icon.png` ← `splash-mark-400.png`).
 
 ### Files (`logo/`)
 
@@ -75,9 +89,9 @@ node brand/scripts/export_png.mjs     # PNGs (needs Playwright + Chromium)
 | `tidemark-logo.svg` | Horizontal logo on light backgrounds. Default. |
 | `tidemark-logo-reverse.svg` | Horizontal logo on navy or dark photos |
 | `tidemark-logo-black.svg` | One color: fax, stamps, engraving, single-color print |
-| `tidemark-mark.svg` | Mark only, full color, on light backgrounds |
-| `tidemark-mark-reverse.svg` | Mark only on navy or dark backgrounds |
-| `tidemark-mark-black.svg` / `-white.svg` | One color: embroidery, vinyl decals. Dot and wave are cut out. |
+| `tidemark-mark.svg` | Mark only on light backgrounds: water blue, dot and lines cut out |
+| `tidemark-mark-reverse.svg` | Mark only on navy: white pin, orange dot, water-blue lines |
+| `tidemark-mark-black.svg` / `-white.svg` | One color: embroidery, vinyl decals. Dot and wave lines are cut out. |
 | `tidemark-app-icon.svg` | iOS / store icon (navy square, no rounded corners) |
 | `tidemark-adaptive-foreground.svg` | Android adaptive icon foreground. Background color: Navy. |
 | `tidemark-adaptive-monochrome.svg` | Android themed (monochrome) icon |
@@ -86,8 +100,8 @@ node brand/scripts/export_png.mjs     # PNGs (needs Playwright + Chromium)
 
 ### Rules
 
-- **Clear space:** keep empty space around the logo at least the width of the orange dot.
-- **Minimum size:** horizontal logo 120 px wide (1 in printed); mark 16 px tall. Below 48 px use the favicon's small-size cut (thicker wave, bigger dot).
+- **Clear space:** keep empty space around the logo at least the width of the dot.
+- **Minimum size:** horizontal logo 120 px wide (1 in printed); mark 16 px tall. Below 48 px use the favicon's small-size cut (thicker, wider-spaced wave lines, bigger dot).
 - **Wordmark:** Barlow Semi Condensed ExtraBold, outlined. "Tide" navy, "mark" water blue on light; all white on dark; all black for one color.
 - **Do not:** recolor the pin outside the brand colors, add shadows or gradients, outline the mark, stretch it, set the wordmark in another font, or put the full-color mark on a busy photo.
 - **Powered by:** customer documents use `tidemark-mark.svg` at 16–20 px next to "Powered by Tidemark" in Public Sans, in the footer only.

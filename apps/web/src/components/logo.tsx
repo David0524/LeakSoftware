@@ -1,7 +1,7 @@
 /** The Tidemark wordmark, switching to the reverse version on dark backgrounds. */
 export function Logo({ height = 36, onDark = false }: { height?: number; onDark?: boolean }) {
-  // The lockup is 518.58 x 151 (brand/logo/tidemark-logo.svg).
-  const width = Math.round((height * 518.58) / 151);
+  // The lockup is 505.55 x 146.3 (brand/logo/tidemark-logo.svg).
+  const width = Math.round((height * 505.55) / 146.3);
   if (onDark) {
     // eslint-disable-next-line @next/next/no-img-element -- static SVG, no optimization needed
     return <img src="/tidemark-logo-reverse.svg" alt="Tidemark" width={width} height={height} />;
