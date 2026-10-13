@@ -15,14 +15,22 @@ const ICONS: Record<string, React.ReactNode> = {
     <path d="M16 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM21 20v-1a4 4 0 0 0-3-3.9M16 4.1a3.5 3.5 0 0 1 0 6.8" />
   ),
   "/invoices": <path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3" />,
+  "/warranties": <path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6zM9 12l2 2 4-4" />,
+  "/dashboard": <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />,
+  "/more": <path d="M5 12h.01M12 12h.01M19 12h.01" strokeWidth="3" />,
   "/settings": (
     <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
   ),
 };
 
-/** Phones: the main sections as a tab bar along the bottom (iOS convention). */
-export function TabBar({ links }: { links: { href: string; label: string }[] }) {
+/**
+ * Phones: the main sections as a tab bar along the bottom (iOS convention). With more than
+ * five, the first four show and the rest are under More.
+ */
+export function TabBar({ links: all }: { links: { href: string; label: string }[] }) {
   const path = usePathname();
+  const overflow = all.length > 5 ? all.slice(4) : [];
+  const links = overflow.length ? [...all.slice(0, 4), { href: "/more", label: "More" }] : all;
   return (
     <nav
       aria-label="Main"
@@ -30,7 +38,11 @@ export function TabBar({ links }: { links: { href: string; label: string }[] }) 
     >
       <ul className="flex">
         {links.map((l) => {
-          const active = path === l.href || path.startsWith(`${l.href}/`);
+          const active =
+            path === l.href ||
+            path.startsWith(`${l.href}/`) ||
+            (l.href === "/more" &&
+              overflow.some((o) => path === o.href || path.startsWith(`${o.href}/`)));
           return (
             <li key={l.href} className="flex-1">
               <Link

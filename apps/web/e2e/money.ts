@@ -8,7 +8,7 @@ export const SAMPLE_JOB = "00000000-0000-4000-8000-00000000e001";
 export const PHONE = { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true };
 
 /** A draft quote on the sample job, written the way the phone app writes it. */
-export async function draftQuote(lines: [string, number][]) {
+export async function draftQuote(lines: [string, number, number?][]) {
   const db = await signedInClient(TECH.email, TECH.password);
   const { data: job } = await db.from("job").select("company_id").eq("id", SAMPLE_JOB).single();
   const { data: quote, error } = await db
@@ -18,11 +18,12 @@ export async function draftQuote(lines: [string, number][]) {
     .single();
   if (error) throw error;
   const { error: lineError } = await db.from("quote_line_item").insert(
-    lines.map(([description, cents], i) => ({
+    lines.map(([description, cents, warrantyMonths], i) => ({
       company_id: quote.company_id,
       quote_id: quote.id,
       description: `${description} (${RUN})`,
       unit_price_cents: cents,
+      warranty_months: warrantyMonths ?? null,
       sort_order: i,
     })),
   );

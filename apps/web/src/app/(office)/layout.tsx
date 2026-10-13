@@ -5,6 +5,7 @@ import { Logo } from "@/components/logo";
 import { NavLinks, TabBar } from "@/components/nav-links";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getOffice } from "@/lib/auth";
+import { officeLinks } from "@/lib/nav";
 
 /**
  * Office shell. The header frame renders at once; everything that depends on who is signed
@@ -31,13 +32,7 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
 
 async function OfficeNav() {
   const office = await getOffice();
-  const links = [
-    { href: "/jobs", label: "Jobs" },
-    { href: "/schedule", label: "Schedule" },
-    { href: "/customers", label: "Customers" },
-    { href: "/invoices", label: "Invoices" },
-    ...(office.isOwner ? [{ href: "/settings", label: "Settings" }] : []),
-  ];
+  const links = officeLinks(office.isOwner);
   return (
     <>
       <NavLinks links={links} className="hidden sm:flex" />

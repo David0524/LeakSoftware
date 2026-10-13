@@ -238,7 +238,7 @@ test("on a phone: a tab bar moves between sections and nothing scrolls sideways"
     ["Schedule", "Schedule"],
     ["Customers", "Customers"],
     ["Invoices", "Invoices"],
-    ["Settings", "Company and Branding"],
+    ["More", "More"],
     ["Jobs", "Jobs"],
   ] as const) {
     await tabs.getByRole("link", { name: label }).click();
@@ -247,6 +247,17 @@ test("on a phone: a tab bar moves between sections and nothing scrolls sideways"
       390,
     );
   }
+  // Warranties and Settings are under More.
+  await tabs.getByRole("link", { name: "More" }).click();
+  await page.getByRole("link", { name: "Warranties" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Warranties" })).toBeVisible();
+  await expect(tabs.getByRole("link", { name: "More" })).toHaveAttribute("aria-current", "page");
+  await tabs.getByRole("link", { name: "More" }).click();
+  await page.getByRole("main").getByRole("link", { name: "Settings" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Company and Branding" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await tabs.getByRole("link", { name: "Jobs" }).click();
+
   // Jobs are cards on a phone; one opens its job.
   await page
     .getByRole("link", { name: /Sam Sample/ })

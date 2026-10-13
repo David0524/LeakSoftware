@@ -13,3 +13,4 @@ export * from "./signature";
 export * from "./quote";
 export * from "./invoice";
 export * from "./followups";
+export * from "./warranty";
