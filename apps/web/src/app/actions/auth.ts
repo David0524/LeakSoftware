@@ -124,7 +124,7 @@ export async function createCompany(_: FormState, form: FormData): Promise<FormS
 export async function acceptInvite(_: FormState, form: FormData): Promise<FormState> {
   const token = text(form, "token");
   const supabase = await createClient();
-  let user = await getUser();
+  let user: { id: string } | null = await getUser();
 
   if (!user) {
     const mode = text(form, "mode");

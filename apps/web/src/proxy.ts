@@ -25,9 +25,10 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Checks the token's signature locally (and refreshes an expired session) without a call to
+  // the auth server on every request.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims?.sub ? data.claims : null;
 
   const path = request.nextUrl.pathname;
   if (!user && OFFICE.some((p) => path === p || path.startsWith(`${p}/`))) {

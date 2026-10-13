@@ -21,13 +21,27 @@ export interface Office {
 
 export const ACTIVE_COMPANY_COOKIE = "lb_company";
 
-/** The signed-in user, verified with Supabase (not just decoded from the cookie). */
-export const getUser = cache(async () => {
+export interface SignedInUser {
+  id: string;
+  email: string | null;
+  user_metadata: Record<string, unknown>;
+}
+
+/**
+ * The signed-in user from the session token, whose signature is checked here against the
+ * project's public signing keys (not just decoded). This avoids a call to the auth server on
+ * every page, which was a large part of each page's load time.
+ */
+export const getUser = cache(async (): Promise<SignedInUser | null> => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
+  const { data, error } = await supabase.auth.getClaims();
+  const c = data?.claims;
+  if (error || !c?.sub) return null;
+  return {
+    id: c.sub,
+    email: typeof c.email === "string" ? c.email : null,
+    user_metadata: (c.user_metadata as Record<string, unknown> | undefined) ?? {},
+  };
 });
 
 /**

@@ -14,6 +14,7 @@ export async function createClient() {
   await connection();
   const store = await cookies();
   return createServerClient(supabaseUrl, supabaseAnonKey, {
+    ...(process.env.DB_TIMING ? { global: { fetch: timedFetch } } : {}),
     cookies: {
       getAll: () => store.getAll(),
       setAll: (list) => {
@@ -25,4 +26,15 @@ export async function createClient() {
       },
     },
   });
+}
+
+/** DB_TIMING=1: log each Supabase call and how long it took (finding slow pages). */
+async function timedFetch(input: RequestInfo | URL, init?: RequestInit) {
+  const start = performance.now();
+  const res = await fetch(input, init);
+  const url = new URL(typeof input === "string" ? input : input instanceof URL ? input : input.url);
+  console.log(
+    `[db] ${Math.round(performance.now() - start)}ms ${init?.method ?? "GET"} ${url.pathname}${url.search.slice(0, 80)}`,
+  );
+  return res;
 }

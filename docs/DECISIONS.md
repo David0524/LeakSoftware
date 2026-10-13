@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (owner: the website is slow; more demo data)
+- **Website speed:** an office page made up to about 40 database calls, each crossing from Vercel's Washington DC region (`iad1`) to the database in Oregon (`us-west-2`), and checked the sign-in with the auth server twice. Now the website runs in Oregon (`pdx1`, `vercel.json`) and checks the sign-in token's signature locally (`getClaims`). `DB_TIMING=1` logs each call a page makes.
+- **Demo data** (`supabase/seed_demo_schedule.sql`): three more techs (Luis, Jake, Priya; password `leakbook-demo`), 24 made-up customers around Phoenix, and a schedule from last week through next week (three jobs a weekday): last week checked, invoiced, and paid, some with a leak found; today in progress; the rest scheduled; three not yet scheduled.
+
 ## 2026-10-13 (owner: add jobs from the website)
 - **The office can add detection jobs** (Jobs → New Job): a new or existing customer and pool, scheduled or not, tech and second tech, detection fee from the price book, booking answers, notes. The same fields as the phone. The checklist is created with the job, so it is ready on the tech's phone. Saved in one transaction by `create_job`, which runs with the user's own access rules. Repair jobs still come from accepted quotes.
 - **The phone app uses the dev website by default** (`config/supabase-dev.json` → `webUrl`), so sending from the phone works without setting `EXPO_PUBLIC_API_URL`.

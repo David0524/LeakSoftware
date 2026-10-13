@@ -78,5 +78,8 @@ if (flag("--seed") && !flag("--dry-run")) {
   // Idempotent: adds the sample inspection once.
   await query(readFileSync(join(root, "supabase", "seed_sample_job.sql"), "utf8"));
   console.log("seed: sample inspection checked");
+  // Idempotent: more techs, customers, and a two-week schedule, once.
+  await query(readFileSync(join(root, "supabase", "seed_demo_schedule.sql"), "utf8"));
+  console.log("seed: demo schedule checked");
 }
 console.log("done");
