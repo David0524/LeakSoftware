@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   saveText,
   sendReportAction,
@@ -47,6 +47,10 @@ export function ReportPanel({
     sendAction(form);
   };
   const latestSent = sent.find((r) => r.status === "sent");
+  // The draft (text boxes and sending) folds away. Folded on load when there is one already;
+  // opened by Write Draft. Folding only hides it, so unsaved edits stay.
+  const [open, setOpen] = useState(false);
+  const bodyId = `report-${template}-draft`;
 
   return (
     <section
@@ -58,6 +62,29 @@ export function ReportPanel({
         <h3 id={`report-${template}`} className="font-display text-xl font-bold">
           {name}
         </h3>
+        {draft?.final_sections ? (
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls={bodyId}
+            onClick={() => setOpen(!open)}
+            className="inline-flex min-h-11 items-center gap-1 font-semibold text-link"
+          >
+            {open ? "Hide Draft" : "Show Draft"}
+            <svg
+              viewBox="0 0 24 24"
+              className={cx("size-5 transition-transform", open && "rotate-180")}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+        ) : null}
         {latestSent?.token ? (
           <a
             href={`/r/${latestSent.token}`}
@@ -71,7 +98,10 @@ export function ReportPanel({
       </div>
 
       <form
-        action={draftAction}
+        action={(form) => {
+          setOpen(true);
+          draftAction(form);
+        }}
         className="mt-3 flex flex-wrap items-center gap-3"
         onSubmit={(e) => {
           // Writing again replaces the draft's text, edits included.
@@ -104,7 +134,7 @@ export function ReportPanel({
       </div>
 
       {draft?.final_sections ? (
-        <>
+        <div id={bodyId} hidden={!open}>
           {problems.length ? (
             <div className="mt-4">
               <Notice tone="warning">
@@ -196,7 +226,12 @@ export function ReportPanel({
               ) : null}
             </div>
           </form>
-        </>
+        </div>
+      ) : null}
+      {draft?.final_sections && !open ? (
+        <p className="mt-2 text-[15px] text-text-muted">
+          Draft version {draft.version} is ready to read, edit, and send.
+        </p>
       ) : null}
 
       <div className="mt-3 space-y-3">

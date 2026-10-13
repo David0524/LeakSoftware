@@ -43,6 +43,12 @@ test("homeowner report: draft, edit, email, and the customer's link", async ({ p
   await panel.getByRole("button", { name: "Save Text" }).click();
   await expect(panel.getByText("Saved.", { exact: true })).toBeVisible();
 
+  // The draft folds away and comes back with the edits still there.
+  await panel.getByRole("button", { name: "Hide Draft" }).click();
+  await expect(summary).toBeHidden();
+  await panel.getByRole("button", { name: "Show Draft" }).click();
+  await expect(summary).toHaveValue(new RegExp(note.replace(/[.]/g, "\\.")));
+
   const to = `customer-${RUN}@example.com`;
   await panel.getByLabel("Customer email").fill(to);
   await panel.getByRole("button", { name: "Send by Email" }).click();
