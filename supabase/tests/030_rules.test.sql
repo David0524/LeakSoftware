@@ -19,22 +19,23 @@ grant select on ids to authenticated;
 create temp view comp as
   select id, company_id, job_id from job_component where company_id = (select ca from ids) limit 1;
 
-select throws_ok(
+-- M8.5: "not applicable" (excluded) needs no reason, and a verdict needs no method.
+select lives_ok(
   format('update checklist_item_result set status = ''excluded'', exclusion_reason = null where job_component_id = %L',
     (select id from comp)),
-  '23514', null, 'checklist: excluded without a reason is rejected');
-select throws_ok(
-  format('update checklist_item_result set status = ''excluded'', exclusion_reason = ''   '' where job_component_id = %L',
-    (select id from comp)),
-  '23514', null, 'checklist: blank exclusion reason is rejected');
+  'checklist: not applicable needs no reason');
 select lives_ok(
   format('update checklist_item_result set status = ''excluded'', exclusion_reason = ''No diver on site'' where job_component_id = %L',
     (select id from comp)),
-  'checklist: excluded with a reason is accepted');
-select throws_ok(
-  format('update checklist_item_result set status = ''inspected'', method = null where job_component_id = %L',
+  'checklist: not applicable can carry a reason');
+select lives_ok(
+  format('update checklist_item_result set status = ''inspected'', outcome = ''leaking'', location_text = ''At the fitting'', method = null where job_component_id = %L',
     (select id from comp)),
-  '23514', null, 'checklist: inspected without a method is rejected');
+  'checklist: a leaking verdict with where, without a method');
+select throws_ok(
+  format('update checklist_item_result set outcome = ''maybe'' where job_component_id = %L',
+    (select id from comp)),
+  '23514', null, 'checklist: unknown verdicts are rejected');
 
 -- ---------------------------------------------------------------------------
 -- Job status machine
@@ -170,8 +171,10 @@ select tests.authenticate_as(tests.create_user('founder@test.local'));
 create temp table signup on commit drop as select create_company('Founder Leak Co', 'America/Denver') as id;
 select is((select role from membership where company_id = (select id from signup) and user_id = auth.uid()),
   'owner', 'signup: creator becomes owner');
-select is((select count(*) from component_type where company_id = (select id from signup)), 8::bigint,
+select is((select count(*) from component_type where company_id = (select id from signup)), 27::bigint,
   'signup: default checklist components copied');
+select is((select count(*) from component_type where company_id = (select id from signup) and section = 'bond_beam'), 5::bigint,
+  'signup: checklist items come in sections');
 select is((select count(*) from test_type where company_id = (select id from signup)), 4::bigint,
   'signup: default test types copied');
 select is((select count(*) from price_book_item where company_id = (select id from signup)), 10::bigint,

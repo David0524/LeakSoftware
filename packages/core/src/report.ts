@@ -3,7 +3,11 @@
 
 import {
   calculate,
+  verdictLabel,
   type Calculator,
+  type ChecklistOutcome,
+  type ChecklistSection,
+  type ChecklistTally,
   type Outcome,
   type TestData,
   type TestFieldSchema,
@@ -29,6 +33,11 @@ export interface SnapshotComponent {
   method: string | null;
   exclusion_reason: string | null;
   notes: string | null;
+  /** M8.5: checklist section, answer kind, verdict, and where. */
+  section?: ChecklistSection;
+  answer?: "leak" | "yes_no";
+  outcome?: ChecklistOutcome | null;
+  location_text?: string | null;
 }
 
 export interface SnapshotTest {
@@ -95,8 +104,15 @@ export interface ReportSnapshot {
     brand_primary: string;
     brand_secondary: string | null;
     timezone: string;
+    /** The shop's legal text, printed at the end of every report. */
+    disclaimer?: string | null;
   };
-  customer: { name: string; email: string | null; phone: string | null } | null;
+  customer: {
+    name: string;
+    email: string | null;
+    phone: string | null;
+    cc_emails?: string[];
+  } | null;
   property: {
     address: string;
     pool_type: string | null;
@@ -111,6 +127,13 @@ export interface ReportSnapshot {
     scheduled_start: string | null;
     summary_notes: string | null;
     tech_name: string | null;
+    second_tech_name?: string | null;
+    completed_at?: string | null;
+    /** Detection fee, shown on the report. */
+    fee_cents?: number | null;
+    location_marked?: boolean | null;
+    /** Booking answers, {question label: answer}. */
+    intake?: Record<string, string | string[]> | null;
   };
   components: SnapshotComponent[];
   tests: SnapshotTest[];
@@ -206,6 +229,19 @@ export function toFinalSections(narrative: Narrative): FinalSection[] {
 // Facts for the model: built from the snapshot only (never from client text)
 // ---------------------------------------------------------------------------
 
+/** Pass / attention / leaking / not applicable counts from a snapshot. */
+export function snapshotTally(s: ReportSnapshot): ChecklistTally {
+  const t: ChecklistTally = { pass: 0, attention: 0, leaking: 0, notApplicable: 0, pending: 0 };
+  for (const c of s.components) {
+    if (c.status === "pending") t.pending += 1;
+    else if (c.status === "excluded") t.notApplicable += 1;
+    else if (c.outcome === "leaking") t.leaking += 1;
+    else if (c.outcome === "attention") t.attention += 1;
+    else t.pass += 1;
+  }
+  return t;
+}
+
 export function testSummary(t: SnapshotTest): string | null {
   return calculate({ calculator: t.calculator, field_schema: t.field_schema }, t.data).summary;
 }
@@ -222,9 +258,10 @@ export function narrativeFacts(s: ReportSnapshot) {
     checklist: s.components.map((c) => ({
       id: c.result_id ?? c.id,
       component: c.label,
-      status: c.status === "excluded" ? "not inspected" : c.status,
+      result: verdictLabel(c, c.answer),
+      where: c.location_text ?? null,
       method: c.method,
-      reason_not_inspected: c.exclusion_reason,
+      reason_not_applicable: c.exclusion_reason,
       notes: c.notes,
     })),
     tests: s.tests.map((t) => ({
@@ -331,6 +368,8 @@ export function allowedNumbers(s: ReportSnapshot): number[] {
   count(s.components.length);
   count(s.components.filter((c) => c.status === "inspected").length);
   count(s.components.filter((c) => c.status === "excluded").length);
+  const tally = snapshotTally(s);
+  Object.values(tally).forEach(count);
   count(s.tests.length);
   count(s.tests.filter((t) => t.outcome === "fail").length);
   count(s.tests.filter((t) => t.outcome === "pass").length);
@@ -502,18 +541,20 @@ export function plainNarrative(s: ReportSnapshot, template: "homeowner" | "partn
   const sections = NARRATIVE_SECTIONS[template];
   const titleOf = (key: string) => sections.find((x) => x.key === key)!.title;
 
+  const tally = snapshotTally(s);
+  const leakingItems = s.components.filter((c) => c.outcome === "leaking");
   const summary: NarrativeParagraph = {
     text:
-      s.findings.length === 0
-        ? `We inspected ${inspected.length} of ${s.components.length} items and did not find a leak.`
-        : `We inspected ${inspected.length} of ${s.components.length} items and recorded ${s.findings.length} finding${s.findings.length === 1 ? "" : "s"}.`,
-    source_ids: s.findings.map((f) => f.id),
+      s.findings.length === 0 && leakingItems.length === 0
+        ? `We checked ${inspected.length} of ${s.components.length} items and did not find a leak.`
+        : `We checked ${inspected.length} of ${s.components.length} items: ${tally.pass} passed, ${tally.attention} need attention, and ${tally.leaking} ${tally.leaking === 1 ? "is" : "are"} leaking.${s.findings.length ? ` We recorded ${s.findings.length} finding${s.findings.length === 1 ? "" : "s"}.` : ""}`,
+    source_ids: [...s.findings.map((f) => f.id), ...leakingItems.map((c) => c.result_id ?? c.id)],
   };
 
   const findings: NarrativeParagraph[] = s.findings.length
     ? s.findings.map((f) => ({
         text: [
-          `${f.title} (${f.severity_name.toLowerCase()}).`,
+          `${f.title} (${f.severity_name.toLowerCase()}${f.status === "repaired" ? ", repaired on site" : ""}).`,
           f.location_text ? `Location: ${f.location_text}.` : "",
           f.notes ?? "",
         ]
@@ -523,11 +564,13 @@ export function plainNarrative(s: ReportSnapshot, template: "homeowner" | "partn
       }))
     : [{ text: "No leaks were found.", source_ids: [] }];
 
-  const coverage: NarrativeParagraph[] = excluded.length
+  // Not applicable needs no reason (M8.5); only items left out for a stated reason are named.
+  const withReason = excluded.filter((c) => c.exclusion_reason?.trim());
+  const coverage: NarrativeParagraph[] = withReason.length
     ? [
         {
-          text: `Not inspected: ${excluded.map((c) => `${c.label} (${c.exclusion_reason ?? "no reason given"})`).join("; ")}.`,
-          source_ids: excluded.map((c) => c.result_id ?? c.id),
+          text: `Not inspected: ${withReason.map((c) => `${c.label} (${c.exclusion_reason})`).join("; ")}.`,
+          source_ids: withReason.map((c) => c.result_id ?? c.id),
         },
       ]
     : [];
@@ -552,9 +595,11 @@ export function plainNarrative(s: ReportSnapshot, template: "homeowner" | "partn
   const steps: NarrativeParagraph[] = [
     {
       text:
-        failed.length || s.findings.length
-          ? "We recommend repairing the findings above. Your quote lists the work and price."
-          : "No repair is needed based on today’s inspection.",
+        s.findings.length && s.findings.every((f) => f.status === "repaired")
+          ? "We repaired what we found during the visit. Watch the water level over the next few days and call us if it keeps dropping."
+          : failed.length || s.findings.length
+            ? "We recommend repairing the findings above. Your quote lists the work and price."
+            : "No repair is needed based on today’s inspection.",
       source_ids: s.findings.map((f) => f.id),
     },
     ...coverage,

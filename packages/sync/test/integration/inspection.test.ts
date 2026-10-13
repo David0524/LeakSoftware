@@ -48,8 +48,8 @@ describe("M4 sample inspection", () => {
       started_at: new Date().toISOString(),
     });
 
-    // Checklist: defaults (1 skimmer, 2 returns, 1 main drain, light, shell, steps, spa, pad),
-    // then a second skimmer and two more returns: 2 skimmers, 4 returns.
+    // Checklist: the defaults (one of each item), then a second skimmer and three more
+    // returns: 2 skimmers, 4 returns.
     const planned = planComponents(types, { has_pool: true, has_spa: true });
     planned.push(
       {
@@ -57,6 +57,12 @@ describe("M4 sample inspection", () => {
         instance_number: 2,
         label: "Skimmer 2",
         sort_order: 1002,
+      },
+      {
+        component_type_id: typeByKey.get("return")!.id,
+        instance_number: 2,
+        label: "Return 2",
+        sort_order: 2002,
       },
       {
         component_type_id: typeByKey.get("return")!.id,
@@ -87,8 +93,8 @@ describe("M4 sample inspection", () => {
         );
       }
     });
-    expect([...compIds.keys()].filter((l) => /^Skimmer/.test(l))).toHaveLength(2);
-    expect([...compIds.keys()].filter((l) => /^Return/.test(l))).toHaveLength(4);
+    expect([...compIds.keys()].filter((l) => /^Skimmer( \d+)?$/.test(l))).toHaveLength(2);
+    expect([...compIds.keys()].filter((l) => /^Returns?( \d+)?$/.test(l))).toHaveLength(4);
     expect(compIds.has("Spa")).toBe(true);
 
     // Mark everything: main drain excluded with a reason, the rest inspected.
@@ -97,11 +103,11 @@ describe("M4 sample inspection", () => {
         "checklist_item_result",
         rid,
         co.id,
-        label === "Main drain 1"
+        label === "Main drain"
           ? { status: "excluded", exclusion_reason: "No diver on site" }
           : {
               status: "inspected",
-              method: label === "Shell" ? "Visual" : "Pressure test",
+              method: label === "Structural cracks in pool" ? "Visual" : "Pressure test",
               inspected_at: new Date().toISOString(),
             },
       );
@@ -129,7 +135,7 @@ describe("M4 sample inspection", () => {
         performed_at: new Date().toISOString(),
       });
     };
-    for (const line of ["Skimmer 1", "Skimmer 2", "Return 1", "Return 2"]) {
+    for (const line of ["Skimmer", "Skimmer 2", "Returns", "Return 2"]) {
       addTest("pressure", line, {
         line_name: line,
         start_psi: "20",
@@ -150,7 +156,10 @@ describe("M4 sample inspection", () => {
       bucket_end_in: "9.94",
       duration_hours: "24",
     });
-    addTest("dye", "Light 1", { location: "Light niche", observation: "No draw" });
+    addTest("dye", "All light niches and conduits", {
+      location: "Light niche",
+      observation: "No draw",
+    });
     addTest(
       "dye",
       "Return 3",
@@ -170,7 +179,7 @@ describe("M4 sample inspection", () => {
     });
     const f2 = a.store.insert("finding", co.id, {
       job_id: job,
-      job_component_id: compIds.get("Light 1")!,
+      job_component_id: compIds.get("All light niches and conduits")!,
       title: "Light niche seal worn",
       severity_key: "minor",
       pin_x: 0.81,
@@ -235,7 +244,7 @@ describe("M4 sample inspection", () => {
     );
   });
 
-  it("an exclusion without a reason is refused by the server, not lost", async () => {
+  it("an unknown verdict is refused by the server, not lost", async () => {
     const a = device("inspC", co.tech);
     await a.engine.sync();
     const types = a.store.list("component_type") as unknown as ComponentType[];
@@ -254,7 +263,8 @@ describe("M4 sample inspection", () => {
     a.store.insert("checklist_item_result", co.id, {
       job_id: job,
       job_component_id: comp,
-      status: "excluded",
+      status: "inspected",
+      outcome: "maybe",
     });
     const s = await a.engine.sync();
     expect(s.rejected).toBe(1);

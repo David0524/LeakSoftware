@@ -14,9 +14,24 @@ interface Base {
   deleted_at?: string | null;
 }
 
+/** Where an item is listed on the checklist and the report. */
+export type ChecklistSection = "visual" | "plumbing" | "bond_beam" | "other";
+
+export const CHECKLIST_SECTION_LABELS: Record<ChecklistSection, string> = {
+  visual: "Visual Leak Inspection",
+  plumbing: "Plumbing Static Test",
+  bond_beam: "Bond Beam",
+  other: "Other",
+};
+
 export interface ComponentType extends Base {
   key: string;
   name: string;
+  section?: ChecklistSection;
+  /** leak: a verdict (not leaking, leaking, attention, not applicable); yes_no: yes or no. */
+  answer?: "leak" | "yes_no";
+  /** Only for this pool type (vinyl checks); null for every pool. */
+  applies_to_pool_type?: string | null;
   allows_multiple: boolean;
   default_count: number;
   applies_to: "pool" | "spa" | "both";
@@ -36,10 +51,16 @@ export interface JobComponent extends Base {
 
 export type ChecklistStatus = "pending" | "inspected" | "excluded";
 
+/** The verdict on an inspected item. Not applicable is status "excluded". */
+export type ChecklistOutcome = "ok" | "leaking" | "attention";
+
 export interface ChecklistItemResult extends Base {
   job_id: string;
   job_component_id: string;
   status: ChecklistStatus;
+  outcome?: ChecklistOutcome | null;
+  /** Where, for a leaking or attention item. */
+  location_text?: string | null;
   method?: string | null;
   exclusion_reason?: string | null;
   notes?: string | null;
@@ -136,19 +157,28 @@ const live = <T extends { deleted_at?: string | null }>(rows: T[]) =>
 // ---------------------------------------------------------------------------
 
 export function componentApplies(
-  type: Pick<ComponentType, "applies_to">,
-  property: Pick<Property, "has_pool" | "has_spa">,
+  type: Pick<ComponentType, "applies_to" | "applies_to_pool_type">,
+  property: Pick<Property, "has_pool" | "has_spa"> & { pool_type?: string | null },
 ): boolean {
+  // Vinyl checks: skipped only when the pool is known to be another type.
+  if (
+    type.applies_to_pool_type &&
+    property.pool_type &&
+    property.pool_type !== type.applies_to_pool_type
+  )
+    return false;
   if (type.applies_to === "both") return property.has_pool || property.has_spa;
   if (type.applies_to === "spa") return property.has_spa;
   return property.has_pool;
 }
 
+/** "Skimmer", then "Skimmer 2" when another is added; numbered from 1 when a job starts with several. */
 export function instanceLabel(
-  type: Pick<ComponentType, "name" | "allows_multiple">,
+  type: Pick<ComponentType, "name" | "allows_multiple" | "default_count">,
   n: number,
 ): string {
-  return type.allows_multiple ? `${type.name} ${n}` : type.name;
+  if (!type.allows_multiple) return type.name;
+  return n === 1 && type.default_count <= 1 ? type.name : `${type.name} ${n}`;
 }
 
 export interface PlannedComponent {
@@ -161,7 +191,7 @@ export interface PlannedComponent {
 /** Default component instances for a new inspection at this property. */
 export function planComponents(
   types: ComponentType[],
-  property: Pick<Property, "has_pool" | "has_spa">,
+  property: Pick<Property, "has_pool" | "has_spa"> & { pool_type?: string | null },
 ): PlannedComponent[] {
   return live(types)
     .filter((t) => t.active && componentApplies(t, property))
@@ -213,15 +243,55 @@ export function checklistProgress(
   return p;
 }
 
+/** A checked item needs a verdict; not applicable needs nothing more (M8.5). */
 export function validateChecklistResult(r: {
   status: ChecklistStatus;
-  method?: string | null;
-  exclusion_reason?: string | null;
+  outcome?: ChecklistOutcome | null;
 }): string | null {
-  if (r.status === "inspected" && !r.method?.trim()) return "Pick how you inspected it.";
-  if (r.status === "excluded" && !r.exclusion_reason?.trim())
-    return "Give a reason it wasn't inspected.";
+  if (r.status === "inspected" && !r.outcome) return "Pick a result.";
   return null;
+}
+
+export interface ChecklistTally {
+  /** Not leaking (or "no" on a yes/no item). */
+  pass: number;
+  attention: number;
+  leaking: number;
+  notApplicable: number;
+  pending: number;
+}
+
+/** The counts at the top of the report: "26 Items Pass · 0 Need Attention · 1 Failed". */
+export function checklistTally(
+  components: JobComponent[],
+  results: ChecklistItemResult[],
+): ChecklistTally {
+  const byComponent = new Map(live(results).map((r) => [r.job_component_id, r]));
+  const t: ChecklistTally = { pass: 0, attention: 0, leaking: 0, notApplicable: 0, pending: 0 };
+  for (const c of live(components)) {
+    const r = byComponent.get(c.id);
+    if (!r || r.status === "pending") t.pending += 1;
+    else if (r.status === "excluded") t.notApplicable += 1;
+    else if (r.outcome === "leaking") t.leaking += 1;
+    else if (r.outcome === "attention") t.attention += 1;
+    else t.pass += 1;
+  }
+  return t;
+}
+
+/** Badge text for an item, in his words. Yes/no items read "Yes" or "No". */
+export function verdictLabel(
+  r: Pick<ChecklistItemResult, "status" | "outcome"> | undefined,
+  answer: "leak" | "yes_no" = "leak",
+): string {
+  if (!r || r.status === "pending") return "To do";
+  if (r.status === "excluded") return "Not applicable";
+  if (answer === "yes_no") return r.outcome === "ok" ? "No" : "Yes";
+  return r.outcome === "leaking"
+    ? "Leaking"
+    : r.outcome === "attention"
+      ? "Attention"
+      : "Not leaking";
 }
 
 // ---------------------------------------------------------------------------

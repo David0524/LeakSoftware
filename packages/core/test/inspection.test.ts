@@ -10,6 +10,8 @@ import {
   poolDiagram,
   pressureDrop,
   validateChecklistResult,
+  checklistTally,
+  verdictLabel,
   validateFinding,
   validateTestData,
   type ComponentType,
@@ -49,7 +51,7 @@ describe("checklist", () => {
       "Return 2",
       "Return 3",
       "Return 4",
-      "Light 1",
+      "Light",
     ]);
   });
 
@@ -112,14 +114,51 @@ describe("checklist", () => {
     });
   });
 
-  it("requires a method or a reason", () => {
-    expect(validateChecklistResult({ status: "inspected" })).toMatch(/how/);
-    expect(validateChecklistResult({ status: "excluded", exclusion_reason: "  " })).toMatch(
-      /reason/,
-    );
+  it("needs a verdict on a checked item, and nothing more for not applicable", () => {
+    expect(validateChecklistResult({ status: "inspected" })).toMatch(/result/);
+    expect(validateChecklistResult({ status: "inspected", outcome: "leaking" })).toBeNull();
+    expect(validateChecklistResult({ status: "excluded" })).toBeNull();
+  });
+
+  it("counts verdicts for the report tiles and labels them in the shop's words", () => {
+    const comp = (id: string): JobComponent => ({
+      id,
+      company_id: "c",
+      job_id: "j",
+      component_type_id: "t",
+      instance_number: 1,
+      label: id,
+      sort_order: 0,
+    });
+    const result = (id: string, over: object) => ({
+      id: `r-${id}`,
+      company_id: "c",
+      job_id: "j",
+      job_component_id: id,
+      ...over,
+    });
+    const tally = checklistTally(["a", "b", "c", "d", "e"].map(comp), [
+      result("a", { status: "inspected", outcome: "ok" }),
+      result("b", { status: "inspected", outcome: "leaking" }),
+      result("c", { status: "inspected", outcome: "attention" }),
+      result("d", { status: "excluded" }),
+    ] as never);
+    expect(tally).toEqual({ pass: 1, attention: 1, leaking: 1, notApplicable: 1, pending: 1 });
+    expect(verdictLabel({ status: "inspected", outcome: "ok" })).toBe("Not leaking");
+    expect(verdictLabel({ status: "excluded" })).toBe("Not applicable");
+    expect(verdictLabel({ status: "inspected", outcome: "ok" }, "yes_no")).toBe("No");
+    expect(verdictLabel({ status: "inspected", outcome: "attention" }, "yes_no")).toBe("Yes");
+  });
+
+  it("skips vinyl checks on pools known to be another type", () => {
+    const vinyl = { applies_to: "pool" as const, applies_to_pool_type: "vinyl" };
     expect(
-      validateChecklistResult({ status: "excluded", exclusion_reason: "No diver on site" }),
-    ).toBeNull();
+      componentApplies(vinyl, { has_pool: true, has_spa: false, pool_type: "gunite_plaster" }),
+    ).toBe(false);
+    expect(componentApplies(vinyl, { has_pool: true, has_spa: false, pool_type: "vinyl" })).toBe(
+      true,
+    );
+    expect(componentApplies(vinyl, { has_pool: true, has_spa: false, pool_type: null })).toBe(true);
   });
 });
 

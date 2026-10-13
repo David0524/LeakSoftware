@@ -278,8 +278,8 @@ describe("narrative inputs", () => {
     const facts = narrativeFacts(SNAPSHOT);
     expect(facts.checklist.find((c) => c.component === "Main drain 1")).toMatchObject({
       id: "r-md1",
-      status: "not inspected",
-      reason_not_inspected: "No diver on site",
+      result: "Not applicable",
+      reason_not_applicable: "No diver on site",
     });
     expect(facts.tests[0]).toMatchObject({
       id: "t-r3",
