@@ -9,3 +9,4 @@ export * from "./media";
 export * from "./office";
 export * from "./settings";
 export * from "./report";
+export * from "./signature";

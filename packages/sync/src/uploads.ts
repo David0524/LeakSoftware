@@ -1,7 +1,10 @@
 import type { LocalStore } from "./store";
 
 export interface UploadJob {
+  /** The row the file belongs to: a media id, or a signature id when recordTable says so. */
   mediaId: string;
+  /** media rows are marked uploaded when done; signature rows already hold their path. */
+  recordTable?: "media" | "signature";
   companyId: string;
   localPath: string;
   /** media/{company_id}/{job_id}/{media_id}.{ext} without the bucket name. */
@@ -24,7 +27,7 @@ export interface Uploader {
 
 export interface UploadSummary {
   uploaded: number;
-  /** Media ids confirmed in this run. */
+  /** Media ids confirmed in this run (signatures are counted in `uploaded` only). */
   uploadedIds: string[];
   failed: number;
   waiting: number;
@@ -49,9 +52,16 @@ export class UploadQueue {
   /** Add a file. Safe to call twice for the same media id. */
   enqueue(job: Omit<UploadJob, "resumeUrl">): void {
     this.store.database.run(
-      `insert into upload_queue (media_id, company_id, local_path, storage_path, mime_type)
-       values (?, ?, ?, ?, ?) on conflict (media_id) do nothing`,
-      [job.mediaId, job.companyId, job.localPath, job.storagePath, job.mimeType],
+      `insert into upload_queue (media_id, company_id, local_path, storage_path, mime_type, record_table)
+       values (?, ?, ?, ?, ?, ?) on conflict (media_id) do nothing`,
+      [
+        job.mediaId,
+        job.companyId,
+        job.localPath,
+        job.storagePath,
+        job.mimeType,
+        job.recordTable ?? "media",
+      ],
     );
   }
 
@@ -90,9 +100,11 @@ export class UploadQueue {
       mime_type: string;
       resume_url: string | null;
       attempts: number;
+      record_table: "media" | "signature";
     }>("select * from upload_queue where next_attempt_at <= ? order by rowid", [this.now()]);
 
     const uploadedIds: string[] = [];
+    let done = 0;
     let failed = 0;
     for (const row of due) {
       const job: UploadJob = {
@@ -102,6 +114,7 @@ export class UploadQueue {
         storagePath: row.storage_path,
         mimeType: row.mime_type,
         resumeUrl: row.resume_url,
+        recordTable: row.record_table,
       };
       try {
         await this.uploader.upload(job, (url) =>
@@ -111,13 +124,16 @@ export class UploadQueue {
           ]),
         );
         this.store.database.transaction(() => {
-          this.store.write("media", job.mediaId, job.companyId, {
-            upload_state: "uploaded",
-            storage_path: job.storagePath,
-          });
+          if (job.recordTable === "media") {
+            this.store.write("media", job.mediaId, job.companyId, {
+              upload_state: "uploaded",
+              storage_path: job.storagePath,
+            });
+          }
           this.store.database.run("delete from upload_queue where media_id = ?", [job.mediaId]);
         });
-        uploadedIds.push(job.mediaId);
+        if (job.recordTable === "media") uploadedIds.push(job.mediaId);
+        done += 1;
       } catch (e) {
         const delay = Math.min(BASE_DELAY_MS * 2 ** row.attempts, MAX_DELAY_MS);
         this.store.database.run(
@@ -128,7 +144,7 @@ export class UploadQueue {
       }
     }
     return {
-      uploaded: uploadedIds.length,
+      uploaded: done,
       uploadedIds,
       failed,
       waiting: this.waitingCount(),

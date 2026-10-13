@@ -60,8 +60,8 @@ test("homeowner report: draft, edit, email, and the customer's link", async ({ p
   await expect(page.getByRole("heading", { name: "Summary" })).toBeVisible();
   await expect(page.getByText(note)).toBeVisible();
   await expect(page.getByText("Return 3 line break").first()).toBeVisible();
-  await expect(page.getByText("Not inspected")).toBeVisible();
-  await expect(page.getByText(/No diver on site/)).toBeVisible();
+  await expect(page.getByText("Not inspected", { exact: true })).toBeVisible();
+  await expect(page.getByText(/No diver on site/).first()).toBeVisible();
   await expect(page.getByText("Powered by LeakBook")).toBeVisible();
   await expect(page.getByRole("link", { name: "Download PDF" })).toBeVisible();
   await expectPdf(page, token);
@@ -82,6 +82,6 @@ test("partner report: draft, send by text, technical page and PDF", async ({ pag
   await page.goto(`/r/${token}`);
   await expect(page.getByText("Leak Detection Report (Technical)")).toBeVisible();
   await expect(page.getByRole("table")).toContainText("Pressure");
-  await expect(page.getByText("Not inspected")).toBeVisible();
+  await expect(page.getByText("Not inspected", { exact: true })).toBeVisible();
   await expectPdf(page, token);
 });

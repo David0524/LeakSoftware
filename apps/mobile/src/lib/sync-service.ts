@@ -176,6 +176,42 @@ export class SyncService {
     this.afterWrite();
   }
 
+  /** Save a signature: the row (already holding its storage path) and its upload ticket. */
+  addSignature(
+    id: string,
+    companyId: string,
+    values: Record<string, JsonValue>,
+    file: { localPath: string; storagePath: string },
+  ) {
+    this.store.database.transaction(() => {
+      this.store.write("signature", id, companyId, { ...values, device_id: this.store.deviceId });
+      this.uploadQueue.enqueue({
+        mediaId: id,
+        recordTable: "signature",
+        companyId,
+        localPath: file.localPath,
+        storagePath: file.storagePath,
+        mimeType: "image/svg+xml",
+      });
+    });
+    this.afterWrite();
+  }
+
+  /** True while local edits to this row have not reached the server. */
+  hasPendingWrites(table: string, id: string): boolean {
+    return (
+      (this.store.database.get<{ n: number }>(
+        "select count(*) as n from sync_outbox where table_name = ? and row_id = ? and status = 'pending'",
+        [table, id],
+      )?.n ?? 0) > 0
+    );
+  }
+
+  /** The signed-in user's access token, for calls to the LeakBook server. */
+  async accessToken(): Promise<string | null> {
+    return (await this.supabase.auth.getSession()).data.session?.access_token ?? null;
+  }
+
   /** Retry waiting uploads now (Settings button). */
   retryUploads() {
     this.uploadQueue.retryNow();

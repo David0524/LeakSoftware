@@ -1,0 +1,113 @@
+import { useMemo } from "react";
+import type { FinalSection, NarrativeProblem } from "@leakbook/core";
+import { API_URL } from "../lib/config";
+import { getServices } from "../lib/services";
+import { useRows } from "./hooks";
+
+export interface ReportRecord {
+  id: string;
+  job_id: string;
+  template_key: "homeowner" | "partner" | "insurance";
+  version: number;
+  status: "draft" | "sent" | "superseded";
+  final_sections: FinalSection[] | null;
+  ai_draft: { problems?: NarrativeProblem[] } | null;
+  model: string | null;
+  sent_at: string | null;
+}
+
+export interface SignatureRecord {
+  id: string;
+  job_id: string;
+  purpose: string;
+  signer_name: string;
+  signer_role: string | null;
+  image_path: string | null;
+  signed_at: string;
+}
+
+interface ShareLinkRecord {
+  token: string;
+  report_id: string | null;
+  revoked_at: string | null;
+}
+
+/** A job's reports, newest version first, with each one's customer link token. */
+export function useJobReports(companyId: string, jobId: string) {
+  const reports = useRows<ReportRecord>("report", companyId);
+  const links = useRows<ShareLinkRecord>("share_link", companyId);
+  return useMemo(() => {
+    const tokenOf = new Map(
+      links.filter((l) => !l.revoked_at && l.report_id).map((l) => [l.report_id, l.token]),
+    );
+    return reports
+      .filter((r) => r.job_id === jobId)
+      .sort((a, b) => b.version - a.version)
+      .map((r) => ({ ...r, token: tokenOf.get(r.id) ?? null }));
+  }, [reports, links, jobId]);
+}
+
+export function useJobSignatures(companyId: string, jobId: string) {
+  const all = useRows<SignatureRecord>("signature", companyId);
+  return useMemo(
+    () =>
+      all.filter((s) => s.job_id === jobId).sort((a, b) => a.signed_at.localeCompare(b.signed_at)),
+    [all, jobId],
+  );
+}
+
+/** Writing and sending reports happen on the LeakBook server (AI, email, PDF). */
+export const reportsOnline = Boolean(API_URL);
+
+export class ReportServerError extends Error {}
+
+async function call<T>(path: string, body: unknown): Promise<T> {
+  if (!API_URL) throw new ReportServerError("This app isn’t connected to the LeakBook server.");
+  const token = await getServices().sync.accessToken();
+  if (!token) throw new ReportServerError("Sign in again to continue.");
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new ReportServerError("No connection. Try again when you have signal.");
+  }
+  const data = (await res.json().catch(() => ({}))) as T & { error?: string };
+  if (!res.ok) throw new ReportServerError(data.error ?? `The server said ${res.status}.`);
+  return data;
+}
+
+/** Saves the job to the server, then has it write the draft; the report syncs down. */
+export async function writeReportDraft(jobId: string, template: "homeowner" | "partner") {
+  const { sync } = getServices();
+  await sync.syncNow();
+  const result = await call<{ reportId: string; problems: NarrativeProblem[] }>(
+    `/api/jobs/${jobId}/reports`,
+    { template },
+  );
+  await sync.syncNow();
+  return result;
+}
+
+/** Sends a report. Edits must reach the server first, so the customer gets what was approved. */
+export async function sendReportFromPhone(
+  reportId: string,
+  channel: "email" | "sms_device",
+  to: string | null,
+) {
+  const { sync } = getServices();
+  await sync.syncNow();
+  if (sync.hasPendingWrites("report", reportId))
+    throw new ReportServerError(
+      "Your edits haven’t reached the server yet. Try again with signal.",
+    );
+  const result = await call<{ link: string; message: string; emailed: boolean }>(
+    `/api/reports/${reportId}/send`,
+    { channel, to },
+  );
+  await sync.syncNow();
+  return result;
+}

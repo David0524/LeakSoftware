@@ -55,6 +55,26 @@ export function localMediaUri(mediaId: string, mime: string | null): string | nu
   }
 }
 
+/** Saves a signature drawing as media/signature-{id}.svg; returns its relative path. */
+export function storeSignatureSvg(id: string, svg: string): string {
+  const relativePath = `${FOLDER}/signature-${id}.svg`;
+  folder();
+  const f = mediaFile(relativePath);
+  if (!f.exists) f.create();
+  f.write(svg);
+  return relativePath;
+}
+
+/** The local copy of a signature drawing, if this phone made it. */
+export function localSignatureUri(id: string): string | null {
+  try {
+    const f = mediaFile(`${FOLDER}/signature-${id}.svg`);
+    return f.exists ? f.uri : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Remove every captured file (sign-out). */
 export function deleteAllMedia() {
   const dir = new Directory(Paths.document, FOLDER);

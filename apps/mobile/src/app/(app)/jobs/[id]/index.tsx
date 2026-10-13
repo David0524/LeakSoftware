@@ -32,6 +32,7 @@ import { ChecklistTab } from "../../../../features/inspection/ChecklistTab";
 import { FindingsTab } from "../../../../features/inspection/FindingsTab";
 import { TestsTab } from "../../../../features/inspection/TestsTab";
 import { MediaSection } from "../../../../features/media/MediaSection";
+import { ReportTab } from "../../../../features/report/ReportTab";
 
 const ACTION_LABELS: Partial<Record<JobStatus, string>> = {
   in_progress: "Start Job",
@@ -192,11 +193,7 @@ export default function JobDetail() {
         {tab === "checklist" ? <ChecklistTab job={job} property={property} /> : null}
         {tab === "tests" ? <TestsTab job={job} /> : null}
         {tab === "findings" ? <FindingsTab job={job} property={property} /> : null}
-        {tab === "report" ? (
-          <Card>
-            <T variant="muted">Reports arrive in a later update.</T>
-          </Card>
-        ) : null}
+        {tab === "report" ? <ReportTab job={job} customer={customer} /> : null}
       </Section>
 
       <MediaSection target={{ jobId: job.id }} title="All Photos and Notes" />

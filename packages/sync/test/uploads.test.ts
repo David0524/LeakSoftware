@@ -91,5 +91,22 @@ describe("UploadQueue", () => {
     LocalStore.open(db);
     const cols = db.all<{ name: string }>("pragma table_info(upload_queue)").map((c) => c.name);
     expect(cols).toContain("resume_url");
+    expect(cols).toContain("record_table");
+  });
+
+  it("uploads a signature image without touching any media row", async () => {
+    const { store, queue, calls } = setup();
+    const before = store.pendingCount();
+    queue.enqueue({
+      mediaId: "sig-1",
+      recordTable: "signature",
+      companyId: C,
+      localPath: "/sig-1.svg",
+      storagePath: `${C}/j/signature-sig-1.svg`,
+      mimeType: "image/svg+xml",
+    });
+    expect(await queue.process()).toEqual({ uploaded: 1, uploadedIds: [], failed: 0, waiting: 0 });
+    expect(calls[0]).toMatchObject({ recordTable: "signature", mimeType: "image/svg+xml" });
+    expect(store.pendingCount()).toBe(before);
   });
 });
