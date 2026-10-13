@@ -1,5 +1,6 @@
 import "server-only";
 import type {
+  CompanyAccess,
   ChecklistItemResult,
   ComponentType,
   Customer,
@@ -722,4 +723,13 @@ export async function getWarranties(office: Office): Promise<WarrantyRow[]> {
     : [];
   const byId = new Map(jobs.map((j) => [j.id, j]));
   return rows.map(({ repair_job_id, ...r }) => ({ ...r, job: byId.get(repair_job_id) ?? null }));
+}
+
+/** Trial, paid, or read-only (M10). Null when the database doesn't have billing yet. */
+export async function getAccess(office: Office): Promise<CompanyAccess | null> {
+  const supabase = await db();
+  const { data, error } = await supabase.rpc("company_access", {
+    target_company: office.company.id,
+  });
+  return error ? null : (data as CompanyAccess);
 }

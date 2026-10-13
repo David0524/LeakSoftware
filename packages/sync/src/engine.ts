@@ -7,7 +7,15 @@ export interface SyncSummary {
   pulled: number;
   pending: number;
   error?: string;
+  /**
+   * The shop is read-only (its Tidemark subscription isn't paid): changes stay on the device,
+   * unsent, and go up once it is paid. Downloads continue.
+   */
+  readOnly?: string;
 }
+
+/** Server code for "this shop is read-only" (supabase/migrations/20261012002100_billing.sql). */
+export const READ_ONLY_CODE = "TL423";
 
 export interface SyncEngineOptions {
   /** Mutations per sync_push call (server limit 500). */
@@ -70,10 +78,14 @@ export class SyncEngine {
 
       this.store.receiveClock(response.server_hlc);
       const handled = new Set<string>();
+      const held: number[] = [];
       for (const r of response.results) {
         const seqs = batch.seqsByMutation.get(r.id) ?? [];
         handled.add(r.id);
-        if (r.status === "rejected") {
+        if (r.status === "rejected" && r.code === READ_ONLY_CODE) {
+          held.push(...seqs);
+          summary.readOnly = r.error ?? "This shop is read-only.";
+        } else if (r.status === "rejected") {
           this.store.reject(seqs, `${r.code ?? ""} ${r.error ?? "rejected"}`.trim());
           summary.rejected += 1;
         } else {
@@ -87,6 +99,11 @@ export class SyncEngine {
         const seqs = missing.flatMap((m) => batch.seqsByMutation.get(m.id) ?? []);
         this.store.noteFailure(seqs, "no result from server");
         throw new Error(`Server returned no result for ${missing.length} change(s)`);
+      }
+      // Read-only: keep these for later (not a conflict) and stop pushing for now.
+      if (held.length > 0) {
+        this.store.noteFailure(held, summary.readOnly!);
+        return;
       }
     }
   }

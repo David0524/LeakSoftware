@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { adminClient } from "./admin";
+import { applyBillingEvent } from "./billing";
 
 // Payments (BUILD_PLAN 6.4): Stripe Connect with Standard accounts and direct charges, so
 // the shop is the merchant of record. Deposits are Checkout Sessions on the shop's account
@@ -287,6 +288,11 @@ export async function applyEvent(
   if (await rpc<boolean>(d, "stripe_event_seen", { event_id: event.id })) return "duplicate";
 
   let outcome: WebhookOutcome = "ignored";
+  // The shop's own Tidemark subscription (M10), on the platform account.
+  if (await applyBillingEvent(event, d)) {
+    await rpc(d, "stripe_claim_event", { event_id: event.id, event_type: event.type });
+    return "applied";
+  }
   switch (event.type) {
     case "checkout.session.completed":
     case "checkout.session.async_payment_succeeded":

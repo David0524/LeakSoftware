@@ -16,6 +16,7 @@ class FakeServer implements SyncTransport {
   received: Mutation[][] = [];
   failNextPush = false;
   rejectTables = new Set<string>();
+  readOnly = false;
   pages: PullPage[] = [];
 
   async push(mutations: Mutation[]): Promise<PushResponse> {
@@ -27,9 +28,11 @@ class FakeServer implements SyncTransport {
     return {
       server_hlc: "1800000000000-0000-server",
       results: mutations.map((m) =>
-        this.rejectTables.has(m.table)
-          ? { id: m.id, status: "rejected", code: "42501", error: "not allowed" }
-          : { id: m.id, status: "applied" },
+        this.readOnly
+          ? { id: m.id, status: "rejected", code: "TL423", error: "This shop is read-only." }
+          : this.rejectTables.has(m.table)
+            ? { id: m.id, status: "rejected", code: "42501", error: "not allowed" }
+            : { id: m.id, status: "applied" },
       ),
     };
   }
@@ -80,6 +83,27 @@ describe("SyncEngine", () => {
     expect(s).toMatchObject({ pushed: 1, rejected: 1, pending: 0 });
     expect(server.received).toHaveLength(1);
     expect(store.problems()).toHaveLength(1);
+  });
+
+  it("keeps changes on the device while the shop is read-only, and sends them once paid", async () => {
+    const store = LocalStore.open(memoryDb());
+    const server = new FakeServer();
+    server.readOnly = true;
+    store.insert("customer", C, { name: "kept" });
+    const engine = new SyncEngine(store, server);
+    const first = await engine.sync();
+    expect(first).toMatchObject({
+      pushed: 0,
+      rejected: 0,
+      pending: 1,
+      readOnly: "This shop is read-only.",
+    });
+    expect(first.error).toBeUndefined();
+    expect(store.problems()).toHaveLength(0);
+    server.readOnly = false;
+    const second = await engine.sync();
+    expect(second).toMatchObject({ pushed: 1, pending: 0 });
+    expect(second.readOnly).toBeUndefined();
   });
 
   it("pushes in batches", async () => {

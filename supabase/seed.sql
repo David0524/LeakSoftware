@@ -48,6 +48,8 @@ begin
   set phone = '(602) 555-0142', email = 'office@demo.leakbook.test',
       address_line1 = '1200 W Example Rd', city = 'Phoenix', state = 'AZ', postal_code = '85001'
   where id = demo_company;
+  -- The demo shop never runs out of trial (M10 billing).
+  update public.subscription set status = 'active', plan = 'demo' where company_id = demo_company;
 
   insert into public.membership (company_id, user_id, role) values (demo_company, tech_id, 'tech');
 

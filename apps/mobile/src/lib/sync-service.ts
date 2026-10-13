@@ -15,7 +15,7 @@ import { API_URL } from "./config";
 import type { KeyValue } from "./database";
 import { deleteAllMedia } from "./media";
 
-export type SyncPhase = "idle" | "syncing" | "offline" | "signed_out" | "error";
+export type SyncPhase = "idle" | "syncing" | "offline" | "signed_out" | "error" | "read_only";
 
 export interface SyncStatus {
   phase: SyncPhase;
@@ -296,7 +296,13 @@ export class SyncService {
     this.kv.set("sync:last_synced_at", String(now));
     this.kv.set("sync:initial_done", "1");
     await this.refreshTeam();
-    this.setStatus({ phase: "idle", lastSyncedAt: now, initialSyncDone: true, error: null });
+    this.setStatus({
+      // Read-only shop (subscription unpaid): downloads work, changes wait on the phone.
+      phase: summary.readOnly ? "read_only" : "idle",
+      lastSyncedAt: now,
+      initialSyncDone: true,
+      error: summary.readOnly ?? null,
+    });
     this.emit(summary.pulled > 0 || summary.pushed > 0);
     await this.runUploads();
   }

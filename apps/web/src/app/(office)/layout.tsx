@@ -4,7 +4,10 @@ import { signOut, switchCompany } from "@/app/actions/auth";
 import { Logo } from "@/components/logo";
 import { NavLinks, TabBar } from "@/components/nav-links";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { accessNotice } from "@leakbook/core";
+import { cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
+import { getAccess } from "@/lib/data";
 import { officeLinks } from "@/lib/nav";
 
 /**
@@ -24,8 +27,40 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
           </Suspense>
         </div>
       </header>
+      <Suspense fallback={null}>
+        <AccessBanner />
+      </Suspense>
       {/* Room for the phone tab bar. */}
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-24 sm:py-8">{children}</main>
+    </div>
+  );
+}
+
+/** Trial ending, payment failed, or read-only (M10 billing). */
+async function AccessBanner() {
+  const office = await getOffice();
+  const access = await getAccess(office);
+  const notice = access ? accessNotice(access) : null;
+  if (!notice) return null;
+  return (
+    <div
+      role={notice.tone === "error" ? "alert" : "status"}
+      className={cx(
+        "border-b-4 bg-surface px-4 py-3",
+        notice.tone === "error" ? "border-status-fail" : "border-status-warning",
+      )}
+    >
+      <p className="mx-auto max-w-7xl">
+        {notice.text}
+        {office.isOwner ? (
+          <>
+            {" "}
+            <Link href="/settings/billing" className="font-semibold text-link underline">
+              Billing
+            </Link>
+          </>
+        ) : null}
+      </p>
     </div>
   );
 }

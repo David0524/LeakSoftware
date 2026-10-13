@@ -4,6 +4,7 @@ export const SETTINGS_SECTIONS = [
   { href: "/settings/team", label: "Team" },
   { href: "/settings/price-book", label: "Price Book" },
   { href: "/settings/payments", label: "Payments and Deposits" },
+  { href: "/settings/billing", label: "Tidemark Billing" },
   { href: "/settings/components", label: "Checklist Components" },
   { href: "/settings/tests", label: "Test Types" },
   { href: "/settings/severities", label: "Severities" },
