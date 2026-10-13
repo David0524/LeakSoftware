@@ -22,6 +22,45 @@ header :focus-visible {
   outline-color: var(--lb-on-header);
 }
 
+/*
+ * Liquid Glass, approximated for the web (apple-design: liquid-glass.md). Only the floating
+ * functional layer wears it: the header, the phone tab bar, and the job's section switcher.
+ * Content stays on opaque surfaces. Reduce Transparency and Increase Contrast get solid fills.
+ */
+.glass {
+  background: color-mix(in srgb, var(--lb-surface) 72%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid color-mix(in srgb, var(--lb-text) 10%, transparent);
+  box-shadow:
+    0 8px 28px rgb(18 38 58 / 0.14),
+    inset 0 1px 0 rgb(255 255 255 / 0.55);
+}
+[data-theme="dark"] .glass {
+  box-shadow:
+    0 8px 28px rgb(0 0 0 / 0.45),
+    inset 0 1px 0 rgb(255 255 255 / 0.08);
+}
+/* The brand bar: the shop's navy, still letting the page show through as it scrolls. */
+.glass-brand {
+  background: color-mix(in srgb, var(--lb-header) 84%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .glass {
+    background: var(--lb-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: var(--lb-control-border);
+  }
+  .glass-brand {
+    background: var(--lb-header);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 h1,
 h2,
 h3 {

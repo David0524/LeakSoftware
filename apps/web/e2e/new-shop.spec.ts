@@ -1,6 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { adminClient, signedEvent, signedInClient } from "./backend";
-import { RUN } from "./helpers";
+import { RUN, finishChecklist } from "./helpers";
 import { PHONE, sessionEvent, webhook } from "./money";
 
 // M10 "Done when": a new shop signs up, starts its free trial, connects Stripe, and runs the
@@ -17,19 +17,6 @@ const OWNER = {
   password: "tidemark-new-shop",
 };
 const CUSTOMER = { name: `Casey Rivers ${RUN}`, email: `casey-${RUN}@example.com` };
-
-/** Mark every checklist item still to do as the first choice, waiting for each save. */
-async function finishChecklist(page: Page) {
-  await expect.poll(() => page.getByRole("radiogroup").count()).toBeGreaterThan(1);
-  const tally = page.getByText(/ to do$/);
-  const toDo = async () => Number(/(\d+) to do/.exec(await tally.innerText())![1]);
-  for (const group of await page.getByRole("radiogroup").all()) {
-    if (await group.locator('[aria-checked="true"]').count()) continue;
-    const before = await toDo();
-    await group.getByRole("radio").first().click();
-    await expect.poll(toDo).toBe(before - 1);
-  }
-}
 
 test("a new shop signs up and runs the whole loop, then subscribes", async ({
   page,
@@ -96,14 +83,13 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   // 4. Inspect: start, one leak with where, the rest not leaking; a finding.
   await page.getByRole("button", { name: "Start Job" }).click();
   await expect(page.getByRole("button", { name: "Move Back to Scheduled" })).toBeVisible();
-  const skimmer = page.getByRole("radiogroup", { name: "Skimmer", exact: true });
-  await skimmer.getByRole("radio", { name: "Leaking", exact: true }).click();
-  const where = page.getByLabel("Where", { exact: true });
+  await page.getByLabel("Skimmer", { exact: true }).selectOption("leaking");
+  const where = page.getByLabel("Where: Skimmer");
   await where.fill("Throat seam");
   await where.blur();
   await expect(page.getByText(/ · 1 leaking · /)).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel("Where", { exact: true })).toHaveValue("Throat seam");
+  await expect(page.getByLabel("Where: Skimmer")).toHaveValue("Throat seam");
   await finishChecklist(page);
   await expect(page.getByText(/ · 1 leaking · 0 not applicable · 0 to do/)).toBeVisible();
 

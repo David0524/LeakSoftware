@@ -1,5 +1,14 @@
 import { expect, test } from "@playwright/test";
-import { OWNER, RUN, TECH, signIn, signOut } from "./helpers";
+import {
+  OWNER,
+  RUN,
+  TECH,
+  finishChecklist,
+  jobSection,
+  openChecklist,
+  signIn,
+  signOut,
+} from "./helpers";
 import { signedInClient } from "./backend";
 import { solidPng } from "./png";
 
@@ -35,15 +44,12 @@ test("owner views the M4 sample job", async ({ page }) => {
   await expect(page.getByText("9 Sample Way, Scottsdale, AZ 85251").first()).toBeVisible();
 
   // Checklist: verdicts by section, the leaking line with where, the drain with its reason.
-  const item = (label: string) =>
-    page
-      .getByRole("listitem")
-      .filter({ has: page.getByRole("radiogroup", { name: label, exact: true }) });
+  await openChecklist(page);
+  await expect(page.getByLabel("Return 3", { exact: true })).toHaveValue("leaking");
+  await expect(page.getByLabel("Where: Return 3")).toHaveValue(/Under the deck/);
   await expect(
-    item("Return 3").getByRole("radio", { name: "Leaking", exact: true }),
-  ).toHaveAttribute("aria-checked", "true");
-  await expect(item("Return 3").getByLabel("Where")).toHaveValue(/Under the deck/);
-  await expect(item("Main drain 1")).toContainText("No diver on site");
+    page.getByRole("listitem").filter({ has: page.getByLabel("Main drain 1", { exact: true }) }),
+  ).toContainText("No diver on site");
   await expect(
     page.getByText(/\d+ not leaking · 1 attention · 1 leaking · 1 not applicable · 0 to do/),
   ).toBeVisible();
@@ -303,45 +309,24 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   await expect(tech.getByText("In progress", { exact: true }).first()).toBeVisible();
   await expect(tech.getByRole("button", { name: "Move Back to Scheduled" })).toBeVisible();
 
-  // Checklist: one item leaking with where, everything else not leaking or N/A.
-  const leaking = tech
-    .getByRole("radiogroup")
-    .filter({ has: tech.getByRole("radio", { name: "Leaking", exact: true }) })
-    .first();
-  const itemName = await tech
-    .locator(`#${await leaking.getAttribute("aria-labelledby")}`)
-    .innerText();
-  await leaking.getByRole("radio", { name: "Leaking", exact: true }).click();
-  await expect(leaking.getByRole("radio", { name: "Leaking", exact: true })).toHaveAttribute(
-    "aria-checked",
-    "true",
-  );
-  const where = tech.getByLabel("Where", { exact: true });
+  // Checklist: one item leaking with where, the rest marked with the section shortcuts.
+  await jobSection(tech, "Checklist");
+  const verdict = tech.locator("#part-checklist select[aria-label]").first();
+  const itemName = (await verdict.getAttribute("aria-label"))!;
+  await verdict.selectOption("leaking");
+  await expect(verdict).toHaveValue("leaking");
+  const where = tech.getByLabel(`Where: ${itemName}`);
   await where.fill("Under the deck by the steps");
   await where.blur();
   await expect(tech.getByText(/0 not leaking · 0 attention · 1 leaking/)).toBeVisible();
   await tech.reload();
-  await expect(tech.getByLabel("Where", { exact: true })).toHaveValue(
-    "Under the deck by the steps",
-  );
+  await expect(tech.getByLabel(`Where: ${itemName}`)).toHaveValue("Under the deck by the steps");
   expect(await wide()).toBeLessThanOrEqual(390);
-
-  // The rest of the checklist: not leaking (or "No"), so the report can be sent. Each tap
-  // saves and refreshes the page, one at a time, so wait for each to land.
-  const tally = tech.getByText(/ to do$/);
-  const toDo = async () => Number(/(\d+) to do/.exec(await tally.innerText())![1]);
-  // .all() doesn't wait, so wait for the whole checklist to be on screen first.
-  await expect(tech.getByRole("radiogroup", { name: itemName, exact: true })).toBeVisible();
-  await expect.poll(() => tech.getByRole("radiogroup").count()).toBeGreaterThan(1);
-  for (const group of await tech.getByRole("radiogroup").all()) {
-    if (await group.locator('[aria-checked="true"]').count()) continue;
-    const before = await toDo();
-    await group.getByRole("radio").first().click();
-    await expect.poll(toDo).toBe(before - 1);
-  }
+  await finishChecklist(tech);
   await expect(tech.getByText(/ · 1 leaking · 0 not applicable · 0 to do/)).toBeVisible();
 
   // A pressure test: the calculator works it out as it's typed.
+  await jobSection(tech, "Findings");
   await tech.getByRole("button", { name: "Add Test" }).click();
   await tech.getByLabel("Test", { exact: true }).selectOption({ label: "Pressure test" });
   await tech.getByLabel("Line", { exact: true }).fill(itemName);
@@ -367,6 +352,7 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   expect(await wide()).toBeLessThanOrEqual(390);
 
   // A photo from the camera (here, a file), marked up with a circle.
+  await jobSection(tech, "Photos");
   await tech.getByLabel("Add Photo").setInputFiles({
     name: "leak.png",
     mimeType: "image/png",
@@ -379,10 +365,13 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   await editor.getByRole("button", { name: "Save" }).click();
   await expect(tech.getByRole("button", { name: /^Edit Markup: Photo/ })).toBeVisible();
 
-  // The customer signs on the screen.
-  await tech.getByRole("button", { name: "Add Signature" }).click();
-  await expect(tech.getByLabel("Signer’s name")).toHaveValue(name);
-  const pad = await tech.getByTestId("signature-pad").boundingBox();
+  // Wrap-up: the tech hands the phone over and the customer signs.
+  await jobSection(tech, "Wrap-Up");
+  await tech.getByRole("button", { name: "Hand to Customer to Sign" }).click();
+  const sheet = tech.getByRole("dialog", { name: "Please Sign" });
+  await expect(sheet).toContainText("inspected the pool at 40 Phone Lane");
+  await expect(sheet.getByLabel("Your name")).toHaveValue(name);
+  const pad = await sheet.getByTestId("signature-pad").boundingBox();
   await tech.mouse.move(pad!.x + 30, pad!.y + 100);
   await tech.mouse.down();
   for (const [x, y] of [
@@ -393,7 +382,7 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   ])
     await tech.mouse.move(pad!.x + x, pad!.y + y, { steps: 4 });
   await tech.mouse.up();
-  await tech.getByRole("button", { name: "Save Signature" }).click();
+  await sheet.getByRole("button", { name: "Sign", exact: true }).click();
   await expect(tech.getByText("Signature saved.")).toBeVisible();
   await expect(tech.getByRole("img", { name: `Signature of ${name}` })).toBeVisible();
   await expect(tech.getByText(/Inspection acknowledged ·/)).toBeVisible();
@@ -425,6 +414,7 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   await expect(quote.getByLabel("Customer link")).toHaveValue(/\/q\//);
   await expect(quote).toContainText("Sent");
 
+  await jobSection(tech, "Details");
   await tech.getByLabel("Job notes").fill("Gate code 1234 worked.");
   await tech.getByLabel("Leak location marked").check();
   const onSite = tech.locator("form").filter({ has: tech.getByLabel("Job notes") });

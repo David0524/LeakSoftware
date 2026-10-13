@@ -92,3 +92,22 @@ export function signatureSvg(strokes: SignatureStroke[], strokeWidth = 3): strin
     `<g fill="none" stroke="#111111" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">${paths}</g></svg>`
   );
 }
+
+/** What the customer is agreeing to, shown above the box they sign in. */
+export function signatureStatement(
+  purpose: SignaturePurpose,
+  shop: string,
+  address: string | null,
+): string {
+  const at = address ? ` at ${address}` : "";
+  switch (purpose) {
+    case "inspection_ack":
+      return `I confirm ${shop} inspected the pool${at} today and explained what they found.`;
+    case "work_authorization":
+      return `I authorize ${shop} to do the work we agreed on${at}.`;
+    case "quote_acceptance":
+      return `I accept ${shop}’s quote for the work${at}.`;
+    case "completion":
+      return `I confirm ${shop} finished the work${at} today.`;
+  }
+}

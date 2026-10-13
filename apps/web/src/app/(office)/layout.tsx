@@ -17,7 +17,7 @@ import { officeLinks } from "@/lib/nav";
 export default function OfficeLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="bg-header text-on-header">
+      <header className="glass-brand sticky top-0 z-30 text-on-header">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2">
           <Link href="/jobs" aria-label="Tidemark jobs" className="py-1">
             <Logo height={30} onDark />
@@ -27,13 +27,22 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
           </Suspense>
         </div>
       </header>
+      {/* Outside the header: its glass blur would make it the tab bar's positioning box. */}
+      <Suspense fallback={null}>
+        <PhoneTabs />
+      </Suspense>
       <Suspense fallback={null}>
         <AccessBanner />
       </Suspense>
       {/* Room for the phone tab bar. */}
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-24 sm:py-8">{children}</main>
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-5 pb-32 sm:py-8">{children}</main>
     </div>
   );
+}
+
+async function PhoneTabs() {
+  const office = await getOffice();
+  return <TabBar links={officeLinks(office.isOwner)} />;
 }
 
 /** Trial ending, payment failed, or read-only (M10 billing). */
@@ -71,7 +80,6 @@ async function OfficeNav() {
   return (
     <>
       <NavLinks links={links} className="hidden sm:flex" />
-      <TabBar links={links} />
       <div className="ml-auto flex items-center gap-3 text-[15px]">
         {office.companies.length > 1 ? (
           <form action={switchCompany} className="flex items-center gap-2">

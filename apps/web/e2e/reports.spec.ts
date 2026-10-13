@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { OWNER, RUN, signIn } from "./helpers";
+import { OWNER, RUN, openChecklist, signIn } from "./helpers";
 import { lastEmailTo } from "./outbox";
 
 // M7 "Done when": both templates as a web page and a PDF on the sample job, and the email a
@@ -104,11 +104,8 @@ test("field parity report: counts, verdicts, fee, and disclaimer", async ({ page
   await expect(page.getByText("With Dana Owner")).toBeVisible();
   await expect(page.getByText("$649.00", { exact: true })).toBeVisible();
   await expect(page.getByText("Pool water level dropping")).toBeVisible();
-  await expect(
-    page
-      .getByRole("radiogroup", { name: "Skimmer seam", exact: true })
-      .getByRole("radio", { name: "Leaking", exact: true }),
-  ).toHaveAttribute("aria-checked", "true");
+  await openChecklist(page);
+  await expect(page.getByLabel("Skimmer seam", { exact: true })).toHaveValue("leaking");
 
   const panel = await writeDraft(page, "homeowner");
   await panel.getByRole("button", { name: "Send by Text" }).click();

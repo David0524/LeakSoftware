@@ -21,6 +21,7 @@ import {
   type Media,
 } from "@leakbook/core";
 import { GalleryImage } from "@/components/gallery-image";
+import { JobSections } from "@/components/job-sections";
 import { MediaActions, MediaCapture, SignatureForm } from "@/components/media-work";
 import {
   ChecklistEditor,
@@ -98,186 +99,225 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
         actions={<JobStatusActions jobId={job.id} status={job.status} />}
       />
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        <Card>
-          <SectionTitle>Customer</SectionTitle>
-          {job.customer ? (
-            <Link
-              href={`/customers/${job.customer.id}`}
-              className="text-xl font-semibold text-link underline-offset-4 hover:underline"
-            >
-              {job.customer.name}
-            </Link>
-          ) : (
-            <p>Customer</p>
-          )}
-          {job.customer?.phone ? (
-            <p>
-              <a href={`tel:${job.customer.phone}`} className="text-link">
-                {job.customer.phone}
-              </a>
-            </p>
-          ) : null}
-          {job.customer?.email ? (
-            <p>
-              <a href={`mailto:${job.customer.email}`} className="text-link">
-                {job.customer.email}
-              </a>
-            </p>
-          ) : null}
-        </Card>
-        <Card>
-          <SectionTitle>Pool</SectionTitle>
-          {job.property ? (
-            <>
-              <p className="font-semibold">{formatAddress(job.property)}</p>
-              <p className="text-text-muted">
-                {[
-                  job.property.pool_type ? POOL_TYPE_LABELS[job.property.pool_type] : null,
-                  job.property.has_spa ? "Pool and spa" : "Pool",
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-              {job.property.access_notes ? (
-                <p className="mt-2 border-l-4 border-status-warning pl-3">
-                  {job.property.access_notes}
+      <JobSections
+        sections={[
+          {
+            id: "details",
+            label: "Details",
+            content: (
+              <>
+                <div className="grid gap-5 lg:grid-cols-3">
+                  <Card>
+                    <SectionTitle>Customer</SectionTitle>
+                    {job.customer ? (
+                      <Link
+                        href={`/customers/${job.customer.id}`}
+                        className="text-xl font-semibold text-link underline-offset-4 hover:underline"
+                      >
+                        {job.customer.name}
+                      </Link>
+                    ) : (
+                      <p>Customer</p>
+                    )}
+                    {job.customer?.phone ? (
+                      <p>
+                        <a href={`tel:${job.customer.phone}`} className="text-link">
+                          {job.customer.phone}
+                        </a>
+                      </p>
+                    ) : null}
+                    {job.customer?.email ? (
+                      <p>
+                        <a href={`mailto:${job.customer.email}`} className="text-link">
+                          {job.customer.email}
+                        </a>
+                      </p>
+                    ) : null}
+                  </Card>
+                  <Card>
+                    <SectionTitle>Pool</SectionTitle>
+                    {job.property ? (
+                      <>
+                        <p className="font-semibold">{formatAddress(job.property)}</p>
+                        <p className="text-text-muted">
+                          {[
+                            job.property.pool_type
+                              ? POOL_TYPE_LABELS[job.property.pool_type]
+                              : null,
+                            job.property.has_spa ? "Pool and spa" : "Pool",
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                        {job.property.access_notes ? (
+                          <p className="mt-2 border-l-4 border-status-warning pl-3">
+                            {job.property.access_notes}
+                          </p>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </Card>
+                  <Card>
+                    <SectionTitle>Assigned to</SectionTitle>
+                    <p className="text-xl font-semibold">{job.techName ?? "Nobody yet"}</p>
+                    {job.secondTechName ? <p>With {job.secondTechName}</p> : null}
+                    {job.fee_cents != null ? (
+                      <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3">
+                        <dt className="text-text-muted">Detection fee</dt>
+                        <dd>{formatCents(job.fee_cents)}</dd>
+                      </dl>
+                    ) : null}
+                  </Card>
+                </div>
+
+                <Card className="mt-5 max-w-3xl" aria-labelledby="on-site">
+                  <h2 id="on-site" className="mb-3 font-display text-xl font-bold">
+                    On Site
+                  </h2>
+                  <JobDetailsForm
+                    jobId={job.id}
+                    fee={job.fee_cents ?? null}
+                    locationMarked={job.location_marked ?? false}
+                    notes={job.summary_notes ?? ""}
+                  />
+                </Card>
+
+                {answers.length ? (
+                  <Card className="mt-5">
+                    <SectionTitle>When they booked</SectionTitle>
+                    <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-[auto_1fr]">
+                      {answers.map(({ q, a }) => (
+                        <div key={q.key} className="contents">
+                          <dt className="text-text-muted">{q.label}</dt>
+                          <dd>{Array.isArray(a) ? a.join(", ") : a}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </Card>
+                ) : null}
+
+                {job.type === "repair" || ["unscheduled", "scheduled"].includes(job.status) ? (
+                  <section className="mt-8" aria-labelledby="schedule">
+                    <h2 id="schedule" className="mb-3 font-display text-2xl font-bold">
+                      Schedule
+                    </h2>
+                    <Card className="max-w-2xl">
+                      <Schedule detail={detail} tz={tz} />
+                    </Card>
+                  </section>
+                ) : null}
+
+                {office.isOwner ? (
+                  <section className="mt-8" aria-labelledby="timeline">
+                    <h2 id="timeline" className="mb-3 font-display text-2xl font-bold">
+                      Timeline
+                    </h2>
+                    <Timeline detail={detail} tz={tz} />
+                  </section>
+                ) : null}
+              </>
+            ),
+          },
+          {
+            id: "checklist",
+            label: "Checklist",
+            badge: tally.pending,
+            content: (
+              <section aria-labelledby="checklist">
+                <h2 id="checklist" className="font-display text-2xl font-bold">
+                  Checklist
+                </h2>
+                <p className="mb-3 text-text-muted">
+                  {total === 0
+                    ? "No checklist yet."
+                    : [
+                        `${tally.pass} not leaking`,
+                        `${tally.attention} attention`,
+                        `${tally.leaking} leaking`,
+                        `${tally.notApplicable} not applicable`,
+                        `${tally.pending} to do`,
+                      ].join(" · ")}
                 </p>
-              ) : null}
-            </>
-          ) : null}
-        </Card>
-        <Card>
-          <SectionTitle>Assigned to</SectionTitle>
-          <p className="text-xl font-semibold">{job.techName ?? "Nobody yet"}</p>
-          {job.secondTechName ? <p>With {job.secondTechName}</p> : null}
-          {job.fee_cents != null ? (
-            <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3">
-              <dt className="text-text-muted">Detection fee</dt>
-              <dd>{formatCents(job.fee_cents)}</dd>
-            </dl>
-          ) : null}
-        </Card>
-      </div>
+                {detail.components.length > 0 ? (
+                  <Checklist detail={detail} />
+                ) : (
+                  <SetUpChecklist jobId={job.id} />
+                )}
+              </section>
+            ),
+          },
+          {
+            id: "findings",
+            label: "Findings",
+            content: (
+              <>
+                <section aria-labelledby="tests">
+                  <h2 id="tests" className="mb-3 font-display text-2xl font-bold">
+                    Tests
+                  </h2>
+                  <Tests detail={detail} tz={tz} />
+                </section>
 
-      <Card className="mt-5 max-w-3xl" aria-labelledby="on-site">
-        <h2 id="on-site" className="mb-3 font-display text-xl font-bold">
-          On Site
-        </h2>
-        <JobDetailsForm
-          jobId={job.id}
-          fee={job.fee_cents ?? null}
-          locationMarked={job.location_marked ?? false}
-          notes={job.summary_notes ?? ""}
-        />
-      </Card>
+                <section className="mt-8" aria-labelledby="findings">
+                  <h2 id="findings" className="mb-3 font-display text-2xl font-bold">
+                    Findings
+                  </h2>
+                  <Findings detail={detail} />
+                </section>
+              </>
+            ),
+          },
+          {
+            id: "photos",
+            label: "Photos",
+            content: (
+              <section aria-labelledby="media">
+                <h2 id="media" className="mb-3 font-display text-2xl font-bold">
+                  Photos and Recordings
+                </h2>
+                <Gallery detail={detail} tz={tz} />
+              </section>
+            ),
+          },
+          {
+            id: "wrap-up",
+            label: "Wrap-Up",
+            content: (
+              <>
+                <section aria-labelledby="signatures">
+                  <h2 id="signatures" className="mb-3 font-display text-2xl font-bold">
+                    Customer Sign-Off
+                  </h2>
+                  <Signatures detail={detail} tz={tz} />
+                </section>
 
-      {answers.length ? (
-        <Card className="mt-5">
-          <SectionTitle>When they booked</SectionTitle>
-          <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-[auto_1fr]">
-            {answers.map(({ q, a }) => (
-              <div key={q.key} className="contents">
-                <dt className="text-text-muted">{q.label}</dt>
-                <dd>{Array.isArray(a) ? a.join(", ") : a}</dd>
-              </div>
-            ))}
-          </dl>
-        </Card>
-      ) : null}
+                <section className="mt-8" aria-labelledby="reports">
+                  <h2 id="reports" className="mb-3 font-display text-2xl font-bold">
+                    Reports
+                  </h2>
+                  <Reports detail={detail} />
+                </section>
 
-      {job.type === "repair" || ["unscheduled", "scheduled"].includes(job.status) ? (
-        <section className="mt-8" aria-labelledby="schedule">
-          <h2 id="schedule" className="mb-3 font-display text-2xl font-bold">
-            Schedule
-          </h2>
-          <Card className="max-w-2xl">
-            <Schedule detail={detail} tz={tz} />
-          </Card>
-        </section>
-      ) : null}
+                {job.type === "detection" ? (
+                  <section className="mt-8" aria-labelledby="quotes">
+                    <h2 id="quotes" className="mb-3 font-display text-2xl font-bold">
+                      Quotes
+                    </h2>
+                    <Quotes detail={detail} />
+                  </section>
+                ) : null}
 
-      <section className="mt-8" aria-labelledby="checklist">
-        <h2 id="checklist" className="font-display text-2xl font-bold">
-          Checklist
-        </h2>
-        <p className="mb-3 text-text-muted">
-          {total === 0
-            ? "No checklist yet."
-            : [
-                `${tally.pass} not leaking`,
-                `${tally.attention} attention`,
-                `${tally.leaking} leaking`,
-                `${tally.notApplicable} not applicable`,
-                `${tally.pending} to do`,
-              ].join(" · ")}
-        </p>
-        {detail.components.length > 0 ? (
-          <Checklist detail={detail} />
-        ) : (
-          <SetUpChecklist jobId={job.id} />
-        )}
-      </section>
-
-      <section className="mt-8" aria-labelledby="tests">
-        <h2 id="tests" className="mb-3 font-display text-2xl font-bold">
-          Tests
-        </h2>
-        <Tests detail={detail} tz={tz} />
-      </section>
-
-      <section className="mt-8" aria-labelledby="findings">
-        <h2 id="findings" className="mb-3 font-display text-2xl font-bold">
-          Findings
-        </h2>
-        <Findings detail={detail} />
-      </section>
-
-      <section className="mt-8" aria-labelledby="media">
-        <h2 id="media" className="mb-3 font-display text-2xl font-bold">
-          Photos and Recordings
-        </h2>
-        <Gallery detail={detail} tz={tz} />
-      </section>
-
-      <section className="mt-8" aria-labelledby="signatures">
-        <h2 id="signatures" className="mb-3 font-display text-2xl font-bold">
-          Signatures
-        </h2>
-        <Signatures detail={detail} tz={tz} />
-      </section>
-
-      <section className="mt-8" aria-labelledby="reports">
-        <h2 id="reports" className="mb-3 font-display text-2xl font-bold">
-          Reports
-        </h2>
-        <Reports detail={detail} />
-      </section>
-
-      {job.type === "detection" ? (
-        <section className="mt-8" aria-labelledby="quotes">
-          <h2 id="quotes" className="mb-3 font-display text-2xl font-bold">
-            Quotes
-          </h2>
-          <Quotes detail={detail} />
-        </section>
-      ) : null}
-
-      <section className="mt-8" aria-labelledby="invoice">
-        <h2 id="invoice" className="mb-3 font-display text-2xl font-bold">
-          Invoice
-        </h2>
-        <Invoices detail={detail} />
-      </section>
-
-      {office.isOwner ? (
-        <section className="mt-8" aria-labelledby="timeline">
-          <h2 id="timeline" className="mb-3 font-display text-2xl font-bold">
-            Timeline
-          </h2>
-          <Timeline detail={detail} tz={tz} />
-        </section>
-      ) : null}
+                <section className="mt-8" aria-labelledby="invoice">
+                  <h2 id="invoice" className="mb-3 font-display text-2xl font-bold">
+                    Invoice
+                  </h2>
+                  <Invoices detail={detail} />
+                </section>
+              </>
+            ),
+          },
+        ]}
+      />
     </>
   );
 }
@@ -485,7 +525,10 @@ async function Signatures({ detail, tz }: { detail: JobDetail; tz: string }) {
   return (
     <div className="space-y-4">
       {signatures.length === 0 ? (
-        <Empty>No signatures yet.</Empty>
+        <p className="text-text-muted">
+          Before you leave, hand the phone to the customer to confirm the visit. Their signature
+          goes on the report.
+        </p>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {signatures.map((s) => {
@@ -519,6 +562,9 @@ async function Signatures({ detail, tz }: { detail: JobDetail; tz: string }) {
         jobId={detail.job.id}
         purposes={enabledSignaturePurposes(company.settings)}
         signer={detail.job.customer?.name ?? ""}
+        shop={company.name}
+        address={detail.job.property ? formatAddress(detail.job.property) : null}
+        signed={signatures.map((s) => s.purpose)}
       />
     </div>
   );

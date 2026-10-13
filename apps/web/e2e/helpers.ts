@@ -19,3 +19,32 @@ export async function signOut(page: Page) {
   await page.waitForURL((url) => url.pathname === "/");
   await expect(page.getByRole("banner").getByRole("link", { name: "Sign In" })).toBeVisible();
 }
+
+/** Phones: show one part of the job page (Details, Checklist, Findings, Photos, Wrap-Up). */
+export async function jobSection(page: Page, name: string) {
+  await page.getByRole("tab", { name: new RegExp(`^${name}`) }).click();
+}
+
+/** Unfold every checklist section (finished ones start folded). */
+export async function openChecklist(page: Page) {
+  await expect(page.getByText(/ to do$/)).toBeVisible();
+  for (const button of await page
+    .locator('button[aria-controls^="checklist-"][aria-expanded="false"]')
+    .all())
+    await button.click();
+}
+
+/** Answer everything still to do with each section's "Mark … Remaining" shortcut. */
+export async function finishChecklist(page: Page) {
+  const tally = page.getByText(/ to do$/);
+  const toDo = async () => Number(/(\d+) to do/.exec(await tally.innerText())![1]);
+  for (;;) {
+    const before = await toDo();
+    if (before === 0) return;
+    await page
+      .getByRole("button", { name: /^(Mark|Answer) \d+ Remaining/ })
+      .first()
+      .click();
+    await expect.poll(toDo).toBeLessThan(before);
+  }
+}

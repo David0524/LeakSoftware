@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (owner: the mobile pages are too long; Apple, Liquid Glass feel)
+- **Job page on phones is in five parts** (Details, Checklist, Findings, Photos, Wrap-Up) with a segmented switcher pinned under the header. It was about 15 screens long. Wider screens keep one page. The part shown is in the URL (`#checklist`).
+- **Checklist rows:** one line per item with its verdict as a pull-down (the phone's own menu), instead of four buttons per item. Sections fold to a one-line summary ("All clear", "1 leaking · 1 attention") once done, and each has "Mark N Remaining Not Leaking" ("Answer N Remaining No" for yes/no questions). "Remove Item" is in the item's menu; adding another skimmer or return is in "Add an item".
+- **Customer sign-off** moved to Wrap-Up, before the report: "Hand to Customer to Sign" opens a full-screen sheet with the statement they confirm in plain words (for example "I confirm Demo Leak Co. inspected the pool at … today and explained what they found."), their name filled in, a large box, and Sign always in reach.
+- **Liquid Glass, web approximation:** translucent blurred material only on the floating controls (the header, a floating tab bar, the job switcher, and sheet bars). Content stays on solid surfaces. Reduce Transparency and Increase Contrast get solid fills.
+
 ## 2026-10-13 (M10: my calls, adjust as needed)
 - **Reminders:** once a day (about 8:45 am Arizona). Each quote or invoice gets only its newest due reminder (a quote 8 days out gets the 7-day one, not the 3-day one too), and each goes out once. They stop when the quote is accepted or expires, or the invoice is paid. Defaults: quotes 3 and 7 days after sending, invoices 7, 14, and 30. Owners change them in Settings.
 - **Review requests:** one per job, between 2 hours and 14 days after it is paid, only when the shop has a review link and hasn't turned them off.

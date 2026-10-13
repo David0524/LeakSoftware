@@ -34,7 +34,7 @@ export function TabBar({ links: all }: { links: { href: string; label: string }[
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-header pb-[env(safe-area-inset-bottom)] text-on-header sm:hidden"
+      className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 rounded-[28px] px-1 sm:hidden"
     >
       <ul className="flex">
         {links.map((l) => {
@@ -49,8 +49,8 @@ export function TabBar({ links: all }: { links: { href: string; label: string }[
                 href={l.href}
                 aria-current={active ? "page" : undefined}
                 className={cx(
-                  "flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold",
-                  active ? "text-on-header" : "text-on-header/65",
+                  "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-3xl text-[11px] font-semibold",
+                  active ? "bg-link/10 text-link" : "text-text",
                 )}
               >
                 <svg

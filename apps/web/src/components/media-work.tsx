@@ -11,6 +11,7 @@ import {
   inkLength,
   shapeAtTap,
   shapeFromDrag,
+  signatureStatement,
   signatureSvg,
   strokePath,
   textShape,
@@ -664,17 +665,30 @@ function MarkupEditor({
 // Signatures
 // ---------------------------------------------------------------------------
 
+/**
+ * The customer's sign-off (apple-design: sheets.md, modality.md). The tech hands the phone
+ * over: a full-screen sheet with one task, the statement in plain words, the customer's
+ * name already filled in, and a large box to sign. Cancel always gets out.
+ */
 export function SignatureForm({
   jobId,
   purposes,
   signer,
+  shop,
+  address,
+  signed,
 }: {
   jobId: string;
   purposes: { value: SignaturePurpose; label: string }[];
   signer: string;
+  shop: string;
+  address: string | null;
+  /** Purposes already signed on this job, so the next one is offered first. */
+  signed: string[];
 }) {
+  const first = purposes.find((p) => !signed.includes(p.value)) ?? purposes[0];
   const [open, setOpen] = useState(false);
-  const [purpose, setPurpose] = useState<SignaturePurpose | "">(purposes[0]?.value ?? "");
+  const [purpose, setPurpose] = useState<SignaturePurpose | "">(first?.value ?? "");
   const [name, setName] = useState(signer);
   const [role, setRole] = useState("");
   const [strokes, setStrokes] = useState<SignatureStroke[]>([]);
@@ -682,29 +696,22 @@ export function SignatureForm({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
   if (purposes.length === 0)
     return <p className="text-text-muted">Signatures are turned off in your company settings.</p>;
-  if (!open)
-    return (
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          type="button"
-          kind="secondary"
-          onClick={() => {
-            setOpen(true);
-            setSaved(false);
-          }}
-        >
-          Add Signature
-        </Button>
-        {saved ? <span className="text-status-pass">Signature saved.</span> : null}
-      </div>
-    );
 
   async function save() {
     if (!purpose) return setError("Choose what this signature is for.");
-    if (!name.trim()) return setError("Enter the signer’s name.");
-    if (inkLength(strokes) < MIN_INK) return setError("Ask them to sign in the box.");
+    if (!name.trim()) return setError("Enter your name.");
+    if (inkLength(strokes) < MIN_INK) return setError("Sign in the box with your finger.");
     setSaving(true);
     setError(null);
     try {
@@ -740,51 +747,97 @@ export function SignatureForm({
     }
   }
 
+  const statement = purpose ? signatureStatement(purpose, shop, address) : "";
+
   return (
-    <div className="max-w-2xl space-y-4 rounded-lg border border-border bg-surface p-4">
-      <h3 className="font-display text-lg font-bold">Add Signature</h3>
-      {purposes.length > 1 ? (
-        <Segmented
-          label="Signature for"
-          name="purpose"
-          value={purpose}
-          onChange={setPurpose}
-          options={purposes}
-        />
-      ) : (
-        <p className="font-semibold">{purposes[0]!.label}</p>
-      )}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field
-          label="Signer’s name"
-          name="signer_name"
-          value={name}
-          autoComplete="off"
-          onChange={(e) => setName(e.target.value)}
-        />
-        <Field
-          label="Role (optional)"
-          name="signer_role"
-          value={role}
-          placeholder="Homeowner, property manager…"
-          onChange={(e) => setRole(e.target.value)}
-        />
+    <>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          type="button"
+          kind="secondary"
+          onClick={() => {
+            setOpen(true);
+            setSaved(false);
+            setError(null);
+          }}
+        >
+          Hand to Customer to Sign
+        </Button>
+        {saved ? (
+          <span role="status" className="text-status-pass">
+            Signature saved.
+          </span>
+        ) : null}
       </div>
-      <SignaturePad strokes={strokes} onChange={setStrokes} />
-      {error ? (
-        <p role="alert" className="text-status-fail">
-          {error}
-        </p>
+      {open ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="sign-title"
+          className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-bg pb-[env(safe-area-inset-bottom)]"
+        >
+          <div className="glass sticky top-0 z-10 flex items-center justify-between rounded-none border-x-0 border-t-0 px-2 py-1">
+            <Button type="button" kind="quiet" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <p className="text-[15px] font-semibold text-text-muted">{shop}</p>
+            <span className="w-20" aria-hidden="true" />
+          </div>
+          <div className="mx-auto w-full max-w-2xl flex-1 space-y-4 px-4 pt-5 pb-6">
+            <div>
+              <p className="text-[15px] font-semibold text-text-muted">
+                {purposes.find((p) => p.value === purpose)?.label ?? "Signature"}
+              </p>
+              <h2 id="sign-title" className="font-display text-3xl font-extrabold">
+                Please Sign
+              </h2>
+            </div>
+            {purposes.length > 1 ? (
+              <Segmented
+                label="Signing for"
+                name="purpose"
+                value={purpose}
+                onChange={setPurpose}
+                options={purposes}
+              />
+            ) : null}
+            <p className="text-[19px] leading-relaxed">{statement}</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label="Your name"
+                name="signer_name"
+                value={name}
+                autoComplete="name"
+                onChange={(e) => setName(e.target.value)}
+              />
+              <Field
+                label="Role (optional)"
+                name="signer_role"
+                value={role}
+                placeholder="Homeowner, property manager…"
+                onChange={(e) => setRole(e.target.value)}
+              />
+            </div>
+            <SignaturePad strokes={strokes} onChange={setStrokes} />
+            {error ? (
+              <p role="alert" className="text-status-fail">
+                {error}
+              </p>
+            ) : null}
+          </div>
+          <div className="glass sticky bottom-0 rounded-none border-x-0 border-b-0 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <Button
+              type="button"
+              disabled={saving}
+              onClick={save}
+              className="mx-auto flex w-full max-w-2xl"
+            >
+              {saving ? "Saving…" : "Sign"}
+            </Button>
+          </div>
+        </div>
       ) : null}
-      <div className="flex flex-wrap gap-3">
-        <Button type="button" disabled={saving} onClick={save}>
-          {saving ? "Saving…" : "Save Signature"}
-        </Button>
-        <Button type="button" kind="quiet" onClick={() => setOpen(false)}>
-          Cancel
-        </Button>
-      </div>
-    </div>
+    </>
   );
 }
 
@@ -804,7 +857,7 @@ function SignaturePad({
     <div className="space-y-1">
       <div className="flex items-center justify-between">
         <p className="font-medium" id="signature-label">
-          Signature
+          Sign here
         </p>
         <Button
           type="button"
@@ -819,7 +872,7 @@ function SignaturePad({
         role="img"
         aria-labelledby="signature-label"
         data-testid="signature-pad"
-        className="h-48 w-full touch-none rounded-md border-2 border-dashed border-control-border bg-paper"
+        className="h-[min(16rem,34vh)] w-full touch-none rounded-xl border-2 border-dashed border-control-border bg-paper"
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
           drawing.current = true;
@@ -849,7 +902,7 @@ function SignaturePad({
           ))}
         </g>
       </svg>
-      <p className="text-[15px] text-text-muted">Sign with a finger, or a mouse on a computer.</p>
+      <p className="text-[15px] text-text-muted">Use your finger, or a mouse on a computer.</p>
     </div>
   );
 }

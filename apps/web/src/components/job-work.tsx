@@ -26,6 +26,7 @@ import type { FormState } from "@/app/actions/auth";
 import {
   addComponent,
   changeJobStatus,
+  markRest,
   deleteFinding,
   deleteTest,
   removeComponent,
@@ -185,44 +186,26 @@ export function ChecklistEditor({
   const sections = (Object.keys(CHECKLIST_SECTION_LABELS) as ChecklistSection[])
     .map((section) => ({ section, items: rows.filter((r) => r.type.section === section) }))
     .filter((s) => s.items.length > 0);
+  // Types that can repeat ("+ Add Another Return"), once each.
+  const repeatable = [
+    ...new Map(rows.filter((r) => r.type.allows_multiple).map((r) => [r.type.id, r.type])).values(),
+  ];
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {sections.map(({ section, items }) => (
-        <section key={section} aria-label={CHECKLIST_SECTION_LABELS[section]}>
-          <h3 className="mb-2 font-display text-lg font-bold">
-            {CHECKLIST_SECTION_LABELS[section]}
-          </h3>
-          <ul className="grid gap-3 lg:grid-cols-2">
-            {items.map((row, i) => {
-              const last = items[i + 1]?.type.id !== row.type.id;
-              return (
-                <li key={row.id} className="space-y-2">
-                  <ChecklistItem jobId={jobId} row={row} />
-                  {last && row.type.allows_multiple ? (
-                    <button
-                      type="button"
-                      disabled={pending}
-                      className="min-h-11 font-semibold text-link underline-offset-4 hover:underline"
-                      onClick={() => run(addComponent, { job: jobId, type: row.type.id })}
-                    >
-                      + Add Another {row.type.name}
-                    </button>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
+        <ChecklistGroup key={section} jobId={jobId} section={section} items={items} />
       ))}
-      {addable.length ? (
+      {repeatable.length || addable.length ? (
         <div className="flex flex-wrap items-end gap-3">
           <Select
             label="Add an item"
             name="add_item"
             value={adding}
             onChange={(e) => setAdding(e.target.value)}
+            className="min-w-0 flex-1"
             options={[
               { value: "", label: "Choose…" },
+              ...repeatable.map((t) => ({ value: t.id, label: `Another ${t.name}` })),
               ...addable.map((t) => ({ value: t.id, label: t.name })),
             ]}
           />
@@ -232,7 +215,7 @@ export function ChecklistEditor({
             disabled={!adding || pending}
             onClick={() => run(addComponent, { job: jobId, type: adding }, () => setAdding(""))}
           >
-            Add Item
+            Add
           </Button>
         </div>
       ) : null}
@@ -241,15 +224,130 @@ export function ChecklistEditor({
   );
 }
 
-function ChecklistItem({ jobId, row }: { jobId: string; row: ChecklistRow }) {
+/**
+ * One section of the checklist as a grouped list that folds away: open while it has items
+ * to do, a one-line summary when it's done (apple-design: disclosure-controls.md).
+ */
+function ChecklistGroup({
+  jobId,
+  section,
+  items,
+}: {
+  jobId: string;
+  section: ChecklistSection;
+  items: ChecklistRow[];
+}) {
   const { pending, error, run } = useRun();
+  const toDo = items.filter((r) => currentVerdict(r.result ?? undefined) === null);
+  const leaking = items.filter((r) => r.result?.outcome === "leaking").length;
+  const attention = items.filter((r) => r.result?.outcome === "attention").length;
+  const [open, setOpen] = useState(toDo.length > 0);
+  const title = CHECKLIST_SECTION_LABELS[section];
+  const summary =
+    toDo.length > 0
+      ? `${toDo.length} of ${items.length} to do`
+      : leaking || attention
+        ? [leaking ? `${leaking} leaking` : null, attention ? `${attention} attention` : null]
+            .filter(Boolean)
+            .join(" · ")
+        : "All clear";
+  const panel = `checklist-${section}`;
+  return (
+    <section
+      aria-label={title}
+      className="overflow-hidden rounded-xl border border-border bg-surface"
+    >
+      <h3>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={panel}
+          onClick={() => setOpen(!open)}
+          className="flex min-h-14 w-full items-center gap-3 px-4 text-left"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            className={cx(
+              "size-5 shrink-0 text-text-muted transition-transform",
+              open && "rotate-90",
+            )}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+          <span className="flex-1 font-display text-lg font-bold">{title}</span>
+          <span
+            className={cx(
+              "text-[15px] font-medium",
+              toDo.length ? "text-text-muted" : leaking ? "text-status-fail" : "text-status-pass",
+            )}
+          >
+            {summary}
+          </span>
+        </button>
+      </h3>
+      {open ? (
+        <div id={panel} className="border-t border-border">
+          <ul className="divide-y divide-border">
+            {items.map((row) => (
+              <li key={row.id}>
+                <ChecklistItem jobId={jobId} row={row} />
+              </li>
+            ))}
+          </ul>
+          {toDo.length > 0 ? (
+            <div className="border-t border-border px-4 py-1">
+              <button
+                type="button"
+                disabled={pending}
+                className="min-h-11 text-[15px] font-semibold text-link underline-offset-4 hover:underline"
+                onClick={() =>
+                  run(markRest, { job: jobId, components: toDo.map((r) => r.id).join(",") })
+                }
+              >
+                {pending
+                  ? "Saving…"
+                  : toDo.every((r) => r.type.answer === "yes_no")
+                    ? `Answer ${toDo.length} Remaining No`
+                    : `Mark ${toDo.length} Remaining Not Leaking`}
+              </button>
+              <ErrorText error={error} />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+const VERDICT_STYLE: Record<Verdict, string> = {
+  ok: "bg-status-pass text-on-status border-transparent",
+  leaking: "bg-status-fail text-on-status border-transparent",
+  attention: "bg-status-warning text-on-status border-transparent",
+  na: "bg-status-excluded text-on-status border-transparent",
+};
+const REMOVE = "remove";
+
+/** One row: the item, and its verdict as a pull-down (the system menu on a phone). */
+function ChecklistItem({ jobId, row }: { jobId: string; row: ChecklistRow }) {
+  const { error, run } = useRun();
   const saved = currentVerdict(row.result ?? undefined);
   const [shown, show] = useOptimistic(saved);
   const needsWhere = row.type.answer !== "yes_no" && (shown === "leaking" || shown === "attention");
-  const groupId = `item-${row.id}`;
   const options = verdictOptions(row.type);
 
-  function choose(v: Verdict) {
+  function choose(value: string) {
+    if (value === REMOVE) {
+      if (window.confirm(`Remove ${row.label}?`))
+        run(removeComponent, { job: jobId, component: row.id });
+      return;
+    }
+    const v = value as Verdict;
     run(
       setVerdict,
       { job: jobId, component: row.id, result: row.result?.id ?? "", verdict: v },
@@ -258,98 +356,93 @@ function ChecklistItem({ jobId, row }: { jobId: string; row: ChecklistRow }) {
   }
 
   return (
-    <div className="space-y-2 rounded-lg border border-border bg-surface p-3">
-      <div className="flex items-center justify-between gap-3">
-        <p id={groupId} className="font-semibold">
-          {row.label}
-        </p>
-        {row.type.allows_multiple ? (
-          <button
-            type="button"
-            disabled={pending}
-            className="min-h-11 text-[15px] text-link underline-offset-4 hover:underline"
-            onClick={() => {
-              if (window.confirm(`Remove ${row.label}?`))
-                run(removeComponent, { job: jobId, component: row.id });
-            }}
-          >
-            Remove
-          </button>
-        ) : null}
-      </div>
-      <div
-        role="radiogroup"
-        aria-labelledby={groupId}
-        className={cx(
-          "grid gap-0.5 rounded-md border border-control-border p-0.5 sm:flex",
-          options.length === 4 ? "grid-cols-2" : "grid-cols-3",
-        )}
-      >
-        {options.map((o) => (
-          <button
-            key={o.value}
-            type="button"
-            role="radio"
-            aria-checked={shown === o.value}
-            onClick={() => choose(o.value)}
+    <div className="px-4 py-2">
+      <div className="flex min-h-11 items-center gap-3">
+        <span className="min-w-0 flex-1">
+          <span className="block leading-tight font-medium">{row.label}</span>
+          {row.result?.method || row.result?.notes ? (
+            <span className="block truncate text-[13px] text-text-muted">
+              {[row.result.method, row.result.notes].filter(Boolean).join(" · ")}
+            </span>
+          ) : null}
+        </span>
+        <span className="relative shrink-0">
+          <select
+            aria-label={row.label}
+            value={shown ?? ""}
+            onChange={(e) => choose(e.target.value)}
             className={cx(
-              "min-h-11 flex-1 rounded px-3 font-medium whitespace-nowrap",
-              shown === o.value ? VERDICT_SELECTED[o.value] : "text-text hover:bg-bg",
+              "min-h-11 cursor-pointer appearance-none rounded-full border py-1 pr-8 pl-3 text-[15px] font-semibold",
+              shown ? VERDICT_STYLE[shown] : "border-control-border bg-surface text-text",
             )}
           >
-            {o.label}
-          </button>
-        ))}
+            {shown === null ? (
+              <option value="" disabled>
+                To Do
+              </option>
+            ) : null}
+            {options.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+            {row.type.allows_multiple ? <option value={REMOVE}>Remove Item…</option> : null}
+          </select>
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M7 10l5 5 5-5" />
+          </svg>
+        </span>
       </div>
       {needsWhere && row.result ? (
-        <WhereField jobId={jobId} resultId={row.result.id} value={row.result.location_text} />
+        <WhereField
+          jobId={jobId}
+          resultId={row.result.id}
+          item={row.label}
+          value={row.result.location_text}
+        />
       ) : null}
       {row.result?.status === "excluded" && row.result.exclusion_reason ? (
-        <p className="text-[15px] text-text-muted">{row.result.exclusion_reason}</p>
-      ) : null}
-      {row.result?.method || row.result?.notes ? (
-        <p className="text-[15px] text-text-muted">
-          {[row.result.method, row.result.notes].filter(Boolean).join(" · ")}
-        </p>
+        <p className="pb-1 text-[15px] text-text-muted">{row.result.exclusion_reason}</p>
       ) : null}
       <ErrorText error={error} />
     </div>
   );
 }
 
-const VERDICT_SELECTED: Record<Verdict, string> = {
-  ok: "bg-status-pass text-on-status",
-  leaking: "bg-status-fail text-on-status",
-  attention: "bg-status-warning text-on-status",
-  na: "bg-status-excluded text-on-status",
-};
-
 function WhereField({
   jobId,
   resultId,
+  item,
   value,
 }: {
   jobId: string;
   resultId: string;
+  item: string;
   value: string | null | undefined;
 }) {
   const { error, run } = useRun();
-  const id = `where-${resultId}`;
   return (
-    <div className="space-y-1">
-      <label htmlFor={id} className="block font-medium">
-        Where
-      </label>
+    <div className="pb-2">
       <input
-        id={id}
+        aria-label={`Where: ${item}`}
+        title="Where"
         key={value ?? ""}
         defaultValue={value ?? ""}
-        placeholder="Where on the line or fitting"
+        placeholder="Where? Under the deck, at the throat…"
         onBlur={(e) => {
           if (e.target.value.trim() !== (value ?? ""))
             run(saveWhere, { job: jobId, result: resultId, where: e.target.value });
         }}
-        className="block min-h-11 w-full rounded-md border border-control-border bg-surface px-3 py-2"
+        className="block min-h-11 w-full rounded-lg border border-control-border bg-bg px-3 py-2"
       />
       <ErrorText error={error} />
     </div>

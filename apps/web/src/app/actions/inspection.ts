@@ -154,6 +154,26 @@ export async function setVerdict(_: FormState, form: FormData): Promise<FormStat
   return done(jobId);
 }
 
+/**
+ * "Mark Rest Not Leaking": every item in a section still to do gets the first verdict (Not
+ * Leaking, or No for yes/no questions). Items already answered are left alone.
+ */
+export async function markRest(_: FormState, form: FormData): Promise<FormState> {
+  const { office, db } = await ctx();
+  const jobId = text(form, "job");
+  const ids = text(form, "components").split(",").filter(Boolean);
+  if (ids.length === 0) return { message: "Nothing to mark." };
+  const { error } = await db
+    .from("checklist_item_result")
+    .update(verdictValues("ok", office.user.id))
+    .eq("job_id", jobId)
+    .eq("status", "pending")
+    .in("job_component_id", ids)
+    .is("deleted_at", null);
+  if (error) return { error: error.message };
+  return done(jobId);
+}
+
 /** Where on a Leaking or Attention item ("Seam at the skimmer throat"). */
 export async function saveWhere(_: FormState, form: FormData): Promise<FormState> {
   const { db } = await ctx();

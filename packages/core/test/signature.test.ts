@@ -3,6 +3,7 @@ import {
   MIN_INK,
   enabledSignaturePurposes,
   inkLength,
+  signatureStatement,
   signatureStoragePath,
   signatureSvg,
   strokePath,
@@ -69,5 +70,16 @@ describe("signatures", () => {
     expect(svg).toContain('<path d="M10 10L110 60"/>');
     expect(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg"')).toBe(true);
     expect(() => signatureSvg([])).toThrow();
+  });
+});
+
+describe("what the customer signs", () => {
+  it("says what they confirm, with the shop and the pool", () => {
+    expect(signatureStatement("inspection_ack", "Demo Leak Co.", "9 Sample Way, Scottsdale")).toBe(
+      "I confirm Demo Leak Co. inspected the pool at 9 Sample Way, Scottsdale today and explained what they found.",
+    );
+    expect(signatureStatement("completion", "Demo Leak Co.", null)).toBe(
+      "I confirm Demo Leak Co. finished the work today.",
+    );
   });
 });
