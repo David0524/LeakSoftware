@@ -165,16 +165,79 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
   } else {
     pool = { has_spa: form.get("has_spa") === "on", pool_type: text(form, "pool_type") || null };
   }
+  const newCustomer = customerId
+    ? null
+    : {
+        name: input.customerName,
+        phone: input.customerPhone || null,
+        email: input.customerEmail || null,
+        cc_emails: splitEmails(text(form, "cc_emails")),
+      };
+  const newProperty = propertyId
+    ? null
+    : {
+        address_line1: input.addressLine1,
+        city: input.city || null,
+        state: input.state.toUpperCase() || null,
+        postal_code: input.postalCode || null,
+        pool_type: pool.pool_type,
+        has_spa: pool.has_spa,
+        access_notes: text(form, "access_notes") || null,
+      };
+
+  // Leak detection, or maintenance: a single visit, or (owners) a plan that repeats.
+  const kind = text(form, "job_type") === "maintenance" ? "maintenance" : "detection";
+  const repeat = kind === "maintenance" ? Number(text(form, "repeat") || "0") : 0;
+  if (repeat > 0) {
+    if (!office.isOwner) return { error: "Only owners can start maintenance plans." };
+    const planFields: Record<string, string> = {};
+    const first = text(form, "date");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(first)) planFields.date = "Pick the first visit's date.";
+    const time = text(form, "time");
+    if (time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) planFields.time = "Pick a time.";
+    const minutes = Number(text(form, "minutes"));
+    if (!(Number.isInteger(minutes) && minutes >= 10 && minutes <= 240))
+      planFields.minutes = "Enter 10 to 240 minutes.";
+    const ends = text(form, "ends_on");
+    if (ends && ends < first) planFields.ends_on = "End on or after the first visit.";
+    if (![1, 2, 4].includes(repeat)) planFields.repeat = "Pick how often.";
+    if (Object.keys(planFields).length) return { fields: planFields };
+    const { data: started, error: planError } = await supabase.rpc("create_service_plan", {
+      target_company: office.company.id,
+      new_customer: newCustomer,
+      existing_customer: customerId ?? null,
+      new_property: newProperty,
+      existing_property: propertyId ?? null,
+      plan: {
+        assigned_user_id: tech,
+        starts_on: first,
+        interval_weeks: repeat,
+        visit_time: time || null,
+        duration_minutes: minutes,
+        price_cents: fee,
+        ends_on: ends || null,
+        notes: text(form, "notes") || null,
+      },
+    });
+    if (planError) return { error: planError.message };
+    const made = started as { customer: string; property: string };
+    await locateProperty(office, made.property);
+    revalidatePath("/jobs");
+    revalidatePath("/schedule");
+    revalidatePath("/today");
+    redirect(`/customers/${made.customer}`);
+  }
+
   const { data: types } = await supabase
     .from("component_type")
     .select("*")
     .eq("company_id", office.company.id)
     .is("deleted_at", null);
-  const components = planComponents((types ?? []) as ComponentType[], {
-    has_pool: true,
-    has_spa: pool.has_spa,
-    pool_type: pool.pool_type,
-  });
+  const components = planComponents(
+    (types ?? []) as ComponentType[],
+    { has_pool: true, has_spa: pool.has_spa, pool_type: pool.pool_type },
+    kind,
+  );
 
   const questions =
     ((await getCompany(office)).settings as Partial<CompanySettings>).intake_questions ?? [];
@@ -193,28 +256,12 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
     : null;
   const { data, error } = await supabase.rpc("create_job", {
     target_company: office.company.id,
-    new_customer: customerId
-      ? null
-      : {
-          name: input.customerName,
-          phone: input.customerPhone || null,
-          email: input.customerEmail || null,
-          cc_emails: splitEmails(text(form, "cc_emails")),
-        },
+    new_customer: newCustomer,
     existing_customer: customerId ?? null,
-    new_property: propertyId
-      ? null
-      : {
-          address_line1: input.addressLine1,
-          city: input.city || null,
-          state: input.state.toUpperCase() || null,
-          postal_code: input.postalCode || null,
-          pool_type: pool.pool_type,
-          has_spa: pool.has_spa,
-          access_notes: text(form, "access_notes") || null,
-        },
+    new_property: newProperty,
     existing_property: propertyId ?? null,
     job: {
+      type: kind,
       status: scheduled ? "scheduled" : "unscheduled",
       scheduled_start: start,
       scheduled_end: start

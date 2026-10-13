@@ -6,6 +6,7 @@ import {
   formatAddress,
   formatDay,
   formatTime,
+  addMonths,
   isDateString,
   localDate,
   lockReason,
@@ -22,6 +23,7 @@ import {
   type BoardStop,
   type TrayJob,
 } from "@/components/route-board";
+import { DateJump } from "@/components/date-jump";
 import { Notice, PageHeader, StatusBadge, buttonClass, cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { mapsAppForRequest } from "@/lib/maps";
@@ -116,7 +118,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   const office = await getOffice();
   const params = await searchParams;
   const [ctx, app] = await Promise.all([routeContext(office), mapsAppForRequest()]);
-  const view: ScheduleView = params.view === "week" ? "week" : "day";
+  const view: ScheduleView =
+    params.view === "week" ? "week" : params.view === "month" ? "month" : "day";
   const today = ctx.today;
   const date = isDateString(params.date) ? params.date : today;
   const days = scheduleDays(view, date);
@@ -130,26 +133,51 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   // in Needs a Time.
   // A tech limited to their own jobs sees only their own route (and can move jobs only
   // within it).
-  const techs = team.filter(
-    (t) =>
-      (ctx.seesAll || t.user_id === office.user.id) &&
-      (t.status === "active" || days.some((d) => routes.has(routeKey(t.user_id, d)))),
-  );
+  const techs = team
+    .filter(
+      (t) =>
+        (ctx.seesAll || t.user_id === office.user.id) &&
+        (t.status === "active" || days.some((d) => routes.has(routeKey(t.user_id, d)))),
+    )
+    // The signed-in person first ("Me"), then everyone else.
+    .sort((a, b) => Number(b.user_id === office.user.id) - Number(a.user_id === office.user.id));
+  // One tech at a time, picked from chips like Today's (owner: the page shouldn't be long);
+  // Everyone shows them all.
+  const wanted = typeof params.tech === "string" ? params.tech : "";
+  const tech =
+    wanted === "all" && techs.length > 1
+      ? "all"
+      : techs.some((t) => t.user_id === wanted)
+        ? wanted
+        : // The first person with work in view (you first), else the first chip.
+          (techs.find((t) => days.some((d) => routes.has(routeKey(t.user_id, d))))?.user_id ??
+          techs[0]?.user_id ??
+          "all");
+  const shown = tech === "all" ? techs : techs.filter((t) => t.user_id === tech);
   const movers = ctx.seesAll
     ? team.filter((t) => t.status === "active")
     : team.filter((t) => t.user_id === office.user.id);
   const columns: BoardColumn[] = [];
-  for (const t of techs)
+  for (const t of shown)
     for (const d of days)
       columns.push(column(ctx, t.user_id, t.name, d, routes.get(routeKey(t.user_id, d)), app));
   const unlocated = columns.some((c) => c.stops.some((s) => !s.location));
 
-  const step = view === "day" ? 1 : 7;
-  const href = (d: string, v: ScheduleView = view) => `/schedule?view=${v}&date=${d}`;
+  const move = (n: number) =>
+    view === "month" ? addMonths(date, n) : addDays(date, view === "week" ? 7 * n : n);
+  const href = (d: string, v: ScheduleView = view, t: string = tech) =>
+    `/schedule?view=${v}&date=${d}&tech=${t}`;
   const title =
     view === "day"
       ? formatDay(date, "long")
-      : `${formatDay(days[0]!)} – ${formatDay(days[days.length - 1]!)}`;
+      : view === "month"
+        ? new Intl.DateTimeFormat("en-US", {
+            month: "long",
+            year: "numeric",
+            timeZone: "UTC",
+          }).format(new Date(`${date}T12:00:00Z`))
+        : `${formatDay(days[0]!)} – ${formatDay(days[days.length - 1]!)}`;
+  const week = scheduleDays("week", date);
   const jobsShown =
     columns.reduce((n, c) => n + c.stops.length, 0) +
     days.reduce((n, d) => n + (unassigned.get(d)?.length ?? 0), 0);
@@ -157,45 +185,101 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   return (
     <>
       <PageHeader title="Schedule" subtitle={title} />
-      <div className="mb-5 flex flex-wrap items-center gap-3">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <nav
           aria-label="View"
           className="inline-flex rounded-md border border-control-border bg-surface p-1"
         >
-          {(["day", "week"] as const).map((v) => (
+          {(["day", "week", "month"] as const).map((v) => (
             <Link
               key={v}
               href={href(date, v)}
               aria-current={v === view ? "page" : undefined}
               className={cx(
-                "min-h-11 min-w-20 content-center rounded px-3 text-center font-medium",
+                "min-h-11 min-w-16 content-center rounded px-3 text-center font-medium",
                 v === view && "bg-text text-bg",
               )}
             >
-              {v === "day" ? "Day" : "Week"}
+              {v === "day" ? "Day" : v === "week" ? "Week" : "Month"}
             </Link>
           ))}
         </nav>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <Link
-            href={href(addDays(date, -step))}
-            className={buttonClass("secondary")}
+            href={href(move(-1))}
+            className={buttonClass("secondary", "px-3")}
             aria-label={`Previous ${view}`}
           >
-            ← Previous
+            ‹
           </Link>
-          <Link href={href(today)} className={buttonClass("secondary")}>
-            Today
-          </Link>
+          <DateJump value={date} view={view} tech={tech} />
           <Link
-            href={href(addDays(date, step))}
-            className={buttonClass("secondary")}
+            href={href(move(1))}
+            className={buttonClass("secondary", "px-3")}
             aria-label={`Next ${view}`}
           >
-            Next →
+            ›
           </Link>
+          {date !== today ? (
+            <Link href={href(today)} className={buttonClass("quiet", "px-2")}>
+              Today
+            </Link>
+          ) : null}
         </div>
       </div>
+
+      {techs.length > 1 ? (
+        <nav
+          aria-label="Whose schedule"
+          className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1"
+        >
+          {[
+            ...techs.map((t) => ({
+              id: t.user_id,
+              name: t.user_id === office.user.id ? "Me" : t.name,
+            })),
+            { id: "all", name: "Everyone" },
+          ].map((t) => (
+            <Link
+              key={t.id}
+              href={href(date, view, t.id)}
+              aria-current={t.id === tech ? "page" : undefined}
+              className={cx(
+                "min-h-11 shrink-0 content-center rounded-full border border-control-border px-4 font-medium whitespace-nowrap",
+                t.id === tech && "bg-text text-bg",
+              )}
+            >
+              {t.name}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
+
+      {view === "day" ? (
+        <nav
+          aria-label="Days this week"
+          className="-mx-4 mb-4 flex gap-1 overflow-x-auto px-4 pb-1"
+        >
+          {week.map((d) => {
+            const at = new Date(`${d}T12:00:00Z`);
+            return (
+              <Link
+                key={d}
+                href={href(d)}
+                aria-current={d === date ? "date" : undefined}
+                aria-label={formatDay(d, "long")}
+                className={cx(
+                  "flex min-h-14 min-w-12 flex-1 flex-col items-center justify-center rounded-xl text-[13px] font-medium",
+                  d === date ? "bg-text text-bg" : d === today ? "text-link" : "hover:bg-surface",
+                )}
+              >
+                {new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "UTC" }).format(at)}
+                <span className="font-display text-xl font-bold">{at.getUTCDate()}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      ) : null}
 
       {!ctx.depot ? (
         <div className="mb-4">
@@ -219,7 +303,27 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
         </p>
       ) : null}
 
-      {view === "week" ? (
+      {view === "month" ? (
+        <MonthCalendar
+          days={days}
+          month={date.slice(0, 7)}
+          today={today}
+          counts={Object.fromEntries(
+            days.map((d) => {
+              const stops = columns.filter((c) => c.date === d).flatMap((c) => c.stops);
+              const extra = tech === "all" ? (unassigned.get(d)?.length ?? 0) : 0;
+              return [
+                d,
+                {
+                  jobs: stops.filter((x) => x.note !== "Maintenance").length + extra,
+                  cleanings: stops.filter((x) => x.note === "Maintenance").length,
+                },
+              ];
+            }),
+          )}
+          href={(d) => href(d, "day")}
+        />
+      ) : view === "week" ? (
         <>
           {/* Phones: the week as an agenda, day by day. Moving is done from the day view. */}
           <div className="space-y-5 sm:hidden">
@@ -301,9 +405,82 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       )}
       {jobsShown === 0 ? (
         <p className="mt-4 text-text-muted">
-          No jobs scheduled {view === "day" ? "this day" : "this week"}.
+          No jobs scheduled{" "}
+          {view === "day" ? "this day" : view === "week" ? "this week" : "this month"}.
         </p>
       ) : null}
     </>
+  );
+}
+
+/**
+ * The month at a glance for the chosen tech (or everyone): each day's jobs and cleanings;
+ * a day opens its route.
+ */
+function MonthCalendar({
+  days,
+  month,
+  today,
+  counts,
+  href,
+}: {
+  days: string[];
+  month: string;
+  today: string;
+  counts: Record<string, { jobs: number; cleanings: number }>;
+  href: (d: string) => string;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-surface p-2">
+      <div
+        className="grid grid-cols-7 text-center text-[13px] font-semibold text-text-muted"
+        aria-hidden="true"
+      >
+        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+          <span key={d} className="py-1">
+            {d}
+          </span>
+        ))}
+      </div>
+      <ol className="grid grid-cols-7 gap-1">
+        {days.map((d) => {
+          const c = counts[d] ?? { jobs: 0, cleanings: 0 };
+          const inMonth = d.startsWith(month);
+          const label = [
+            formatDay(d, "long"),
+            c.jobs ? `${c.jobs} ${c.jobs === 1 ? "job" : "jobs"}` : null,
+            c.cleanings ? `${c.cleanings} ${c.cleanings === 1 ? "cleaning" : "cleanings"}` : null,
+          ]
+            .filter(Boolean)
+            .join(", ");
+          return (
+            <li key={d}>
+              <Link
+                href={href(d)}
+                aria-label={label}
+                aria-current={d === today ? "date" : undefined}
+                className={cx(
+                  "flex min-h-16 flex-col items-center rounded-lg p-1 hover:bg-bg",
+                  !inMonth && "opacity-40",
+                  d === today && "ring-2 ring-link",
+                )}
+              >
+                <span className="font-display text-lg font-bold">{Number(d.slice(8))}</span>
+                {c.jobs ? (
+                  <span className="text-[13px] leading-tight font-semibold">
+                    {c.jobs} {c.jobs === 1 ? "job" : "jobs"}
+                  </span>
+                ) : null}
+                {c.cleanings ? (
+                  <span className="text-[13px] leading-tight text-text-muted">
+                    {c.cleanings} clean
+                  </span>
+                ) : null}
+              </Link>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }

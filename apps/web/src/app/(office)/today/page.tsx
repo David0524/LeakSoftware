@@ -15,7 +15,7 @@ import { Suspense } from "react";
 import { OnMyWay } from "@/components/on-my-way";
 import { WeatherBadge } from "@/components/weather-badge";
 import { AddressLink, OpenRouteInMaps } from "@/components/open-in-maps";
-import { Card, Empty, PageHeader, StatusBadge, buttonClass, cx } from "@/components/ui";
+import { Empty, PageHeader, StatusBadge, buttonClass, cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { mapsAppForRequest } from "@/lib/maps";
 import { loadRoutes, routeContext, routeKey } from "@/server/route-days";
@@ -117,7 +117,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
               const done = j.status !== "scheduled" && j.status !== "in_progress";
               return (
                 <li key={j.id}>
-                  <p className="flex items-center gap-2 py-1 pl-5 text-[15px] text-text-muted">
+                  <p className="flex items-center gap-2 py-0.5 pl-4 text-[15px] text-text-muted">
                     <span
                       aria-hidden="true"
                       className="h-4 border-l-2 border-dotted border-text-muted"
@@ -129,69 +129,85 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                       </span>
                     ) : null}
                   </p>
-                  <Card
+                  <section
                     aria-label={`Stop ${i + 1}: ${j.customer?.name ?? "Customer"}`}
-                    className={cx("p-4", isNext && "border-2 border-link", done && "opacity-70")}
+                    className={cx(
+                      "relative rounded-lg border border-border bg-surface p-3",
+                      isNext && "border-2 border-link",
+                      done && "opacity-70",
+                    )}
                     data-testid="today-stop"
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span
                         aria-hidden="true"
                         className={cx(
-                          "grid size-9 shrink-0 place-items-center rounded-full font-display font-bold",
+                          "grid size-8 shrink-0 place-items-center rounded-full font-display font-bold",
                           isNext ? "bg-link text-bg" : "bg-bg",
                         )}
                       >
                         {i + 1}
                       </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="flex flex-wrap items-center gap-x-2 font-display text-xl font-bold">
-                          {j.scheduled_start ? formatTime(j.scheduled_start, ctx.timeZone) : ""}
-                          <StatusBadge status={j.status} />
-                          {lock && lock !== "started" ? (
-                            <span className="text-[13px] font-semibold text-text-muted">
-                              {LOCK_LABELS[lock]}
-                            </span>
+                      <span className="font-display text-[17px] font-bold">
+                        {j.scheduled_start ? formatTime(j.scheduled_start, ctx.timeZone) : ""}
+                      </span>
+                      <StatusBadge status={j.status} />
+                      {lock && lock !== "started" ? (
+                        <span className="text-[13px] font-semibold text-text-muted">
+                          {LOCK_LABELS[lock]}
+                        </span>
+                      ) : null}
+                      {done ? null : (
+                        <span className="relative z-10 ml-auto flex flex-wrap justify-end gap-2">
+                          {j.customer?.phone ? (
+                            <a
+                              href={`tel:${j.customer.phone}`}
+                              aria-label={`Call ${j.customer.name ?? "the customer"}`}
+                              className={buttonClass("secondary", "w-11 px-0")}
+                            >
+                              <PhoneIcon />
+                            </a>
                           ) : null}
-                        </p>
-                        <p className="font-semibold">{j.customer?.name ?? "Customer"}</p>
-                        <p className="text-[15px]">
+                          {mine ? (
+                            <OnMyWay
+                              phone={j.customer?.phone ?? null}
+                              customer={j.customer?.name ?? null}
+                              tech={office.user.name ?? tech?.name ?? "your tech"}
+                              shop={ctx.shopName}
+                              driveMin={leg}
+                              windowMin={ctx.settings.windowMin}
+                              timeZone={ctx.timeZone}
+                              className="px-3"
+                            />
+                          ) : null}
+                        </span>
+                      )}
+                    </div>
+                    {/* The whole card opens the job; the address and buttons sit above the link. */}
+                    <Link
+                      href={`/jobs/${j.id}`}
+                      className="mt-1 block truncate font-semibold after:absolute after:inset-0 after:content-['']"
+                    >
+                      {j.customer?.name ?? "Customer"}
+                    </Link>
+                    {done ? null : (
+                      <>
+                        <p className="relative z-10 w-fit max-w-full text-[15px]">
                           <AddressLink address={address} location={propertyLocation(j.property)} />
                         </p>
                         {j.property?.access_notes ? (
-                          <p className="mt-1 border-l-4 border-status-warning pl-2 text-[15px]">
+                          <p className="mt-1 line-clamp-2 border-l-4 border-status-warning pl-2 text-[15px]">
                             {j.property.access_notes}
                           </p>
                         ) : null}
-                      </div>
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {!done && mine ? (
-                        <OnMyWay
-                          phone={j.customer?.phone ?? null}
-                          customer={j.customer?.name ?? null}
-                          tech={office.user.name ?? tech?.name ?? "your tech"}
-                          shop={ctx.shopName}
-                          driveMin={leg}
-                          windowMin={ctx.settings.windowMin}
-                          timeZone={ctx.timeZone}
-                        />
-                      ) : null}
-                      {j.customer?.phone ? (
-                        <a href={`tel:${j.customer.phone}`} className={buttonClass("quiet")}>
-                          Call
-                        </a>
-                      ) : null}
-                      <Link href={`/jobs/${j.id}`} className={buttonClass("quiet")}>
-                        {j.status === "scheduled" ? "Open Job" : "View Job"}
-                      </Link>
-                    </div>
-                  </Card>
+                      </>
+                    )}
+                  </section>
                 </li>
               );
             })}
             <li>
-              <p className="flex items-center gap-2 py-1 pl-5 text-[15px] text-text-muted">
+              <p className="flex items-center gap-2 py-0.5 pl-4 text-[15px] text-text-muted">
                 <span
                   aria-hidden="true"
                   className="h-4 border-l-2 border-dotted border-text-muted"
@@ -203,5 +219,22 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
         </>
       )}
     </>
+  );
+}
+
+function PhoneIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="size-6 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z" />
+    </svg>
   );
 }

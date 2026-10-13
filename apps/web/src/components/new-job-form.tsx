@@ -35,6 +35,8 @@ export function NewJobForm({
   fees,
   questions,
   lockedTech,
+  canPlan = false,
+  visitMinutes = 30,
 }: {
   customers: CustomerOption[];
   team: { id: string; name: string }[];
@@ -42,12 +44,21 @@ export function NewJobForm({
   questions: IntakeQuestion[];
   /** A tech who sees only their own jobs books jobs for themselves. */
   lockedTech?: string;
+  /** Owners can start a maintenance plan here (recurring visits). */
+  canPlan?: boolean;
+  /** Settings › Scheduling: a maintenance visit's length. */
+  visitMinutes?: number;
 }) {
   const [mode, setMode] = useState<"new" | "existing">("new");
   const [customerId, setCustomerId] = useState("");
   const [pool, setPool] = useState("new");
   const [when, setWhen] = useState<"unscheduled" | "scheduled">("scheduled");
   const [fee, setFee] = useState("");
+  // Leak detection, or maintenance: one visit, or a plan that repeats.
+  const [kind, setKind] = useState<"detection" | "maintenance">("detection");
+  const [repeat, setRepeat] = useState<"0" | "1" | "2" | "4">("0");
+  const maintenance = kind === "maintenance";
+  const plan = maintenance && canPlan && repeat !== "0";
   const customer = customers.find((c) => c.id === customerId);
   const newPool = mode === "new" || pool === "new";
   const visit = useRef<HTMLDivElement>(null);
@@ -64,7 +75,12 @@ export function NewJobForm({
   }
 
   return (
-    <SettingsForm action={createJobAction} submit="Create Job" primary className="max-w-3xl">
+    <SettingsForm
+      action={createJobAction}
+      submit={plan ? "Start Plan" : "Create Job"}
+      primary
+      className="max-w-3xl"
+    >
       <Section title="Customer">
         {customers.length ? (
           <Segmented
@@ -165,16 +181,59 @@ export function NewJobForm({
       <Section title="Visit">
         <div ref={visit} className="space-y-4">
           <Segmented
-            label="When"
-            name="when"
-            value={when}
-            onChange={setWhen}
+            label="Job"
+            name="job_type"
+            value={kind}
+            onChange={setKind}
             options={[
-              { value: "scheduled", label: "Scheduled" },
-              { value: "unscheduled", label: "Not Yet" },
+              { value: "detection", label: "Leak Detection" },
+              { value: "maintenance", label: "Maintenance" },
             ]}
           />
-          {when === "scheduled" && !newPool ? (
+          {maintenance && canPlan ? (
+            <Segmented
+              label="Repeats"
+              name="repeat"
+              value={repeat}
+              onChange={setRepeat}
+              options={[
+                { value: "0", label: "Just Once" },
+                { value: "1", label: "Weekly" },
+                { value: "2", label: "Every 2 Weeks" },
+                { value: "4", label: "Every 4 Weeks" },
+              ]}
+            />
+          ) : null}
+          {plan ? (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              <SField label="First visit" name="date" type="date" hint="Repeats on this weekday." />
+              <SField
+                label="Time (optional)"
+                name="time"
+                type="time"
+                hint="Blank: route planning picks it."
+              />
+              <SField
+                label="Visit length (minutes)"
+                name="minutes"
+                inputMode="numeric"
+                defaultValue={String(visitMinutes)}
+              />
+              <SField label="Last visit (optional)" name="ends_on" type="date" />
+            </div>
+          ) : (
+            <Segmented
+              label="When"
+              name="when"
+              value={when}
+              onChange={setWhen}
+              options={[
+                { value: "scheduled", label: "Scheduled" },
+                { value: "unscheduled", label: "Not Yet" },
+              ]}
+            />
+          )}
+          {!plan && when === "scheduled" && !newPool ? (
             <div>
               <Suggestions
                 target={{ property: pool }}
@@ -189,11 +248,17 @@ export function NewJobForm({
               </p>
             </div>
           ) : null}
-          {when === "scheduled" ? (
+          {!plan && when === "scheduled" ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
               <SField label="Date" name="date" type="date" />
               <SField label="Start" name="time" type="time" defaultValue="09:00" />
-              <SField label="Hours" name="hours" inputMode="decimal" defaultValue="2" />
+              <SField
+                key={kind}
+                label="Hours"
+                name="hours"
+                inputMode="decimal"
+                defaultValue={maintenance ? String(visitMinutes / 60) : "2"}
+              />
             </div>
           ) : null}
           <div className="grid gap-4 sm:grid-cols-2">
@@ -212,19 +277,21 @@ export function NewJobForm({
                     ]
               }
             />
-            <div>
-              <Select
-                label="Second tech (optional)"
-                name="second_tech"
-                defaultValue=""
-                options={[
-                  { value: "", label: "None" },
-                  ...team.map((t) => ({ value: t.id, label: t.name })),
-                ]}
-              />
-              <FieldError name="second_tech" />
-            </div>
-            {fees.length ? (
+            {maintenance ? null : (
+              <div>
+                <Select
+                  label="Second tech (optional)"
+                  name="second_tech"
+                  defaultValue=""
+                  options={[
+                    { value: "", label: "None" },
+                    ...team.map((t) => ({ value: t.id, label: t.name })),
+                  ]}
+                />
+                <FieldError name="second_tech" />
+              </div>
+            )}
+            {fees.length && !maintenance ? (
               <Select
                 label="Detection price"
                 name="fee_item"
@@ -243,18 +310,22 @@ export function NewJobForm({
               />
             ) : null}
             <SField
-              label="Detection fee ($)"
+              label={plan ? "Price per visit ($)" : maintenance ? "Price ($)" : "Detection fee ($)"}
               name="fee"
               inputMode="decimal"
               value={fee}
               onChange={(e) => setFee(e.target.value)}
-              hint="Shown on the report and billed on the invoice."
+              hint={
+                maintenance
+                  ? "Billed monthly with the customer's other visits."
+                  : "Shown on the report and billed on the invoice."
+              }
             />
           </div>
         </div>
       </Section>
 
-      {questions.length ? (
+      {questions.length && !maintenance ? (
         <Section title="When They Called">
           {questions.map((q) =>
             q.type === "multi" ? (

@@ -141,7 +141,7 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   // Tall enough that the tray and every tech's route are on screen together (for dragging).
   await page.setViewportSize({ width: 1400, height: 2400 });
   await signIn(page, OWNER, "/jobs");
-  await page.goto(`/schedule?view=day&date=${day}`);
+  await page.goto(`/schedule?view=day&date=${day}&tech=all`);
   const route = page.getByRole("region", { name: "Priya Shah" });
   await expect(route.getByTestId("stop")).toHaveCount(3);
   expect(await routeNames(page, "Priya Shah")).toEqual([

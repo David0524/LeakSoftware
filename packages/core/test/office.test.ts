@@ -6,6 +6,8 @@ import {
   groupSchedule,
   isDateString,
   scheduleBounds,
+  addMonths,
+  monthGrid,
   scheduleDays,
   timeline,
   weekStart,
@@ -150,5 +152,21 @@ describe("timeline", () => {
     expect(timeline([e({ field: "status", new_value: "scheduled" })], () => undefined)).toEqual([
       { at, userId: "u1", text: "Job created (Scheduled)" },
     ]);
+  });
+});
+
+describe("month view", () => {
+  it("adds months, keeping the day where it can", () => {
+    expect(addMonths("2026-10-13", 1)).toBe("2026-11-13");
+    expect(addMonths("2026-01-31", 1)).toBe("2026-02-28");
+    expect(addMonths("2026-01-15", -1)).toBe("2025-12-15");
+  });
+
+  it("lays out whole weeks, Monday first", () => {
+    const grid = monthGrid("2026-10-13"); // October 2026 starts on a Thursday
+    expect(grid[0]).toBe("2026-09-28");
+    expect(grid.at(-1)).toBe("2026-11-01");
+    expect(grid.length % 7).toBe(0);
+    expect(scheduleDays("month", "2026-10-13")).toEqual(grid);
   });
 });

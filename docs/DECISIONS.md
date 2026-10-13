@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (owner: no way to add a maintenance job; schedule and Today feedback)
+- **New Job books maintenance too.** A Job switch (Leak Detection / Maintenance). Maintenance can be Just Once (one visit with the service checklist) or, for owners, a plan (Weekly, Every 2 Weeks, Every 4 Weeks) started for a new or existing customer in one step; the owner lands on the customer's page with the plan. Maintenance hides the second tech, the detection price, and the intake questions.
+- **The schedule shows one person at a time by default**, picked from a sideways row of chips like Today's (Me first, Everyone last). It opens on the first person with work in view. Month view added: a calendar with each day's job and cleaning counts, tapping a day opens it.
+- **Picking a date:** a date field between the arrows opens the phone's date picker, and day view has a strip of the week's days.
+- **Today's stop cards are shorter:** time, status, and Call / On My Way on one row; the whole card opens the job (no Open Job button); finished stops shrink to time and name.
+
 ## 2026-10-13 (owner: regular pool cleaning; my calls, adjust as needed)
 - **Maintenance plans live on the customer's pool** and make ordinary jobs of type Maintenance, so visits use everything routes already do (schedule, Plan Route, moving, Today, phones, who-sees-what). Plans are made and changed by owners.
 - **Visits are made four weeks ahead** (Settings › Scheduling, 1 to 12) when a plan is saved and topped up every morning. Changing, pausing, or ending a plan replaces its upcoming visits that haven't started; started and finished visits are kept. A visit moved by hand keeps its plan date, so it isn't made twice.

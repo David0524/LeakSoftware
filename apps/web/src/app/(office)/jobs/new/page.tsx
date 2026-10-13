@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { seesAllJobs, formatAddress, type CompanySettings } from "@leakbook/core";
+import {
+  formatAddress,
+  maintenanceSettings,
+  seesAllJobs,
+  type CompanySettings,
+} from "@leakbook/core";
 import { NewJobForm } from "@/components/new-job-form";
 import { PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
@@ -51,6 +56,8 @@ export default async function NewJobPage() {
         team={team
           .filter((m) => m.status === "active")
           .map((m) => ({ id: m.user_id, name: m.name }))}
+        canPlan={office.isOwner}
+        visitMinutes={maintenanceSettings(company.settings).visitMinutes}
         lockedTech={seesAllJobs(office.company.role, company.settings) ? undefined : office.user.id}
         fees={prices
           .filter((p) => p.active && !p.deleted_at && p.category === "Detection")

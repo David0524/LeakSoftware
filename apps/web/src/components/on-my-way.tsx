@@ -17,6 +17,7 @@ export function OnMyWay({
   driveMin,
   windowMin,
   timeZone,
+  className,
 }: {
   phone: string | null;
   customer: string | null;
@@ -25,6 +26,7 @@ export function OnMyWay({
   driveMin: number;
   windowMin: number;
   timeZone: string;
+  className?: string;
 }) {
   const [shown, setShown] = useState<string | null>(null);
   async function send() {
@@ -49,7 +51,7 @@ export function OnMyWay({
   }
   return (
     <>
-      <button type="button" className={buttonClass("secondary")} onClick={send}>
+      <button type="button" className={buttonClass("secondary", className)} onClick={send}>
         On My Way
       </button>
       {shown ? (

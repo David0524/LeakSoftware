@@ -58,7 +58,7 @@ test("a weekly cleaning plan puts visits on the route, and a visit is marked don
   await expect(plan).toContainText("Priya Shah");
 
   // 2. Tomorrow's visit is on Priya's route, 30 minutes, marked Maintenance.
-  await page.goto(`/schedule?view=day&date=${day}`);
+  await page.goto(`/schedule?view=day&date=${day}&tech=all`);
   const route = page.getByRole("region", { name: "Priya Shah" });
   const stop = route.getByTestId("stop").filter({ hasText: name });
   await expect(stop).toContainText("Maintenance");
@@ -81,7 +81,50 @@ test("a weekly cleaning plan puts visits on the route, and a visit is marked don
   const nextWeek = new Date(Date.parse(`${day}T12:00:00Z`) + 7 * 86_400_000)
     .toISOString()
     .slice(0, 10);
-  await page.goto(`/schedule?view=day&date=${nextWeek}`);
+  await page.goto(`/schedule?view=day&date=${nextWeek}&tech=all`);
   await expect(page.getByRole("region", { name: "Priya Shah" })).toBeVisible();
   await expect(page.getByTestId("stop").filter({ hasText: name })).toHaveCount(0);
+});
+
+// Owner request, 2026-10-13: "There is no way to add a maintenance job." New Job books a single
+// maintenance visit, or starts a plan for a new customer in one step.
+test("New Job books a maintenance visit, or starts a plan for a new customer", async ({ page }) => {
+  test.setTimeout(180_000);
+  const day = tomorrow();
+
+  // Just once: a maintenance job, no leak checklist.
+  await signIn(page, OWNER, "/jobs/new");
+  const once = `One Cleaning ${RUN}`;
+  await page.getByRole("radio", { name: "New Customer" }).click();
+  await page.getByLabel("Name").fill(once);
+  await page.getByLabel("Street address").fill("455 N Galvin Pkwy");
+  await page.getByLabel("City").fill("Phoenix");
+  await page.getByLabel("State").fill("AZ");
+  await page.getByRole("radio", { name: "Maintenance" }).click();
+  await expect(page.getByLabel("Second tech (optional)")).toHaveCount(0);
+  await page.getByLabel("Date").fill(day);
+  await page.getByLabel("Tech", { exact: true }).selectOption({ label: "Priya Shah" });
+  await page.getByRole("button", { name: "Create Job" }).click();
+  await expect(page.getByRole("heading", { name: /^Job #\d+$/ })).toBeVisible();
+  // The service checklist, not the leak one.
+  await expect(page.getByText(/^0 done · 0 need attention · 0 skipped · 7 to do$/)).toBeVisible();
+
+  // Weekly: the plan, on the new customer's page.
+  await page.goto("/jobs/new");
+  const weekly = `New Plan ${RUN}`;
+  await page.getByRole("radio", { name: "New Customer" }).click();
+  await page.getByLabel("Name").fill(weekly);
+  await page.getByLabel("Street address").fill("1201 N Galvin Pkwy");
+  await page.getByLabel("City").fill("Phoenix");
+  await page.getByLabel("State").fill("AZ");
+  await page.getByRole("radio", { name: "Maintenance" }).click();
+  await page.getByRole("radio", { name: "Weekly" }).click();
+  await page.getByLabel("First visit").fill(day);
+  await page.getByLabel("Tech", { exact: true }).selectOption({ label: "Priya Shah" });
+  await page.getByLabel("Price per visit ($)").fill("110");
+  await page.getByRole("button", { name: "Start Plan" }).click();
+  await expect(page.getByRole("heading", { name: weekly })).toBeVisible();
+  await expect(page.getByTestId("plan")).toContainText(
+    /^Every \w+day · any time · 30 min · \$110\.00 a visit/,
+  );
 });

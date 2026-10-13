@@ -8,7 +8,7 @@ import { zonedTimeToIso } from "./forms";
 // Schedule
 // ---------------------------------------------------------------------------
 
-export type ScheduleView = "day" | "week";
+export type ScheduleView = "day" | "week" | "month";
 
 const DAY_MS = 86_400_000;
 
@@ -35,9 +35,28 @@ export function weekStart(date: string): string {
   return addDays(date, -((dow + 6) % 7));
 }
 
+/** The same day of the month, `months` later (clamped: Jan 31 + 1 month = Feb 28). */
+export function addMonths(date: string, months: number): string {
+  const [y, m, d] = date.split("-").map(Number) as [number, number, number];
+  const first = new Date(Date.UTC(y, m - 1 + months, 1));
+  const last = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+  return format(Date.UTC(first.getUTCFullYear(), first.getUTCMonth(), Math.min(d, last)));
+}
+
+/** The month's calendar: whole weeks, Monday first, from the week of the 1st to the last. */
+export function monthGrid(date: string): string[] {
+  const first = `${date.slice(0, 8)}01`;
+  const last = addDays(addMonths(first, 1), -1);
+  const days: string[] = [];
+  for (let d = weekStart(first); d <= last || days.length % 7 !== 0; d = addDays(d, 1))
+    days.push(d);
+  return days;
+}
+
 /** The dates a schedule view covers. */
 export function scheduleDays(view: ScheduleView, date: string): string[] {
   if (view === "day") return [date];
+  if (view === "month") return monthGrid(date);
   const start = weekStart(date);
   return Array.from({ length: 7 }, (_, i) => addDays(start, i));
 }
