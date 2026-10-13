@@ -58,7 +58,8 @@ export async function sendReportAction(
   form: FormData,
 ): Promise<ReportFormState> {
   await getOffice();
-  const channel = (text(form, "channel") === "sms_device" ? "sms_device" : "email") as Channel;
+  const channel = text(form, "channel") as Channel;
+  if (channel !== "email" && channel !== "sms_device") return { error: "Choose how to send it." };
   // The send buttons share the form with the text, so what is on screen is what gets sent.
   const final = sectionsOf(form);
   if (final.length && final.every((s) => !s.text)) return { error: "The report has no text." };

@@ -41,6 +41,11 @@ export function ReportPanel({
   const [saveState, saveAction, saving] = useActionState(saveText, {});
   const [sendState, sendAction, sending] = useActionState(sendReportAction, {});
   const problems = draft?.ai_draft?.problems ?? [];
+  // A submit button's name/value is not passed to a formAction, so each one sets its channel.
+  const sendVia = (form: FormData, channel: "email" | "sms_device") => {
+    form.set("channel", channel);
+    sendAction(form);
+  };
   const latestSent = sent.find((r) => r.status === "sent");
 
   return (
@@ -168,9 +173,7 @@ export function ReportPanel({
                 </div>
                 <Button
                   type="submit"
-                  formAction={sendAction}
-                  name="channel"
-                  value="email"
+                  formAction={(f) => sendVia(f, "email")}
                   disabled={sending || !emailReady}
                   title={emailReady ? undefined : "Email isn’t set up yet"}
                 >
@@ -178,9 +181,7 @@ export function ReportPanel({
                 </Button>
                 <Button
                   type="submit"
-                  formAction={sendAction}
-                  name="channel"
-                  value="sms_device"
+                  formAction={(f) => sendVia(f, "sms_device")}
                   kind="secondary"
                   disabled={sending}
                 >
