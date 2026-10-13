@@ -116,9 +116,16 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
 
   // Every active tech gets a route, plus anyone with work these days. Jobs with no tech are
   // in Needs a Time.
+  // A tech limited to their own jobs sees only their own route (and can move jobs only
+  // within it).
   const techs = team.filter(
-    (t) => t.status === "active" || days.some((d) => routes.has(routeKey(t.user_id, d))),
+    (t) =>
+      (ctx.seesAll || t.user_id === office.user.id) &&
+      (t.status === "active" || days.some((d) => routes.has(routeKey(t.user_id, d)))),
   );
+  const movers = ctx.seesAll
+    ? team.filter((t) => t.status === "active")
+    : team.filter((t) => t.user_id === office.user.id);
   const columns: BoardColumn[] = [];
   for (const t of techs)
     for (const d of days)
@@ -265,9 +272,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
               mode="week"
               columns={columns}
               tray={trayJobs}
-              techs={team
-                .filter((t) => t.status === "active")
-                .map((t) => ({ id: t.user_id, name: t.name }))}
+              techs={movers.map((t) => ({ id: t.user_id, name: t.name }))}
               today={today}
               weekDays={days.map((d) => [d, formatDay(d)])}
             />
@@ -278,9 +283,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           mode="day"
           columns={columns}
           tray={trayJobs}
-          techs={team
-            .filter((t) => t.status === "active")
-            .map((t) => ({ id: t.user_id, name: t.name }))}
+          techs={movers.map((t) => ({ id: t.user_id, name: t.name }))}
           today={today}
         />
       )}

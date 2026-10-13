@@ -8,6 +8,7 @@ import {
   lockReason,
   optimizeRoute,
   routeUpdates,
+  seesAllJobs,
   routingSettings,
   stopFor,
   timeRoute,
@@ -33,6 +34,15 @@ const job = (over: Partial<PlanJob> & { id: string }): PlanJob => ({
   arrival_fixed: false,
   property: null,
   ...over,
+});
+
+describe("who sees which jobs", () => {
+  it("owners always; techs unless the owner turned it off", () => {
+    expect(seesAllJobs("owner", { techs_see_all_jobs: false })).toBe(true);
+    expect(seesAllJobs("tech", {})).toBe(true);
+    expect(seesAllJobs("tech", null)).toBe(true);
+    expect(seesAllJobs("tech", { techs_see_all_jobs: false })).toBe(false);
+  });
 });
 
 describe("routing settings", () => {

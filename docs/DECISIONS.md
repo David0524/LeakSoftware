@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (owner: techs seeing other techs' schedules and jobs)
+- **Owners choose what techs see** (Settings › Team › Techs see: Every Job / Only Their Own; default Every Job, as before). With Only Their Own, a tech sees only jobs where they are the tech or second tech, and everything under them (checklist, tests, findings, photos, reports, quotes, invoices, payments, signatures, messages, warranties), on the website and on their phone. Owners always see everything. **Customers and pools stay visible to the whole team**, so a tech can still look up a customer and book a job (always for themselves).
+- **Enforced in the database** (restrictive row policies, `20261012002300_job_visibility.sql`), not only hidden on screens. The schedule shows such a tech only their own route, and suggestions and moves stay on it.
+- **Phones follow changes:** when the setting changes or a job changes hands, the tech's phone downloads everything again and drops jobs that are no longer theirs (unsent changes stay until sent).
+- **Not covered yet:** a few server functions (sending a report, quote, or invoice) check only that the person belongs to the shop. A tech can't find hidden jobs' ids through the app, but a tech who saw a job before it was taken away could still call them with its id. Photos in storage are protected the same way. Tightening these is a follow-up if wanted.
+
 ## 2026-10-13 (owner: route optimization; my calls, adjust as needed)
 - **Routing is in scope now** (was "No" in BUILD_PLAN section 1), folded into scheduling as milestone M10.5. Ordering each tech's day and suggesting where a job fits; assigning jobs across techs automatically ("fleet routing") is not built.
 - **Mapbox** (owner's pick) behind one server module (`apps/web/src/server/routing.ts`): permanent geocoding and the Matrix API, one Tidemark key (`MAPBOX_TOKEN`, server only). Our own solver orders the stops (exact up to 8 stops, then improving swaps), so the 12-stop Optimization API limit doesn't apply. **Without a key everything still works**: drive times are estimated from distance (road factor 1.35, city and freeway speeds, 3 minutes to park). Each call is counted per shop per day (`ROUTING_DAILY_LIMIT`, default 300); drive times are kept for a day.

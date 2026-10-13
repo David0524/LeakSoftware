@@ -16,6 +16,7 @@ import {
   type NewJobInput,
   type PoolType,
   type Property,
+  seesAllJobs,
 } from "@leakbook/core";
 import { useRows } from "../../../data/hooks";
 import { useCompany, useSession } from "../../../state/session";
@@ -37,7 +38,8 @@ type When = "now" | "scheduled" | "later";
 
 export default function NewJob() {
   const company = useCompany();
-  const { services, user } = useSession();
+  const { services, user, membership } = useSession();
+  const seesAll = seesAllJobs(membership?.role, company.settings);
   const customers = useRows<Customer>("customer", company.id);
   const properties = useRows<Property>("property", company.id);
   const componentTypes = useRows<ComponentType>("component_type", company.id);
@@ -119,7 +121,7 @@ export default function NewJob() {
       poolType,
       hasSpa,
       accessNotes,
-      assignedUserId: assignToMe ? (user?.id ?? null) : null,
+      assignedUserId: assignToMe || !seesAll ? (user?.id ?? null) : null,
       timing:
         when === "now"
           ? { kind: "now", at: new Date() }
@@ -417,7 +419,10 @@ export default function NewJob() {
             </View>
           </>
         ) : null}
-        <Toggle label="Assign to me" value={assignToMe} onChange={setAssignToMe} />
+        {/* When techs see only their own jobs, a tech's new job is always theirs. */}
+        {seesAll ? (
+          <Toggle label="Assign to me" value={assignToMe} onChange={setAssignToMe} />
+        ) : null}
         {team.length > 0 ? (
           <Choice
             label="Second tech"

@@ -183,6 +183,10 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
     return { error: "This job has started, so it stays where it is." };
   const ctx = await routeContext(office);
   if (date && date < ctx.today) return { error: "Pick today or a later day." };
+  if (!ctx.seesAll && tech !== office.user.id && date)
+    return {
+      error: "You can schedule only your own jobs. Ask an owner to move it to someone else.",
+    };
   if (tech && tech === job.second_tech_id)
     return { error: "This tech is already the second tech on this job." };
   const from = job.scheduled_start
@@ -385,7 +389,10 @@ export async function suggestTimes(target: {
     loadRoutes(office, ctx, dates),
     getTeam(office),
   ]);
-  const techs = team.filter((t) => t.status === "active");
+  // A tech limited to their own jobs gets suggestions on their own route only.
+  const techs = team.filter(
+    (t) => t.status === "active" && (ctx.seesAll || t.user_id === office.user.id),
+  );
   const days: TechDay[] = [];
   for (const date of dates) {
     for (const t of techs) {

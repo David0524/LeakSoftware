@@ -109,13 +109,23 @@ export class SyncEngine {
   }
 
   private async pull(summary: SyncSummary): Promise<void> {
-    let cursor = this.store.getCursor();
+    // When what this user may see has changed, start from the beginning and keep only what
+    // comes back: newly visible jobs arrive whole, and jobs taken away leave the device.
+    const scope = this.transport.scope ? await this.transport.scope() : null;
+    const last = this.store.getScope();
+    const restart = scope !== null && last !== null && scope !== last;
+    const seen = restart ? new Set<string>() : null;
+    let cursor = restart ? {} : this.store.getCursor();
     for (;;) {
       const page = await this.transport.pull(cursor, this.pullPage);
       this.store.applyPage(page);
+      if (seen) for (const r of page.rows) seen.add(`${r.table}:${r.row.id}`);
       summary.pulled += page.rows.length;
       cursor = page.cursor;
-      if (page.done) return;
+      if (page.done) break;
     }
+    // Only after a complete pull: an interrupted one starts over next time.
+    if (seen) this.store.keepOnly(seen);
+    if (scope !== null) this.store.setScope(scope);
   }
 }

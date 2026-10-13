@@ -221,6 +221,26 @@ export async function revokeInvite(_: FormState, form: FormData): Promise<FormSt
   return done("/settings/team", "Invite revoked.");
 }
 
+/** Owners: techs see every job, or only their own (owner request, 2026-10-13). */
+export async function saveJobVisibility(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const choice = text(form, "techs_see");
+  if (choice !== "all" && choice !== "own") return { error: "Pick who techs see." };
+  const { data: company } = await supabase
+    .from("company")
+    .select("settings")
+    .eq("id", office.company.id)
+    .single();
+  const settings = {
+    ...((company?.settings ?? {}) as Record<string, unknown>),
+    techs_see_all_jobs: choice === "all",
+  };
+  const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
+  if (error) return failed(error);
+  revalidatePath("/", "layout");
+  return { message: "Saved." };
+}
+
 export async function updateMember(_: FormState, form: FormData): Promise<FormState> {
   const { office, supabase } = await owner();
   const role = text(form, "role") === "owner" ? "owner" : "tech";

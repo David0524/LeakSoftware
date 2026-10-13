@@ -56,4 +56,9 @@ export interface PullPage {
 export interface SyncTransport {
   push(mutations: Mutation[], deviceId: string): Promise<PushResponse>;
   pull(cursor: PullCursor, pageSize: number): Promise<PullPage>;
+  /**
+   * What this user may see (public.sync_scope). When it changes, for example a job was taken
+   * away from them, the engine pulls everything again and drops what is no longer theirs.
+   */
+  scope?(): Promise<string>;
 }

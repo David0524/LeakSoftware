@@ -18,6 +18,13 @@ class FakeServer implements SyncTransport {
   rejectTables = new Set<string>();
   readOnly = false;
   pages: PullPage[] = [];
+  cursors: PullCursor[] = [];
+  scopeValue = "c1:all";
+  failPullAt = -1;
+
+  async scope(): Promise<string> {
+    return this.scopeValue;
+  }
 
   async push(mutations: Mutation[]): Promise<PushResponse> {
     if (this.failNextPush) {
@@ -37,7 +44,9 @@ class FakeServer implements SyncTransport {
     };
   }
 
-  async pull(_cursor: PullCursor): Promise<PullPage> {
+  async pull(cursor: PullCursor): Promise<PullPage> {
+    this.cursors.push(cursor);
+    if (this.cursors.length - 1 === this.failPullAt) throw new Error("network down");
     return (
       this.pages.shift() ?? {
         rows: [],
@@ -146,5 +155,77 @@ describe("SyncEngine", () => {
     const store = LocalStore.open(memoryDb());
     const engine = new SyncEngine(store, new FakeServer());
     expect(engine.sync()).toBe(engine.sync());
+  });
+
+  describe("when what the tech may see changes", () => {
+    const row = (table: string, id: string, extra: Record<string, unknown> = {}) => ({
+      table,
+      xid: "5",
+      row: { id, company_id: C, ...extra },
+    });
+    const page = (rows: ReturnType<typeof row>[], done = true): PullPage => ({
+      rows,
+      done,
+      cursor: { from: "9" },
+      server_hlc: "1800000000000-0000-server",
+    });
+    const J1 = "00000000-0000-4000-8000-0000000000a1";
+    const J2 = "00000000-0000-4000-8000-0000000000a2";
+
+    it("pulls everything again and drops jobs that are no longer theirs", async () => {
+      const store = LocalStore.open(memoryDb());
+      const server = new FakeServer();
+      const engine = new SyncEngine(store, server);
+      server.pages = [page([row("job", J1), row("job", J2)])];
+      await engine.sync();
+      expect(store.getScope()).toBe("c1:all");
+      expect(store.get("job", J2)).toBeTruthy();
+
+      // Same scope: an ordinary incremental pull from the saved cursor.
+      await engine.sync();
+      expect(server.cursors.at(-1)).toEqual({ from: "9" });
+
+      // The owner limits techs; J2 isn't theirs. Everything comes again, J2 is gone.
+      server.scopeValue = "c1:own1";
+      server.pages = [page([row("job", J1)], false), page([])];
+      const s = await engine.sync();
+      expect(server.cursors.at(-2)).toEqual({});
+      expect(s.pulled).toBe(1);
+      expect(store.get("job", J1)).toBeTruthy();
+      expect(store.get("job", J2)).toBeUndefined();
+      expect(store.getScope()).toBe("c1:own1");
+    });
+
+    it("keeps rows with changes not yet sent", async () => {
+      const store = LocalStore.open(memoryDb());
+      const server = new FakeServer();
+      const engine = new SyncEngine(store, server);
+      server.pages = [page([row("job", J1), row("job", J2)])];
+      await engine.sync();
+      server.readOnly = true; // the change stays unsent
+      store.write("job", J2, C, { summary_notes: "found the leak" });
+      server.scopeValue = "c1:own2";
+      server.pages = [page([row("job", J1)])];
+      await engine.sync();
+      expect(store.get("job", J2)).toBeTruthy();
+    });
+
+    it("starts over again when the full pull is interrupted", async () => {
+      const store = LocalStore.open(memoryDb());
+      const server = new FakeServer();
+      const engine = new SyncEngine(store, server);
+      server.pages = [page([row("job", J1), row("job", J2)])];
+      await engine.sync();
+      server.scopeValue = "c1:own3";
+      server.failPullAt = server.cursors.length; // the next pull fails
+      const failed = await engine.sync();
+      expect(failed.error).toBe("network down");
+      expect(store.getScope()).toBe("c1:all");
+      expect(store.get("job", J2)).toBeTruthy();
+      server.pages = [page([row("job", J1)])];
+      await engine.sync();
+      expect(server.cursors.at(-1)).toEqual({});
+      expect(store.get("job", J2)).toBeUndefined();
+    });
   });
 });

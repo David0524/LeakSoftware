@@ -32,9 +32,9 @@ export default async function MorePage() {
           </li>
         ))}
       </ul>
-      <section className="mt-6 rounded-lg border border-border bg-surface p-4">
+      <div className="mt-6 rounded-lg border border-border bg-surface px-4 py-1.5">
         <MapsChoice initial={maps} />
-      </section>
+      </div>
     </>
   );
 }

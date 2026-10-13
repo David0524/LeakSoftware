@@ -34,11 +34,14 @@ export function NewJobForm({
   team,
   fees,
   questions,
+  lockedTech,
 }: {
   customers: CustomerOption[];
   team: { id: string; name: string }[];
   fees: { id: string; name: string; cents: number }[];
   questions: IntakeQuestion[];
+  /** A tech who sees only their own jobs books jobs for themselves. */
+  lockedTech?: string;
 }) {
   const [mode, setMode] = useState<"new" | "existing">("new");
   const [customerId, setCustomerId] = useState("");
@@ -197,11 +200,17 @@ export function NewJobForm({
             <Select
               label="Tech"
               name="tech"
-              defaultValue=""
-              options={[
-                { value: "", label: "Nobody yet" },
-                ...team.map((t) => ({ value: t.id, label: t.name })),
-              ]}
+              defaultValue={lockedTech ?? ""}
+              options={
+                lockedTech
+                  ? team
+                      .filter((t) => t.id === lockedTech)
+                      .map((t) => ({ value: t.id, label: t.name }))
+                  : [
+                      { value: "", label: "Nobody yet" },
+                      ...team.map((t) => ({ value: t.id, label: t.name })),
+                    ]
+              }
             />
             <div>
               <Select

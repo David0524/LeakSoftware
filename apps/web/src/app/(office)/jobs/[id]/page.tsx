@@ -20,6 +20,7 @@ import {
   type CompanySettings,
   type PriceBookItem,
   type Media,
+  seesAllJobs,
 } from "@leakbook/core";
 import { GalleryImage } from "@/components/gallery-image";
 import { JobSections } from "@/components/job-sections";
@@ -646,12 +647,14 @@ async function Schedule({ detail, tz }: { detail: JobDetail; tz: string }) {
             3_600_000,
         )
       : "2";
+  const seesAll = seesAllJobs(office.company.role, (await getCompany(office)).settings);
   return (
     <ScheduleForm
       jobId={job.id}
       techs={team
-        .filter((m) => m.status === "active")
+        .filter((m) => m.status === "active" && (seesAll || m.user_id === office.user.id))
         .map((m) => ({ value: m.user_id, label: m.name }))}
+      allowNobody={seesAll}
       defaults={{
         tech: job.assigned_user_id ?? "",
         date: start.date,

@@ -315,6 +315,45 @@ export class LocalStore {
     ]);
   }
 
+  /** The server's sync scope as of the last complete pull (null before the first). */
+  getScope(): string | null {
+    return (
+      this.db.get<{ value: string }>("select value from sync_meta where key = 'pull_scope'")
+        ?.value ?? null
+    );
+  }
+
+  setScope(scope: string): void {
+    this.db.run("insert or replace into sync_meta (key, value) values ('pull_scope', ?)", [scope]);
+  }
+
+  /**
+   * After a full pull: drop every synced row the server didn't send ("table:id" in `seen`),
+   * except rows with local changes not yet accepted, which stay until they are sent or
+   * discarded.
+   */
+  keepOnly(seen: Set<string>): number {
+    return this.db.transaction(() => {
+      const local = new Set(
+        this.db
+          .all<{ k: string }>("select distinct table_name || ':' || row_id as k from sync_outbox")
+          .map((r) => r.k),
+      );
+      const gone = this.db
+        .all<{ table_name: string; id: string }>("select table_name, id from sync_records")
+        .filter((r) => {
+          const k = `${r.table_name}:${r.id}`;
+          return !seen.has(k) && !local.has(k);
+        });
+      for (const r of gone)
+        this.db.run("delete from sync_records where table_name = ? and id = ?", [
+          r.table_name,
+          r.id,
+        ]);
+      return gone.length;
+    });
+  }
+
   /**
    * Apply one page of server rows and its cursor atomically. Pending local edits are laid
    * back over each row so unpushed work never disappears from the screen.
@@ -369,7 +408,7 @@ export class LocalStore {
       this.db.run("delete from sync_records");
       this.db.run("delete from sync_outbox");
       this.db.run("delete from upload_queue");
-      this.db.run("delete from sync_meta where key = 'pull_cursor'");
+      this.db.run("delete from sync_meta where key in ('pull_cursor', 'pull_scope')");
     });
   }
 

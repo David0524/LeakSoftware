@@ -22,6 +22,14 @@ export interface CompanySettings {
   sync_window_days: number;
   /** Questions asked when booking (M8.5). */
   intake_questions?: IntakeQuestion[];
+  /** Techs see every job (default), or only their own (owner setting, 2026-10-13). */
+  techs_see_all_jobs?: boolean;
+}
+
+/** Whether this member sees every job: owners always; techs unless the owner limits them. */
+export function seesAllJobs(role: string | null | undefined, settings: unknown): boolean {
+  if (role === "owner") return true;
+  return (settings as Partial<CompanySettings> | null)?.techs_see_all_jobs !== false;
 }
 
 export interface IntakeQuestion {

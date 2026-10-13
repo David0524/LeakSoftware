@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { inviteMember, revokeInvite, updateMember } from "@/app/actions/settings";
+import { seesAllJobs } from "@leakbook/core";
+import { JobVisibilityForm } from "@/components/job-visibility";
 import { CopyLink, SField, SettingsForm } from "@/components/settings-forms";
 import { Card, Empty, PageHeader, Select } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getTeam } from "@/lib/data";
+import { getCompany, getTeam } from "@/lib/data";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -20,7 +22,7 @@ interface Invite {
 export default async function TeamSettingsPage() {
   const office = await getOffice();
   const supabase = await createClient();
-  const [team, { data: invites }, origin] = await Promise.all([
+  const [team, { data: invites }, origin, company] = await Promise.all([
     getTeam(office),
     supabase
       .from("invite")
@@ -31,6 +33,7 @@ export default async function TeamSettingsPage() {
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false }),
     siteOrigin(),
+    getCompany(office),
   ]);
   const open = (invites ?? []) as Invite[];
 
@@ -41,6 +44,11 @@ export default async function TeamSettingsPage() {
         subtitle="Techs run jobs on the phone. Owners also manage settings, pricing, and payments."
       />
       <div className="space-y-6">
+        <Card>
+          <h2 className="mb-4 font-display text-xl font-bold">What techs see</h2>
+          <JobVisibilityForm seesAll={seesAllJobs("tech", company.settings)} />
+        </Card>
+
         <Card>
           <h2 className="mb-4 font-display text-xl font-bold">Invite someone</h2>
           <SettingsForm action={inviteMember} submit="Create Invite" primary>

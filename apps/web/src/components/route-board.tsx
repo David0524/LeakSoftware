@@ -810,7 +810,10 @@ function MoveSheet({
   onMove: (to: string, index: number) => void;
 }) {
   const [fromTech, fromDate] = from === TRAY ? ["", today] : from.split("|");
-  const [tech, setTech] = useState(fromTech === "none" ? "" : (fromTech ?? ""));
+  // With only one person to pick (a tech who sees only their own jobs), it's them.
+  const [tech, setTech] = useState(
+    techs.length === 1 ? techs[0]!.id : fromTech === "none" ? "" : (fromTech ?? ""),
+  );
   const [date, setDate] = useState(fromDate && fromDate >= today ? fromDate : today);
   const key = `${tech || "none"}|${date}`;
   // Only days on this page are known here; other days put the job last.
@@ -843,7 +846,9 @@ function MoveSheet({
               className="mt-1 min-h-11 w-full rounded-md border border-control-border bg-surface px-3"
               autoFocus
             >
-              <option value="">Nobody yet (waits in Needs a Time)</option>
+              {techs.length > 1 ? (
+                <option value="">Nobody yet (waits in Needs a Time)</option>
+              ) : null}
               {techs.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   parseDollars,
+  seesAllJobs,
   planComponents,
   splitEmails,
   validateNewJob,
@@ -31,6 +32,13 @@ export async function scheduleJob(_: FormState, form: FormData): Promise<FormSta
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { fields: { date: "Choose a date." } };
   if (!/^\d{2}:\d{2}$/.test(time)) return { fields: { time: "Choose a start time." } };
   if (!(hours > 0 && hours <= 24)) return { fields: { hours: "Enter 0.5 to 24 hours." } };
+  if (
+    !seesAllJobs(office.company.role, (await getCompany(office)).settings) &&
+    text(form, "tech") !== office.user.id
+  )
+    return {
+      error: "You can schedule only your own jobs. Ask an owner to give it to someone else.",
+    };
   const start = zonedTimeToIso(date, time, office.company.timezone);
   const end = new Date(new Date(start).getTime() + hours * 3_600_000).toISOString();
   const supabase = await createClient();
@@ -131,6 +139,12 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
   const hours = Number(text(form, "hours") || "2");
   if (scheduled && !(hours > 0 && hours <= 24)) fields.hours = "Enter 0.5 to 24 hours.";
   const tech = text(form, "tech") || null;
+  // A tech who sees only their own jobs books them for themselves.
+  if (
+    !seesAllJobs(office.company.role, (await getCompany(office)).settings) &&
+    tech !== office.user.id
+  )
+    fields.tech = "Book the job for yourself.";
   const second = text(form, "second_tech") || null;
   if (second && second === tech) fields.second_tech = "Pick someone other than the main tech.";
   const feeText = text(form, "fee");

@@ -15,11 +15,14 @@ export function ScheduleForm({
   techs,
   defaults,
   canSuggest = true,
+  allowNobody = true,
 }: {
   jobId: string;
   techs: { value: string; label: string }[];
   defaults: { tech: string; date: string; time: string; hours: string; fixed?: boolean };
   canSuggest?: boolean;
+  /** False for a tech who sees only their own jobs: unassigning would hide it from them. */
+  allowNobody?: boolean;
 }) {
   const [state, action, pending] = useActionState(scheduleJob, {});
   const [picked, setPicked] = useState<RouteResult>({});
@@ -49,7 +52,7 @@ export function ScheduleForm({
           label="Tech"
           name="tech"
           defaultValue={defaults.tech}
-          options={[{ value: "", label: "Nobody yet" }, ...techs]}
+          options={allowNobody ? [{ value: "", label: "Nobody yet" }, ...techs] : techs}
         />
         <div className="grid gap-3 sm:grid-cols-3">
           <Field

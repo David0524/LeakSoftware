@@ -74,6 +74,11 @@ export class PgTransport implements SyncTransport {
     );
     return res.rows[0]!.r;
   }
+
+  async scope(): Promise<string> {
+    const res = await asUser(this.user, (c) => c.query<{ s: string }>("select sync_scope() as s"));
+    return res.rows[0]!.s;
+  }
 }
 
 export interface Device {

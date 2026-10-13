@@ -7,6 +7,7 @@ import {
   localMinutes,
   propertyLocation,
   routingSettings,
+  seesAllJobs,
   scheduleBounds,
   workDay,
   zonedTimeToIso,
@@ -38,6 +39,8 @@ export interface RouteContext {
   depotAddress: string;
   shopName: string;
   shopZip: string | null;
+  /** False for a tech when the owner limits techs to their own jobs. */
+  seesAll: boolean;
   /** Drive times come from the routing service (otherwise the estimate). */
   live: boolean;
   today: string;
@@ -54,6 +57,7 @@ export async function routeContext(office: Office): Promise<RouteContext> {
     depotAddress: formatAddress(company as unknown as Parameters<typeof formatAddress>[0]),
     shopName: company.name,
     shopZip: (company.postal_code as string | null) ?? null,
+    seesAll: seesAllJobs(office.company.role, company.settings),
     live: routingConfigured(),
     today: localDate(now, office.company.timezone),
     nowMin: localMinutes(now.toISOString(), office.company.timezone),

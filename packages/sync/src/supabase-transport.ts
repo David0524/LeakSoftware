@@ -8,7 +8,7 @@ export interface RpcClient {
   ): PromiseLike<{ data: unknown; error: { message: string } | null }>;
 }
 
-/** Sync over Supabase RPC: public.sync_push and public.sync_pull. */
+/** Sync over Supabase RPC: public.sync_push, public.sync_pull, and public.sync_scope. */
 export class SupabaseTransport implements SyncTransport {
   constructor(private readonly client: RpcClient) {}
 
@@ -22,5 +22,11 @@ export class SupabaseTransport implements SyncTransport {
     const { data, error } = await this.client.rpc("sync_pull", { cursor, page_size: pageSize });
     if (error) throw new Error(error.message);
     return data as PullPage;
+  }
+
+  async scope(): Promise<string> {
+    const { data, error } = await this.client.rpc("sync_scope", {});
+    if (error) throw new Error(error.message);
+    return String(data ?? "");
   }
 }
