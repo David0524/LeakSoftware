@@ -131,16 +131,25 @@ interface MovedJob extends PlanJob {
 }
 
 async function loadJob(db: Db, office: Office, id: string): Promise<MovedJob | null> {
+  // Two reads: foreign keys here are composite (with company_id), so PostgREST can't embed
+  // the pool from property_id alone.
   const { data } = await db
     .from("job")
     .select(
-      "id, status, assigned_user_id, second_tech_id, scheduled_start, scheduled_end, route_order, arrival_fixed, property:property_id (latitude, longitude)",
+      "id, status, property_id, assigned_user_id, second_tech_id, scheduled_start, scheduled_end, route_order, arrival_fixed",
     )
     .eq("id", id)
     .eq("company_id", office.company.id)
     .is("deleted_at", null)
     .maybeSingle();
-  return data as MovedJob | null;
+  if (!data) return null;
+  const job = data as Omit<MovedJob, "property"> & { property_id: string };
+  const { data: property } = await db
+    .from("property")
+    .select("latitude, longitude")
+    .eq("id", job.property_id)
+    .maybeSingle();
+  return { ...job, property: (property as MovedJob["property"]) ?? null };
 }
 
 export interface MoveInput {

@@ -97,17 +97,21 @@ export async function saveJobDetails(_: FormState, form: FormData): Promise<Form
 export async function setUpChecklist(_: FormState, form: FormData): Promise<FormState> {
   const { office, db } = await ctx();
   const jobId = text(form, "job");
-  const { data: job } = await db
-    .from("job")
-    .select("property:property_id (has_pool, has_spa, pool_type)")
-    .eq("id", jobId)
-    .single();
+  // Two reads: the job's foreign key to its pool is composite, so it can't be embedded.
+  const { data: job } = await db.from("job").select("property_id").eq("id", jobId).single();
+  const { data: property } = job
+    ? await db
+        .from("property")
+        .select("has_pool, has_spa, pool_type")
+        .eq("id", (job as { property_id: string }).property_id)
+        .maybeSingle()
+    : { data: null };
   const { data: types } = await db
     .from("component_type")
     .select("*")
     .eq("company_id", office.company.id)
     .is("deleted_at", null);
-  const pool = (job?.property ?? null) as unknown as {
+  const pool = property as {
     has_pool: boolean;
     has_spa: boolean;
     pool_type: string | null;

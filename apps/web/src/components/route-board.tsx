@@ -239,7 +239,7 @@ export function RouteBoard({
       />
 
       {mode === "day" ? (
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-[repeat(2,minmax(0,1fr))] xl:grid-cols-[repeat(3,minmax(0,1fr))]">
           {columns.map((c) => (
             <DayColumn
               key={c.key}
@@ -649,7 +649,7 @@ function Tray({
         </p>
       ) : (
         <SortableContext id={TRAY} items={jobs.map((j) => j.id)} strategy={rectSortingStrategy}>
-          <ul className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <ul className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-[repeat(2,minmax(0,1fr))] xl:grid-cols-[repeat(3,minmax(0,1fr))]">
             {jobs.map((j) => (
               <li key={j.id}>
                 <TrayCard job={j} onMove={onMove} onSuggestion={onSuggestion} />
