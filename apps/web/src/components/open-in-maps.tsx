@@ -52,16 +52,26 @@ export function AddressLink({
  * A whole day's stops in Google Maps, always (Apple Maps links take one stop at a time), so
  * the button says so.
  */
-export function OpenRouteInMaps({ href, className }: { href: string; className?: string }) {
+export function OpenRouteInMaps({
+  href,
+  className,
+  compact = false,
+}: {
+  href: string;
+  className?: string;
+  /** "Google Maps" only, to sit beside another button on a phone. */
+  compact?: boolean;
+}) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      aria-label={compact ? "Open route in Google Maps" : undefined}
       className={cx(buttonClass("secondary"), className)}
     >
       {PIN}
-      Open Route in Google Maps
+      {compact ? "Google Maps" : "Open Route in Google Maps"}
     </a>
   );
 }

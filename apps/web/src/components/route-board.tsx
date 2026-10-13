@@ -359,13 +359,19 @@ function DayColumn({
         </ol>
       </SortableContext>
       {c.techId && stops.length ? (
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 grid grid-cols-2 gap-2">
           {c.open ? (
-            <Button type="button" kind="secondary" disabled={busy} onClick={onPlan}>
+            <Button
+              type="button"
+              kind="secondary"
+              disabled={busy}
+              onClick={onPlan}
+              className="px-2"
+            >
               Plan Route
             </Button>
           ) : null}
-          {c.routeHref ? <OpenRouteInMaps href={c.routeHref} /> : null}
+          {c.routeHref ? <OpenRouteInMaps href={c.routeHref} compact className="px-2" /> : null}
         </div>
       ) : null}
     </section>
@@ -438,10 +444,9 @@ function StopCard({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
           {...attributes}
           {...listeners}
         />
-      ) : (
-        <span className="min-w-11" />
-      )}
-      <div className="min-w-0 flex-1">
+      ) : null}
+      {/* Stops that can't move (started) have no grip and no gap for one. */}
+      <div className={cx("min-w-0 flex-1", !s.draggable && "pl-1")}>
         <Link href={`/jobs/${s.id}`} className="block hover:underline">
           <span className="font-semibold">{s.time ?? "Saving…"}</span>
           <span className="text-text-muted">{s.number ? ` · #${s.number}` : ""}</span>
