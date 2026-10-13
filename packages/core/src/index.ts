@@ -8,3 +8,4 @@ export * from "./inspection";
 export * from "./media";
 export * from "./office";
 export * from "./settings";
+export * from "./report";

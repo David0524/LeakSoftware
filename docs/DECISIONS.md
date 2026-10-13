@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-12 (M6 accepted)
+- **Owner opened the website and accepted M6** without running the checklist, and asked to continue with M7.
+
 ## 2026-10-12 (M6 office web app)
 - **The website talks to Supabase only from the server** (Server Components and Server Actions, as the signed-in user so RLS applies). The browser never holds a Supabase client. Sessions are cookies refreshed by `proxy.ts`. Office edits go straight to the database (no outbox): the office is online by nature, and the database triggers stamp field clocks and the audit log, so phones pick the changes up through normal sync.
 - **Sign in:** email and password, or an emailed sign-in link (existing accounts only). **Start a trial** creates the account and the company in one form; if email confirmation is on (production), the company is created after the person confirms, on `/setup`.
