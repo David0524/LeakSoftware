@@ -31,7 +31,7 @@ import {
 } from "@/app/actions/media";
 import { MarkupOverlay } from "./markup";
 import { Segmented } from "./segmented";
-import { Button, Field, Select, buttonClass, cx } from "./ui";
+import { Button, Field, Select, cx } from "./ui";
 
 // Photos, videos, voice notes, markup, and signatures from a browser (M9.5): the phone app's
 // capture screens. Files go straight to storage; the server records them.
@@ -210,11 +210,12 @@ export function MediaCapture({
     });
   }
 
+  // No `capture`: phones then offer Take Photo or Video, Photo Library (the camera roll),
+  // or Choose File. With `capture` they went straight to the camera.
   const pick = (accept: string, multiple = false) => ({
     type: "file" as const,
     accept,
     multiple,
-    capture: "environment" as const,
     disabled: busy !== null,
     className: "sr-only",
   });
@@ -231,8 +232,9 @@ export function MediaCapture({
           className="max-w-md"
         />
       ) : null}
-      <div className="flex flex-wrap gap-3">
-        <label className={cx(buttonClass("secondary"), "cursor-pointer focus-within:outline-3")}>
+      <div className="grid grid-cols-3 gap-2">
+        <label className={cx(TILE, "cursor-pointer focus-within:outline-3")}>
+          <TileIcon d={CAMERA} />
           Add Photo
           <input
             {...pick("image/*", true)}
@@ -243,7 +245,8 @@ export function MediaCapture({
             }}
           />
         </label>
-        <label className={cx(buttonClass("secondary"), "cursor-pointer focus-within:outline-3")}>
+        <label className={cx(TILE, "cursor-pointer focus-within:outline-3")}>
+          <TileIcon d={VIDEO} />
           Add Video
           <input
             {...pick("video/*")}
@@ -284,6 +287,36 @@ export function MediaCapture({
         ) : null}
       </p>
     </div>
+  );
+}
+
+// Add Photo, Add Video, and Voice Note sit in one row of equal tiles (icon over label), so
+// they fit a phone's width without wrapping to three rows.
+const TILE = cx(
+  "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-md border-2 border-text bg-surface px-1 py-1.5",
+  "text-center font-display text-[15px] leading-tight font-bold tracking-wide hover:bg-bg",
+  "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus",
+);
+const CAMERA =
+  "M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z";
+const VIDEO =
+  "M3 7h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM16 11l6-3v8l-6-3";
+const MIC = "M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3";
+
+function TileIcon({ d }: { d: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="size-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={d} />
+    </svg>
   );
 }
 
@@ -343,18 +376,25 @@ function VoiceNote({
   if (!recording)
     return (
       <>
-        <Button type="button" kind="secondary" disabled={disabled} onClick={start}>
-          Record Voice Note
-        </Button>
+        <button
+          type="button"
+          className={cx(TILE, "disabled:cursor-not-allowed disabled:opacity-50")}
+          disabled={disabled}
+          onClick={start}
+          aria-label="Record Voice Note"
+        >
+          <TileIcon d={MIC} />
+          Voice Note
+        </button>
         {error ? (
-          <p role="alert" className="w-full text-[15px] text-status-fail">
+          <p role="alert" className="col-span-3 text-[15px] text-status-fail">
             {error}
           </p>
         ) : null}
       </>
     );
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="col-span-3 flex flex-wrap items-center gap-3">
       <span className="font-semibold" aria-live="polite">
         <span className="mr-2 inline-block size-3 rounded-full bg-status-fail" aria-hidden />
         Recording {formatDuration(elapsed)}

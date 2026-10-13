@@ -22,6 +22,7 @@ import {
   MediaError,
   askLocationOnce,
   captureWithCamera,
+  chooseFromLibrary,
   currentPosition,
   type CapturedFile,
 } from "../../lib/media";
@@ -63,9 +64,25 @@ export function MediaSection({
     }
   }
 
-  async function capture(kind: "photo" | "video") {
+  /** Photo and Video ask: take a new one, or choose one already on the phone. */
+  function choose(kind: "photo" | "video") {
+    const noun = kind === "photo" ? "Photo" : "Video";
+    Alert.alert(`Add ${noun}`, undefined, [
+      { text: `Take ${noun}`, onPress: () => void capture(kind, "camera") },
+      { text: "Choose from Library", onPress: () => void capture(kind, "library") },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  }
+
+  async function capture(kind: "photo" | "video", source: "camera" | "library") {
     setBusy(kind);
     try {
+      if (source === "library") {
+        // Taken earlier, maybe elsewhere: where the phone is now isn't where it was taken.
+        const file = await chooseFromLibrary(kind);
+        if (file) await save(file, Promise.resolve(null));
+        return;
+      }
       await askLocationOnce();
       const position = currentPosition();
       const file = await captureWithCamera(kind);
@@ -98,7 +115,7 @@ export function MediaSection({
           <Button
             title="Photo"
             kind="secondary"
-            onPress={() => void capture("photo")}
+            onPress={() => choose("photo")}
             loading={busy === "photo"}
             disabled={busy !== null}
             style={stack ? undefined : styles.button}
@@ -106,7 +123,7 @@ export function MediaSection({
           <Button
             title="Video"
             kind="secondary"
-            onPress={() => void capture("video")}
+            onPress={() => choose("video")}
             loading={busy === "video"}
             disabled={busy !== null}
             style={stack ? undefined : styles.button}

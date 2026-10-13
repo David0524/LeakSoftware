@@ -168,8 +168,41 @@ export async function captureWithCamera(kind: "photo" | "video"): Promise<Captur
     videoQuality: ImagePicker.UIImagePickerControllerQualityType.Medium,
   });
   if (result.canceled || !result.assets[0]) return null;
-  const asset = result.assets[0];
+  return prepareCapture(kind, result.assets[0], capturedAt);
+}
 
+/** "2026:10:13 09:15:22" (EXIF, the phone's local time) as an ISO time, or null. */
+function exifTime(exif: Record<string, unknown> | null | undefined): string | null {
+  const raw = exif?.DateTimeOriginal ?? exif?.DateTime;
+  const m = typeof raw === "string" && /^(\d{4}):(\d{2}):(\d{2}) (\d{2}:\d{2}:\d{2})/.exec(raw);
+  if (!m) return null;
+  const t = new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4]}`);
+  return Number.isNaN(t.getTime()) ? null : t.toISOString();
+}
+
+/**
+ * Pick a photo or video already on the phone (the camera roll). Its capture time comes from
+ * the photo itself when it has one. Videos over the limit are refused, as when recording.
+ */
+export async function chooseFromLibrary(kind: "photo" | "video"): Promise<CapturedFile | null> {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: kind === "photo" ? ["images"] : ["videos"],
+    quality: 1,
+    exif: kind === "photo",
+    videoQuality: ImagePicker.UIImagePickerControllerQualityType.Medium,
+  });
+  if (result.canceled || !result.assets[0]) return null;
+  const asset = result.assets[0];
+  if (kind === "video" && (asset.duration ?? 0) > (MEDIA_LIMITS.videoMaxSeconds + 1) * 1000)
+    throw new MediaError(`Videos can be up to ${MEDIA_LIMITS.videoMaxSeconds} seconds.`);
+  return prepareCapture(kind, asset, exifTime(asset.exif) ?? new Date().toISOString());
+}
+
+async function prepareCapture(
+  kind: "photo" | "video",
+  asset: ImagePicker.ImagePickerAsset,
+  capturedAt: string,
+): Promise<CapturedFile> {
   if (kind === "video") {
     return {
       kind,
