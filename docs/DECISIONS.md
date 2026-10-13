@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (website appearance)
+- **Owner asked for light mode with a toggle.** The website has an Auto / Light / Dark switch (office header, public footer). Auto follows the device. The choice is kept in the browser and applied before the page draws. Customer reports and PDFs stay light whatever the setting.
+
 ## 2026-10-13 (M7 reports)
 - **Server writes to reports go through database functions** (`prepare_report`, `save_report_draft`, `send_report`, `log_message`), called as the signed-in member so membership checks apply. Freezing the snapshot, superseding the previous version, creating the customer link, and moving the job to "report sent" happen in one transaction. Clients can only edit `final_sections` on a draft; sent reports never change.
 - **The snapshot is built in SQL** (`app.report_snapshot`), so the website, the phone API, and the tests all freeze the same facts. Signatures for quote acceptance are left out of reports.

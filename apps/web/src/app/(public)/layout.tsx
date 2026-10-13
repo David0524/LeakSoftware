@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function PublicLayout({ children }: LayoutProps<"/">) {
   return (
@@ -23,8 +24,9 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
         </div>
       </header>
       <div className="flex flex-1 flex-col">{children}</div>
-      <footer className="border-t border-border py-6 text-center text-[15px] text-text-muted">
-        LeakBook · Field app and office for pool leak detection shops
+      <footer className="flex flex-col items-center gap-3 border-t border-border py-6 text-center text-[15px] text-text-muted">
+        <p>LeakBook · Field app and office for pool leak detection shops</p>
+        <ThemeToggle />
       </footer>
     </>
   );

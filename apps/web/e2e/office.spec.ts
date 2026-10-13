@@ -136,3 +136,30 @@ test("the demo tech cannot reach settings", async ({ page }) => {
     await expect(page.getByText("Settings are for owners.")).toBeVisible();
   }
 });
+
+test("the appearance switch picks light or dark and remembers it", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/");
+  const html = page.locator("html");
+  const appearance = page.getByRole("radiogroup", { name: "Appearance" });
+  // Auto follows the device.
+  await expect(appearance.getByRole("radio", { name: "Auto" })).toBeChecked();
+  await expect(html).toHaveAttribute("data-theme", "dark");
+
+  await appearance.getByRole("radio", { name: "Light" }).click();
+  await expect(html).toHaveAttribute("data-theme", "light");
+  await page.reload();
+  await expect(html).toHaveAttribute("data-theme", "light");
+  await expect(page.getByRole("img", { name: "LeakBook" }).first()).toBeVisible();
+
+  // The office header has the switch too.
+  await signIn(page, OWNER);
+  const office = page.getByRole("radiogroup", { name: "Appearance" });
+  await expect(office.getByRole("radio", { name: "Light" })).toBeChecked();
+  await office.getByRole("radio", { name: "Dark" }).click();
+  await expect(html).toHaveAttribute("data-theme", "dark");
+  await office.getByRole("radio", { name: "Auto" }).click();
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(html).toHaveAttribute("data-theme", "light");
+  await signOut(page);
+});

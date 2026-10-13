@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { signOut, switchCompany } from "@/app/actions/auth";
 import { Logo } from "@/components/logo";
 import { NavLinks } from "@/components/nav-links";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { getOffice } from "@/lib/auth";
 
 /**
@@ -66,6 +67,7 @@ async function OfficeNav() {
         <span className="hidden text-neutral-300 md:inline">
           {office.user.name ?? office.user.email}
         </span>
+        <ThemeToggle onHeader />
         <form action={signOut}>
           <button
             type="submit"

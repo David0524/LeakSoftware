@@ -5,11 +5,25 @@ export function Logo({ height = 36, onDark = false }: { height?: number; onDark?
     // eslint-disable-next-line @next/next/no-img-element -- static SVG, no optimization needed
     return <img src="/leakbook-logo-reverse.svg" alt="LeakBook" width={width} height={height} />;
   }
+  // Follows the website's appearance setting, not only the device's.
   return (
-    <picture>
-      <source srcSet="/leakbook-logo-reverse.svg" media="(prefers-color-scheme: dark)" />
-      {}
-      <img src="/leakbook-logo.svg" alt="LeakBook" width={width} height={height} />
-    </picture>
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element -- static SVG */}
+      <img
+        src="/leakbook-logo.svg"
+        alt="LeakBook"
+        width={width}
+        height={height}
+        className="dark:hidden"
+      />
+      {/* eslint-disable-next-line @next/next/no-img-element -- static SVG */}
+      <img
+        src="/leakbook-logo-reverse.svg"
+        alt="LeakBook"
+        width={width}
+        height={height}
+        className="hidden dark:block"
+      />
+    </>
   );
 }

@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "@leakbook/tokens/tokens.css";
 
+/* dark: follows the appearance setting (data-theme, set before paint by lib/theme.ts). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 body {
   background: var(--lb-bg);
   color: var(--lb-text);
