@@ -56,7 +56,9 @@ function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardSto
         ? `With ${j.secondTechName}`
         : j.type === "repair"
           ? "Repair"
-          : null,
+          : j.type === "maintenance"
+            ? "Maintenance"
+            : null,
   };
 }
 

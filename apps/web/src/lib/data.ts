@@ -12,6 +12,7 @@ import type {
   JobStatus,
   Media,
   Property,
+  ServicePlan,
   SeverityLevel,
   TestResult,
   TestType,
@@ -347,7 +348,20 @@ export async function getCustomer(office: Office, id: string) {
           .order("scheduled_start", { ascending: false, nullsFirst: true }),
       ) as Job[])
     : [];
-  return { customer, properties, jobs: await attach(office, jobs) };
+  const plans = properties.length
+    ? (must(
+        await supabase
+          .from("service_plan")
+          .select("*")
+          .in(
+            "property_id",
+            properties.map((p) => p.id),
+          )
+          .is("deleted_at", null)
+          .order("starts_on"),
+      ) as ServicePlan[])
+    : [];
+  return { customer, properties, plans, jobs: await attach(office, jobs) };
 }
 
 // ---------------------------------------------------------------------------

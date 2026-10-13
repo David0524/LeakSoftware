@@ -79,11 +79,20 @@ const ACTION_LABELS: Partial<Record<JobStatus, string>> = {
   scheduled: "Move Back to Scheduled",
   unscheduled: "Reopen Job",
   canceled: "Cancel Job",
+  done: "Mark Done",
 };
 
-export function JobStatusActions({ jobId, status }: { jobId: string; status: JobStatus }) {
+export function JobStatusActions({
+  jobId,
+  status,
+  jobType,
+}: {
+  jobId: string;
+  status: JobStatus;
+  jobType?: string;
+}) {
   const { pending, error, run } = useRun();
-  const next = userTransitions(status);
+  const next = userTransitions(status, jobType);
   if (next.length === 0) return null;
   return (
     <div className="space-y-2">
@@ -246,11 +255,15 @@ function ChecklistGroup({
   const summary =
     toDo.length > 0
       ? `${toDo.length} of ${items.length} to do`
-      : leaking || attention
-        ? [leaking ? `${leaking} leaking` : null, attention ? `${attention} attention` : null]
-            .filter(Boolean)
-            .join(" · ")
-        : "All clear";
+      : section === "service"
+        ? attention
+          ? `${attention} need${attention === 1 ? "s" : ""} attention`
+          : "All done"
+        : leaking || attention
+          ? [leaking ? `${leaking} leaking` : null, attention ? `${attention} attention` : null]
+              .filter(Boolean)
+              .join(" · ")
+          : "All clear";
   const panel = `checklist-${section}`;
   return (
     <section
@@ -314,7 +327,9 @@ function ChecklistGroup({
                   ? "Saving…"
                   : toDo.every((r) => r.type.answer === "yes_no")
                     ? `Answer ${toDo.length} Remaining No`
-                    : `Mark ${toDo.length} Remaining Not Leaking`}
+                    : toDo.every((r) => r.type.answer === "done")
+                      ? `Mark ${toDo.length} Remaining Done`
+                      : `Mark ${toDo.length} Remaining Not Leaking`}
               </button>
               <ErrorText error={error} />
             </div>

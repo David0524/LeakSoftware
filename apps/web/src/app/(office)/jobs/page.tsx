@@ -18,6 +18,7 @@ const FILTERS: { key: string; label: string; statuses: JobStatus[] | null }[] = 
     statuses: ["report_sent", "quote_sent", "quote_accepted", "invoiced"],
   },
   { key: "paid", label: "Paid", statuses: ["paid"] },
+  { key: "done", label: "Done", statuses: ["done"] },
   { key: "canceled", label: "Canceled", statuses: ["canceled"] },
   { key: "all", label: "All", statuses: null },
 ];

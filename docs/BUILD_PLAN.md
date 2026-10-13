@@ -395,6 +395,13 @@ Added 2026-10-13 (owner: "assign routes to specific days and techs, suggestions 
 - Settings › Scheduling: working day and days, usual job length, arrival windows, shop location, find pool locations.
 - **Done when:** in Playwright, a tech's badly ordered day is planned (less driving, the promised time kept), a job moves from the tray onto a day with Move… and back by dragging, a suggested time schedules it, and the addresses on the job page and Today link to directions to the pool.
 
+### M10.6 Maintenance (regular pool cleaning)
+Added 2026-10-13 (owner: "This company does regular pool cleaning too... regular maintenance visits (default 20 or 30 minutes), recurring on a weekly basis with some settings there"). Checklist: `docs/testing/M10.6-checklist.md`.
+- Maintenance plans on a customer's pool (owners): tech, first visit (the weekday), every 1 to 4 weeks, optional set time (otherwise route planning picks it), visit length (30 minutes by default), price per visit, last visit, notes for the tech. Pause, resume, or end.
+- Visits are jobs of type Maintenance, made a few weeks ahead (Settings › Scheduling) when a plan is saved and every morning; they go on routes, Today, and phones like any job. A visit has the service checklist (skim, brush, vacuum, baskets, filter pressure, water, equipment) and ends with Mark Done.
+- **Done when:** in Playwright, an owner adds a weekly plan, its 30-minute visit is on the tech's route the next day, the visit is started, its checklist done, and it is marked Done, and pausing the plan takes the upcoming visits off the schedule.
+- Not yet: billing maintenance (monthly invoices), water-chemistry readings, a service summary emailed to the customer.
+
 ### M11 Launch hardening
 - Sentry, error boundaries, offline edge cases (full disk, revoked session, app update with pending outbox), accessibility pass, performance with 1,000 jobs and 10,000 photos on the device.
 - EAS production builds, TestFlight, App Store and Play listings (screenshots, demo account for review), privacy policy and terms (owner provides final legal text), support email, status page.

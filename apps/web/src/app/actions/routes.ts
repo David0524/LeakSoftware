@@ -581,6 +581,12 @@ export async function saveScheduling(_: FormState, form: FormData): Promise<Form
     .map(Number)
     .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6);
   if (days.length === 0) fields.work_days = "Pick at least one day.";
+  const visitMinutes = Number(text("visit_minutes"));
+  if (!(Number.isInteger(visitMinutes) && visitMinutes >= 10 && visitMinutes <= 240))
+    fields.visit_minutes = "Enter 10 to 240 minutes.";
+  const weeksAhead = Number(text("weeks_ahead"));
+  if (!(Number.isInteger(weeksAhead) && weeksAhead >= 1 && weeksAhead <= 12))
+    fields.weeks_ahead = "Enter 1 to 12 weeks.";
   if (Object.keys(fields).length) return { fields };
   const db = await createClient();
   const { data } = await db.from("company").select("settings").eq("id", office.company.id).single();
@@ -593,6 +599,7 @@ export async function saveScheduling(_: FormState, form: FormData): Promise<Form
       job_minutes: Math.round(hours * 60),
       work_days: [...new Set(days)].sort(),
     },
+    maintenance: { visit_minutes: visitMinutes, weeks_ahead: weeksAhead },
   };
   const { error } = await db.from("company").update({ settings }).eq("id", office.company.id);
   if (error) return { error: error.message };

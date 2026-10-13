@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (owner: regular pool cleaning; my calls, adjust as needed)
+- **Maintenance plans live on the customer's pool** and make ordinary jobs of type Maintenance, so visits use everything routes already do (schedule, Plan Route, moving, Today, phones, who-sees-what). Plans are made and changed by owners.
+- **Visits are made four weeks ahead** (Settings › Scheduling, 1 to 12) when a plan is saved and topped up every morning. Changing, pausing, or ending a plan replaces its upcoming visits that haven't started; started and finished visits are kept. A visit moved by hand keeps its plan date, so it isn't made twice.
+- **30 minutes by default** (Settings › Scheduling; each plan can differ). A visit without a set time goes after the tech's last job that day and Plan Route places it properly; a set time is kept like a promised time.
+- **Service checklist** (configurable rows like the leak checklist): skim, brush, vacuum, empty baskets, filter pressure, test and balance water, equipment for leaks or noise. Each is Done, Needs Attention, or Skipped. A visit ends with the new status Done (only maintenance visits offer it).
+- **Price per visit** is saved on the plan and the visit, but **billing isn't built yet**. Owner to decide: monthly invoice per customer (common for pool service) or per visit.
+- **Demo:** the demo shop's techs have cleaning plans too (`supabase/seed_demo_maintenance.sql`), so each route mixes leak jobs and 30-minute cleanings (four to six stops a day).
+
 ## 2026-10-13 (owner: techs seeing other techs' schedules and jobs)
 - **Owners choose what techs see** (Settings › Team › Techs see: Every Job / Only Their Own; default Every Job, as before). With Only Their Own, a tech sees only jobs where they are the tech or second tech, and everything under them (checklist, tests, findings, photos, reports, quotes, invoices, payments, signatures, messages, warranties), on the website and on their phone. Owners always see everything. **Customers and pools stay visible to the whole team**, so a tech can still look up a customer and book a job (always for themselves).
 - **Enforced in the database** (restrictive row policies, `20261012002300_job_visibility.sql`), not only hidden on screens. The schedule shows such a tech only their own route, and suggestions and moves stay on it.

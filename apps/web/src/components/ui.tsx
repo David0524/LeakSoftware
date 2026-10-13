@@ -214,6 +214,7 @@ const STATUS_STYLE: Record<JobStatus, string> = {
   invoiced: "bg-status-warning",
   paid: "bg-status-pass",
   canceled: "bg-status-excluded",
+  done: "bg-status-pass",
 };
 
 /** A small status label. Fill colors come from the status tokens; text uses on-status. */

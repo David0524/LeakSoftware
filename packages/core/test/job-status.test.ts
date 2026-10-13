@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -10,10 +10,13 @@ import {
   userTransitions,
 } from "../src";
 
-const migration = readFileSync(
-  join(import.meta.dirname, "../../../supabase/migrations/20261012000300_jobs.sql"),
-  "utf8",
-);
+const dir = join(import.meta.dirname, "../../../supabase/migrations");
+const migration = readFileSync(join(dir, "20261012000300_jobs.sql"), "utf8");
+// Later migrations add transitions too (maintenance's Done).
+const allMigrations = readdirSync(dir)
+  .filter((f) => f.endsWith(".sql"))
+  .sort()
+  .map((f) => readFileSync(join(dir, f), "utf8"));
 
 function sqlArray(fn: string): string[] {
   const m = migration.match(new RegExp(`${fn}\\(\\)[\\s\\S]*?array\\[([^\\]]*)\\]`));
@@ -23,8 +26,14 @@ function sqlArray(fn: string): string[] {
 
 describe("job status machine", () => {
   it("matches the database transition table", () => {
-    const block = migration.split("insert into app.job_status_transition")[1]!.split(";")[0]!;
-    const fromSql = [...block.matchAll(/\('([a-z_]+)', '([a-z_]+)'\)/g)]
+    const fromSql = allMigrations
+      .flatMap((sql) =>
+        sql
+          .split("insert into app.job_status_transition")
+          .slice(1)
+          .map((part) => part.split(";")[0]!),
+      )
+      .flatMap((block) => [...block.matchAll(/\('([a-z_]+)', '([a-z_]+)'\)/g)])
       .map((m) => `${m[1]}>${m[2]}`)
       .sort();
     const fromTs = Object.entries(JOB_STATUS_TRANSITIONS)
@@ -55,5 +64,15 @@ describe("job status machine", () => {
 
   it("does not offer server-only statuses to people", () => {
     expect(userTransitions("in_progress")).toEqual(["scheduled", "canceled"]);
+  });
+
+  it("offers Done only for maintenance visits", () => {
+    expect(userTransitions("in_progress", "detection")).not.toContain("done");
+    expect(userTransitions("in_progress", "maintenance")).toEqual([
+      "scheduled",
+      "canceled",
+      "done",
+    ]);
+    expect(userTransitions("done", "maintenance")).toEqual(["in_progress"]);
   });
 });

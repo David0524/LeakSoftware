@@ -91,6 +91,9 @@ begin
     values (c, j, 'email', 'c@example.com', 'report');
   insert into warranty (company_id, repair_job_id, quote_line_item_id, description, starts_on, ends_on)
     values (c, j, qli, 'Return fitting', current_date, current_date + 365);
+  -- Paused, so it makes no visits here (200_maintenance tests the visits).
+  insert into service_plan (company_id, customer_id, property_id, assigned_user_id, starts_on, paused)
+    values (c, cust, prop, t, current_date, true);
   insert into stripe_account (company_id, stripe_account_id) values (c, 'acct_' || label);
   insert into subscription (company_id) values (c);
   insert into invite (company_id, email, role) values (c, 'new-' || label || '@test.local', 'tech');

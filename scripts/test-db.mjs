@@ -98,6 +98,7 @@ if (existsSync(join(sb, "seed.sql"))) {
   psql(TEST_DB, ["-o", "/dev/null", "-f", join(sb, "seed_sample_job.sql")]);
   psql(TEST_DB, ["-o", "/dev/null", "-f", join(sb, "seed_demo_schedule.sql")]);
   psql(TEST_DB, ["-o", "/dev/null", "-f", join(sb, "seed_demo_routes.sql")]);
+  psql(TEST_DB, ["-o", "/dev/null", "-f", join(sb, "seed_demo_maintenance.sql")]);
 }
 
 const tests = readdirSync(join(sb, "tests"))

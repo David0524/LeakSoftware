@@ -171,8 +171,12 @@ select tests.authenticate_as(tests.create_user('founder@test.local'));
 create temp table signup on commit drop as select create_company('Founder Leak Co', 'America/Denver') as id;
 select is((select role from membership where company_id = (select id from signup) and user_id = auth.uid()),
   'owner', 'signup: creator becomes owner');
-select is((select count(*) from component_type where company_id = (select id from signup)), 27::bigint,
+select is((select count(*) from component_type where company_id = (select id from signup)
+            and job_type = 'detection'), 27::bigint,
   'signup: default checklist components copied');
+select is((select count(*) from component_type where company_id = (select id from signup)
+            and job_type = 'maintenance'), 7::bigint,
+  'signup: the maintenance checklist too');
 select is((select count(*) from component_type where company_id = (select id from signup) and section = 'bond_beam'), 5::bigint,
   'signup: checklist items come in sections');
 select is((select count(*) from test_type where company_id = (select id from signup)), 4::bigint,

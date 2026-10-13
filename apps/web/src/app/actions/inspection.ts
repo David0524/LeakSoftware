@@ -53,12 +53,12 @@ export async function changeJobStatus(_: FormState, form: FormData): Promise<For
   const to = text(form, "to") as JobStatus;
   const { data: job } = await db
     .from("job")
-    .select("status, started_at")
+    .select("status, started_at, type")
     .eq("id", jobId)
     .eq("company_id", office.company.id)
     .single();
   if (!job) return { error: "Job not found." };
-  if (!userTransitions(job.status as JobStatus).includes(to))
+  if (!userTransitions(job.status as JobStatus, job.type as string).includes(to))
     return { error: "The job can't move to that status now." };
   const values: Record<string, string> = { status: to };
   if (to === "in_progress" && !job.started_at) values.started_at = new Date().toISOString();
@@ -98,7 +98,7 @@ export async function setUpChecklist(_: FormState, form: FormData): Promise<Form
   const { office, db } = await ctx();
   const jobId = text(form, "job");
   // Two reads: the job's foreign key to its pool is composite, so it can't be embedded.
-  const { data: job } = await db.from("job").select("property_id").eq("id", jobId).single();
+  const { data: job } = await db.from("job").select("property_id, type").eq("id", jobId).single();
   const { data: property } = job
     ? await db
         .from("property")
@@ -116,11 +116,17 @@ export async function setUpChecklist(_: FormState, form: FormData): Promise<Form
     has_spa: boolean;
     pool_type: string | null;
   } | null;
-  const planned = planComponents((types ?? []) as ComponentType[], {
-    has_pool: pool?.has_pool ?? true,
-    has_spa: pool?.has_spa ?? false,
-    pool_type: pool?.pool_type ?? null,
-  }).map((p) => ({ ...p, id: uuidv7(), company_id: office.company.id, job_id: jobId }));
+  const jobType =
+    (job as { type?: string } | null)?.type === "maintenance" ? "maintenance" : "detection";
+  const planned = planComponents(
+    (types ?? []) as ComponentType[],
+    {
+      has_pool: pool?.has_pool ?? true,
+      has_spa: pool?.has_spa ?? false,
+      pool_type: pool?.pool_type ?? null,
+    },
+    jobType,
+  ).map((p) => ({ ...p, id: uuidv7(), company_id: office.company.id, job_id: jobId }));
   if (planned.length === 0) return { error: "No checklist items are set up in Settings." };
   const { error } = await db.from("job_component").insert(planned);
   if (error) return { error: error.message };

@@ -39,11 +39,18 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
         <Button
           title="Set Up Checklist"
           onPress={() =>
-            createChecklist(services.sync, job.company_id, job.id, config.componentTypes, {
-              has_pool: property?.has_pool ?? true,
-              has_spa: property?.has_spa ?? false,
-              pool_type: property?.pool_type ?? null,
-            })
+            createChecklist(
+              services.sync,
+              job.company_id,
+              job.id,
+              config.componentTypes,
+              {
+                has_pool: property?.has_pool ?? true,
+                has_spa: property?.has_spa ?? false,
+                pool_type: property?.pool_type ?? null,
+              },
+              job.type === "maintenance" ? "maintenance" : "detection",
+            )
           }
         />
       </Card>
@@ -54,14 +61,16 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
   const missing = config.componentTypes.filter(
     (t) =>
       !insp.components.some((c) => c.component_type_id === t.id) &&
+      (t.job_type ?? "detection") === (job.type === "maintenance" ? "maintenance" : "detection") &&
       (!property || componentApplies(t, property)),
   );
 
   return (
     <View style={{ gap: space["4"] }}>
       <T variant="muted">
-        {tally.pass} pass · {tally.attention} attention · {tally.leaking} leaking ·{" "}
-        {tally.notApplicable} N/A · {tally.pending} to do
+        {job.type === "maintenance"
+          ? `${tally.pass} done · ${tally.attention} need attention · ${tally.notApplicable} skipped · ${tally.pending} to do`
+          : `${tally.pass} pass · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} N/A · ${tally.pending} to do`}
       </T>
       {SECTIONS.map((section) => {
         const items = insp.components

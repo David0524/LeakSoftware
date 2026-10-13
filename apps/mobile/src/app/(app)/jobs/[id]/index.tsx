@@ -45,6 +45,7 @@ const ACTION_LABELS: Partial<Record<JobStatus, string>> = {
   scheduled: "Move Back to Scheduled",
   unscheduled: "Reopen Job",
   canceled: "Cancel Job",
+  done: "Mark Done",
 };
 
 type Tab = "checklist" | "tests" | "findings" | "report" | "quote";
@@ -204,7 +205,7 @@ export default function JobDetail() {
       </Card>
 
       <View style={{ gap: 8 }}>
-        {userTransitions(job.status).map((to) => (
+        {userTransitions(job.status, job.type).map((to) => (
           <Button
             key={to}
             title={ACTION_LABELS[to] ?? JOB_STATUS_LABELS[to]}

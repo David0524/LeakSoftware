@@ -92,7 +92,16 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
         subtitle={
           <span className="flex flex-wrap items-center gap-3">
             <StatusBadge status={job.status} />
-            <span>{JOB_TYPE_LABELS[job.type]}</span>
+            {job.service_plan_id && job.customer ? (
+              <Link
+                href={`/customers/${job.customer.id}`}
+                className="text-link underline-offset-4 hover:underline"
+              >
+                {JOB_TYPE_LABELS[job.type]} plan
+              </Link>
+            ) : (
+              <span>{JOB_TYPE_LABELS[job.type]}</span>
+            )}
             <span>
               {job.started_at && job.status === "in_progress"
                 ? `Started ${formatSchedule(job.started_at, new Date(), tz)}`
@@ -100,7 +109,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
             </span>
           </span>
         }
-        actions={<JobStatusActions jobId={job.id} status={job.status} />}
+        actions={<JobStatusActions jobId={job.id} status={job.status} jobType={job.type} />}
       />
 
       <JobSections
@@ -251,13 +260,21 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                 <p className="mb-3 text-text-muted">
                   {total === 0
                     ? "No checklist yet."
-                    : [
-                        `${tally.pass} not leaking`,
-                        `${tally.attention} attention`,
-                        `${tally.leaking} leaking`,
-                        `${tally.notApplicable} not applicable`,
-                        `${tally.pending} to do`,
-                      ].join(" · ")}
+                    : (job.type === "maintenance"
+                        ? [
+                            `${tally.pass} done`,
+                            `${tally.attention} need attention`,
+                            `${tally.notApplicable} skipped`,
+                            `${tally.pending} to do`,
+                          ]
+                        : [
+                            `${tally.pass} not leaking`,
+                            `${tally.attention} attention`,
+                            `${tally.leaking} leaking`,
+                            `${tally.notApplicable} not applicable`,
+                            `${tally.pending} to do`,
+                          ]
+                      ).join(" · ")}
                 </p>
                 {detail.components.length > 0 ? (
                   <Checklist detail={detail} />
@@ -381,6 +398,8 @@ function Checklist({ detail }: { detail: JobDetail }) {
         t.active &&
         !t.deleted_at &&
         !present.has(t.id) &&
+        (t.job_type ?? "detection") ===
+          (detail.job.type === "maintenance" ? "maintenance" : "detection") &&
         (!property || componentApplies(t, { ...property, has_pool: true })),
     )
     .sort((a, b) => a.sort_order - b.sort_order)

@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { formatAddress, propertyLocation, routingSettings } from "@leakbook/core";
+import {
+  formatAddress,
+  maintenanceSettings,
+  propertyLocation,
+  routingSettings,
+} from "@leakbook/core";
 import { locatePools, locateShop } from "@/app/actions/routes";
 import { MarkLocationHere } from "@/components/pool-location";
 import { ActionButton, SchedulingForm } from "@/components/scheduling-settings";
@@ -47,6 +52,8 @@ export default async function SchedulingSettingsPage() {
               windowMin: s.windowMin,
               jobHours: String(s.jobMinutes / 60),
               workDays: s.workDays,
+              visitMinutes: maintenanceSettings(company.settings).visitMinutes,
+              weeksAhead: maintenanceSettings(company.settings).weeksAhead,
             }}
           />
         </Card>

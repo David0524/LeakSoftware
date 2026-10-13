@@ -92,9 +92,10 @@ export function createChecklist(
   jobId: string,
   types: ComponentType[],
   property: Pick<Property, "has_pool" | "has_spa"> & { pool_type?: string | null },
+  jobType: "detection" | "maintenance" = "detection",
 ) {
   sync.batch(() => {
-    for (const planned of planComponents(types, property))
+    for (const planned of planComponents(types, property, jobType))
       insertComponent(sync, companyId, jobId, planned);
   });
 }

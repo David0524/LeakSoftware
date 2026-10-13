@@ -1,13 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { JOB_TYPE_LABELS, POOL_TYPE_LABELS, formatAddress, formatSchedule } from "@leakbook/core";
+import {
+  JOB_TYPE_LABELS,
+  POOL_TYPE_LABELS,
+  formatAddress,
+  formatSchedule,
+  localDate,
+  maintenanceSettings,
+} from "@leakbook/core";
 import { saveCustomerEmails } from "@/app/actions/jobs";
 import { DeleteCustomerForm } from "@/components/delete-customer";
+import { MaintenancePlans } from "@/components/maintenance-plans";
 import { SField, SettingsForm } from "@/components/settings-forms";
 import { Card, Checkbox, Empty, PageHeader, SectionTitle, StatusBadge } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getCustomer } from "@/lib/data";
+import { getCompany, getCustomer, getTeam } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Customer · Tidemark" };
 
@@ -25,8 +33,17 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
   const office = await getOffice();
   const data = await getCustomer(office, id);
   if (!data) notFound();
-  const { customer, properties, jobs } = data;
+  const { customer, properties, plans, jobs } = data;
   const now = new Date();
+  const [team, company] = await Promise.all([getTeam(office), getCompany(office)]);
+  const techs = team
+    .filter((t) => t.status === "active")
+    .map((t) => ({ id: t.user_id, name: t.name }));
+  const today = localDate(now, office.company.timezone);
+  const doneCounts: Record<string, number> = {};
+  for (const j of jobs)
+    if (j.service_plan_id && j.status === "done")
+      doneCounts[j.service_plan_id] = (doneCounts[j.service_plan_id] ?? 0) + 1;
 
   return (
     <>
@@ -83,7 +100,8 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
         <div className="space-y-5 lg:col-span-2">
           {properties.length === 0 ? <Empty>No properties.</Empty> : null}
           {properties.map((p) => {
-            const visits = jobs.filter((j) => j.property_id === p.id);
+            // Maintenance visits are summed up by their plan, not listed one by one.
+            const visits = jobs.filter((j) => j.property_id === p.id && j.type !== "maintenance");
             return (
               <Card key={p.id}>
                 <h2 className="font-display text-xl font-bold">{formatAddress(p)}</h2>
@@ -98,8 +116,18 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                 {p.access_notes ? (
                   <p className="mt-2 border-l-4 border-status-warning pl-3">{p.access_notes}</p>
                 ) : null}
+                <MaintenancePlans
+                  customerId={customer.id}
+                  propertyId={p.id}
+                  plans={plans.filter((plan) => plan.property_id === p.id)}
+                  techs={techs}
+                  today={today}
+                  visitMinutes={maintenanceSettings(company.settings).visitMinutes}
+                  doneCounts={doneCounts}
+                  canEdit={office.isOwner}
+                />
                 <h3 className="mt-4 mb-2 font-display text-sm font-semibold tracking-widest text-text-muted uppercase">
-                  Visits
+                  Leak Detection and Repairs
                 </h3>
                 {visits.length === 0 ? (
                   <p className="text-text-muted">No visits yet.</p>

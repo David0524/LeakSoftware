@@ -1,7 +1,7 @@
 -- Fuller routes for demonstrations (owner request, 2026-10-13: "add more jobs to schedules,
 -- I want to see what routes look like with multiple jobs"). Runs after
 -- seed_demo_schedule.sql: 16 more customers at real public places around Phoenix, and from
--- today through the next week every tech has four or five 90-minute stops a weekday in
+-- today through the next week every tech has three or four 90-minute stops a weekday in
 -- their part of the valley. The stops are booked in the order customers called, not the
 -- best driving order, so Plan Route on the schedule has something to show.
 -- Coordinates: © OpenStreetMap contributors (ODbL), looked up once on 2026-10-13.
@@ -101,8 +101,9 @@ begin
       from generate_subscripts(areas, 1) as i where areas[i] = r;
       continue when area is null;
 
-      -- Top the day up to four or five stops, at pools not already on it.
-      want := 4 + (k + r) % 2;
+      -- Top the day up, at pools not already on it.
+      -- Three or four, leaving room for the maintenance visits (seed_demo_maintenance.sql).
+      want := 3 + (k + r) % 2;
       select count(*), coalesce(array_agg(property_id), '{}') into have, used
       from public.job
       where company_id = co and assigned_user_id = techs[r] and deleted_at is null

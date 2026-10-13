@@ -13,6 +13,7 @@ export const JOB_STATUSES = [
   "invoiced",
   "paid",
   "canceled",
+  "done",
 ] as const;
 
 export type JobStatus = (typeof JOB_STATUSES)[number];
@@ -20,13 +21,15 @@ export type JobStatus = (typeof JOB_STATUSES)[number];
 export const JOB_STATUS_TRANSITIONS: Record<JobStatus, readonly JobStatus[]> = {
   unscheduled: ["scheduled", "in_progress", "canceled"],
   scheduled: ["unscheduled", "in_progress", "canceled"],
-  in_progress: ["scheduled", "report_sent", "invoiced", "canceled"],
+  in_progress: ["scheduled", "report_sent", "invoiced", "canceled", "done"],
   report_sent: ["in_progress", "quote_sent", "invoiced", "canceled"],
   quote_sent: ["report_sent", "quote_accepted", "invoiced", "canceled"],
   quote_accepted: ["invoiced", "canceled"],
   invoiced: ["paid", "canceled"],
   paid: [],
   canceled: ["unscheduled"],
+  // Maintenance visits (20261012002400_maintenance.sql).
+  done: ["in_progress", "invoiced"],
 };
 
 /** Statuses a new job may be created in (including offline on a phone). */
@@ -49,9 +52,14 @@ export function canTransition(from: JobStatus, to: JobStatus): boolean {
   return from === to || JOB_STATUS_TRANSITIONS[from].includes(to);
 }
 
-/** Next statuses a person (not the server) can pick from the app or office view. */
-export function userTransitions(from: JobStatus): JobStatus[] {
-  return JOB_STATUS_TRANSITIONS[from].filter((s) => !JOB_SERVER_STATUSES.includes(s));
+/**
+ * Next statuses a person (not the server) can pick from the app or office view. Done is
+ * how a maintenance visit ends; leak detection and repairs end with a report or invoice.
+ */
+export function userTransitions(from: JobStatus, type?: string): JobStatus[] {
+  return JOB_STATUS_TRANSITIONS[from].filter(
+    (s) => !JOB_SERVER_STATUSES.includes(s) && (s !== "done" || type === "maintenance"),
+  );
 }
 
 /** Labels from the handoff, used in the office view. */
@@ -65,4 +73,5 @@ export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
   invoiced: "Invoiced",
   paid: "Paid",
   canceled: "Canceled",
+  done: "Done",
 };

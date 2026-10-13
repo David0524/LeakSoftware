@@ -18,5 +18,7 @@ export async function GET(request: Request) {
   const at = new URL(request.url).searchParams.get("at");
   const when = at && !Number.isNaN(Date.parse(at)) ? new Date(at) : new Date();
   const followups = await runFollowups(admin, await siteOrigin(), when);
-  return Response.json({ followups });
+  // Maintenance plans keep their visits made a few weeks ahead (20261012002400).
+  const { data: visits, error } = await admin.rpc("extend_service_plans");
+  return Response.json({ followups, maintenanceVisits: error ? error.message : visits });
 }

@@ -105,7 +105,7 @@ export interface Property extends Base {
 
 export interface Job extends Base {
   number?: number | null;
-  type: "detection" | "repair";
+  type: "detection" | "repair" | "maintenance";
   property_id: string;
   bill_to_customer_id?: string | null;
   status: JobStatus;
@@ -124,6 +124,9 @@ export interface Job extends Base {
   route_order?: number | null;
   /** The customer was told this time: planning never moves it. */
   arrival_fixed?: boolean;
+  /** A maintenance visit's plan, and the plan's date for it. */
+  service_plan_id?: string | null;
+  plan_date?: string | null;
   created_at?: string;
 }
 
@@ -137,4 +140,5 @@ export const POOL_TYPE_LABELS: Record<PoolType, string> = {
 export const JOB_TYPE_LABELS: Record<Job["type"], string> = {
   detection: "Leak detection",
   repair: "Repair",
+  maintenance: "Maintenance",
 };

@@ -45,4 +45,5 @@ export const JOB_STATUS_COLOR: Record<JobStatus, string> = {
   invoiced: tokens.color.status.warning,
   paid: tokens.color.status.pass,
   canceled: tokens.color.status.excluded,
+  done: tokens.color.status.pass,
 };

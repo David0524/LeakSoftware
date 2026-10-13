@@ -15,21 +15,27 @@ interface Base {
 }
 
 /** Where an item is listed on the checklist and the report. */
-export type ChecklistSection = "visual" | "plumbing" | "bond_beam" | "other";
+export type ChecklistSection = "visual" | "plumbing" | "bond_beam" | "other" | "service";
 
 export const CHECKLIST_SECTION_LABELS: Record<ChecklistSection, string> = {
   visual: "Visual Leak Inspection",
   plumbing: "Plumbing Static Test",
   bond_beam: "Bond Beam",
   other: "Other",
+  service: "Service",
 };
 
 export interface ComponentType extends Base {
   key: string;
   name: string;
   section?: ChecklistSection;
-  /** leak: a verdict (not leaking, leaking, attention, not applicable); yes_no: yes or no. */
-  answer?: "leak" | "yes_no";
+  /**
+   * leak: a verdict (not leaking, leaking, attention, not applicable); yes_no: yes or no;
+   * done: a maintenance task (done, needs attention, skipped).
+   */
+  answer?: "leak" | "yes_no" | "done";
+  /** Which jobs get the item: leak detection (default) or maintenance visits. */
+  job_type?: "detection" | "maintenance";
   /** Only for this pool type (vinyl checks); null for every pool. */
   applies_to_pool_type?: string | null;
   allows_multiple: boolean;
@@ -188,13 +194,19 @@ export interface PlannedComponent {
   sort_order: number;
 }
 
-/** Default component instances for a new inspection at this property. */
+/**
+ * Default component instances for a new job at this property: the leak checklist for a
+ * detection job, the service checklist for a maintenance visit.
+ */
 export function planComponents(
   types: ComponentType[],
   property: Pick<Property, "has_pool" | "has_spa"> & { pool_type?: string | null },
+  jobType: "detection" | "maintenance" = "detection",
 ): PlannedComponent[] {
   return live(types)
-    .filter((t) => t.active && componentApplies(t, property))
+    .filter(
+      (t) => t.active && (t.job_type ?? "detection") === jobType && componentApplies(t, property),
+    )
     .sort((a, b) => a.sort_order - b.sort_order)
     .flatMap((t) =>
       Array.from(
@@ -282,9 +294,13 @@ export function checklistTally(
 /** Badge text for an item, in his words. Yes/no items read "Yes" or "No". */
 export function verdictLabel(
   r: Pick<ChecklistItemResult, "status" | "outcome"> | undefined,
-  answer: "leak" | "yes_no" = "leak",
+  answer: "leak" | "yes_no" | "done" = "leak",
 ): string {
   if (!r || r.status === "pending") return "To do";
+  if (answer === "done") {
+    if (r.status === "excluded") return "Skipped";
+    return r.outcome === "attention" ? "Needs attention" : "Done";
+  }
   if (r.status === "excluded") return "Not applicable";
   if (answer === "yes_no") return r.outcome === "ok" ? "No" : "Yes";
   return r.outcome === "leaking"
@@ -298,6 +314,12 @@ export function verdictLabel(
 export type Verdict = ChecklistOutcome | "na";
 
 export function verdictOptions(type: Pick<ComponentType, "answer"> | undefined) {
+  if (type?.answer === "done")
+    return [
+      { value: "ok" as Verdict, label: "Done" },
+      { value: "attention" as Verdict, label: "Needs Attention" },
+      { value: "na" as Verdict, label: "Skipped" },
+    ];
   return type?.answer === "yes_no"
     ? [
         { value: "ok" as Verdict, label: "No" },

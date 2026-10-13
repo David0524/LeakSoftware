@@ -36,7 +36,7 @@ export interface SnapshotComponent {
   notes: string | null;
   /** M8.5: checklist section, answer kind, verdict, and where. */
   section?: ChecklistSection;
-  answer?: "leak" | "yes_no";
+  answer?: "leak" | "yes_no" | "done";
   outcome?: ChecklistOutcome | null;
   location_text?: string | null;
 }
