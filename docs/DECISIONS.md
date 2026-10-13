@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (M10: my calls, adjust as needed)
+- **Reminders:** once a day (about 8:45 am Arizona). Each quote or invoice gets only its newest due reminder (a quote 8 days out gets the 7-day one, not the 3-day one too), and each goes out once. They stop when the quote is accepted or expires, or the invoice is paid. Defaults: quotes 3 and 7 days after sending, invoices 7, 14, and 30. Owners change them in Settings.
+- **Review requests:** one per job, between 2 hours and 14 days after it is paid, only when the shop has a review link and hasn't turned them off.
+- **Opting out:** every reminder and review email has a "stop these emails" link; the office can tick the same thing on the customer. It never stops reports, receipts, or anything the office sends by hand.
+- **Warranties** start the day the repair job is paid (shop's time zone) and come from the accepted quote's lines with a warranty term. "Expiring soon" means within 60 days.
+- **Phone navigation:** the tab bar shows four sections and puts the rest (Dashboard, Warranties, Settings) under More, as iOS apps do.
+- **Billing:** one Stripe price per shop per month (the amount is still the owner's decision; set it in Stripe as `STRIPE_BILLING_PRICE_ID`). Subscribing during the trial keeps the remaining trial days; the card is charged when the trial ends.
+- **Read-only, never data loss:** a shop is read-only when its trial ended without subscribing, its subscription is canceled, or a payment has been past due for more than 7 days. Members can see everything but not change anything; customers can still accept quotes and pay; the server keeps working. Changes made on a phone while read-only stay on the phone and go up once paid. The demo shop never runs out.
+
 ## 2026-10-13 (owner: the website and the app are the same)
 - **The website does everything the phone app does** (milestone M9.5), except offline work: the website saves straight to the server. Demos will use the website on a phone, so every office page must work at phone width. Replaces BUILD_PLAN's split of "field app for techs, office view for the office".
 

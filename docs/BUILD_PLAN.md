@@ -377,6 +377,7 @@ Added 2026-10-13 (owner: "the app and website should essentially be the same"; d
 - **Done when:** at phone width in Playwright, a job is started, its checklist worked, a test and a finding with a pin added, a photo uploaded and marked up, the customer signs, a quote is built and sent, and the report is sent, all from the website.
 
 ### M10 Beyond the MVP
+Built 2026-10-13: reminders and review requests (daily cron), warranties, owner dashboard, Tidemark billing with read-only when unpaid. Checklist: `docs/testing/M10-checklist.md`.
 - Quote and invoice reminder emails (Vercel Cron, schedule in company settings, stops when accepted or paid).
 - Review request after payment (shop's review link, once per job, opt-out per customer).
 - Warranty records from accepted repair lines, active and expiring list.
