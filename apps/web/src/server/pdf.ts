@@ -1,9 +1,9 @@
-import { chromium } from "playwright-core";
-
 // Report PDFs are the report page printed by headless Chromium (BUILD_PLAN 6.3).
 // Local and CI: CHROMIUM_PATH (or Playwright's own browser). Vercel: @sparticuz/chromium.
 
 async function launch() {
+  // Loaded here, not at the top, so pages that only import report helpers never load it.
+  const { chromium } = await import("playwright-core");
   if (process.env.CHROMIUM_PATH) {
     return chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
   }
