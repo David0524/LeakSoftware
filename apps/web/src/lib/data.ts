@@ -662,3 +662,26 @@ export async function listInvoices(office: Office): Promise<InvoiceListRow[]> {
     customer: byId.get(i.job_id)?.customer?.name ?? null,
   }));
 }
+
+export interface SignatureRow {
+  id: string;
+  purpose: string;
+  signer_name: string;
+  signer_role: string | null;
+  image_path: string | null;
+  signed_at: string;
+}
+
+/** Signatures taken on a job (customer acknowledgement, work authorization, completion). */
+export async function getSignatures(office: Office, jobId: string): Promise<SignatureRow[]> {
+  const supabase = await db();
+  return must(
+    await supabase
+      .from("signature")
+      .select("id, purpose, signer_name, signer_role, image_path, signed_at")
+      .eq("company_id", office.company.id)
+      .eq("job_id", jobId)
+      .is("deleted_at", null)
+      .order("signed_at"),
+  ) as SignatureRow[];
+}

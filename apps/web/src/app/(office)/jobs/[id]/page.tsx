@@ -5,7 +5,9 @@ import {
   JOB_TYPE_LABELS,
   MEDIA_KIND_LABELS,
   POOL_TYPE_LABELS,
+  SIGNATURE_PURPOSE_LABELS,
   checklistTally,
+  enabledSignaturePurposes,
   componentApplies,
   formatCents,
   formatAddress,
@@ -17,6 +19,7 @@ import {
   type Media,
 } from "@leakbook/core";
 import { GalleryImage } from "@/components/gallery-image";
+import { MediaActions, MediaCapture, SignatureForm } from "@/components/media-work";
 import {
   ChecklistEditor,
   FindingsEditor,
@@ -36,6 +39,7 @@ import {
   getPaymentAccount,
   getQuotes,
   getReports,
+  getSignatures,
   getTeam,
   signedMediaUrls,
   type JobDetail,
@@ -232,6 +236,13 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
         <Gallery detail={detail} tz={tz} />
       </section>
 
+      <section className="mt-8" aria-labelledby="signatures">
+        <h2 id="signatures" className="mb-3 font-display text-2xl font-bold">
+          Signatures
+        </h2>
+        <Signatures detail={detail} tz={tz} />
+      </section>
+
       <section className="mt-8" aria-labelledby="reports">
         <h2 id="reports" className="mb-3 font-display text-2xl font-bold">
           Reports
@@ -365,7 +376,6 @@ function Findings({ detail }: { detail: JobDetail }) {
 }
 
 async function Gallery({ detail, tz }: { detail: JobDetail; tz: string }) {
-  if (detail.media.length === 0) return <Empty>No photos or recordings yet.</Empty>;
   const urls = await signedMediaUrls(
     detail.media
       .filter((m) => m.upload_state === "uploaded" && m.storage_path)
@@ -377,60 +387,136 @@ async function Gallery({ detail, tz }: { detail: JobDetail; tz: string }) {
     (m.finding_id && findingTitle.get(m.finding_id)) ||
     (m.job_component_id && componentLabel.get(m.job_component_id)) ||
     (m.test_result_id ? "Test" : "Job");
+  const targets = [
+    ...detail.findings.map((f) => ({ value: `finding:${f.id}`, label: `Finding: ${f.title}` })),
+    ...detail.components.map((c) => ({ value: `component:${c.id}`, label: c.label })),
+  ];
   return (
-    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {detail.media.map((m) => {
-        const url = m.storage_path ? urls.get(m.storage_path) : undefined;
-        const markup = parseMarkup(m.markup).shapes;
-        const w = m.width ?? 4;
-        const h = m.height ?? 3;
-        return (
-          <li key={m.id} className="overflow-hidden rounded-lg border border-border bg-surface">
-            {!url ? (
-              <div className="flex aspect-[4/3] items-center justify-center bg-bg p-4 text-center text-text-muted">
-                {MEDIA_KIND_LABELS[m.kind]} still uploading from the phone
-              </div>
-            ) : m.kind === "photo" ? (
-              <GalleryImage
-                url={url}
-                alt={
-                  m.caption ??
-                  `Photo of ${attached(m)}${m.captured_at ? `, ${formatSchedule(m.captured_at, new Date(), tz)}` : ""}`
-                }
-                width={w}
-                height={h}
-                shapes={markup}
-              />
-            ) : m.kind === "video" ? (
-              <video
-                src={url}
-                controls
-                preload="metadata"
-                className="aspect-video w-full bg-navy"
-              />
-            ) : (
-              <div className="p-4">
-                <audio src={url} controls preload="metadata" className="w-full" />
-              </div>
-            )}
-            <div className="p-3 text-[15px]">
-              <p className="font-medium">
-                {MEDIA_KIND_LABELS[m.kind]} · {attached(m)}
-                {m.duration_ms ? ` · ${formatDuration(m.duration_ms)}` : ""}
-              </p>
-              {m.caption ? <p>{m.caption}</p> : null}
-              {m.kind === "audio" && m.transcript ? (
-                <p className="mt-1 italic">“{m.transcript}”</p>
-              ) : null}
-              <p className="text-text-muted">
-                {m.captured_at ? formatSchedule(m.captured_at, new Date(), tz) : ""}
-                {m.latitude != null ? " · location recorded" : ""}
-              </p>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="space-y-4">
+      <MediaCapture jobId={detail.job.id} targets={targets} />
+      {detail.media.length === 0 ? (
+        <Empty>No photos or recordings yet.</Empty>
+      ) : (
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {detail.media.map((m) => {
+            const url = m.storage_path ? urls.get(m.storage_path) : undefined;
+            const markup = parseMarkup(m.markup).shapes;
+            const w = m.width ?? 4;
+            const h = m.height ?? 3;
+            const label = `${MEDIA_KIND_LABELS[m.kind]} · ${attached(m)}`;
+            return (
+              <li key={m.id} className="overflow-hidden rounded-lg border border-border bg-surface">
+                {!url ? (
+                  <div className="flex aspect-[4/3] items-center justify-center bg-bg p-4 text-center text-text-muted">
+                    {MEDIA_KIND_LABELS[m.kind]} still uploading from the phone
+                  </div>
+                ) : m.kind === "photo" ? (
+                  <GalleryImage
+                    url={url}
+                    alt={
+                      m.caption ??
+                      `Photo of ${attached(m)}${m.captured_at ? `, ${formatSchedule(m.captured_at, new Date(), tz)}` : ""}`
+                    }
+                    width={w}
+                    height={h}
+                    shapes={markup}
+                  />
+                ) : m.kind === "video" ? (
+                  <video
+                    src={url}
+                    controls
+                    preload="metadata"
+                    className="aspect-video w-full bg-navy"
+                  />
+                ) : (
+                  <div className="p-4">
+                    <audio src={url} controls preload="metadata" className="w-full" />
+                  </div>
+                )}
+                <div className="p-3 text-[15px]">
+                  <p className="font-medium">
+                    {label}
+                    {m.duration_ms ? ` · ${formatDuration(m.duration_ms)}` : ""}
+                  </p>
+                  {m.caption ? <p>{m.caption}</p> : null}
+                  {m.kind === "audio" && m.transcript ? (
+                    <p className="mt-1 italic">“{m.transcript}”</p>
+                  ) : null}
+                  <p className="text-text-muted">
+                    {m.captured_at ? formatSchedule(m.captured_at, new Date(), tz) : ""}
+                    {m.latitude != null ? " · location recorded" : ""}
+                  </p>
+                  <MediaActions
+                    jobId={detail.job.id}
+                    media={{
+                      id: m.id,
+                      kind: m.kind,
+                      url: url ?? null,
+                      width: w,
+                      height: h,
+                      shapes: markup,
+                      caption: m.caption,
+                      label,
+                    }}
+                  />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+async function Signatures({ detail, tz }: { detail: JobDetail; tz: string }) {
+  const office = await getOffice();
+  const [signatures, company] = await Promise.all([
+    getSignatures(office, detail.job.id),
+    getCompany(office),
+  ]);
+  const urls = await signedMediaUrls(
+    signatures.filter((s) => s.image_path).map((s) => s.image_path!),
+  );
+  return (
+    <div className="space-y-4">
+      {signatures.length === 0 ? (
+        <Empty>No signatures yet.</Empty>
+      ) : (
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {signatures.map((s) => {
+            const url = s.image_path ? urls.get(s.image_path) : undefined;
+            return (
+              <li key={s.id} className="rounded-lg border border-border bg-surface p-4">
+                {url ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
+                  <img
+                    src={url}
+                    alt={`Signature of ${s.signer_name}`}
+                    className="mb-2 h-20 w-full rounded bg-paper object-contain"
+                  />
+                ) : null}
+                <p className="font-semibold">
+                  {s.signer_name}
+                  {s.signer_role ? (
+                    <span className="font-normal text-text-muted"> · {s.signer_role}</span>
+                  ) : null}
+                </p>
+                <p className="text-[15px] text-text-muted">
+                  {SIGNATURE_PURPOSE_LABELS[s.purpose] ?? s.purpose} ·{" "}
+                  {formatSchedule(s.signed_at, new Date(), tz)}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <SignatureForm
+        jobId={detail.job.id}
+        purposes={enabledSignaturePurposes(company.settings)}
+        signer={detail.job.customer?.name ?? ""}
+      />
+    </div>
   );
 }
 

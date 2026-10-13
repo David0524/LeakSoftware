@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { OWNER, RUN, TECH, signIn, signOut } from "./helpers";
 import { signedInClient } from "./backend";
+import { solidPng } from "./png";
 
 test.describe.configure({ mode: "serial" });
 
@@ -335,6 +336,39 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   await expect(tech.getByText(`Line break ${RUN}`, { exact: true })).toBeVisible();
   await expect(tech.getByText(/Major · Open · Pinned on the diagram/)).toBeVisible();
   await expect(tech.getByRole("img", { name: "Pool diagram with 1 finding pins" })).toBeVisible();
+  expect(await wide()).toBeLessThanOrEqual(390);
+
+  // A photo from the camera (here, a file), marked up with a circle.
+  await tech.getByLabel("Add Photo").setInputFiles({
+    name: "leak.png",
+    mimeType: "image/png",
+    buffer: solidPng(400, 300, [40, 120, 170]),
+  });
+  await expect(tech.getByText("Photo added.")).toBeVisible();
+  await tech.getByRole("button", { name: /^Mark Up: Photo/ }).click();
+  const editor = tech.getByRole("dialog", { name: "Mark Up" });
+  await editor.getByTestId("markup-canvas").click({ position: { x: 120, y: 80 } });
+  await editor.getByRole("button", { name: "Save" }).click();
+  await expect(tech.getByRole("button", { name: /^Edit Markup: Photo/ })).toBeVisible();
+
+  // The customer signs on the screen.
+  await tech.getByRole("button", { name: "Add Signature" }).click();
+  await expect(tech.getByLabel("Signer’s name")).toHaveValue(name);
+  const pad = await tech.getByTestId("signature-pad").boundingBox();
+  await tech.mouse.move(pad!.x + 30, pad!.y + 100);
+  await tech.mouse.down();
+  for (const [x, y] of [
+    [80, 60],
+    [130, 120],
+    [180, 50],
+    [240, 110],
+  ])
+    await tech.mouse.move(pad!.x + x, pad!.y + y, { steps: 4 });
+  await tech.mouse.up();
+  await tech.getByRole("button", { name: "Save Signature" }).click();
+  await expect(tech.getByText("Signature saved.")).toBeVisible();
+  await expect(tech.getByRole("img", { name: `Signature of ${name}` })).toBeVisible();
+  await expect(tech.getByText(/Inspection acknowledged ·/)).toBeVisible();
   expect(await wide()).toBeLessThanOrEqual(390);
 
   // Job notes.

@@ -43,12 +43,15 @@ const EXTENSIONS: Record<string, string> = {
   "image/heic": "heic",
   "video/mp4": "mp4",
   "video/quicktime": "mov",
+  "video/webm": "webm",
   "audio/mp4": "m4a",
   "audio/m4a": "m4a",
   "audio/x-m4a": "m4a",
   "audio/aac": "aac",
   "audio/mpeg": "mp3",
   "audio/wav": "wav",
+  "audio/webm": "webm",
+  "audio/ogg": "ogg",
 };
 
 export function extensionForMime(mime: string): string {
