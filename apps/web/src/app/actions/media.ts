@@ -224,3 +224,16 @@ export async function finishSignature(input: {
   revalidatePath(`/jobs/${input.jobId}`);
   return { ok: true, value: null };
 }
+
+/** Remove a signature (soft delete). Finished report versions keep their own copy. */
+export async function removeSignature(input: { id: string; jobId: string }): Promise<Result<null>> {
+  const { office, db } = await ctx();
+  const { error } = await db
+    .from("signature")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", input.id)
+    .eq("company_id", office.company.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/jobs/${input.jobId}`);
+  return { ok: true, value: null };
+}

@@ -55,6 +55,7 @@ import { siteOrigin } from "@/lib/origin";
 import { CreateInvoice, InvoicePanel } from "@/components/invoice-panel";
 import { QuoteBuilder, StartQuote } from "@/components/quote-builder";
 import { QuotePanel } from "@/components/quote-panel";
+import { RemoveSignature } from "@/components/remove-signature";
 import { ReportPanel } from "@/components/report-panel";
 import { AddressLink } from "@/components/open-in-maps";
 import { MarkLocationHere } from "@/components/pool-location";
@@ -586,6 +587,7 @@ async function Signatures({ detail, tz }: { detail: JobDetail; tz: string }) {
                   {SIGNATURE_PURPOSE_LABELS[s.purpose] ?? s.purpose} ·{" "}
                   {formatSchedule(s.signed_at, new Date(), tz)}
                 </p>
+                <RemoveSignature id={s.id} jobId={detail.job.id} name={s.signer_name} />
               </li>
             );
           })}

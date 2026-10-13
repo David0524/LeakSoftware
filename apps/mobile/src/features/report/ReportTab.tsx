@@ -98,6 +98,25 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
     setEdits({});
   }
 
+  /** Removed signatures leave later versions; finished versions keep their own copy. */
+  function removeSignature(id: string, name: string) {
+    Alert.alert(
+      `Remove ${name}’s signature?`,
+      "Reports already finished keep it; new versions won’t show it.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () =>
+            services.sync.write("signature", id, company.id, {
+              deleted_at: new Date().toISOString(),
+            }),
+        },
+      ],
+    );
+  }
+
   /** Writing again replaces the draft's text, so ask first when there is text to lose. */
   function writeDraft() {
     if (!draft?.final_sections) return void run("draft");
@@ -187,13 +206,26 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
           <T variant="heading">Signatures</T>
         </Row>
         {signatures.map((s) => (
-          <View key={s.id}>
-            <T variant="strong">{s.signer_name}</T>
-            <T variant="muted">
-              {SIGNATURE_PURPOSE_LABELS[s.purpose] ?? s.purpose} ·{" "}
-              {new Date(s.signed_at).toLocaleString()}
-            </T>
-          </View>
+          <Row key={s.id} style={{ justifyContent: "space-between" }}>
+            <View style={{ flex: 1 }}>
+              <T variant="strong">{s.signer_name}</T>
+              <T variant="muted">
+                {SIGNATURE_PURPOSE_LABELS[s.purpose] ?? s.purpose} ·{" "}
+                {new Date(s.signed_at).toLocaleString()}
+              </T>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Remove signature of ${s.signer_name}`}
+              hitSlop={8}
+              style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 8 }}
+              onPress={() => removeSignature(s.id, s.signer_name)}
+            >
+              <T variant="strong" style={{ color: color.fail }}>
+                Remove
+              </T>
+            </Pressable>
+          </Row>
         ))}
         {signatures.length === 0 ? (
           <T variant="muted">The customer signs at the end of the report: Review with Customer.</T>

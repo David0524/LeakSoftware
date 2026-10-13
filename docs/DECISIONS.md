@@ -13,6 +13,7 @@ Newest first. Each entry: date, decision, reason.
 - **Signing finishes the report.** That version locks, so what they read is what they get; later changes go out as a new version, and the signature shows as "signed on version N" there. Signatures are tied to the version they were finished with (`signature.report_id`).
 - **Customer Not Here** finishes the report without a signature, and it says "Not signed: customer not present." The tech can also still send without a signature from the report panel. A finished version can be sent by email or text, or downloaded as a PDF, signed or not.
 - **Offline (app):** the customer can read and sign without signal; the written summary appears once the draft is written, and the report is finished from the Report tab (Finish Report) when the phone is back online.
+- **Re-signing replaces (owner, 2026-10-13):** a report shows the newest signature of each kind, so signing a new version replaces the earlier signature there; a version nobody signed shows the last one, marked "signed on version N". Signatures can be removed (job page Signatures, the app's Report tab): finished versions keep their copy and the drawing stays in storage, but new versions don't show it.
 - **Work authorization** comes before the work, so it is still signed on its own. The visit's sign-off (inspection acknowledged, work completed) is at the end of the report.
 - **The checklist must be done before the customer signs**, as before sending.
 
