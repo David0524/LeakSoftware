@@ -35,6 +35,7 @@ export interface RouteContext {
   depot: LatLng | null;
   depotAddress: string;
   shopName: string;
+  shopZip: string | null;
   /** Drive times come from the routing service (otherwise the estimate). */
   live: boolean;
   today: string;
@@ -50,6 +51,7 @@ export async function routeContext(office: Office): Promise<RouteContext> {
     depot: propertyLocation(company as { latitude?: number | null; longitude?: number | null }),
     depotAddress: formatAddress(company as unknown as Parameters<typeof formatAddress>[0]),
     shopName: company.name,
+    shopZip: (company.postal_code as string | null) ?? null,
     live: routingConfigured(),
     today: localDate(now, office.company.timezone),
     nowMin: localMinutes(now.toISOString(), office.company.timezone),

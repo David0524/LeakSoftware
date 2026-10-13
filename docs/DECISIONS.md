@@ -9,6 +9,7 @@ Newest first. Each entry: date, decision, reason.
 - **Where a pool is:** looked up from its address when a job is made (with a key), or marked exactly with Mark Location Here at the pool (phone GPS, free). Either is kept with the address it belongs to; a changed address is looked up again. The shop's location comes from its address or Use My Location at the shop.
 - **Working day** 8:00 AM to 5:00 PM, Monday to Friday, jobs 2.5 hours unless booked longer; arrival windows off (exact time). All in Settings › Scheduling. On My Way texts come from the tech's own phone with now plus the drive.
 - **Addresses are the link to directions** (owner: no separate button; keep pages short). They open Apple Maps on iPhone, iPad, and Mac, Google Maps elsewhere, and the phone's default maps app on Android in the field app. A whole day opens in Google Maps (Apple Maps links take one stop).
+- **Weather on Today** comes from the shop's zip code, never the device's location (owner): the zip is turned into a point by Zippopotam.us (GeoNames data), and the forecast comes from the National Weather Service (free, no key, US only). It shows the temperature now, the conditions, and today's high, and refreshes at most every half hour. If either service is down, the weather is simply left off.
 - **Today** is the first tab: the signed-in tech's route in order. Invoices moved under More on phones.
 - **Demo addresses** are real public places around Phoenix (parks, libraries, civic buildings, never homes) with coordinates from OpenStreetMap (ODbL), so maps and drive times are real.
 

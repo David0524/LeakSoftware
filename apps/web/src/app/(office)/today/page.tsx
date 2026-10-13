@@ -11,7 +11,9 @@ import {
   propertyLocation,
   routeLink,
 } from "@leakbook/core";
+import { Suspense } from "react";
 import { OnMyWay } from "@/components/on-my-way";
+import { WeatherBadge } from "@/components/weather-badge";
 import { AddressLink, OpenRouteInMaps } from "@/components/open-in-maps";
 import { Card, Empty, PageHeader, StatusBadge, buttonClass, cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
@@ -56,7 +58,14 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
     <>
       <PageHeader
         title={mine ? "Today" : `Today · ${tech?.name ?? "Teammate"}`}
-        subtitle={formatDay(ctx.today, "long")}
+        subtitle={
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {formatDay(ctx.today, "long")}
+            <Suspense fallback={null}>
+              <WeatherBadge zip={ctx.shopZip} />
+            </Suspense>
+          </span>
+        }
         actions={whole ? <OpenRouteInMaps href={whole} /> : null}
       />
       {office.isOwner && techs.length > 1 ? (

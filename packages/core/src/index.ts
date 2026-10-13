@@ -18,3 +18,4 @@ export * from "./dashboard";
 export * from "./billing";
 export * from "./routing";
 export * from "./route-plan";
+export * from "./weather";
