@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-13 (owner: the website and the app are the same)
+- **The website does everything the phone app does** (milestone M9.5), except offline work: the website saves straight to the server. Demos will use the website on a phone, so every office page must work at phone width. Replaces BUILD_PLAN's split of "field app for techs, office view for the office".
+
 ## 2026-10-13 (owner: the website is slow; more demo data)
 - **Website speed:** an office page made up to about 40 database calls, each crossing from Vercel's Washington DC region (`iad1`) to the database in Oregon (`us-west-2`), and checked the sign-in with the auth server twice. Now the website runs in Oregon (`pdx1`, `vercel.json`) and checks the sign-in token's signature locally (`getClaims`). `DB_TIMING=1` logs each call a page makes.
 - **Demo data** (`supabase/seed_demo_schedule.sql`): three more techs (Luis, Jake, Priya; password `leakbook-demo`), 24 made-up customers around Phoenix, and a schedule from last week through next week (three jobs a weekday): last week checked, invoiced, and paid, some with a leak found; today in progress; the rest scheduled; three not yet scheduled.

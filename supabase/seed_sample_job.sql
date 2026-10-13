@@ -10,7 +10,9 @@ declare
   prop uuid := '00000000-0000-4000-8000-00000000c004';
   tech_id uuid := '00000000-0000-4000-8000-00000000d002';
   co uuid;
-  started timestamptz := date_trunc('day', now()) - interval '1 day' + interval '8 hours';
+  -- Yesterday at 8:00 in the demo company's time zone.
+  started timestamptz := ((now() at time zone 'America/Phoenix')::date - 1 + time '08:00')
+                         at time zone 'America/Phoenix';
   c record;
   comp uuid;
   r3 uuid;
@@ -161,7 +163,8 @@ declare
   owner_id uuid := '00000000-0000-4000-8000-00000000d001';
   tech_id uuid := '00000000-0000-4000-8000-00000000d002';
   co uuid;
-  started timestamptz := date_trunc('day', now()) - interval '2 days' + interval '9 hours';
+  started timestamptz := ((now() at time zone 'America/Phoenix')::date - 2 + time '09:00')
+                         at time zone 'America/Phoenix';
   c record;
   comp uuid;
   seam uuid;

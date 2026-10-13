@@ -27,8 +27,8 @@ async function OwnersOnly({ children }: { children: React.ReactNode }) {
     );
   }
   return (
-    <div className="grid gap-8 md:grid-cols-[200px_1fr]">
-      <aside>
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-8 md:grid-cols-[200px_minmax(0,1fr)]">
+      <aside className="min-w-0">
         <NavLinks links={SETTINGS_SECTIONS} vertical label="Settings sections" />
       </aside>
       <div className="min-w-0">{children}</div>

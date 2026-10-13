@@ -154,7 +154,7 @@ export default async function CompanySettingsPage() {
                 name="logo"
                 type="file"
                 accept="image/png,image/jpeg,image/svg+xml"
-                className="block min-h-11 file:mr-3 file:min-h-11 file:rounded-md file:border-2 file:border-text file:text-text file:bg-surface file:px-4 file:font-display file:font-bold"
+                className="block w-full min-h-11 file:mr-3 file:min-h-11 file:rounded-md file:border-2 file:border-text file:text-text file:bg-surface file:px-4 file:font-display file:font-bold"
               />
               <p className="text-[15px] text-text-muted">
                 PNG, JPEG, or SVG, under 2 MB. A wide logo works best.

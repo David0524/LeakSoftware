@@ -4,19 +4,83 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cx } from "./ui";
 
+const ICONS: Record<string, React.ReactNode> = {
+  "/jobs": (
+    <path d="M9 4h6M8 4H6a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-2M9 11h6M9 15h4" />
+  ),
+  "/schedule": (
+    <path d="M7 3v3M17 3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM8 12h3M8 16h3M13 12h3" />
+  ),
+  "/customers": (
+    <path d="M16 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM21 20v-1a4 4 0 0 0-3-3.9M16 4.1a3.5 3.5 0 0 1 0 6.8" />
+  ),
+  "/invoices": <path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3" />,
+  "/settings": (
+    <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
+  ),
+};
+
+/** Phones: the main sections as a tab bar along the bottom (iOS convention). */
+export function TabBar({ links }: { links: { href: string; label: string }[] }) {
+  const path = usePathname();
+  return (
+    <nav
+      aria-label="Main"
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-header pb-[env(safe-area-inset-bottom)] text-on-header sm:hidden"
+    >
+      <ul className="flex">
+        {links.map((l) => {
+          const active = path === l.href || path.startsWith(`${l.href}/`);
+          return (
+            <li key={l.href} className="flex-1">
+              <Link
+                href={l.href}
+                aria-current={active ? "page" : undefined}
+                className={cx(
+                  "flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-semibold",
+                  active ? "text-on-header" : "text-on-header/65",
+                )}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  className="size-6"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  {ICONS[l.href]}
+                </svg>
+                {l.label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
 export function NavLinks({
   links,
   vertical = false,
   label = "Main",
+  className,
 }: {
   links: { href: string; label: string }[];
   vertical?: boolean;
   label?: string;
+  className?: string;
 }) {
   const path = usePathname();
   if (vertical) {
     return (
-      <nav aria-label={label} className="flex flex-row flex-wrap gap-1 md:flex-col">
+      <nav
+        aria-label={label}
+        className="-mx-4 flex flex-row gap-1 overflow-x-auto px-4 whitespace-nowrap md:mx-0 md:flex-col md:overflow-visible md:px-0 md:whitespace-normal"
+      >
         {links.map((l) => {
           const active = path === l.href || path.startsWith(`${l.href}/`);
           return (
@@ -37,7 +101,7 @@ export function NavLinks({
     );
   }
   return (
-    <nav aria-label={label} className="flex flex-wrap gap-1">
+    <nav aria-label={label} className={cx("flex flex-wrap gap-1", className)}>
       {links.map((l) => {
         const active = path === l.href || path.startsWith(`${l.href}/`);
         return (

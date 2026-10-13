@@ -88,56 +88,95 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       </div>
 
       {view === "week" ? (
-        <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-          <table className="w-full min-w-[760px] table-fixed text-left">
-            <thead className="border-b border-border">
-              <tr>
-                <th scope="col" className="w-32 px-3 py-2 font-medium text-text-muted">
-                  Tech
-                </th>
-                {days.map((d) => (
-                  <th
-                    key={d}
-                    scope="col"
+        <>
+          {/* Phones: the week as an agenda, day by day. */}
+          <div className="space-y-5 sm:hidden">
+            {days.map((d) => {
+              const list = jobs.filter(
+                (j) => j.scheduled_start && localDate(new Date(j.scheduled_start), tz) === d,
+              );
+              return (
+                <section key={d} aria-label={formatDay(d, "long")}>
+                  <h2
                     className={cx(
-                      "px-2 py-2 font-medium",
-                      d === today ? "text-link" : "text-text-muted",
+                      "mb-2 font-display text-lg font-bold",
+                      d === today && "text-link",
                     )}
                   >
-                    <Link
-                      href={href(d, "day")}
-                      aria-current={d === today ? "date" : undefined}
-                      className="underline-offset-4 hover:underline"
-                    >
-                      {formatDay(d)}
+                    <Link href={href(d, "day")} className="underline-offset-4 hover:underline">
+                      {formatDay(d, "long")}
                       {d === today ? " · Today" : ""}
                     </Link>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id ?? "none"} className="border-b border-border align-top last:border-0">
-                  <th scope="row" className="px-3 py-2 font-semibold">
-                    {r.name}
+                  </h2>
+                  {list.length === 0 ? (
+                    <p className="text-[15px] text-text-muted">Nothing scheduled.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {list.map((j) => (
+                        <li key={j.id}>
+                          <JobChip job={j} tz={tz} tech={j.techName ?? "Unassigned"} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+          <div className="hidden overflow-x-auto rounded-lg border border-border bg-surface sm:block">
+            <table className="w-full min-w-[760px] table-fixed text-left">
+              <thead className="border-b border-border">
+                <tr>
+                  <th scope="col" className="w-32 px-3 py-2 font-medium text-text-muted">
+                    Tech
                   </th>
                   {days.map((d) => (
-                    <td key={d} className={cx("px-2 py-2", d === today && "bg-bg")}>
-                      <ul className="space-y-2">
-                        {(grouped.get(r.id)?.get(d) ?? []).map((j) => (
-                          <li key={j.id}>
-                            <JobChip job={j} tz={tz} compact />
-                          </li>
-                        ))}
-                      </ul>
-                    </td>
+                    <th
+                      key={d}
+                      scope="col"
+                      className={cx(
+                        "px-2 py-2 font-medium",
+                        d === today ? "text-link" : "text-text-muted",
+                      )}
+                    >
+                      <Link
+                        href={href(d, "day")}
+                        aria-current={d === today ? "date" : undefined}
+                        className="underline-offset-4 hover:underline"
+                      >
+                        {formatDay(d)}
+                        {d === today ? " · Today" : ""}
+                      </Link>
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr
+                    key={r.id ?? "none"}
+                    className="border-b border-border align-top last:border-0"
+                  >
+                    <th scope="row" className="px-3 py-2 font-semibold">
+                      {r.name}
+                    </th>
+                    {days.map((d) => (
+                      <td key={d} className={cx("px-2 py-2", d === today && "bg-bg")}>
+                        <ul className="space-y-2">
+                          {(grouped.get(r.id)?.get(d) ?? []).map((j) => (
+                            <li key={j.id}>
+                              <JobChip job={j} tz={tz} compact />
+                            </li>
+                          ))}
+                        </ul>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       ) : (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {rows.map((r) => {
@@ -173,7 +212,18 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   );
 }
 
-function JobChip({ job, tz, compact = false }: { job: JobRow; tz: string; compact?: boolean }) {
+function JobChip({
+  job,
+  tz,
+  compact = false,
+  tech,
+}: {
+  job: JobRow;
+  tz: string;
+  compact?: boolean;
+  /** Shown in the phone agenda, where jobs are not grouped by tech. */
+  tech?: string;
+}) {
   return (
     <Link
       href={`/jobs/${job.id}`}
@@ -182,7 +232,10 @@ function JobChip({ job, tz, compact = false }: { job: JobRow; tz: string; compac
       <span className="block font-semibold whitespace-nowrap">
         {formatTime(job.scheduled_start!, tz)} · {job.number ? `#${job.number}` : "New"}
       </span>
-      <span className="block text-[15px]">{job.customer?.name ?? "Customer"}</span>
+      <span className="block text-[15px]">
+        {job.customer?.name ?? "Customer"}
+        {tech ? <span className="text-text-muted"> · {tech}</span> : null}
+      </span>
       {!compact && job.property ? (
         <span className="block text-[15px] text-text-muted">{job.property.address_line1}</span>
       ) : null}

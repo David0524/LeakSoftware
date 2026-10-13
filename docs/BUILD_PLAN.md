@@ -368,6 +368,14 @@ Added 2026-10-13 after reviewing his current reports (`docs/research/2026-10-13-
 - Invoice from a completed job (detection fee and/or repair), deposit credited, send, pay via Checkout, statuses (`draft`, `sent`, `partially_paid`, `paid`, `void`), receipts, CSV export.
 - **Done when:** the full definition of done from the handoff passes end to end in test mode. Write it as a scripted Playwright + device checklist.
 
+### M9.5 Website parity with the app
+Added 2026-10-13 (owner: "the app and website should essentially be the same"; demos use the website on a phone). The website does everything the app does, except working with no signal: on the website every change saves straight to the server, with the same database rules.
+1. Every office page works on a phone (390 px): navigation, lists, job page, schedule, settings.
+2. Job page actions: start, finish, cancel; checklist results and "where"; tests with the calculators; findings with diagram pins.
+3. Photos and videos from the browser's camera, markup, voice notes, and on-screen signatures.
+4. Quote builder: from findings and the price book, discount, send.
+- **Done when:** at phone width in Playwright, a job is started, its checklist worked, a test and a finding with a pin added, a photo uploaded and marked up, the customer signs, a quote is built and sent, and the report is sent, all from the website.
+
 ### M10 Beyond the MVP
 - Quote and invoice reminder emails (Vercel Cron, schedule in company settings, stops when accepted or paid).
 - Review request after payment (shop's review link, once per job, opt-out per customer).

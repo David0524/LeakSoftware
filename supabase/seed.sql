@@ -66,7 +66,7 @@ begin
      scheduled_start, scheduled_end)
   values
     (demo_company, 'detection', prop, cust, 'scheduled', tech_id,
-     date_trunc('day', now()) + interval '1 day 9 hours',
-     date_trunc('day', now()) + interval '1 day 11 hours');
+     ((now() at time zone 'America/Phoenix')::date + 1 + time '09:00') at time zone 'America/Phoenix',
+     ((now() at time zone 'America/Phoenix')::date + 1 + time '11:00') at time zone 'America/Phoenix');
 end
 $$;

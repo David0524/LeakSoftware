@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { signOut, switchCompany } from "@/app/actions/auth";
 import { Logo } from "@/components/logo";
-import { NavLinks } from "@/components/nav-links";
+import { NavLinks, TabBar } from "@/components/nav-links";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getOffice } from "@/lib/auth";
 
@@ -23,7 +23,8 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
           </Suspense>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8">{children}</main>
+      {/* Room for the phone tab bar. */}
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-6 pb-24 sm:py-8">{children}</main>
     </div>
   );
 }
@@ -39,7 +40,8 @@ async function OfficeNav() {
   ];
   return (
     <>
-      <NavLinks links={links} />
+      <NavLinks links={links} className="hidden sm:flex" />
+      <TabBar links={links} />
       <div className="ml-auto flex items-center gap-3 text-[15px]">
         {office.companies.length > 1 ? (
           <form action={switchCompany} className="flex items-center gap-2">

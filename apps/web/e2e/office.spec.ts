@@ -220,3 +220,37 @@ test("the office adds a job for a new customer, with its checklist ready", async
     page.getByText(/0 not leaking · 0 attention · 0 leaking · 0 not applicable · \d+ to do/),
   ).toBeVisible();
 });
+
+test("on a phone: a tab bar moves between sections and nothing scrolls sideways", async ({
+  browser,
+}) => {
+  const phone = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  });
+  const page = await phone.newPage();
+  await signIn(page, OWNER);
+  const tabs = page.getByRole("navigation", { name: "Main" });
+  for (const [label, heading] of [
+    ["Schedule", "Schedule"],
+    ["Customers", "Customers"],
+    ["Invoices", "Invoices"],
+    ["Settings", "Company and Branding"],
+    ["Jobs", "Jobs"],
+  ] as const) {
+    await tabs.getByRole("link", { name: label }).click();
+    await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      390,
+    );
+  }
+  // Jobs are cards on a phone; one opens its job.
+  await page
+    .getByRole("link", { name: /Sam Sample/ })
+    .first()
+    .click();
+  await expect(page.getByRole("heading", { name: /^Job #\d+$/ })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await phone.close();
+});
