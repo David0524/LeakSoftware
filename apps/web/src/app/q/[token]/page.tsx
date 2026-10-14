@@ -106,7 +106,7 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
             <p className="text-[0.9375rem]">{[c.phone, c.email].filter(Boolean).join(" · ")}</p>
           </div>
         </div>
-        <div className="text-right">
+        <div className="text-left sm:text-right">
           <h1 className="font-display text-xl font-bold">
             Repair Quote{q.number ? ` #${q.number}` : ""}
           </h1>

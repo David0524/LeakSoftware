@@ -39,7 +39,7 @@ export function JobSections({ sections }: { sections: JobSection[] }) {
       <div
         role="tablist"
         aria-label="Job sections"
-        className="glass sticky top-[4.25rem] z-20 mb-4 grid grid-cols-5 gap-0.5 rounded-full p-1 sm:hidden"
+        className="glass glass-strong sticky top-[4.25rem] z-20 mb-4 grid grid-cols-5 gap-0.5 rounded-full p-1 after:pointer-events-none after:absolute after:inset-x-4 after:-bottom-3 after:h-3 after:bg-linear-to-b after:from-bg after:to-transparent sm:hidden"
       >
         {sections.map((s) => (
           <button

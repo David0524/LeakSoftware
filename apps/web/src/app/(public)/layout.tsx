@@ -8,7 +8,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
     <>
       <header className="border-b border-border bg-surface">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-          <Link href="/" aria-label="Tidemark home">
+          <Link href="/" aria-label="Tidemark home" className="inline-flex min-h-11 items-center">
             <Logo />
           </Link>
           <nav className="flex items-center gap-2">

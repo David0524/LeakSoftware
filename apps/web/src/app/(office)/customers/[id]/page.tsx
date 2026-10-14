@@ -71,7 +71,12 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
           <h3 className="mt-5 mb-2 font-display text-lg font-bold">Emails</h3>
           <SettingsForm action={saveCustomerEmails}>
             <input type="hidden" name="customer" value={customer.id} />
-            <SField label="Email" name="email" type="email" defaultValue={customer.email ?? ""} />
+            <SField
+              label="Main email"
+              name="email"
+              type="email"
+              defaultValue={customer.email ?? ""}
+            />
             <SField
               label="Other emails"
               name="cc_emails"

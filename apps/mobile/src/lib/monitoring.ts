@@ -29,7 +29,7 @@ function handleFullStorage() {
   ErrorUtils.setGlobalHandler((error: unknown, isFatal?: boolean) => {
     if (isStorageFull(error) || (error instanceof Error && error.name === "StorageFullError")) {
       Alert.alert(
-        "Phone Storage Is Full",
+        "Phone storage is full",
         "This wasn’t saved. Free up some space (old photos, videos, or apps), then try again. Nothing saved before is lost.",
       );
       return;

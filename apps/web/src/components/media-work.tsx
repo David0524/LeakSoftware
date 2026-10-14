@@ -31,7 +31,7 @@ import {
 } from "@/app/actions/media";
 import { MarkupOverlay } from "./markup";
 import { Segmented } from "./segmented";
-import { Button, Field, Select, cx } from "./ui";
+import { Button, Field, Select, buttonClass, cx } from "./ui";
 
 // Photos, videos, voice notes, markup, and signatures from a browser (M9.5): the phone app's
 // capture screens. Files go straight to storage; the server records them.
@@ -441,11 +441,11 @@ export function MediaActions({
   const [busy, setBusy] = useState(false);
   return (
     <>
-      <div className="flex flex-wrap gap-4">
+      <div className="flex flex-wrap gap-3">
         {media.kind === "photo" && media.url ? (
           <button
             type="button"
-            className="min-h-11 font-semibold text-link underline-offset-4 hover:underline"
+            className={buttonClass("secondary", "min-w-24")}
             onClick={() => setEditing(true)}
             aria-label={`${media.shapes.length ? "Edit Markup" : "Mark Up"}: ${media.label}`}
           >
@@ -455,7 +455,7 @@ export function MediaActions({
         <button
           type="button"
           disabled={busy}
-          className="min-h-11 font-semibold text-status-fail underline-offset-4 hover:underline"
+          className={buttonClass("danger")}
           aria-label={`Delete: ${media.label}`}
           onClick={async () => {
             if (!window.confirm("Remove this from the job? The original stays on file.")) return;

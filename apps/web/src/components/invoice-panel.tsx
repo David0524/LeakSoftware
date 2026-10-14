@@ -265,7 +265,9 @@ export function InvoicePanel({
                 <li key={p.id}>
                   {formatCents(p.amount_cents)} · {METHOD[p.method] ?? p.method} ·{" "}
                   {PAYMENT_STATUS[p.status] ?? p.status}
-                  {p.paid_at ? ` · ${new Date(p.paid_at).toLocaleDateString()}` : ""}
+                  {p.paid_at
+                    ? ` · ${new Date(p.paid_at).toLocaleDateString("en-US", { dateStyle: "medium" })}`
+                    : ""}
                 </li>
               ))}
             </ul>

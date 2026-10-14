@@ -21,5 +21,10 @@ export function AuthCard({
 }
 
 export function FormSkeleton() {
-  return <div className="h-64 animate-pulse rounded-md bg-bg" aria-label="Loading" />;
+  return (
+    <div
+      className="h-64 animate-pulse motion-reduce:animate-none rounded-md bg-bg"
+      aria-label="Loading"
+    />
+  );
 }

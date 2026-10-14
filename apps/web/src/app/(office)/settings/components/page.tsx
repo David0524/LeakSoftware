@@ -77,28 +77,39 @@ export default async function ComponentsPage() {
           </SettingsForm>
         </Card>
         {types.map((t) => (
-          <Card key={t.id}>
-            <h2 className="mb-4 font-display text-xl font-bold">
-              {t.name}
-              {!t.active ? <span className="font-normal text-text-muted"> · off</span> : null}
-            </h2>
-            <SettingsForm action={saveComponentType}>
-              <input type="hidden" name="id" value={t.id} />
-              <TypeFields t={t} />
-            </SettingsForm>
-            <div className="mt-4">
-              <SettingsForm
-                action={removeConfigRow}
-                submit="Remove Component"
-                danger
-                confirm="Remove this component from new checklists?"
-              >
-                <input type="hidden" name="table" value="component_type" />
+          <details key={t.id} className="group card">
+            <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 px-5 py-3">
+              <span>
+                <span className="font-semibold">{t.name}</span>
+                <span className="text-text-muted">
+                  {" "}
+                  · {APPLIES.find((a) => a.value === t.applies_to)?.label ?? t.applies_to}
+                </span>
+                {!t.active ? <span className="text-text-muted"> · off</span> : null}
+              </span>
+              <span aria-hidden="true" className="text-text-muted group-open:rotate-90">
+                ›
+              </span>
+            </summary>
+            <div className="border-t border-border px-5 py-4">
+              <SettingsForm action={saveComponentType}>
                 <input type="hidden" name="id" value={t.id} />
-                <input type="hidden" name="path" value="/settings/components" />
+                <TypeFields t={t} />
               </SettingsForm>
+              <div className="mt-4">
+                <SettingsForm
+                  action={removeConfigRow}
+                  submit="Remove Component"
+                  danger
+                  confirm="Remove this component from new checklists?"
+                >
+                  <input type="hidden" name="table" value="component_type" />
+                  <input type="hidden" name="id" value={t.id} />
+                  <input type="hidden" name="path" value="/settings/components" />
+                </SettingsForm>
+              </div>
             </div>
-          </Card>
+          </details>
         ))}
       </div>
     </>

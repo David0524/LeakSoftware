@@ -25,7 +25,11 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
       </a>
       <header className="glass-brand sticky top-0 z-30 text-on-header">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2">
-          <Link href="/today" aria-label="Tidemark, Today" className="py-1">
+          <Link
+            href="/today"
+            aria-label="Tidemark, Today"
+            className="inline-flex min-h-11 items-center"
+          >
             <Logo height={30} onDark />
           </Link>
           <Suspense fallback={<div className="h-11 flex-1" />}>

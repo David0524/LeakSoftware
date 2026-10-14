@@ -92,7 +92,10 @@ export function QuotePanel({
       {quote.status === "accepted" ? (
         <p className="mt-4">
           Accepted by {quote.accepted_by_name}
-          {quote.accepted_at ? ` on ${new Date(quote.accepted_at).toLocaleDateString()}` : ""}.
+          {quote.accepted_at
+            ? ` on ${new Date(quote.accepted_at).toLocaleDateString("en-US", { dateStyle: "medium" })}`
+            : ""}
+          .
           {quote.repair_job_id ? (
             <>
               {" "}

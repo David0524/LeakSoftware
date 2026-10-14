@@ -54,10 +54,10 @@ export default function Settings() {
             )
               .then(async (r) => {
                 if (r.status === "deleted") return signOut();
-                Alert.alert("Request Sent", r.message ?? "We’ll email you when it’s done.");
+                Alert.alert("Request sent", r.message ?? "We’ll email you when it’s done.");
               })
               .catch((e: unknown) =>
-                Alert.alert("Couldn’t Delete", e instanceof Error ? e.message : String(e)),
+                Alert.alert("Couldn’t delete", e instanceof Error ? e.message : String(e)),
               )
               .finally(() => setDeleting(false));
           },

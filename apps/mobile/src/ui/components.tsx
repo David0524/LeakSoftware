@@ -254,7 +254,7 @@ export function Choice<V extends string>({
             <Pressable
               key={o.value}
               accessibilityRole="radio"
-              accessibilityState={{ selected: on }}
+              accessibilityState={{ checked: on }}
               onPress={() => onChange(o.value)}
               style={[styles.choice, on && styles.choiceOn]}
             >

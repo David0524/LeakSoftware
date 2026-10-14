@@ -617,7 +617,9 @@ function WeekChip({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
         className="min-h-11 min-w-0 flex-1 rounded-xl py-1.5 pr-1.5 hover:underline active:bg-text/[0.06]"
       >
         <span className="block text-[0.9375rem] font-semibold">{s.time ?? "Saving…"}</span>
-        <span className="block truncate text-[0.9375rem]">{s.customer}</span>
+        <span className="line-clamp-2 block text-[0.9375rem]" title={s.customer}>
+          {s.customer}
+        </span>
         {s.lock ? <span className="block text-[0.8125rem] text-text-muted">{s.lock}</span> : null}
       </Link>
       {s.draggable ? (

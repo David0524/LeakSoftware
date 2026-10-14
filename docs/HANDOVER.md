@@ -13,8 +13,7 @@ the newest entries in `docs/DECISIONS.md`.
   `docs/release/LAUNCH.md`.
 - **Dev database:** the owner applies migrations from another chat with `pnpm db:deploy`.
   `20261012002600_report_sign_off.sql` is applied (the owner has signed reports with it).
-  **Check that `20261012002700_signature_replace.sql` is applied**; until it is, removing
-  signatures and "newest signature replaces the old one" don't work on the dev site.
+  Run `pnpm db:deploy` after pulling to apply `20261012002800` and `20261012002900`.
 
 ## What this stretch added (newest first)
 
@@ -43,12 +42,13 @@ deposit, where jobs come from and who pays, how monthly maintenance billing shou
 water-chemistry readings and post-visit emails, pricing and pilot. List in BUILD_PLAN
 section 10 and DECISIONS.
 
-**Left from the M11 review:** M3 (Edit/Delete as pills), M4 (stronger glass under the job's
-section switcher), M6 (VoiceOver for pin placement in the app), M7 (fold Checklist Components),
-and the Low findings. The app's review findings were from reading code; they still need a
-check on an iPhone with large text and VoiceOver.
+**M11 review:** every finding is fixed (see the review's Fixes section). The app's findings
+were fixed from reading code; they still need a check on an iPhone with large text and
+VoiceOver.
 
-**Not built yet (decided, not requested):** monthly maintenance invoices.
+**Built 2026-10-14 (second pass):** job visibility reaches the server functions and stored
+files (`20261012002800`); monthly maintenance invoices (`20261012002900`, Invoices page
+"Maintenance to Bill", daily run on the 1st). See DECISIONS.
 
 ## Working notes
 

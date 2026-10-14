@@ -40,7 +40,7 @@ import {
 import { PoolDiagram } from "./pool-diagram";
 import { Segmented } from "./segmented";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
-import { Button, Checkbox, Chip, Empty, Select, cx } from "./ui";
+import { Button, Checkbox, Chip, Empty, Select, buttonClass, cx } from "./ui";
 
 // Working a job on the website (M9.5): the phone's job screen, for a browser.
 
@@ -553,10 +553,10 @@ export function TestsEditor({
                 </dl>
               ) : null}
               {t.notes ? <p className="mt-2 text-[0.9375rem]">{t.notes}</p> : null}
-              <div className="mt-2 flex gap-4">
+              <div className="mt-3 flex flex-wrap gap-3">
                 <button
                   type="button"
-                  className="min-h-11 font-semibold text-link underline-offset-4 hover:underline"
+                  className={buttonClass("secondary", "min-w-24")}
                   onClick={() => setEditing(t.id)}
                   aria-label={`Edit ${type?.name ?? "test"}`}
                 >
@@ -565,7 +565,7 @@ export function TestsEditor({
                 <button
                   type="button"
                   disabled={pending}
-                  className="min-h-11 font-semibold text-status-fail underline-offset-4 hover:underline"
+                  className={buttonClass("danger")}
                   aria-label={`Delete ${type?.name ?? "test"}`}
                   onClick={() => {
                     if (window.confirm("Delete this test?"))
@@ -821,10 +821,10 @@ export function FindingsEditor({
                       </p>
                       {f.location ? <p className="mt-1">{f.location}</p> : null}
                       {f.notes ? <p className="mt-1 text-[0.9375rem]">{f.notes}</p> : null}
-                      <div className="mt-1 flex gap-4">
+                      <div className="mt-3 flex flex-wrap gap-3">
                         <button
                           type="button"
-                          className="min-h-11 font-semibold text-link underline-offset-4 hover:underline"
+                          className={buttonClass("secondary", "min-w-24")}
                           aria-label={`Edit ${f.title}`}
                           onClick={() => setEditing(f.id)}
                         >
@@ -833,7 +833,7 @@ export function FindingsEditor({
                         <button
                           type="button"
                           disabled={pending}
-                          className="min-h-11 font-semibold text-status-fail underline-offset-4 hover:underline"
+                          className={buttonClass("danger")}
                           aria-label={`Delete ${f.title}`}
                           onClick={() => {
                             if (window.confirm(`Delete “${f.title}”?`))

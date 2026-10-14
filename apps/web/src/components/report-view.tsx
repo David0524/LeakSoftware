@@ -147,7 +147,7 @@ export function ReportView(p: ReportViewProps) {
             </p>
           </div>
         </div>
-        <div className="text-right text-[0.9375rem]">
+        <div className="text-left text-[0.9375rem] sm:text-right">
           <h1 className="font-display text-xl font-bold">{title}</h1>
           <p>
             {p.sentAt ? formatDate(p.sentAt, tz) : "Draft"}

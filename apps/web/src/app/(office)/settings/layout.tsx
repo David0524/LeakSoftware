@@ -1,9 +1,13 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { NavLinks } from "@/components/nav-links";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Notice } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { SETTINGS_SECTIONS } from "@/lib/settings-sections";
+
+// Each section names itself; a tech (who sees only the notice below) still gets a title.
+export const metadata: Metadata = { title: "Settings · Tidemark" };
 
 export default function SettingsLayout({ children }: LayoutProps<"/settings">) {
   return (

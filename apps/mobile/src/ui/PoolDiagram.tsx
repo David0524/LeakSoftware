@@ -40,16 +40,31 @@ export function PoolDiagram({
     onPlace(Math.round(x * 10000) / 10000, Math.round(y * 10000) / 10000);
   }
 
+  // VoiceOver can't aim a tap on the drawing (design review M6): the diagram reads as one
+  // element that names its pins, and double-tapping drops the pin in the middle; the finding's
+  // location field then says where it is.
+  const pinSummary = pins.length ? pins.map((p) => `Pin ${p.label}`).join(", ") : "No pins";
+
   return (
     <View
       style={styles.frame}
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
-      accessibilityLabel={
-        onPlace ? "Pool diagram. Tap where the leak is." : "Pool diagram with finding pins"
-      }
+      accessible={!onPlace}
+      accessibilityLabel={onPlace ? undefined : "Pool diagram"}
+      accessibilityValue={onPlace ? undefined : { text: pinSummary }}
     >
       {width > 0 ? (
-        <Pressable onPress={place} disabled={!onPlace} style={{ width, height }}>
+        <Pressable
+          onPress={place}
+          disabled={!onPlace}
+          style={{ width, height }}
+          accessible={!!onPlace}
+          accessibilityRole="button"
+          accessibilityLabel="Pool diagram. Tap where the leak is."
+          accessibilityValue={{ text: pinSummary }}
+          accessibilityHint="Double-tap to place the pin in the middle, then describe where it is in the location field."
+          onAccessibilityTap={onPlace ? () => onPlace(0.5, 0.5) : undefined}
+        >
           <Svg
             width={width}
             height={height}
