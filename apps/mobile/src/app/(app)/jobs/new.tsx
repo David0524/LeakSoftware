@@ -1,6 +1,6 @@
-import { router } from "expo-router";
+import { router, Stack } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import {
   POOL_TYPE_LABELS,
   formatAddress,
@@ -26,6 +26,9 @@ import {
   Card,
   Choice,
   Field,
+  Group,
+  HeaderButton,
+  ListRow,
   Notice,
   Screen,
   Section,
@@ -33,8 +36,9 @@ import {
   Toggle,
   Segmented,
 } from "../../../ui/components";
+import { confirmDestructive } from "../../../ui/confirm";
 import { ShapePicker } from "../../../ui/ShapePicker";
-import { color, space } from "../../../ui/theme";
+import { ios, space } from "../../../ui/theme";
 
 type When = "now" | "scheduled" | "later";
 
@@ -103,6 +107,29 @@ export default function NewJob() {
       tomorrow: localDate(new Date(now.getTime() + 86_400_000), company.timezone),
     };
   });
+
+  // Anything typed or picked yet? Then closing the sheet asks first, and on iPhone a swipe
+  // down doesn't close it by accident.
+  const dirty = Boolean(
+    customerId ||
+    search.trim() ||
+    accessNotes.trim() ||
+    otherEmails.trim() ||
+    shape ||
+    fee !== null ||
+    Object.keys(answers).length > 0 ||
+    Object.values(form).some((v) => v.trim()),
+  );
+
+  function cancel() {
+    if (!dirty) return router.back();
+    confirmDestructive({
+      title: "Discard this job?",
+      confirm: "Discard",
+      cancel: "Keep Editing",
+      onConfirm: () => router.back(),
+    });
+  }
 
   function save() {
     const input: NewJobInput = {
@@ -184,6 +211,14 @@ export default function NewJob() {
 
   return (
     <Screen>
+      {ios ? (
+        <Stack.Screen
+          options={{
+            headerLeft: () => <HeaderButton title="Cancel" onPress={cancel} />,
+            gestureEnabled: !dirty,
+          }}
+        />
+      ) : null}
       <Section title="Customer">
         {selectedCustomer ? (
           <Card>
@@ -208,24 +243,27 @@ export default function NewJob() {
                 placeholder="Name, phone, or email"
               />
             ) : null}
-            {matches.map((c) => (
-              <Pressable
-                key={c.id}
-                accessibilityRole="button"
-                onPress={() => {
-                  setCustomerId(c.id);
-                  setSearch("");
-                  const props = properties.filter((p) => p.customer_id === c.id);
-                  setPropertyId(props.length === 1 ? props[0]!.id : undefined);
-                }}
-                style={styles.match}
-              >
-                <T variant="strong">{c.name}</T>
-                <T variant="muted">
-                  {[c.phone, c.email].filter(Boolean).join(" · ") || "No contact details"}
-                </T>
-              </Pressable>
-            ))}
+            {matches.length > 0 ? (
+              <Group>
+                {matches.map((c) => (
+                  <ListRow
+                    key={c.id}
+                    chevron={false}
+                    onPress={() => {
+                      setCustomerId(c.id);
+                      setSearch("");
+                      const props = properties.filter((p) => p.customer_id === c.id);
+                      setPropertyId(props.length === 1 ? props[0]!.id : undefined);
+                    }}
+                  >
+                    <T variant="strong">{c.name}</T>
+                    <T variant="muted">
+                      {[c.phone, c.email].filter(Boolean).join(" · ") || "No contact details"}
+                    </T>
+                  </ListRow>
+                ))}
+              </Group>
+            ) : null}
             <T variant="muted">Or add a new customer:</T>
             <Field
               label="Name"
@@ -459,12 +497,4 @@ export default function NewJob() {
 
 const styles = StyleSheet.create({
   cols: { flexDirection: "row", gap: space["3"] },
-  match: {
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: 10,
-    padding: space["3"],
-    gap: 2,
-  },
 });

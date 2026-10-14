@@ -28,8 +28,9 @@ import {
 } from "../../lib/media";
 import { useCompany } from "../../state/session";
 import { Button, Row, Section, T } from "../../ui/components";
+import { chooseAction } from "../../ui/confirm";
 import { MarkupLayer } from "../../ui/MarkupLayer";
-import { color, font, radius, space } from "../../ui/theme";
+import { color, face, radius, space } from "../../ui/theme";
 import { VoiceRecorder } from "./VoiceRecorder";
 
 /**
@@ -71,11 +72,13 @@ export function MediaSection({
   /** Photo and Video ask: take a new one, or choose one already on the phone. */
   function choose(kind: "photo" | "video") {
     const noun = kind === "photo" ? "Photo" : "Video";
-    Alert.alert(`Add ${noun}`, undefined, [
-      { text: `Take ${noun}`, onPress: () => void capture(kind, "camera") },
-      { text: "Choose from Library", onPress: () => void capture(kind, "library") },
-      { text: "Cancel", style: "cancel" },
-    ]);
+    chooseAction({
+      title: `Add ${noun}`,
+      actions: [
+        { label: `Take ${noun}`, onPress: () => void capture(kind, "camera") },
+        { label: "Choose from Library", onPress: () => void capture(kind, "library") },
+      ],
+    });
   }
 
   async function capture(kind: "photo" | "video", source: "camera" | "library") {
@@ -243,7 +246,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.navy,
   },
   placeholder: { flex: 1, alignItems: "center", justifyContent: "center", gap: 4 },
-  duration: { color: color.onHeader, fontFamily: font.bodySemiBold, fontVariant: ["tabular-nums"] },
+  duration: { color: color.onHeader, ...face.semiBold, fontVariant: ["tabular-nums"] },
   badge: {
     position: "absolute",
     right: 4,

@@ -11,6 +11,7 @@ import { MEDIA_LIMITS, formatDuration } from "@leakbook/core";
 import { VOICE_MIME } from "../../lib/media";
 import { Button, Card, Row, T } from "../../ui/components";
 import { color, space } from "../../ui/theme";
+import { confirmDestructive } from "../../ui/confirm";
 import type { CapturedFile } from "../../lib/media";
 
 /**
@@ -104,10 +105,12 @@ export function VoiceRecorder({
 
   function discard() {
     if (state.durationMillis < 5_000) return void stop(false);
-    Alert.alert("Discard this voice note?", undefined, [
-      { text: "Keep Recording", style: "cancel" },
-      { text: "Discard", style: "destructive", onPress: () => void stop(false) },
-    ]);
+    confirmDestructive({
+      title: "Discard this voice note?",
+      confirm: "Discard",
+      cancel: "Keep Recording",
+      onConfirm: () => void stop(false),
+    });
   }
 
   const limitMs = MEDIA_LIMITS.voiceMaxSeconds * 1000;

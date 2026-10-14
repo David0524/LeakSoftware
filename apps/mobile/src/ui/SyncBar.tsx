@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSyncStatus } from "../data/hooks";
-import { color, font, space } from "./theme";
+import { color, face, space } from "./theme";
 
 function ago(ms: number): string {
   const s = Math.round((Date.now() - ms) / 1000);
@@ -19,7 +19,14 @@ function files(n: number, allPhotos: boolean): string {
  * changes or files waiting, problems, or signed out. When everything is saved it takes no
  * space (Settings still shows the full sync state). Tapping it opens Settings for details.
  */
-export function SyncBar({ onPress }: { onPress: () => void }) {
+export function SyncBar({
+  onPress,
+  inset = false,
+}: {
+  onPress: () => void;
+  /** iPhone: a rounded row at the top of the inset grouped list instead of a full-width bar. */
+  inset?: boolean;
+}) {
   const s = useSyncStatus();
   const waiting = s.pending > 0 || s.uploads.waiting > 0;
   const healthy =
@@ -75,7 +82,7 @@ export function SyncBar({ onPress }: { onPress: () => void }) {
       accessibilityRole="button"
       accessibilityLabel={`Sync status: ${label}`}
       onPress={onPress}
-      style={styles.bar}
+      style={[styles.bar, inset && styles.inset]}
     >
       <View style={[styles.dot, { backgroundColor: dot }]} />
       <Text style={styles.text} numberOfLines={2}>
@@ -97,6 +104,7 @@ const styles = StyleSheet.create({
     borderBottomColor: color.border,
     minHeight: 44,
   },
+  inset: { borderBottomWidth: 0, borderRadius: 12 },
   dot: { width: 10, height: 10, borderRadius: 5 },
-  text: { fontFamily: font.bodyMedium, fontSize: 15, lineHeight: 20, color: color.text, flex: 1 },
+  text: { ...face.medium, fontSize: 15, lineHeight: 20, color: color.text, flex: 1 },
 });

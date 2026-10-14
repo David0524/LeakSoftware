@@ -1,7 +1,7 @@
 import { StyleSheet, View } from "react-native";
 import type { Outcome } from "@leakbook/core";
 import { T } from "../../ui/components";
-import { color, font, radius } from "../../ui/theme";
+import { color, face, radius } from "../../ui/theme";
 
 export const OUTCOME_STYLE: Record<Outcome, { label: string; bg: string }> = {
   pass: { label: "Pass", bg: color.pass },
@@ -24,5 +24,5 @@ export function OutcomeChip({ outcome }: { outcome?: Outcome | null }) {
 const styles = StyleSheet.create({
   // A pill like every other status label (M11 review M9).
   chip: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: radius.pill },
-  text: { fontFamily: font.bodySemiBold, fontSize: 13, color: color.onHeader },
+  text: { ...face.semiBold, fontSize: 13, color: color.onHeader },
 });

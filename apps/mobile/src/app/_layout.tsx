@@ -7,7 +7,7 @@ import { View } from "react-native";
 import { initMonitoring, reportError } from "../lib/monitoring";
 import { SessionProvider, useSession } from "../state/session";
 import { Button, T } from "../ui/components";
-import { color, space } from "../ui/theme";
+import { color, ios, space } from "../ui/theme";
 
 initMonitoring();
 void SplashScreen.preventAutoHideAsync();
@@ -58,7 +58,8 @@ export default function RootLayout() {
   if (!loaded && !error) return null;
   return (
     <SessionProvider>
-      <StatusBar style="light" />
+      {/* Dark on iPhone's light navigation bar, light on Android's navy one. */}
+      <StatusBar style={ios ? "dark" : "light"} />
       <RootStack />
     </SessionProvider>
   );

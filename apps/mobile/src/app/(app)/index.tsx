@@ -6,9 +6,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatAddress, formatSchedule, groupJobs } from "@leakbook/core";
 import { useJobViews, type JobView } from "../../data/jobs";
 import { useCompany, useSession } from "../../state/session";
-import { StatusChip, T } from "../../ui/components";
+import { HeaderButton, StatusChip, T } from "../../ui/components";
 import { SyncBar } from "../../ui/SyncBar";
-import { color, font, radius, space, touch } from "../../ui/theme";
+import { color, font, ios, radius, space, tint, touch } from "../../ui/theme";
 
 export default function Jobs() {
   const company = useCompany();
@@ -34,40 +34,52 @@ export default function Jobs() {
     setRefreshing(false);
   }
 
+  const openSettings = () => router.push("/settings");
+  const newJob = () => router.push("/jobs/new");
+
   return (
     <View style={{ flex: 1 }}>
       <Stack.Screen
         options={{
           title: company.name,
+          // The screen's main action sits at the bar's right on iPhone (a +); Android keeps the
+          // floating New Job button below, its own convention.
           headerRight: () => (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Settings"
-              hitSlop={12}
-              onPress={() => router.push("/settings")}
-            >
-              <Ionicons name="settings-outline" size={24} color={color.onHeader} />
-            </Pressable>
+            <View style={styles.headerActions}>
+              <HeaderButton title="Settings" icon="settings-outline" onPress={openSettings} />
+              {ios ? <HeaderButton title="New Job" icon="add" onPress={newJob} /> : null}
+            </View>
           ),
         }}
       />
-      <SyncBar onPress={() => router.push("/settings")} />
+      {/* On iPhone the list comes first, so the large title shrinks as it scrolls. */}
+      {ios ? null : <SyncBar onPress={openSettings} />}
       <SectionList
         sections={sections}
         keyExtractor={(j) => j.id}
-        // Room for the last row to scroll clear of the floating New Job button.
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={[
           styles.list,
-          { paddingBottom: insets.bottom + FAB_HEIGHT + space["4"] * 2 },
+          // Room for the last row to scroll clear of Android's floating New Job button.
+          !ios && { paddingBottom: insets.bottom + FAB_HEIGHT + space["4"] * 2 },
         ]}
         stickySectionHeadersEnabled={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+        ListHeaderComponent={ios ? <SyncBar onPress={openSettings} inset /> : null}
         renderSectionHeader={({ section }) => (
           <T variant="label" style={styles.sectionTitle}>
             {section.title}
           </T>
         )}
-        renderItem={({ item }) => <JobRow job={item} now={now} timeZone={company.timezone} />}
+        renderItem={({ item, index, section }) => (
+          <JobRow
+            job={item}
+            now={now}
+            timeZone={company.timezone}
+            first={index === 0}
+            last={index === section.data.length - 1}
+          />
+        )}
         ListEmptyComponent={
           <View style={styles.empty}>
             <T variant="heading">No jobs yet</T>
@@ -77,66 +89,115 @@ export default function Jobs() {
           </View>
         }
       />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="New Job"
-        onPress={() => router.push("/jobs/new")}
-        style={({ pressed }) => [
-          styles.fab,
-          { bottom: insets.bottom + space["4"] },
-          pressed && { opacity: 0.85 },
-        ]}
-      >
-        <Ionicons name="add" size={24} color={color.onPrimary} />
-        <Text style={styles.fabText} maxFontSizeMultiplier={1.6}>
-          New Job
-        </Text>
-      </Pressable>
+      {ios ? null : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="New Job"
+          onPress={newJob}
+          style={({ pressed }) => [
+            styles.fab,
+            { bottom: insets.bottom + space["4"] },
+            pressed && { opacity: 0.85 },
+          ]}
+        >
+          <Ionicons name="add" size={24} color={color.onPrimary} />
+          <Text style={styles.fabText} maxFontSizeMultiplier={1.6}>
+            New Job
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 }
 
-function JobRow({ job, now, timeZone }: { job: JobView; now: Date; timeZone: string }) {
+/** One row of an inset grouped list: the section's rows share one rounded block. */
+function JobRow({
+  job,
+  now,
+  timeZone,
+  first,
+  last,
+}: {
+  job: JobView;
+  now: Date;
+  timeZone: string;
+  first: boolean;
+  last: boolean;
+}) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={() => router.push(`/jobs/${job.id}`)}
-      style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}
-    >
-      <View style={styles.rowLine}>
-        <T variant="strong" style={{ flex: 1 }} numberOfLines={1}>
-          {job.customer?.name ?? "Customer"}
-        </T>
-        <T variant="muted" numberOfLines={1}>
-          {job.status === "in_progress"
-            ? "In progress"
-            : formatSchedule(job.scheduled_start, now, timeZone)}
-        </T>
-      </View>
-      <View style={styles.rowLine}>
-        <T variant="small" style={{ flex: 1 }} numberOfLines={1}>
-          {job.number ? `#${job.number} · ` : "New · "}
-          {job.property ? formatAddress(job.property) : "Address"}
-        </T>
-        <StatusChip status={job.status} />
-      </View>
-    </Pressable>
+    <View style={[styles.rowBox, first && styles.rowFirst, last && styles.rowLast]}>
+      {first ? null : <View style={styles.separator} />}
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push(`/jobs/${job.id}`)}
+        android_ripple={{ color: color.fill }}
+        style={({ pressed }) => [
+          styles.row,
+          ios && pressed && { backgroundColor: color.neutral200 },
+        ]}
+      >
+        <View style={{ flex: 1, gap: 4 }}>
+          <View style={styles.rowLine}>
+            <T variant="strong" style={{ flex: 1 }} numberOfLines={1}>
+              {job.customer?.name ?? "Customer"}
+            </T>
+            <T variant="muted" numberOfLines={1}>
+              {job.status === "in_progress"
+                ? "In progress"
+                : formatSchedule(job.scheduled_start, now, timeZone)}
+            </T>
+          </View>
+          <View style={styles.rowLine}>
+            <T variant="small" style={{ flex: 1 }} numberOfLines={1}>
+              {job.number ? `#${job.number} · ` : "New · "}
+              {job.property ? formatAddress(job.property) : "Address"}
+            </T>
+            <StatusChip status={job.status} />
+          </View>
+        </View>
+        {ios ? (
+          <Ionicons
+            name="chevron-forward"
+            size={17}
+            color={tint(color.textMuted, 0.6)}
+            importantForAccessibility="no"
+          />
+        ) : null}
+      </Pressable>
+    </View>
   );
 }
 
 /** Height of the floating New Job pill (the field app's minimum tap target plus a little). */
 const FAB_HEIGHT = touch + 4;
 
+const GROUP_RADIUS = 12;
+
 const styles = StyleSheet.create({
-  list: { padding: space["4"], gap: space["2"] },
-  sectionTitle: { marginTop: space["3"], marginBottom: space["1"] },
+  list: { padding: space["4"] },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: ios ? space["2"] : 0 },
+  // iPhone: section headers line up with the rows' text, as in iOS inset grouped lists.
+  sectionTitle: {
+    marginTop: space["4"],
+    marginBottom: space["2"],
+    paddingHorizontal: ios ? space["4"] : 0,
+  },
+  rowBox: { backgroundColor: color.surface, overflow: "hidden" },
+  rowFirst: { borderTopLeftRadius: GROUP_RADIUS, borderTopRightRadius: GROUP_RADIUS },
+  rowLast: { borderBottomLeftRadius: GROUP_RADIUS, borderBottomRightRadius: GROUP_RADIUS },
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: space["4"],
+    backgroundColor: color.separator,
+  },
   row: {
-    backgroundColor: color.surface,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: color.border,
-    padding: space["3"],
-    gap: 4,
+    minHeight: touch + 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space["2"],
+    paddingVertical: space["3"],
+    paddingLeft: space["4"],
+    paddingRight: ios ? space["3"] : space["4"],
   },
   rowLine: { flexDirection: "row", alignItems: "center", gap: space["2"] },
   empty: { paddingVertical: space["7"], gap: space["2"] },

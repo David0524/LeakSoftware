@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Alert, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
+import { Linking, Platform, Pressable, StyleSheet, TextInput, View } from "react-native";
 import {
   JOB_STATUS_LABELS,
   POOL_TYPE_LABELS,
@@ -21,8 +21,9 @@ import { useRow } from "../../../../data/hooks";
 import { useCompany, useSession } from "../../../../state/session";
 import {
   Button,
-  Card,
   Field,
+  Group,
+  ListRow,
   Notice,
   Row,
   Screen,
@@ -31,7 +32,8 @@ import {
   Segmented,
   Toggle,
 } from "../../../../ui/components";
-import { color, radius, space, touch } from "../../../../ui/theme";
+import { confirmDestructive } from "../../../../ui/confirm";
+import { color, face, radius, space, touch } from "../../../../ui/theme";
 import { ChecklistTab } from "../../../../features/inspection/ChecklistTab";
 import { FindingsTab } from "../../../../features/inspection/FindingsTab";
 import { TestsTab } from "../../../../features/inspection/TestsTab";
@@ -104,10 +106,13 @@ export default function JobDetail() {
       update(values);
     };
     if (to === "canceled") {
-      Alert.alert("Cancel this job?", "You can reopen it later.", [
-        { text: "Keep Job", style: "cancel" },
-        { text: "Cancel Job", style: "destructive", onPress: apply },
-      ]);
+      confirmDestructive({
+        title: "Cancel this job?",
+        message: "You can reopen it later.",
+        confirm: "Cancel Job",
+        cancel: "Keep Job",
+        onConfirm: apply,
+      });
     } else {
       apply();
     }
@@ -124,9 +129,10 @@ export default function JobDetail() {
     <Screen>
       <Stack.Screen options={{ title: job.number ? `Job #${job.number}` : "New Job" }} />
 
-      <Card>
-        <View style={styles.cardTop}>
-          <Row style={{ flex: 1, gap: space["2"] }}>
+      {/* Who, where, and what, as an inset grouped list (iOS) or a list card (Android). */}
+      <Group>
+        <ListRow>
+          <Row style={{ gap: space["2"] }}>
             <StatusChip status={job.status} />
             <T variant="muted" numberOfLines={1} style={{ flexShrink: 1 }}>
               {job.status === "in_progress"
@@ -134,68 +140,93 @@ export default function JobDetail() {
                 : formatSchedule(job.scheduled_start, new Date(), company.timezone)}
             </T>
           </Row>
-          {customer?.phone ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Call ${customer.phone}`}
-              hitSlop={4}
-              onPress={() => void Linking.openURL(`tel:${customer.phone}`)}
-              style={({ pressed }) => [styles.callButton, pressed && { opacity: 0.8 }]}
-            >
-              <Ionicons name="call" size={20} color={color.navy} />
-            </Pressable>
-          ) : null}
-        </View>
-        <T variant="heading">{customer?.name ?? "Customer"}</T>
-        {customer?.email ? <T variant="muted">{customer.email}</T> : null}
+        </ListRow>
+        <ListRow
+          trailing={
+            customer?.phone ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Call ${customer.phone}`}
+                hitSlop={4}
+                onPress={() => void Linking.openURL(`tel:${customer.phone}`)}
+                style={({ pressed }) => [styles.callButton, pressed && { opacity: 0.8 }]}
+              >
+                <Ionicons name="call" size={20} color={color.navy} />
+              </Pressable>
+            ) : undefined
+          }
+        >
+          <T variant="heading">{customer?.name ?? "Customer"}</T>
+          {customer?.email ? <T variant="muted">{customer.email}</T> : null}
+        </ListRow>
         {property ? (
-          <>
-            <Pressable
-              accessibilityRole="link"
-              accessibilityHint="Directions in Maps"
-              onPress={openMaps}
-            >
-              <T variant="strong" style={{ color: color.link }}>
-                {address}
-              </T>
-            </Pressable>
-            <T variant="muted">
-              {[
-                property.pool_type ? POOL_TYPE_LABELS[property.pool_type] : null,
-                property.has_spa ? "Pool and spa" : "Pool",
-                `Tech: ${techs}`,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
+          <ListRow
+            accessibilityRole="link"
+            accessibilityHint="Directions in Maps"
+            onPress={openMaps}
+            chevron={false}
+            trailing={
+              <Ionicons
+                name="navigate-outline"
+                size={20}
+                color={color.link}
+                importantForAccessibility="no"
+              />
+            }
+          >
+            <T variant="body" style={{ color: color.link }}>
+              {address}
             </T>
-            {property.access_notes ? <Notice tone="warning">{property.access_notes}</Notice> : null}
-          </>
+          </ListRow>
         ) : (
-          <>
-            <T variant="muted">Address not on this phone yet.</T>
-            <T variant="muted">Tech: {techs}</T>
-          </>
+          <ListRow subtitle="Address not on this phone yet." />
         )}
-        <View style={styles.divider} />
-        <Field
-          label="Detection fee ($)"
-          value={fee ?? (job.fee_cents != null ? (job.fee_cents / 100).toFixed(2) : "")}
-          onChangeText={setFee}
-          onBlur={() => {
-            if (fee === null) return;
-            const cents = fee.trim() ? parseDollars(fee) : null;
-            if (cents === null && fee.trim()) return setFee(null);
-            update({ fee_cents: cents });
-            setFee(null);
-          }}
-          keyboardType="decimal-pad"
-        />
+        {property ? (
+          <ListRow
+            title="Pool"
+            detail={[
+              property.pool_type ? POOL_TYPE_LABELS[property.pool_type] : null,
+              property.has_spa ? "Pool and spa" : "Pool",
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          />
+        ) : null}
+        <ListRow title="Tech" detail={techs} />
+      </Group>
+      {property?.access_notes ? <Notice tone="warning">{property.access_notes}</Notice> : null}
+
+      <Group>
+        <ListRow>
+          <Row>
+            <T variant="body" style={{ flex: 1 }}>
+              Detection fee ($)
+            </T>
+            <TextInput
+              accessibilityLabel="Detection fee ($)"
+              value={fee ?? (job.fee_cents != null ? (job.fee_cents / 100).toFixed(2) : "")}
+              onChangeText={setFee}
+              onBlur={() => {
+                if (fee === null) return;
+                const cents = fee.trim() ? parseDollars(fee) : null;
+                if (cents === null && fee.trim()) return setFee(null);
+                update({ fee_cents: cents });
+                setFee(null);
+              }}
+              keyboardType="decimal-pad"
+              placeholder="0.00"
+              placeholderTextColor={color.textMuted}
+              style={styles.feeInput}
+            />
+          </Row>
+        </ListRow>
         <Toggle
+          inList
           label="Leak location marked"
           value={job.location_marked ?? false}
           onChange={(v) => update({ location_marked: v })}
         />
-      </Card>
+      </Group>
 
       {/* The primary action full width; the others side by side as half-width pills. */}
       <View style={{ gap: space["2"] }}>
@@ -261,7 +292,6 @@ export default function JobDetail() {
 }
 
 const styles = StyleSheet.create({
-  cardTop: { flexDirection: "row", alignItems: "center", gap: space["2"] },
   // Round contact button: 40 pt to look, 48 pt to tap with the hit slop.
   callButton: {
     width: touch - 8,
@@ -271,7 +301,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: color.border, marginVertical: 4 },
+  // The fee sits at the row's right, like a value in iOS Settings; tap to type.
+  feeInput: {
+    ...face.regular,
+    minWidth: 96,
+    minHeight: touch - 4,
+    fontSize: 17,
+    textAlign: "right",
+    color: color.text,
+  },
   actionRow: { flexDirection: "row", flexWrap: "wrap", gap: space["2"] },
   halfButton: { flexGrow: 1, flexBasis: "45%", paddingHorizontal: space["2"] },
 });

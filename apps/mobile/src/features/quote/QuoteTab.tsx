@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, Pressable, Share, View } from "react-native";
+import { Pressable, Share, View } from "react-native";
 import {
   QUOTE_STATUS_LABELS,
   discountAllowed,
@@ -30,6 +30,7 @@ import { reportsOnline } from "../../data/reports";
 import { useCompany, useSession } from "../../state/session";
 import { Button, Card, Field, Notice, Row, T } from "../../ui/components";
 import { color } from "../../ui/theme";
+import { confirmDestructive } from "../../ui/confirm";
 
 /** Build a repair quote from the findings and price book (works offline), then send it. */
 export function QuoteTab({ job }: { job: Job }) {
@@ -240,14 +241,13 @@ function DraftQuote({ job, quote }: { job: Job; quote: JobQuote }) {
                   accessibilityLabel={`Remove ${l.description || "line"}`}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   onPress={() =>
-                    Alert.alert("Remove this line?", l.description, [
-                      { text: "Keep", style: "cancel" },
-                      {
-                        text: "Remove",
-                        style: "destructive",
-                        onPress: () => removeLine(sync, company, quote, l.id),
-                      },
-                    ])
+                    confirmDestructive({
+                      title: "Remove this line?",
+                      message: l.description,
+                      confirm: "Remove",
+                      cancel: "Keep",
+                      onConfirm: () => removeLine(sync, company, quote, l.id),
+                    })
                   }
                 >
                   <T variant="strong" style={{ color: color.link }}>

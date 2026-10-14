@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, Linking, Pressable, Share, View, type ViewStyle } from "react-native";
+import { Linking, Pressable, Share, View, type ViewStyle } from "react-native";
 import {
   SIGNATURE_PURPOSE_LABELS,
   enabledSignaturePurposes,
@@ -23,6 +23,7 @@ import { API_URL } from "../../lib/config";
 import { useCompany, useSession } from "../../state/session";
 import { Button, Card, Field, Notice, Row, Segmented, T } from "../../ui/components";
 import { color, space } from "../../ui/theme";
+import { confirmDestructive } from "../../ui/confirm";
 
 /** Send by Email and Send by Text share one row. */
 const halfButton: ViewStyle = { flex: 1, paddingHorizontal: space["2"] };
@@ -103,34 +104,26 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
 
   /** Removed signatures leave later versions; finished versions keep their own copy. */
   function removeSignature(id: string, name: string) {
-    Alert.alert(
-      `Remove ${name}’s signature?`,
-      "Reports already finished keep it; new versions won’t show it.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: () =>
-            services.sync.write("signature", id, company.id, {
-              deleted_at: new Date().toISOString(),
-            }),
-        },
-      ],
-    );
+    confirmDestructive({
+      title: `Remove ${name}’s signature?`,
+      message: "Reports already finished keep it; new versions won’t show it.",
+      confirm: "Remove",
+      onConfirm: () =>
+        services.sync.write("signature", id, company.id, {
+          deleted_at: new Date().toISOString(),
+        }),
+    });
   }
 
   /** Writing again replaces the draft's text, so ask first when there is text to lose. */
   function writeDraft() {
     if (!draft?.final_sections) return void run("draft");
-    Alert.alert(
-      "Write the draft again?",
-      "The new draft replaces this one, including your edits.",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Write Again", style: "destructive", onPress: () => void run("draft") },
-      ],
-    );
+    confirmDestructive({
+      title: "Write the draft again?",
+      message: "The new draft replaces this one, including your edits.",
+      confirm: "Write Again",
+      onConfirm: () => void run("draft"),
+    });
   }
 
   async function run(kind: "draft" | "email" | "text" | "finish", reportId = draft?.id) {

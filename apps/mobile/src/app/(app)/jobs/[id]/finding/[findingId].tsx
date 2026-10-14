@@ -1,6 +1,5 @@
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Alert } from "react-native";
 import { validateFinding, type FindingStatus, type Job, type Property } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useRow } from "../../../../../data/hooks";
@@ -17,6 +16,7 @@ import {
   T,
   Segmented,
 } from "../../../../../ui/components";
+import { confirmDestructive } from "../../../../../ui/confirm";
 import { PoolDiagram } from "../../../../../ui/PoolDiagram";
 import { color } from "../../../../../ui/theme";
 
@@ -76,19 +76,17 @@ export default function FindingScreen() {
   }
 
   function remove() {
-    Alert.alert("Delete this finding?", undefined, [
-      { text: "Keep", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          services.sync.write("finding", existing!.id, company.id, {
-            deleted_at: new Date().toISOString(),
-          });
-          router.back();
-        },
+    confirmDestructive({
+      title: "Delete this finding?",
+      confirm: "Delete",
+      cancel: "Keep",
+      onConfirm: () => {
+        services.sync.write("finding", existing!.id, company.id, {
+          deleted_at: new Date().toISOString(),
+        });
+        router.back();
       },
-    ]);
+    });
   }
 
   const sevColor = config.severityByKey.get(severity)?.color ?? color.fail;

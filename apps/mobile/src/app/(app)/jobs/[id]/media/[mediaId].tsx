@@ -5,14 +5,12 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
   type GestureResponderEvent,
 } from "react-native";
@@ -36,9 +34,21 @@ import { useJobInspection } from "../../../../../data/inspection";
 import { useRow } from "../../../../../data/hooks";
 import { useMediaSource, type MediaSourceState } from "../../../../../data/media";
 import { useCompany, useSession } from "../../../../../state/session";
-import { Button, Card, Field, Notice, Row, Segmented, T } from "../../../../../ui/components";
+import {
+  Button,
+  Card,
+  Field,
+  Group,
+  HeaderButton,
+  ListRow,
+  Notice,
+  Row,
+  Segmented,
+  T,
+} from "../../../../../ui/components";
+import { confirmDestructive } from "../../../../../ui/confirm";
 import { MarkupLayer } from "../../../../../ui/MarkupLayer";
-import { color, font, markupColor, space } from "../../../../../ui/theme";
+import { color, markupColor, space } from "../../../../../ui/theme";
 
 type Tool = "arrow" | "circle" | "text";
 
@@ -98,19 +108,17 @@ export default function MediaScreen() {
   }
 
   function remove() {
-    Alert.alert(`Delete this ${kindName}?`, "It is removed from the job and its reports.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          services.sync.write("media", media!.id, company.id, {
-            deleted_at: new Date().toISOString(),
-          });
-          router.back();
-        },
+    confirmDestructive({
+      title: `Delete this ${kindName}?`,
+      message: "It is removed from the job and its reports.",
+      confirm: "Delete",
+      onConfirm: () => {
+        services.sync.write("media", media!.id, company.id, {
+          deleted_at: new Date().toISOString(),
+        });
+        router.back();
       },
-    ]);
+    });
   }
 
   const attachedTo =
@@ -163,7 +171,7 @@ export default function MediaScreen() {
             placeholder="What this shows"
             multiline
           />
-          <Card>
+          <Group>
             <Detail label="Attached to" value={attachedTo} />
             <Detail
               label="Captured"
@@ -199,7 +207,7 @@ export default function MediaScreen() {
               label="Fingerprint"
               value={media.sha256 ? `SHA-256 ${media.sha256.slice(0, 16)}…` : "None"}
             />
-          </Card>
+          </Group>
           <Button title="Delete" kind="danger" onPress={remove} />
         </>
       </ScrollView>
@@ -207,15 +215,9 @@ export default function MediaScreen() {
   );
 }
 
+/** One line of the capture's record, as a label and value row. */
 function Detail({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.detail}>
-      <T variant="label">{label}</T>
-      <T variant="small" style={{ flexShrink: 1, textAlign: "right" }}>
-        {value}
-      </T>
-    </View>
-  );
+  return <ListRow title={label} detail={value} />;
 }
 
 function SourceState({
@@ -338,10 +340,12 @@ function MarkupEditor({
 
   function cancel() {
     if (!dirty) return onCancel();
-    Alert.alert("Discard markup changes?", undefined, [
-      { text: "Keep Editing", style: "cancel" },
-      { text: "Discard", style: "destructive", onPress: onCancel },
-    ]);
+    confirmDestructive({
+      title: "Discard markup changes?",
+      confirm: "Discard",
+      cancel: "Keep Editing",
+      onConfirm: onCancel,
+    });
   }
 
   return (
@@ -458,24 +462,6 @@ function MarkupEditor({
   );
 }
 
-function HeaderButton({
-  title,
-  onPress,
-  strong = false,
-}: {
-  title: string;
-  onPress: () => void;
-  strong?: boolean;
-}) {
-  return (
-    <Pressable accessibilityRole="button" onPress={onPress} hitSlop={8} style={styles.headerButton}>
-      <Text style={[styles.headerButtonText, strong && { fontFamily: font.bodyBold }]}>
-        {title}
-      </Text>
-    </Pressable>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Video and voice playback
 // ---------------------------------------------------------------------------
@@ -562,8 +548,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: color.border,
   },
-  headerButton: { minHeight: 44, minWidth: 44, justifyContent: "center", paddingHorizontal: 4 },
-  headerButtonText: { fontFamily: font.bodyMedium, fontSize: 17, color: color.onHeader },
   swatchHit: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
   swatch: {
     width: 32,
@@ -573,7 +557,6 @@ const styles = StyleSheet.create({
     borderColor: color.controlBorder,
   },
   swatchOn: { borderWidth: 3, borderColor: color.navy, width: 38, height: 38, borderRadius: 19 },
-  detail: { flexDirection: "row", justifyContent: "space-between", gap: space["3"] },
   video: { width: "100%", backgroundColor: "black", borderRadius: 10 },
   play: {
     width: 52,

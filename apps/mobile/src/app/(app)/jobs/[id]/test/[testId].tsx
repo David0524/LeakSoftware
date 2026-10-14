@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, View } from "react-native";
+import { View } from "react-native";
 import {
   calculate,
   normalizeTestData,
@@ -22,6 +22,7 @@ import {
   T,
   Segmented,
 } from "../../../../../ui/components";
+import { confirmDestructive } from "../../../../../ui/confirm";
 import { OUTCOME_STYLE } from "../../../../../features/inspection/OutcomeChip";
 import { color } from "../../../../../ui/theme";
 
@@ -96,19 +97,17 @@ export default function TestScreen() {
   }
 
   function remove() {
-    Alert.alert("Delete this test?", undefined, [
-      { text: "Keep", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          services.sync.write("test_result", existing!.id, company.id, {
-            deleted_at: new Date().toISOString(),
-          });
-          router.back();
-        },
+    confirmDestructive({
+      title: "Delete this test?",
+      confirm: "Delete",
+      cancel: "Keep",
+      onConfirm: () => {
+        services.sync.write("test_result", existing!.id, company.id, {
+          deleted_at: new Date().toISOString(),
+        });
+        router.back();
       },
-    ]);
+    });
   }
 
   return (

@@ -19,8 +19,8 @@ import {
   useJobInspection,
 } from "../../data/inspection";
 import { useSession } from "../../state/session";
-import { Button, Card, Field, Row, Segmented, T } from "../../ui/components";
-import { color, radius, space } from "../../ui/theme";
+import { Button, Card, Field, Group, Row, Segmented, T } from "../../ui/components";
+import { color, ios, space } from "../../ui/theme";
 import { currentVerdict, verdictOptions, verdictValues, type Verdict } from "./verdict";
 
 const SECTIONS: ChecklistSection[] = ["visual", "plumbing", "bond_beam", "other"];
@@ -83,26 +83,37 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
         if (items.length === 0) return null;
         return (
           <View key={section} style={{ gap: space["2"] }}>
-            <T variant="label">{CHECKLIST_SECTION_LABELS[section]}</T>
-            {items.map((c, i) => {
-              const type = typeOf(c);
-              const last = items[i + 1]?.component_type_id !== c.component_type_id;
-              return type ? (
-                <ChecklistItem
-                  key={c.id}
-                  job={job}
-                  component={c}
-                  type={type}
-                  // "+ Add" sits in the last item of a type that can repeat, not on its own row.
-                  onAddAnother={
-                    last && type.allows_multiple
-                      ? () =>
-                          addComponent(services.sync, job.company_id, job.id, type, insp.components)
-                      : undefined
-                  }
-                />
-              ) : null;
-            })}
+            <T variant="label" style={ios && { paddingHorizontal: space["4"] }}>
+              {CHECKLIST_SECTION_LABELS[section]}
+            </T>
+            {/* One inset grouped block per section, a hairline between items. */}
+            <Group>
+              {items.map((c, i) => {
+                const type = typeOf(c);
+                const last = items[i + 1]?.component_type_id !== c.component_type_id;
+                return type ? (
+                  <ChecklistItem
+                    key={c.id}
+                    job={job}
+                    component={c}
+                    type={type}
+                    // "+ Add" sits in the last item of a type that can repeat, not on its own row.
+                    onAddAnother={
+                      last && type.allows_multiple
+                        ? () =>
+                            addComponent(
+                              services.sync,
+                              job.company_id,
+                              job.id,
+                              type,
+                              insp.components,
+                            )
+                        : undefined
+                    }
+                  />
+                ) : null;
+              })}
+            </Group>
           </View>
         );
       })}
@@ -205,13 +216,6 @@ function ChecklistItem({
 const LINK_SLOP = { top: 12, bottom: 12, left: 8, right: 8 };
 
 const styles = StyleSheet.create({
-  item: {
-    gap: space["2"],
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.lg,
-    padding: space["3"],
-  },
+  item: { gap: space["2"], paddingHorizontal: space["4"], paddingVertical: space["3"] },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: space["2"] },
 });

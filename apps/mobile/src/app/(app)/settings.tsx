@@ -1,14 +1,26 @@
 import Constants from "expo-constants";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, Linking, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, View } from "react-native";
 import { call } from "../../data/reports";
 import { API_URL } from "../../lib/config";
 import { useSession, useSyncStatus } from "../../state/session";
-import { Button, Card, Choice, Notice, Row, Screen, Section, T } from "../../ui/components";
-import { space } from "../../ui/theme";
+import {
+  Button,
+  Card,
+  Choice,
+  Group,
+  ListRow,
+  Notice,
+  Screen,
+  Section,
+  T,
+} from "../../ui/components";
+import { confirmDestructive } from "../../ui/confirm";
+import { color, ios, space } from "../../ui/theme";
 
-const halfButton = { flex: 1, paddingHorizontal: space["2"] };
+/** A note under a grouped list, lined up with the rows' text on iPhone. */
+const footer = { paddingHorizontal: ios ? space["4"] : 0 };
 
 export default function Settings() {
   const { services, user, company, companies, membership, setActiveCompany, signOut } =
@@ -25,48 +37,40 @@ export default function Settings() {
         ? `${files} photo${files === 1 ? "" : "s"} or recording${files === 1 ? "" : "s"}`
         : null,
     ].filter(Boolean);
-    Alert.alert(
-      "Sign out?",
-      parts.length > 0
-        ? `${parts.join(" and ")} haven’t reached the office yet. Signing out deletes them from this phone.`
-        : "Your work is saved to the office. Signing out removes it from this phone.",
-      [
-        { text: "Stay Signed In", style: "cancel" },
-        { text: "Sign Out", style: "destructive", onPress: () => void signOut() },
-      ],
-    );
+    confirmDestructive({
+      title: "Sign out?",
+      message:
+        parts.length > 0
+          ? `${parts.join(" and ")} haven’t reached the office yet. Signing out deletes them from this phone.`
+          : "Your work is saved to the office. Signing out removes it from this phone.",
+      confirm: "Sign Out",
+      cancel: "Stay Signed In",
+      onConfirm: () => void signOut(),
+    });
   }
 
   const [deleting, setDeleting] = useState(false);
 
   /** Delete My Account (App Store rule 5.1.1(v)). The server decides: now, or a request. */
   function confirmDelete() {
-    Alert.alert(
-      "Delete your account?",
-      "This removes your sign-in and the work on this phone. Jobs, reports, and invoices stay with the shop. If you’re the shop’s only owner, the shop’s data is deleted too, within 30 days.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete Account",
-          style: "destructive",
-          onPress: () => {
-            setDeleting(true);
-            void call<{ status: "deleted" | "requested"; message?: string }>(
-              "/api/account/delete",
-              {},
-            )
-              .then(async (r) => {
-                if (r.status === "deleted") return signOut();
-                Alert.alert("Request sent", r.message ?? "We’ll email you when it’s done.");
-              })
-              .catch((e: unknown) =>
-                Alert.alert("Couldn’t delete", e instanceof Error ? e.message : String(e)),
-              )
-              .finally(() => setDeleting(false));
-          },
-        },
-      ],
-    );
+    confirmDestructive({
+      title: "Delete your account?",
+      message:
+        "This removes your sign-in and the work on this phone. Jobs, reports, and invoices stay with the shop. If you’re the shop’s only owner, the shop’s data is deleted too, within 30 days.",
+      confirm: "Delete Account",
+      onConfirm: () => {
+        setDeleting(true);
+        void call<{ status: "deleted" | "requested"; message?: string }>("/api/account/delete", {})
+          .then(async (r) => {
+            if (r.status === "deleted") return signOut();
+            Alert.alert("Request sent", r.message ?? "We’ll email you when it’s done.");
+          })
+          .catch((e: unknown) =>
+            Alert.alert("Couldn’t delete", e instanceof Error ? e.message : String(e)),
+          )
+          .finally(() => setDeleting(false));
+      },
+    });
   }
 
   const open = (path: string) => API_URL && void Linking.openURL(`${API_URL}${path}`);
@@ -75,19 +79,20 @@ export default function Settings() {
 
   return (
     <Screen>
-      <Section title="Account">
-        <Card>
-          <T variant="strong">{user?.email}</T>
-          <T variant="muted">
-            {company?.name} · {membership?.role === "owner" ? "Owner" : "Tech"}
-          </T>
-          {/* This phone's details, folded into the account card. */}
-          <T variant="muted">
-            Local data: {encrypted ? "encrypted" : "not encrypted (Expo Go preview)"}
-          </T>
-          <T variant="muted">Device ID: {sync.store.deviceId}</T>
-          <T variant="muted">App version: {Constants.expoConfig?.version ?? "dev"}</T>
-        </Card>
+      <Section title="Account" grouped>
+        <Group>
+          <ListRow
+            title={user?.email ?? ""}
+            subtitle={`${company?.name ?? ""} · ${membership?.role === "owner" ? "Owner" : "Tech"}`}
+          />
+          {/* This phone's details. */}
+          <ListRow
+            title="Local data"
+            detail={encrypted ? "Encrypted" : "Not encrypted (Expo Go preview)"}
+          />
+          <ListRow title="Device ID" subtitle={sync.store.deviceId} />
+          <ListRow title="App version" detail={Constants.expoConfig?.version ?? "dev"} />
+        </Group>
         {companies.length > 1 ? (
           <Choice
             label="Company"
@@ -98,19 +103,27 @@ export default function Settings() {
         ) : null}
       </Section>
 
-      <Section title="Sync">
-        <Card>
-          <T variant="body">Last synced: {last}</T>
-          <T variant="body">Waiting to sync: {status.pending}</T>
-          <T variant="body">Waiting to upload: {status.uploads.waiting}</T>
-          {status.phase === "offline" ? (
-            <T variant="muted">This phone is offline. Changes are saved here and sync later.</T>
-          ) : null}
-          {status.error ? <T variant="muted">Last error: {status.error}</T> : null}
-          {status.uploads.lastError ? (
-            <T variant="muted">Last upload error: {status.uploads.lastError}</T>
-          ) : null}
-        </Card>
+      <Section title="Sync" grouped>
+        <Group>
+          <ListRow title="Last synced" detail={last} />
+          <ListRow title="Waiting to sync" detail={String(status.pending)} />
+          <ListRow title="Waiting to upload" detail={String(status.uploads.waiting)} />
+        </Group>
+        {status.phase === "offline" ? (
+          <T variant="muted" style={footer}>
+            This phone is offline. Changes are saved here and sync later.
+          </T>
+        ) : null}
+        {status.error ? (
+          <T variant="muted" style={footer}>
+            Last error: {status.error}
+          </T>
+        ) : null}
+        {status.uploads.lastError ? (
+          <T variant="muted" style={footer}>
+            Last upload error: {status.uploads.lastError}
+          </T>
+        ) : null}
         {status.phase === "signed_out" ? (
           <Notice tone="warning">
             Your sign-in expired. Sign in again to keep syncing; nothing on this phone is lost.
@@ -149,36 +162,57 @@ export default function Settings() {
       ) : null}
 
       {API_URL ? (
-        <Section title="Help">
-          <Button title="Status and Support" kind="secondary" onPress={() => open("/status")} />
-          <Row style={{ gap: space["2"] }}>
-            <Button
+        <Section title="Help" grouped>
+          <Group>
+            <ListRow
+              title="Status and Support"
+              accessibilityRole="link"
+              onPress={() => open("/status")}
+            />
+            <ListRow
               title="Privacy Policy"
-              kind="quiet"
-              style={halfButton}
+              accessibilityRole="link"
               onPress={() => open("/privacy")}
             />
-            <Button
+            <ListRow
               title="Terms of Service"
-              kind="quiet"
-              style={halfButton}
+              accessibilityRole="link"
               onPress={() => open("/terms")}
             />
-          </Row>
+          </Group>
         </Section>
       ) : null}
 
-      <View style={{ gap: space["2"] }}>
-        <Button title="Sign Out" kind="danger" onPress={confirmSignOut} />
-        {API_URL ? (
-          <Button
-            title="Delete My Account"
-            kind="quiet"
-            loading={deleting}
-            onPress={confirmDelete}
-          />
-        ) : null}
-      </View>
+      {ios ? (
+        // iPhone: red action rows, as at the end of iOS Settings screens.
+        <>
+          <Group>
+            <ListRow title="Sign Out" tone="destructive" onPress={confirmSignOut} />
+          </Group>
+          {API_URL ? (
+            <Group>
+              <ListRow
+                title="Delete My Account"
+                tone="destructive"
+                onPress={deleting ? undefined : confirmDelete}
+                trailing={deleting ? <ActivityIndicator color={color.fail} /> : undefined}
+              />
+            </Group>
+          ) : null}
+        </>
+      ) : (
+        <View style={{ gap: space["2"] }}>
+          <Button title="Sign Out" kind="danger" onPress={confirmSignOut} />
+          {API_URL ? (
+            <Button
+              title="Delete My Account"
+              kind="quiet"
+              loading={deleting}
+              onPress={confirmDelete}
+            />
+          ) : null}
+        </View>
+      )}
     </Screen>
   );
 }

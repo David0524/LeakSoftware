@@ -1,7 +1,6 @@
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import { Alert, Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import {
   removeComponent,
   saveChecklistResult,
@@ -12,14 +11,15 @@ import { useCompany, useSession } from "../../../../../state/session";
 import { MediaSection } from "../../../../../features/media/MediaSection";
 import {
   Button,
-  Card,
   Field,
+  Group,
+  ListRow,
   Notice,
   Screen,
   Section,
   Segmented,
-  T,
 } from "../../../../../ui/components";
+import { confirmDestructive } from "../../../../../ui/confirm";
 import { OutcomeChip } from "../../../../../features/inspection/OutcomeChip";
 import {
   currentVerdict,
@@ -27,7 +27,7 @@ import {
   verdictValues,
   type Verdict,
 } from "../../../../../features/inspection/verdict";
-import { color, space } from "../../../../../ui/theme";
+import { space } from "../../../../../ui/theme";
 
 /** One checklist item: its verdict and where, notes, photos, tests, and findings. */
 export default function ComponentScreen() {
@@ -66,17 +66,16 @@ export default function ComponentScreen() {
   }
 
   function remove() {
-    Alert.alert(`Remove ${comp.label}?`, "Use this only if it was added by mistake.", [
-      { text: "Keep", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: () => {
-          removeComponent(services.sync, company.id, comp, result);
-          router.back();
-        },
+    confirmDestructive({
+      title: `Remove ${comp.label}?`,
+      message: "Use this only if it was added by mistake.",
+      confirm: "Remove",
+      cancel: "Keep",
+      onConfirm: () => {
+        removeComponent(services.sync, company.id, comp, result);
+        router.back();
       },
-    ]);
+    });
   }
 
   return (
@@ -109,22 +108,18 @@ export default function ComponentScreen() {
       <MediaSection target={{ jobId, componentId }} />
 
       <Section title="Tests on this item">
-        {tests.map((t) => (
-          <Pressable
-            key={t.id}
-            accessibilityRole="button"
-            onPress={() => router.push(`/jobs/${jobId}/test/${t.id}`)}
-            style={({ pressed }) => pressed && { opacity: 0.85 }}
-          >
-            <Card style={styles.item}>
-              <T variant="strong" style={{ flex: 1 }}>
-                {config.testTypeById.get(t.test_type_id)?.name ?? "Test"}
-              </T>
-              <OutcomeChip outcome={t.outcome} />
-              <Ionicons name="chevron-forward" size={18} color={color.textMuted} />
-            </Card>
-          </Pressable>
-        ))}
+        {tests.length > 0 ? (
+          <Group>
+            {tests.map((t) => (
+              <ListRow
+                key={t.id}
+                title={config.testTypeById.get(t.test_type_id)?.name ?? "Test"}
+                trailing={<OutcomeChip outcome={t.outcome} />}
+                onPress={() => router.push(`/jobs/${jobId}/test/${t.id}`)}
+              />
+            ))}
+          </Group>
+        ) : null}
         <View style={styles.wrap}>
           {config.testTypes.map((tt) => (
             <Button
@@ -140,21 +135,17 @@ export default function ComponentScreen() {
       </Section>
 
       <Section title="Findings on this item">
-        {findings.map((f) => (
-          <Pressable
-            key={f.id}
-            accessibilityRole="button"
-            onPress={() => router.push(`/jobs/${jobId}/finding/${f.id}`)}
-            style={({ pressed }) => pressed && { opacity: 0.85 }}
-          >
-            <Card style={styles.item}>
-              <T variant="strong" style={{ flex: 1 }}>
-                {f.title}
-              </T>
-              <Ionicons name="chevron-forward" size={18} color={color.textMuted} />
-            </Card>
-          </Pressable>
-        ))}
+        {findings.length > 0 ? (
+          <Group>
+            {findings.map((f) => (
+              <ListRow
+                key={f.id}
+                title={f.title}
+                onPress={() => router.push(`/jobs/${jobId}/finding/${f.id}`)}
+              />
+            ))}
+          </Group>
+        ) : null}
         <Button
           title="+ Finding Here"
           kind="secondary"
@@ -168,6 +159,5 @@ export default function ComponentScreen() {
 }
 
 const styles = StyleSheet.create({
-  item: { flexDirection: "row", alignItems: "center", gap: space["3"], padding: space["3"] },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: space["2"] },
 });
