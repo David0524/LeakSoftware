@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-14 (owner: "credit card processing directly on the website")
+- **Customers pay on our own pages.** The Pay buttons on the quote (deposit) and invoice pages open Stripe's embedded Checkout in place, so the customer never leaves the site. Stripe still draws and holds the card form (in its own secure frame), so card numbers never touch Tidemark and the shop stays merchant of record on its own Stripe account. Payments, webhooks, and receipts are unchanged.
+- **Ways to pay:** card (with Apple Pay and Google Pay where the device offers them), Link (Stripe's saved-card wallet), and US bank account. Apple Pay and Google Pay need the site's domain registered on each shop's Stripe account; that happens automatically when a shop finishes payment setup.
+- **Fallback:** without `STRIPE_PUBLISHABLE_KEY` the Pay button opens Stripe's own page as before.
+- **Not now:** a fully custom card form (Payment Element) and tapping a card on the tech's phone (Stripe Terminal). The second is a question for the design partner.
+
 ## 2026-10-14 (owner: "do the design fixes, monthly invoices, and tightening"; details my calls)
 - **Job visibility reaches the server functions and stored files.** With techs_see_all_jobs off, a tech can no longer prepare, preview, or send a hidden job's report, send its quote, or create, send, void, or record a payment on its invoice, even knowing its id; the job's photos, signatures, and PDFs are hidden too. The original functions moved to the `app` schema behind wrappers with the same names, so nothing that calls them changed.
 - **Monthly maintenance invoices:** each month, one draft invoice per customer with a line per finished, priced visit ("Pool service, Sep 17"), not taxed. The daily run drafts last month on the 1st (the shop's time zone); owners can also draft any month from the Invoices page ("Maintenance to Bill"), including this month so far. Owners review and send drafts as usual. The invoice sits on the month's last visit, so sending, the customer page, card and bank payment, and receipts work like any invoice. Visits follow it: sent makes them invoiced, paid makes them paid, void frees them to bill again. A visit finished late joins the month's draft; once that month's invoice is sent, a late visit waits for the office to bill it by hand. A visit on a monthly invoice can't get one of its own.

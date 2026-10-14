@@ -8,8 +8,13 @@ import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 import { EmailNotConfigured } from "@/server/email";
 import { createInvoice, sendInvoice, sendReceipt } from "@/server/invoices";
-import { CheckoutRefused, PaymentsNotConfigured, invoiceCheckoutUrl } from "@/server/stripe";
-import type { FormState } from "./auth";
+import {
+  CheckoutRefused,
+  PaymentsNotConfigured,
+  invoiceCheckout,
+  type CheckoutStart,
+} from "@/server/stripe";
+import type { FormState, PayState } from "./auth";
 
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 
@@ -179,15 +184,17 @@ export async function billMaintenanceMonth(_: FormState, form: FormData): Promis
 // Customer invoice page (/i/{token}): no sign-in
 // ---------------------------------------------------------------------------
 
-export async function payInvoice(_: FormState, form: FormData): Promise<FormState> {
+export async function payInvoice(_: PayState, form: FormData): Promise<PayState> {
   const token = text(form, "token");
-  let url: string;
+  let start: CheckoutStart;
   try {
-    url = await invoiceCheckoutUrl(token, await siteOrigin());
+    start = await invoiceCheckout(token, await siteOrigin());
   } catch (e) {
     if (e instanceof CheckoutRefused || e instanceof PaymentsNotConfigured)
       return { error: e.message };
     return { error: "Couldn’t start the payment. Please try again in a moment." };
   }
-  redirect(url);
+  // Embedded: the page shows Stripe's form in place. Otherwise, off to Stripe's page.
+  if (start.kind === "embedded") return { checkout: start };
+  redirect(start.url);
 }

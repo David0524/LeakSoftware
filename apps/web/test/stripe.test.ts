@@ -5,8 +5,9 @@ import {
   BadSignature,
   CheckoutRefused,
   applyEvent,
-  depositCheckoutUrl,
-  invoiceCheckoutUrl,
+  depositCheckout,
+  invoiceCheckout,
+  registerPaymentDomain,
   verifyEvent,
 } from "../src/server/stripe";
 
@@ -217,7 +218,7 @@ describe("deposit checkout", () => {
         sessions: {
           async create(params: Stripe.Checkout.SessionCreateParams, opts: Stripe.RequestOptions) {
             created.push({ params, opts });
-            return { url: "https://checkout.stripe.test/cs_1" };
+            return { url: "https://checkout.stripe.test/cs_1", client_secret: "cs_1_secret" };
           },
         },
       },
@@ -225,23 +226,61 @@ describe("deposit checkout", () => {
     return { stripe: stripe as unknown as Stripe, created };
   }
 
-  it("charges the deposit on the shop's account with card and bank options", async () => {
+  it("charges the deposit on the shop's account with card, Link, and bank options", async () => {
     const { stripe, created } = fakeStripe();
-    const url = await depositCheckoutUrl("tok", "https://app.test", stripe, fakeDb(details).db);
-    expect(url).toBe("https://checkout.stripe.test/cs_1");
+    const start = await depositCheckout(
+      "tok",
+      "https://app.test",
+      stripe,
+      fakeDb(details).db,
+      null,
+    );
+    expect(start).toEqual({ kind: "page", url: "https://checkout.stripe.test/cs_1" });
     const { params, opts } = created[0]!;
     expect(opts).toEqual({ stripeAccount: "acct_shop" });
-    expect(params.payment_method_types).toEqual(["card", "us_bank_account"]);
+    expect(params.payment_method_types).toEqual(["card", "link", "us_bank_account"]);
     expect(params.line_items?.[0]?.price_data?.unit_amount).toBe(65_730);
     expect(params.metadata).toEqual({ kind: "quote_deposit", quote_id: "q1", company_id: "c1" });
     expect(params.success_url).toBe("https://app.test/q/tok?paid=1");
+    expect(params.cancel_url).toBe("https://app.test/q/tok");
+    expect(params.ui_mode).toBeUndefined();
+  });
+
+  it("with a publishable key, shows Checkout on our page and returns to it", async () => {
+    const { stripe, created } = fakeStripe();
+    const start = await depositCheckout(
+      "tok",
+      "https://app.test",
+      stripe,
+      fakeDb(details).db,
+      "pk_test_1",
+    );
+    expect(start).toEqual({
+      kind: "embedded",
+      clientSecret: "cs_1_secret",
+      account: "acct_shop",
+      publishableKey: "pk_test_1",
+    });
+    const { params, opts } = created[0]!;
+    expect(opts).toEqual({ stripeAccount: "acct_shop" });
+    expect(params.ui_mode).toBe("embedded_page");
+    expect(params.return_url).toBe("https://app.test/q/tok?paid=1");
+    expect(params.success_url).toBeUndefined();
+    expect(params.cancel_url).toBeUndefined();
+    expect(params.metadata).toEqual({ kind: "quote_deposit", quote_id: "q1", company_id: "c1" });
   });
 
   it("refuses before acceptance, when paid, or when the shop can't take payments", async () => {
     const { stripe } = fakeStripe();
     for (const over of [{ status: "sent" }, { deposit_paid: true }, { charges_enabled: false }]) {
       await expect(
-        depositCheckoutUrl("tok", "https://app.test", stripe, fakeDb({ ...details, ...over }).db),
+        depositCheckout(
+          "tok",
+          "https://app.test",
+          stripe,
+          fakeDb({ ...details, ...over }).db,
+          null,
+        ),
       ).rejects.toBeInstanceOf(CheckoutRefused);
     }
   });
@@ -268,7 +307,7 @@ describe("invoice checkout", () => {
         sessions: {
           async create(params: Stripe.Checkout.SessionCreateParams) {
             created.push(params);
-            return { url: "https://checkout.stripe.test/cs_2" };
+            return { url: "https://checkout.stripe.test/cs_2", client_secret: "cs_2_secret" };
           },
         },
       },
@@ -278,7 +317,7 @@ describe("invoice checkout", () => {
 
   it("charges what is still owed", async () => {
     const { stripe, created } = fakeStripe();
-    await invoiceCheckoutUrl("tok", "https://app.test", stripe, fakeDb(details).db);
+    await invoiceCheckout("tok", "https://app.test", stripe, fakeDb(details).db, null);
     expect(created[0]!.line_items?.[0]?.price_data?.unit_amount).toBe(45_730);
     expect(created[0]!.metadata).toEqual({
       kind: "invoice_payment",
@@ -286,6 +325,20 @@ describe("invoice checkout", () => {
       company_id: "c1",
     });
     expect(created[0]!.success_url).toBe("https://app.test/i/tok?paid=1");
+  });
+
+  it("embedded, it returns to the invoice page", async () => {
+    const { stripe, created } = fakeStripe();
+    const start = await invoiceCheckout(
+      "tok",
+      "https://app.test",
+      stripe,
+      fakeDb(details).db,
+      "pk",
+    );
+    expect(start).toMatchObject({ kind: "embedded", clientSecret: "cs_2_secret" });
+    expect(created[0]!.ui_mode).toBe("embedded_page");
+    expect(created[0]!.return_url).toBe("https://app.test/i/tok?paid=1");
   });
 
   it("refuses when paid, void, processing, or the shop can't take payments", async () => {
@@ -297,8 +350,51 @@ describe("invoice checkout", () => {
       { charges_enabled: false },
     ]) {
       await expect(
-        invoiceCheckoutUrl("tok", "https://app.test", stripe, fakeDb({ ...details, ...over }).db),
+        invoiceCheckout(
+          "tok",
+          "https://app.test",
+          stripe,
+          fakeDb({ ...details, ...over }).db,
+          null,
+        ),
       ).rejects.toBeInstanceOf(CheckoutRefused);
     }
+  });
+});
+
+describe("payment domain", () => {
+  function fakeStripe(fail = false) {
+    const calls: { params: unknown; opts: unknown }[] = [];
+    const stripe = {
+      paymentMethodDomains: {
+        async create(params: unknown, opts: unknown) {
+          calls.push({ params, opts });
+          if (fail) throw new Error("already exists");
+          return {};
+        },
+      },
+    };
+    return { stripe: stripe as unknown as Stripe, calls };
+  }
+
+  it("registers the site's domain on the shop's account for Apple Pay and Google Pay", async () => {
+    const { stripe, calls } = fakeStripe();
+    await registerPaymentDomain(stripe, "acct_shop", "https://app.tidemark.app");
+    expect(calls).toEqual([
+      {
+        params: { domain_name: "app.tidemark.app" },
+        opts: { stripeAccount: "acct_shop", idempotencyKey: "domain-acct_shop-app.tidemark.app" },
+      },
+    ]);
+  });
+
+  it("skips local addresses and never throws", async () => {
+    const { stripe, calls } = fakeStripe(true);
+    await registerPaymentDomain(stripe, "acct_shop", "http://localhost:3000");
+    await registerPaymentDomain(stripe, "acct_shop", "http://127.0.0.1:3000");
+    expect(calls).toHaveLength(0);
+    await expect(
+      registerPaymentDomain(stripe, "acct_shop", "https://app.tidemark.app"),
+    ).resolves.toBeUndefined();
   });
 });

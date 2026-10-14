@@ -20,6 +20,8 @@
     "@leakbook/tokens": "workspace:*",
     "@sentry/nextjs": "11.7.0",
     "@sparticuz/chromium": "^153.0.0",
+    "@stripe/react-stripe-js": "7.0.0",
+    "@stripe/stripe-js": "10.0.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.3",
     "next": "16.4.0",

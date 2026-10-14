@@ -5,9 +5,11 @@ import { adminClient } from "./admin";
 import { applyBillingEvent } from "./billing";
 
 // Payments (BUILD_PLAN 6.4): Stripe Connect with Standard accounts and direct charges, so
-// the shop is the merchant of record. Deposits are Checkout Sessions on the shop's account
-// with card and US bank account (ACH). Webhooks update payments and accounts; each event
-// applies once.
+// the shop is the merchant of record. Deposits and invoices are Checkout Sessions on the
+// shop's account with card (and the Apple Pay and Google Pay wallets), Link, and US bank
+// account (ACH). With a publishable key the session is shown on our own page (embedded
+// Checkout); without one the customer goes to Stripe's page. Webhooks update payments and
+// accounts; each event applies once.
 
 export class PaymentsNotConfigured extends Error {
   constructor() {
@@ -18,6 +20,11 @@ export class PaymentsNotConfigured extends Error {
 export function stripeClient(): Stripe | null {
   const key = process.env.STRIPE_SECRET_KEY;
   return key ? new Stripe(key) : null;
+}
+
+/** The platform's publishable key: with it, Checkout is shown on our own pages. */
+export function publishableKey(): string | null {
+  return process.env.STRIPE_PUBLISHABLE_KEY || null;
 }
 
 /** True when the server can take payments: Stripe key and service key both present. */
@@ -81,6 +88,7 @@ export async function onboardingLink(
       submitted: account.details_submitted ?? false,
     });
   }
+  await registerPaymentDomain(d.stripe, accountId, origin);
   const link = await d.stripe.accountLinks.create({
     account: accountId,
     type: "account_onboarding",
@@ -90,15 +98,39 @@ export async function onboardingLink(
   return link.url;
 }
 
+/**
+ * Apple Pay and Google Pay inside embedded Checkout need the site's domain registered on the
+ * shop's account. Safe to repeat; skipped for local addresses, and never blocks onboarding.
+ */
+export async function registerPaymentDomain(
+  stripe: Stripe,
+  accountId: string,
+  origin: string | undefined,
+): Promise<void> {
+  if (!origin) return;
+  const host = new URL(origin).hostname;
+  if (host === "localhost" || /^[\d.]+$/.test(host) || host.endsWith(".test")) return;
+  try {
+    await stripe.paymentMethodDomains.create(
+      { domain_name: host },
+      { stripeAccount: accountId, idempotencyKey: `domain-${accountId}-${host}` },
+    );
+  } catch {
+    // Already registered, or wallets not available for this account: card still works.
+  }
+}
+
 /** Reads the account's current state from Stripe and saves it (after onboarding). */
 export async function refreshAccount(
   companyId: string,
   accountId: string,
+  origin?: string,
   stripe?: Stripe | null,
   db?: SupabaseClient | null,
 ): Promise<void> {
   const d = deps(stripe, db);
   const account = await d.stripe.accounts.retrieve(accountId);
+  if (account.charges_enabled) await registerPaymentDomain(d.stripe, account.id, origin);
   await rpc(d.db, "stripe_save_account", {
     target_company: companyId,
     account_id: account.id,
@@ -109,8 +141,43 @@ export async function refreshAccount(
 }
 
 // ---------------------------------------------------------------------------
-// Deposit checkout (customers, from the quote page)
+// Checkout (customers, from the quote and invoice pages)
 // ---------------------------------------------------------------------------
+
+/** Where the customer pays: Stripe's page, or Checkout embedded on ours. */
+export type CheckoutStart =
+  | { kind: "page"; url: string }
+  | { kind: "embedded"; clientSecret: string; account: string; publishableKey: string };
+
+export const PAYMENT_METHODS = ["card", "link", "us_bank_account"] as const;
+
+async function startCheckout(
+  stripe: Stripe,
+  account: string,
+  pagePath: string,
+  key: string | null,
+  params: Pick<
+    Stripe.Checkout.SessionCreateParams,
+    "line_items" | "customer_email" | "metadata" | "payment_intent_data"
+  >,
+): Promise<CheckoutStart> {
+  const base = { mode: "payment" as const, payment_method_types: [...PAYMENT_METHODS], ...params };
+  if (key) {
+    // After paying, Stripe sends the customer back to the same page, as the hosted flow does.
+    const session = await stripe.checkout.sessions.create(
+      { ...base, ui_mode: "embedded_page", return_url: `${pagePath}?paid=1` },
+      { stripeAccount: account },
+    );
+    if (!session.client_secret) throw new Error("Stripe did not return a checkout session.");
+    return { kind: "embedded", clientSecret: session.client_secret, account, publishableKey: key };
+  }
+  const session = await stripe.checkout.sessions.create(
+    { ...base, success_url: `${pagePath}?paid=1`, cancel_url: pagePath },
+    { stripeAccount: account },
+  );
+  if (!session.url) throw new Error("Stripe did not return a checkout page.");
+  return { kind: "page", url: session.url };
+}
 
 interface CheckoutDetails {
   quote_id: string;
@@ -128,12 +195,13 @@ interface CheckoutDetails {
 export class CheckoutRefused extends Error {}
 
 /** A Checkout Session for an accepted quote's deposit, on the shop's account. */
-export async function depositCheckoutUrl(
+export async function depositCheckout(
   token: string,
   origin: string,
   stripe?: Stripe | null,
   db?: SupabaseClient | null,
-): Promise<string> {
+  key: string | null = publishableKey(),
+): Promise<CheckoutStart> {
   const d = deps(stripe, db);
   const q = await rpc<CheckoutDetails | null>(d.db, "quote_checkout_details", {
     link_token: token,
@@ -145,32 +213,23 @@ export async function depositCheckoutUrl(
   if (!q.stripe_account_id || !q.charges_enabled)
     throw new CheckoutRefused(`${q.company_name} can’t take online payments yet.`);
   const metadata = { kind: "quote_deposit", quote_id: q.quote_id, company_id: q.company_id };
-  const session = await d.stripe.checkout.sessions.create(
-    {
-      mode: "payment",
-      payment_method_types: ["card", "us_bank_account"],
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: "usd",
-            unit_amount: q.deposit_cents,
-            product_data: {
-              name: `Deposit for quote${q.number ? ` #${q.number}` : ""} · ${q.company_name}`,
-            },
+  return startCheckout(d.stripe, q.stripe_account_id, `${origin}/q/${token}`, key, {
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: "usd",
+          unit_amount: q.deposit_cents,
+          product_data: {
+            name: `Deposit for quote${q.number ? ` #${q.number}` : ""} · ${q.company_name}`,
           },
         },
-      ],
-      customer_email: q.customer_email ?? undefined,
-      metadata,
-      payment_intent_data: { metadata },
-      success_url: `${origin}/q/${token}?paid=1`,
-      cancel_url: `${origin}/q/${token}`,
-    },
-    { stripeAccount: q.stripe_account_id },
-  );
-  if (!session.url) throw new Error("Stripe did not return a checkout page.");
-  return session.url;
+      },
+    ],
+    customer_email: q.customer_email ?? undefined,
+    metadata,
+    payment_intent_data: { metadata },
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -191,12 +250,13 @@ interface InvoiceCheckoutDetails {
 }
 
 /** A Checkout Session for what is still owed on an invoice, on the shop's account. */
-export async function invoiceCheckoutUrl(
+export async function invoiceCheckout(
   token: string,
   origin: string,
   stripe?: Stripe | null,
   db?: SupabaseClient | null,
-): Promise<string> {
+  key: string | null = publishableKey(),
+): Promise<CheckoutStart> {
   const d = deps(stripe, db);
   const i = await rpc<InvoiceCheckoutDetails | null>(d.db, "invoice_checkout_details", {
     link_token: token,
@@ -211,32 +271,23 @@ export async function invoiceCheckoutUrl(
   if (!i.stripe_account_id || !i.charges_enabled)
     throw new CheckoutRefused(`${i.company_name} can’t take online payments yet.`);
   const metadata = { kind: "invoice_payment", invoice_id: i.invoice_id, company_id: i.company_id };
-  const session = await d.stripe.checkout.sessions.create(
-    {
-      mode: "payment",
-      payment_method_types: ["card", "us_bank_account"],
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: "usd",
-            unit_amount: i.balance_cents,
-            product_data: {
-              name: `Invoice${i.number ? ` #${i.number}` : ""} · ${i.company_name}`,
-            },
+  return startCheckout(d.stripe, i.stripe_account_id, `${origin}/i/${token}`, key, {
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: "usd",
+          unit_amount: i.balance_cents,
+          product_data: {
+            name: `Invoice${i.number ? ` #${i.number}` : ""} · ${i.company_name}`,
           },
         },
-      ],
-      customer_email: i.customer_email ?? undefined,
-      metadata,
-      payment_intent_data: { metadata },
-      success_url: `${origin}/i/${token}?paid=1`,
-      cancel_url: `${origin}/i/${token}`,
-    },
-    { stripeAccount: i.stripe_account_id },
-  );
-  if (!session.url) throw new Error("Stripe did not return a checkout page.");
-  return session.url;
+      },
+    ],
+    customer_email: i.customer_email ?? undefined,
+    metadata,
+    payment_intent_data: { metadata },
+  });
 }
 
 // ---------------------------------------------------------------------------

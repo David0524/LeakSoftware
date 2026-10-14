@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { acceptQuote, payDeposit } from "@/app/actions/quotes";
+import { PayForm } from "./pay-form";
 import { Button, Checkbox, Field, Notice } from "./ui";
 
 /** Typed name and the terms box (BUILD_PLAN 6.4). */
@@ -41,17 +42,5 @@ export function AcceptForm({
 }
 
 export function PayDepositForm({ token, amount }: { token: string; amount: string }) {
-  const [state, action, pending] = useActionState(payDeposit, {});
-  return (
-    <form action={action} className="space-y-3">
-      <input type="hidden" name="token" value={token} />
-      {state.error ? <Notice tone="error">{state.error}</Notice> : null}
-      <Button type="submit" disabled={pending} className="w-full sm:w-auto">
-        {pending ? "Opening secure payment…" : `Pay ${amount} Deposit`}
-      </Button>
-      <p className="text-[0.9375rem] text-text-muted">
-        Card or bank account, through Stripe. Bank payments take a few business days to clear.
-      </p>
-    </form>
-  );
+  return <PayForm token={token} label={`Pay ${amount} Deposit`} action={payDeposit} />;
 }

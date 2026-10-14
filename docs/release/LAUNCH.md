@@ -13,6 +13,7 @@ and can't be done from here.
 | Domain, support mailbox | `tidemark.app` and `support@tidemark.app` are placeholders (`SUPPORT_EMAIL`). |
 | Final privacy policy and terms | `/privacy` and `/terms` carry a plain-language draft marked as a draft. Replace with the final text. |
 | Sentry project | Free plan is enough. Set `SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_DSN` (Vercel) and `EXPO_PUBLIC_SENTRY_DSN` (EAS environment). Without them nothing is sent. |
+| Stripe keys | Platform account with Connect. Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY` (customers pay on our pages), and the webhook secrets in Vercel. Run one test-mode payment by card, Link, and Apple Pay before the pilot. |
 | Uptime monitor | Point a free monitor (for example Better Stack or UptimeRobot) at `https://<site>/api/health` (200 = working, 503 = database or sign-in down). `/status` shows the same to people. |
 
 ## 2. Build and TestFlight

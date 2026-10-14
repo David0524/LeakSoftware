@@ -14,6 +14,11 @@ export interface FormState {
   values?: Record<string, string>;
 }
 
+/** A pay button's state: an error, or Stripe's embedded Checkout to show in place. */
+export interface PayState extends FormState {
+  checkout?: { clientSecret: string; account: string; publishableKey: string };
+}
+
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 
 /** Only same-site paths, so a crafted link cannot send someone elsewhere after sign-in. */

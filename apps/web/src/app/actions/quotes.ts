@@ -10,12 +10,13 @@ import { publicClient } from "@/server/reports";
 import {
   CheckoutRefused,
   PaymentsNotConfigured,
-  depositCheckoutUrl,
+  depositCheckout,
+  type CheckoutStart,
   onboardingLink,
   type PaymentAccount,
 } from "@/server/stripe";
 import { getCompany } from "@/lib/data";
-import type { FormState } from "./auth";
+import type { FormState, PayState } from "./auth";
 
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 
@@ -39,17 +40,19 @@ export async function acceptQuote(_: FormState, form: FormData): Promise<FormSta
   return { message: "Accepted. Thank you!" };
 }
 
-export async function payDeposit(_: FormState, form: FormData): Promise<FormState> {
+export async function payDeposit(_: PayState, form: FormData): Promise<PayState> {
   const token = text(form, "token");
-  let url: string;
+  let start: CheckoutStart;
   try {
-    url = await depositCheckoutUrl(token, await siteOrigin());
+    start = await depositCheckout(token, await siteOrigin());
   } catch (e) {
     if (e instanceof CheckoutRefused || e instanceof PaymentsNotConfigured)
       return { error: e.message };
     return { error: "Couldn’t start the payment. Please try again in a moment." };
   }
-  redirect(url);
+  // Embedded: the page shows Stripe's form in place. Otherwise, off to Stripe's page.
+  if (start.kind === "embedded") return { checkout: start };
+  redirect(start.url);
 }
 
 // ---------------------------------------------------------------------------

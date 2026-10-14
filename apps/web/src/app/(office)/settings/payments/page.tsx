@@ -5,6 +5,7 @@ import { SField, SettingsForm } from "@/components/settings-forms";
 import { Card, Notice, PageHeader, SectionTitle, Select } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany, getPaymentAccount } from "@/lib/data";
+import { siteOrigin } from "@/lib/origin";
 import { PaymentsSetupButton } from "@/components/payments-setup";
 import { paymentsConfigured, refreshAccount } from "@/server/stripe";
 
@@ -27,7 +28,9 @@ export default async function PaymentsSettingsPage({
   // Back from Stripe onboarding: read the account's state now rather than waiting for the
   // account.updated webhook.
   if (stripe === "return" && account && paymentsConfigured()) {
-    await refreshAccount(office.company.id, account.stripe_account_id).catch(() => undefined);
+    await refreshAccount(office.company.id, account.stripe_account_id, await siteOrigin()).catch(
+      () => undefined,
+    );
     account = await getPaymentAccount(office);
   }
   const company = await getCompany(office);
