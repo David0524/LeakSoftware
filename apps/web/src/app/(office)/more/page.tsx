@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
+import { DeleteAccount } from "@/components/delete-account";
 import { MapsChoice } from "@/components/maps-choice";
 import { PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { officeLinks } from "@/lib/nav";
+import { SUPPORT_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = { title: "More · Tidemark" };
 
@@ -35,6 +37,27 @@ export default async function MorePage() {
       <div className="mt-6 card px-4 py-1.5">
         <MapsChoice initial={maps} />
       </div>
+      <ul className="mt-6 divide-y divide-border overflow-hidden card">
+        {[
+          { href: `mailto:${SUPPORT_EMAIL}`, label: "Help and Support" },
+          { href: "/privacy", label: "Privacy Policy" },
+          { href: "/terms", label: "Terms of Service" },
+          { href: "/status", label: "System Status" },
+        ].map((l) => (
+          <li key={l.href}>
+            <a
+              href={l.href}
+              className="flex min-h-14 items-center justify-between px-4 text-[17px] font-medium"
+            >
+              {l.label}
+              <span aria-hidden="true" className="text-text-muted">
+                ›
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+      <DeleteAccount />
     </>
   );
 }

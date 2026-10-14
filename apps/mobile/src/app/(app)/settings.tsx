@@ -1,6 +1,9 @@
 import Constants from "expo-constants";
 import { router } from "expo-router";
-import { Alert, View } from "react-native";
+import { useState } from "react";
+import { Alert, Linking, View } from "react-native";
+import { call } from "../../data/reports";
+import { API_URL } from "../../lib/config";
 import { useSession, useSyncStatus } from "../../state/session";
 import { Button, Card, Choice, Notice, Screen, Section, T } from "../../ui/components";
 
@@ -30,6 +33,40 @@ export default function Settings() {
       ],
     );
   }
+
+  const [deleting, setDeleting] = useState(false);
+
+  /** Delete My Account (App Store rule 5.1.1(v)). The server decides: now, or a request. */
+  function confirmDelete() {
+    Alert.alert(
+      "Delete your account?",
+      "This removes your sign-in and the work on this phone. Jobs, reports, and invoices stay with the shop. If you’re the shop’s only owner, the shop’s data is deleted too, within 30 days.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete Account",
+          style: "destructive",
+          onPress: () => {
+            setDeleting(true);
+            void call<{ status: "deleted" | "requested"; message?: string }>(
+              "/api/account/delete",
+              {},
+            )
+              .then(async (r) => {
+                if (r.status === "deleted") return signOut();
+                Alert.alert("Request Sent", r.message ?? "We’ll email you when it’s done.");
+              })
+              .catch((e: unknown) =>
+                Alert.alert("Couldn’t Delete", e instanceof Error ? e.message : String(e)),
+              )
+              .finally(() => setDeleting(false));
+          },
+        },
+      ],
+    );
+  }
+
+  const open = (path: string) => API_URL && void Linking.openURL(`${API_URL}${path}`);
 
   const last = status.lastSyncedAt ? new Date(status.lastSyncedAt).toLocaleString() : "Never";
 
@@ -112,8 +149,24 @@ export default function Settings() {
         </Card>
       </Section>
 
-      <View style={{ marginTop: 8 }}>
+      {API_URL ? (
+        <Section title="Help">
+          <Button title="Status and Support" kind="secondary" onPress={() => open("/status")} />
+          <Button title="Privacy Policy" kind="quiet" onPress={() => open("/privacy")} />
+          <Button title="Terms of Service" kind="quiet" onPress={() => open("/terms")} />
+        </Section>
+      ) : null}
+
+      <View style={{ marginTop: 8, gap: 8 }}>
         <Button title="Sign Out" kind="danger" onPress={confirmSignOut} />
+        {API_URL ? (
+          <Button
+            title="Delete My Account"
+            kind="quiet"
+            loading={deleting}
+            onPress={confirmDelete}
+          />
+        ) : null}
       </View>
     </Screen>
   );

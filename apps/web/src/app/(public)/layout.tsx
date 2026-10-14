@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SUPPORT_EMAIL } from "@/lib/site";
 
 export default function PublicLayout({ children }: LayoutProps<"/">) {
   return (
@@ -26,6 +27,18 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
       <div className="flex flex-1 flex-col">{children}</div>
       <footer className="flex flex-col items-center gap-3 border-t border-border py-6 text-center text-[15px] text-text-muted">
         <p>Tidemark · Field app and office for pool leak detection shops</p>
+        <nav aria-label="About Tidemark" className="flex flex-wrap justify-center gap-x-1">
+          {[
+            { href: "/privacy", label: "Privacy" },
+            { href: "/terms", label: "Terms" },
+            { href: "/status", label: "Status" },
+            { href: `mailto:${SUPPORT_EMAIL}`, label: "Support" },
+          ].map((l) => (
+            <a key={l.href} href={l.href} className="min-h-11 content-center px-3 text-link">
+              {l.label}
+            </a>
+          ))}
+        </nav>
         <ThemeToggle />
       </footer>
     </>
