@@ -233,7 +233,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
         <div className="flex min-w-0 max-w-full items-center gap-2">
           <Link
             href={href(move(-1))}
-            className={buttonClass("secondary", "px-3")}
+            className={buttonClass("secondary", "min-w-11 px-3")}
             aria-label={`Previous ${view}`}
           >
             ‹
@@ -241,7 +241,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           <DateJump value={date} view={view} tech={tech} />
           <Link
             href={href(move(1))}
-            className={buttonClass("secondary", "px-3")}
+            className={buttonClass("secondary", "min-w-11 px-3")}
             aria-label={`Next ${view}`}
           >
             ›

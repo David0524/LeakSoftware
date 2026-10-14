@@ -661,9 +661,13 @@ function Tray({
         </p>
       ) : (
         <SortableContext id={TRAY} items={jobs.map((j) => j.id)} strategy={rectSortingStrategy}>
-          <ul className="mt-3 grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-[repeat(2,minmax(0,1fr))] xl:grid-cols-[repeat(3,minmax(0,1fr))]">
+          {/* Phones: one row that scrolls sideways (the next card peeks in); wider: a grid. */}
+          <ul className="-mx-4 mt-3 flex snap-x snap-mandatory scroll-px-4 items-start gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-[repeat(2,minmax(0,1fr))] md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-[repeat(3,minmax(0,1fr))]">
             {jobs.map((j) => (
-              <li key={j.id}>
+              <li
+                key={j.id}
+                className="w-[88%] max-w-80 shrink-0 snap-start md:w-auto md:max-w-none"
+              >
                 <TrayCard job={j} onMove={onMove} onSuggestion={onSuggestion} />
               </li>
             ))}

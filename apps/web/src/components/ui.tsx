@@ -22,8 +22,12 @@ const BUTTON: Record<ButtonKind, string> = {
 };
 
 export function buttonClass(kind: ButtonKind = "primary", extra?: string) {
+  // A caller's own padding or text size replaces the default. Both would otherwise be in the
+  // class list, and the stylesheet (not the list order) decides which wins.
+  const pad = /(^|\s)px-/.test(extra ?? "") ? "" : "px-5";
+  const size = /(^|\s)text-\[/.test(extra ?? "") ? "" : "text-[1.0625rem]";
   return cx(
-    "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 font-display text-[1.0625rem] font-bold tracking-wide transition-colors",
+    `inline-flex min-h-11 items-center justify-center gap-2 rounded-full ${pad} font-display ${size} font-bold tracking-wide transition-colors`,
     "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus",
     "disabled:cursor-not-allowed disabled:opacity-50",
     BUTTON[kind],
