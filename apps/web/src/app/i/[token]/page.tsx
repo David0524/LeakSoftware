@@ -95,21 +95,12 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
 
   return (
     <article className="mx-auto max-w-2xl p-4 sm:p-8">
-      {!print ? (
-        <div className="mb-4 flex justify-end print:hidden">
-          <a
-            href={`/i/${token}/pdf`}
-            className="inline-flex min-h-11 items-center rounded-md border-2 border-navy px-4 font-display font-bold text-navy"
-          >
-            Download PDF
-          </a>
-        </div>
-      ) : null}
       <header
         className="-mx-4 flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:mx-0 sm:rounded-lg"
         style={{ backgroundColor: c.brand_primary, color: onBrand }}
       >
-        <div className="flex items-center gap-3">
+        {/* Phones: the PDF link sits at the end of the shop's row; wider, next to the title. */}
+        <div className="flex w-full min-w-0 items-center gap-3 sm:w-auto">
           {logo?.signedUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
             <img
@@ -118,14 +109,20 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
               className="max-h-14 max-w-40 rounded bg-paper p-1"
             />
           ) : null}
-          <div>
+          <div className="min-w-0">
             <p className="font-display text-2xl font-extrabold">{c.name}</p>
             <p className="text-[0.9375rem]">{[c.phone, c.email].filter(Boolean).join(" · ")}</p>
           </div>
+          {!print ? (
+            <PdfLink href={`/i/${token}/pdf`} className="ml-auto inline-flex sm:hidden" />
+          ) : null}
         </div>
-        <div className="text-right">
-          <h1 className="font-display text-xl font-bold">{title}</h1>
-          {i.sent_at ? <p className="text-[0.9375rem]">{date(i.sent_at, tz)}</p> : null}
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <h1 className="font-display text-xl font-bold">{title}</h1>
+            {i.sent_at ? <p className="text-[0.9375rem]">{date(i.sent_at, tz)}</p> : null}
+          </div>
+          {!print ? <PdfLink href={`/i/${token}/pdf`} className="hidden sm:inline-flex" /> : null}
         </div>
       </header>
 
@@ -278,6 +275,18 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
         <p className="mt-1 text-text-muted">Powered by Tidemark</p>
       </footer>
     </article>
+  );
+}
+
+/** Download PDF, on the shop's color band: outlined pill in the band's text color. */
+function PdfLink({ href, className }: { href: string; className: string }) {
+  return (
+    <a
+      href={href}
+      className={`${className} min-h-11 shrink-0 items-center rounded-full border-2 border-current px-4 font-display font-bold whitespace-nowrap print:hidden`}
+    >
+      Download PDF
+    </a>
   );
 }
 
