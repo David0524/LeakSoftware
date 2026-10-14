@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import type { FinalSection, ReportSnapshot, ReportTemplateKey } from "@leakbook/core";
+import { Banner, DOC_PAGE } from "@/components/doc-ui";
 import { ReportView } from "@/components/report-view";
 import { publicClient } from "@/server/reports";
 
@@ -24,7 +25,7 @@ interface TokenReport {
 /** The customer's report: no sign-in, only the unguessable link. */
 export default function CustomerReportPage({ params, searchParams }: PageProps<"/r/[token]">) {
   return (
-    <main className="lb-light min-h-full flex-1 bg-paper text-text">
+    <main className={DOC_PAGE}>
       <Suspense fallback={<p className="p-8 text-center text-neutral-500">Loading your report…</p>}>
         <Report params={params} searchParams={searchParams} />
       </Suspense>
@@ -64,12 +65,15 @@ async function Report({ params, searchParams }: PageProps<"/r/[token]">) {
       {/* Only a superseded report needs a row above the header; Download PDF sits in it. */}
       {!print && r.status === "superseded" && r.newer_token ? (
         <div className="report-actions mx-auto max-w-4xl px-4 pt-4 sm:px-8 print:hidden">
-          <p className="rounded-md border-l-4 border-status-warning bg-neutral-50 px-3 py-2 text-navy">
+          <Banner tone="warning">
             This report was updated.{" "}
-            <Link href={`/r/${r.newer_token}`} className="font-semibold text-water underline">
+            <Link
+              href={`/r/${r.newer_token}`}
+              className="font-semibold text-link underline underline-offset-2"
+            >
               See the latest version
             </Link>
-          </p>
+          </Banner>
         </div>
       ) : null}
       <ReportView

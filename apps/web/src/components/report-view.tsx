@@ -21,6 +21,8 @@ import { MarkupOverlay } from "./markup";
 import { PoolDiagram } from "./pool-diagram";
 import { ContactLine } from "./contact-line";
 import { PdfLink } from "./pdf-link";
+import { PHONE_CARD, PHONE_GROUP, PHONE_LABEL, PHONE_ROW, PHONE_VALUE } from "./doc-ui";
+import { cx } from "./ui";
 
 // The customer-facing report, rendered from the frozen snapshot and the tech-approved text
 // (BUILD_PLAN 6.3). Shop branding, not Tidemark's; Tidemark appears only in the footer.
@@ -64,13 +66,14 @@ function Badge({ tone, children }: { tone: VerdictTone; children: ReactNode }) {
 function Tile({ count, label, tone }: { count: number; label: string; tone: VerdictTone }) {
   return (
     <div
-      className="rounded-lg border border-l-8 px-4 py-3"
+      // Phones: a gray tile inside the summary card, no outline. The PDF keeps the side bar.
+      className="rounded-lg border border-l-8 px-4 py-3 max-sm:rounded-xl max-sm:border-0 max-sm:bg-bg max-sm:px-3"
       style={{ borderColor: NEUTRAL["200"], borderLeftColor: TONE_COLOR[tone] }}
     >
       <p className="font-display text-3xl font-extrabold" style={{ color: TONE_COLOR[tone] }}>
         {count}
       </p>
-      <p className="font-semibold">{label}</p>
+      <p className="font-semibold max-sm:text-[0.9375rem] max-sm:leading-snug">{label}</p>
     </div>
   );
 }
@@ -82,9 +85,10 @@ function formatDate(iso: string | null, timeZone: string) {
 
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="report-block mt-8 break-inside-avoid-page">
+    <section className={cx("report-block mt-8 break-inside-avoid-page max-sm:mt-4", PHONE_CARD)}>
       <h2
-        className="mb-3 border-b-2 pb-1 font-display text-2xl font-bold"
+        // Phones: the section's title heads its card; the shop-color rule is for the PDF.
+        className="mb-3 border-b-2 pb-1 font-display text-2xl font-bold max-sm:border-b-0 max-sm:pb-0"
         style={{ borderColor: "var(--shop)" }}
       >
         {title}
@@ -132,11 +136,11 @@ export function ReportView(p: ReportViewProps) {
   const render: Record<string, () => ReactNode> = {
     header: () => (
       <header
-        className="report-header -mx-4 -mt-4 flex flex-wrap items-center justify-between gap-4 px-6 py-5 sm:mx-0 sm:mt-0 sm:rounded-lg"
+        className="report-header -mx-4 -mt-4 flex flex-wrap items-center justify-between gap-4 px-6 py-5 max-sm:px-5 sm:mx-0 sm:mt-0 sm:rounded-lg"
         style={{ backgroundColor: brand, color: onBrand }}
       >
         {/* Phones: the PDF link ends the shop's row; wider, it sits beside the title. */}
-        <div className="flex w-full min-w-0 items-center gap-4 sm:w-auto">
+        <div className="flex w-full min-w-0 items-center gap-4 max-sm:gap-3 sm:w-auto">
           {p.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
             <img
@@ -168,8 +172,8 @@ export function ReportView(p: ReportViewProps) {
       </header>
     ),
     summary: () => (
-      <section className="mt-6 grid gap-6 sm:grid-cols-[1fr_260px]">
-        <div>
+      <section className="mt-6 grid gap-6 max-sm:gap-4 sm:grid-cols-[1fr_260px]">
+        <div className={PHONE_CARD}>
           <h2 className="mb-2 font-display text-2xl font-bold">
             {section("summary")?.title ?? "Summary"}
           </h2>
@@ -191,23 +195,28 @@ export function ReportView(p: ReportViewProps) {
           ) : null}
         </div>
         <dl
-          // Two columns on phones; one column from sm up, as on the PDF.
-          className="grid grid-cols-2 gap-x-4 rounded-lg border p-4 text-[0.9375rem] sm:block"
+          // Phones: an iOS grouped list of label and value rows. From sm up, and on the PDF,
+          // one column in an outlined box.
+          className={cx(
+            "grid grid-cols-2 gap-x-4 rounded-lg border p-4 text-[0.9375rem] sm:block",
+            "max-sm:block max-sm:border-0 max-sm:p-0 max-sm:text-[1.0625rem]",
+            PHONE_GROUP,
+          )}
           style={{ borderColor: NEUTRAL["200"] }}
         >
-          <div>
-            <dt className="text-text-muted">Property</dt>
-            <dd className="mb-2 font-medium">{s.property.address}</dd>
+          <div className={PHONE_ROW}>
+            <dt className={cx("text-text-muted", PHONE_LABEL)}>Property</dt>
+            <dd className={cx("mb-2 font-medium", PHONE_VALUE)}>{s.property.address}</dd>
           </div>
           {s.customer ? (
-            <div>
-              <dt className="text-text-muted">Prepared for</dt>
-              <dd className="mb-2 font-medium">{s.customer.name}</dd>
+            <div className={PHONE_ROW}>
+              <dt className={cx("text-text-muted", PHONE_LABEL)}>Prepared for</dt>
+              <dd className={cx("mb-2 font-medium", PHONE_VALUE)}>{s.customer.name}</dd>
             </div>
           ) : null}
-          <div>
-            <dt className="text-text-muted">Pool</dt>
-            <dd className="mb-2">
+          <div className={PHONE_ROW}>
+            <dt className={cx("text-text-muted", PHONE_LABEL)}>Pool</dt>
+            <dd className={cx("mb-2", PHONE_VALUE)}>
               {[
                 s.property.pool_type ? POOL_TYPE_LABELS[s.property.pool_type as PoolType] : null,
                 s.property.has_spa ? "with spa" : null,
@@ -217,27 +226,29 @@ export function ReportView(p: ReportViewProps) {
             </dd>
           </div>
           {performed && checklist ? (
-            <div>
-              <dt className="text-text-muted">Date performed</dt>
-              <dd className="mb-2">{formatDate(performed, tz)}</dd>
+            <div className={PHONE_ROW}>
+              <dt className={cx("text-text-muted", PHONE_LABEL)}>Date performed</dt>
+              <dd className={cx("mb-2", PHONE_VALUE)}>{formatDate(performed, tz)}</dd>
             </div>
           ) : null}
           {techs.length ? (
-            <div>
-              <dt className="text-text-muted">{techs.length > 1 ? "Technicians" : "Technician"}</dt>
-              <dd className="mb-2">{techs.join(" and ")}</dd>
+            <div className={PHONE_ROW}>
+              <dt className={cx("text-text-muted", PHONE_LABEL)}>
+                {techs.length > 1 ? "Technicians" : "Technician"}
+              </dt>
+              <dd className={cx("mb-2", PHONE_VALUE)}>{techs.join(" and ")}</dd>
             </div>
           ) : null}
           {s.job.fee_cents != null ? (
-            <div>
-              <dt className="text-text-muted">Leak detection fee</dt>
-              <dd className="mb-2">{formatCents(s.job.fee_cents)}</dd>
+            <div className={PHONE_ROW}>
+              <dt className={cx("text-text-muted", PHONE_LABEL)}>Leak detection fee</dt>
+              <dd className={cx("mb-2", PHONE_VALUE)}>{formatCents(s.job.fee_cents)}</dd>
             </div>
           ) : null}
           {s.job.number ? (
-            <div>
-              <dt className="text-text-muted">Job</dt>
-              <dd>#{s.job.number}</dd>
+            <div className={PHONE_ROW}>
+              <dt className={cx("text-text-muted", PHONE_LABEL)}>Job</dt>
+              <dd className={PHONE_VALUE}>#{s.job.number}</dd>
             </div>
           ) : null}
         </dl>
@@ -275,7 +286,9 @@ export function ReportView(p: ReportViewProps) {
     ),
     diagram: () =>
       s.findings.some((f) => f.pin_x != null) ? (
-        <section className="report-block mt-6 max-w-xl break-inside-avoid">
+        <section
+          className={cx("report-block mt-6 max-w-xl break-inside-avoid max-sm:mt-4", PHONE_CARD)}
+        >
           <PoolDiagram
             shape={s.property.diagram_shape as never}
             hasSpa={s.property.has_spa}
@@ -491,7 +504,8 @@ export function ReportView(p: ReportViewProps) {
 
   return (
     <article
-      className="report lb-light mx-auto max-w-4xl bg-paper p-4 text-text sm:p-8"
+      // Phones: content on cards over the iOS grouped gray; wider and printed, plain paper.
+      className="report lb-light mx-auto max-w-4xl bg-paper p-4 text-text max-sm:bg-bg sm:p-8"
       style={{ ["--shop" as string]: brand }}
     >
       {blocks.map((b) => (

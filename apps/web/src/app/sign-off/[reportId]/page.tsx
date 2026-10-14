@@ -33,8 +33,9 @@ interface Preview {
  * Not Here) finishes the report. No office navigation, so the customer stays on the report.
  */
 export default function SignOffPage({ params }: PageProps<"/sign-off/[reportId]">) {
+  // Phones: the iOS grouped gray, matching the report's cards.
   return (
-    <main className="lb-light min-h-full flex-1 bg-paper text-text">
+    <main className="lb-light min-h-full flex-1 bg-paper text-text max-sm:bg-bg">
       <Suspense fallback={<p className="p-8 text-center text-text-muted">Loading the report…</p>}>
         <Review params={params} />
       </Suspense>

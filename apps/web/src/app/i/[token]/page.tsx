@@ -4,10 +4,21 @@ import { Suspense } from "react";
 import { formatCents, lineTotal, textOnBrand } from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import { PayInvoiceForm } from "@/components/invoice-actions";
-import { Notice } from "@/components/ui";
+import { cx } from "@/components/ui";
 import { publicClient } from "@/server/reports";
 import { paymentsConfigured } from "@/server/stripe";
 import { ContactLine } from "@/components/contact-line";
+import {
+  Banner,
+  DOC_PAGE,
+  PHONE_CARD,
+  PHONE_GROUP,
+  PHONE_GROUP_TITLE,
+  PHONE_LABEL,
+  PHONE_ROW,
+  PHONE_VALUE,
+  actionCardClass,
+} from "@/components/doc-ui";
 import { PdfLink } from "@/components/pdf-link";
 
 export const metadata: Metadata = { title: "Invoice", robots: { index: false } };
@@ -56,7 +67,7 @@ interface TokenInvoice {
 /** The customer's invoice, and once paid their receipt. No sign-in, only the link. */
 export default function CustomerInvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
   return (
-    <main className="lb-light min-h-full flex-1 bg-paper text-text">
+    <main className={DOC_PAGE}>
       <Suspense
         fallback={<p className="p-8 text-center text-neutral-500">Loading your invoice…</p>}
       >
@@ -93,12 +104,13 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
   const processing = i.payments.find((p) => p.status === "pending");
   const received = i.payments.filter((p) => p.status === "succeeded");
   const isReceipt = i.status === "paid";
+  const isPrint = !!print;
   const title = `${isReceipt ? "Receipt" : "Invoice"}${i.number ? ` #${i.number}` : ""}`;
 
   return (
     <article className="mx-auto max-w-2xl p-4 sm:p-8">
       <header
-        className="-mx-4 flex flex-wrap items-center justify-between gap-4 px-5 py-5 sm:mx-0 sm:rounded-lg"
+        className="-mx-4 flex flex-wrap items-center justify-between gap-4 px-5 py-5 max-sm:-mt-4 sm:mx-0 sm:rounded-lg"
         style={{ backgroundColor: c.brand_primary, color: onBrand }}
       >
         {/* Phones: the PDF link sits at the end of the shop's row; wider, next to the title. */}
@@ -133,36 +145,42 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
 
       {i.status === "void" ? (
         <div className="mt-6">
-          <Notice tone="warning">
+          <Banner tone="warning" print={isPrint}>
             This invoice was canceled. Nothing is due on it. Contact {c.name}
             {c.phone ? ` at ${c.phone}` : ""} with any questions.
-          </Notice>
+          </Banner>
         </div>
       ) : null}
 
-      <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-1 text-[0.9375rem]">
+      {/* Phones: an iOS grouped list of label and value rows; wider and printed, two columns. */}
+      <dl
+        className={cx(
+          "mt-6 grid grid-cols-2 gap-x-6 gap-y-1 text-[0.9375rem] max-sm:block max-sm:text-[1.0625rem]",
+          PHONE_GROUP,
+        )}
+      >
         {i.customer ? (
-          <div>
-            <dt className="text-text-muted">Billed to</dt>
-            <dd className="font-medium">{i.customer.name}</dd>
+          <div className={PHONE_ROW}>
+            <dt className={cx("text-text-muted", PHONE_LABEL)}>Billed to</dt>
+            <dd className={cx("font-medium", PHONE_VALUE)}>{i.customer.name}</dd>
           </div>
         ) : null}
         {i.property ? (
-          <div>
-            <dt className="text-text-muted">Property</dt>
-            <dd className="font-medium">{i.property.address}</dd>
+          <div className={PHONE_ROW}>
+            <dt className={cx("text-text-muted", PHONE_LABEL)}>Property</dt>
+            <dd className={cx("font-medium", PHONE_VALUE)}>{i.property.address}</dd>
           </div>
         ) : null}
         {i.job_number ? (
-          <div>
-            <dt className="text-text-muted">Job</dt>
-            <dd className="font-medium">#{i.job_number}</dd>
+          <div className={PHONE_ROW}>
+            <dt className={cx("text-text-muted", PHONE_LABEL)}>Job</dt>
+            <dd className={cx("font-medium", PHONE_VALUE)}>#{i.job_number}</dd>
           </div>
         ) : null}
         {i.due_date && !isReceipt && i.status !== "void" ? (
-          <div>
-            <dt className="text-text-muted">Due</dt>
-            <dd className="font-medium">
+          <div className={PHONE_ROW}>
+            <dt className={cx("text-text-muted", PHONE_LABEL)}>Due</dt>
+            <dd className={cx("font-medium", PHONE_VALUE)}>
               {i.sent_at && i.due_date <= i.sent_at.slice(0, 10)
                 ? "On receipt"
                 : date(i.due_date, tz)}
@@ -174,16 +192,16 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
       <section aria-labelledby="items" className="mt-6">
         <h2
           id="items"
-          className="mb-2 border-b-2 pb-1 font-display text-2xl font-bold"
+          className={cx("mb-2 border-b-2 pb-1 font-display text-2xl font-bold", PHONE_GROUP_TITLE)}
           style={{ borderColor: c.brand_primary }}
         >
           Work
         </h2>
-        <ul className="divide-y divide-neutral-200">
+        <ul className={cx("divide-y divide-neutral-200 max-sm:divide-separator", PHONE_GROUP)}>
           {i.lines
             .filter((l) => l.kind === "item")
             .map((l) => (
-              <li key={l.id} className="flex justify-between gap-4 py-3">
+              <li key={l.id} className="flex justify-between gap-4 py-3 max-sm:pr-4">
                 <div>
                   <p className="font-medium">{l.description}</p>
                   <p className="text-[0.9375rem] text-text-muted">
@@ -208,7 +226,13 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
               </li>
             ))}
         </ul>
-        <dl className="mt-2 space-y-1 border-t-2 border-neutral-300 pt-3 tabular-nums">
+        <dl
+          className={cx(
+            "mt-2 space-y-1 border-t-2 border-neutral-300 pt-3 tabular-nums",
+            "max-sm:mt-4 max-sm:space-y-0 max-sm:border-t-0 max-sm:pt-0",
+            PHONE_GROUP,
+          )}
+        >
           <Row label="Subtotal" value={formatCents(i.subtotal_cents)} />
           {i.discount_cents > 0 ? (
             <Row label="Discount" value={`−${formatCents(i.discount_cents)}`} />
@@ -237,26 +261,25 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
             <Row label="Balance due" value={formatCents(i.balance_cents)} strong />
           ) : null}
         </dl>
-        {i.notes ? <p className="mt-4 whitespace-pre-line">{i.notes}</p> : null}
+        {i.notes ? <p className={cx("mt-4 whitespace-pre-line", PHONE_CARD)}>{i.notes}</p> : null}
       </section>
 
       {i.status !== "void" ? (
-        <section
-          aria-labelledby="pay"
-          className="mt-8 rounded-lg border border-neutral-200 p-4 sm:p-6"
-        >
+        <section aria-labelledby="pay" className={actionCardClass(isPrint)}>
           <h2 id="pay" className="mb-3 font-display text-2xl font-bold">
             {isReceipt ? "Paid in Full" : "Pay This Invoice"}
           </h2>
           {isReceipt ? (
             <p>Paid{i.paid_at ? ` on ${date(i.paid_at, tz)}` : ""}. Thank you for your business!</p>
           ) : processing ? (
-            <Notice>
+            <Banner print={isPrint}>
               Your bank payment of {formatCents(processing.amount_cents)} is processing. It usually
               clears in 4 business days; there’s nothing more to do.
-            </Notice>
+            </Banner>
           ) : paid ? (
-            <Notice>Payment received. It can take a moment to show here; refresh shortly.</Notice>
+            <Banner print={isPrint}>
+              Payment received. It can take a moment to show here; refresh shortly.
+            </Banner>
           ) : (i.can_pay || !paymentsConfigured()) && !print ? (
             <PayInvoiceForm
               token={token}
@@ -272,7 +295,7 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
         </section>
       ) : null}
 
-      <footer className="mt-10 border-t border-neutral-200 pt-4 text-[0.9375rem]">
+      <footer className="mt-10 border-t border-neutral-200 pt-4 text-[0.9375rem] max-sm:border-t-0 max-sm:px-4 max-sm:pt-0">
         <p>
           {c.legal_name ?? c.name}
           {c.address ? ` · ${c.address}` : ""}
@@ -285,7 +308,7 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
 
 function Row({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className={strong ? "flex justify-between text-xl font-bold" : "flex justify-between"}>
+    <div className={cx("flex justify-between", strong && "text-xl font-bold", PHONE_ROW)}>
       <dt>{label}</dt>
       <dd>{value}</dd>
     </div>
