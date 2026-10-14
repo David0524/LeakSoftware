@@ -411,7 +411,9 @@ function Grip(props: Record<string, unknown> & { label: string }) {
     <button
       type="button"
       aria-label={label}
-      className="grid min-h-11 min-w-11 cursor-grab touch-none place-items-center rounded-md text-text-muted hover:bg-bg active:cursor-grabbing"
+      // Phones use Move… instead: dragging inside a scrolling page is fiddly, and the handle's
+      // column took width from the address.
+      className="grid min-h-11 min-w-11 cursor-grab touch-none place-items-center rounded-md text-text-muted hover:bg-bg active:cursor-grabbing max-sm:hidden"
       {...rest}
     >
       <svg viewBox="0 0 24 24" className="size-5" fill="currentColor" aria-hidden="true">
@@ -450,36 +452,42 @@ function StopCard({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
         />
       ) : null}
       {/* Stops that can't move (started) have no grip and no gap for one. */}
-      <div className={cx("min-w-0 flex-1", !s.draggable && "pl-1")}>
-        <Link href={`/jobs/${s.id}`} className="block min-h-11 hover:underline">
-          <span className="font-semibold">{s.time ?? "Saving…"}</span>
-          <span className="text-text-muted">{s.number ? ` · #${s.number}` : ""}</span>
-          <span className="block">{s.customer}</span>
-        </Link>
-        <p className="truncate text-[0.9375rem]">
-          <AddressLink address={s.address} location={s.location} />
-        </p>
-        {s.note ? <p className="text-[0.9375rem] text-text-muted">{s.note}</p> : null}
-        <div className="flex flex-wrap items-center gap-x-2">
-          <StatusBadge status={s.status} />
-          {s.lock ? (
-            <span className="rounded-sm border border-control-border px-1.5 text-[0.8125rem] font-semibold">
-              {s.lock}
-            </span>
-          ) : null}
-          {!s.location ? (
-            <span className="text-[0.8125rem] text-status-warning">No map location</span>
-          ) : null}
+      <div className={cx("min-w-0 flex-1", !s.draggable && "pl-1", "max-sm:pl-1")}>
+        {/* Time, number, and Move… on one row; the badge only when it says more than
+            "Scheduled" (most stops on a schedule are). */}
+        <div className="flex items-start gap-2">
+          <Link href={`/jobs/${s.id}`} className="block min-h-11 min-w-0 flex-1 hover:underline">
+            <span className="font-semibold">{s.time ?? "Saving…"}</span>
+            <span className="text-text-muted">{s.number ? ` · #${s.number}` : ""}</span>
+            <span className="block truncate">{s.customer}</span>
+          </Link>
           {s.draggable ? (
             <button
               type="button"
-              className={buttonClass("quiet", "ml-auto px-2")}
+              className={buttonClass("quiet", "-mt-1.5 -mr-1 shrink-0 px-2")}
               onClick={() => onMove(s)}
             >
               Move…
             </button>
           ) : null}
         </div>
+        <p className="truncate text-[0.9375rem]">
+          <AddressLink address={s.address} location={s.location} />
+        </p>
+        {s.note ? <p className="text-[0.9375rem] text-text-muted">{s.note}</p> : null}
+        {s.status !== "scheduled" || s.lock || !s.location ? (
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+            {s.status !== "scheduled" ? <StatusBadge status={s.status} /> : null}
+            {s.lock ? (
+              <span className="rounded-sm border border-control-border px-1.5 text-[0.8125rem] font-semibold">
+                {s.lock}
+              </span>
+            ) : null}
+            {!s.location ? (
+              <span className="text-[0.8125rem] text-status-warning">No map location</span>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </article>
   );
