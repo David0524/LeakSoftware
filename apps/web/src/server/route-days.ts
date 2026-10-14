@@ -47,6 +47,9 @@ export interface RouteContext {
   nowMin: number;
 }
 
+/** Today in the shop's time zone, without waiting for the company's settings. */
+export const shopToday = (office: Office) => localDate(new Date(), office.company.timezone);
+
 export async function routeContext(office: Office): Promise<RouteContext> {
   const company = await getCompany(office);
   const now = new Date();
@@ -78,7 +81,8 @@ export const routeKey = (techId: string | null, date: string) => `${techId ?? "n
 /** Every tech's route for each date, plus the jobs on those dates with nobody assigned. */
 export async function loadRoutes(
   office: Office,
-  ctx: RouteContext,
+  /** May still be loading: the jobs and team start without waiting for it. */
+  ctxOrPromise: RouteContext | Promise<RouteContext>,
   dates: string[],
   { live = false }: { live?: boolean } = {},
 ): Promise<{
@@ -87,8 +91,12 @@ export async function loadRoutes(
   team: TeamMember[];
   drive: DriveFn;
 }> {
-  const { from, to } = scheduleBounds(dates, ctx.timeZone);
-  const [jobs, team] = await Promise.all([jobsBetween(office, from, to), getTeam(office)]);
+  const { from, to } = scheduleBounds(dates, office.company.timezone);
+  const [jobs, team, ctx] = await Promise.all([
+    jobsBetween(office, from, to),
+    getTeam(office),
+    ctxOrPromise,
+  ]);
   const names = new Map(team.map((t) => [t.user_id, t.name]));
   const byKey = new Map<string, { techId: string; date: string; jobs: JobRow[] }>();
   const unassigned = new Map<string, JobRow[]>();
@@ -139,10 +147,11 @@ export async function loadRoutes(
  * first (repairs from accepted quotes land here), then booked jobs with nobody assigned
  * (taken off a tech, or booked before choosing one), soonest first.
  */
-export async function needsScheduling(office: Office, ctx: RouteContext): Promise<JobRow[]> {
+export async function needsScheduling(office: Office): Promise<JobRow[]> {
+  const tz = office.company.timezone;
   const [waiting, untech] = await Promise.all([
-    listJobs(office, ["unscheduled"]),
-    unassignedFrom(office, zonedTimeToIso(ctx.today, "00:00", ctx.timeZone)),
+    listJobs(office, ["unscheduled"], { limit: 500 }),
+    unassignedFrom(office, zonedTimeToIso(shopToday(office), "00:00", tz)),
   ]);
   return [
     ...waiting.sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? "")),

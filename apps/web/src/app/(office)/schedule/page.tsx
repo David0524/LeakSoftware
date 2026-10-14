@@ -42,6 +42,7 @@ import {
   routeContext,
   routeKey,
   needsScheduling,
+  shopToday,
   type DayRoute,
   type RouteContext,
 } from "@/server/route-days";
@@ -126,15 +127,18 @@ function column(
 export default async function SchedulePage({ searchParams }: PageProps<"/schedule">) {
   const office = await getOffice();
   const params = await searchParams;
-  const [ctx, app] = await Promise.all([routeContext(office), mapsAppForRequest()]);
   const view: ScheduleView =
     params.view === "week" ? "week" : params.view === "month" ? "month" : "day";
-  const today = ctx.today;
+  const today = shopToday(office);
   const date = isDateString(params.date) ? params.date : today;
   const days = scheduleDays(view, date);
-  const [{ routes, unassigned, team }, tray] = await Promise.all([
-    loadRoutes(office, ctx, days),
-    needsScheduling(office, ctx),
+  // Settings, routes, and Needs a Time all load at once.
+  const ctxP = routeContext(office);
+  const [ctx, app, { routes, unassigned, team }, tray] = await Promise.all([
+    ctxP,
+    mapsAppForRequest(),
+    loadRoutes(office, ctxP, days),
+    needsScheduling(office),
   ]);
   const trayJobs = tray.map((j) => trayStop(j, ctx));
 
@@ -150,8 +154,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
     )
     // The signed-in person first ("Me"), then everyone else.
     .sort((a, b) => Number(b.user_id === office.user.id) - Number(a.user_id === office.user.id));
-  // One tech at a time, picked from chips like Today's (owner: the page shouldn't be long);
-  // Everyone shows them all.
+  // Phones: one tech at a time, picked from chips like Today's (owner: the page shouldn't be
+  // long); Everyone shows them all. Desktop always shows everyone (owner, 2026-10-14).
   const wanted = typeof params.tech === "string" ? params.tech : "";
   const tech =
     wanted === "all" && techs.length > 1
@@ -162,14 +166,18 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           (techs.find((t) => days.some((d) => routes.has(routeKey(t.user_id, d))))?.user_id ??
           techs[0]?.user_id ??
           "all");
-  const shown = tech === "all" ? techs : techs.filter((t) => t.user_id === tech);
+  const onPhone = (techId: string) => tech === "all" || techId === tech;
   const movers = ctx.seesAll
     ? team.filter((t) => t.status === "active")
     : team.filter((t) => t.user_id === office.user.id);
   const columns: BoardColumn[] = [];
-  for (const t of shown)
+  for (const t of techs)
     for (const d of days)
-      columns.push(column(ctx, t.user_id, t.name, d, routes.get(routeKey(t.user_id, d)), app));
+      columns.push({
+        ...column(ctx, t.user_id, t.name, d, routes.get(routeKey(t.user_id, d)), app),
+        phoneHidden: !onPhone(t.user_id),
+      });
+  const phoneColumns = columns.filter((c) => !c.phoneHidden);
   const unlocated = columns.some((c) => c.stops.some((s) => !s.location));
 
   const move = (n: number) =>
@@ -187,9 +195,24 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           }).format(new Date(`${date}T12:00:00Z`))
         : `${formatDay(days[0]!)} – ${formatDay(days[days.length - 1]!)}`;
   const week = scheduleDays("week", date);
-  const jobsShown =
-    columns.reduce((n, c) => n + c.stops.length, 0) +
-    days.reduce((n, d) => n + (unassigned.get(d)?.length ?? 0), 0);
+  const unassignedCount = days.reduce((n, d) => n + (unassigned.get(d)?.length ?? 0), 0);
+  const jobsShown = columns.reduce((n, c) => n + c.stops.length, 0) + unassignedCount;
+  const jobsOnPhone =
+    phoneColumns.reduce((n, c) => n + c.stops.length, 0) + (tech === "all" ? unassignedCount : 0);
+  const monthCounts = (cols: BoardColumn[], withUnassigned: boolean) =>
+    Object.fromEntries(
+      days.map((d) => {
+        const stops = cols.filter((c) => c.date === d).flatMap((c) => c.stops);
+        const extra = withUnassigned ? (unassigned.get(d)?.length ?? 0) : 0;
+        return [
+          d,
+          {
+            jobs: stops.filter((x) => x.note !== "Maintenance").length + extra,
+            cleanings: stops.filter((x) => x.note === "Maintenance").length,
+          },
+        ];
+      }),
+    );
 
   return (
     <>
@@ -234,7 +257,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       {techs.length > 1 ? (
         <nav
           aria-label="Whose schedule"
-          className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1"
+          className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1 sm:hidden"
         >
           {[
             ...techs.map((t) => ({
@@ -304,31 +327,32 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       ) : null}
 
       {view === "month" ? (
-        <MonthCalendar
-          days={days}
-          month={date.slice(0, 7)}
-          today={today}
-          counts={Object.fromEntries(
-            days.map((d) => {
-              const stops = columns.filter((c) => c.date === d).flatMap((c) => c.stops);
-              const extra = tech === "all" ? (unassigned.get(d)?.length ?? 0) : 0;
-              return [
-                d,
-                {
-                  jobs: stops.filter((x) => x.note !== "Maintenance").length + extra,
-                  cleanings: stops.filter((x) => x.note === "Maintenance").length,
-                },
-              ];
-            }),
-          )}
-          href={(d) => href(d, "day")}
-        />
+        <>
+          <div className="sm:hidden">
+            <MonthCalendar
+              days={days}
+              month={date.slice(0, 7)}
+              today={today}
+              counts={monthCounts(phoneColumns, tech === "all")}
+              href={(d) => href(d, "day")}
+            />
+          </div>
+          <div className="max-sm:hidden">
+            <MonthCalendar
+              days={days}
+              month={date.slice(0, 7)}
+              today={today}
+              counts={monthCounts(columns, true)}
+              href={(d) => href(d, "day")}
+            />
+          </div>
+        </>
       ) : view === "week" ? (
         <>
           {/* Phones: the week as an agenda, day by day. Moving is done from the day view. */}
           <div className="space-y-5 sm:hidden">
             {days.map((d) => {
-              const list = columns
+              const list = phoneColumns
                 .filter((c) => c.date === d)
                 .flatMap((c) =>
                   c.stops
@@ -336,7 +360,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                     .map((s) => ({ s, tech: c.title })),
                 )
                 .concat(
-                  (unassigned.get(d) ?? []).map((j) => ({
+                  (tech === "all" ? (unassigned.get(d) ?? []) : []).map((j) => ({
                     s: toStop(j, ctx),
                     tech: "No tech yet",
                   })),
@@ -406,8 +430,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           today={today}
         />
       )}
-      {jobsShown === 0 ? (
-        <p className="mt-4 text-text-muted">
+      {jobsOnPhone === 0 || jobsShown === 0 ? (
+        <p className={cx("mt-4 text-text-muted", jobsShown > 0 && "sm:hidden")}>
           No jobs scheduled{" "}
           {view === "day" ? "this day" : view === "week" ? "this week" : "this month"}.
         </p>

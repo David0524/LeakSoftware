@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import type {
   CompanyAccess,
   ChecklistItemResult,
@@ -43,7 +44,8 @@ export interface TeamMember {
   email: string | null;
 }
 
-export async function getTeam(office: Office): Promise<TeamMember[]> {
+/** Cached per request: several parts of a page ask for the team. */
+export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
   const supabase = await db();
   const members = must(
     await supabase
@@ -77,7 +79,7 @@ export async function getTeam(office: Office): Promise<TeamMember[]> {
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
-}
+});
 
 // ---------------------------------------------------------------------------
 // Jobs
@@ -93,21 +95,27 @@ export interface JobRow extends Job {
 async function attach(office: Office, jobs: Job[]): Promise<JobRow[]> {
   const supabase = await db();
   const propertyIds = [...new Set(jobs.map((j) => j.property_id))];
-  const [properties, team] = await Promise.all([
-    propertyIds.length
+  // Pools then their customers, while the team loads alongside (each was waiting on the
+  // one before it: four round trips in a row on every job list and job page).
+  const poolsAndCustomers = async () => {
+    const properties = propertyIds.length
       ? (must(await supabase.from("property").select("*").in("id", propertyIds)) as Property[])
-      : [],
+      : [];
+    const customerIds = [
+      ...new Set([
+        ...jobs.map((j) => j.bill_to_customer_id).filter((x): x is string => !!x),
+        ...properties.map((p) => p.customer_id),
+      ]),
+    ];
+    const customers = customerIds.length
+      ? (must(await supabase.from("customer").select("*").in("id", customerIds)) as Customer[])
+      : [];
+    return { properties, customers };
+  };
+  const [{ properties, customers }, team] = await Promise.all([
+    poolsAndCustomers(),
     getTeam(office),
   ]);
-  const customerIds = [
-    ...new Set([
-      ...jobs.map((j) => j.bill_to_customer_id).filter((x): x is string => !!x),
-      ...properties.map((p) => p.customer_id),
-    ]),
-  ];
-  const customers = customerIds.length
-    ? (must(await supabase.from("customer").select("*").in("id", customerIds)) as Customer[])
-    : [];
   const propById = new Map(properties.map((p) => [p.id, p]));
   const custById = new Map(customers.map((c) => [c.id, c]));
   const techById = new Map(team.map((t) => [t.user_id, t.name]));
@@ -135,8 +143,17 @@ export const OPEN_STATUSES: JobStatus[] = [
   "invoiced",
 ];
 
-export async function listJobs(office: Office, statuses: JobStatus[] | null): Promise<JobRow[]> {
+/**
+ * A page of jobs (M11: the full list was a megabyte on a phone). `search` matches the job
+ * number or the customer's name. Returns one row past `limit` so the page knows there's more.
+ */
+export async function listJobs(
+  office: Office,
+  statuses: JobStatus[] | null,
+  opts: { limit?: number; search?: string } = {},
+): Promise<JobRow[]> {
   const supabase = await db();
+  const limit = Math.min(opts.limit ?? 50, 500);
   let q = supabase
     .from("job")
     .select("*")
@@ -144,8 +161,30 @@ export async function listJobs(office: Office, statuses: JobStatus[] | null): Pr
     .is("deleted_at", null)
     .order("scheduled_start", { ascending: true, nullsFirst: false })
     .order("number", { ascending: false })
-    .limit(500);
+    .limit(limit + 1);
   if (statuses) q = q.in("status", statuses);
+  const search = opts.search?.trim();
+  if (search) {
+    const number = /^#?\d+$/.test(search) ? Number(search.replace("#", "")) : null;
+    const { data: people } = await supabase
+      .from("customer")
+      .select("id")
+      .eq("company_id", office.company.id)
+      .is("deleted_at", null)
+      .ilike("name", `%${search.replace(/[%_,()]/g, " ")}%`)
+      .limit(200);
+    const ids = (people ?? []).map((c) => c.id as string);
+    const { data: pools } = ids.length
+      ? await supabase.from("property").select("id").in("customer_id", ids)
+      : { data: [] };
+    const terms = [
+      ids.length ? `bill_to_customer_id.in.(${ids.join(",")})` : null,
+      pools?.length ? `property_id.in.(${pools.map((p) => p.id).join(",")})` : null,
+      number ? `number.eq.${number}` : null,
+    ].filter(Boolean);
+    if (terms.length === 0) return [];
+    q = q.or(terms.join(","));
+  }
   return attach(office, must(await q) as Job[]);
 }
 
@@ -197,16 +236,6 @@ export interface JobDetail {
 
 export async function getJob(office: Office, id: string): Promise<JobDetail | null> {
   const supabase = await db();
-  const job = must(
-    await supabase
-      .from("job")
-      .select("*")
-      .eq("company_id", office.company.id)
-      .eq("id", id)
-      .is("deleted_at", null)
-      .maybeSingle(),
-  ) as Job | null;
-  if (!job) return null;
   const live = <T>(table: string) =>
     supabase.from(table).select("*").eq("job_id", id).is("deleted_at", null) as unknown as Promise<{
       data: T[] | null;
@@ -217,9 +246,22 @@ export async function getJob(office: Office, id: string): Promise<JobDetail | nu
       data: T[] | null;
       error: { message: string } | null;
     }>;
-  const [[row], components, results, tests, findings, media, types, testTypes, severities] =
+  // Everything starts at once; only the customer and pool wait for the job row.
+  const jobRow = (async () => {
+    const job = must(
+      await supabase
+        .from("job")
+        .select("*")
+        .eq("company_id", office.company.id)
+        .eq("id", id)
+        .is("deleted_at", null)
+        .maybeSingle(),
+    ) as Job | null;
+    return job ? (await attach(office, [job]))[0]! : null;
+  })();
+  const [row, components, results, tests, findings, media, types, testTypes, severities] =
     await Promise.all([
-      attach(office, [job]),
+      jobRow,
       live<JobComponent>("job_component").then(must),
       live<ChecklistItemResult>("checklist_item_result").then(must),
       live<TestResult>("test_result").then(must),
@@ -229,8 +271,9 @@ export async function getJob(office: Office, id: string): Promise<JobDetail | nu
       cfg<TestType>("test_type").then(must),
       cfg<SeverityLevel>("severity_level").then(must),
     ]);
+  if (!row) return null;
   return {
-    job: row!,
+    job: row,
     components: components.sort((a, b) => a.sort_order - b.sort_order),
     componentTypes: new Map(types.map((t) => [t.id, t])),
     results: new Map(results.map((r) => [r.job_component_id, r])),
@@ -368,7 +411,8 @@ export async function getCustomer(office: Office, id: string) {
 // Settings
 // ---------------------------------------------------------------------------
 
-export async function getCompany(office: Office) {
+/** Cached per request: the header, page, and panels all read the company. */
+export const getCompany = cache(async (office: Office) => {
   const supabase = await db();
   return must(
     await supabase.from("company").select("*").eq("id", office.company.id).single(),
@@ -381,7 +425,7 @@ export async function getCompany(office: Office) {
     brand_secondary: string | null;
     timezone: string;
   };
-}
+});
 
 export async function listConfig<T>(office: Office, table: string): Promise<T[]> {
   const supabase = await db();

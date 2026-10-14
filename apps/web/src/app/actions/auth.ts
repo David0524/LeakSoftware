@@ -17,7 +17,7 @@ export interface FormState {
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 
 /** Only same-site paths, so a crafted link cannot send someone elsewhere after sign-in. */
-function safeNext(next: string, fallback = "/jobs") {
+function safeNext(next: string, fallback = "/today") {
   return next.startsWith("/") && !next.startsWith("//") ? next : fallback;
 }
 
@@ -102,7 +102,7 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
     company_timezone: text(form, "timezone") || null,
   });
   if (companyError) return { error: companyError.message, values };
-  redirect("/jobs");
+  redirect("/today");
 }
 
 /** Accounts confirmed by email create their company here. */
@@ -117,7 +117,7 @@ export async function createCompany(_: FormState, form: FormData): Promise<FormS
     company_timezone: text(form, "timezone") || null,
   });
   if (error) return { error: error.message, values: { company } };
-  redirect("/jobs");
+  redirect("/today");
 }
 
 /** Join a company from an invite link, creating the account first if needed. */
@@ -163,7 +163,7 @@ export async function acceptInvite(_: FormState, form: FormData): Promise<FormSt
     httpOnly: true,
     maxAge: 60 * 60 * 24 * 365,
   });
-  redirect("/jobs");
+  redirect("/today");
 }
 
 export async function signOut() {
@@ -184,5 +184,5 @@ export async function switchCompany(form: FormData) {
       maxAge: 60 * 60 * 24 * 365,
     });
   }
-  redirect("/jobs");
+  redirect("/today");
 }

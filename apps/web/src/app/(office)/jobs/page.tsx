@@ -1,11 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { JOB_TYPE_LABELS, formatAddress, formatSchedule, type JobStatus } from "@leakbook/core";
-import { ButtonLink, Empty, PageHeader, StatusBadge, pillClass } from "@/components/ui";
+import {
+  Button,
+  ButtonLink,
+  Empty,
+  PageHeader,
+  StatusBadge,
+  buttonClass,
+  pillClass,
+} from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { OPEN_STATUSES, listJobs } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Jobs · Tidemark" };
+
+/** Jobs per page; Show More adds this many. */
+const PAGE = 50;
 
 const FILTERS: { key: string; label: string; statuses: JobStatus[] | null }[] = [
   { key: "open", label: "Open", statuses: OPEN_STATUSES },
@@ -25,9 +36,21 @@ const FILTERS: { key: string; label: string; statuses: JobStatus[] | null }[] = 
 
 export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
   const office = await getOffice();
-  const { status } = await searchParams;
+  const { status, q, show } = await searchParams;
   const filter = FILTERS.find((f) => f.key === status) ?? FILTERS[0]!;
-  const jobs = await listJobs(office, filter.statuses);
+  const search = typeof q === "string" ? q.trim() : "";
+  const limit = Math.min(Math.max(Number(show) || PAGE, PAGE), 500);
+  const found = await listJobs(office, filter.statuses, { limit, search });
+  const more = found.length > limit;
+  const jobs = more ? found.slice(0, limit) : found;
+  const link = (params: Record<string, string>) => {
+    const next = new URLSearchParams({
+      ...(filter.key !== "open" ? { status: filter.key } : {}),
+      ...(search ? { q: search } : {}),
+      ...params,
+    });
+    return `/jobs${next.size ? `?${next}` : ""}`;
+  };
   const now = new Date();
 
   return (
@@ -44,7 +67,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
         {FILTERS.map((f) => (
           <Link
             key={f.key}
-            href={f.key === "open" ? "/jobs" : `/jobs?status=${f.key}`}
+            href={`/jobs${f.key === "open" ? "" : `?status=${f.key}`}${search ? `${f.key === "open" ? "?" : "&"}q=${encodeURIComponent(search)}` : ""}`}
             aria-current={f === filter ? "page" : undefined}
             className={pillClass(f === filter)}
           >
@@ -53,8 +76,30 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
         ))}
       </nav>
 
+      <form action="/jobs" className="mb-5 flex gap-2" role="search">
+        {filter.key !== "open" ? <input type="hidden" name="status" value={filter.key} /> : null}
+        <label htmlFor="q" className="sr-only">
+          Search jobs
+        </label>
+        <input
+          id="q"
+          name="q"
+          type="search"
+          defaultValue={search}
+          placeholder="Customer name or job number"
+          className="min-h-11 min-w-0 flex-1 rounded-xl border border-control-border bg-surface px-3 focus:outline-3 focus:outline-focus"
+        />
+        <Button type="submit" kind="secondary">
+          Search
+        </Button>
+      </form>
+
       {jobs.length === 0 ? (
-        <Empty>No jobs here. Add one with New Job, or on the phone.</Empty>
+        <Empty>
+          {search
+            ? `No jobs match “${search}”.`
+            : "No jobs here. Add one with New Job, or on the phone."}
+        </Empty>
       ) : (
         <>
           {/* Phones: one card per job. */}
@@ -146,6 +191,17 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
               </tbody>
             </table>
           </div>
+          {more ? (
+            <div className="mt-5 flex justify-center">
+              <Link
+                href={link({ show: String(limit + PAGE) })}
+                className={buttonClass("secondary")}
+                scroll={false}
+              >
+                Show More
+              </Link>
+            </div>
+          ) : null}
         </>
       )}
     </>

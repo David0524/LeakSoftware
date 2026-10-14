@@ -48,13 +48,13 @@ test("owners choose whether techs see every job or only their own", async ({ bro
 
   try {
     // By default, Tony sees Priya's job.
-    await techPage.goto("/jobs?status=all");
+    await techPage.goto(`/jobs?status=all&q=${encodeURIComponent(customer)}`);
     await expect(techPage.getByRole("row").filter({ hasText: customer })).toHaveCount(1);
 
     // Only their own: it's gone from the list and its page, and the schedule shows only
     // Tony's route.
     await setTechsSee(ownerPage, "Only Their Own");
-    await techPage.goto("/jobs?status=all");
+    await techPage.goto(`/jobs?status=all&q=${encodeURIComponent(customer)}`);
     await expect(techPage.getByRole("heading", { name: "Jobs" })).toBeVisible();
     await expect(techPage.getByRole("row").filter({ hasText: customer })).toHaveCount(0);
     await techPage.goto(`/jobs/${jobId}`);
@@ -64,13 +64,13 @@ test("owners choose whether techs see every job or only their own", async ({ bro
     await expect(techPage.getByRole("region", { name: "Priya Shah" })).toHaveCount(0);
 
     // The owner still sees it.
-    await ownerPage.goto("/jobs?status=all");
+    await ownerPage.goto(`/jobs?status=all&q=${encodeURIComponent(customer)}`);
     await expect(ownerPage.getByRole("row").filter({ hasText: customer })).toHaveCount(1);
   } finally {
     await setTechsSee(ownerPage, "Every Job");
   }
 
   // Back to every job.
-  await techPage.goto("/jobs?status=all");
+  await techPage.goto(`/jobs?status=all&q=${encodeURIComponent(customer)}`);
   await expect(techPage.getByRole("row").filter({ hasText: customer })).toHaveCount(1);
 });

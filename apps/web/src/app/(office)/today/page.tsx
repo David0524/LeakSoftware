@@ -19,7 +19,7 @@ import { AddressLink, OpenRouteInMaps } from "@/components/open-in-maps";
 import { Empty, PageHeader, StatusBadge, cx, iconButtonClass, pillClass } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { mapsAppForRequest } from "@/lib/maps";
-import { loadRoutes, routeContext, routeKey } from "@/server/route-days";
+import { loadRoutes, routeContext, routeKey, shopToday } from "@/server/route-days";
 
 export const metadata: Metadata = { title: "Today · Tidemark" };
 
@@ -31,8 +31,10 @@ export const metadata: Metadata = { title: "Today · Tidemark" };
 export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   const office = await getOffice();
   const params = await searchParams;
-  const ctx = await routeContext(office);
-  const { routes, team } = await loadRoutes(office, ctx, [ctx.today]);
+  // The route context (company settings) and the day's jobs load together.
+  const ctxP = routeContext(office);
+  const day = shopToday(office);
+  const [ctx, { routes, team }] = await Promise.all([ctxP, loadRoutes(office, ctxP, [day])]);
   const techs = team.filter(
     (t) => t.status === "active" || routes.has(routeKey(t.user_id, ctx.today)),
   );

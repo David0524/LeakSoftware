@@ -9,7 +9,7 @@ test.describe.configure({ mode: "serial" });
 
 async function openSampleJob(page: Page, customer = "Sam Sample") {
   await signIn(page, OWNER);
-  await page.goto("/jobs?status=all");
+  await page.goto(`/jobs?status=all&q=${encodeURIComponent(customer)}`);
   await page.getByRole("row").filter({ hasText: customer }).getByRole("link").first().click();
   await expect(page.getByRole("heading", { name: "Report and Sign-Off" })).toBeVisible();
 }
@@ -107,7 +107,7 @@ test("field parity report: counts, verdicts, fee, and disclaimer", async ({ page
   await termsForm.getByRole("button", { name: "Save" }).click();
   await expect(termsForm.getByText("Saved.", { exact: true })).toBeVisible();
 
-  await page.goto("/jobs?status=all");
+  await page.goto("/jobs?status=all&q=Riley%20Rivera");
   await page.getByRole("row").filter({ hasText: "Riley Rivera" }).getByRole("link").first().click();
   await expect(page.getByText("With Dana Owner")).toBeVisible();
   await expect(page.getByText("$649.00", { exact: true })).toBeVisible();

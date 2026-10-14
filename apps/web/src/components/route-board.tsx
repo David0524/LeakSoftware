@@ -64,6 +64,8 @@ export interface BoardStop {
 export interface BoardColumn {
   /** "techId|date" */
   key: string;
+  /** Phones show one person at a time (picked with chips); desktop shows everyone. */
+  phoneHidden?: boolean;
   techId: string;
   title: string;
   date: string;
@@ -324,7 +326,11 @@ function DayColumn({
     <section
       aria-label={c.title}
       data-testid="route"
-      className={cx("card flex flex-col p-4", isOver && "ring-2 ring-link")}
+      className={cx(
+        "card flex flex-col p-4",
+        c.phoneHidden && "max-sm:hidden",
+        isOver && "ring-2 ring-link",
+      )}
     >
       <h2 className="font-display text-xl font-bold">{c.title}</h2>
       {summary ? <p className="text-[0.9375rem] text-text-muted">{summary}</p> : null}

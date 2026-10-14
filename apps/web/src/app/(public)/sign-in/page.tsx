@@ -31,8 +31,8 @@ export default function SignInPage({ searchParams }: PageProps<"/sign-in">) {
 
 async function SignInBody({ searchParams }: Pick<PageProps<"/sign-in">, "searchParams">) {
   const params = await searchParams;
-  const next = typeof params.next === "string" ? params.next : "/jobs";
-  if (await getUser()) redirect(next.startsWith("/") ? next : "/jobs");
+  const next = typeof params.next === "string" ? params.next : "/today";
+  if (await getUser()) redirect(next.startsWith("/") ? next : "/today");
   return (
     <>
       {params.error ? (

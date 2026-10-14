@@ -33,8 +33,9 @@ async function timedFetch(input: RequestInfo | URL, init?: RequestInit) {
   const start = performance.now();
   const res = await fetch(input, init);
   const url = new URL(typeof input === "string" ? input : input instanceof URL ? input : input.url);
+  // The start time shows which calls wait on others (a waterfall) and which run together.
   console.log(
-    `[db] ${Math.round(performance.now() - start)}ms ${init?.method ?? "GET"} ${url.pathname}${url.search.slice(0, 80)}`,
+    `[db] @${Math.round(start)} ${Math.round(performance.now() - start)}ms ${init?.method ?? "GET"} ${url.pathname}${url.search.slice(0, 80)}`,
   );
   return res;
 }

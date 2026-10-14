@@ -26,6 +26,15 @@ test("signed-out visitors see the home page and are sent to sign in", async ({ p
   await expect(page.getByRole("alert").filter({ hasText: "don’t match" })).toBeVisible();
 });
 
+test("signing in opens Today", async ({ page }) => {
+  await page.goto("/sign-in");
+  await page.getByLabel("Email").fill(OWNER.email);
+  await page.getByLabel("Password").fill(OWNER.password);
+  await page.getByRole("button", { name: "Sign In", exact: true }).click();
+  await page.waitForURL((url) => url.pathname === "/today");
+  await expect(page.getByRole("heading", { name: "Today", exact: true })).toBeVisible();
+});
+
 test("owner signs in and sees jobs", async ({ page }) => {
   await signIn(page, OWNER);
   await expect(page.getByRole("heading", { name: "Jobs" })).toBeVisible();
@@ -37,7 +46,7 @@ test("owner signs in and sees jobs", async ({ page }) => {
 
 test("owner views the M4 sample job", async ({ page }) => {
   await signIn(page, OWNER);
-  await page.goto("/jobs?status=all");
+  await page.goto("/jobs?status=all&q=Sam%20Sample");
   const row = page.getByRole("row").filter({ hasText: "Sam Sample" });
   await row.getByRole("link").first().click();
   await expect(page.getByRole("heading", { name: /^Job #\d+/ })).toBeVisible();
@@ -120,7 +129,7 @@ test("owner invites a tech, who joins and cannot reach settings", async ({ page,
   await tech.getByLabel("Your name").fill("E2E Tech");
   await tech.getByLabel("Choose a password").fill("e2e-password-123");
   await tech.getByRole("button", { name: "Create Account and Join" }).click();
-  await tech.waitForURL("**/jobs");
+  await tech.waitForURL("**/today");
   const nav = tech.getByRole("navigation", { name: "Main" });
   await expect(nav.getByRole("link", { name: "Jobs" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Settings" })).toHaveCount(0);

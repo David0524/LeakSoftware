@@ -40,7 +40,7 @@ test("a tech deletes their account and can't sign in again", async ({ page, brow
   await tech.getByLabel("Your name").fill("Leaving Tech");
   await tech.getByLabel("Choose a password").fill("e2e-password-123");
   await tech.getByRole("button", { name: "Create Account and Join" }).click();
-  await tech.waitForURL("**/jobs");
+  await tech.waitForURL("**/today");
 
   await tech.goto("/more");
   await tech.locator("summary", { hasText: "Delete My Account" }).click();

@@ -67,14 +67,13 @@ export const metadata: Metadata = { title: "Job · Tidemark" };
 export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   const { id } = await params;
   const office = await getOffice();
-  const detail = await getJob(office, id);
+  const [detail, company] = await Promise.all([getJob(office, id), getCompany(office)]);
   if (!detail) notFound();
   const { job } = detail;
   const tz = office.company.timezone;
   const tally = checklistTally(detail.components, [...detail.results.values()]);
   const total = detail.components.length;
-  const questions =
-    ((await getCompany(office)).settings as Partial<CompanySettings>).intake_questions ?? [];
+  const questions = (company.settings as Partial<CompanySettings>).intake_questions ?? [];
   const answers = questions
     .map((q) => ({ q, a: job.intake?.[q.key] }))
     .filter(({ a }) => (Array.isArray(a) ? a.length > 0 : !!a));

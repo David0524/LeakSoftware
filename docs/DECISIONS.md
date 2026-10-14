@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-14 (owner: faster site; Today first; whole team on the desktop schedule)
+- **Signing in opens Today** (also after joining from an invite, starting a shop, or switching companies). Links that carry a destination still go there.
+- **Schedule:** desktop shows every tech at once; phones keep one person at a time with the chips (Everyone shows all). Month view counts everyone on desktop.
+- **Speed:** the error-monitoring code loads only when Sentry is set up (about 250 KB less script on every page); Jobs shows 50 at a time with Show More and a search (customer name or job number), instead of every job (about 1 MB of page on the demo shop); the job page, Today, and the schedule start their database reads together instead of one after another; the team and company are read once per page.
+
 ## 2026-10-14 (M11 launch hardening; my calls, adjust as needed)
 - **Error monitoring is Sentry, errors only.** Website (server and browser) and app; off until a DSN is set. No customer data: no request bodies, headers, cookies, query strings, screenshots, or session replay.
 - **Offline edge cases:** a refused sign-in keeps everything on the phone and shows "Sign in again"; a full phone rolls the save back whole and explains it (no crash), and the sync bar warns below 200 MB free; an app update keeps unsent changes (tested from the first schema).

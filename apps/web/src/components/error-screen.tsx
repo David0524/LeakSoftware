@@ -1,6 +1,6 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
+import { reportError } from "@/lib/report-error";
 import Link from "next/link";
 import { useEffect } from "react";
 import { Button, buttonClass } from "./ui";
@@ -19,7 +19,7 @@ export function ErrorScreen({
   home?: string;
 }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    reportError(error);
   }, [error]);
   return (
     <div role="alert" className="mx-auto max-w-lg py-16 text-center">

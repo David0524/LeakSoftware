@@ -34,7 +34,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await page.getByLabel("Email").fill(OWNER.email);
   await page.getByLabel("Password").fill(OWNER.password);
   await page.getByRole("button", { name: "Start Free Trial" }).click();
-  await page.waitForURL((url) => url.pathname === "/jobs");
+  await page.waitForURL((url) => url.pathname === "/today");
   await page.goto("/settings/billing");
   await expect(page.getByText(/Free trial: (29|30) days left/)).toBeVisible();
 

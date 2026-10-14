@@ -1,6 +1,6 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
+import { reportError } from "@/lib/report-error";
 import { useEffect } from "react";
 import { tokens } from "@leakbook/tokens";
 
@@ -19,7 +19,7 @@ export default function GlobalError({
   retry: () => void;
 }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    reportError(error);
   }, [error]);
   return (
     <html lang="en">
