@@ -41,6 +41,14 @@ export function AcceptForm({
   );
 }
 
-export function PayDepositForm({ token, amount }: { token: string; amount: string }) {
-  return <PayForm token={token} label={`Pay ${amount} Deposit`} action={payDeposit} />;
+export function PayDepositForm({
+  token,
+  amount,
+  demo,
+}: {
+  token: string;
+  amount: string;
+  demo?: boolean;
+}) {
+  return <PayForm token={token} label={`Pay ${amount} Deposit`} action={payDeposit} demo={demo} />;
 }

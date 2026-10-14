@@ -6,6 +6,7 @@ import { tokens } from "@leakbook/tokens";
 import { PayInvoiceForm } from "@/components/invoice-actions";
 import { Notice } from "@/components/ui";
 import { publicClient } from "@/server/reports";
+import { paymentsConfigured } from "@/server/stripe";
 
 export const metadata: Metadata = { title: "Invoice", robots: { index: false } };
 
@@ -254,8 +255,12 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
             </Notice>
           ) : paid ? (
             <Notice>Payment received. It can take a moment to show here; refresh shortly.</Notice>
-          ) : i.can_pay && !print ? (
-            <PayInvoiceForm token={token} amount={formatCents(i.balance_cents)} />
+          ) : (i.can_pay || !paymentsConfigured()) && !print ? (
+            <PayInvoiceForm
+              token={token}
+              amount={formatCents(i.balance_cents)}
+              demo={!paymentsConfigured()}
+            />
           ) : (
             <p>
               {c.name} will tell you how to pay the {formatCents(i.balance_cents)} due.

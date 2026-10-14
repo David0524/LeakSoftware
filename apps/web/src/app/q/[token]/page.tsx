@@ -6,6 +6,7 @@ import { tokens } from "@leakbook/tokens";
 import { AcceptForm, PayDepositForm } from "@/components/quote-actions";
 import { Notice } from "@/components/ui";
 import { publicClient } from "@/server/reports";
+import { paymentsConfigured } from "@/server/stripe";
 
 export const metadata: Metadata = { title: "Repair Quote", robots: { index: false } };
 
@@ -229,8 +230,12 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
               </Notice>
             ) : paid ? (
               <Notice>Payment received. It can take a moment to show here; refresh shortly.</Notice>
-            ) : q.deposit_cents > 0 && q.can_pay ? (
-              <PayDepositForm token={token} amount={formatCents(q.deposit_cents)} />
+            ) : q.deposit_cents > 0 && (q.can_pay || !paymentsConfigured()) ? (
+              <PayDepositForm
+                token={token}
+                amount={formatCents(q.deposit_cents)}
+                demo={!paymentsConfigured()}
+              />
             ) : q.deposit_cents > 0 ? (
               <p>
                 {c.name} will tell you how to pay the {formatCents(q.deposit_cents)} deposit.

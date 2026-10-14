@@ -6,6 +6,7 @@ Newest first. Each entry: date, decision, reason.
 - **Customers pay on our own pages.** The Pay buttons on the quote (deposit) and invoice pages open Stripe's embedded Checkout in place, so the customer never leaves the site. Stripe still draws and holds the card form (in its own secure frame), so card numbers never touch Tidemark and the shop stays merchant of record on its own Stripe account. Payments, webhooks, and receipts are unchanged.
 - **Ways to pay:** card (with Apple Pay and Google Pay where the device offers them), Link (Stripe's saved-card wallet), and US bank account. Apple Pay and Google Pay need the site's domain registered on each shop's Stripe account; that happens automatically when a shop finishes payment setup.
 - **Fallback:** without `STRIPE_PUBLISHABLE_KEY` the Pay button opens Stripe's own page as before.
+- **Demo mode (owner: "I want to see it to demo"):** on a server with no Stripe secret key, the quote and invoice pages still show the Pay button with a "Demo only" note; tapping it shows a picture of the payment form (wallet buttons, card fields, bank option) that has no inputs and can't submit. It disappears once the keys are set.
 - **Not now:** a fully custom card form (Payment Element) and tapping a card on the tech's phone (Stripe Terminal). The second is a question for the design partner.
 
 ## 2026-10-14 (owner: "do the design fixes, monthly invoices, and tightening"; details my calls)

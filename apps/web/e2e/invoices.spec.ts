@@ -82,6 +82,13 @@ test("a repair is invoiced with its deposit credited, paid by check and card, wi
   await expect(customer.getByRole("heading", { name: /^Invoice #\d+$/ })).toBeVisible();
   await expect(customer.getByText(`Deposit paid on quote #${quote.number}`)).toBeVisible();
   await expect(customer.getByRole("button", { name: "Pay $550.00" })).toBeVisible();
+  // No Stripe key on the test server: the button opens a demo preview that charges nothing.
+  await expect(customer.getByText(/^Demo only/)).toBeVisible();
+  await customer.getByRole("button", { name: "Pay $550.00" }).click();
+  const preview = customer.getByRole("region", { name: "Payment form preview (demo)" });
+  await expect(preview).toBeVisible();
+  await expect(preview.getByRole("button", { name: "Pay $550.00" })).toBeDisabled();
+  await expect(preview.getByRole("textbox")).toHaveCount(0);
   expect(await customer.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
     390,
   );
