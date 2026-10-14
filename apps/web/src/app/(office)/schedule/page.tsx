@@ -367,9 +367,11 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                 );
               return (
                 <section key={d} aria-label={formatDay(d, "long")}>
+                  {/* An empty day is one line: the day, then "Nothing scheduled" beside it. */}
                   <h2
                     className={cx(
-                      "mb-2 font-display text-lg font-bold",
+                      "flex flex-wrap items-baseline gap-x-2 font-display text-lg font-bold",
+                      list.length > 0 && "mb-2",
                       d === today && "text-link",
                     )}
                   >
@@ -380,10 +382,13 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                       {formatDay(d, "long")}
                       {d === today ? " · Today" : ""}
                     </Link>
+                    {list.length === 0 ? (
+                      <span className="font-sans text-[0.9375rem] font-normal text-text-muted">
+                        Nothing scheduled
+                      </span>
+                    ) : null}
                   </h2>
-                  {list.length === 0 ? (
-                    <p className="text-[0.9375rem] text-text-muted">Nothing scheduled.</p>
-                  ) : (
+                  {list.length === 0 ? null : (
                     <ul className="space-y-2">
                       {list.map(({ s, tech }) => (
                         <li key={s.id}>

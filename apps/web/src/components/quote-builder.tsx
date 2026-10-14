@@ -46,8 +46,8 @@ function ErrorText({ error }: { error: string | null }) {
 export function StartQuote({ jobId }: { jobId: string }) {
   const { pending, error, run } = useRun();
   return (
-    <div className="space-y-2 rounded-2xl bg-text/[0.04] p-6">
-      <p className="text-text-muted">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <p className="min-w-0 flex-1 basis-48 text-text-muted">
         No quote yet. Start one to price the repairs for these findings.
       </p>
       <Button
@@ -58,7 +58,9 @@ export function StartQuote({ jobId }: { jobId: string }) {
       >
         Start Quote
       </Button>
-      <ErrorText error={error} />
+      <div className="w-full empty:hidden">
+        <ErrorText error={error} />
+      </div>
     </div>
   );
 }

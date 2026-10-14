@@ -27,7 +27,6 @@ export function ReportPanel({
   sent,
   customerEmail,
   emailReady,
-  aiReady,
 }: {
   jobId: string;
   template: "homeowner" | "partner";
@@ -36,7 +35,6 @@ export function ReportPanel({
   sent: ReportRow[];
   customerEmail: string | null;
   emailReady: boolean;
-  aiReady: boolean;
 }) {
   const [draftState, draftAction, drafting] = useActionState(writeDraft, {});
   const [saveState, saveAction, saving] = useActionState(saveText, {});
@@ -125,11 +123,6 @@ export function ReportPanel({
         >
           {drafting ? "Writing…" : draft?.final_sections ? "Write the Draft Again" : "Write Draft"}
         </Button>
-        <span className="text-[0.9375rem] text-text-muted">
-          {aiReady
-            ? "AI writes the draft from this job’s checklist, tests, and findings. It can get details wrong, so read every word before sending."
-            : "AI writing isn’t set up yet; the draft is a plain summary of the job data."}
-        </span>
       </form>
       <div className="mt-3">
         <Status state={draftState} />

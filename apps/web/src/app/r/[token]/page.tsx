@@ -61,24 +61,15 @@ async function Report({ params, searchParams }: PageProps<"/r/[token]">) {
 
   return (
     <>
-      {!print ? (
-        <div className="report-actions mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 pt-4 sm:px-8 print:hidden">
-          {r.status === "superseded" && r.newer_token ? (
-            <p className="rounded-md border-l-4 border-status-warning bg-neutral-50 px-3 py-2 text-navy">
-              This report was updated.{" "}
-              <Link href={`/r/${r.newer_token}`} className="font-semibold text-water underline">
-                See the latest version
-              </Link>
-            </p>
-          ) : (
-            <span />
-          )}
-          <a
-            href={`/r/${token}/pdf`}
-            className="inline-flex min-h-11 items-center rounded-md border-2 border-navy px-4 font-display font-bold text-navy"
-          >
-            Download PDF
-          </a>
+      {/* Only a superseded report needs a row above the header; Download PDF sits in it. */}
+      {!print && r.status === "superseded" && r.newer_token ? (
+        <div className="report-actions mx-auto max-w-4xl px-4 pt-4 sm:px-8 print:hidden">
+          <p className="rounded-md border-l-4 border-status-warning bg-neutral-50 px-3 py-2 text-navy">
+            This report was updated.{" "}
+            <Link href={`/r/${r.newer_token}`} className="font-semibold text-water underline">
+              See the latest version
+            </Link>
+          </p>
         </div>
       ) : null}
       <ReportView
@@ -89,6 +80,7 @@ async function Report({ params, searchParams }: PageProps<"/r/[token]">) {
         sections={r.final_sections ?? []}
         urls={urls}
         logoUrl={logo.data?.signedUrl ?? null}
+        pdfHref={print ? undefined : `/r/${token}/pdf`}
       />
     </>
   );

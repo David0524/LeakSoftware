@@ -95,7 +95,7 @@ test("New Job books a maintenance visit, or starts a plan for a new customer", a
   // Just once: a maintenance job, no leak checklist.
   await signIn(page, OWNER, "/jobs/new");
   const once = `One Cleaning ${RUN}`;
-  await page.getByRole("radio", { name: "New Customer" }).click();
+  await page.getByRole("radio", { name: "New", exact: true }).click();
   await page.getByLabel("Name").fill(once);
   await page.getByLabel("Street address").fill("455 N Galvin Pkwy");
   await page.getByLabel("City").fill("Phoenix");
@@ -112,7 +112,7 @@ test("New Job books a maintenance visit, or starts a plan for a new customer", a
   // Weekly: the plan, on the new customer's page.
   await page.goto("/jobs/new");
   const weekly = `New Plan ${RUN}`;
-  await page.getByRole("radio", { name: "New Customer" }).click();
+  await page.getByRole("radio", { name: "New", exact: true }).click();
   await page.getByLabel("Name").fill(weekly);
   await page.getByLabel("Street address").fill("1201 N Galvin Pkwy");
   await page.getByLabel("City").fill("Phoenix");

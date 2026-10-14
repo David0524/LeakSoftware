@@ -57,7 +57,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
     <>
       <PageHeader
         title="Jobs"
-        subtitle={office.company.name}
+        subtitle={<span className="hidden sm:inline">{office.company.name}</span>}
         actions={<ButtonLink href="/jobs/new">New Job</ButtonLink>}
       />
       <nav

@@ -8,6 +8,7 @@ import { Notice } from "@/components/ui";
 import { publicClient } from "@/server/reports";
 import { paymentsConfigured } from "@/server/stripe";
 import { ContactLine } from "@/components/contact-line";
+import { PdfLink } from "@/components/pdf-link";
 
 export const metadata: Metadata = { title: "Invoice", robots: { index: false } };
 
@@ -279,18 +280,6 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
         <p className="mt-1 text-text-muted">Powered by Tidemark</p>
       </footer>
     </article>
-  );
-}
-
-/** Download PDF, on the shop's color band: outlined pill in the band's text color. */
-function PdfLink({ href, className }: { href: string; className: string }) {
-  return (
-    <a
-      href={href}
-      className={`${className} min-h-11 shrink-0 items-center rounded-full border-2 border-current px-4 font-display font-bold whitespace-nowrap print:hidden`}
-    >
-      Download PDF
-    </a>
   );
 }
 

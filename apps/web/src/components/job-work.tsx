@@ -40,7 +40,7 @@ import {
 import { PoolDiagram } from "./pool-diagram";
 import { Segmented } from "./segmented";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
-import { Button, Checkbox, Chip, Empty, Select, buttonClass, cx } from "./ui";
+import { Button, Checkbox, Chip, Select, buttonClass, cx } from "./ui";
 
 // Working a job on the website (M9.5): the phone's job screen, for a browser.
 
@@ -137,7 +137,8 @@ export function JobDetailsForm({
   return (
     <SettingsForm action={saveJobDetails} submit="Save">
       <input type="hidden" name="job" value={jobId} />
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* Fee and the checkbox share a row on phones too. */}
+      <div className="grid grid-cols-2 gap-4">
         <SField
           label="Detection fee ($)"
           name="fee"
@@ -508,8 +509,18 @@ export function TestsEditor({
   const componentLabel = new Map(components.map((c) => [c.id, c.label]));
   return (
     <div className="space-y-4">
-      {tests.length === 0 && editing !== "new" ? <Empty>No tests recorded.</Empty> : null}
-      <ul className="grid gap-3 md:grid-cols-2">
+      {tests.length === 0 && editing !== "new" ? (
+        // One row when there's nothing yet: the note and the button side by side.
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-text-muted">No tests recorded.</p>
+          {types.length ? (
+            <Button type="button" kind="secondary" onClick={() => setEditing("new")}>
+              Add Test
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+      <ul className="grid gap-3 empty:hidden md:grid-cols-2">
         {tests.map((t) => {
           const type = typeOf.get(t.typeId);
           if (editing === t.id && type)
@@ -587,7 +598,7 @@ export function TestsEditor({
           components={components}
           onDone={() => setEditing(null)}
         />
-      ) : types.length ? (
+      ) : types.length && tests.length ? (
         <Button type="button" kind="secondary" onClick={() => setEditing("new")}>
           Add Test
         </Button>
@@ -773,7 +784,14 @@ export function FindingsEditor({
   );
   return (
     <div className="space-y-4">
-      {findings.length === 0 && editing !== "new" ? <Empty>No findings recorded.</Empty> : null}
+      {findings.length === 0 && editing !== "new" ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-text-muted">No findings recorded.</p>
+          <Button type="button" kind="secondary" onClick={() => setEditing("new")}>
+            Add Finding
+          </Button>
+        </div>
+      ) : null}
       {findings.length ? (
         <div className="grid gap-5 lg:grid-cols-2">
           {diagram ? (
@@ -854,11 +872,11 @@ export function FindingsEditor({
       <ErrorText error={error} />
       {editing === "new" ? (
         form()
-      ) : (
+      ) : findings.length ? (
         <Button type="button" kind="secondary" onClick={() => setEditing("new")}>
           Add Finding
         </Button>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -15,7 +15,14 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
 
   return (
     <>
-      <PageHeader title="Customers" subtitle="Homeowners, pool companies, and everyone you bill." />
+      <PageHeader
+        title="Customers"
+        subtitle={
+          <span className="hidden sm:inline">
+            Homeowners, pool companies, and everyone you bill.
+          </span>
+        }
+      />
       <form role="search" className="mb-5 flex max-w-xl gap-2">
         <label htmlFor="q" className="sr-only">
           Search customers
@@ -47,8 +54,16 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
                 {c.company_name ? (
                   <span className="text-text-muted"> · {c.company_name}</span>
                 ) : null}
+                {/* Phones show the number only (one line); the email joins it when wider. */}
                 <span className="block text-[0.9375rem] text-text-muted">
-                  {[c.phone, c.email].filter(Boolean).join(" · ") || "No contact details"}
+                  {c.phone ?? null}
+                  {c.email ? (
+                    <span className={c.phone ? "hidden sm:inline" : undefined}>
+                      {c.phone ? " · " : ""}
+                      {c.email}
+                    </span>
+                  ) : null}
+                  {!c.phone && !c.email ? "No contact details" : null}
                 </span>
                 {c.properties.length > 0 ? (
                   <span className="block text-[0.9375rem]">

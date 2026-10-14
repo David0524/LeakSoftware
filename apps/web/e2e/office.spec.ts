@@ -219,7 +219,7 @@ test("the office adds a job for a new customer, with its checklist ready", async
   await expect(page.getByRole("heading", { name: "New Job" })).toBeVisible();
 
   const name = `Web Customer ${RUN}`;
-  await page.getByRole("radio", { name: "New Customer" }).click();
+  await page.getByRole("radio", { name: "New", exact: true }).click();
   await page.getByLabel("Name").fill(name);
   await page.getByLabel("Phone").fill("(480) 555-0199");
   await page.getByLabel("Street address").fill("12 Office Way");
@@ -307,7 +307,7 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   // The office books it for Tony Tech.
   await signIn(page, OWNER, "/jobs/new");
   const name = `Phone Work ${RUN}`;
-  await page.getByRole("radio", { name: "New Customer" }).click();
+  await page.getByRole("radio", { name: "New", exact: true }).click();
   await page.getByLabel("Name").fill(name);
   await page.getByLabel("Street address").fill("40 Phone Lane");
   await page.getByLabel("City").fill("Mesa");

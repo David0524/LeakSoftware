@@ -20,6 +20,7 @@ import type { ReactNode } from "react";
 import { MarkupOverlay } from "./markup";
 import { PoolDiagram } from "./pool-diagram";
 import { ContactLine } from "./contact-line";
+import { PdfLink } from "./pdf-link";
 
 // The customer-facing report, rendered from the frozen snapshot and the tech-approved text
 // (BUILD_PLAN 6.3). Shop branding, not Tidemark's; Tidemark appears only in the footer.
@@ -33,6 +34,8 @@ export interface ReportViewProps {
   /** storage path -> signed URL */
   urls: Map<string, string>;
   logoUrl: string | null;
+  /** The customer page: a Download PDF link in the header band. */
+  pdfHref?: string;
 }
 
 const NEUTRAL = tokens.color.neutral;
@@ -132,7 +135,8 @@ export function ReportView(p: ReportViewProps) {
         className="report-header -mx-4 -mt-4 flex flex-wrap items-center justify-between gap-4 px-6 py-5 sm:mx-0 sm:mt-0 sm:rounded-lg"
         style={{ backgroundColor: brand, color: onBrand }}
       >
-        <div className="flex items-center gap-4">
+        {/* Phones: the PDF link ends the shop's row; wider, it sits beside the title. */}
+        <div className="flex w-full min-w-0 items-center gap-4 sm:w-auto">
           {p.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
             <img
@@ -141,19 +145,25 @@ export function ReportView(p: ReportViewProps) {
               className="max-h-16 max-w-48 rounded bg-paper p-1"
             />
           ) : null}
-          <div>
+          <div className="min-w-0">
             <p className="font-display text-2xl font-extrabold">{s.company.name}</p>
             <p className="text-[0.9375rem]">
               <ContactLine phone={s.company.phone} email={s.company.email} />
             </p>
           </div>
+          {p.pdfHref ? (
+            <PdfLink href={p.pdfHref} className="ml-auto inline-flex sm:hidden" />
+          ) : null}
         </div>
-        <div className="text-left text-[0.9375rem] sm:text-right">
-          <h1 className="font-display text-xl font-bold">{title}</h1>
-          <p>
-            {p.sentAt ? formatDate(p.sentAt, tz) : "Draft"}
-            {p.version > 1 ? ` · version ${p.version}` : ""}
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="text-left text-[0.9375rem] sm:text-right">
+            <h1 className="font-display text-xl font-bold">{title}</h1>
+            <p>
+              {p.sentAt ? formatDate(p.sentAt, tz) : "Draft"}
+              {p.version > 1 ? ` · version ${p.version}` : ""}
+            </p>
+          </div>
+          {p.pdfHref ? <PdfLink href={p.pdfHref} className="hidden sm:inline-flex" /> : null}
         </div>
       </header>
     ),
@@ -181,49 +191,54 @@ export function ReportView(p: ReportViewProps) {
           ) : null}
         </div>
         <dl
-          className="rounded-lg border p-4 text-[0.9375rem]"
+          // Two columns on phones; one column from sm up, as on the PDF.
+          className="grid grid-cols-2 gap-x-4 rounded-lg border p-4 text-[0.9375rem] sm:block"
           style={{ borderColor: NEUTRAL["200"] }}
         >
-          <dt className="text-text-muted">Property</dt>
-          <dd className="mb-2 font-medium">{s.property.address}</dd>
+          <div>
+            <dt className="text-text-muted">Property</dt>
+            <dd className="mb-2 font-medium">{s.property.address}</dd>
+          </div>
           {s.customer ? (
-            <>
+            <div>
               <dt className="text-text-muted">Prepared for</dt>
               <dd className="mb-2 font-medium">{s.customer.name}</dd>
-            </>
+            </div>
           ) : null}
-          <dt className="text-text-muted">Pool</dt>
-          <dd className="mb-2">
-            {[
-              s.property.pool_type ? POOL_TYPE_LABELS[s.property.pool_type as PoolType] : null,
-              s.property.has_spa ? "with spa" : null,
-            ]
-              .filter(Boolean)
-              .join(", ") || "Pool"}
-          </dd>
+          <div>
+            <dt className="text-text-muted">Pool</dt>
+            <dd className="mb-2">
+              {[
+                s.property.pool_type ? POOL_TYPE_LABELS[s.property.pool_type as PoolType] : null,
+                s.property.has_spa ? "with spa" : null,
+              ]
+                .filter(Boolean)
+                .join(", ") || "Pool"}
+            </dd>
+          </div>
           {performed && checklist ? (
-            <>
+            <div>
               <dt className="text-text-muted">Date performed</dt>
               <dd className="mb-2">{formatDate(performed, tz)}</dd>
-            </>
+            </div>
           ) : null}
           {techs.length ? (
-            <>
+            <div>
               <dt className="text-text-muted">{techs.length > 1 ? "Technicians" : "Technician"}</dt>
               <dd className="mb-2">{techs.join(" and ")}</dd>
-            </>
+            </div>
           ) : null}
           {s.job.fee_cents != null ? (
-            <>
+            <div>
               <dt className="text-text-muted">Leak detection fee</dt>
               <dd className="mb-2">{formatCents(s.job.fee_cents)}</dd>
-            </>
+            </div>
           ) : null}
           {s.job.number ? (
-            <>
+            <div>
               <dt className="text-text-muted">Job</dt>
               <dd>#{s.job.number}</dd>
-            </>
+            </div>
           ) : null}
         </dl>
       </section>

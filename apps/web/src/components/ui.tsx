@@ -102,12 +102,13 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div className="mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-3 sm:mb-6">
       <div>
         <h1 className="font-display text-3xl font-extrabold">{title}</h1>
         {subtitle ? <p className="mt-1 text-text-muted">{subtitle}</p> : null}
       </div>
-      {actions ? <div className="flex flex-wrap gap-3">{actions}</div> : null}
+      {/* empty:hidden: an action component that renders nothing adds no blank row on phones. */}
+      {actions ? <div className="flex flex-wrap gap-3 empty:hidden">{actions}</div> : null}
     </div>
   );
 }

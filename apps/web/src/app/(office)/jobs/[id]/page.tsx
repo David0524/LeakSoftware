@@ -617,6 +617,12 @@ async function Reports({ detail }: { detail: JobDetail }) {
   const nameOf = new Map(templates.map((t) => [t.key, t.name]));
   return (
     <div className="grid gap-5 xl:grid-cols-2">
+      {/* Said once for both reports, not on each card. */}
+      <p className="text-[0.9375rem] text-text-muted xl:col-span-2">
+        {process.env.ANTHROPIC_API_KEY
+          ? "Write Draft has AI write the report from this job’s checklist, tests, and findings. It can get details wrong, so read every word before sending."
+          : "AI writing isn’t set up yet; Write Draft makes a plain summary of the job data."}
+      </p>
       {(["homeowner", "partner"] as const)
         .filter((key) => templates.find((t) => t.key === key)?.enabled !== false)
         .map((key) => (
@@ -629,12 +635,8 @@ async function Reports({ detail }: { detail: JobDetail }) {
             sent={reports.filter((r) => r.template_key === key && r.status !== "draft")}
             customerEmail={detail.job.customer?.email ?? null}
             emailReady={emailConfigured()}
-            aiReady={Boolean(process.env.ANTHROPIC_API_KEY)}
           />
         ))}
-      <p className="text-[0.9375rem] text-text-muted xl:col-span-2">
-        Insurance adjuster report: coming soon.
-      </p>
     </div>
   );
 }

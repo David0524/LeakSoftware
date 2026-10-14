@@ -151,14 +151,16 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                       <span className="font-display text-[1.0625rem] font-bold">
                         {j.scheduled_start ? formatTime(j.scheduled_start, ctx.timeZone) : ""}
                       </span>
-                      <StatusBadge status={j.status} />
+                      {/* Most stops on Today are scheduled; the badge only shows other states, so
+                          the call and On My Way buttons fit on this row on phones. */}
+                      {j.status !== "scheduled" ? <StatusBadge status={j.status} /> : null}
                       {lock && lock !== "started" ? (
                         <span className="text-[0.8125rem] font-semibold text-text-muted">
                           {LOCK_LABELS[lock]}
                         </span>
                       ) : null}
                       {done ? null : (
-                        <span className="relative z-10 ml-auto flex flex-wrap justify-end gap-2">
+                        <span className="relative z-10 ml-auto flex shrink-0 flex-wrap justify-end gap-2">
                           {j.customer?.phone ? (
                             <a
                               href={`tel:${j.customer.phone}`}

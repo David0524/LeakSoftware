@@ -89,8 +89,8 @@ export function NewJobForm({
             value={mode}
             onChange={setMode}
             options={[
-              { value: "new", label: "New Customer" },
-              { value: "existing", label: "Existing Customer" },
+              { value: "new", label: "New" },
+              { value: "existing", label: "Existing" },
             ]}
           />
         ) : (
