@@ -129,7 +129,7 @@ export default async function CompanySettingsPage() {
               defaultChecked={settings.review_requests ?? true}
             />
             {company.review_url ? null : (
-              <p className="text-[15px] text-text-muted">
+              <p className="text-[0.9375rem] text-text-muted">
                 Add your review link under Company profile to send review requests.
               </p>
             )}
@@ -195,7 +195,7 @@ export default async function CompanySettingsPage() {
                 accept="image/png,image/jpeg,image/svg+xml"
                 className="block w-full min-h-11 file:mr-3 file:min-h-11 file:rounded-md file:border-2 file:border-text file:text-text file:bg-surface file:px-4 file:font-display file:font-bold"
               />
-              <p className="text-[15px] text-text-muted">
+              <p className="text-[0.9375rem] text-text-muted">
                 PNG, JPEG, or SVG, under 2 MB. A wide logo works best.
               </p>
               <FieldError name="logo" />

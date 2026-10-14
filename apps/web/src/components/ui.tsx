@@ -8,7 +8,7 @@ export function cx(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(" ");
 }
 
-type ButtonKind = "primary" | "secondary" | "quiet" | "danger";
+type ButtonKind = "primary" | "secondary" | "quiet" | "danger" | "onDark";
 
 // Pills (owner, 2026-10-13: "utilize more pills"). Outlines stay in color.controlBorder.
 const BUTTON: Record<ButtonKind, string> = {
@@ -17,11 +17,13 @@ const BUTTON: Record<ButtonKind, string> = {
   secondary: "border border-control-border text-text bg-surface hover:bg-bg",
   quiet: "text-link hover:bg-link/10",
   danger: "border border-status-fail text-status-fail bg-surface hover:bg-status-fail/10",
+  // On the navy brand band (the home page hero).
+  onDark: "border border-on-header text-on-header hover:bg-white/10",
 };
 
 export function buttonClass(kind: ButtonKind = "primary", extra?: string) {
   return cx(
-    "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 font-display text-[17px] font-bold tracking-wide transition-colors",
+    "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 font-display text-[1.0625rem] font-bold tracking-wide transition-colors",
     "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus",
     "disabled:cursor-not-allowed disabled:opacity-50",
     BUTTON[kind],
@@ -146,7 +148,7 @@ export function Field({
       {error || hint ? (
         <p
           id={`${id}-note`}
-          className={cx("text-[15px]", error ? "text-status-fail" : "text-text-muted")}
+          className={cx("text-[0.9375rem]", error ? "text-status-fail" : "text-text-muted")}
         >
           {error ?? hint}
         </p>
@@ -168,7 +170,7 @@ export function TextArea({
         {label}
       </label>
       <textarea {...input} id={id} className={cx(INPUT, "min-h-24")} />
-      {hint ? <p className="text-[15px] text-text-muted">{hint}</p> : null}
+      {hint ? <p className="text-[0.9375rem] text-text-muted">{hint}</p> : null}
     </div>
   );
 }
@@ -252,7 +254,7 @@ export function Chip({ label, className }: { label: string; className: string })
   return (
     <span
       className={cx(
-        "inline-block rounded-full px-2.5 py-0.5 text-[13px] font-semibold whitespace-nowrap text-on-status",
+        "inline-block rounded-full px-2.5 py-0.5 text-[0.8125rem] font-semibold whitespace-nowrap text-on-status",
         className,
       )}
     >

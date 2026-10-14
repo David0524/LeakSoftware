@@ -14,7 +14,7 @@ export default function StatusPage() {
       <Suspense fallback={<p className="mt-4 text-text-muted">Checking…</p>}>
         <Checks />
       </Suspense>
-      <p className="mt-8 text-[15px] text-text-muted">
+      <p className="mt-8 text-[0.9375rem] text-text-muted">
         The field app keeps working without a connection and syncs when Tidemark is back. Questions:{" "}
         <a className="text-link underline" href={`mailto:${SUPPORT_EMAIL}`}>
           {SUPPORT_EMAIL}
@@ -29,7 +29,7 @@ async function Checks() {
   const health = await checkHealth();
   return (
     <>
-      <p className="mt-2 text-[17px] font-semibold" role="status">
+      <p className="mt-2 text-[1.0625rem] font-semibold" role="status">
         {health.ok
           ? "Everything is working."
           : "Some parts of Tidemark aren’t reachable right now."}
@@ -45,7 +45,7 @@ async function Checks() {
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-[15px] text-text-muted">
+      <p className="mt-3 text-[0.9375rem] text-text-muted">
         Checked{" "}
         {new Date(health.checkedAt).toLocaleString("en-US", {
           dateStyle: "medium",

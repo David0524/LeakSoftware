@@ -25,7 +25,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
         </div>
       </header>
       <div className="flex flex-1 flex-col">{children}</div>
-      <footer className="flex flex-col items-center gap-3 border-t border-border py-6 text-center text-[15px] text-text-muted">
+      <footer className="flex flex-col items-center gap-3 border-t border-border py-6 text-center text-[0.9375rem] text-text-muted">
         <p>Tidemark · Field app and office for pool leak detection shops</p>
         <nav aria-label="About Tidemark" className="flex flex-wrap justify-center gap-x-1">
           {[

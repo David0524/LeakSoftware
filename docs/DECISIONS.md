@@ -2,6 +2,15 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-14 (M11 launch hardening; my calls, adjust as needed)
+- **Error monitoring is Sentry, errors only.** Website (server and browser) and app; off until a DSN is set. No customer data: no request bodies, headers, cookies, query strings, screenshots, or session replay.
+- **Offline edge cases:** a refused sign-in keeps everything on the phone and shows "Sign in again"; a full phone rolls the save back whole and explains it (no crash), and the sync bar warns below 200 MB free; an app update keeps unsent changes (tested from the first schema).
+- **The phone database has a job index** (schema 4), so a job's screens read only that job's rows.
+- **Delete My Account** (App Store rule): techs and second owners are deleted at once; a shop's only owner becomes a request to support, done within 30 days, because the shop's records go with it.
+- **Privacy policy and terms** are plain-language drafts marked as drafts; the owner supplies the final text. Support is `support@tidemark.app` (placeholder) via `SUPPORT_EMAIL`. `/status` and `/api/health` for an uptime monitor.
+- **Design review (M11):** report in `docs/design/2026-10-14-m11-review.md`. Critical and High fixed: link color `#1A63A0` and warning `#8A5A0E` (contrast on the page background), website text in rem, app text scales up to 2.4×, 44 pt links. Also: Cancel Job moved to the end of Details; on phones Sign Out moved to More; "min short" now reads "min late".
+- **Bundle ID stays `com.leakbook.app` until the owner decides** (it can't change after the first upload); recommended `app.tidemark.field`.
+
 ## 2026-10-13 (owner: "still feels super boxy"; more pills, phone as an icon)
 - **Pills:** every button is a pill (orange still only for the primary action; secondary and danger keep a 1 px outline in `color.controlBorder`). Status labels are solid pills in sentence case. Filters and "whose day" chips are pills; segmented controls are a pill track with a navy thumb. The app follows the same shapes (`radius.pill`, `radius.xl` added to `brand/tokens.json`).
 - **Soft cards:** content sits on raised surfaces with a faint shadow and no outline (`.card`); groups inside a card use a quiet inset well (`.well`). Increase Contrast brings the outlines back. The job's customer, pool, and tech are one grouped card instead of three.

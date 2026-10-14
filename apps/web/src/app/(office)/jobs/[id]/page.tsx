@@ -128,7 +128,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                     {job.customer ? (
                       <Link
                         href={`/customers/${job.customer.id}`}
-                        className="text-xl font-semibold text-link underline-offset-4 hover:underline"
+                        className="inline-flex min-h-11 items-center text-xl font-semibold text-link underline-offset-4 hover:underline"
                       >
                         {job.customer.name}
                       </Link>
@@ -167,7 +167,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                           </p>
                         ) : null}
                         {propertyLocation(job.property) ? null : (
-                          <p className="mt-1 text-[15px] text-text-muted">
+                          <p className="mt-1 text-[0.9375rem] text-text-muted">
                             Not on the map yet.{" "}
                             <MarkLocationHere
                               target={{ property: job.property.id }}
@@ -239,6 +239,10 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                     <Timeline detail={detail} tz={tz} />
                   </section>
                 ) : null}
+
+                <div className="mt-8">
+                  <JobStatusActions jobId={job.id} status={job.status} jobType={job.type} cancel />
+                </div>
               </>
             ),
           },
@@ -511,7 +515,7 @@ async function Gallery({ detail, tz }: { detail: JobDetail; tz: string }) {
                     <audio src={url} controls preload="metadata" className="w-full" />
                   </div>
                 )}
-                <div className="p-3 text-[15px]">
+                <div className="p-3 text-[0.9375rem]">
                   <p className="font-medium">
                     {label}
                     {m.duration_ms ? ` · ${formatDuration(m.duration_ms)}` : ""}
@@ -583,7 +587,7 @@ async function Signatures({ detail, tz }: { detail: JobDetail; tz: string }) {
                     <span className="font-normal text-text-muted"> · {s.signer_role}</span>
                   ) : null}
                 </p>
-                <p className="text-[15px] text-text-muted">
+                <p className="text-[0.9375rem] text-text-muted">
                   {SIGNATURE_PURPOSE_LABELS[s.purpose] ?? s.purpose} ·{" "}
                   {formatSchedule(s.signed_at, new Date(), tz)}
                 </p>
@@ -629,7 +633,7 @@ async function Reports({ detail }: { detail: JobDetail }) {
             aiReady={Boolean(process.env.ANTHROPIC_API_KEY)}
           />
         ))}
-      <p className="text-[15px] text-text-muted xl:col-span-2">
+      <p className="text-[0.9375rem] text-text-muted xl:col-span-2">
         Insurance adjuster report: coming soon.
       </p>
     </div>
@@ -717,7 +721,10 @@ async function Quotes({ detail }: { detail: JobDetail }) {
       {office.isOwner && !account?.charges_enabled && quotes.some((q) => q.status !== "draft") ? (
         <Notice tone="warning">
           Customers can accept quotes but can’t pay deposits online until payments are set up.{" "}
-          <Link href="/settings/payments" className="font-semibold text-link underline">
+          <Link
+            href="/settings/payments"
+            className="inline-flex min-h-11 items-center font-semibold text-link underline"
+          >
             Set up payments
           </Link>
         </Notice>
@@ -804,7 +811,7 @@ async function Invoices({ detail }: { detail: JobDetail }) {
         <Empty>Start the job before invoicing it.</Empty>
       )}
       {voided.length ? (
-        <p className="text-[15px] text-text-muted">
+        <p className="text-[0.9375rem] text-text-muted">
           Voided:{" "}
           {voided.map((i) => `#${i.number ?? ""} (${formatCents(i.total_cents)})`).join(", ")}
         </p>
@@ -846,7 +853,7 @@ async function Timeline({ detail, tz }: { detail: JobDetail; tz: string }) {
   if (events.length === 0) return <Empty>No changes recorded yet.</Empty>;
   const who = new Map(team.map((t) => [t.user_id, t.name]));
   const row = (e: (typeof events)[number], i: number) => (
-    <li key={i} className="flex gap-1.5 text-[15px]" title={e.text}>
+    <li key={i} className="flex gap-1.5 text-[0.9375rem]" title={e.text}>
       <span className="min-w-0 truncate">{e.text}</span>
       <span className="shrink-0 text-text-muted">
         · {e.userId ? (who.get(e.userId) ?? "Teammate") : "System"} ·{" "}

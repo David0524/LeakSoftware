@@ -16,7 +16,7 @@ export function DeleteAccount() {
         Delete My Account
       </summary>
       <form action={action} className="space-y-3 pb-4">
-        <p className="text-[15px] text-text-muted">
+        <p className="text-[0.9375rem] text-text-muted">
           Removes your sign-in. The jobs, reports, and invoices you worked on stay with the shop. If
           you’re the shop’s only owner, we’ll delete the shop’s data too, within 30 days.
         </p>

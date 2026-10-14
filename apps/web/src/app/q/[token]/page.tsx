@@ -103,18 +103,18 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
           ) : null}
           <div>
             <p className="font-display text-2xl font-extrabold">{c.name}</p>
-            <p className="text-[15px]">{[c.phone, c.email].filter(Boolean).join(" · ")}</p>
+            <p className="text-[0.9375rem]">{[c.phone, c.email].filter(Boolean).join(" · ")}</p>
           </div>
         </div>
         <div className="text-right">
           <h1 className="font-display text-xl font-bold">
             Repair Quote{q.number ? ` #${q.number}` : ""}
           </h1>
-          {q.sent_at ? <p className="text-[15px]">{date(q.sent_at, tz)}</p> : null}
+          {q.sent_at ? <p className="text-[0.9375rem]">{date(q.sent_at, tz)}</p> : null}
         </div>
       </header>
 
-      <dl className="mt-6 grid gap-x-6 gap-y-1 text-[15px] sm:grid-cols-2">
+      <dl className="mt-6 grid gap-x-6 gap-y-1 text-[0.9375rem] sm:grid-cols-2">
         {q.customer ? (
           <div>
             <dt className="text-text-muted">Prepared for</dt>
@@ -142,7 +142,7 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
             <li key={l.id} className="flex justify-between gap-4 py-3">
               <div>
                 <p className="font-medium">{l.description}</p>
-                <p className="text-[15px] text-text-muted">
+                <p className="text-[0.9375rem] text-text-muted">
                   {[
                     l.quantity !== 1
                       ? `${Number(l.quantity)} × ${formatCents(l.unit_price_cents)}`
@@ -192,7 +192,7 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
         {q.status === "sent" ? (
           <>
             {q.valid_until ? (
-              <p className="mb-4 text-[15px] text-text-muted">
+              <p className="mb-4 text-[0.9375rem] text-text-muted">
                 Good through {date(q.valid_until, tz)}.
               </p>
             ) : null}
@@ -240,7 +240,7 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
         ) : null}
       </section>
 
-      <footer className="mt-10 border-t border-neutral-200 pt-4 text-[15px]">
+      <footer className="mt-10 border-t border-neutral-200 pt-4 text-[0.9375rem]">
         <p>
           {c.legal_name ?? c.name}
           {c.address ? ` · ${c.address}` : ""}

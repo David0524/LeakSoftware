@@ -85,7 +85,7 @@ export default async function TestTypesPage() {
                       defaultValue={value}
                     />
                   ))}
-                  <p className="text-[15px] text-text-muted sm:col-span-2">
+                  <p className="text-[0.9375rem] text-text-muted sm:col-span-2">
                     Fields: {t.field_schema.fields.map((f) => f.label).join(", ")}. Built-in; the
                     phone calculates the result from these.
                   </p>

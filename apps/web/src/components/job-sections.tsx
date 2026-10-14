@@ -51,7 +51,7 @@ export function JobSections({ sections }: { sections: JobSection[] }) {
             aria-controls={`part-${s.id}`}
             onClick={() => choose(s.id)}
             className={cx(
-              "relative min-h-11 rounded-full px-1 text-[13px] font-semibold",
+              "relative min-h-11 rounded-full px-1 text-[0.8125rem] font-semibold",
               active === s.id ? "bg-text text-bg" : "text-text",
             )}
           >
@@ -59,7 +59,7 @@ export function JobSections({ sections }: { sections: JobSection[] }) {
             {s.badge ? (
               <span
                 className={cx(
-                  "absolute -top-1 right-0 min-w-5 rounded-full px-1 text-[11px] leading-5",
+                  "absolute -top-1 right-0 min-w-5 rounded-full px-1 text-[0.6875rem] leading-5",
                   "bg-status-warning text-on-status",
                 )}
                 aria-label={`, ${s.badge} to do`}

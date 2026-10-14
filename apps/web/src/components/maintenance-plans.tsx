@@ -32,7 +32,7 @@ export function MaintenancePlans(p: Props) {
         Maintenance
       </h3>
       {p.plans.length === 0 && editing !== "new" ? (
-        <p className="text-[15px] text-text-muted">No regular cleaning for this pool.</p>
+        <p className="text-[0.9375rem] text-text-muted">No regular cleaning for this pool.</p>
       ) : null}
       <ul className="space-y-2">
         {p.plans.map((plan) => {
@@ -44,7 +44,7 @@ export function MaintenancePlans(p: Props) {
               ) : (
                 <>
                   <p className="font-semibold">{planSummary(plan)}</p>
-                  <p className="text-[15px] text-text-muted">
+                  <p className="text-[0.9375rem] text-text-muted">
                     {[
                       plan.assigned_user_id
                         ? (names.get(plan.assigned_user_id) ?? "Teammate")
@@ -60,7 +60,7 @@ export function MaintenancePlans(p: Props) {
                       .filter(Boolean)
                       .join(" · ")}
                   </p>
-                  {plan.notes ? <p className="text-[15px]">{plan.notes}</p> : null}
+                  {plan.notes ? <p className="text-[0.9375rem]">{plan.notes}</p> : null}
                   {p.canEdit ? (
                     <div className="-ml-2 flex flex-wrap items-center">
                       <button

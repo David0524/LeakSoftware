@@ -15,7 +15,7 @@ export default function SignInPage({ searchParams }: PageProps<"/sign-in">) {
       intro={
         <>
           New to Tidemark?{" "}
-          <Link href="/sign-up" className="text-link underline">
+          <Link href="/sign-up" className="inline-flex min-h-11 items-center text-link underline">
             Start a free trial
           </Link>
           .

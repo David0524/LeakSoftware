@@ -17,6 +17,12 @@ import { officeLinks } from "@/lib/nav";
 export default function OfficeLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-full flex-1 flex-col">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-full focus:bg-surface focus:px-4 focus:py-2 focus:text-text"
+      >
+        Skip to Content
+      </a>
       <header className="glass-brand sticky top-0 z-30 text-on-header">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2">
           <Link href="/today" aria-label="Tidemark, Today" className="py-1">
@@ -35,7 +41,13 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
         <AccessBanner />
       </Suspense>
       {/* Room for the phone tab bar. */}
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-5 pb-32 sm:py-8">{children}</main>
+      <main
+        id="main"
+        tabIndex={-1}
+        className="mx-auto w-full max-w-7xl flex-1 px-4 pt-5 pb-32 outline-none sm:py-8"
+      >
+        {children}
+      </main>
     </div>
   );
 }
@@ -80,7 +92,7 @@ async function OfficeNav() {
   return (
     <>
       <NavLinks links={links} className="hidden sm:flex" />
-      <div className="ml-auto flex items-center gap-3 text-[15px]">
+      <div className="ml-auto flex items-center gap-3 text-[0.9375rem]">
         {office.companies.length > 1 ? (
           <form action={switchCompany} className="flex items-center gap-2">
             <label htmlFor="company-switch" className="sr-only">
@@ -109,7 +121,8 @@ async function OfficeNav() {
           {office.user.name ?? office.user.email}
         </span>
         <ThemeToggle onHeader />
-        <form action={signOut}>
+        {/* Phones: Sign Out is on More, away from the appearance button (M11 review M10). */}
+        <form action={signOut} className="hidden sm:block">
           <button
             type="submit"
             className="min-h-11 px-2 font-medium underline-offset-4 hover:underline"

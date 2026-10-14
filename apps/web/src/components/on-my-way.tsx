@@ -55,7 +55,7 @@ export function OnMyWay({
         On My Way
       </button>
       {shown ? (
-        <p role="status" className="w-full text-[15px] text-text-muted">
+        <p role="status" className="w-full text-[0.9375rem] text-text-muted">
           {shown}
         </p>
       ) : null}

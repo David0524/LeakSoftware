@@ -274,7 +274,7 @@ export function MediaCapture({
           }
         />
       </div>
-      <p aria-live="polite" className="text-[15px]">
+      <p aria-live="polite" className="text-[0.9375rem]">
         {busy ? (
           <span className="text-text-muted">{busy}</span>
         ) : message ? (
@@ -294,7 +294,7 @@ export function MediaCapture({
 // they fit a phone's width without wrapping to three rows.
 const TILE = cx(
   "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-2xl bg-link/10 px-1 py-1.5 text-link transition-colors hover:bg-link/20",
-  "text-center font-display text-[15px] leading-tight font-bold tracking-wide",
+  "text-center font-display text-[0.9375rem] leading-tight font-bold tracking-wide",
   "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus",
 );
 const CAMERA =
@@ -387,7 +387,7 @@ function VoiceNote({
           Voice Note
         </button>
         {error ? (
-          <p role="alert" className="col-span-3 text-[15px] text-status-fail">
+          <p role="alert" className="col-span-3 text-[0.9375rem] text-status-fail">
             {error}
           </p>
         ) : null}
@@ -830,12 +830,12 @@ export function SignatureForm({
             <Button type="button" kind="quiet" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <p className="text-[15px] font-semibold text-text-muted">{shop}</p>
+            <p className="text-[0.9375rem] font-semibold text-text-muted">{shop}</p>
             <span className="w-20" aria-hidden="true" />
           </div>
           <div className="mx-auto w-full max-w-2xl flex-1 space-y-4 px-4 pt-5 pb-6">
             <div>
-              <p className="text-[15px] font-semibold text-text-muted">
+              <p className="text-[0.9375rem] font-semibold text-text-muted">
                 {purposes.find((p) => p.value === purpose)?.label ?? "Signature"}
               </p>
               <h2 id="sign-title" className="font-display text-3xl font-extrabold">
@@ -851,7 +851,7 @@ export function SignatureForm({
                 options={purposes}
               />
             ) : null}
-            <p className="text-[19px] leading-relaxed">{statement}</p>
+            <p className="text-[1.1875rem] leading-relaxed">{statement}</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field
                 label="Your name"
@@ -952,7 +952,7 @@ export function SignaturePad({
           ))}
         </g>
       </svg>
-      <p className="text-[15px] text-text-muted">Use your finger, or a mouse on a computer.</p>
+      <p className="text-[0.9375rem] text-text-muted">Use your finger, or a mouse on a computer.</p>
     </div>
   );
 }

@@ -4,9 +4,9 @@ import { T } from "../../ui/components";
 import { color, font, radius } from "../../ui/theme";
 
 export const OUTCOME_STYLE: Record<Outcome, { label: string; bg: string }> = {
-  pass: { label: "PASS", bg: color.pass },
-  fail: { label: "FAIL", bg: color.fail },
-  inconclusive: { label: "UNCLEAR", bg: color.warning },
+  pass: { label: "Pass", bg: color.pass },
+  fail: { label: "Fail", bg: color.fail },
+  inconclusive: { label: "Unclear", bg: color.warning },
 };
 
 export function OutcomeChip({ outcome }: { outcome?: Outcome | null }) {
@@ -22,6 +22,7 @@ export function OutcomeChip({ outcome }: { outcome?: Outcome | null }) {
 }
 
 const styles = StyleSheet.create({
-  chip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.sm },
-  text: { fontFamily: font.displayBold, fontSize: 12, letterSpacing: 0.6, color: color.onHeader },
+  // A pill like every other status label (M11 review M9).
+  chip: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: radius.pill },
+  text: { fontFamily: font.bodySemiBold, fontSize: 13, color: color.onHeader },
 });

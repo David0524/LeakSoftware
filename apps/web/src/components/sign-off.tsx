@@ -96,7 +96,7 @@ export function SignOff({
   return (
     <div className="space-y-4 border-t-2 border-text pt-6">
       <div>
-        <p className="text-[15px] font-semibold text-text-muted">
+        <p className="text-[0.9375rem] font-semibold text-text-muted">
           {purposes.find((p) => p.value === purpose)?.label ?? "Signature"}
         </p>
         <h2 id="sign-title" className="font-display text-3xl font-extrabold">
@@ -112,7 +112,7 @@ export function SignOff({
           options={purposes}
         />
       ) : null}
-      <p className="text-[19px] leading-relaxed">
+      <p className="text-[1.1875rem] leading-relaxed">
         {purpose ? signatureStatement(purpose, shop, address) : ""}
       </p>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -146,7 +146,7 @@ export function SignOff({
         {busy === "sign" ? "Saving…" : "Sign"}
       </Button>
       <div className="border-t border-border pt-4">
-        <p className="text-[15px] text-text-muted">
+        <p className="text-[0.9375rem] text-text-muted">
           For the tech: nobody here to sign? Finish the report without a signature. It will say the
           customer wasn’t present.
         </p>

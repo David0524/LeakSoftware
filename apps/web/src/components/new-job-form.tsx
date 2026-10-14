@@ -243,7 +243,7 @@ export function NewJobForm({
                   setPicked(`${s.dayLabel} at ${s.timeLabel} with ${s.techName}.`);
                 }}
               />
-              <p role="status" className="text-[15px] text-status-pass">
+              <p role="status" className="text-[0.9375rem] text-status-pass">
                 {picked ? `Filled in: ${picked}` : ""}
               </p>
             </div>

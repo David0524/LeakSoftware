@@ -207,7 +207,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
             </Link>
           ))}
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 max-w-full items-center gap-2">
           <Link
             href={href(move(-1))}
             className={buttonClass("secondary", "px-3")}
@@ -269,7 +269,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                 aria-current={d === date ? "date" : undefined}
                 aria-label={formatDay(d, "long")}
                 className={cx(
-                  "flex min-h-14 min-w-12 flex-1 flex-col items-center justify-center rounded-xl text-[13px] font-medium",
+                  "flex min-h-14 min-w-12 flex-1 flex-col items-center justify-center rounded-xl text-[0.8125rem] font-medium",
                   d === date ? "bg-text text-bg" : d === today ? "text-link" : "hover:bg-surface",
                 )}
               >
@@ -296,7 +296,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
         </div>
       ) : null}
       {unlocated ? (
-        <p className="mb-4 text-[15px] text-text-muted">
+        <p className="mb-4 text-[0.9375rem] text-text-muted">
           Pools marked “No map location” aren’t counted in drive times. Open the job and use Mark
           Location Here at the pool
           {office.isOwner ? ", or Find Pool Locations in Settings › Scheduling" : ""}.
@@ -349,13 +349,16 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                       d === today && "text-link",
                     )}
                   >
-                    <Link href={href(d, "day")} className="underline-offset-4 hover:underline">
+                    <Link
+                      href={href(d, "day")}
+                      className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
+                    >
                       {formatDay(d, "long")}
                       {d === today ? " · Today" : ""}
                     </Link>
                   </h2>
                   {list.length === 0 ? (
-                    <p className="text-[15px] text-text-muted">Nothing scheduled.</p>
+                    <p className="text-[0.9375rem] text-text-muted">Nothing scheduled.</p>
                   ) : (
                     <ul className="space-y-2">
                       {list.map(({ s, tech }) => (
@@ -367,7 +370,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                             <span className="block font-semibold">
                               {s.time} · {s.number ? `#${s.number}` : "New"}
                             </span>
-                            <span className="block text-[15px]">
+                            <span className="block text-[0.9375rem]">
                               {s.customer}
                               <span className="text-text-muted"> · {tech}</span>
                             </span>
@@ -433,7 +436,7 @@ function MonthCalendar({
   return (
     <div className="card p-2">
       <div
-        className="grid grid-cols-7 text-center text-[13px] font-semibold text-text-muted"
+        className="grid grid-cols-7 text-center text-[0.8125rem] font-semibold text-text-muted"
         aria-hidden="true"
       >
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
@@ -467,12 +470,12 @@ function MonthCalendar({
               >
                 <span className="font-display text-lg font-bold">{Number(d.slice(8))}</span>
                 {c.jobs ? (
-                  <span className="text-[13px] leading-tight font-semibold">
+                  <span className="text-[0.8125rem] leading-tight font-semibold">
                     {c.jobs} {c.jobs === 1 ? "job" : "jobs"}
                   </span>
                 ) : null}
                 {c.cleanings ? (
-                  <span className="text-[13px] leading-tight text-text-muted">
+                  <span className="text-[0.8125rem] leading-tight text-text-muted">
                     {c.cleanings} clean
                   </span>
                 ) : null}

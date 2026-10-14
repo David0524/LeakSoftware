@@ -37,7 +37,7 @@ export function ErrorScreen({
         </Link>
       </div>
       {error.digest ? (
-        <p className="mt-6 text-[15px] text-text-muted">Error code {error.digest}</p>
+        <p className="mt-6 text-[0.9375rem] text-text-muted">Error code {error.digest}</p>
       ) : null}
     </div>
   );

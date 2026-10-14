@@ -49,7 +49,7 @@ const TONE_COLOR: Record<VerdictTone, string> = {
 function Badge({ tone, children }: { tone: VerdictTone; children: ReactNode }) {
   return (
     <span
-      className="inline-block shrink-0 rounded px-2 py-0.5 text-[15px] font-semibold whitespace-nowrap"
+      className="inline-block shrink-0 rounded px-2 py-0.5 text-[0.9375rem] font-semibold whitespace-nowrap"
       style={{ backgroundColor: TONE_COLOR[tone], color: tokens.color.role.light.onStatus }}
     >
       {children}
@@ -142,12 +142,12 @@ export function ReportView(p: ReportViewProps) {
           ) : null}
           <div>
             <p className="font-display text-2xl font-extrabold">{s.company.name}</p>
-            <p className="text-[15px]">
+            <p className="text-[0.9375rem]">
               {[s.company.phone, s.company.email].filter(Boolean).join(" · ")}
             </p>
           </div>
         </div>
-        <div className="text-right text-[15px]">
+        <div className="text-right text-[0.9375rem]">
           <h1 className="font-display text-xl font-bold">{title}</h1>
           <p>
             {p.sentAt ? formatDate(p.sentAt, tz) : "Draft"}
@@ -179,7 +179,10 @@ export function ReportView(p: ReportViewProps) {
             </div>
           ) : null}
         </div>
-        <dl className="rounded-lg border p-4 text-[15px]" style={{ borderColor: NEUTRAL["200"] }}>
+        <dl
+          className="rounded-lg border p-4 text-[0.9375rem]"
+          style={{ borderColor: NEUTRAL["200"] }}
+        >
           <dt className="text-text-muted">Property</dt>
           <dd className="mb-2 font-medium">{s.property.address}</dd>
           {s.customer ? (
@@ -245,7 +248,7 @@ export function ReportView(p: ReportViewProps) {
                   {f.component_id ? ` · ${labelOf.get(f.component_id)}` : ""}
                   {f.status === "repaired" ? " · Repaired on site" : ""}
                   {f.location_text ? (
-                    <span className="block text-[15px]">{f.location_text}</span>
+                    <span className="block text-[0.9375rem]">{f.location_text}</span>
                   ) : null}
                 </span>
               </li>
@@ -285,7 +288,7 @@ export function ReportView(p: ReportViewProps) {
         {section("tests")?.text ? <Paragraphs text={section("tests")!.text} /> : null}
         {s.tests.length ? (
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-[15px]">
+            <table className="w-full text-left text-[0.9375rem]">
               <thead>
                 <tr className="border-b" style={{ borderColor: NEUTRAL["300"] }}>
                   <th className="py-1 pr-3 font-semibold">Test</th>
@@ -336,7 +339,7 @@ export function ReportView(p: ReportViewProps) {
                       <span>
                         {item.label}
                         {item.where || item.reason ? (
-                          <span className="block text-[15px] text-text-muted">
+                          <span className="block text-[0.9375rem] text-text-muted">
                             {item.where ?? item.reason}
                           </span>
                         ) : null}
@@ -399,7 +402,7 @@ export function ReportView(p: ReportViewProps) {
                     />
                     <MarkupOverlay shapes={m.markup?.shapes ?? []} width={w} height={h} />
                   </div>
-                  <p className="mt-1 text-[15px]">
+                  <p className="mt-1 text-[0.9375rem]">
                     {[where, m.caption].filter(Boolean).join(" · ")}
                   </p>
                 </li>
@@ -425,7 +428,7 @@ export function ReportView(p: ReportViewProps) {
                     />
                   ) : null}
                   <p className="font-medium">{sig.signer_name}</p>
-                  <p className="text-[15px]">
+                  <p className="text-[0.9375rem]">
                     {SIGNATURE_PURPOSE_LABELS[sig.purpose] ?? sig.purpose} ·{" "}
                     {formatDate(sig.signed_at, tz)}
                     {sig.report_version && sig.report_version !== p.version
@@ -450,13 +453,16 @@ export function ReportView(p: ReportViewProps) {
       <>
         {s.company.disclaimer ? (
           <section
-            className="report-disclaimer mt-10 text-[15px] whitespace-pre-line text-text-muted"
+            className="report-disclaimer mt-10 text-[0.9375rem] whitespace-pre-line text-text-muted"
             aria-label="Terms"
           >
             {s.company.disclaimer}
           </section>
         ) : null}
-        <footer className="mt-10 border-t pt-4 text-[15px]" style={{ borderColor: NEUTRAL["200"] }}>
+        <footer
+          className="mt-10 border-t pt-4 text-[0.9375rem]"
+          style={{ borderColor: NEUTRAL["200"] }}
+        >
           <p>
             {s.company.legal_name ?? s.company.name}
             {s.company.address ? ` · ${s.company.address}` : ""}

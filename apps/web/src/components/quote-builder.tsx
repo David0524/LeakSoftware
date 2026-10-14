@@ -37,7 +37,7 @@ function useRun(): { pending: boolean; error: string | null; run: Run } {
 
 function ErrorText({ error }: { error: string | null }) {
   return error ? (
-    <p role="alert" className="text-[15px] text-status-fail">
+    <p role="alert" className="text-[0.9375rem] text-status-fail">
       {error}
     </p>
   ) : null;
@@ -105,7 +105,7 @@ export function QuoteBuilder({
             <div key={f.id} className="space-y-2">
               <p className="font-semibold">{f.title}</p>
               {f.items.length === 0 ? (
-                <p className="text-[15px] text-text-muted">
+                <p className="text-[0.9375rem] text-text-muted">
                   No price book items for this component. Add a custom line.
                 </p>
               ) : (
@@ -127,7 +127,7 @@ export function QuoteBuilder({
                             }),
                           )
                         }
-                        className="min-h-11 rounded-xl border border-control-border bg-surface px-3 text-[15px] disabled:opacity-50"
+                        className="min-h-11 rounded-xl border border-control-border bg-surface px-3 text-[0.9375rem] disabled:opacity-50"
                       >
                         {added ? "✓ " : "+ "}
                         {item.name} · {formatCents(item.price_cents)}

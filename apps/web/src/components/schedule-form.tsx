@@ -87,7 +87,7 @@ export function ScheduleForm({
           <Button type="submit" kind="secondary" disabled={pending}>
             {pending ? "Saving…" : "Save Schedule"}
           </Button>
-          <span role="status" className="text-[15px] text-status-pass">
+          <span role="status" className="text-[0.9375rem] text-status-pass">
             {state.message}
           </span>
         </div>

@@ -269,7 +269,7 @@ export function RouteBoard({
         {dragging ? (
           <div className="rounded-2xl bg-surface p-3 shadow-xl ring-2 ring-link">
             <span className="block font-semibold">{dragging.customer}</span>
-            <span className="block text-[15px] text-text-muted">{dragging.address}</span>
+            <span className="block text-[0.9375rem] text-text-muted">{dragging.address}</span>
           </div>
         ) : null}
       </DragOverlay>
@@ -327,9 +327,9 @@ function DayColumn({
       className={cx("card flex flex-col p-4", isOver && "ring-2 ring-link")}
     >
       <h2 className="font-display text-xl font-bold">{c.title}</h2>
-      {summary ? <p className="text-[15px] text-text-muted">{summary}</p> : null}
+      {summary ? <p className="text-[0.9375rem] text-text-muted">{summary}</p> : null}
       {c.overtimeMin > 0 ? (
-        <p className="mt-1 text-[15px] font-semibold text-status-warning">
+        <p className="mt-1 text-[0.9375rem] font-semibold text-status-warning">
           Runs {durationLabel(c.overtimeMin)} past the end of the day.
         </p>
       ) : null}
@@ -389,11 +389,11 @@ function Leg({
   label?: string;
 }) {
   return (
-    <p className="flex items-center gap-2 py-1 pl-3 text-[15px] text-text-muted">
+    <p className="flex items-center gap-2 py-1 pl-3 text-[0.9375rem] text-text-muted">
       <span aria-hidden="true" className="h-4 border-l-2 border-dotted border-text-muted" />
       {durationLabel(minutes)} {label}
       {short > 0 ? (
-        <span className="font-semibold text-status-warning">· {durationLabel(short)} short</span>
+        <span className="font-semibold text-status-warning">· {durationLabel(short)} late</span>
       ) : null}
     </p>
   );
@@ -445,24 +445,24 @@ function StopCard({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
       ) : null}
       {/* Stops that can't move (started) have no grip and no gap for one. */}
       <div className={cx("min-w-0 flex-1", !s.draggable && "pl-1")}>
-        <Link href={`/jobs/${s.id}`} className="block hover:underline">
+        <Link href={`/jobs/${s.id}`} className="block min-h-11 hover:underline">
           <span className="font-semibold">{s.time ?? "Saving…"}</span>
           <span className="text-text-muted">{s.number ? ` · #${s.number}` : ""}</span>
           <span className="block">{s.customer}</span>
         </Link>
-        <p className="truncate text-[15px]">
+        <p className="truncate text-[0.9375rem]">
           <AddressLink address={s.address} location={s.location} />
         </p>
-        {s.note ? <p className="text-[15px] text-text-muted">{s.note}</p> : null}
+        {s.note ? <p className="text-[0.9375rem] text-text-muted">{s.note}</p> : null}
         <div className="flex flex-wrap items-center gap-x-2">
           <StatusBadge status={s.status} />
           {s.lock ? (
-            <span className="rounded-sm border border-control-border px-1.5 text-[13px] font-semibold">
+            <span className="rounded-sm border border-control-border px-1.5 text-[0.8125rem] font-semibold">
               {s.lock}
             </span>
           ) : null}
           {!s.location ? (
-            <span className="text-[13px] text-status-warning">No map location</span>
+            <span className="text-[0.8125rem] text-status-warning">No map location</span>
           ) : null}
           {s.draggable ? (
             <button
@@ -585,7 +585,9 @@ function WeekCell({
         </ul>
       </SortableContext>
       {c.techId && stops.length ? (
-        <p className="mt-1 px-1 text-[13px] text-text-muted">{durationLabel(c.driveMin)} driving</p>
+        <p className="mt-1 px-1 text-[0.8125rem] text-text-muted">
+          {durationLabel(c.driveMin)} driving
+        </p>
       ) : null}
     </td>
   );
@@ -604,10 +606,13 @@ function WeekChip({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
       className={cx("well flex items-start", isDragging && "opacity-40")}
     >
       {s.draggable ? <Grip label={`Drag ${s.customer}`} {...attributes} {...listeners} /> : null}
-      <Link href={`/jobs/${s.id}`} className="min-w-0 flex-1 py-1.5 pr-1.5 hover:underline">
-        <span className="block text-[15px] font-semibold">{s.time ?? "Saving…"}</span>
-        <span className="block truncate text-[15px]">{s.customer}</span>
-        {s.lock ? <span className="block text-[13px] text-text-muted">{s.lock}</span> : null}
+      <Link
+        href={`/jobs/${s.id}`}
+        className="min-h-11 min-w-0 flex-1 rounded-xl py-1.5 pr-1.5 hover:underline active:bg-text/[0.06]"
+      >
+        <span className="block text-[0.9375rem] font-semibold">{s.time ?? "Saving…"}</span>
+        <span className="block truncate text-[0.9375rem]">{s.customer}</span>
+        {s.lock ? <span className="block text-[0.8125rem] text-text-muted">{s.lock}</span> : null}
       </Link>
       {s.draggable ? (
         <button type="button" className="sr-only focus:not-sr-only" onClick={() => onMove(s)}>
@@ -643,7 +648,7 @@ function Tray({
         Needs a Time{jobs.length ? ` (${jobs.length})` : ""}
       </h2>
       {jobs.length === 0 ? (
-        <p className="mt-1 text-[15px] text-text-muted">
+        <p className="mt-1 text-[0.9375rem] text-text-muted">
           Every job has a time. Drag a job here to take it off the schedule.
         </p>
       ) : (
@@ -692,8 +697,8 @@ function TrayCard({
           <span className="font-semibold">{j.customer}</span>
           <span className="text-text-muted">{j.number ? ` · #${j.number}` : ""}</span>
         </Link>
-        <p className="truncate text-[15px] text-text-muted">{j.address}</p>
-        {j.note ? <p className="text-[15px] text-text-muted">{j.note}</p> : null}
+        <p className="truncate text-[0.9375rem] text-text-muted">{j.address}</p>
+        {j.note ? <p className="text-[0.9375rem] text-text-muted">{j.note}</p> : null}
         <Suggestions target={{ job: j.id }} onPick={(s) => onSuggestion(j.id, s)}>
           <button type="button" className={buttonClass("quiet", "px-2")} onClick={() => onMove(j)}>
             Move…
@@ -747,8 +752,8 @@ export function Suggestions({
       </div>
       {state ? (
         <div id={id} className="mt-2 space-y-2">
-          {state.error ? <p className="text-[15px] text-status-fail">{state.error}</p> : null}
-          {state.note ? <p className="text-[15px] text-text-muted">{state.note}</p> : null}
+          {state.error ? <p className="text-[0.9375rem] text-status-fail">{state.error}</p> : null}
+          {state.note ? <p className="text-[0.9375rem] text-text-muted">{state.note}</p> : null}
           {state.list?.length ? (
             <ul className="space-y-2" aria-label="Suggested times">
               {state.list.map((s) => (
@@ -760,7 +765,7 @@ export function Suggestions({
                     <span className="block font-semibold">
                       {s.dayLabel} · {s.timeLabel} · {s.techName}
                     </span>
-                    <span className="block text-[15px] text-text-muted">
+                    <span className="block text-[0.9375rem] text-text-muted">
                       {s.addedDriveMin > 0
                         ? `Adds ${durationLabel(s.addedDriveMin)} of driving`
                         : "Adds no driving"}
@@ -833,7 +838,7 @@ function MoveSheet({
         <h2 id={title} className="font-display text-xl font-bold">
           Move {stop.customer}
         </h2>
-        <p className="text-[15px] text-text-muted">{stop.address}</p>
+        <p className="text-[0.9375rem] text-text-muted">{stop.address}</p>
         <div className="mt-4 space-y-3">
           <label className="block">
             <span className="block font-medium">Tech</span>

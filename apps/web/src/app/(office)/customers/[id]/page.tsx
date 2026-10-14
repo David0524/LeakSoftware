@@ -125,7 +125,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                       <li key={j.id} className="flex flex-wrap items-center gap-3 py-2">
                         <Link
                           href={`/jobs/${j.id}`}
-                          className="font-semibold text-link underline-offset-4 hover:underline"
+                          className="inline-flex min-h-11 items-center font-semibold text-link underline-offset-4 hover:underline"
                         >
                           {j.number ? `Job #${j.number}` : "New job"}
                         </Link>

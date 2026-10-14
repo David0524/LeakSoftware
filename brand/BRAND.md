@@ -25,7 +25,7 @@ Reports, quotes, invoices, and the customer payment page carry the **shop's** lo
 | Token | Hex | Use |
 |---|---|---|
 | Navy | `#12263A` | Headers, primary text, app icon background |
-| Water | `#1F6FAE` | Links, focus rings, info, logo pin |
+| Water | `#1F6FAE` | Info, logo pin. Links and focus rings use a slightly deeper `#1A63A0` so small text passes 4.5:1 on the page background (M11 review) |
 | Safety | `#EE6A1F` | Primary action button, logo dot. Use sparingly. |
 | Concrete | `#E9ECEF` | App background |
 | Paper | `#FFFFFF` | Cards, surfaces, documents |
@@ -39,7 +39,7 @@ Reports, quotes, invoices, and the customer payment page carry the **shop's** lo
 | Pass | `#1B7D45` | Line held, item inspected OK |
 | Fail | `#C62F2B` | Leak found, line dropped |
 | Excluded | `#5B6B7A` | Not inspected, reason recorded. Neutral, not a warning. |
-| Warning | `#9A6210` | Needs attention: unsynced data, missing signature |
+| Warning | `#8A5A0E` | Needs attention: unsynced data, missing signature (deepened from `#9A6210` in the M11 review for 4.5:1 on the page background) |
 | Info | `#1F6FAE` | Neutral notices |
 
 Status is always shown with a text label too (HELD, FAIL, EXCLUDED), never by color alone.

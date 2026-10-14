@@ -61,7 +61,7 @@ export default async function InvoicesPage() {
                     <span className="font-semibold tabular-nums">{formatCents(i.total_cents)}</span>
                   </span>
                   <span className="mt-1 block font-medium">{i.customer}</span>
-                  <span className="block text-[15px] text-text-muted">
+                  <span className="block text-[0.9375rem] text-text-muted">
                     {INVOICE_STATUS_LABELS[i.status]}
                     {i.sent_at ? ` · sent ${day(i.sent_at)}` : ""}
                     {i.status === "sent" || i.status === "partially_paid"
@@ -74,7 +74,7 @@ export default async function InvoicesPage() {
           </ul>
           <div className="hidden overflow-x-auto card sm:block">
             <table className="w-full text-left">
-              <thead className="border-b border-border text-[15px] text-text-muted">
+              <thead className="border-b border-border text-[0.9375rem] text-text-muted">
                 <tr>
                   <th scope="col" className="px-4 py-3 font-medium">
                     Invoice

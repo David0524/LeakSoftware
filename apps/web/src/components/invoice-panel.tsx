@@ -55,7 +55,7 @@ function Totals({
     </div>
   );
   return (
-    <dl className="mt-3 space-y-1 border-t border-border pt-3 text-[15px]">
+    <dl className="mt-3 space-y-1 border-t border-border pt-3 text-[0.9375rem]">
       {row("Subtotal", formatCents(t.subtotal_cents))}
       {t.discount_cents > 0 ? row("Discount", `−${formatCents(t.discount_cents)}`) : null}
       {t.tax_cents > 0 ? row("Tax", formatCents(t.tax_cents)) : null}
@@ -147,7 +147,7 @@ export function InvoicePanel({
               {l.description}
               {l.quantity !== 1 ? ` × ${l.quantity}` : ""}
               {l.kind === "item" && !l.taxable && taxRateBps > 0 ? (
-                <span className="text-[15px] text-text-muted"> · no tax</span>
+                <span className="text-[0.9375rem] text-text-muted"> · no tax</span>
               ) : null}
             </span>
             <span className="flex items-center gap-2">
@@ -230,7 +230,7 @@ export function InvoicePanel({
                 Send Without Email
               </Button>
             </div>
-            <p className="text-[15px] text-text-muted">
+            <p className="text-[0.9375rem] text-text-muted">
               Sending locks the invoice and gives you a link for the customer.
             </p>
           </form>
@@ -260,7 +260,7 @@ export function InvoicePanel({
       {!draft ? (
         <div className="mt-4 space-y-4">
           {invoice.payments.length ? (
-            <ul className="space-y-1 text-[15px]">
+            <ul className="space-y-1 text-[0.9375rem]">
               {invoice.payments.map((p) => (
                 <li key={p.id}>
                   {formatCents(p.amount_cents)} · {METHOD[p.method] ?? p.method} ·{" "}

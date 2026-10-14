@@ -74,11 +74,11 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
                   </span>
                   <span className="mt-1 block font-medium">{j.customer?.name ?? "Customer"}</span>
                   {j.property ? (
-                    <span className="block text-[15px] text-text-muted">
+                    <span className="block text-[0.9375rem] text-text-muted">
                       {formatAddress(j.property)}
                     </span>
                   ) : null}
-                  <span className="mt-1 block text-[15px]">
+                  <span className="mt-1 block text-[0.9375rem]">
                     {j.status === "in_progress" && j.started_at
                       ? "Started"
                       : formatSchedule(j.scheduled_start ?? null, now, office.company.timezone)}
@@ -91,7 +91,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
           </ul>
           <div className="hidden overflow-x-auto card sm:block">
             <table className="w-full text-left">
-              <thead className="border-b border-border text-[15px] text-text-muted">
+              <thead className="border-b border-border text-[0.9375rem] text-text-muted">
                 <tr>
                   <th scope="col" className="px-4 py-3 font-medium">
                     Job
@@ -120,11 +120,13 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
                       >
                         {j.number ? `#${j.number}` : "New job"}
                       </Link>
-                      <div className="text-[15px] text-text-muted">{JOB_TYPE_LABELS[j.type]}</div>
+                      <div className="text-[0.9375rem] text-text-muted">
+                        {JOB_TYPE_LABELS[j.type]}
+                      </div>
                     </td>
                     <td className="px-4 py-3 align-top">
                       <div className="font-medium">{j.customer?.name ?? "Customer"}</div>
-                      <div className="text-[15px] text-text-muted">
+                      <div className="text-[0.9375rem] text-text-muted">
                         {j.property ? formatAddress(j.property) : ""}
                       </div>
                     </td>

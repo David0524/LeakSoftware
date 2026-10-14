@@ -21,7 +21,12 @@ function SeverityFields({ s }: { s?: SeverityLevel }) {
           defaultValue={s?.sort_order ?? 0}
         />
       </div>
-      <ColorField name="color" label="Pin color" defaultValue={s?.color ?? "#9A6210"} />
+      <ColorField
+        name="color"
+        id={`color-${p}`}
+        label="Pin color"
+        defaultValue={s?.color ?? "#9A6210"}
+      />
       <div className="flex flex-wrap gap-6">
         <Checkbox
           label="Must appear in the report summary"

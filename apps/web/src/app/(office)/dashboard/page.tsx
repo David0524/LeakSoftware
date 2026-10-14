@@ -61,7 +61,10 @@ export default async function DashboardPage() {
           label="Owed to you"
           value={formatCents(d.outstanding_cents)}
           note={
-            <Link href="/invoices" className="text-link underline-offset-4 hover:underline">
+            <Link
+              href="/invoices"
+              className="inline-flex min-h-11 items-center text-link underline-offset-4 hover:underline"
+            >
               Open invoices
             </Link>
           }
@@ -83,7 +86,7 @@ export default async function DashboardPage() {
           <h2 id="collected-title" className="font-display text-xl font-bold">
             Collected by Month
           </h2>
-          <p className="mb-4 text-[15px] text-text-muted">
+          <p className="mb-4 text-[0.9375rem] text-text-muted">
             Payments received, by card, bank, or check.
           </p>
           <ol className="flex h-48 items-end gap-2 border-b border-border" aria-hidden="true">
@@ -96,7 +99,7 @@ export default async function DashboardPage() {
                   className="group relative flex h-full flex-1 flex-col justify-end"
                 >
                   {last && m.collected_cents ? (
-                    <span className="mb-1 text-center text-[13px] font-semibold tabular-nums">
+                    <span className="mb-1 text-center text-[0.8125rem] font-semibold tabular-nums">
                       {formatCents(m.collected_cents)}
                     </span>
                   ) : null}
@@ -104,7 +107,7 @@ export default async function DashboardPage() {
                     className="mx-auto w-full max-w-12 rounded-t bg-chart"
                     style={{ height: `${Math.max(h, m.collected_cents ? 2 : 0)}%` }}
                   />
-                  <span className="pointer-events-none absolute -top-8 left-1/2 hidden -translate-x-1/2 rounded bg-text px-2 py-1 text-[13px] whitespace-nowrap text-bg group-hover:block">
+                  <span className="pointer-events-none absolute -top-8 left-1/2 hidden -translate-x-1/2 rounded bg-text px-2 py-1 text-[0.8125rem] whitespace-nowrap text-bg group-hover:block">
                     {monthLabel(m.month)}: {formatCents(m.collected_cents)}
                   </span>
                 </li>
@@ -112,7 +115,7 @@ export default async function DashboardPage() {
             })}
           </ol>
           <ol
-            className="mt-1 flex gap-2 text-center text-[13px] text-text-muted"
+            className="mt-1 flex gap-2 text-center text-[0.8125rem] text-text-muted"
             aria-hidden="true"
           >
             {d.months.map((m) => (
@@ -127,7 +130,7 @@ export default async function DashboardPage() {
           <h2 id="status-title" className="font-display text-xl font-bold">
             Jobs by Status
           </h2>
-          <p className="mb-4 text-[15px] text-text-muted">Every job, as of now.</p>
+          <p className="mb-4 text-[0.9375rem] text-text-muted">Every job, as of now.</p>
           {statuses.length === 0 ? (
             <Empty>No jobs yet.</Empty>
           ) : (
@@ -136,9 +139,9 @@ export default async function DashboardPage() {
                 <li key={s.status}>
                   <Link
                     href={`/jobs?status=${WAITING.includes(s.status) ? "follow_up" : s.status}`}
-                    className="grid grid-cols-[8.5rem_1fr_2.5rem] items-center gap-3 rounded py-1 hover:bg-bg"
+                    className="grid grid-cols-[8.5rem_1fr_2.5rem] items-center gap-3 rounded-xl py-1 hover:bg-text/[0.04] active:bg-text/[0.06]"
                   >
-                    <span className="text-[15px]">{JOB_STATUS_LABELS[s.status]}</span>
+                    <span className="text-[0.9375rem]">{JOB_STATUS_LABELS[s.status]}</span>
                     <span
                       className="h-3 rounded-r bg-chart"
                       style={{ width: `${(s.n / maxStatus) * 100}%` }}
@@ -157,7 +160,7 @@ export default async function DashboardPage() {
           By Month
         </h2>
         <table className="w-full min-w-[640px] text-left tabular-nums">
-          <thead className="border-b border-border text-[15px] text-text-muted">
+          <thead className="border-b border-border text-[0.9375rem] text-text-muted">
             <tr>
               <th scope="col" className="py-2 pr-3 font-medium">
                 Month
@@ -210,9 +213,9 @@ export default async function DashboardPage() {
 function Stat({ label, value, note }: { label: string; value: string; note: React.ReactNode }) {
   return (
     <div className="card p-4">
-      <dt className="text-[15px] text-text-muted">{label}</dt>
+      <dt className="text-[0.9375rem] text-text-muted">{label}</dt>
       <dd className="font-display text-3xl font-extrabold tabular-nums">{value}</dd>
-      <dd className="text-[15px] text-text-muted">{note}</dd>
+      <dd className="text-[0.9375rem] text-text-muted">{note}</dd>
     </div>
   );
 }

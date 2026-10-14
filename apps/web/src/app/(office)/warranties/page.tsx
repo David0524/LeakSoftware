@@ -88,20 +88,20 @@ export default async function WarrantiesPage({ searchParams }: PageProps<"/warra
                     </Link>
                   ) : null}
                   {w.job.property ? (
-                    <span className="block text-[15px] text-text-muted">
+                    <span className="block text-[0.9375rem] text-text-muted">
                       {formatAddress(w.job.property)}
                     </span>
                   ) : null}
                 </p>
               ) : null}
-              <p className="mt-2 text-[15px]">
+              <p className="mt-2 text-[0.9375rem]">
                 {date(w.starts_on)} – {date(w.ends_on)} · {warrantyEndsText(w.ends_on, today)}
               </p>
-              {w.terms ? <p className="text-[15px] text-text-muted">{w.terms}</p> : null}
+              {w.terms ? <p className="text-[0.9375rem] text-text-muted">{w.terms}</p> : null}
               {w.job ? (
                 <Link
                   href={`/jobs/${w.job.id}`}
-                  className="mt-1 inline-flex min-h-11 items-center text-[15px] font-semibold text-link underline-offset-4 hover:underline"
+                  className="mt-1 inline-flex min-h-11 items-center text-[0.9375rem] font-semibold text-link underline-offset-4 hover:underline"
                 >
                   Repair job{w.job.number ? ` #${w.job.number}` : ""}
                 </Link>

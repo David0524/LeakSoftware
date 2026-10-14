@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 export function DateJump({ value, view, tech }: { value: string; view: string; tech: string }) {
   const router = useRouter();
   return (
-    <label className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-control-border bg-surface px-3">
+    <label className="inline-flex min-h-11 min-w-0 items-center gap-2 rounded-xl border border-control-border bg-surface px-3">
       <svg
         viewBox="0 0 24 24"
         className="size-5 shrink-0 text-text-muted"
@@ -30,7 +30,7 @@ export function DateJump({ value, view, tech }: { value: string; view: string; t
           const next = new URLSearchParams({ view, date: e.target.value, tech });
           router.push(`/schedule?${next.toString()}`);
         }}
-        className="min-h-10 bg-transparent font-medium"
+        className="min-h-10 min-w-0 bg-transparent font-medium"
       />
     </label>
   );

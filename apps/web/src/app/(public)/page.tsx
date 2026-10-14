@@ -47,15 +47,11 @@ export default function Home() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <ButtonLink href="/sign-up">Start Free Trial</ButtonLink>
-            <ButtonLink
-              href="/sign-in"
-              kind="secondary"
-              className="border-on-header bg-transparent text-on-header hover:bg-white/10 dark:border-on-header dark:text-on-header"
-            >
+            <ButtonLink href="/sign-in" kind="onDark">
               Sign In
             </ButtonLink>
           </div>
-          <p className="mt-4 text-[15px] text-neutral-300">30 days free. No card needed.</p>
+          <p className="mt-4 text-[0.9375rem] text-neutral-300">30 days free. No card needed.</p>
         </div>
       </section>
 

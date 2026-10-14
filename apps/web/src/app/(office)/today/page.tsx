@@ -115,7 +115,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
               const done = j.status !== "scheduled" && j.status !== "in_progress";
               return (
                 <li key={j.id}>
-                  <p className="flex items-center gap-2 py-0.5 pl-4 text-[15px] text-text-muted">
+                  <p className="flex items-center gap-2 py-0.5 pl-4 text-[0.9375rem] text-text-muted">
                     <span
                       aria-hidden="true"
                       className="h-4 border-l-2 border-dotted border-text-muted"
@@ -123,7 +123,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                     {durationLabel(leg)} {i === 0 ? "from the shop" : "drive"}
                     {route!.summary.short[i] ? (
                       <span className="font-semibold text-status-warning">
-                        · {durationLabel(route!.summary.short[i]!)} short
+                        · {durationLabel(route!.summary.short[i]!)} late
                       </span>
                     ) : null}
                   </p>
@@ -146,12 +146,12 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                       >
                         {i + 1}
                       </span>
-                      <span className="font-display text-[17px] font-bold">
+                      <span className="font-display text-[1.0625rem] font-bold">
                         {j.scheduled_start ? formatTime(j.scheduled_start, ctx.timeZone) : ""}
                       </span>
                       <StatusBadge status={j.status} />
                       {lock && lock !== "started" ? (
-                        <span className="text-[13px] font-semibold text-text-muted">
+                        <span className="text-[0.8125rem] font-semibold text-text-muted">
                           {LOCK_LABELS[lock]}
                         </span>
                       ) : null}
@@ -190,11 +190,11 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                     </Link>
                     {done ? null : (
                       <>
-                        <p className="relative z-10 w-fit max-w-full text-[15px]">
+                        <p className="relative z-10 w-fit max-w-full text-[0.9375rem]">
                           <AddressLink address={address} location={propertyLocation(j.property)} />
                         </p>
                         {j.property?.access_notes ? (
-                          <p className="mt-1 line-clamp-2 border-l-4 border-status-warning pl-2 text-[15px]">
+                          <p className="mt-1 line-clamp-2 border-l-4 border-status-warning pl-2 text-[0.9375rem]">
                             {j.property.access_notes}
                           </p>
                         ) : null}
@@ -205,7 +205,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
               );
             })}
             <li>
-              <p className="flex items-center gap-2 py-0.5 pl-4 text-[15px] text-text-muted">
+              <p className="flex items-center gap-2 py-0.5 pl-4 text-[0.9375rem] text-text-muted">
                 <span
                   aria-hidden="true"
                   className="h-4 border-l-2 border-dotted border-text-muted"

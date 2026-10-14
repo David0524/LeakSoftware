@@ -44,7 +44,9 @@ export function ContactButtons({
           <MailIcon />
         </a>
       ) : null}
-      <span className="min-w-0 truncate pl-1 text-[15px] text-text-muted">{phone ?? email}</span>
+      <span className="min-w-0 truncate pl-1 text-[0.9375rem] text-text-muted">
+        {phone ?? email}
+      </span>
     </div>
   );
 }

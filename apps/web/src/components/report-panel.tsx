@@ -125,7 +125,7 @@ export function ReportPanel({
         >
           {drafting ? "Writing…" : draft?.final_sections ? "Write the Draft Again" : "Write Draft"}
         </Button>
-        <span className="text-[15px] text-text-muted">
+        <span className="text-[0.9375rem] text-text-muted">
           {aiReady
             ? "AI writes the draft from this job’s checklist, tests, and findings. It can get details wrong, so read every word before sending."
             : "AI writing isn’t set up yet; the draft is a plain summary of the job data."}
@@ -176,7 +176,7 @@ export function ReportPanel({
               <span
                 aria-live="polite"
                 className={cx(
-                  "text-[15px]",
+                  "text-[0.9375rem]",
                   saveState.error ? "text-status-fail" : "text-status-pass",
                 )}
               >
@@ -186,7 +186,7 @@ export function ReportPanel({
 
             <div className="mt-6 border-t border-border pt-4">
               <h4 className="font-medium">Finish version {draft.version}</h4>
-              <p className="text-[15px] text-text-muted">
+              <p className="text-[0.9375rem] text-text-muted">
                 Hand the phone to the customer: they read the report and sign at the bottom. Signing
                 locks this version; changes after that go out as a new version.
               </p>
@@ -204,7 +204,7 @@ export function ReportPanel({
                 <summary className="inline-flex min-h-11 cursor-pointer items-center font-semibold text-link">
                   Send Without a Signature
                 </summary>
-                <p className="text-[15px] text-text-muted">
+                <p className="text-[0.9375rem] text-text-muted">
                   Sending saves your edits and locks this version.
                 </p>
                 <SendControls
@@ -220,7 +220,7 @@ export function ReportPanel({
         </div>
       ) : null}
       {draft?.final_sections && !open ? (
-        <p className="mt-2 text-[15px] text-text-muted">
+        <p className="mt-2 text-[0.9375rem] text-text-muted">
           Draft version {draft.version} is ready to read, edit, and review with the customer.
         </p>
       ) : null}
@@ -243,7 +243,7 @@ export function ReportPanel({
           <input type="hidden" name="job" value={jobId} />
           <input type="hidden" name="report" value={latestSent.id} />
           <h4 className="font-medium">Version {latestSent.version} is finished</h4>
-          <p className="text-[15px] text-text-muted">
+          <p className="text-[0.9375rem] text-text-muted">
             Send it to the customer, or download the PDF.
           </p>
           <SendControls
@@ -273,7 +273,7 @@ export function ReportPanel({
           <ul className="mt-1 divide-y divide-border">
             {sent.map((r) => (
               <li key={r.id} className="flex flex-wrap items-center justify-between gap-x-3 py-1">
-                <span className="text-[15px]">
+                <span className="text-[0.9375rem]">
                   Version {r.version}
                   <span className="text-text-muted">
                     {" · "}
@@ -293,7 +293,7 @@ export function ReportPanel({
                       target="_blank"
                       rel="noreferrer"
                       aria-label={`Version ${r.version} report`}
-                      className={buttonClass("quiet", "px-3 text-[15px]")}
+                      className={buttonClass("quiet", "px-3 text-[0.9375rem]")}
                     >
                       Report
                     </a>
@@ -302,7 +302,7 @@ export function ReportPanel({
                       target="_blank"
                       rel="noreferrer"
                       aria-label={`Version ${r.version} PDF`}
-                      className={buttonClass("quiet", "px-3 text-[15px]")}
+                      className={buttonClass("quiet", "px-3 text-[0.9375rem]")}
                     >
                       PDF
                     </a>
@@ -367,7 +367,7 @@ function SendControls({
         </Button>
       </div>
       {!emailReady ? (
-        <p className="mt-2 text-[15px] text-text-muted">
+        <p className="mt-2 text-[0.9375rem] text-text-muted">
           Email isn’t set up yet. “Send by Text” gives you a link and message to text the customer.
         </p>
       ) : null}

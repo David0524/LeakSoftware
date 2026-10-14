@@ -60,7 +60,7 @@ export function SchedulingForm({
       </div>
       <fieldset>
         <legend className="font-medium">Working days</legend>
-        <p className="text-[15px] text-text-muted">Suggested times use these days.</p>
+        <p className="text-[0.9375rem] text-text-muted">Suggested times use these days.</p>
         <div className="mt-1 flex flex-wrap gap-x-4">
           {DAYS.map((d, i) => (
             <label key={d} className="flex min-h-11 items-center gap-2">
@@ -91,7 +91,7 @@ export function SchedulingForm({
             { value: "240", label: "4-Hour Window" },
           ]}
         />
-        <p className="mt-1 text-[15px] text-text-muted">
+        <p className="mt-1 text-[0.9375rem] text-text-muted">
           {window === "0"
             ? "On My Way texts say “about 10:15 AM”."
             : `On My Way texts give a ${Number(window) / 60}-hour window, like “between 10:00 AM and ${
@@ -125,7 +125,7 @@ export function ActionButton({
       >
         {pending ? busyLabel : label}
       </Button>
-      <span role="status" className="text-[15px]">
+      <span role="status" className="text-[0.9375rem]">
         {result.error ? (
           <span className="text-status-fail">{result.error}</span>
         ) : (

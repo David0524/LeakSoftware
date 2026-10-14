@@ -14,6 +14,7 @@ import {
   type TextInputProps,
   type TextStyle,
   type ViewStyle,
+  useWindowDimensions,
 } from "react-native";
 import { JOB_STATUS_LABELS, type JobStatus } from "@leakbook/core";
 import { color, font, JOB_STATUS_COLOR, radius, space, touch } from "./theme";
@@ -35,12 +36,25 @@ export function T({
   children: ReactNode;
   numberOfLines?: number;
 }) {
+  // Text follows the phone's text size setting (Dynamic Type). Line heights are fixed numbers
+  // in React Native, so they grow with the text, or large text would overlap (M11 review H4).
+  const { fontScale } = useWindowDimensions();
+  const base: TextStyle = text[variant];
+  const scaled =
+    fontScale !== 1 && base.lineHeight ? { lineHeight: base.lineHeight * fontScale } : null;
   return (
-    <Text style={[text[variant], style]} numberOfLines={numberOfLines}>
+    <Text
+      style={[base, scaled, style]}
+      numberOfLines={numberOfLines}
+      maxFontSizeMultiplier={MAX_TEXT_SCALE}
+    >
       {children}
     </Text>
   );
 }
+
+/** Up to the largest accessibility sizes (about AX3); beyond that layouts can't hold. */
+const MAX_TEXT_SCALE = 2.4;
 
 const text = StyleSheet.create({
   title: { fontFamily: font.displayExtraBold, fontSize: 28, lineHeight: 32, color: color.text },
@@ -284,8 +298,8 @@ export function Segmented<V extends string>({
             >
               <Text
                 style={[styles.segmentText, on && styles.segmentTextOn]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
+                numberOfLines={2}
+                maxFontSizeMultiplier={MAX_TEXT_SCALE}
               >
                 {o.label}
               </Text>

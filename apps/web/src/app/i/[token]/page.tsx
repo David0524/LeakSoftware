@@ -119,12 +119,12 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
           ) : null}
           <div>
             <p className="font-display text-2xl font-extrabold">{c.name}</p>
-            <p className="text-[15px]">{[c.phone, c.email].filter(Boolean).join(" · ")}</p>
+            <p className="text-[0.9375rem]">{[c.phone, c.email].filter(Boolean).join(" · ")}</p>
           </div>
         </div>
         <div className="text-right">
           <h1 className="font-display text-xl font-bold">{title}</h1>
-          {i.sent_at ? <p className="text-[15px]">{date(i.sent_at, tz)}</p> : null}
+          {i.sent_at ? <p className="text-[0.9375rem]">{date(i.sent_at, tz)}</p> : null}
         </div>
       </header>
 
@@ -137,7 +137,7 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
         </div>
       ) : null}
 
-      <dl className="mt-6 grid gap-x-6 gap-y-1 text-[15px] sm:grid-cols-2">
+      <dl className="mt-6 grid gap-x-6 gap-y-1 text-[0.9375rem] sm:grid-cols-2">
         {i.customer ? (
           <div>
             <dt className="text-text-muted">Billed to</dt>
@@ -183,7 +183,7 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
               <li key={l.id} className="flex justify-between gap-4 py-3">
                 <div>
                   <p className="font-medium">{l.description}</p>
-                  <p className="text-[15px] text-text-muted">
+                  <p className="text-[0.9375rem] text-text-muted">
                     {[
                       Number(l.quantity) !== 1
                         ? `${Number(l.quantity)} × ${formatCents(l.unit_price_cents)}`
@@ -265,7 +265,7 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
         </section>
       ) : null}
 
-      <footer className="mt-10 border-t border-neutral-200 pt-4 text-[15px]">
+      <footer className="mt-10 border-t border-neutral-200 pt-4 text-[0.9375rem]">
         <p>
           {c.legal_name ?? c.name}
           {c.address ? ` · ${c.address}` : ""}

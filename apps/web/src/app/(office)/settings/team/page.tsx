@@ -114,14 +114,14 @@ export default async function TeamSettingsPage() {
                   inline
                 >
                   <input type="hidden" name="id" value={m.membership_id} />
-                  <div className="min-w-48 flex-1">
+                  <div className="min-w-0 flex-1 basis-48">
                     <p className="font-semibold">
                       {m.name}
                       {m.user_id === office.user.id ? (
                         <span className="font-normal text-text-muted"> (you)</span>
                       ) : null}
                     </p>
-                    <p className="text-[15px] text-text-muted">{m.email}</p>
+                    <p className="text-[0.9375rem] break-all text-text-muted">{m.email}</p>
                   </div>
                   <Select
                     label="Role"

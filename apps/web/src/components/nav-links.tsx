@@ -57,7 +57,7 @@ export function TabBar({ links: all }: { links: { href: string; label: string }[
                   href={l.href}
                   aria-current={active ? "page" : undefined}
                   className={cx(
-                    "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-3xl text-[11px] font-semibold",
+                    "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-3xl text-[0.6875rem] font-semibold",
                     active ? "bg-link/10 text-link" : "text-text",
                   )}
                 >
@@ -131,7 +131,7 @@ export function NavLinks({
             href={l.href}
             aria-current={active ? "page" : undefined}
             className={cx(
-              "min-h-11 content-center rounded-md px-3 font-display text-[17px] font-semibold tracking-wide",
+              "min-h-11 content-center rounded-md px-3 font-display text-[1.0625rem] font-semibold tracking-wide",
               active ? "bg-white/15" : "hover:bg-white/10",
             )}
           >

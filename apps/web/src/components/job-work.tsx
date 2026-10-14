@@ -64,7 +64,7 @@ function useRun() {
 
 function ErrorText({ error }: { error: string | null }) {
   return error ? (
-    <p role="alert" className="text-[15px] text-status-fail">
+    <p role="alert" className="text-[0.9375rem] text-status-fail">
       {error}
     </p>
   ) : null;
@@ -86,13 +86,19 @@ export function JobStatusActions({
   jobId,
   status,
   jobType,
+  cancel = false,
 }: {
   jobId: string;
   status: JobStatus;
   jobType?: string;
+  /**
+   * Cancel Job lives apart, at the end of Details, so the destructive action isn't the first
+   * control on the page (M11 review M5). false: every other action; true: only Cancel Job.
+   */
+  cancel?: boolean;
 }) {
   const { pending, error, run } = useRun();
-  const next = userTransitions(status, jobType);
+  const next = userTransitions(status, jobType).filter((to) => (to === "canceled") === cancel);
   if (next.length === 0) return null;
   return (
     <div className="space-y-2">
@@ -296,7 +302,7 @@ function ChecklistGroup({
           <span className="flex-1 font-display text-lg font-bold">{title}</span>
           <span
             className={cx(
-              "text-[15px] font-medium",
+              "text-[0.9375rem] font-medium",
               toDo.length ? "text-text-muted" : leaking ? "text-status-fail" : "text-status-pass",
             )}
           >
@@ -318,7 +324,7 @@ function ChecklistGroup({
               <button
                 type="button"
                 disabled={pending}
-                className="min-h-11 text-[15px] font-semibold text-link underline-offset-4 hover:underline"
+                className="min-h-11 text-[0.9375rem] font-semibold text-link underline-offset-4 hover:underline"
                 onClick={() =>
                   run(markRest, { job: jobId, components: toDo.map((r) => r.id).join(",") })
                 }
@@ -376,7 +382,7 @@ function ChecklistItem({ jobId, row }: { jobId: string; row: ChecklistRow }) {
         <span className="min-w-0 flex-1">
           <span className="block leading-tight font-medium">{row.label}</span>
           {row.result?.method || row.result?.notes ? (
-            <span className="block truncate text-[13px] text-text-muted">
+            <span className="block truncate text-[0.8125rem] text-text-muted">
               {[row.result.method, row.result.notes].filter(Boolean).join(" · ")}
             </span>
           ) : null}
@@ -387,7 +393,7 @@ function ChecklistItem({ jobId, row }: { jobId: string; row: ChecklistRow }) {
             value={shown ?? ""}
             onChange={(e) => choose(e.target.value)}
             className={cx(
-              "min-h-11 cursor-pointer appearance-none rounded-full border py-1 pr-8 pl-3 text-[15px] font-semibold",
+              "min-h-11 cursor-pointer appearance-none rounded-full border py-1 pr-8 pl-3 text-[0.9375rem] font-semibold",
               shown ? VERDICT_STYLE[shown] : "border-control-border bg-surface text-text",
             )}
           >
@@ -426,7 +432,7 @@ function ChecklistItem({ jobId, row }: { jobId: string; row: ChecklistRow }) {
         />
       ) : null}
       {row.result?.status === "excluded" && row.result.exclusion_reason ? (
-        <p className="pb-1 text-[15px] text-text-muted">{row.result.exclusion_reason}</p>
+        <p className="pb-1 text-[0.9375rem] text-text-muted">{row.result.exclusion_reason}</p>
       ) : null}
       <ErrorText error={error} />
     </div>
@@ -525,7 +531,7 @@ export function TestsEditor({
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-semibold">{type?.name ?? "Test"}</p>
-                  <p className="text-[15px] text-text-muted">
+                  <p className="text-[0.9375rem] text-text-muted">
                     {[t.componentId ? componentLabel.get(t.componentId) : null, t.when]
                       .filter(Boolean)
                       .join(" · ")}
@@ -535,7 +541,7 @@ export function TestsEditor({
               </div>
               {calc?.summary ? <p className="mt-2 font-medium">{calc.summary}</p> : null}
               {type && !type.calculator ? (
-                <dl className="mt-2 text-[15px]">
+                <dl className="mt-2 text-[0.9375rem]">
                   {type.field_schema.fields
                     .filter((f) => t.data[f.key] != null && t.data[f.key] !== "")
                     .map((f) => (
@@ -546,7 +552,7 @@ export function TestsEditor({
                     ))}
                 </dl>
               ) : null}
-              {t.notes ? <p className="mt-2 text-[15px]">{t.notes}</p> : null}
+              {t.notes ? <p className="mt-2 text-[0.9375rem]">{t.notes}</p> : null}
               <div className="mt-2 flex gap-4">
                 <button
                   type="button"
@@ -803,7 +809,7 @@ export function FindingsEditor({
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold">{f.title}</p>
-                      <p className="text-[15px] text-text-muted">
+                      <p className="text-[0.9375rem] text-text-muted">
                         {[
                           sev.get(f.severity)?.name ?? f.severity,
                           f.componentId ? componentLabel.get(f.componentId) : null,
@@ -814,7 +820,7 @@ export function FindingsEditor({
                           .join(" · ")}
                       </p>
                       {f.location ? <p className="mt-1">{f.location}</p> : null}
-                      {f.notes ? <p className="mt-1 text-[15px]">{f.notes}</p> : null}
+                      {f.notes ? <p className="mt-1 text-[0.9375rem]">{f.notes}</p> : null}
                       <div className="mt-1 flex gap-4">
                         <button
                           type="button"
@@ -972,7 +978,7 @@ function PinPicker({
       <p className="font-medium" id="pin-label">
         Pin on the diagram (optional)
       </p>
-      <p className="text-[15px] text-text-muted" id="pin-hint">
+      <p className="text-[0.9375rem] text-text-muted" id="pin-hint">
         Tap where the leak is. Arrow keys move the pin.
       </p>
       <svg
@@ -1028,7 +1034,7 @@ function PinPicker({
           </g>
         ) : null}
       </svg>
-      <p className="text-[15px]" aria-live="polite">
+      <p className="text-[0.9375rem]" aria-live="polite">
         {pin ? "Pin placed." : "No pin yet."}
         {pin ? (
           <button

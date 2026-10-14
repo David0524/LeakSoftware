@@ -13,7 +13,7 @@ export function PayInvoiceForm({ token, amount }: { token: string; amount: strin
       <Button type="submit" disabled={pending} className="w-full sm:w-auto">
         {pending ? "Opening secure payment…" : `Pay ${amount}`}
       </Button>
-      <p className="text-[15px] text-text-muted">
+      <p className="text-[0.9375rem] text-text-muted">
         Card or bank account, through Stripe. Bank payments take a few business days to clear.
       </p>
     </form>

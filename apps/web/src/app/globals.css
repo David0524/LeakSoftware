@@ -8,8 +8,9 @@ body {
   background: var(--lb-bg);
   color: var(--lb-text);
   font-family: var(--lb-font-body);
-  /* House rule: 17 px body text (iOS Body size). */
-  font-size: 17px;
+  /* House rule: 17 pt body text (iOS Body size). In rem, so the browser's text size setting
+     scales everything together (M11 review H3); secondary text is 0.9375rem (15 pt). */
+  font-size: 1.0625rem;
   line-height: 1.5;
 }
 

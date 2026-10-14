@@ -88,12 +88,12 @@ function JobRow({ job, now, timeZone }: { job: JobView; now: Date; timeZone: str
       style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}
     >
       <View style={styles.rowTop}>
-        <T variant="strong" style={{ flex: 1 }} numberOfLines={1}>
+        <T variant="strong" style={{ flex: 1 }} numberOfLines={2}>
           {job.customer?.name ?? "Customer"}
         </T>
         <StatusChip status={job.status} />
       </View>
-      <T variant="small" numberOfLines={1}>
+      <T variant="small" numberOfLines={2}>
         {job.property ? formatAddress(job.property) : "Address"}
       </T>
       <T variant="muted">

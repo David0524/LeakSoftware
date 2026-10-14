@@ -76,7 +76,7 @@ export function SettingsForm({
         >
           {pending ? "Saving…" : submit}
         </Button>
-        <span aria-live="polite" className="text-[15px]">
+        <span aria-live="polite" className="text-[0.9375rem]">
           {state.error ? (
             <span role="alert" className="text-status-fail">
               {state.error}
@@ -95,7 +95,7 @@ export function SettingsForm({
 export function FieldError({ name }: { name: string }) {
   const error = useFieldError(name);
   return error ? (
-    <p id={`${name}-error`} className="text-[15px] text-status-fail">
+    <p id={`${name}-error`} className="text-[0.9375rem] text-status-fail">
       {error}
     </p>
   ) : null;
@@ -107,11 +107,14 @@ export function ColorField({
   label,
   defaultValue,
   optional = false,
+  id = name,
 }: {
   name: string;
   label: string;
   defaultValue: string | null;
   optional?: boolean;
+  /** Unique per page when several forms share a field name (M11 review C3). */
+  id?: string;
 }) {
   const [value, setValue] = useState(defaultValue ?? "");
   const error = useFieldError(name);
@@ -121,7 +124,7 @@ export function ColorField({
   const whiteOn = onWhite;
   return (
     <div className="space-y-2">
-      <label htmlFor={name} className="block font-medium">
+      <label htmlFor={id} className="block font-medium">
         {label}
         {optional ? <span className="font-normal text-text-muted"> (optional)</span> : null}
       </label>
@@ -134,7 +137,7 @@ export function ColorField({
           className="h-11 w-14 cursor-pointer rounded-xl border border-control-border bg-surface"
         />
         <input
-          id={name}
+          id={id}
           name={name}
           value={value}
           onChange={(e) => setValue(e.target.value)}
@@ -144,7 +147,7 @@ export function ColorField({
         />
       </div>
       {valid ? (
-        <div className="flex flex-wrap gap-2 text-[15px]">
+        <div className="flex flex-wrap gap-2 text-[0.9375rem]">
           <span
             className="rounded-md px-3 py-2 font-semibold"
             style={{ backgroundColor: value, color: WHITE }}
@@ -160,7 +163,7 @@ export function ColorField({
         </div>
       ) : null}
       {valid && onWhite! < 3 ? (
-        <p className="text-[15px] text-status-warning">
+        <p className="text-[0.9375rem] text-status-warning">
           Too light for text on white. Fine as a fill color behind dark text.
         </p>
       ) : null}
@@ -186,7 +189,7 @@ export function CopyLink({
         value={url}
         aria-label={label}
         onFocus={(e) => e.target.select()}
-        className="min-h-11 min-w-0 flex-1 rounded-xl border border-control-border bg-bg px-3 font-mono text-[15px]"
+        className="min-h-11 min-w-0 flex-1 rounded-xl border border-control-border bg-bg px-3 font-mono text-[0.9375rem]"
       />
       <Button
         type="button"
@@ -214,7 +217,7 @@ export function STextArea(props: Parameters<typeof TextArea>[0]) {
   return (
     <div>
       <TextArea {...props} />
-      {error ? <p className="text-[15px] text-status-fail">{error}</p> : null}
+      {error ? <p className="text-[0.9375rem] text-status-fail">{error}</p> : null}
     </div>
   );
 }

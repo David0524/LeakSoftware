@@ -47,11 +47,11 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
                 {c.company_name ? (
                   <span className="text-text-muted"> · {c.company_name}</span>
                 ) : null}
-                <span className="block text-[15px] text-text-muted">
+                <span className="block text-[0.9375rem] text-text-muted">
                   {[c.phone, c.email].filter(Boolean).join(" · ") || "No contact details"}
                 </span>
                 {c.properties.length > 0 ? (
-                  <span className="block text-[15px]">
+                  <span className="block text-[0.9375rem]">
                     {c.properties.map((p) => formatAddress(p)).join("; ")}
                   </span>
                 ) : null}

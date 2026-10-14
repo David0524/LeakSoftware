@@ -42,7 +42,7 @@ export function QuotePanel({
       {quote.status === "draft" && children ? (
         children
       ) : (
-        <ul className="mt-3 space-y-1 text-[15px]">
+        <ul className="mt-3 space-y-1 text-[0.9375rem]">
           {quote.lines.map((l) => (
             <li key={l.id} className="flex justify-between gap-4">
               <span>
@@ -59,7 +59,7 @@ export function QuotePanel({
         </ul>
       )}
       {quote.status !== "draft" ? (
-        <p className="mt-2 text-[15px] text-text-muted">
+        <p className="mt-2 text-[0.9375rem] text-text-muted">
           Deposit {formatCents(quote.deposit_cents)}
           {deposit
             ? ` · ${PAYMENT_LABELS[deposit.status]} (${deposit.method === "ach" ? "bank" : "card"})`
@@ -74,7 +74,7 @@ export function QuotePanel({
           <Button type="submit" disabled={pending}>
             {pending ? "Sending…" : "Send Quote"}
           </Button>
-          <span className="text-[15px] text-text-muted">
+          <span className="text-[0.9375rem] text-text-muted">
             Locks the prices and gives you a link for the customer.
           </span>
         </form>

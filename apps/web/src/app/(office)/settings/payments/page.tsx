@@ -70,7 +70,7 @@ export default async function PaymentsSettingsPage({
               bank account. Your shop is the seller; payments go straight to your account.
             </p>
             {account?.details_submitted ? (
-              <p className="text-[15px] text-text-muted">
+              <p className="text-[0.9375rem] text-text-muted">
                 Stripe is reviewing your details. This page updates when they finish.
               </p>
             ) : null}

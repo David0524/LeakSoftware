@@ -62,7 +62,7 @@ export function MarkLocationHere({
       >
         {pending ? "Finding You…" : label}
       </button>
-      <span role="status" className="text-[15px]">
+      <span role="status" className="text-[0.9375rem]">
         {result.error ? (
           <span className="text-status-fail">{result.error}</span>
         ) : (

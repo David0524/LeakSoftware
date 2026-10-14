@@ -71,20 +71,22 @@ async function Review({ params }: { params: Promise<{ reportId: string }> }) {
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-2 py-1">
           <Link
             href={back}
-            className="inline-flex min-h-11 items-center px-3 font-display text-[17px] font-bold text-link"
+            className="inline-flex min-h-11 items-center px-3 font-display text-[1.0625rem] font-bold text-link"
           >
             Back to Job
           </Link>
-          <p className="truncate text-[15px] font-semibold text-text-muted">{s.company.name}</p>
+          <p className="truncate text-[0.9375rem] font-semibold text-text-muted">
+            {s.company.name}
+          </p>
           <a
             href="#sign"
-            className="inline-flex min-h-11 items-center px-3 font-display text-[17px] font-bold text-link"
+            className="inline-flex min-h-11 items-center px-3 font-display text-[1.0625rem] font-bold text-link"
           >
             Sign
           </a>
         </div>
       </div>
-      <p className="mx-auto max-w-4xl px-4 pt-4 text-[17px] sm:px-8">
+      <p className="mx-auto max-w-4xl px-4 pt-4 text-[1.0625rem] sm:px-8">
         Please read your report. Sign at the bottom to confirm the visit.
       </p>
       <ReportView

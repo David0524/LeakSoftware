@@ -66,7 +66,7 @@ export default async function SchedulingSettingsPage() {
             Shop location
           </h2>
           <p className="font-semibold">{address || "No address yet."}</p>
-          <p className="text-[15px] text-text-muted">
+          <p className="text-[0.9375rem] text-text-muted">
             {shopAt
               ? company.geocoded_address === address
                 ? "On the map."
@@ -91,7 +91,7 @@ export default async function SchedulingSettingsPage() {
               ? "Drive times come from road maps (Mapbox) and are kept for a day."
               : "Drive times are estimated from the distance between pools. Road drive times turn on when Tidemark’s routing service is connected."}
           </p>
-          <p className="mt-2 text-[15px] text-text-muted">
+          <p className="mt-2 text-[0.9375rem] text-text-muted">
             {unlocated
               ? `${unlocated} ${unlocated === 1 ? "pool has" : "pools have"} no map location yet.`
               : "Every pool is on the map."}{" "}
