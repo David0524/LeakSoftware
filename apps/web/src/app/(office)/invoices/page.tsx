@@ -3,16 +3,25 @@ import Link from "next/link";
 import { INVOICE_STATUS_LABELS, formatCents, invoiceBalance } from "@leakbook/core";
 import { ButtonLink, Empty, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { listInvoices } from "@/lib/data";
+import { listInvoices, unbilledMaintenance } from "@/lib/data";
+import { MonthlyBilling } from "@/components/monthly-billing";
 
 export const metadata: Metadata = { title: "Invoices · Tidemark" };
 
 export default async function InvoicesPage() {
   const office = await getOffice();
-  const invoices = await listInvoices(office);
+  const [invoices, unbilled] = await Promise.all([
+    listInvoices(office),
+    unbilledMaintenance(office),
+  ]);
   const open = invoices.filter((i) => i.status === "sent" || i.status === "partially_paid");
   const owed = open.reduce((sum, i) => sum + invoiceBalance(i), 0);
   const tz = office.company.timezone;
+  const thisMonth = `${new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", timeZone: tz }).format(new Date())}-01`;
+  const monthLabel = (month: string) =>
+    new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(
+      new Date(`${month}T12:00:00Z`),
+    );
   const day = (iso: string | null) =>
     iso
       ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: tz }).format(
@@ -42,6 +51,7 @@ export default async function InvoicesPage() {
           ) : null
         }
       />
+      <MonthlyBilling months={unbilled} thisMonth={thisMonth} />
       {invoices.length === 0 ? (
         <Empty>No invoices yet. Create one from a job once the work is done.</Empty>
       ) : (
@@ -54,7 +64,12 @@ export default async function InvoicesPage() {
                   <span className="flex items-baseline justify-between gap-3">
                     <span className="font-semibold text-link">
                       #{i.number}
-                      {i.jobNumber ? (
+                      {i.period_month ? (
+                        <span className="font-normal text-text-muted">
+                          {" "}
+                          · Maintenance, {monthLabel(i.period_month)}
+                        </span>
+                      ) : i.jobNumber ? (
                         <span className="font-normal text-text-muted"> · Job #{i.jobNumber}</span>
                       ) : null}
                     </span>
@@ -105,7 +120,11 @@ export default async function InvoicesPage() {
                         className="inline-flex min-h-11 items-center font-semibold text-link underline-offset-4 hover:underline"
                       >
                         #{i.number}
-                        {i.jobNumber ? ` · Job #${i.jobNumber}` : ""}
+                        {i.period_month
+                          ? ` · Maintenance, ${monthLabel(i.period_month)}`
+                          : i.jobNumber
+                            ? ` · Job #${i.jobNumber}`
+                            : ""}
                       </Link>
                     </td>
                     <td className="px-4 py-3">{i.customer}</td>

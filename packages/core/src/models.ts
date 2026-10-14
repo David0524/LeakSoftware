@@ -127,6 +127,8 @@ export interface Job extends Base {
   /** A maintenance visit's plan, and the plan's date for it. */
   service_plan_id?: string | null;
   plan_date?: string | null;
+  /** A maintenance visit's monthly invoice (set by the server). */
+  billed_invoice_id?: string | null;
   created_at?: string;
 }
 

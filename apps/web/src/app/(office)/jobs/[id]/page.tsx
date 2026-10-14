@@ -793,6 +793,12 @@ async function Invoices({ detail }: { detail: JobDetail }) {
             isOwner={office.isOwner}
           />
         </div>
+      ) : job.type === "maintenance" ? (
+        <Empty>
+          {job.billed_invoice_id
+            ? "This visit is on the customer’s monthly invoice. Find it on the Invoices page."
+            : "Finished visits are billed once a month, one invoice per customer, from the Invoices page."}
+        </Empty>
       ) : INVOICEABLE.includes(job.status) ? (
         <Card className="max-w-3xl">
           <CreateInvoice

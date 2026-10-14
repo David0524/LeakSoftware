@@ -159,6 +159,22 @@ export async function voidInvoiceAction(_: FormState, form: FormData): Promise<F
   return done(form, "Invoice voided.");
 }
 
+/** Owners: one draft invoice per customer for a month's finished maintenance visits. */
+export async function billMaintenanceMonth(_: FormState, form: FormData): Promise<FormState> {
+  const office = await getOffice();
+  const month = text(form, "month");
+  if (!/^\d{4}-\d{2}-01$/.test(month)) return { error: "Pick a month." };
+  const { data, error } = await (
+    await createClient()
+  ).rpc("create_monthly_invoices", { target_company: office.company.id, month });
+  if (error) return { error: error.message };
+  revalidatePath("/invoices");
+  const n = Number(data ?? 0);
+  return {
+    message: n === 1 ? "1 draft invoice ready to review." : `${n} draft invoices ready to review.`,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Customer invoice page (/i/{token}): no sign-in
 // ---------------------------------------------------------------------------

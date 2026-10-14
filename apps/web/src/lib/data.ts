@@ -714,6 +714,8 @@ export interface InvoiceListRow {
   due_date: string | null;
   sent_at: string | null;
   paid_at: string | null;
+  /** First day of the month billed, for a monthly maintenance invoice. */
+  period_month: string | null;
   jobNumber: number | null;
   customer: string | null;
 }
@@ -725,7 +727,7 @@ export async function listInvoices(office: Office): Promise<InvoiceListRow[]> {
     await supabase
       .from("invoice")
       .select(
-        "id, job_id, number, status, total_cents, amount_paid_cents, due_date, sent_at, paid_at",
+        "id, job_id, number, status, total_cents, amount_paid_cents, due_date, sent_at, paid_at, period_month",
       )
       .eq("company_id", office.company.id)
       .is("deleted_at", null)
@@ -748,6 +750,23 @@ export async function listInvoices(office: Office): Promise<InvoiceListRow[]> {
     jobNumber: byId.get(i.job_id)?.number ?? null,
     customer: byId.get(i.job_id)?.customer?.name ?? null,
   }));
+}
+
+export interface UnbilledMonth {
+  /** First day of the month, YYYY-MM-01. */
+  month: string;
+  visits: number;
+  customers: number;
+  total_cents: number;
+}
+
+/** Owners: finished maintenance visits not on an invoice yet, by month. */
+export async function unbilledMaintenance(office: Office): Promise<UnbilledMonth[]> {
+  if (!office.isOwner) return [];
+  const supabase = await db();
+  return must(
+    await supabase.rpc("unbilled_maintenance", { target_company: office.company.id }),
+  ) as UnbilledMonth[];
 }
 
 export interface SignatureRow {

@@ -20,5 +20,11 @@ export async function GET(request: Request) {
   const followups = await runFollowups(admin, await siteOrigin(), when);
   // Maintenance plans keep their visits made a few weeks ahead (20261012002400).
   const { data: visits, error } = await admin.rpc("extend_service_plans");
-  return Response.json({ followups, maintenanceVisits: error ? error.message : visits });
+  // Last month's finished visits become one draft invoice per customer (20261012002900).
+  const billed = await admin.rpc("bill_maintenance_due", { at: when.toISOString() });
+  return Response.json({
+    followups,
+    maintenanceVisits: error ? error.message : visits,
+    monthlyInvoices: billed.error ? billed.error.message : billed.data,
+  });
 }

@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-14 (owner: "do the design fixes, monthly invoices, and tightening"; details my calls)
+- **Job visibility reaches the server functions and stored files.** With techs_see_all_jobs off, a tech can no longer prepare, preview, or send a hidden job's report, send its quote, or create, send, void, or record a payment on its invoice, even knowing its id; the job's photos, signatures, and PDFs are hidden too. The original functions moved to the `app` schema behind wrappers with the same names, so nothing that calls them changed.
+- **Monthly maintenance invoices:** each month, one draft invoice per customer with a line per finished, priced visit ("Pool service, Sep 17"), not taxed. The daily run drafts last month on the 1st (the shop's time zone); owners can also draft any month from the Invoices page ("Maintenance to Bill"), including this month so far. Owners review and send drafts as usual. The invoice sits on the month's last visit, so sending, the customer page, card and bank payment, and receipts work like any invoice. Visits follow it: sent makes them invoiced, paid makes them paid, void frees them to bill again. A visit finished late joins the month's draft; once that month's invoice is sent, a late visit waits for the office to bill it by hand. A visit on a monthly invoice can't get one of its own.
+
 ## 2026-10-14 (owner: faster site; Today first; whole team on the desktop schedule)
 - **Signing in opens Today** (also after joining from an invite, starting a shop, or switching companies). Links that carry a destination still go there.
 - **Schedule:** desktop shows every tech at once; phones keep one person at a time with the chips (Everyone shows all). Month view counts everyone on desktop.
@@ -42,7 +46,7 @@ Newest first. Each entry: date, decision, reason.
 - **Visits are made four weeks ahead** (Settings › Scheduling, 1 to 12) when a plan is saved and topped up every morning. Changing, pausing, or ending a plan replaces its upcoming visits that haven't started; started and finished visits are kept. A visit moved by hand keeps its plan date, so it isn't made twice.
 - **30 minutes by default** (Settings › Scheduling; each plan can differ). A visit without a set time goes after the tech's last job that day and Plan Route places it properly; a set time is kept like a promised time.
 - **Service checklist** (configurable rows like the leak checklist): skim, brush, vacuum, empty baskets, filter pressure, test and balance water, equipment for leaks or noise. Each is Done, Needs Attention, or Skipped. A visit ends with the new status Done (only maintenance visits offer it).
-- **Price per visit** is saved on the plan and the visit. **Billing is monthly** (owner, 2026-10-13): one invoice per customer per month for the visits done. Not built yet.
+- **Price per visit** is saved on the plan and the visit. **Billing is monthly** (owner, 2026-10-13): one invoice per customer per month for the visits done. Built 2026-10-14 (see above).
 - **Water-chemistry readings and a service summary email to the customer:** on hold; ask the cousin (BUILD_PLAN section 10).
 - **Demo:** the demo shop's techs have cleaning plans too (`supabase/seed_demo_maintenance.sql`), so each route mixes leak jobs and 30-minute cleanings (four to six stops a day).
 
