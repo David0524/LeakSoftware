@@ -3,7 +3,8 @@ import { Stack, type ErrorBoundaryProps } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { initMonitoring, reportError } from "../lib/monitoring";
 import { SessionProvider, useSession } from "../state/session";
 import { Button, T } from "../ui/components";
@@ -57,11 +58,14 @@ export default function RootLayout() {
 
   if (!loaded && !error) return null;
   return (
-    <SessionProvider>
-      {/* Dark on iPhone's light navigation bar, light on Android's navy one. */}
-      <StatusBar style={ios ? "dark" : "light"} />
-      <RootStack />
-    </SessionProvider>
+    // Swipe actions on list rows need the gesture handler's root.
+    <GestureHandlerRootView style={StyleSheet.absoluteFill}>
+      <SessionProvider>
+        {/* Dark on iPhone's light navigation bar, light on Android's navy one. */}
+        <StatusBar style={ios ? "dark" : "light"} />
+        <RootStack />
+      </SessionProvider>
+    </GestureHandlerRootView>
   );
 }
 

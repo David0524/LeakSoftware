@@ -1,5 +1,4 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
-import { Children, Fragment, isValidElement, type ReactNode } from "react";
+import { Children, Fragment, isValidElement, useContext, type ReactNode } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -17,6 +16,7 @@ import {
   type ViewStyle,
   useWindowDimensions,
 } from "react-native";
+import { HeaderHeightContext } from "expo-router/react-navigation";
 import { JOB_STATUS_LABELS, type JobStatus } from "@leakbook/core";
 import {
   color,
@@ -30,6 +30,9 @@ import {
   tint,
   touch,
 } from "./theme";
+import { haptics } from "./haptics";
+import { Icon, type IconName } from "./Icon";
+import { SwipeToDelete } from "./SwipeRow";
 
 // ---------------------------------------------------------------------------
 // Text
@@ -109,6 +112,9 @@ export function Screen({
   /** Turn scrolling off for a moment, e.g. while a finger draws on a pad. */
   scrollEnabled?: boolean;
 }) {
+  // iPhone's navigation bar is translucent and floats over the page. A scrolling page is inset
+  // below it by the system (contentInsetAdjustmentBehavior); a fixed one is padded here.
+  const headerHeight = useContext(HeaderHeightContext) ?? 0;
   const body = scroll ? (
     <ScrollView
       contentContainerStyle={styles.screenContent}
@@ -121,7 +127,9 @@ export function Screen({
       {children}
     </ScrollView>
   ) : (
-    <View style={styles.screenContent}>{children}</View>
+    <View style={[styles.screenContent, ios && { paddingTop: headerHeight + space["4"] }]}>
+      {children}
+    </View>
   );
   return (
     <KeyboardAvoidingView
@@ -318,7 +326,11 @@ export function Segmented<V extends string>({
               key={o.value}
               accessibilityRole="tab"
               accessibilityState={{ selected: on }}
-              onPress={() => onChange(o.value)}
+              onPress={() => {
+                if (on) return;
+                haptics.selection();
+                onChange(o.value);
+              }}
               style={[styles.segment, on && styles.segmentOn]}
             >
               <Text
@@ -359,7 +371,11 @@ export function Toggle({
       </T>
       <Switch
         value={value}
-        onValueChange={onChange}
+        onValueChange={(v) => {
+          // iPhone's switch already taps as it flips; Android's doesn't, so add one there.
+          if (!ios) haptics.selection();
+          onChange(v);
+        }}
         // iPhone keeps the system green; Android tints the track with the brand blue.
         trackColor={ios ? undefined : { true: color.water, false: color.neutral200 }}
         accessibilityLabel={label}
@@ -411,6 +427,8 @@ export function ListRow({
   accessibilityLabel,
   accessibilityHint,
   accessibilityRole,
+  onDelete,
+  deleteLabel = "Delete",
   children,
 }: {
   title?: string;
@@ -427,6 +445,13 @@ export function ListRow({
   accessibilityLabel?: string;
   accessibilityHint?: string;
   accessibilityRole?: "button" | "link";
+  /**
+   * Swipe left to delete, plus a "Delete" action for VoiceOver and TalkBack. Should ask first
+   * (confirmDestructive). The screen the row opens keeps its own visible Delete button.
+   */
+  onDelete?: () => void;
+  /** The swipe and accessibility action's name, as on the visible button ("Remove"). */
+  deleteLabel?: string;
   /** Free-form content in place of title and subtitle. */
   children?: ReactNode;
 }) {
@@ -463,32 +488,60 @@ export function ListRow({
       )}
       {trailing}
       {showChevron ? (
-        <Ionicons
-          name="chevron-forward"
-          size={17}
+        <Icon
+          name="chevron"
+          size={ios ? 14 : 17}
+          weight="semibold"
           color={tint(color.textMuted, 0.6)}
-          importantForAccessibility="no"
         />
       ) : null}
     </>
   );
-  if (!onPress) return <View style={[styles.listRow, styles.rowPad]}>{body}</View>;
-  return (
+  const deleteAction = onDelete
+    ? {
+        accessibilityActions: [{ name: "delete", label: deleteLabel }],
+        onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) => {
+          if (e.nativeEvent.actionName === "delete") onDelete();
+        },
+      }
+    : null;
+  const swipe = (row: ReactNode) =>
+    onDelete ? (
+      <SwipeToDelete label={deleteLabel} onDelete={onDelete}>
+        {row}
+      </SwipeToDelete>
+    ) : (
+      row
+    );
+  if (!onPress)
+    return swipe(
+      <View
+        style={[styles.listRow, styles.rowPad, onDelete && styles.rowSolid]}
+        accessible={Boolean(onDelete) || undefined}
+        {...deleteAction}
+      >
+        {body}
+      </View>,
+    );
+  return swipe(
     <Pressable
       accessibilityRole={accessibilityRole ?? "button"}
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
+      {...deleteAction}
       onPress={onPress}
       android_ripple={{ color: color.fill }}
       style={({ pressed }) => [
         styles.listRow,
         styles.rowPad,
+        // A swipeable row slides over the red action, so it needs its own background.
+        onDelete && styles.rowSolid,
         // iOS highlights the pressed row in gray; Android ripples.
         ios && pressed && { backgroundColor: color.neutral200 },
       ]}
     >
       {body}
-    </Pressable>
+    </Pressable>,
   );
 }
 
@@ -505,7 +558,7 @@ export function HeaderButton({
 }: {
   /** Shown as text, or the accessibility label when there is an icon. */
   title: string;
-  icon?: keyof typeof Ionicons.glyphMap;
+  icon?: IconName;
   onPress: () => void;
   /** The confirming action (Save, Done) is bold, as on iOS. */
   strong?: boolean;
@@ -525,7 +578,7 @@ export function HeaderButton({
       ]}
     >
       {icon ? (
-        <Ionicons name={icon} size={ios ? 26 : 24} color={header.tint} />
+        <Icon name={icon} size={ios ? 22 : 24} color={header.tint} weight="medium" />
       ) : (
         <Text
           style={[styles.headerButtonText, strong && (ios ? face.semiBold : face.bold)]}
@@ -662,6 +715,7 @@ const styles = StyleSheet.create({
   separator: { height: StyleSheet.hairlineWidth, backgroundColor: color.separator },
   listRow: { minHeight: touch, flexDirection: "row", alignItems: "center", gap: space["3"] },
   rowPad: { paddingHorizontal: space["4"], paddingVertical: 10 },
+  rowSolid: { backgroundColor: color.surface },
   rowBody: { flex: 1, gap: 2 },
   rowDetail: { color: color.textMuted, textAlign: "right", flexShrink: 1 },
 });

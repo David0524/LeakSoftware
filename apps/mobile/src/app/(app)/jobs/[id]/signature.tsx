@@ -18,6 +18,7 @@ import { useRow } from "../../../../data/hooks";
 import { currentPosition, storeSignatureSvg } from "../../../../lib/media";
 import { useCompany, useSession } from "../../../../state/session";
 import { Button, Choice, Field, Notice, Row, Screen, T } from "../../../../ui/components";
+import { haptics } from "../../../../ui/haptics";
 import { SignaturePad } from "../../../../ui/SignaturePad";
 
 /** Capture a customer's signature on the job. Works offline; the drawing uploads later. */
@@ -84,6 +85,7 @@ export default function SignatureScreen() {
         },
         { localPath, storagePath },
       );
+      haptics.success();
       router.back();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

@@ -37,6 +37,7 @@ import {
   Segmented,
 } from "../../../ui/components";
 import { confirmDestructive } from "../../../ui/confirm";
+import { haptics } from "../../../ui/haptics";
 import { ShapePicker } from "../../../ui/ShapePicker";
 import { ios, space } from "../../../ui/theme";
 
@@ -206,6 +207,7 @@ export default function NewJob() {
       }
       return job;
     });
+    haptics.success();
     router.replace(`/jobs/${jobId}`);
   }
 

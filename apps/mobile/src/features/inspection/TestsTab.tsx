@@ -2,11 +2,14 @@ import { router } from "expo-router";
 import { View } from "react-native";
 import { calculate, type Job } from "@leakbook/core";
 import { useInspectionConfig, useJobInspection } from "../../data/inspection";
+import { useSession } from "../../state/session";
 import { Button, Group, ListRow, T } from "../../ui/components";
 import { space } from "../../ui/theme";
 import { OutcomeChip } from "./OutcomeChip";
+import { confirmDeleteTest } from "./remove";
 
 export function TestsTab({ job }: { job: Job }) {
+  const { services } = useSession();
   const config = useInspectionConfig(job.company_id);
   const insp = useJobInspection(job.company_id, job.id);
 
@@ -25,6 +28,7 @@ export function TestsTab({ job }: { job: Job }) {
               <ListRow
                 key={t.id}
                 onPress={() => router.push(`/jobs/${job.id}/test/${t.id}`)}
+                onDelete={() => confirmDeleteTest(services.sync, job.company_id, t.id)}
                 trailing={<OutcomeChip outcome={t.outcome} />}
               >
                 <T variant="strong">

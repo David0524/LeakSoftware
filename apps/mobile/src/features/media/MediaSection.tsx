@@ -1,4 +1,3 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -26,11 +25,14 @@ import {
   currentPosition,
   type CapturedFile,
 } from "../../lib/media";
-import { useCompany } from "../../state/session";
+import { useCompany, useSession } from "../../state/session";
 import { Button, Row, Section, T } from "../../ui/components";
 import { chooseAction } from "../../ui/confirm";
+import { Icon } from "../../ui/Icon";
 import { MarkupLayer } from "../../ui/MarkupLayer";
+import { useInSheet } from "../../ui/sheet";
 import { color, face, radius, space } from "../../ui/theme";
+import { confirmDeleteMedia } from "./remove";
 import { VoiceRecorder } from "./VoiceRecorder";
 
 /**
@@ -161,6 +163,9 @@ const GAP = space["2"];
 const FALLBACK_THUMB = 80;
 
 function Thumb({ media, size }: { media: Media; size: number }) {
+  const { services } = useSession();
+  // Inside the Test or Finding sheet, the capture opens in the sheet's own stack.
+  const inSheet = useInSheet();
   const uri = useMediaUri(media);
   const markup = parseMarkup(media.markup);
   const label = `${MEDIA_KIND_LABELS[media.kind]}${media.duration_ms ? `, ${formatDuration(media.duration_ms)}` : ""}${media.upload_state === "pending" ? ", waiting to upload" : ""}`;
@@ -168,7 +173,15 @@ function Thumb({ media, size }: { media: Media; size: number }) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      onPress={() => router.push(`/jobs/${media.job_id}/media/${media.id}`)}
+      // The capture's screen has a Delete button; screen readers can also delete from here.
+      accessibilityActions={[{ name: "delete", label: "Delete" }]}
+      onAccessibilityAction={(e) => {
+        if (e.nativeEvent.actionName === "delete")
+          confirmDeleteMedia(services.sync, media.company_id, media);
+      }}
+      onPress={() =>
+        router.push(`/jobs/${media.job_id}/${inSheet ? "capture" : "media"}/${media.id}`)
+      }
       style={({ pressed }) => [
         styles.thumb,
         { width: size, height: size },
@@ -184,8 +197,10 @@ function Thumb({ media, size }: { media: Media; size: number }) {
         </>
       ) : (
         <View style={styles.placeholder}>
-          <Ionicons
-            name={media.kind === "audio" ? "mic" : media.kind === "video" ? "videocam" : "image"}
+          <Icon
+            name={
+              media.kind === "audio" ? "microphone" : media.kind === "video" ? "video" : "photo"
+            }
             size={30}
             color={color.onHeader}
           />
@@ -198,7 +213,7 @@ function Thumb({ media, size }: { media: Media; size: number }) {
       )}
       {media.upload_state === "pending" ? (
         <View style={styles.badge}>
-          <Ionicons name="cloud-upload-outline" size={16} color={color.navy} />
+          <Icon name="upload" size={16} color={color.navy} />
         </View>
       ) : null}
     </Pressable>

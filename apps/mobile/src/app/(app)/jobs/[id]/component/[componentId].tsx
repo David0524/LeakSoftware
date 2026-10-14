@@ -2,7 +2,6 @@ import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import {
-  removeComponent,
   saveChecklistResult,
   useInspectionConfig,
   useJobInspection,
@@ -19,8 +18,13 @@ import {
   Section,
   Segmented,
 } from "../../../../../ui/components";
-import { confirmDestructive } from "../../../../../ui/confirm";
 import { OutcomeChip } from "../../../../../features/inspection/OutcomeChip";
+import {
+  confirmDeleteFinding,
+  confirmDeleteTest,
+  confirmRemoveComponent,
+} from "../../../../../features/inspection/remove";
+import { haptics } from "../../../../../ui/haptics";
 import {
   currentVerdict,
   verdictOptions,
@@ -62,20 +66,12 @@ export default function ComponentScreen() {
       location_text: needsWhere ? where.trim() || null : null,
       notes: notes.trim() || null,
     });
+    haptics.success();
     router.back();
   }
 
   function remove() {
-    confirmDestructive({
-      title: `Remove ${comp.label}?`,
-      message: "Use this only if it was added by mistake.",
-      confirm: "Remove",
-      cancel: "Keep",
-      onConfirm: () => {
-        removeComponent(services.sync, company.id, comp, result);
-        router.back();
-      },
-    });
+    confirmRemoveComponent(services.sync, company.id, comp, result, () => router.back());
   }
 
   return (
@@ -116,6 +112,7 @@ export default function ComponentScreen() {
                 title={config.testTypeById.get(t.test_type_id)?.name ?? "Test"}
                 trailing={<OutcomeChip outcome={t.outcome} />}
                 onPress={() => router.push(`/jobs/${jobId}/test/${t.id}`)}
+                onDelete={() => confirmDeleteTest(services.sync, company.id, t.id)}
               />
             ))}
           </Group>
@@ -142,6 +139,7 @@ export default function ComponentScreen() {
                 key={f.id}
                 title={f.title}
                 onPress={() => router.push(`/jobs/${jobId}/finding/${f.id}`)}
+                onDelete={() => confirmDeleteFinding(services.sync, company.id, f.id)}
               />
             ))}
           </Group>

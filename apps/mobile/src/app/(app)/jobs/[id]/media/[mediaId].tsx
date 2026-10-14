@@ -1,4 +1,3 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
@@ -47,7 +46,11 @@ import {
   T,
 } from "../../../../../ui/components";
 import { confirmDestructive } from "../../../../../ui/confirm";
+import { confirmDeleteMedia } from "../../../../../features/media/remove";
+import { Icon } from "../../../../../ui/Icon";
 import { MarkupLayer } from "../../../../../ui/MarkupLayer";
+import { solidBar, translucentBar } from "../../../../../ui/navigation";
+import { useSheetLock } from "../../../../../ui/sheet";
 import { color, markupColor, space } from "../../../../../ui/theme";
 
 type Tool = "arrow" | "circle" | "text";
@@ -79,13 +82,16 @@ export default function MediaScreen() {
 
   if (!media) {
     return (
-      <View style={styles.screen}>
-        <Notice tone="warning">This capture isn’t on this phone.</Notice>
-      </View>
+      <ScrollView style={styles.screen} contentInsetAdjustmentBehavior="automatic">
+        <View style={styles.content}>
+          <Notice tone="warning">This capture isn’t on this phone.</Notice>
+        </View>
+      </ScrollView>
     );
   }
   const saved = parseMarkup(media.markup).shapes;
   const kindName = MEDIA_KIND_LABELS[media.kind].toLowerCase();
+  const capture = media;
 
   function saveMarkup(shapes: MarkupShape[]) {
     const markup: Markup | null = shapes.length > 0 ? { version: 1, shapes } : null;
@@ -108,17 +114,7 @@ export default function MediaScreen() {
   }
 
   function remove() {
-    confirmDestructive({
-      title: `Delete this ${kindName}?`,
-      message: "It is removed from the job and its reports.",
-      confirm: "Delete",
-      onConfirm: () => {
-        services.sync.write("media", media!.id, company.id, {
-          deleted_at: new Date().toISOString(),
-        });
-        router.back();
-      },
-    });
+    confirmDeleteMedia(services.sync, company.id, capture, () => router.back());
   }
 
   const attachedTo =
@@ -134,6 +130,7 @@ export default function MediaScreen() {
     >
       <Stack.Screen
         options={{
+          ...translucentBar,
           title: MEDIA_KIND_LABELS[media.kind],
           headerLeft: undefined,
           headerRight: undefined,
@@ -141,7 +138,12 @@ export default function MediaScreen() {
           gestureEnabled: true,
         }}
       />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        // iPhone: starts below the translucent bar and scrolls under it.
+        contentInsetAdjustmentBehavior="automatic"
+      >
         {source.state !== "ready" ? (
           <SourceState state={source.state} kind={kindName} onRetry={source.retry} />
         ) : media.kind === "photo" ? (
@@ -295,6 +297,8 @@ function MarkupEditor({
   onSave: (shapes: MarkupShape[]) => void;
 }) {
   const insets = useSafeAreaInsets();
+  // Drawing drags on the photo; inside a sheet they must not pull the sheet down.
+  useSheetLock(true);
   // Every change is a new entry, so Undo also brings back a Clear All.
   const [history, setHistory] = useState<MarkupShape[][]>([saved]);
   const draft = history[history.length - 1]!;
@@ -355,6 +359,8 @@ function MarkupEditor({
     >
       <Stack.Screen
         options={{
+          // The editor doesn't scroll: a solid bar, so the photo never sits under it.
+          ...solidBar,
           title: "Mark Up",
           headerBackVisible: false,
           gestureEnabled: false,
@@ -503,7 +509,7 @@ function AudioBox({ uri, durationMs }: { uri: string; durationMs: number | null 
           }}
           style={styles.play}
         >
-          <Ionicons name={playing ? "pause" : "play"} size={28} color={color.onHeader} />
+          <Icon name={playing ? "pause" : "play"} size={28} color={color.onHeader} />
         </Pressable>
         <T variant="heading" style={{ fontVariant: ["tabular-nums"] }}>
           {formatDuration(status.currentTime * 1000)} /{" "}

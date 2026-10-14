@@ -1,4 +1,3 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, Stack } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from "react-native";
@@ -7,6 +6,8 @@ import { formatAddress, formatSchedule, groupJobs } from "@leakbook/core";
 import { useJobViews, type JobView } from "../../data/jobs";
 import { useCompany, useSession } from "../../state/session";
 import { HeaderButton, StatusChip, T } from "../../ui/components";
+import { haptics } from "../../ui/haptics";
+import { Icon } from "../../ui/Icon";
 import { SyncBar } from "../../ui/SyncBar";
 import { color, font, ios, radius, space, tint, touch } from "../../ui/theme";
 
@@ -29,6 +30,7 @@ export default function Jobs() {
   }, [jobs, company.timezone]);
 
   async function refresh() {
+    haptics.light();
     setRefreshing(true);
     await services.sync.syncNow();
     setRefreshing(false);
@@ -46,7 +48,7 @@ export default function Jobs() {
           // floating New Job button below, its own convention.
           headerRight: () => (
             <View style={styles.headerActions}>
-              <HeaderButton title="Settings" icon="settings-outline" onPress={openSettings} />
+              <HeaderButton title="Settings" icon="settings" onPress={openSettings} />
               {ios ? <HeaderButton title="New Job" icon="add" onPress={newJob} /> : null}
             </View>
           ),
@@ -100,7 +102,7 @@ export default function Jobs() {
             pressed && { opacity: 0.85 },
           ]}
         >
-          <Ionicons name="add" size={24} color={color.onPrimary} />
+          <Icon name="add" size={24} color={color.onPrimary} />
           <Text style={styles.fabText} maxFontSizeMultiplier={1.6}>
             New Job
           </Text>
@@ -156,12 +158,7 @@ function JobRow({
           </View>
         </View>
         {ios ? (
-          <Ionicons
-            name="chevron-forward"
-            size={17}
-            color={tint(color.textMuted, 0.6)}
-            importantForAccessibility="no"
-          />
+          <Icon name="chevron" size={14} weight="semibold" color={tint(color.textMuted, 0.6)} />
         ) : null}
       </Pressable>
     </View>

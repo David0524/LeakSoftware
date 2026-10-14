@@ -9,22 +9,26 @@ import {
   type TestData,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
-import { useInspectionConfig, useJobInspection } from "../../../../../data/inspection";
-import { useCompany, useSession } from "../../../../../state/session";
-import { MediaSection } from "../../../../../features/media/MediaSection";
+import { useInspectionConfig, useJobInspection } from "../../../../../../data/inspection";
+import { useCompany, useSession } from "../../../../../../state/session";
+import { MediaSection } from "../../../../../../features/media/MediaSection";
 import {
   Button,
   Card,
   Choice,
   Field,
+  HeaderButton,
   Notice,
   Screen,
   T,
   Segmented,
-} from "../../../../../ui/components";
-import { confirmDestructive } from "../../../../../ui/confirm";
-import { OUTCOME_STYLE } from "../../../../../features/inspection/OutcomeChip";
-import { color } from "../../../../../ui/theme";
+} from "../../../../../../ui/components";
+import { confirmDestructive } from "../../../../../../ui/confirm";
+import { OUTCOME_STYLE } from "../../../../../../features/inspection/OutcomeChip";
+import { confirmDeleteTest } from "../../../../../../features/inspection/remove";
+import { haptics } from "../../../../../../ui/haptics";
+import { useSheetLock } from "../../../../../../ui/sheet";
+import { color, ios } from "../../../../../../ui/theme";
 
 /** Record or edit one test. The form comes from the test type's field schema. */
 export default function TestScreen() {
@@ -58,6 +62,12 @@ export default function TestScreen() {
   const [notes, setNotes] = useState(existing?.notes ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Anything changed since the sheet opened? Then Cancel asks first, and on iPhone a swipe down
+  // doesn't close the sheet by accident (as in New Job).
+  const [initial] = useState(() => JSON.stringify({ componentId, values, chosenOutcome, notes }));
+  const dirty = JSON.stringify({ componentId, values, chosenOutcome, notes }) !== initial;
+  useSheetLock(dirty);
+
   const calc = useMemo(() => (type ? calculate(type, values as TestData) : null), [type, values]);
 
   if (!type || (params.testId !== "new" && !existing)) {
@@ -69,6 +79,16 @@ export default function TestScreen() {
   }
   const testType = type;
   const outcome = chosenOutcome ?? calc?.suggested ?? null;
+
+  function cancel() {
+    if (!dirty) return router.back();
+    confirmDestructive({
+      title: existing ? "Discard your changes?" : "Discard this test?",
+      confirm: "Discard",
+      cancel: "Keep Editing",
+      onConfirm: () => router.back(),
+    });
+  }
 
   function save() {
     const e = validateTestData(testType.field_schema, values as TestData);
@@ -93,26 +113,28 @@ export default function TestScreen() {
         performed_at: new Date().toISOString(),
       });
     }
+    haptics.success();
     router.back();
   }
 
   function remove() {
-    confirmDestructive({
-      title: "Delete this test?",
-      confirm: "Delete",
-      cancel: "Keep",
-      onConfirm: () => {
-        services.sync.write("test_result", existing!.id, company.id, {
-          deleted_at: new Date().toISOString(),
-        });
-        router.back();
-      },
-    });
+    confirmDeleteTest(services.sync, company.id, existing!.id, () => router.back());
   }
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: testType.name }} />
+      <Stack.Screen
+        options={{
+          title: testType.name,
+          // iPhone sheet: Cancel and Save in the bar. Android keeps its back arrow.
+          ...(ios
+            ? {
+                headerLeft: () => <HeaderButton title="Cancel" onPress={cancel} />,
+                headerRight: () => <HeaderButton title="Save" strong onPress={save} />,
+              }
+            : null),
+        }}
+      />
       <Choice
         label="Component"
         options={[

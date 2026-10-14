@@ -1,6 +1,5 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { Linking, Platform, Pressable, StyleSheet, TextInput, View } from "react-native";
 import {
   JOB_STATUS_LABELS,
@@ -33,6 +32,7 @@ import {
   Toggle,
 } from "../../../../ui/components";
 import { confirmDestructive } from "../../../../ui/confirm";
+import { Icon } from "../../../../ui/Icon";
 import { color, face, radius, space, touch } from "../../../../ui/theme";
 import { ChecklistTab } from "../../../../features/inspection/ChecklistTab";
 import { FindingsTab } from "../../../../features/inspection/FindingsTab";
@@ -151,7 +151,7 @@ export default function JobDetail() {
                 onPress={() => void Linking.openURL(`tel:${customer.phone}`)}
                 style={({ pressed }) => [styles.callButton, pressed && { opacity: 0.8 }]}
               >
-                <Ionicons name="call" size={20} color={color.navy} />
+                <Icon name="call" size={20} color={color.navy} />
               </Pressable>
             ) : undefined
           }
@@ -165,14 +165,7 @@ export default function JobDetail() {
             accessibilityHint="Directions in Maps"
             onPress={openMaps}
             chevron={false}
-            trailing={
-              <Ionicons
-                name="navigate-outline"
-                size={20}
-                color={color.link}
-                importantForAccessibility="no"
-              />
-            }
+            trailing={<Icon name="directions" size={20} color={color.link} />}
           >
             <T variant="body" style={{ color: color.link }}>
               {address}

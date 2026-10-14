@@ -1,9 +1,11 @@
 import { ActionSheetIOS, Alert, Platform } from "react-native";
+import { haptics } from "./haptics";
 
 /**
  * Ask before something that can't be undone (delete, remove, discard, cancel). iPhone shows an
  * action sheet with the red destructive button, as iOS apps do; Android shows its own dialog
- * with the same two buttons. `onConfirm` runs only when the destructive button is tapped.
+ * with the same two buttons. `onConfirm` runs only when the destructive button is tapped, with
+ * a warning haptic.
  */
 export function confirmDestructive({
   title,
@@ -20,6 +22,10 @@ export function confirmDestructive({
   cancel?: string;
   onConfirm: () => void;
 }) {
+  const confirmed = () => {
+    haptics.warning();
+    onConfirm();
+  };
   if (Platform.OS === "ios") {
     ActionSheetIOS.showActionSheetWithOptions(
       {
@@ -30,14 +36,14 @@ export function confirmDestructive({
         cancelButtonIndex: 1,
       },
       (index) => {
-        if (index === 0) onConfirm();
+        if (index === 0) confirmed();
       },
     );
     return;
   }
   Alert.alert(title, message, [
     { text: cancel, style: "cancel" },
-    { text: confirm, style: "destructive", onPress: onConfirm },
+    { text: confirm, style: "destructive", onPress: confirmed },
   ]);
 }
 

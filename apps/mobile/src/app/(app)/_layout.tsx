@@ -1,26 +1,17 @@
 import { router, Stack } from "expo-router";
 import { HeaderButton } from "../../ui/components";
-import { color, font, header, ios } from "../../ui/theme";
+import { stackScreenOptions } from "../../ui/navigation";
+import { ios } from "../../ui/theme";
 
 /**
- * iPhone follows iOS navigation (owner, 2026-10-14, as on the website): a light bar with large
- * titles on the top-level screens that shrink as you scroll, the back button named after the
- * previous screen, and New Job as a sheet. Android keeps its navy app bar and arrow back.
+ * iPhone follows iOS navigation (owner, 2026-10-14, as on the website): a translucent frosted
+ * bar with large titles on the top-level screens that shrink as you scroll, the back button
+ * named after the previous screen, and New Job, Test, and Finding as sheets. Android keeps its
+ * navy app bar, arrow back, and full-screen pushes.
  */
 export default function AppLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: header.background },
-        headerTintColor: header.tint,
-        headerTitleStyle: { fontFamily: font.displayBold, fontSize: 20, color: header.title },
-        headerLargeTitleStyle: { fontFamily: font.displayExtraBold, color: header.title },
-        headerLargeStyle: { backgroundColor: header.background },
-        headerLargeTitleShadowVisible: false,
-        headerBackButtonDisplayMode: ios ? "default" : "minimal",
-        contentStyle: { backgroundColor: color.bg },
-      }}
-    >
+    <Stack screenOptions={stackScreenOptions}>
       <Stack.Screen name="index" options={{ title: "Jobs", headerLargeTitleEnabled: true }} />
       <Stack.Screen
         name="jobs/new"
@@ -29,8 +20,12 @@ export default function AppLayout() {
       />
       <Stack.Screen name="jobs/[id]/index" options={{ title: "Job" }} />
       <Stack.Screen name="jobs/[id]/component/[componentId]" options={{ title: "Component" }} />
-      <Stack.Screen name="jobs/[id]/test/[testId]" options={{ title: "Test" }} />
-      <Stack.Screen name="jobs/[id]/finding/[findingId]" options={{ title: "Finding" }} />
+      <Stack.Screen
+        name="jobs/[id]/(edit)"
+        // Test and Finding: a sheet with its own stack on iPhone (see (edit)/_layout.tsx), so a
+        // photo opened from it stays in the sheet; a full-screen push on Android.
+        options={{ headerShown: false, presentation: ios ? "modal" : "card" }}
+      />
       <Stack.Screen name="jobs/[id]/media/[mediaId]" options={{ title: "Photo" }} />
       <Stack.Screen name="jobs/[id]/signature" options={{ title: "Signature" }} />
       <Stack.Screen name="jobs/[id]/review" options={{ title: "Review and Sign" }} />

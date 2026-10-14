@@ -2,23 +2,27 @@ import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { validateFinding, type FindingStatus, type Job, type Property } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
-import { useRow } from "../../../../../data/hooks";
-import { useInspectionConfig, useJobInspection } from "../../../../../data/inspection";
-import { useCompany, useSession } from "../../../../../state/session";
-import { MediaSection } from "../../../../../features/media/MediaSection";
+import { useRow } from "../../../../../../data/hooks";
+import { useInspectionConfig, useJobInspection } from "../../../../../../data/inspection";
+import { useCompany, useSession } from "../../../../../../state/session";
+import { MediaSection } from "../../../../../../features/media/MediaSection";
 import {
   Button,
   Choice,
   Field,
+  HeaderButton,
   Notice,
   Screen,
   Section,
   T,
   Segmented,
-} from "../../../../../ui/components";
-import { confirmDestructive } from "../../../../../ui/confirm";
-import { PoolDiagram } from "../../../../../ui/PoolDiagram";
-import { color } from "../../../../../ui/theme";
+} from "../../../../../../ui/components";
+import { confirmDestructive } from "../../../../../../ui/confirm";
+import { confirmDeleteFinding } from "../../../../../../features/inspection/remove";
+import { haptics } from "../../../../../../ui/haptics";
+import { PoolDiagram } from "../../../../../../ui/PoolDiagram";
+import { useSheetLock } from "../../../../../../ui/sheet";
+import { color, ios } from "../../../../../../ui/theme";
 
 /** Record a leak: what, where, how serious, and a pin on the pool diagram. */
 export default function FindingScreen() {
@@ -48,6 +52,14 @@ export default function FindingScreen() {
   const [notes, setNotes] = useState(existing?.notes ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Anything changed since the sheet opened? Then Cancel asks first, and on iPhone a swipe down
+  // doesn't close the sheet by accident (as in New Job).
+  const snapshot = () =>
+    JSON.stringify({ title, componentId, severity, location, pin, status, notes });
+  const [initial] = useState(snapshot);
+  const dirty = snapshot() !== initial;
+  useSheetLock(dirty);
+
   if (params.findingId !== "new" && !existing) {
     return (
       <Screen>
@@ -72,21 +84,22 @@ export default function FindingScreen() {
     };
     if (existing) services.sync.write("finding", existing.id, company.id, values);
     else services.sync.insert("finding", company.id, { ...values, job_id: jobId });
+    haptics.success();
     router.back();
   }
 
-  function remove() {
+  function cancel() {
+    if (!dirty) return router.back();
     confirmDestructive({
-      title: "Delete this finding?",
-      confirm: "Delete",
-      cancel: "Keep",
-      onConfirm: () => {
-        services.sync.write("finding", existing!.id, company.id, {
-          deleted_at: new Date().toISOString(),
-        });
-        router.back();
-      },
+      title: existing ? "Discard your changes?" : "Discard this finding?",
+      confirm: "Discard",
+      cancel: "Keep Editing",
+      onConfirm: () => router.back(),
     });
+  }
+
+  function remove() {
+    confirmDeleteFinding(services.sync, company.id, existing!.id, () => router.back());
   }
 
   const sevColor = config.severityByKey.get(severity)?.color ?? color.fail;
@@ -96,7 +109,18 @@ export default function FindingScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: existing ? "Finding" : "New Finding" }} />
+      <Stack.Screen
+        options={{
+          title: existing ? "Finding" : "New Finding",
+          // iPhone sheet: Cancel and Save in the bar. Android keeps its back arrow.
+          ...(ios
+            ? {
+                headerLeft: () => <HeaderButton title="Cancel" onPress={cancel} />,
+                headerRight: () => <HeaderButton title="Save" strong onPress={save} />,
+              }
+            : null),
+        }}
+      />
       <Field
         label="What did you find?"
         value={title}

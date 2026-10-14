@@ -20,7 +20,9 @@ import {
 } from "../../data/inspection";
 import { useSession } from "../../state/session";
 import { Button, Card, Field, Group, Row, Segmented, T } from "../../ui/components";
+import { SwipeToDelete } from "../../ui/SwipeRow";
 import { color, ios, space } from "../../ui/theme";
+import { confirmRemoveComponent } from "./remove";
 import { currentVerdict, verdictOptions, verdictValues, type Verdict } from "./verdict";
 
 const SECTIONS: ChecklistSection[] = ["visual", "plumbing", "bond_beam", "other"];
@@ -163,52 +165,66 @@ function ChecklistItem({
     });
   }
 
+  // Swipe left to remove (as on the item's own screen, under More); screen readers get the
+  // same Remove as an action on the item's name.
+  const remove = () => confirmRemoveComponent(services.sync, job.company_id, component, result);
+
   return (
-    <View style={styles.item}>
-      <Row style={{ justifyContent: "space-between", gap: space["4"] }}>
-        <T variant="strong" style={{ flex: 1 }}>
-          {component.label}
-        </T>
-        {onAddAnother ? (
+    <SwipeToDelete label="Remove" onDelete={remove}>
+      <View style={styles.item}>
+        <Row style={{ justifyContent: "space-between", gap: space["4"] }}>
+          <View
+            style={{ flex: 1 }}
+            accessible
+            accessibilityLabel={component.label}
+            accessibilityActions={[{ name: "delete", label: "Remove" }]}
+            onAccessibilityAction={(e) => {
+              if (e.nativeEvent.actionName === "delete") remove();
+            }}
+          >
+            <T variant="strong">{component.label}</T>
+          </View>
+          {onAddAnother ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Add another ${type.name.toLowerCase()}`}
+              hitSlop={LINK_SLOP}
+              onPress={onAddAnother}
+            >
+              <T variant="strong" style={{ color: color.link }}>
+                + Add
+              </T>
+            </Pressable>
+          ) : null}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Add another ${type.name.toLowerCase()}`}
+            accessibilityLabel={`${component.label}: photos, tests, and notes`}
             hitSlop={LINK_SLOP}
-            onPress={onAddAnother}
+            onPress={() => router.push(`/jobs/${job.id}/component/${component.id}`)}
           >
             <T variant="strong" style={{ color: color.link }}>
-              + Add
+              More
             </T>
           </Pressable>
+        </Row>
+        <Segmented options={verdictOptions(type)} value={verdict} onChange={choose} />
+        {needsWhere ? (
+          <Field
+            label="Where"
+            value={where ?? result?.location_text ?? ""}
+            onChangeText={setWhere}
+            onBlur={() => {
+              if (result && where !== null && where !== (result.location_text ?? ""))
+                saveChecklistResult(services.sync, job.company_id, job.id, component.id, result, {
+                  location_text: where.trim() || null,
+                });
+              setWhere(null);
+            }}
+            placeholder="Where on the line or fitting"
+          />
         ) : null}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${component.label}: photos, tests, and notes`}
-          hitSlop={LINK_SLOP}
-          onPress={() => router.push(`/jobs/${job.id}/component/${component.id}`)}
-        >
-          <T variant="strong" style={{ color: color.link }}>
-            More
-          </T>
-        </Pressable>
-      </Row>
-      <Segmented options={verdictOptions(type)} value={verdict} onChange={choose} />
-      {needsWhere ? (
-        <Field
-          label="Where"
-          value={where ?? result?.location_text ?? ""}
-          onChangeText={setWhere}
-          onBlur={() => {
-            if (result && where !== null && where !== (result.location_text ?? ""))
-              saveChecklistResult(services.sync, job.company_id, job.id, component.id, result, {
-                location_text: where.trim() || null,
-              });
-            setWhere(null);
-          }}
-          placeholder="Where on the line or fitting"
-        />
-      ) : null}
-    </View>
+      </View>
+    </SwipeToDelete>
   );
 }
 
@@ -216,6 +232,12 @@ function ChecklistItem({
 const LINK_SLOP = { top: 12, bottom: 12, left: 8, right: 8 };
 
 const styles = StyleSheet.create({
-  item: { gap: space["2"], paddingHorizontal: space["4"], paddingVertical: space["3"] },
+  item: {
+    gap: space["2"],
+    paddingHorizontal: space["4"],
+    paddingVertical: space["3"],
+    // Solid, so the row covers the red Remove until it is swiped.
+    backgroundColor: color.surface,
+  },
   wrap: { flexDirection: "row", flexWrap: "wrap", gap: space["2"] },
 });

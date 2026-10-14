@@ -7,6 +7,7 @@ import { Button, Group, ListRow, T } from "../../ui/components";
 import { PoolDiagram } from "../../ui/PoolDiagram";
 import { ShapePicker } from "../../ui/ShapePicker";
 import { color, font, space } from "../../ui/theme";
+import { confirmDeleteFinding } from "./remove";
 
 export function FindingsTab({ job, property }: { job: Job; property?: Property }) {
   const { services } = useSession();
@@ -57,6 +58,7 @@ export function FindingsTab({ job, property }: { job: Job; property?: Property }
               <ListRow
                 key={f.id}
                 onPress={() => router.push(`/jobs/${job.id}/finding/${f.id}`)}
+                onDelete={() => confirmDeleteFinding(services.sync, job.company_id, f.id)}
                 leading={
                   <View style={[styles.num, { backgroundColor: sev?.color ?? color.fail }]}>
                     <T variant="strong" style={styles.numText}>

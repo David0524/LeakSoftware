@@ -31,6 +31,7 @@ import { useCompany, useSession } from "../../state/session";
 import { Button, Card, Field, Notice, Row, T } from "../../ui/components";
 import { color } from "../../ui/theme";
 import { confirmDestructive } from "../../ui/confirm";
+import { SwipeToDelete } from "../../ui/SwipeRow";
 
 /** Build a repair quote from the findings and price book (works offline), then send it. */
 export function QuoteTab({ job }: { job: Job }) {
@@ -198,66 +199,71 @@ function DraftQuote({ job, quote }: { job: Job; quote: JobQuote }) {
       <Card>
         <T variant="heading">Lines</T>
         {quote.lines.length === 0 ? <T variant="muted">No lines yet.</T> : null}
-        {quote.lines.map((l) => (
-          <View
-            key={l.id}
-            style={{
-              gap: 8,
-              paddingBottom: 8,
-              borderBottomWidth: 1,
-              borderBottomColor: color.border,
-            }}
-          >
-            <Field
-              label="Description"
-              value={edit(`${l.id}:description`, l.description)}
-              onChangeText={(v) => setEdits((e) => ({ ...e, [`${l.id}:description`]: v }))}
-              onBlur={() => commit(l.id, "description")}
-            />
-            <Row style={{ gap: 12, alignItems: "flex-end" }}>
-              <View style={{ flex: 1 }}>
+        {quote.lines.map((l) => {
+          const remove = () =>
+            confirmDestructive({
+              title: "Remove this line?",
+              message: l.description,
+              confirm: "Remove",
+              cancel: "Keep",
+              onConfirm: () => removeLine(sync, company, quote, l.id),
+            });
+          return (
+            // Swipe left to remove, or use the line's Remove button (also for screen readers).
+            <SwipeToDelete key={l.id} label="Remove" onDelete={remove}>
+              <View
+                style={{
+                  gap: 8,
+                  paddingBottom: 8,
+                  borderBottomWidth: 1,
+                  borderBottomColor: color.border,
+                  backgroundColor: color.surface,
+                }}
+              >
                 <Field
-                  label="Qty"
-                  value={edit(`${l.id}:quantity`, String(Number(l.quantity)))}
-                  onChangeText={(v) => setEdits((e) => ({ ...e, [`${l.id}:quantity`]: v }))}
-                  onBlur={() => commit(l.id, "quantity")}
-                  keyboardType="decimal-pad"
+                  label="Description"
+                  value={edit(`${l.id}:description`, l.description)}
+                  onChangeText={(v) => setEdits((e) => ({ ...e, [`${l.id}:description`]: v }))}
+                  onBlur={() => commit(l.id, "description")}
                 />
+                <Row style={{ gap: 12, alignItems: "flex-end" }}>
+                  <View style={{ flex: 1 }}>
+                    <Field
+                      label="Qty"
+                      value={edit(`${l.id}:quantity`, String(Number(l.quantity)))}
+                      onChangeText={(v) => setEdits((e) => ({ ...e, [`${l.id}:quantity`]: v }))}
+                      onBlur={() => commit(l.id, "quantity")}
+                      keyboardType="decimal-pad"
+                    />
+                  </View>
+                  <View style={{ flex: 2 }}>
+                    <Field
+                      label="Price each ($)"
+                      value={edit(`${l.id}:price`, (l.unit_price_cents / 100).toFixed(2))}
+                      onChangeText={(v) => setEdits((e) => ({ ...e, [`${l.id}:price`]: v }))}
+                      onBlur={() => commit(l.id, "price")}
+                      keyboardType="decimal-pad"
+                    />
+                  </View>
+                  {/* Line total and Remove close the Qty and Price row instead of their own row. */}
+                  <View style={{ alignItems: "flex-end", gap: 4, paddingBottom: 2 }}>
+                    <T variant="strong">{formatCents(lineTotal(l))}</T>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${l.description || "line"}`}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                      onPress={remove}
+                    >
+                      <T variant="strong" style={{ color: color.link }}>
+                        Remove
+                      </T>
+                    </Pressable>
+                  </View>
+                </Row>
               </View>
-              <View style={{ flex: 2 }}>
-                <Field
-                  label="Price each ($)"
-                  value={edit(`${l.id}:price`, (l.unit_price_cents / 100).toFixed(2))}
-                  onChangeText={(v) => setEdits((e) => ({ ...e, [`${l.id}:price`]: v }))}
-                  onBlur={() => commit(l.id, "price")}
-                  keyboardType="decimal-pad"
-                />
-              </View>
-              {/* Line total and Remove close the Qty and Price row instead of their own row. */}
-              <View style={{ alignItems: "flex-end", gap: 4, paddingBottom: 2 }}>
-                <T variant="strong">{formatCents(lineTotal(l))}</T>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Remove ${l.description || "line"}`}
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                  onPress={() =>
-                    confirmDestructive({
-                      title: "Remove this line?",
-                      message: l.description,
-                      confirm: "Remove",
-                      cancel: "Keep",
-                      onConfirm: () => removeLine(sync, company, quote, l.id),
-                    })
-                  }
-                >
-                  <T variant="strong" style={{ color: color.link }}>
-                    Remove
-                  </T>
-                </Pressable>
-              </View>
-            </Row>
-          </View>
-        ))}
+            </SwipeToDelete>
+          );
+        })}
         <Row style={{ gap: 12, alignItems: "flex-start" }}>
           <View style={{ flex: 2 }}>
             <Field
