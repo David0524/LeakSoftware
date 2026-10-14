@@ -28,7 +28,13 @@ Offline-first field app and office web app for pool leak detection shops.
 - `supabase/` migrations, `seed.sql`, pgTAP tests in `supabase/tests/`.
 
 ## Checks before every commit
-`pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:db`. Do not commit with failing checks, and never skip or disable a test to get green. CI (`.github/workflows/ci.yml`) runs the same, plus the web build.
+Run the checks the change can affect (owner, 2026-10-14):
+- Always: `pnpm format:check && pnpm lint && pnpm typecheck`.
+- Code with logic (web, app, core, sync): add `pnpm test`.
+- SQL, migrations, `seed.sql`, or `supabase/tests/`: add `pnpm test:db`.
+- Layout and wording only: the first line is enough.
+
+Do not commit with failing checks, and never skip or disable a test to get green. CI (`.github/workflows/ci.yml`) runs everything on every push, plus the web build and Playwright. Don't wait for it after pushing; check its result before the next push and fix anything red first. Wait for a green CI only before `pnpm db:deploy`.
 
 `pnpm test:db` uses real Supabase in Docker when available (CI), otherwise local Postgres 16 with the shim in `supabase/test-shim/` (kept outside `supabase/tests/`, which `supabase test db` runs in full) (cloud sessions; `scripts/session-start.sh` installs pgTAP). Write SQL that works on both: only rely on `auth.uid()`, `auth.jwt()`, `auth.users`, and `storage.objects`/`storage.foldername()` from Supabase's schemas.
 
@@ -43,6 +49,6 @@ Logos and icons are generated: edit `brand/scripts/build_logo.py`, then run `pyt
 
 ## Hosted dev project
 `config/supabase-dev.json` holds the public settings of `leakbook-dev`. In cloud sessions a network secret attaches a Supabase access token to `api.supabase.com/v1/projects/<ref>/` requests; direct Postgres connections are not possible.
-- `pnpm db:deploy` applies pending migrations through the Management API (`-- --seed` also loads the demo data once). Run it after adding a migration, once local and CI checks pass.
+- `pnpm db:deploy` applies pending migrations through the Management API (`-- --seed` also loads the demo data once). Run it after adding a migration, once local checks and CI on that commit pass.
 - `pnpm test:hosted` syncs two simulated devices against the dev project as the demo tech, and uploads 30 photos and 2 videos to its storage with a simulated kill (about 16 MB per run; originals cannot be deleted). Not part of `pnpm test` or CI.
 - `pnpm --filter @leakbook/web test:e2e` runs the website's Playwright tests (CI runs them against Supabase in Docker). Here: `NODE_USE_ENV_PROXY=1 PW_CHROMIUM_PATH=/opt/pw-browsers/chromium` against the dev project after `next build`; each run leaves one turned-off test tech.
