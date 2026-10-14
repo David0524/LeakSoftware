@@ -14,9 +14,21 @@ function files(n: number, allPhotos: boolean): string {
   return `${n} photo${n === 1 ? "" : "s"} and recording${n === 1 ? "" : "s"}`;
 }
 
-/** One-line sync state under the header. Tapping it opens Settings for details. */
+/**
+ * One-line sync state under the header, shown only when something needs attention: offline,
+ * changes or files waiting, problems, or signed out. When everything is saved it takes no
+ * space (Settings still shows the full sync state). Tapping it opens Settings for details.
+ */
 export function SyncBar({ onPress }: { onPress: () => void }) {
   const s = useSyncStatus();
+  const waiting = s.pending > 0 || s.uploads.waiting > 0;
+  const healthy =
+    s.problems.length === 0 &&
+    !s.storageLow &&
+    s.lastSyncedAt != null &&
+    !waiting &&
+    (s.phase === "idle" || s.phase === "syncing");
+  if (healthy) return null;
   let dot: string = color.pass;
   let label = s.lastSyncedAt
     ? `All changes saved to the office · ${ago(s.lastSyncedAt)}`

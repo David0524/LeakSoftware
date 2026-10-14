@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Share, View } from "react-native";
+import { Share, type ViewStyle } from "react-native";
 import {
   INVOICE_STATUS_LABELS,
   formatCents,
@@ -15,6 +15,10 @@ import { reportsOnline } from "../../data/reports";
 import { API_URL } from "../../lib/config";
 import { useCompany } from "../../state/session";
 import { Button, Card, Field, Notice, Row, Section, T } from "../../ui/components";
+import { space } from "../../ui/theme";
+
+/** Send by Email and Send by Text share one row. */
+const halfButton: ViewStyle = { flex: 1, paddingHorizontal: space["2"] };
 
 const INVOICEABLE = ["in_progress", "report_sent", "quote_sent", "quote_accepted", "invoiced"];
 
@@ -137,9 +141,10 @@ export function InvoiceSection({ job, customer }: { job: Job; customer: Customer
             autoCapitalize="none"
             textContentType="emailAddress"
           />
-          <View style={{ gap: 8 }}>
+          <Row style={{ gap: space["2"] }}>
             <Button
               title="Send by Email"
+              style={halfButton}
               loading={busy === "email"}
               disabled={busy !== null || !reportsOnline}
               onPress={() => void run("email")}
@@ -147,11 +152,12 @@ export function InvoiceSection({ job, customer }: { job: Job; customer: Customer
             <Button
               title="Send by Text"
               kind="secondary"
+              style={halfButton}
               loading={busy === "text"}
               disabled={busy !== null || !reportsOnline}
               onPress={() => void run("text")}
             />
-          </View>
+          </Row>
         </Card>
       ) : invoice.token && invoice.status !== "paid" ? (
         <Button

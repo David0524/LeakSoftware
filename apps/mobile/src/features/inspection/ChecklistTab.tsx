@@ -88,23 +88,19 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
               const type = typeOf(c);
               const last = items[i + 1]?.component_type_id !== c.component_type_id;
               return type ? (
-                <View key={c.id} style={{ gap: space["2"] }}>
-                  <ChecklistItem job={job} component={c} type={type} />
-                  {last && type.allows_multiple ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Add another ${type.name.toLowerCase()}`}
-                      style={{ minHeight: 44, justifyContent: "center", alignSelf: "flex-start" }}
-                      onPress={() =>
-                        addComponent(services.sync, job.company_id, job.id, type, insp.components)
-                      }
-                    >
-                      <T variant="strong" style={{ color: color.link }}>
-                        + Add Another {type.name}
-                      </T>
-                    </Pressable>
-                  ) : null}
-                </View>
+                <ChecklistItem
+                  key={c.id}
+                  job={job}
+                  component={c}
+                  type={type}
+                  // "+ Add" sits in the last item of a type that can repeat, not on its own row.
+                  onAddAnother={
+                    last && type.allows_multiple
+                      ? () =>
+                          addComponent(services.sync, job.company_id, job.id, type, insp.components)
+                      : undefined
+                  }
+                />
               ) : null;
             })}
           </View>
@@ -135,10 +131,12 @@ function ChecklistItem({
   job,
   component,
   type,
+  onAddAnother,
 }: {
   job: Job;
   component: JobComponent;
   type: ComponentType;
+  onAddAnother?: () => void;
 }) {
   const { services, user } = useSession();
   const insp = useJobInspection(job.company_id, job.id);
@@ -156,15 +154,26 @@ function ChecklistItem({
 
   return (
     <View style={styles.item}>
-      <Row style={{ justifyContent: "space-between" }}>
+      <Row style={{ justifyContent: "space-between", gap: space["4"] }}>
         <T variant="strong" style={{ flex: 1 }}>
           {component.label}
         </T>
+        {onAddAnother ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Add another ${type.name.toLowerCase()}`}
+            hitSlop={LINK_SLOP}
+            onPress={onAddAnother}
+          >
+            <T variant="strong" style={{ color: color.link }}>
+              + Add
+            </T>
+          </Pressable>
+        ) : null}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${component.label}: photos, tests, and notes`}
-          hitSlop={8}
-          style={{ minHeight: 44, minWidth: 44, alignItems: "flex-end", justifyContent: "center" }}
+          hitSlop={LINK_SLOP}
           onPress={() => router.push(`/jobs/${job.id}/component/${component.id}`)}
         >
           <T variant="strong" style={{ color: color.link }}>
@@ -191,6 +200,9 @@ function ChecklistItem({
     </View>
   );
 }
+
+/** The text links are 22 pt tall; the slop makes them at least 46 pt to tap. */
+const LINK_SLOP = { top: 12, bottom: 12, left: 8, right: 8 };
 
 const styles = StyleSheet.create({
   item: {

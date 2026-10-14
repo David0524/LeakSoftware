@@ -1,14 +1,14 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, Stack } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, RefreshControl, SectionList, StyleSheet, View } from "react-native";
+import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatAddress, formatSchedule, groupJobs } from "@leakbook/core";
 import { useJobViews, type JobView } from "../../data/jobs";
 import { useCompany, useSession } from "../../state/session";
-import { Button, StatusChip, T } from "../../ui/components";
+import { StatusChip, T } from "../../ui/components";
 import { SyncBar } from "../../ui/SyncBar";
-import { color, space } from "../../ui/theme";
+import { color, font, radius, space, touch } from "../../ui/theme";
 
 export default function Jobs() {
   const company = useCompany();
@@ -55,7 +55,11 @@ export default function Jobs() {
       <SectionList
         sections={sections}
         keyExtractor={(j) => j.id}
-        contentContainerStyle={styles.list}
+        // Room for the last row to scroll clear of the floating New Job button.
+        contentContainerStyle={[
+          styles.list,
+          { paddingBottom: insets.bottom + FAB_HEIGHT + space["4"] * 2 },
+        ]}
         stickySectionHeadersEnabled={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
         renderSectionHeader={({ section }) => (
@@ -73,9 +77,21 @@ export default function Jobs() {
           </View>
         }
       />
-      <View style={[styles.footer, { paddingBottom: insets.bottom + space["3"] }]}>
-        <Button title="New Job" onPress={() => router.push("/jobs/new")} />
-      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="New Job"
+        onPress={() => router.push("/jobs/new")}
+        style={({ pressed }) => [
+          styles.fab,
+          { bottom: insets.bottom + space["4"] },
+          pressed && { opacity: 0.85 },
+        ]}
+      >
+        <Ionicons name="add" size={24} color={color.onPrimary} />
+        <Text style={styles.fabText} maxFontSizeMultiplier={1.6}>
+          New Job
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -87,47 +103,65 @@ function JobRow({ job, now, timeZone }: { job: JobView; now: Date; timeZone: str
       onPress={() => router.push(`/jobs/${job.id}`)}
       style={({ pressed }) => [styles.row, pressed && { opacity: 0.85 }]}
     >
-      <View style={styles.rowTop}>
-        <T variant="strong" style={{ flex: 1 }} numberOfLines={2}>
+      <View style={styles.rowLine}>
+        <T variant="strong" style={{ flex: 1 }} numberOfLines={1}>
           {job.customer?.name ?? "Customer"}
+        </T>
+        <T variant="muted" numberOfLines={1}>
+          {job.status === "in_progress"
+            ? "In progress"
+            : formatSchedule(job.scheduled_start, now, timeZone)}
+        </T>
+      </View>
+      <View style={styles.rowLine}>
+        <T variant="small" style={{ flex: 1 }} numberOfLines={1}>
+          {job.number ? `#${job.number} · ` : "New · "}
+          {job.property ? formatAddress(job.property) : "Address"}
         </T>
         <StatusChip status={job.status} />
       </View>
-      <T variant="small" numberOfLines={2}>
-        {job.property ? formatAddress(job.property) : "Address"}
-      </T>
-      <T variant="muted">
-        {job.number ? `#${job.number} · ` : "New · "}
-        {job.status === "in_progress"
-          ? "In progress"
-          : formatSchedule(job.scheduled_start, now, timeZone)}
-      </T>
     </Pressable>
   );
 }
 
+/** Height of the floating New Job pill (the field app's minimum tap target plus a little). */
+const FAB_HEIGHT = touch + 4;
+
 const styles = StyleSheet.create({
-  list: { padding: space["4"], gap: space["2"], paddingBottom: 120 },
+  list: { padding: space["4"], gap: space["2"] },
   sectionTitle: { marginTop: space["3"], marginBottom: space["1"] },
   row: {
     backgroundColor: color.surface,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: color.border,
-    padding: space["4"],
+    padding: space["3"],
     gap: 4,
   },
-  rowTop: { flexDirection: "row", alignItems: "center", gap: space["2"] },
+  rowLine: { flexDirection: "row", alignItems: "center", gap: space["2"] },
   empty: { paddingVertical: space["7"], gap: space["2"] },
-  footer: {
+  // Floating pill anchored bottom-right above the home indicator.
+  fab: {
     position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: space["4"],
-    paddingTop: space["3"],
-    backgroundColor: color.bg,
-    borderTopWidth: 1,
-    borderTopColor: color.border,
+    right: space["4"],
+    minHeight: FAB_HEIGHT,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space["1"],
+    paddingLeft: space["4"],
+    paddingRight: space["5"],
+    borderRadius: radius.pill,
+    backgroundColor: color.primary,
+    shadowColor: color.navy,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  fabText: {
+    fontFamily: font.displayExtraBold,
+    fontSize: 18,
+    letterSpacing: 0.4,
+    color: color.onPrimary,
   },
 });

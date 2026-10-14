@@ -212,9 +212,8 @@ function DraftQuote({ job, quote }: { job: Job; quote: JobQuote }) {
               value={edit(`${l.id}:description`, l.description)}
               onChangeText={(v) => setEdits((e) => ({ ...e, [`${l.id}:description`]: v }))}
               onBlur={() => commit(l.id, "description")}
-              multiline
             />
-            <Row style={{ gap: 12 }}>
+            <Row style={{ gap: 12, alignItems: "flex-end" }}>
               <View style={{ flex: 1 }}>
                 <Field
                   label="Qty"
@@ -233,39 +232,50 @@ function DraftQuote({ job, quote }: { job: Job; quote: JobQuote }) {
                   keyboardType="decimal-pad"
                 />
               </View>
-            </Row>
-            <Row style={{ justifyContent: "space-between" }}>
-              <T variant="strong">{formatCents(lineTotal(l))}</T>
-              <Button
-                title="Remove"
-                kind="quiet"
-                onPress={() =>
-                  Alert.alert("Remove this line?", l.description, [
-                    { text: "Keep", style: "cancel" },
-                    {
-                      text: "Remove",
-                      style: "destructive",
-                      onPress: () => removeLine(sync, company, quote, l.id),
-                    },
-                  ])
-                }
-              />
+              {/* Line total and Remove close the Qty and Price row instead of their own row. */}
+              <View style={{ alignItems: "flex-end", gap: 4, paddingBottom: 2 }}>
+                <T variant="strong">{formatCents(lineTotal(l))}</T>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Remove ${l.description || "line"}`}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  onPress={() =>
+                    Alert.alert("Remove this line?", l.description, [
+                      { text: "Keep", style: "cancel" },
+                      {
+                        text: "Remove",
+                        style: "destructive",
+                        onPress: () => removeLine(sync, company, quote, l.id),
+                      },
+                    ])
+                  }
+                >
+                  <T variant="strong" style={{ color: color.link }}>
+                    Remove
+                  </T>
+                </Pressable>
+              </View>
             </Row>
           </View>
         ))}
-        <T variant="label">Custom line</T>
-        <Field
-          label="Work"
-          value={custom.description}
-          onChangeText={(v) => setCustom((c) => ({ ...c, description: v }))}
-          placeholder="Patch skimmer throat"
-        />
-        <Field
-          label="Price ($)"
-          value={custom.price}
-          onChangeText={(v) => setCustom((c) => ({ ...c, price: v }))}
-          keyboardType="decimal-pad"
-        />
+        <Row style={{ gap: 12, alignItems: "flex-start" }}>
+          <View style={{ flex: 2 }}>
+            <Field
+              label="Work"
+              value={custom.description}
+              onChangeText={(v) => setCustom((c) => ({ ...c, description: v }))}
+              placeholder="Patch skimmer throat"
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Field
+              label="Price ($)"
+              value={custom.price}
+              onChangeText={(v) => setCustom((c) => ({ ...c, price: v }))}
+              keyboardType="decimal-pad"
+            />
+          </View>
+        </Row>
         <Button title="Add Line" kind="secondary" onPress={addCustom} />
       </Card>
 

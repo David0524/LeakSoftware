@@ -52,6 +52,10 @@ export function MediaSection({
   const [recording, setRecording] = useState(false);
   // At large text sizes the three buttons stack instead of squeezing their labels.
   const stack = useWindowDimensions().fontScale >= 1.3;
+  // Four thumbnails per row, sized from the grid's measured width.
+  const [gridWidth, setGridWidth] = useState(0);
+  const thumbSize =
+    gridWidth > 0 ? Math.floor((gridWidth - GAP * (PER_ROW - 1)) / PER_ROW) : FALLBACK_THUMB;
 
   async function save(
     file: CapturedFile,
@@ -138,9 +142,9 @@ export function MediaSection({
         </Row>
       )}
       {media.length > 0 ? (
-        <View style={styles.grid}>
+        <View style={styles.grid} onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}>
           {media.map((m) => (
-            <Thumb key={m.id} media={m} />
+            <Thumb key={m.id} media={m} size={thumbSize} />
           ))}
         </View>
       ) : null}
@@ -148,9 +152,12 @@ export function MediaSection({
   );
 }
 
-const THUMB = 104;
+const PER_ROW = 4;
+const GAP = space["2"];
+/** Size before the grid is measured (one frame). */
+const FALLBACK_THUMB = 80;
 
-function Thumb({ media }: { media: Media }) {
+function Thumb({ media, size }: { media: Media; size: number }) {
   const uri = useMediaUri(media);
   const markup = parseMarkup(media.markup);
   const label = `${MEDIA_KIND_LABELS[media.kind]}${media.duration_ms ? `, ${formatDuration(media.duration_ms)}` : ""}${media.upload_state === "pending" ? ", waiting to upload" : ""}`;
@@ -159,13 +166,17 @@ function Thumb({ media }: { media: Media }) {
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={() => router.push(`/jobs/${media.job_id}/media/${media.id}`)}
-      style={({ pressed }) => [styles.thumb, pressed && { opacity: 0.8 }]}
+      style={({ pressed }) => [
+        styles.thumb,
+        { width: size, height: size },
+        pressed && { opacity: 0.8 },
+      ]}
     >
       {media.kind === "photo" && uri ? (
         <>
-          <Image source={{ uri }} style={styles.image} resizeMode="cover" />
+          <Image source={{ uri }} style={{ width: size, height: size }} resizeMode="cover" />
           {markup.shapes.length > 0 && media.width && media.height ? (
-            <CoverMarkup media={media} shapes={markup.shapes} />
+            <CoverMarkup media={media} shapes={markup.shapes} size={size} />
           ) : null}
         </>
       ) : (
@@ -195,21 +206,23 @@ function Thumb({ media }: { media: Media }) {
 function CoverMarkup({
   media,
   shapes,
+  size,
 }: {
   media: Media;
   shapes: Parameters<typeof MarkupLayer>[0]["shapes"];
+  size: number;
 }) {
   const w = media.width!;
   const h = media.height!;
-  const scale = Math.max(THUMB / w, THUMB / h);
+  const scale = Math.max(size / w, size / h);
   const dw = w * scale;
   const dh = h * scale;
   return (
     <View
       style={{
         position: "absolute",
-        left: (THUMB - dw) / 2,
-        top: (THUMB - dh) / 2,
+        left: (size - dw) / 2,
+        top: (size - dh) / 2,
         width: dw,
         height: dh,
       }}
@@ -223,15 +236,12 @@ function CoverMarkup({
 const styles = StyleSheet.create({
   buttons: { gap: space["2"] },
   button: { flex: 1, paddingHorizontal: space["2"] },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: space["2"] },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: GAP },
   thumb: {
-    width: THUMB,
-    height: THUMB,
     borderRadius: radius.md,
     overflow: "hidden",
     backgroundColor: color.navy,
   },
-  image: { width: THUMB, height: THUMB },
   placeholder: { flex: 1, alignItems: "center", justifyContent: "center", gap: 4 },
   duration: { color: color.onHeader, fontFamily: font.bodySemiBold, fontVariant: ["tabular-nums"] },
   badge: {

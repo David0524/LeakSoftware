@@ -5,7 +5,10 @@ import { Alert, Linking, View } from "react-native";
 import { call } from "../../data/reports";
 import { API_URL } from "../../lib/config";
 import { useSession, useSyncStatus } from "../../state/session";
-import { Button, Card, Choice, Notice, Screen, Section, T } from "../../ui/components";
+import { Button, Card, Choice, Notice, Row, Screen, Section, T } from "../../ui/components";
+import { space } from "../../ui/theme";
+
+const halfButton = { flex: 1, paddingHorizontal: space["2"] };
 
 export default function Settings() {
   const { services, user, company, companies, membership, setActiveCompany, signOut } =
@@ -78,6 +81,12 @@ export default function Settings() {
           <T variant="muted">
             {company?.name} · {membership?.role === "owner" ? "Owner" : "Tech"}
           </T>
+          {/* This phone's details, folded into the account card. */}
+          <T variant="muted">
+            Local data: {encrypted ? "encrypted" : "not encrypted (Expo Go preview)"}
+          </T>
+          <T variant="muted">Device ID: {sync.store.deviceId}</T>
+          <T variant="muted">App version: {Constants.expoConfig?.version ?? "dev"}</T>
         </Card>
         {companies.length > 1 ? (
           <Choice
@@ -139,25 +148,27 @@ export default function Settings() {
         </Section>
       ) : null}
 
-      <Section title="This phone">
-        <Card>
-          <T variant="body">
-            Local data: {encrypted ? "encrypted" : "not encrypted (Expo Go preview)"}
-          </T>
-          <T variant="muted">Device ID: {sync.store.deviceId}</T>
-          <T variant="muted">App version: {Constants.expoConfig?.version ?? "dev"}</T>
-        </Card>
-      </Section>
-
       {API_URL ? (
         <Section title="Help">
           <Button title="Status and Support" kind="secondary" onPress={() => open("/status")} />
-          <Button title="Privacy Policy" kind="quiet" onPress={() => open("/privacy")} />
-          <Button title="Terms of Service" kind="quiet" onPress={() => open("/terms")} />
+          <Row style={{ gap: space["2"] }}>
+            <Button
+              title="Privacy Policy"
+              kind="quiet"
+              style={halfButton}
+              onPress={() => open("/privacy")}
+            />
+            <Button
+              title="Terms of Service"
+              kind="quiet"
+              style={halfButton}
+              onPress={() => open("/terms")}
+            />
+          </Row>
         </Section>
       ) : null}
 
-      <View style={{ marginTop: 8, gap: 8 }}>
+      <View style={{ gap: space["2"] }}>
         <Button title="Sign Out" kind="danger" onPress={confirmSignOut} />
         {API_URL ? (
           <Button

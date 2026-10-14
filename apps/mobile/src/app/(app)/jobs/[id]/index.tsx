@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Alert, Linking, Platform, Pressable, View } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { Alert, Linking, Platform, Pressable, StyleSheet, View } from "react-native";
 import {
   JOB_STATUS_LABELS,
   POOL_TYPE_LABELS,
@@ -25,13 +26,12 @@ import {
   Notice,
   Row,
   Screen,
-  Section,
   StatusChip,
   T,
   Segmented,
   Toggle,
 } from "../../../../ui/components";
-import { color } from "../../../../ui/theme";
+import { color, radius, space, touch } from "../../../../ui/theme";
 import { ChecklistTab } from "../../../../features/inspection/ChecklistTab";
 import { FindingsTab } from "../../../../features/inspection/FindingsTab";
 import { TestsTab } from "../../../../features/inspection/TestsTab";
@@ -42,7 +42,7 @@ import { ReportTab } from "../../../../features/report/ReportTab";
 
 const ACTION_LABELS: Partial<Record<JobStatus, string>> = {
   in_progress: "Start Job",
-  scheduled: "Move Back to Scheduled",
+  scheduled: "Back to Scheduled",
   unscheduled: "Reopen Job",
   canceled: "Cancel Job",
   done: "Mark Done",
@@ -89,6 +89,11 @@ export default function JobDetail() {
   const team = services.sync.team();
   const assignee = team.find((p) => p.id === job.assigned_user_id);
   const second = team.find((p) => p.id === job.second_tech_id);
+  const techs =
+    (assignee?.full_name ?? assignee?.email ?? (job.assigned_user_id ? "Teammate" : "Nobody yet")) +
+    (second ? ` and ${second.full_name ?? second.email ?? "teammate"}` : "");
+  const transitions = userTransitions(job.status, job.type);
+  const others = transitions.filter((to) => to !== "in_progress");
   const update = (values: Record<string, JsonValue>) =>
     services.sync.write("job", job.id, company.id, values);
 
@@ -119,33 +124,30 @@ export default function JobDetail() {
     <Screen>
       <Stack.Screen options={{ title: job.number ? `Job #${job.number}` : "New Job" }} />
 
-      <Row>
-        <StatusChip status={job.status} />
-        <T variant="muted">
-          {job.status === "in_progress"
-            ? "Started"
-            : formatSchedule(job.scheduled_start, new Date(), company.timezone)}
-        </T>
-      </Row>
-
       <Card>
-        <T variant="label">Customer</T>
-        <T variant="heading">{customer?.name ?? "Customer"}</T>
-        {customer?.phone ? (
-          <Pressable
-            accessibilityRole="link"
-            onPress={() => void Linking.openURL(`tel:${customer.phone}`)}
-          >
-            <T variant="strong" style={{ color: color.link }}>
-              {customer.phone}
+        <View style={styles.cardTop}>
+          <Row style={{ flex: 1, gap: space["2"] }}>
+            <StatusChip status={job.status} />
+            <T variant="muted" numberOfLines={1} style={{ flexShrink: 1 }}>
+              {job.status === "in_progress"
+                ? "Started"
+                : formatSchedule(job.scheduled_start, new Date(), company.timezone)}
             </T>
-          </Pressable>
-        ) : null}
-        {customer?.email ? <T variant="small">{customer.email}</T> : null}
-      </Card>
-
-      <Card>
-        <T variant="label">Pool</T>
+          </Row>
+          {customer?.phone ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Call ${customer.phone}`}
+              hitSlop={4}
+              onPress={() => void Linking.openURL(`tel:${customer.phone}`)}
+              style={({ pressed }) => [styles.callButton, pressed && { opacity: 0.8 }]}
+            >
+              <Ionicons name="call" size={20} color={color.navy} />
+            </Pressable>
+          ) : null}
+        </View>
+        <T variant="heading">{customer?.name ?? "Customer"}</T>
+        {customer?.email ? <T variant="muted">{customer.email}</T> : null}
         {property ? (
           <>
             <Pressable
@@ -157,10 +159,11 @@ export default function JobDetail() {
                 {address}
               </T>
             </Pressable>
-            <T variant="small">
+            <T variant="muted">
               {[
                 property.pool_type ? POOL_TYPE_LABELS[property.pool_type] : null,
                 property.has_spa ? "Pool and spa" : "Pool",
+                `Tech: ${techs}`,
               ]
                 .filter(Boolean)
                 .join(" · ")}
@@ -168,21 +171,12 @@ export default function JobDetail() {
             {property.access_notes ? <Notice tone="warning">{property.access_notes}</Notice> : null}
           </>
         ) : (
-          <T variant="muted">Address not on this phone yet.</T>
+          <>
+            <T variant="muted">Address not on this phone yet.</T>
+            <T variant="muted">Tech: {techs}</T>
+          </>
         )}
-      </Card>
-
-      <Card>
-        <T variant="label">Assigned to</T>
-        <T variant="body">
-          {assignee?.full_name ??
-            assignee?.email ??
-            (job.assigned_user_id ? "Teammate" : "Nobody yet")}
-          {second ? ` and ${second.full_name ?? second.email ?? "teammate"}` : ""}
-        </T>
-      </Card>
-
-      <Card>
+        <View style={styles.divider} />
         <Field
           label="Detection fee ($)"
           value={fee ?? (job.fee_cents != null ? (job.fee_cents / 100).toFixed(2) : "")}
@@ -195,7 +189,6 @@ export default function JobDetail() {
             setFee(null);
           }}
           keyboardType="decimal-pad"
-          hint="Shown on the report."
         />
         <Toggle
           label="Leak location marked"
@@ -204,35 +197,48 @@ export default function JobDetail() {
         />
       </Card>
 
-      <View style={{ gap: 8 }}>
-        {userTransitions(job.status, job.type).map((to) => (
-          <Button
-            key={to}
-            title={ACTION_LABELS[to] ?? JOB_STATUS_LABELS[to]}
-            kind={to === "in_progress" ? "primary" : to === "canceled" ? "danger" : "secondary"}
-            onPress={() => changeStatus(to)}
-          />
-        ))}
+      {/* The primary action full width; the others side by side as half-width pills. */}
+      <View style={{ gap: space["2"] }}>
+        {transitions
+          .filter((to) => to === "in_progress")
+          .map((to) => (
+            <Button
+              key={to}
+              title={ACTION_LABELS[to] ?? JOB_STATUS_LABELS[to]}
+              onPress={() => changeStatus(to)}
+            />
+          ))}
+        {others.length > 0 ? (
+          <View style={styles.actionRow}>
+            {others.map((to) => (
+              <Button
+                key={to}
+                title={ACTION_LABELS[to] ?? JOB_STATUS_LABELS[to]}
+                kind={to === "canceled" ? "danger" : "secondary"}
+                onPress={() => changeStatus(to)}
+                style={styles.halfButton}
+              />
+            ))}
+          </View>
+        ) : null}
       </View>
 
-      <Section title="Inspection">
-        <Segmented
-          options={[
-            { value: "checklist", label: "Checklist" },
-            { value: "tests", label: "Tests" },
-            { value: "findings", label: "Findings" },
-            { value: "report", label: "Report" },
-            ...(job.type === "detection" ? [{ value: "quote" as const, label: "Quote" }] : []),
-          ]}
-          value={tab}
-          onChange={setTab}
-        />
-        {tab === "checklist" ? <ChecklistTab job={job} property={property} /> : null}
-        {tab === "tests" ? <TestsTab job={job} /> : null}
-        {tab === "findings" ? <FindingsTab job={job} property={property} /> : null}
-        {tab === "report" ? <ReportTab job={job} customer={customer} /> : null}
-        {tab === "quote" ? <QuoteTab job={job} /> : null}
-      </Section>
+      <Segmented
+        options={[
+          { value: "checklist", label: "Checklist" },
+          { value: "tests", label: "Tests" },
+          { value: "findings", label: "Findings" },
+          { value: "report", label: "Report" },
+          ...(job.type === "detection" ? [{ value: "quote" as const, label: "Quote" }] : []),
+        ]}
+        value={tab}
+        onChange={setTab}
+      />
+      {tab === "checklist" ? <ChecklistTab job={job} property={property} /> : null}
+      {tab === "tests" ? <TestsTab job={job} /> : null}
+      {tab === "findings" ? <FindingsTab job={job} property={property} /> : null}
+      {tab === "report" ? <ReportTab job={job} customer={customer} /> : null}
+      {tab === "quote" ? <QuoteTab job={job} /> : null}
 
       <InvoiceSection job={job} customer={customer} />
 
@@ -253,3 +259,19 @@ export default function JobDetail() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  cardTop: { flexDirection: "row", alignItems: "center", gap: space["2"] },
+  // Round contact button: 40 pt to look, 48 pt to tap with the hit slop.
+  callButton: {
+    width: touch - 8,
+    height: touch - 8,
+    borderRadius: radius.pill,
+    backgroundColor: color.neutral100,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: color.border, marginVertical: 4 },
+  actionRow: { flexDirection: "row", flexWrap: "wrap", gap: space["2"] },
+  halfButton: { flexGrow: 1, flexBasis: "45%", paddingHorizontal: space["2"] },
+});

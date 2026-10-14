@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, Linking, Pressable, Share, View } from "react-native";
+import { Alert, Linking, Pressable, Share, View, type ViewStyle } from "react-native";
 import {
   SIGNATURE_PURPOSE_LABELS,
   enabledSignaturePurposes,
@@ -22,7 +22,10 @@ import {
 import { API_URL } from "../../lib/config";
 import { useCompany, useSession } from "../../state/session";
 import { Button, Card, Field, Notice, Row, Segmented, T } from "../../ui/components";
-import { color } from "../../ui/theme";
+import { color, space } from "../../ui/theme";
+
+/** Send by Email and Send by Text share one row. */
+const halfButton: ViewStyle = { flex: 1, paddingHorizontal: space["2"] };
 
 type Template = "homeowner" | "partner";
 
@@ -204,6 +207,18 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
       <Card>
         <Row style={{ justifyContent: "space-between" }}>
           <T variant="heading">Signatures</T>
+          {ownSheet ? (
+            <Pressable
+              accessibilityRole="button"
+              hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+              style={{ flexShrink: 1 }}
+              onPress={() => router.push(`/jobs/${job.id}/signature`)}
+            >
+              <T variant="strong" style={{ color: color.link, textAlign: "right" }}>
+                Sign Work Authorization
+              </T>
+            </Pressable>
+          ) : null}
         </Row>
         {signatures.map((s) => (
           <Row key={s.id} style={{ justifyContent: "space-between" }}>
@@ -229,13 +244,6 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
         ))}
         {signatures.length === 0 ? (
           <T variant="muted">The customer signs at the end of the report: Review with Customer.</T>
-        ) : null}
-        {ownSheet ? (
-          <Button
-            title="Sign Work Authorization"
-            kind="secondary"
-            onPress={() => router.push(`/jobs/${job.id}/signature`)}
-          />
         ) : null}
       </Card>
 
@@ -277,10 +285,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
         />
       ) : null}
       {draft?.final_sections && draft.model && draft.model !== PLAIN_MODEL ? (
-        <T variant="muted">
-          AI wrote this draft from the job’s checklist, tests, and findings. It can get details
-          wrong, so read every word before sending.
-        </T>
+        <T variant="muted">AI draft: read every word before sending.</T>
       ) : null}
       {error?.at === "draft" ? <Notice tone="error">{error.text}</Notice> : null}
       {message ? <Notice>{message}</Notice> : null}
@@ -338,20 +343,24 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
             <T variant="heading">Send Without a Signature</T>
             <T variant="muted">Sending locks this version.</T>
             {sendFields()}
-            <Button
-              title="Send by Email"
-              kind="secondary"
-              loading={busy === "email"}
-              disabled={busy !== null || !reportsOnline}
-              onPress={() => void run("email")}
-            />
-            <Button
-              title="Send by Text"
-              kind="secondary"
-              loading={busy === "text"}
-              disabled={busy !== null || !reportsOnline}
-              onPress={() => void run("text")}
-            />
+            <Row style={{ gap: space["2"] }}>
+              <Button
+                title="Send by Email"
+                kind="secondary"
+                style={halfButton}
+                loading={busy === "email"}
+                disabled={busy !== null || !reportsOnline}
+                onPress={() => void run("email")}
+              />
+              <Button
+                title="Send by Text"
+                kind="secondary"
+                style={halfButton}
+                loading={busy === "text"}
+                disabled={busy !== null || !reportsOnline}
+                onPress={() => void run("text")}
+              />
+            </Row>
             {error?.at === "send" && !finished ? <Notice tone="error">{error.text}</Notice> : null}
           </Card>
         </>
@@ -362,20 +371,24 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
           <T variant="heading">{`Version ${finished.version} is finished`}</T>
           <T variant="muted">Send it to the customer, or open the PDF.</T>
           {sendFields()}
-          <Button
-            title="Send by Email"
-            kind={draft?.final_sections ? "secondary" : "primary"}
-            loading={busy === "email"}
-            disabled={busy !== null || !reportsOnline}
-            onPress={() => void run("email", finished.id)}
-          />
-          <Button
-            title="Send by Text"
-            kind="secondary"
-            loading={busy === "text"}
-            disabled={busy !== null || !reportsOnline}
-            onPress={() => void run("text", finished.id)}
-          />
+          <Row style={{ gap: space["2"] }}>
+            <Button
+              title="Send by Email"
+              kind={draft?.final_sections ? "secondary" : "primary"}
+              style={halfButton}
+              loading={busy === "email"}
+              disabled={busy !== null || !reportsOnline}
+              onPress={() => void run("email", finished.id)}
+            />
+            <Button
+              title="Send by Text"
+              kind="secondary"
+              style={halfButton}
+              loading={busy === "text"}
+              disabled={busy !== null || !reportsOnline}
+              onPress={() => void run("text", finished.id)}
+            />
+          </Row>
           {finished.token && API_URL ? (
             <Button
               title="Open PDF"
