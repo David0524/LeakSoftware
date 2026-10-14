@@ -13,7 +13,7 @@ export function FindingsTab({ job, property }: { job: Job; property?: Property }
   const config = useInspectionConfig(job.company_id);
   const insp = useJobInspection(job.company_id, job.id);
   const ordered = [...insp.findings].sort((a, b) => a.id.localeCompare(b.id));
-  const shape = (property?.diagram_shape as DiagramShape | undefined) ?? "rectangle";
+  const shape = (property?.diagram_shape as DiagramShape | null | undefined) ?? null;
 
   return (
     <View style={{ gap: space["3"] }}>
@@ -34,6 +34,7 @@ export function FindingsTab({ job, property }: { job: Job; property?: Property }
           />
           <ShapePicker
             value={shape}
+            hint={shape ? undefined : "Not picked yet. Pick one so the diagram matches the pool."}
             onChange={(v) =>
               services.sync.write("property", property.id, property.company_id, {
                 diagram_shape: v,

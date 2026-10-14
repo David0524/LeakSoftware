@@ -898,16 +898,17 @@ function PoolShapeSetting({
   propertyId: string;
   shape: DiagramShape | null;
 }) {
-  const [value, setValue] = useState<DiagramShape>(shape ?? "rectangle");
+  const [value, setValue] = useState<DiagramShape | null>(shape);
   const { pending, error, run } = useRun();
   return (
     <div>
       <ShapePicker
         value={value}
+        hint={value ? undefined : "Not picked yet. Pick one so the diagram matches the pool."}
         disabled={pending}
         onChange={(next) => {
           setValue(next);
-          run(setPoolShape, { job: jobId, property: propertyId, shape: next });
+          run(setPoolShape, { job: jobId, property: propertyId, shape: next ?? "" });
         }}
       />
       <ErrorText error={error} />

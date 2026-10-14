@@ -357,13 +357,14 @@ export async function deleteFinding(_: FormState, form: FormData): Promise<FormS
 /** The pool's shape, for the diagram findings are pinned on (the job page's Findings part). */
 export async function setPoolShape(_: FormState, form: FormData): Promise<FormState> {
   await getOffice();
+  // Empty clears it (not known yet).
   const shape = String(form.get("shape") ?? "");
-  if (!DIAGRAM_SHAPES.some((s) => s.key === shape)) return { error: "Pick a shape." };
+  if (shape && !DIAGRAM_SHAPES.some((s) => s.key === shape)) return { error: "Pick a shape." };
   const { error } = await (
     await createClient()
   )
     .from("property")
-    .update({ diagram_shape: shape })
+    .update({ diagram_shape: shape || null })
     .eq("id", String(form.get("property") ?? ""));
   if (error) return { error: error.message };
   revalidatePath(`/jobs/${String(form.get("job") ?? "")}`);

@@ -54,7 +54,7 @@ export function NewJobForm({
   const [mode, setMode] = useState<"new" | "existing">("new");
   const [customerId, setCustomerId] = useState("");
   const [pool, setPool] = useState("new");
-  const [shape, setShape] = useState<DiagramShape>("rectangle");
+  const [shape, setShape] = useState<DiagramShape | null>(null);
   const [when, setWhen] = useState<"unscheduled" | "scheduled">("scheduled");
   const [fee, setFee] = useState("");
   // Leak detection, or maintenance: one visit, or a plan that repeats.
@@ -171,7 +171,13 @@ export function NewJobForm({
               <Checkbox name="has_spa" label="Has a spa" />
             </div>
             <div className="sm:col-span-2">
-              <ShapePicker name="diagram_shape" value={shape} onChange={setShape} />
+              <ShapePicker
+                name="diagram_shape"
+                value={shape}
+                onChange={setShape}
+                label="Pool shape (optional)"
+                hint="Leave it blank if you don’t know yet; it can be set on the job’s Findings."
+              />
             </div>
             <div className="sm:col-span-2">
               <STextArea

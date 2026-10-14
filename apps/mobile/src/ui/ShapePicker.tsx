@@ -6,20 +6,25 @@ import { color, radius, space } from "./theme";
 
 /**
  * The pool's shape as five small drawings to tap (owner, 2026-10-14: a list of shape names
- * was easy to miss). Used on New Job and above the diagram on Findings.
+ * was easy to miss). Used on New Job and above the diagram on Findings. The shape can stay
+ * blank; tapping the picked shape again clears it.
  */
 export function ShapePicker({
   value,
   onChange,
   label = "Pool shape",
+  hint,
 }: {
-  value: DiagramShape;
-  onChange: (shape: DiagramShape) => void;
+  value: DiagramShape | null;
+  onChange: (shape: DiagramShape | null) => void;
   label?: string;
+  /** A line under the label, e.g. that it can be set later. */
+  hint?: string;
 }) {
   return (
     <View style={{ gap: space["1"] }}>
       <T variant="label">{label}</T>
+      {hint ? <T variant="muted">{hint}</T> : null}
       <View accessibilityRole="radiogroup" accessibilityLabel={label} style={styles.row}>
         {DIAGRAM_SHAPES.map((s) => {
           const d = poolDiagram(s.key, false);
@@ -30,7 +35,8 @@ export function ShapePicker({
               accessibilityRole="radio"
               accessibilityLabel={s.label}
               accessibilityState={{ checked: on }}
-              onPress={() => onChange(s.key)}
+              accessibilityHint={on ? "Tap again to clear" : undefined}
+              onPress={() => onChange(on ? null : s.key)}
               style={({ pressed }) => [
                 styles.tile,
                 on && styles.tileOn,

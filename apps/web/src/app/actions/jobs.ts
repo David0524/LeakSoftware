@@ -185,11 +185,11 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
         access_notes: text(form, "access_notes") || null,
       };
 
-  // The create functions don't take a shape; a new pool gets it right after (rectangle is the
-  // default, so only another shape needs the extra write).
+  // The create functions don't take a shape; a new pool gets it right after, when one was
+  // picked (it can stay blank and be set on the job's Findings).
   const shape = text(form, "diagram_shape");
   async function saveShape(property: string) {
-    if (newProperty && shape && shape !== "rectangle")
+    if (newProperty && shape)
       await supabase.from("property").update({ diagram_shape: shape }).eq("id", property);
   }
 

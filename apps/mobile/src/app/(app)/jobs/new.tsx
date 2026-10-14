@@ -64,7 +64,7 @@ export default function NewJob() {
     scheduleTime: "",
   });
   const [poolType, setPoolType] = useState<PoolType>("gunite_plaster");
-  const [shape, setShape] = useState<DiagramShape>("rectangle");
+  const [shape, setShape] = useState<DiagramShape | null>(null);
   const [hasSpa, setHasSpa] = useState(false);
   const [accessNotes, setAccessNotes] = useState("");
   const [when, setWhen] = useState<When>("now");
@@ -367,7 +367,12 @@ export default function NewJob() {
               onChange={setPoolType}
             />
             <Toggle label="Has a spa" value={hasSpa} onChange={setHasSpa} />
-            <ShapePicker value={shape} onChange={setShape} />
+            <ShapePicker
+              value={shape}
+              onChange={setShape}
+              label="Pool shape (optional)"
+              hint="Leave it blank if you don’t know yet; set it later on Findings."
+            />
             <Field
               label="Access notes"
               value={accessNotes}
