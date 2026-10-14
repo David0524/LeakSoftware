@@ -7,8 +7,8 @@ import { lastEmailTo } from "./outbox";
 
 test.describe.configure({ mode: "serial" });
 
-async function openSampleJob(page: Page, customer = "Sam Sample") {
-  await signIn(page, OWNER);
+async function openSampleJob(page: Page, customer = "Sam Sample", signedIn = false) {
+  if (!signedIn) await signIn(page, OWNER);
   await page.goto(`/jobs?status=all&q=${encodeURIComponent(customer)}`);
   await page.getByRole("row").filter({ hasText: customer }).getByRole("link").first().click();
   await expect(page.getByRole("heading", { name: "Report and Sign-Off" })).toBeVisible();
@@ -78,7 +78,18 @@ test("homeowner report: draft, edit, email, and the customer's link", async ({ p
 });
 
 test("partner report: draft, send by text, technical page and PDF", async ({ page }) => {
-  await openSampleJob(page);
+  // The partner report starts off (owner, 2026-10-14); the owner turns it on in Settings.
+  await signIn(page, OWNER, "/settings/reports");
+  const settings = page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: "Partner report" }) });
+  const enabled = settings.getByLabel("Techs can send this report");
+  if (!(await enabled.isChecked())) {
+    await enabled.check();
+    await settings.getByRole("button", { name: "Save" }).click();
+    await expect(settings.getByText("Saved.")).toBeVisible();
+  }
+  await openSampleJob(page, "Sam Sample", true);
   const panel = await writeDraft(page, "partner");
   await sendUnsigned(panel, "Send by Text");
   await expect(panel.getByText("Report sent. Copy the message below.")).toBeVisible();

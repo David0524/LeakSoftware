@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-14 (owner: partner report is rarely needed)
+- **The partner (technical) report starts turned off.** Most shops report to homeowners; pool companies wanting a technical version is assumed rare until the design partner says otherwise. Owners turn it on in Settings › Report Templates ("Techs can send this report"); Wrap-Up and the app then show it again. Existing shops that never sent one have it off too (`20261012003000`).
+- **No further work on the partner report** unless the design partner says pool companies ask for it. The homeowner report gets the attention.
+
 ## 2026-10-14 (owner: "credit card processing directly on the website")
 - **Customers pay on our own pages.** The Pay buttons on the quote (deposit) and invoice pages open Stripe's embedded Checkout in place, so the customer never leaves the site. Stripe still draws and holds the card form (in its own secure frame), so card numbers never touch Tidemark and the shop stays merchant of record on its own Stripe account. Payments, webhooks, and receipts are unchanged.
 - **Ways to pay:** card (with Apple Pay and Google Pay where the device offers them), Link (Stripe's saved-card wallet), and US bank account. Apple Pay and Google Pay need the site's domain registered on each shop's Stripe account; that happens automatically when a shop finishes payment setup.
