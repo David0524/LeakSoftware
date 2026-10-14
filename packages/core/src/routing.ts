@@ -405,7 +405,10 @@ export function arrivalText(startMin: number, windowMin: number): string {
     : `at ${minutesLabel(startMin)}`;
 }
 
-/** The text a tech sends from their phone when they leave for a job. */
+/**
+ * The text a tech sends from their phone when they leave for a job. The arrival time rounds
+ * up to the next 5 minutes ("about 10:45 AM", not "10:42 AM"; owner, 2026-10-14).
+ */
 export function onMyWayText(input: {
   customer: string | null;
   tech: string;
@@ -415,9 +418,10 @@ export function onMyWayText(input: {
 }): string {
   const hi = input.customer ? `Hi ${input.customer.split(" ")[0]}, ` : "Hi, ";
   const shop = input.shop.replace(/\.$/, "");
+  const arrive = Math.ceil(input.arriveMin / 5) * 5;
   const when = input.windowMin
-    ? arrivalText(input.arriveMin, input.windowMin)
-    : `about ${minutesLabel(input.arriveMin)}`;
+    ? arrivalText(arrive, input.windowMin)
+    : `about ${minutesLabel(arrive)}`;
   return `${hi}this is ${input.tech.split(" ")[0]} from ${shop}. I’m on my way and should be there ${when}.`;
 }
 

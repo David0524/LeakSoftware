@@ -261,6 +261,15 @@ describe("times and words", () => {
       "Hi Grace, this is Tony from Demo Leak Co. I’m on my way and should be there about 10:40 AM.",
     );
   });
+
+  it("rounds the arrival up to the next 5 minutes", () => {
+    const text = (arriveMin: number) =>
+      onMyWayText({ customer: null, tech: "Tony Tech", shop: "Demo Leak Co.", arriveMin });
+    expect(text(641)).toContain("about 10:45 AM");
+    expect(text(644)).toContain("about 10:45 AM");
+    expect(text(645)).toContain("about 10:45 AM");
+    expect(text(718)).toContain("about 12:00 PM");
+  });
 });
 
 describe("maps", () => {

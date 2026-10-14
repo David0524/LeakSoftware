@@ -30,8 +30,7 @@ import {
   StatusBadge,
   buttonClass,
   cx,
-  SEGMENT_TRACK,
-  segmentClass,
+  iconButtonClass,
   pillClass,
 } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
@@ -217,66 +216,40 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   return (
     <>
       <PageHeader title="Schedule" subtitle={title} />
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <nav aria-label="View" className={SEGMENT_TRACK}>
-          {(["day", "week", "month"] as const).map((v) => (
-            <Link
-              key={v}
-              href={href(date, v)}
-              aria-current={v === view ? "page" : undefined}
-              className={segmentClass(v === view, "min-w-16")}
-            >
-              {v === "day" ? "Day" : v === "week" ? "Week" : "Month"}
-            </Link>
-          ))}
-        </nav>
-        <div className="flex min-w-0 max-w-full items-center gap-2">
-          <Link
-            href={href(move(-1))}
-            className={buttonClass("secondary", "min-w-11 px-3")}
-            aria-label={`Previous ${view}`}
-          >
-            ‹
-          </Link>
-          <DateJump value={date} view={view} tech={tech} />
-          <Link
-            href={href(move(1))}
-            className={buttonClass("secondary", "min-w-11 px-3")}
-            aria-label={`Next ${view}`}
-          >
-            ›
-          </Link>
-          {date !== today ? (
-            <Link href={href(today)} className={buttonClass("quiet", "px-2")}>
-              Today
-            </Link>
-          ) : null}
-        </div>
-      </div>
-
-      {techs.length > 1 ? (
-        <nav
-          aria-label="Whose schedule"
-          className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1 sm:hidden"
+      {/* One row: previous, the date, next (and Today), with Day / Week / Month as icons at
+          the far right. */}
+      <div className="mb-3 flex items-center gap-2">
+        <Link
+          href={href(move(-1))}
+          className={buttonClass("secondary", "min-w-11 shrink-0 px-3")}
+          aria-label={`Previous ${view}`}
         >
-          {[
-            ...techs.map((t) => ({
-              id: t.user_id,
-              name: t.user_id === office.user.id ? "Me" : t.name,
-            })),
-            { id: "all", name: "Everyone" },
-          ].map((t) => (
-            <Link
-              key={t.id}
-              href={href(date, view, t.id)}
-              aria-current={t.id === tech ? "page" : undefined}
-              className={pillClass(t.id === tech)}
-            >
-              {t.name}
-            </Link>
-          ))}
-        </nav>
-      ) : null}
+          ‹
+        </Link>
+        <DateJump value={date} view={view} tech={tech} />
+        <Link
+          href={href(move(1))}
+          className={buttonClass("secondary", "min-w-11 shrink-0 px-3")}
+          aria-label={`Next ${view}`}
+        >
+          ›
+        </Link>
+        {date !== today ? (
+          <Link href={href(today)} className={buttonClass("quiet", "shrink-0 px-2")}>
+            Today
+          </Link>
+        ) : null}
+        {/* One round button shows the current view; each tap moves to the next one
+            (Day, Week, Month, then Day again). */}
+        <Link
+          href={href(date, NEXT_VIEW[view])}
+          aria-label={`${VIEW_NAMES[view]} view. Switch to ${VIEW_NAMES[NEXT_VIEW[view]]}`}
+          title={`Switch to ${VIEW_NAMES[NEXT_VIEW[view]]}`}
+          className={iconButtonClass("ml-auto shrink-0")}
+        >
+          <ViewIcon view={view} />
+        </Link>
+      </div>
 
       {view === "day" ? (
         <nav
@@ -301,6 +274,31 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
               </Link>
             );
           })}
+        </nav>
+      ) : null}
+
+      {/* Whose schedule: under the days of the week. */}
+      {techs.length > 1 ? (
+        <nav
+          aria-label="Whose schedule"
+          className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:hidden"
+        >
+          {[
+            ...techs.map((t) => ({
+              id: t.user_id,
+              name: t.user_id === office.user.id ? "Me" : t.name,
+            })),
+            { id: "all", name: "Everyone" },
+          ].map((t) => (
+            <Link
+              key={t.id}
+              href={href(date, view, t.id)}
+              aria-current={t.id === tech ? "page" : undefined}
+              className={pillClass(t.id === tech)}
+            >
+              {t.name}
+            </Link>
+          ))}
         </nav>
       ) : null}
 
@@ -514,5 +512,34 @@ function MonthCalendar({
         })}
       </ol>
     </div>
+  );
+}
+
+const VIEW_NAMES = { day: "Day", week: "Week", month: "Month" } as const;
+const NEXT_VIEW = { day: "week", week: "month", month: "day" } as const;
+
+/** Day, Week, and Month as small calendar drawings for the view toggle. */
+function ViewIcon({ view }: { view: "day" | "week" | "month" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM4 9h16" />
+      {view === "day" ? <path d="M9 13h6v4H9z" /> : null}
+      {view === "week" ? <path d="M7 14.5h10" strokeWidth="2.6" /> : null}
+      {view === "month" ? (
+        <path
+          d="M8 12.5h.01M12 12.5h.01M16 12.5h.01M8 16.5h.01M12 16.5h.01M16 16.5h.01"
+          strokeWidth="2.6"
+        />
+      ) : null}
+    </svg>
   );
 }

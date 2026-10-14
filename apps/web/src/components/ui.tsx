@@ -69,8 +69,10 @@ export function Card({ className, ...props }: ComponentProps<"section">) {
 export const SEGMENT_TRACK =
   "inline-flex max-w-full flex-wrap gap-0.5 rounded-[1.5rem] bg-text/[0.07] p-1";
 export function segmentClass(active: boolean, extra?: string) {
+  // As with buttons, a caller's own padding replaces the default (icon segments use px-0).
+  const pad = /(^|\s)px-/.test(extra ?? "") ? "" : "px-4";
   return cx(
-    "min-h-11 content-center rounded-full px-4 text-center font-medium whitespace-nowrap transition-colors",
+    `min-h-11 content-center rounded-full ${pad} text-center font-medium whitespace-nowrap transition-colors`,
     active ? "bg-text text-bg shadow-sm" : "text-text hover:bg-text/[0.06]",
     extra,
   );

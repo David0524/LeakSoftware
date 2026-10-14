@@ -339,6 +339,25 @@ function DayColumn({
           Runs {durationLabel(c.overtimeMin)} past the end of the day.
         </p>
       ) : null}
+      {/* Planning and driving the route are what this card is for: they lead. */}
+      {c.techId && stops.length ? (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {c.open ? (
+            <Button
+              type="button"
+              kind="secondary"
+              disabled={busy}
+              onClick={onPlan}
+              className="px-2"
+            >
+              Plan Route
+            </Button>
+          ) : null}
+          {c.routeHref ? (
+            <OpenRouteInMaps href={c.routeHref} app={c.routeApp} compact className="px-2" />
+          ) : null}
+        </div>
+      ) : null}
       <SortableContext
         id={c.key}
         items={stops.map((s) => s.id)}
@@ -363,24 +382,6 @@ function DayColumn({
           ) : null}
         </ol>
       </SortableContext>
-      {c.techId && stops.length ? (
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          {c.open ? (
-            <Button
-              type="button"
-              kind="secondary"
-              disabled={busy}
-              onClick={onPlan}
-              className="px-2"
-            >
-              Plan Route
-            </Button>
-          ) : null}
-          {c.routeHref ? (
-            <OpenRouteInMaps href={c.routeHref} app={c.routeApp} compact className="px-2" />
-          ) : null}
-        </div>
-      ) : null}
     </section>
   );
 }
