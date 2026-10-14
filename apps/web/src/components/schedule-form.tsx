@@ -54,7 +54,8 @@ export function ScheduleForm({
           defaultValue={defaults.tech}
           options={allowNobody ? [{ value: "", label: "Nobody yet" }, ...techs] : techs}
         />
-        <div className="grid gap-3 sm:grid-cols-3">
+        {/* Date, start, and hours on one row, phones included. */}
+        <div className="grid grid-cols-[minmax(0,1.7fr)_minmax(0,1.15fr)_minmax(0,0.6fr)] gap-2 sm:gap-4 [&>*]:min-w-0">
           <Field
             label="Date"
             name="date"

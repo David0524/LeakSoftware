@@ -261,7 +261,8 @@ export function NewJobForm({
             </div>
           ) : null}
           {!plan && when === "scheduled" ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            // Date, start, and hours on one row, phones included.
+            <div className="grid grid-cols-[minmax(0,1.7fr)_minmax(0,1.15fr)_minmax(0,0.6fr)] gap-2 sm:gap-4 [&>*]:min-w-0">
               <SField label="Date" name="date" type="date" />
               <SField label="Start" name="time" type="time" defaultValue="09:00" />
               <SField
