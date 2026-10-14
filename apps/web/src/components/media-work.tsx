@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import {
+  MEDIA_KIND_LABELS,
   MARKUP_COLORS,
   MARKUP_TEXT_MAX,
   MEDIA_LIMITS,
@@ -31,6 +32,7 @@ import {
 } from "@/app/actions/media";
 import { MarkupOverlay } from "./markup";
 import { Segmented } from "./segmented";
+import { useConfirm } from "./sheet";
 import { Button, Field, Select, buttonClass, cx } from "./ui";
 
 // Photos, videos, voice notes, markup, and signatures from a browser (M9.5): the phone app's
@@ -294,7 +296,7 @@ export function MediaCapture({
 // they fit a phone's width without wrapping to three rows.
 const TILE = cx(
   "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-2xl bg-link/10 px-1 py-1.5 text-link transition-colors hover:bg-link/20",
-  "text-center font-display text-[0.9375rem] leading-tight font-bold tracking-wide",
+  "text-center text-[0.9375rem] leading-tight font-semibold",
   "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus",
 );
 const CAMERA =
@@ -439,6 +441,7 @@ export function MediaActions({
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirm, confirmSheet] = useConfirm();
   return (
     <>
       <div className="flex flex-wrap gap-3">
@@ -458,7 +461,13 @@ export function MediaActions({
           className={buttonClass("danger")}
           aria-label={`Delete: ${media.label}`}
           onClick={async () => {
-            if (!window.confirm("Remove this from the job? The original stays on file.")) return;
+            const ok = await confirm({
+              title: `Remove this ${MEDIA_KIND_LABELS[media.kind].toLowerCase()} from the job?`,
+              message: "The original stays on file.",
+              confirmLabel: `Delete ${MEDIA_KIND_LABELS[media.kind]}`,
+              destructive: true,
+            });
+            if (!ok) return;
             setBusy(true);
             const r = await deleteMedia({ jobId, mediaId: media.id });
             setBusy(false);
@@ -473,6 +482,7 @@ export function MediaActions({
           {error}
         </p>
       ) : null}
+      {confirmSheet}
       {editing && media.url ? (
         <MarkupEditor
           url={media.url}
@@ -528,6 +538,7 @@ function MarkupEditor({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const start = useRef<{ x: number; y: number } | null>(null);
+  const [confirm, confirmSheet] = useConfirm();
   const dirty = history.length > 1 || caption !== savedCaption;
   const push = (next: MarkupShape[]) => setHistory((h) => [...h, next]);
 
@@ -568,20 +579,30 @@ function MarkupEditor({
       aria-label="Mark Up"
       className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-bg"
     >
-      <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-2">
+      <div className="glass-bar sticky top-0 z-10 grid grid-cols-[1fr_auto_1fr] items-center px-2 pt-[env(safe-area-inset-top)]">
         <Button
           type="button"
           kind="quiet"
-          onClick={() => {
-            if (!dirty || window.confirm("Discard markup changes?")) onCancel();
+          className="justify-self-start px-3 font-normal"
+          onClick={async () => {
+            if (
+              !dirty ||
+              (await confirm({
+                title: "Discard your markup changes?",
+                confirmLabel: "Discard Changes",
+                destructive: true,
+              }))
+            )
+              onCancel();
           }}
         >
           Cancel
         </Button>
-        <h2 className="font-display text-lg font-bold">Mark Up</h2>
+        <h2 className="font-sans text-[1.0625rem] font-semibold">Mark Up</h2>
         <Button
           type="button"
           kind="quiet"
+          className="justify-self-end px-3"
           disabled={saving}
           onClick={async () => {
             setSaving(true);
@@ -697,6 +718,7 @@ function MarkupEditor({
           </p>
         ) : null}
       </div>
+      {confirmSheet}
     </div>
   );
 }

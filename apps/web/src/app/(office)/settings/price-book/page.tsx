@@ -99,6 +99,7 @@ export default async function PriceBookPage() {
   return (
     <>
       <PageHeader
+        back={{ href: "/settings", label: "Settings" }}
         title="Price Book"
         subtitle="Repair items techs pick from when building a quote. Prices are suggestions; a tech can adjust within the discount limit."
       />

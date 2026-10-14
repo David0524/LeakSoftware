@@ -13,7 +13,7 @@ import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
 import { Suggestions } from "./route-board";
 import { Segmented } from "./segmented";
 import { ShapePicker } from "./shape-picker";
-import { Checkbox, Select } from "./ui";
+import { Checkbox, SectionTitle, Select } from "./ui";
 
 interface CustomerOption {
   id: string;
@@ -22,11 +22,15 @@ interface CustomerOption {
   pools: { id: string; label: string }[];
 }
 
+/** A group of fields, as iOS forms draw them: a small gray header over a rounded block. */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const id = `section-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
   return (
-    <section className="space-y-4 card p-5">
-      <h2 className="font-display text-xl font-bold">{title}</h2>
-      {children}
+    <section aria-labelledby={id} className="pt-3">
+      <SectionTitle>
+        <span id={id}>{title}</span>
+      </SectionTitle>
+      <div className="space-y-4 card p-4">{children}</div>
     </section>
   );
 }
@@ -339,7 +343,7 @@ export function NewJobForm({
       </Section>
 
       {questions.length && !maintenance ? (
-        <Section title="When They Called">
+        <Section title="When they called">
           {questions.map((q) =>
             q.type === "multi" ? (
               <fieldset key={q.key}>

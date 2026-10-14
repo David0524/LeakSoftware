@@ -9,12 +9,12 @@ import { useRouter } from "next/navigation";
 export function DateJump({ value, view, tech }: { value: string; view: string; tech: string }) {
   const router = useRouter();
   return (
-    // Phones: a calendar button (the date is already the page's subtitle); tapping it opens
-    // the date picker. Wider screens show the date in the field.
-    <label className="relative inline-flex min-h-11 min-w-0 items-center gap-2 rounded-xl border border-control-border bg-surface px-3 max-sm:w-11 max-sm:justify-center max-sm:rounded-full max-sm:px-0">
+    // Phones: a round tinted calendar button, like the arrows beside it (the date is already
+    // the page's subtitle); tapping it opens the date picker. Wider screens show the date in the field.
+    <label className="relative inline-flex min-h-11 min-w-0 items-center gap-2 rounded-[10px] border border-control-border bg-surface px-3 max-sm:w-11 max-sm:justify-center max-sm:rounded-full max-sm:border-0 max-sm:bg-link/12 max-sm:px-0 max-sm:text-link">
       <svg
         viewBox="0 0 24 24"
-        className="size-5 shrink-0 text-text-muted"
+        className="size-5 shrink-0 text-text-muted max-sm:text-link"
         fill="none"
         stroke="currentColor"
         strokeWidth="1.8"

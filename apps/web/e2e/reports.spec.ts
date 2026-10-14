@@ -16,9 +16,12 @@ async function openSampleJob(page: Page, customer = "Sam Sample", signedIn = fal
 
 async function writeDraft(page: Page, template: "homeowner" | "partner") {
   const panel = page.getByTestId(`report-${template}`);
-  // Writing again over an existing draft asks first (reruns against a shared database).
-  page.once("dialog", (d) => void d.accept());
+  // Writing again over an existing draft asks first, in an action sheet (reruns against a
+  // shared database).
+  const again = (await panel.getByRole("button", { name: "Write the Draft Again" }).count()) > 0;
   await panel.getByRole("button", { name: /^Write (Draft|the Draft Again)$/ }).click();
+  if (again)
+    await page.getByRole("alertdialog").getByRole("button", { name: "Replace Draft" }).click();
   await expect(panel.getByText(/^Draft written\./)).toBeVisible();
   await expect(panel.getByLabel("Summary", { exact: true })).not.toHaveValue("");
   return panel;

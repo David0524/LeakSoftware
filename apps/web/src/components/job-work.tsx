@@ -1,6 +1,14 @@
 "use client";
 
-import { useOptimistic, useState, useTransition } from "react";
+import {
+  useCallback,
+  useOptimistic,
+  useRef,
+  useState,
+  useTransition,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import {
   CHECKLIST_SECTION_LABELS,
   FINDING_STATUS_LABELS,
@@ -42,7 +50,8 @@ import { PoolDiagram } from "./pool-diagram";
 import { Segmented } from "./segmented";
 import { ShapePicker } from "./shape-picker";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
-import { Button, Checkbox, Chip, Select, buttonClass, cx } from "./ui";
+import { Sheet, useConfirm } from "./sheet";
+import { Button, Checkbox, Chip, Select, cx } from "./ui";
 
 // Working a job on the website (M9.5): the phone's job screen, for a browser.
 
@@ -100,6 +109,7 @@ export function JobStatusActions({
   cancel?: boolean;
 }) {
   const { pending, error, run } = useRun();
+  const [confirm, confirmSheet] = useConfirm();
   const next = userTransitions(status, jobType).filter((to) => (to === "canceled") === cancel);
   if (next.length === 0) return null;
   return (
@@ -111,8 +121,16 @@ export function JobStatusActions({
             type="button"
             disabled={pending}
             kind={to === "in_progress" ? "primary" : to === "canceled" ? "danger" : "secondary"}
-            onClick={() => {
-              if (to === "canceled" && !window.confirm("Cancel this job?")) return;
+            onClick={async () => {
+              if (
+                to === "canceled" &&
+                !(await confirm({
+                  title: "Cancel this job?",
+                  confirmLabel: "Cancel Job",
+                  destructive: true,
+                }))
+              )
+                return;
               run(changeJobStatus, { job: jobId, to });
             }}
           >
@@ -121,10 +139,17 @@ export function JobStatusActions({
         ))}
       </div>
       <ErrorText error={error} />
+      {confirmSheet}
     </div>
   );
 }
 
+// Inputs inside a grouped row. Outlined in color.controlBorder so they read in direct sun.
+const ROW_INPUT =
+  "rounded-[10px] border border-control-border bg-surface px-3 text-text placeholder:text-text-muted " +
+  "focus:outline-3 focus:outline-offset-1 focus:outline-focus";
+
+/** On Site, as an iOS grouped form: label left and the control right, notes full width. */
 export function JobDetailsForm({
   jobId,
   fee,
@@ -139,29 +164,53 @@ export function JobDetailsForm({
   return (
     <SettingsForm action={saveJobDetails} submit="Save">
       <input type="hidden" name="job" value={jobId} />
-      {/* Fee and the checkbox share a row on phones too. */}
-      <div className="grid grid-cols-2 gap-4">
-        <SField
-          label="Detection fee ($)"
-          name="fee"
-          inputMode="decimal"
-          defaultValue={fee != null ? (fee / 100).toFixed(2) : ""}
-          hint="Shown on the report."
-        />
-        <div className="self-center">
-          <Checkbox
-            name="location_marked"
-            label="Leak location marked"
-            defaultChecked={locationMarked}
-          />
+      <div>
+        <ul className="grouped">
+          <li className="flex min-h-11 items-center gap-3 px-4 py-1.5">
+            <label htmlFor="job-fee" className="min-w-0 flex-1">
+              Detection fee
+            </label>
+            <span aria-hidden="true" className="text-text-muted">
+              $
+            </span>
+            <input
+              id="job-fee"
+              name="fee"
+              inputMode="decimal"
+              placeholder="0.00"
+              defaultValue={fee != null ? (fee / 100).toFixed(2) : ""}
+              aria-describedby="job-fee-note"
+              className={cx(ROW_INPUT, "min-h-11 w-28 text-right tabular-nums")}
+            />
+          </li>
+          <li className="px-4">
+            <Checkbox
+              name="location_marked"
+              label="Leak location marked"
+              defaultChecked={locationMarked}
+            />
+          </li>
+          <li className="px-4 pt-2.5 pb-3">
+            <label htmlFor="job-notes" className="block text-[0.9375rem] text-text-muted">
+              Job notes
+            </label>
+            <textarea
+              id="job-notes"
+              name="notes"
+              defaultValue={notes}
+              placeholder="Anything the office should know"
+              className={cx(ROW_INPUT, "mt-1 block min-h-24 w-full py-2")}
+            />
+          </li>
+        </ul>
+        <p id="job-fee-note" className="mt-2 px-4 text-[0.8125rem] text-text-muted">
+          The detection fee is shown on the report.
+        </p>
+        <div className="px-4">
+          <FieldError name="fee" />
+          <FieldError name="notes" />
         </div>
       </div>
-      <STextArea
-        label="Job notes"
-        name="notes"
-        defaultValue={notes}
-        placeholder="Anything the office should know"
-      />
     </SettingsForm>
   );
 }
@@ -275,10 +324,7 @@ function ChecklistGroup({
           : "All clear";
   const panel = `checklist-${section}`;
   return (
-    <section
-      aria-label={title}
-      className="overflow-hidden rounded-xl border border-border bg-surface"
-    >
+    <section aria-label={title} className="grouped">
       <h3>
         <button
           type="button"
@@ -302,7 +348,7 @@ function ChecklistGroup({
           >
             <path d="M9 6l6 6-6 6" />
           </svg>
-          <span className="flex-1 font-display text-lg font-bold">{title}</span>
+          <span className="flex-1 font-sans text-[1.0625rem] font-semibold">{title}</span>
           <span
             className={cx(
               "text-[0.9375rem] font-medium",
@@ -314,8 +360,8 @@ function ChecklistGroup({
         </button>
       </h3>
       {open ? (
-        <div id={panel} className="border-t border-border">
-          <ul className="divide-y divide-border">
+        <div id={panel} className="border-t-[0.5px] border-separator">
+          <ul className="grouped rounded-none">
             {items.map((row) => (
               <li key={row.id}>
                 <ChecklistItem jobId={jobId} row={row} />
@@ -323,11 +369,11 @@ function ChecklistGroup({
             ))}
           </ul>
           {toDo.length > 0 ? (
-            <div className="border-t border-border px-4 py-1">
+            <div className="border-t-[0.5px] border-separator px-4 py-1">
               <button
                 type="button"
                 disabled={pending}
-                className="min-h-11 text-[0.9375rem] font-semibold text-link underline-offset-4 hover:underline"
+                className="min-h-11 text-[1.0625rem] text-link"
                 onClick={() =>
                   run(markRest, { job: jobId, components: toDo.map((r) => r.id).join(",") })
                 }
@@ -360,14 +406,21 @@ const REMOVE = "remove";
 /** One row: the item, and its verdict as a pull-down (the system menu on a phone). */
 function ChecklistItem({ jobId, row }: { jobId: string; row: ChecklistRow }) {
   const { error, run } = useRun();
+  const [confirm, confirmSheet] = useConfirm();
   const saved = currentVerdict(row.result ?? undefined);
   const [shown, show] = useOptimistic(saved);
   const needsWhere = row.type.answer !== "yes_no" && (shown === "leaking" || shown === "attention");
   const options = verdictOptions(row.type);
 
-  function choose(value: string) {
+  async function choose(value: string) {
     if (value === REMOVE) {
-      if (window.confirm(`Remove ${row.label}?`))
+      if (
+        await confirm({
+          title: `Remove ${row.label} from the checklist?`,
+          confirmLabel: "Remove Item",
+          destructive: true,
+        })
+      )
         run(removeComponent, { job: jobId, component: row.id });
       return;
     }
@@ -394,10 +447,10 @@ function ChecklistItem({ jobId, row }: { jobId: string; row: ChecklistRow }) {
           <select
             aria-label={row.label}
             value={shown ?? ""}
-            onChange={(e) => choose(e.target.value)}
+            onChange={(e) => void choose(e.target.value)}
             className={cx(
               "min-h-11 cursor-pointer appearance-none rounded-full border py-1 pr-8 pl-3 text-[0.9375rem] font-semibold",
-              shown ? VERDICT_STYLE[shown] : "border-control-border bg-surface text-text",
+              shown ? VERDICT_STYLE[shown] : "border-transparent bg-fill text-text",
             )}
           >
             {shown === null ? (
@@ -438,6 +491,7 @@ function ChecklistItem({ jobId, row }: { jobId: string; row: ChecklistRow }) {
         <p className="pb-1 text-[0.9375rem] text-text-muted">{row.result.exclusion_reason}</p>
       ) : null}
       <ErrorText error={error} />
+      {confirmSheet}
     </div>
   );
 }
@@ -466,9 +520,161 @@ function WhereField({
           if (e.target.value.trim() !== (value ?? ""))
             run(saveWhere, { job: jobId, result: resultId, where: e.target.value });
         }}
-        className="block min-h-11 w-full rounded-xl border border-control-border bg-bg px-3 py-2"
+        className="block min-h-11 w-full rounded-[10px] border border-control-border bg-bg px-3 py-2"
       />
       <ErrorText error={error} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// List rows that swipe (Tests and Findings)
+// ---------------------------------------------------------------------------
+
+const SWIPE_WIDTH = 88;
+
+/**
+ * An iOS list row that slides left on touch to show a red Delete button (lists-and-tables.md:
+ * swipe actions). Mouse, keyboard, and VoiceOver users delete from the row's edit sheet
+ * instead, so the hidden button stays out of the tab order and the accessibility tree until
+ * it shows. `inset` is where the separator above the row starts (where the text does).
+ */
+function SwipeRow({
+  children,
+  onDelete,
+  deleteLabel,
+  disabled = false,
+  first = false,
+  inset = "1rem",
+}: {
+  children: ReactNode;
+  onDelete: () => void;
+  deleteLabel: string;
+  disabled?: boolean;
+  first?: boolean;
+  inset?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [dx, setDx] = useState<number | null>(null);
+  const live = useRef(0);
+  const drag = useRef<{ x0: number; y0: number; base: number; axis: "x" | "y" | null } | null>(
+    null,
+  );
+  // A swipe ends with a click on the row; that click must not open the editor.
+  const swallow = useRef(false);
+  const offset = dx ?? (open ? -SWIPE_WIDTH : 0);
+
+  function down(e: PointerEvent<HTMLDivElement>) {
+    swallow.current = false;
+    if (e.pointerType === "mouse" || disabled) return;
+    drag.current = { x0: e.clientX, y0: e.clientY, base: open ? -SWIPE_WIDTH : 0, axis: null };
+  }
+  function move(e: PointerEvent<HTMLDivElement>) {
+    const d = drag.current;
+    if (!d) return;
+    const mx = e.clientX - d.x0;
+    const my = e.clientY - d.y0;
+    if (d.axis === null) {
+      if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
+      d.axis = Math.abs(mx) > Math.abs(my) ? "x" : "y";
+      if (d.axis === "x") e.currentTarget.setPointerCapture?.(e.pointerId);
+    }
+    if (d.axis !== "x") return;
+    live.current = Math.min(0, Math.max(-SWIPE_WIDTH * 1.4, d.base + mx));
+    setDx(live.current);
+  }
+  function up() {
+    const d = drag.current;
+    drag.current = null;
+    if (!d || d.axis !== "x") return;
+    swallow.current = true;
+    setOpen(live.current < -SWIPE_WIDTH / 2);
+    setDx(null);
+  }
+  function cancel() {
+    drag.current = null;
+    setDx(null);
+  }
+
+  return (
+    <li className="relative overflow-hidden">
+      {first ? null : (
+        <span
+          aria-hidden="true"
+          style={{ left: inset }}
+          className="pointer-events-none absolute top-0 right-0 z-10 border-t-[0.5px] border-separator"
+        />
+      )}
+      {offset < 0 ? (
+        <button
+          type="button"
+          tabIndex={open ? 0 : -1}
+          aria-hidden={!open}
+          aria-label={deleteLabel}
+          disabled={disabled}
+          onClick={() => {
+            setOpen(false);
+            onDelete();
+          }}
+          style={{ width: Math.max(SWIPE_WIDTH, -offset) }}
+          className="absolute inset-y-0 right-0 flex items-center justify-center bg-status-fail text-[1.0625rem] font-semibold text-on-status"
+        >
+          Delete
+        </button>
+      ) : null}
+      <div
+        style={offset ? { transform: `translateX(${offset}px)` } : undefined}
+        className={cx("relative touch-pan-y bg-surface", dx === null && "transition-transform")}
+        onPointerDown={down}
+        onPointerMove={move}
+        onPointerUp={up}
+        onPointerCancel={cancel}
+        onClickCapture={(e) => {
+          if (swallow.current || open) {
+            swallow.current = false;
+            e.preventDefault();
+            e.stopPropagation();
+            setOpen(false);
+          }
+        }}
+      >
+        {children}
+      </div>
+    </li>
+  );
+}
+
+/** The content of a tappable list row: what's given, then a chevron. */
+const LIST_BUTTON =
+  "flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-text/[0.03] active:bg-text/[0.06] " +
+  "focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus";
+
+function Chevron() {
+  return (
+    <span
+      aria-hidden="true"
+      className="shrink-0 self-center text-xl leading-none text-text-muted/70"
+    >
+      ›
+    </span>
+  );
+}
+
+/** Delete, inside an edit sheet: the way to delete without swiping. */
+function SheetDelete({
+  label,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="mt-6 border-t-[0.5px] border-separator pt-4">
+      <Button type="button" kind="danger" className="w-full" disabled={disabled} onClick={onClick}>
+        {label}
+      </Button>
     </div>
   );
 }
@@ -505,106 +711,123 @@ export function TestsEditor({
   types: TestType[];
   components: { id: string; label: string }[];
 }) {
+  // "new", a test's id, or null: which sheet is up.
   const [editing, setEditing] = useState<string | null>(null);
+  const close = useCallback(() => setEditing(null), []);
   const { pending, error, run } = useRun();
+  const [confirm, confirmSheet] = useConfirm();
   const typeOf = new Map(types.map((t) => [t.id, t]));
   const componentLabel = new Map(components.map((c) => [c.id, c.label]));
+  const current = editing && editing !== "new" ? tests.find((t) => t.id === editing) : undefined;
+  const currentType = current ? typeOf.get(current.typeId) : undefined;
+  const remove = (t: TestRow) => run(deleteTest, { job: jobId, test: t.id }, close);
+
   return (
     <div className="space-y-4">
-      {tests.length === 0 && editing !== "new" ? (
-        // One row when there's nothing yet: the note and the button side by side.
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-text-muted">No tests recorded.</p>
-          {types.length ? (
-            <Button type="button" kind="secondary" onClick={() => setEditing("new")}>
-              Add Test
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-      <ul className="grid gap-3 empty:hidden md:grid-cols-2">
-        {tests.map((t) => {
-          const type = typeOf.get(t.typeId);
-          if (editing === t.id && type)
+      {tests.length === 0 ? (
+        <p className="text-text-muted">No tests recorded.</p>
+      ) : (
+        <ul className="grouped" aria-label="Tests">
+          {tests.map((t, i) => {
+            const type = typeOf.get(t.typeId);
+            const name = type?.name ?? "Test";
+            const calc = type ? calculate(type, t.data) : null;
+            const outcome = t.outcome ? OUTCOME[t.outcome] : null;
+            const meta = [t.componentId ? componentLabel.get(t.componentId) : null, t.when]
+              .filter(Boolean)
+              .join(" · ");
+            const fields =
+              type && !type.calculator
+                ? type.field_schema.fields.filter(
+                    (f) => t.data[f.key] != null && t.data[f.key] !== "",
+                  )
+                : [];
             return (
-              <li key={t.id} className="md:col-span-2">
-                <TestForm
-                  jobId={jobId}
-                  types={[type]}
-                  components={components}
-                  test={t}
-                  onDone={() => setEditing(null)}
-                />
-              </li>
-            );
-          const calc = type ? calculate(type, t.data) : null;
-          const outcome = t.outcome ? OUTCOME[t.outcome] : null;
-          return (
-            <li key={t.id} className="card p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-semibold">{type?.name ?? "Test"}</p>
-                  <p className="text-[0.9375rem] text-text-muted">
-                    {[t.componentId ? componentLabel.get(t.componentId) : null, t.when]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                </div>
-                {outcome ? <Chip label={outcome.label} className={outcome.className} /> : null}
-              </div>
-              {calc?.summary ? <p className="mt-2 font-medium">{calc.summary}</p> : null}
-              {type && !type.calculator ? (
-                <dl className="mt-2 text-[0.9375rem]">
-                  {type.field_schema.fields
-                    .filter((f) => t.data[f.key] != null && t.data[f.key] !== "")
-                    .map((f) => (
-                      <div key={f.key} className="flex gap-2">
-                        <dt className="text-text-muted">{f.label}:</dt>
-                        <dd>{String(t.data[f.key])}</dd>
-                      </div>
-                    ))}
-                </dl>
-              ) : null}
-              {t.notes ? <p className="mt-2 text-[0.9375rem]">{t.notes}</p> : null}
-              <div className="mt-3 flex flex-wrap gap-3">
+              <SwipeRow
+                key={t.id}
+                first={i === 0}
+                deleteLabel={`Delete ${name}`}
+                disabled={pending}
+                onDelete={() => remove(t)}
+              >
                 <button
                   type="button"
-                  className={buttonClass("secondary", "min-w-24")}
+                  className={LIST_BUTTON}
+                  disabled={!type}
                   onClick={() => setEditing(t.id)}
-                  aria-label={`Edit ${type?.name ?? "test"}`}
+                  aria-label={`Edit ${name}`}
+                  aria-describedby={`test-${t.id}-detail`}
                 >
-                  Edit
+                  <span className="min-w-0 flex-1" id={`test-${t.id}-detail`}>
+                    <span className="block font-semibold">{name}</span>
+                    {meta ? (
+                      <span className="block text-[0.9375rem] text-text-muted">{meta}</span>
+                    ) : null}
+                    {calc?.summary ? (
+                      <span className="mt-1 block font-medium">{calc.summary}</span>
+                    ) : null}
+                    {fields.map((f) => (
+                      <span key={f.key} className="block text-[0.9375rem]">
+                        <span className="text-text-muted">{f.label}:</span> {String(t.data[f.key])}
+                      </span>
+                    ))}
+                    {t.notes ? (
+                      <span className="mt-1 block text-[0.9375rem]">{t.notes}</span>
+                    ) : null}
+                  </span>
+                  {outcome ? (
+                    <span className="shrink-0 self-center">
+                      <Chip label={outcome.label} className={outcome.className} />
+                    </span>
+                  ) : null}
+                  <Chevron />
                 </button>
-                <button
-                  type="button"
-                  disabled={pending}
-                  className={buttonClass("danger")}
-                  aria-label={`Delete ${type?.name ?? "test"}`}
-                  onClick={() => {
-                    if (window.confirm("Delete this test?"))
-                      run(deleteTest, { job: jobId, test: t.id });
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+              </SwipeRow>
+            );
+          })}
+        </ul>
+      )}
       <ErrorText error={error} />
-      {editing === "new" ? (
-        <TestForm
-          jobId={jobId}
-          types={types}
-          components={components}
-          onDone={() => setEditing(null)}
-        />
-      ) : types.length && tests.length ? (
+      {types.length ? (
         <Button type="button" kind="secondary" onClick={() => setEditing("new")}>
           Add Test
         </Button>
       ) : null}
+      <Sheet
+        open={editing === "new" || !!(current && currentType)}
+        onClose={close}
+        title={current ? `Edit ${currentType?.name ?? "Test"}` : "Add Test"}
+      >
+        {editing === "new" ? (
+          <TestForm jobId={jobId} types={types} components={components} onDone={close} />
+        ) : current && currentType ? (
+          <>
+            <TestForm
+              key={current.id}
+              jobId={jobId}
+              types={[currentType]}
+              components={components}
+              test={current}
+              onDone={close}
+            />
+            <SheetDelete
+              label="Delete Test"
+              disabled={pending}
+              onClick={async () => {
+                if (
+                  await confirm({
+                    title: `Delete this ${currentType.name.toLowerCase()}?`,
+                    confirmLabel: "Delete Test",
+                    destructive: true,
+                  })
+                )
+                  remove(current);
+              }}
+            />
+          </>
+        ) : null}
+      </Sheet>
+      {confirmSheet}
     </div>
   );
 }
@@ -631,108 +854,106 @@ function TestForm({
   const type = types.find((t) => t.id === typeId);
   const calc = type ? calculate(type, normalizeTestData(type.field_schema, values)) : null;
   const set = (k: string, v: string) => setValues((old) => ({ ...old, [k]: v }));
+  // In a sheet: the sheet carries the title and Cancel.
   return (
-    <div className="card p-4">
-      <h3 className="mb-3 font-display text-lg font-bold">
-        {test ? `Edit ${type?.name ?? "Test"}` : "Add Test"}
-      </h3>
-      <SettingsForm action={saveTest} submit={test ? "Save Test" : "Add Test"} onSaved={onDone}>
-        <input type="hidden" name="job" value={jobId} />
-        <input type="hidden" name="test" value={test?.id ?? ""} />
-        {test ? (
-          <input type="hidden" name="type" value={typeId} />
-        ) : (
-          <Select
-            label="Test"
-            name="type"
-            value={typeId}
-            onChange={(e) => {
-              setTypeId(e.target.value);
-              setValues({});
-            }}
-            options={types.map((t) => ({ value: t.id, label: t.name }))}
-          />
-        )}
+    <SettingsForm
+      action={saveTest}
+      submit={test ? "Save Test" : "Add Test"}
+      onSaved={onDone}
+      primary
+    >
+      <input type="hidden" name="job" value={jobId} />
+      <input type="hidden" name="test" value={test?.id ?? ""} />
+      {test ? (
+        <input type="hidden" name="type" value={typeId} />
+      ) : (
         <Select
-          label="Item (optional)"
-          name="component"
-          defaultValue={test?.componentId ?? ""}
-          options={[
-            { value: "", label: "Whole job" },
-            ...components.map((c) => ({ value: c.id, label: c.label })),
-          ]}
+          label="Test"
+          name="type"
+          value={typeId}
+          onChange={(e) => {
+            setTypeId(e.target.value);
+            setValues({});
+          }}
+          options={types.map((t) => ({ value: t.id, label: t.name }))}
         />
-        <div className="grid gap-4 sm:grid-cols-2">
-          {(type?.field_schema.fields ?? []).map((f) => {
-            const name = `f_${f.key}`;
-            const label = f.unit ? `${f.label} (${f.unit})` : f.label;
-            if (f.type === "select")
-              return (
-                <div key={f.key}>
-                  <Select
-                    label={label}
-                    name={name}
-                    value={values[f.key] ?? ""}
-                    onChange={(e) => set(f.key, e.target.value)}
-                    options={[
-                      { value: "", label: "Choose…" },
-                      ...(f.options ?? []).map((o) => ({ value: o, label: o })),
-                    ]}
-                  />
-                  <FieldError name={name} />
-                </div>
-              );
-            if (f.type === "textarea")
-              return (
-                <div key={f.key} className="sm:col-span-2">
-                  <STextArea
-                    label={label}
-                    name={name}
-                    value={values[f.key] ?? ""}
-                    onChange={(e) => set(f.key, e.target.value)}
-                  />
-                </div>
-              );
+      )}
+      <Select
+        label="Item (optional)"
+        name="component"
+        defaultValue={test?.componentId ?? ""}
+        options={[
+          { value: "", label: "Whole job" },
+          ...components.map((c) => ({ value: c.id, label: c.label })),
+        ]}
+      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        {(type?.field_schema.fields ?? []).map((f) => {
+          const name = `f_${f.key}`;
+          const label = f.unit ? `${f.label} (${f.unit})` : f.label;
+          if (f.type === "select")
             return (
-              <SField
-                key={f.key}
-                label={label}
-                name={name}
-                inputMode={f.type === "number" ? "decimal" : undefined}
-                value={values[f.key] ?? ""}
-                onChange={(e) => set(f.key, e.target.value)}
-              />
+              <div key={f.key}>
+                <Select
+                  label={label}
+                  name={name}
+                  value={values[f.key] ?? ""}
+                  onChange={(e) => set(f.key, e.target.value)}
+                  options={[
+                    { value: "", label: "Choose…" },
+                    ...(f.options ?? []).map((o) => ({ value: o, label: o })),
+                  ]}
+                />
+                <FieldError name={name} />
+              </div>
             );
-          })}
-        </div>
-        {calc?.summary ? (
-          <p className="font-semibold" aria-live="polite">
-            {calc.summary}
-          </p>
-        ) : null}
-        <Select
-          label="Result"
-          name="outcome"
-          defaultValue={test?.outcome ?? ""}
-          options={[
-            {
-              value: "",
-              label: calc?.suggested
-                ? `Use the calculation (${OUTCOME[calc.suggested].label})`
-                : "Not decided",
-            },
-            ...(type?.result_options ?? ["pass", "fail", "inconclusive"]).map((o) => ({
-              value: o,
-              label: OUTCOME[o].label,
-            })),
-          ]}
-        />
-        <STextArea label="Notes (optional)" name="notes" defaultValue={test?.notes ?? ""} />
-      </SettingsForm>
-      <Button type="button" kind="quiet" className="mt-2" onClick={onDone}>
-        Cancel
-      </Button>
-    </div>
+          if (f.type === "textarea")
+            return (
+              <div key={f.key} className="sm:col-span-2">
+                <STextArea
+                  label={label}
+                  name={name}
+                  value={values[f.key] ?? ""}
+                  onChange={(e) => set(f.key, e.target.value)}
+                />
+              </div>
+            );
+          return (
+            <SField
+              key={f.key}
+              label={label}
+              name={name}
+              inputMode={f.type === "number" ? "decimal" : undefined}
+              value={values[f.key] ?? ""}
+              onChange={(e) => set(f.key, e.target.value)}
+            />
+          );
+        })}
+      </div>
+      {calc?.summary ? (
+        <p className="font-semibold" aria-live="polite">
+          {calc.summary}
+        </p>
+      ) : null}
+      <Select
+        label="Result"
+        name="outcome"
+        defaultValue={test?.outcome ?? ""}
+        options={[
+          {
+            value: "",
+            label: calc?.suggested
+              ? `Use the calculation (${OUTCOME[calc.suggested].label})`
+              : "Not decided",
+          },
+          ...(type?.result_options ?? ["pass", "fail", "inconclusive"]).map((o) => ({
+            value: o,
+            label: OUTCOME[o].label,
+          })),
+        ]}
+      />
+      <STextArea label="Notes (optional)" name="notes" defaultValue={test?.notes ?? ""} />
+    </SettingsForm>
   );
 }
 
@@ -772,40 +993,30 @@ export function FindingsEditor({
   components: { id: string; label: string }[];
   diagram: Diagram | null;
 }) {
+  // "new", a finding's id, or null: which sheet is up.
   const [editing, setEditing] = useState<string | null>(null);
+  const close = useCallback(() => setEditing(null), []);
   const { pending, error, run } = useRun();
+  const [confirm, confirmSheet] = useConfirm();
   const sev = new Map(severities.map((s) => [s.key, s]));
   const componentLabel = new Map(components.map((c) => [c.id, c.label]));
-  const form = (f?: FindingRow) => (
-    <FindingForm
-      jobId={jobId}
-      finding={f}
-      severities={severities}
-      components={components}
-      diagram={diagram}
-      onDone={() => setEditing(null)}
-    />
-  );
+  const current = editing && editing !== "new" ? findings.find((f) => f.id === editing) : undefined;
+  const remove = (f: FindingRow) => run(deleteFinding, { job: jobId, finding: f.id }, close);
   return (
     <div className="space-y-4">
       {diagram?.propertyId ? (
         <PoolShapeSetting jobId={jobId} propertyId={diagram.propertyId} shape={diagram.shape} />
       ) : null}
-      {findings.length === 0 && editing !== "new" ? (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-text-muted">No findings recorded.</p>
-          <Button type="button" kind="secondary" onClick={() => setEditing("new")}>
-            Add Finding
-          </Button>
-        </div>
-      ) : null}
-      {findings.length ? (
-        <div className="grid gap-5 lg:grid-cols-2">
+      {findings.length === 0 ? (
+        <p className="text-text-muted">No findings recorded.</p>
+      ) : (
+        <div className="grid items-start gap-5 lg:grid-cols-2">
           {diagram ? (
             <PoolDiagram
               shape={diagram.shape}
               hasSpa={diagram.hasSpa}
               title={`Pool diagram with ${findings.length} finding pins`}
+              className="w-full rounded-xl bg-surface"
               pins={findings
                 .map((f, i) => ({ f, n: i + 1 }))
                 .filter(({ f }) => f.pinX != null && f.pinY != null)
@@ -818,72 +1029,92 @@ export function FindingsEditor({
                 }))}
             />
           ) : null}
-          <ol className="space-y-3">
-            {findings.map((f, i) =>
-              editing === f.id ? (
-                <li key={f.id}>{form(f)}</li>
-              ) : (
-                <li key={f.id} className="card p-4">
-                  <div className="flex items-start gap-3">
-                    <span
-                      className="inline-flex size-7 shrink-0 items-center justify-center rounded-full font-display font-bold text-paper"
-                      style={{ backgroundColor: sev.get(f.severity)?.color }}
-                      aria-hidden="true"
-                    >
-                      {i + 1}
+          <ol className="grouped" aria-label="Findings">
+            {findings.map((f, i) => (
+              <SwipeRow
+                key={f.id}
+                first={i === 0}
+                inset="3.75rem"
+                deleteLabel={`Delete ${f.title}`}
+                disabled={pending}
+                onDelete={() => remove(f)}
+              >
+                <button
+                  type="button"
+                  className={LIST_BUTTON}
+                  onClick={() => setEditing(f.id)}
+                  aria-label={`Edit ${f.title}`}
+                  aria-describedby={`finding-${f.id}-detail`}
+                >
+                  <span
+                    className="inline-flex size-7 shrink-0 items-center justify-center rounded-full font-sans text-[0.9375rem] font-bold text-paper"
+                    style={{ backgroundColor: sev.get(f.severity)?.color }}
+                    aria-hidden="true"
+                  >
+                    {i + 1}
+                  </span>
+                  <span className="min-w-0 flex-1" id={`finding-${f.id}-detail`}>
+                    <span className="block font-semibold">{f.title}</span>
+                    <span className="block text-[0.9375rem] text-text-muted">
+                      {[
+                        sev.get(f.severity)?.name ?? f.severity,
+                        f.componentId ? componentLabel.get(f.componentId) : null,
+                        FINDING_STATUS_LABELS[f.status],
+                        f.pinX != null ? "Pinned on the diagram" : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold">{f.title}</p>
-                      <p className="text-[0.9375rem] text-text-muted">
-                        {[
-                          sev.get(f.severity)?.name ?? f.severity,
-                          f.componentId ? componentLabel.get(f.componentId) : null,
-                          FINDING_STATUS_LABELS[f.status],
-                          f.pinX != null ? "Pinned on the diagram" : null,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </p>
-                      {f.location ? <p className="mt-1">{f.location}</p> : null}
-                      {f.notes ? <p className="mt-1 text-[0.9375rem]">{f.notes}</p> : null}
-                      <div className="mt-3 flex flex-wrap gap-3">
-                        <button
-                          type="button"
-                          className={buttonClass("secondary", "min-w-24")}
-                          aria-label={`Edit ${f.title}`}
-                          onClick={() => setEditing(f.id)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          disabled={pending}
-                          className={buttonClass("danger")}
-                          aria-label={`Delete ${f.title}`}
-                          onClick={() => {
-                            if (window.confirm(`Delete “${f.title}”?`))
-                              run(deleteFinding, { job: jobId, finding: f.id });
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </li>
-              ),
-            )}
+                    {f.location ? <span className="mt-1 block">{f.location}</span> : null}
+                    {f.notes ? (
+                      <span className="mt-1 block text-[0.9375rem]">{f.notes}</span>
+                    ) : null}
+                  </span>
+                  <Chevron />
+                </button>
+              </SwipeRow>
+            ))}
           </ol>
         </div>
-      ) : null}
+      )}
       <ErrorText error={error} />
-      {editing === "new" ? (
-        form()
-      ) : findings.length ? (
-        <Button type="button" kind="secondary" onClick={() => setEditing("new")}>
-          Add Finding
-        </Button>
-      ) : null}
+      <Button type="button" kind="secondary" onClick={() => setEditing("new")}>
+        Add Finding
+      </Button>
+      <Sheet
+        open={editing === "new" || !!current}
+        onClose={close}
+        title={current ? "Edit Finding" : "Add Finding"}
+      >
+        {editing === "new" || current ? (
+          <FindingForm
+            key={current?.id ?? "new"}
+            jobId={jobId}
+            finding={current}
+            severities={severities}
+            components={components}
+            diagram={diagram}
+            onDone={close}
+          />
+        ) : null}
+        {current ? (
+          <SheetDelete
+            label="Delete Finding"
+            disabled={pending}
+            onClick={async () => {
+              if (
+                await confirm({
+                  title: `Delete “${current.title}”?`,
+                  confirmLabel: "Delete Finding",
+                  destructive: true,
+                })
+              )
+                remove(current);
+            }}
+          />
+        ) : null}
+      </Sheet>
+      {confirmSheet}
     </div>
   );
 }
@@ -901,7 +1132,7 @@ function PoolShapeSetting({
   const [value, setValue] = useState<DiagramShape | null>(shape);
   const { pending, error, run } = useRun();
   return (
-    <div>
+    <div className="rounded-xl bg-surface px-4 py-3">
       <ShapePicker
         value={value}
         hint={value ? undefined : "Not picked yet. Pick one so the diagram matches the pool."}
@@ -938,77 +1169,71 @@ function FindingForm({
   const [pin, setPin] = useState<{ x: number; y: number } | null>(
     finding?.pinX != null && finding.pinY != null ? { x: finding.pinX, y: finding.pinY } : null,
   );
+  // In a sheet: the sheet carries the title and Cancel.
   return (
-    <div className="card p-4">
-      <h3 className="mb-3 font-display text-lg font-bold">
-        {finding ? "Edit Finding" : "Add Finding"}
-      </h3>
-      <SettingsForm
-        action={saveFinding}
-        submit={finding ? "Save Finding" : "Add Finding"}
-        onSaved={onDone}
-      >
-        <input type="hidden" name="job" value={jobId} />
-        <input type="hidden" name="finding" value={finding?.id ?? ""} />
-        <input type="hidden" name="pin_x" value={pin ? String(pin.x) : ""} />
-        <input type="hidden" name="pin_y" value={pin ? String(pin.y) : ""} />
-        <SField
-          label="What"
-          name="title"
-          defaultValue={finding?.title ?? ""}
-          placeholder="Crack at the skimmer throat"
-        />
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <Select
-              label="Severity"
-              name="severity"
-              value={severity}
-              onChange={(e) => setSeverity(e.target.value)}
-              options={[
-                { value: "", label: "Choose…" },
-                ...severities.map((s) => ({ value: s.key, label: s.name })),
-              ]}
-            />
-            <FieldError name="severity" />
-          </div>
+    <SettingsForm
+      action={saveFinding}
+      submit={finding ? "Save Finding" : "Add Finding"}
+      onSaved={onDone}
+      primary
+    >
+      <input type="hidden" name="job" value={jobId} />
+      <input type="hidden" name="finding" value={finding?.id ?? ""} />
+      <input type="hidden" name="pin_x" value={pin ? String(pin.x) : ""} />
+      <input type="hidden" name="pin_y" value={pin ? String(pin.y) : ""} />
+      <SField
+        label="What"
+        name="title"
+        defaultValue={finding?.title ?? ""}
+        placeholder="Crack at the skimmer throat"
+      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
           <Select
-            label="Item (optional)"
-            name="component"
-            defaultValue={finding?.componentId ?? ""}
+            label="Severity"
+            name="severity"
+            value={severity}
+            onChange={(e) => setSeverity(e.target.value)}
             options={[
-              { value: "", label: "None" },
-              ...components.map((c) => ({ value: c.id, label: c.label })),
+              { value: "", label: "Choose…" },
+              ...severities.map((s) => ({ value: s.key, label: s.name })),
             ]}
           />
+          <FieldError name="severity" />
         </div>
-        <SField
-          label="Where (optional)"
-          name="location"
-          defaultValue={finding?.location ?? ""}
-          placeholder="Two feet left of the skimmer"
+        <Select
+          label="Item (optional)"
+          name="component"
+          defaultValue={finding?.componentId ?? ""}
+          options={[
+            { value: "", label: "None" },
+            ...components.map((c) => ({ value: c.id, label: c.label })),
+          ]}
         />
-        <Segmented
-          label="Status"
-          name="status"
-          value={status}
-          onChange={setStatus}
-          options={STATUSES.map((s) => ({ value: s, label: FINDING_STATUS_LABELS[s] }))}
+      </div>
+      <SField
+        label="Where (optional)"
+        name="location"
+        defaultValue={finding?.location ?? ""}
+        placeholder="Two feet left of the skimmer"
+      />
+      <Segmented
+        label="Status"
+        name="status"
+        value={status}
+        onChange={setStatus}
+        options={STATUSES.map((s) => ({ value: s, label: FINDING_STATUS_LABELS[s] }))}
+      />
+      {diagram ? (
+        <PinPicker
+          diagram={diagram}
+          pin={pin}
+          color={severities.find((s) => s.key === severity)?.color}
+          onChange={setPin}
         />
-        {diagram ? (
-          <PinPicker
-            diagram={diagram}
-            pin={pin}
-            color={severities.find((s) => s.key === severity)?.color}
-            onChange={setPin}
-          />
-        ) : null}
-        <STextArea label="Notes (optional)" name="notes" defaultValue={finding?.notes ?? ""} />
-      </SettingsForm>
-      <Button type="button" kind="quiet" className="mt-2" onClick={onDone}>
-        Cancel
-      </Button>
-    </div>
+      ) : null}
+      <STextArea label="Notes (optional)" name="notes" defaultValue={finding?.notes ?? ""} />
+    </SettingsForm>
   );
 }
 
@@ -1041,7 +1266,7 @@ function PinPicker({
         aria-describedby="pin-hint"
         tabIndex={0}
         data-testid="pin-picker"
-        className="w-full max-w-md cursor-crosshair touch-manipulation rounded-lg border border-control-border bg-surface focus:outline-3 focus:outline-offset-2 focus:outline-focus"
+        className="w-full max-w-md cursor-crosshair touch-manipulation rounded-xl border border-control-border bg-surface focus:outline-3 focus:outline-offset-2 focus:outline-focus"
         onClick={(e) => {
           const box = e.currentTarget.getBoundingClientRect();
           onChange({
@@ -1090,11 +1315,7 @@ function PinPicker({
       <p className="text-[0.9375rem]" aria-live="polite">
         {pin ? "Pin placed." : "No pin yet."}
         {pin ? (
-          <button
-            type="button"
-            className="ml-3 min-h-11 font-semibold text-link underline-offset-4 hover:underline"
-            onClick={() => onChange(null)}
-          >
+          <button type="button" className="ml-3 min-h-11 text-link" onClick={() => onChange(null)}>
             Clear Pin
           </button>
         ) : null}

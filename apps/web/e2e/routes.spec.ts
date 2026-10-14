@@ -210,7 +210,10 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   // 4. Suggest Times fits it into the routes already planned this week; pick the best.
   const card = tray.getByTestId("tray-job").filter({ hasText: name("tempe") });
   await card.getByRole("button", { name: "Suggest Times" }).click();
-  const list = card.getByRole("list", { name: "Suggested times" });
+  // The suggestions open in a sheet.
+  const list = page
+    .getByRole("dialog", { name: "Suggested Times" })
+    .getByRole("list", { name: "Suggested times" });
   await expect(list.getByRole("listitem").first()).toContainText(/Adds (no driving|.* of driving)/);
   await list
     .getByRole("button", { name: /^Schedule / })

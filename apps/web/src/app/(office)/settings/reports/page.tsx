@@ -29,6 +29,7 @@ export default async function ReportTemplatesPage() {
   return (
     <>
       <PageHeader
+        back={{ href: "/settings", label: "Settings" }}
         title="Report Templates"
         subtitle="The wording and tone of written reports. The facts (tests, findings, photos) always come from the job."
       />

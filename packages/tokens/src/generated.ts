@@ -35,7 +35,7 @@ export const tokens = {
     },
     "role": {
       "light": {
-        "bg": "#E9ECEF",
+        "bg": "#F2F2F7",
         "surface": "#FFFFFF",
         "text": "#12263A",
         "textMuted": "#5A6875",
@@ -49,7 +49,10 @@ export const tokens = {
         "diagramWater": "#CFE3F3",
         "onStatus": "#FFFFFF",
         "controlBorder": "#5A6875",
-        "chart": "#1F6FAE"
+        "chart": "#1F6FAE",
+        "fill": "#7676801F",
+        "separator": "#3C3C434A",
+        "thumb": "#FFFFFF"
       },
       "dark": {
         "bg": "#0E141A",
@@ -71,7 +74,10 @@ export const tokens = {
         "controlBorder": "#8A97A4",
         "warning": "#D9A040",
         "info": "#6AAEE6",
-        "chart": "#4A93D0"
+        "chart": "#4A93D0",
+        "fill": "#7676803D",
+        "separator": "#545458A6",
+        "thumb": "#636366"
       }
     }
   },
@@ -93,7 +99,7 @@ export const tokens = {
         600,
         700
       ],
-      "use": "All running text, form fields, tables. Use tabular numbers for readings."
+      "use": "All running text, form fields, tables. Use tabular numbers for readings. On Apple devices the website uses the system font (San Francisco) for body text and controls instead (owner, 2026-10-14)."
     }
   },
   "radius": {

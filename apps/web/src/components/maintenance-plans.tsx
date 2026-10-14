@@ -28,9 +28,7 @@ export function MaintenancePlans(p: Props) {
   const names = new Map(p.techs.map((t) => [t.id, t.name]));
   return (
     <div className="mt-4">
-      <h3 className="mb-2 font-display text-sm font-semibold tracking-widest text-text-muted uppercase">
-        Maintenance
-      </h3>
+      <h3 className="mb-2 text-[0.8125rem] text-text-muted uppercase">Maintenance</h3>
       {p.plans.length === 0 && editing !== "new" ? (
         <p className="text-[0.9375rem] text-text-muted">No regular cleaning for this pool.</p>
       ) : null}
@@ -38,7 +36,7 @@ export function MaintenancePlans(p: Props) {
         {p.plans.map((plan) => {
           const next = upcomingVisitDates(plan, p.today, 3);
           return (
-            <li key={plan.id} className="rounded-md bg-bg p-3" data-testid="plan">
+            <li key={plan.id} className="well p-3" data-testid="plan">
               {editing === plan.id ? (
                 <PlanForm {...p} plan={plan} onDone={() => setEditing(null)} />
               ) : (
@@ -101,7 +99,7 @@ export function MaintenancePlans(p: Props) {
       </ul>
       {p.canEdit ? (
         editing === "new" ? (
-          <div className="mt-2 rounded-md bg-bg p-3">
+          <div className="well mt-2 p-3">
             <PlanForm {...p} plan={null} onDone={() => setEditing(null)} />
           </div>
         ) : (

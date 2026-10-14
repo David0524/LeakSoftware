@@ -5,13 +5,16 @@ import {
   Button,
   ButtonLink,
   Empty,
+  Grouped,
   PageHeader,
+  Row,
   StatusBadge,
   buttonClass,
   pillClass,
 } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { OPEN_STATUSES, listJobs } from "@/lib/data";
+import { NavPlus } from "@/components/nav-bar";
 
 export const metadata: Metadata = { title: "Jobs · Tidemark" };
 
@@ -57,9 +60,10 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
     <>
       <PageHeader
         title="Jobs"
+        navAction={<NavPlus href="/jobs/new" label="New Job" />}
         subtitle={<span className="hidden sm:inline">{office.company.name}</span>}
         actions={<ButtonLink href="/jobs/new">New Job</ButtonLink>}
-        // Phones use the floating New Job button above the tab bar instead.
+        // Phones use the "+" in the navigation bar instead.
         actionsClassName="hidden sm:flex"
       />
       <nav
@@ -89,7 +93,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
           type="search"
           defaultValue={search}
           placeholder="Customer name or job number"
-          className="min-h-11 min-w-0 flex-1 rounded-xl border border-control-border bg-surface px-3 focus:outline-3 focus:outline-focus"
+          className="min-h-11 min-w-0 flex-1 rounded-[10px] border border-control-border bg-surface px-3 focus:outline-3 focus:outline-focus"
         />
         <Button type="submit" kind="secondary">
           Search
@@ -104,38 +108,34 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
         </Empty>
       ) : (
         <>
-          {/* Phones: one card per job. */}
-          <ul className="space-y-3 sm:hidden">
+          {/* Phones: an inset grouped list, a row per job. */}
+          <Grouped className="sm:hidden">
             {jobs.map((j) => (
-              <li key={j.id}>
-                <Link href={`/jobs/${j.id}`} className="block card p-4 active:bg-bg">
-                  <span className="flex items-start justify-between gap-3">
-                    <span className="font-semibold text-link">
-                      {j.number ? `#${j.number}` : "New job"}
-                      <span className="font-normal text-text-muted">
-                        {" "}
-                        · {JOB_TYPE_LABELS[j.type]}
-                      </span>
+              <Row
+                key={j.id}
+                href={`/jobs/${j.id}`}
+                label={<span className="font-semibold">{j.customer?.name ?? "Customer"}</span>}
+                detail={
+                  <>
+                    <span className="block">
+                      {j.number ? `#${j.number}` : "New job"} · {JOB_TYPE_LABELS[j.type]}
                     </span>
-                    <StatusBadge status={j.status} />
-                  </span>
-                  <span className="mt-1 block font-medium">{j.customer?.name ?? "Customer"}</span>
-                  {j.property ? (
-                    <span className="block text-[0.9375rem] text-text-muted">
-                      {formatAddress(j.property)}
+                    {j.property ? (
+                      <span className="block truncate">{formatAddress(j.property)}</span>
+                    ) : null}
+                    <span className="block text-text">
+                      {j.status === "in_progress" && j.started_at
+                        ? "Started"
+                        : formatSchedule(j.scheduled_start ?? null, now, office.company.timezone)}
+                      {" · "}
+                      {j.techName ?? "Unassigned"}
                     </span>
-                  ) : null}
-                  <span className="mt-1 block text-[0.9375rem]">
-                    {j.status === "in_progress" && j.started_at
-                      ? "Started"
-                      : formatSchedule(j.scheduled_start ?? null, now, office.company.timezone)}
-                    {" · "}
-                    {j.techName ?? "Unassigned"}
-                  </span>
-                </Link>
-              </li>
+                  </>
+                }
+                value={<StatusBadge status={j.status} />}
+              />
             ))}
-          </ul>
+          </Grouped>
           <div className="hidden overflow-x-auto card sm:block">
             <table className="w-full text-left">
               <thead className="border-b border-border text-[0.9375rem] text-text-muted">

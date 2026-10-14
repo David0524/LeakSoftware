@@ -20,6 +20,7 @@ import { Empty, PageHeader, StatusBadge, cx, iconButtonClass, pillClass } from "
 import { getOffice } from "@/lib/auth";
 import { mapsAppForRequest } from "@/lib/maps";
 import { loadRoutes, routeContext, routeKey, shopToday } from "@/server/route-days";
+import { NavPlus } from "@/components/nav-bar";
 
 export const metadata: Metadata = { title: "Today · Tidemark" };
 
@@ -64,6 +65,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
     <>
       <PageHeader
         title={mine ? "Today" : `Today · ${tech?.name ?? "Teammate"}`}
+        navAction={<NavPlus href="/jobs/new" label="New Job" />}
         subtitle={
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
             {formatDay(ctx.today, "long")}
@@ -133,7 +135,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                     aria-label={`Stop ${i + 1}: ${j.customer?.name ?? "Customer"}`}
                     className={cx(
                       "relative card p-3",
-                      isNext && "border-2 border-link",
+                      isNext && "ring-2 ring-link",
                       done && "opacity-70",
                     )}
                     data-testid="today-stop"
@@ -198,7 +200,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                           <AddressLink address={address} location={propertyLocation(j.property)} />
                         </p>
                         {j.property?.access_notes ? (
-                          <p className="mt-1 line-clamp-2 border-l-4 border-status-warning pl-2 text-[0.9375rem]">
+                          <p className="mt-1 line-clamp-2 rounded-lg bg-status-warning/10 px-2 py-1 text-[0.9375rem]">
                             {j.property.access_notes}
                           </p>
                         ) : null}

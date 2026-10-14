@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { formatCents } from "@leakbook/core";
 import { billMaintenanceMonth } from "@/app/actions/invoices";
 import type { UnbilledMonth } from "@/lib/data";
-import { Button, Card, Notice, SectionTitle } from "./ui";
+import { Button, Notice, SectionTitle } from "./ui";
 
 const monthName = (month: string) =>
   new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(
@@ -14,7 +14,7 @@ const monthName = (month: string) =>
 function MonthRow({ m, current }: { m: UnbilledMonth; current: boolean }) {
   const [state, action, pending] = useActionState(billMaintenanceMonth, {});
   return (
-    <li className="space-y-3 py-3 first:pt-0 last:pb-0">
+    <li className="space-y-3 px-4 py-3">
       <form action={action} className="flex flex-wrap items-center justify-between gap-3">
         <input type="hidden" name="month" value={m.month} />
         <span>
@@ -51,17 +51,17 @@ export function MonthlyBilling({
 }) {
   if (months.length === 0) return null;
   return (
-    <Card className="mb-6">
-      <SectionTitle>Maintenance to Bill</SectionTitle>
-      <p className="mb-4 text-[0.9375rem] text-text-muted">
-        One draft invoice per customer for the month, a line per visit. Review the drafts, then send
-        them. Last month is drafted automatically on the 1st.
-      </p>
-      <ul className="divide-y divide-border">
+    <section className="mb-6" aria-label="Maintenance to bill">
+      <SectionTitle>Maintenance to bill</SectionTitle>
+      <ul className="grouped">
         {months.map((m) => (
           <MonthRow key={m.month} m={m} current={m.month === thisMonth} />
         ))}
       </ul>
-    </Card>
+      <p className="mt-2 px-4 text-[0.8125rem] text-text-muted">
+        One draft invoice per customer for the month, a line per visit. Review the drafts, then send
+        them. Last month is drafted automatically on the 1st.
+      </p>
+    </section>
   );
 }

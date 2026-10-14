@@ -53,6 +53,7 @@ export default async function SeveritiesPage() {
   return (
     <>
       <PageHeader
+        back={{ href: "/settings", label: "Settings" }}
         title="Severities"
         subtitle="How serious a finding is. The color is the pin on the pool diagram."
       />

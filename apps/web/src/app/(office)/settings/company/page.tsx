@@ -55,7 +55,11 @@ export default async function CompanySettingsPage() {
 
   return (
     <>
-      <PageHeader title="Company and Branding" subtitle="Shown on reports, quotes, and invoices." />
+      <PageHeader
+        back={{ href: "/settings", label: "Settings" }}
+        title="Company and Branding"
+        subtitle="Shown on reports, quotes, and invoices."
+      />
       <div className="space-y-6">
         <Card>
           <h2 className="mb-4 font-display text-xl font-bold">Company profile</h2>

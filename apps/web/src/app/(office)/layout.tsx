@@ -23,7 +23,9 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
       >
         Skip to Content
       </a>
-      <header className="glass-brand sticky top-0 z-30 text-on-header">
+      {/* Phones use the iOS navigation bar each page draws (PageHeader); the brand bar, with
+          the desktop navigation, is for wider screens. */}
+      <header className="glass-brand sticky top-0 z-30 text-on-header max-sm:hidden">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2">
           <Link
             href="/today"
@@ -44,11 +46,11 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
       <Suspense fallback={null}>
         <AccessBanner />
       </Suspense>
-      {/* Room for the phone tab bar. */}
+      {/* Room for the phone navigation bar above and the tab bar below. */}
       <main
         id="main"
         tabIndex={-1}
-        className="mx-auto w-full max-w-7xl flex-1 px-4 pt-5 pb-32 outline-none sm:py-8"
+        className="mx-auto w-full max-w-7xl flex-1 px-4 pt-[calc(2.75rem+env(safe-area-inset-top))] pb-32 outline-none sm:py-8"
       >
         {children}
       </main>

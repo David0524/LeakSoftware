@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { deleteCustomer } from "@/app/actions/jobs";
+import { useConfirm } from "./sheet";
 import { Button, Notice } from "./ui";
 
 /**
@@ -11,6 +12,7 @@ import { Button, Notice } from "./ui";
 export function DeleteCustomerForm({ id, name }: { id: string; name: string }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [confirm, confirmSheet] = useConfirm();
   return (
     <div className="space-y-3">
       {error ? <Notice tone="error">{error}</Notice> : null}
@@ -18,8 +20,14 @@ export function DeleteCustomerForm({ id, name }: { id: string; name: string }) {
         type="button"
         kind="danger"
         disabled={pending}
-        onClick={() => {
-          if (!window.confirm(`Delete ${name}? This can't be undone from Tidemark.`)) return;
+        onClick={async () => {
+          const ok = await confirm({
+            title: `Delete ${name}?`,
+            message: "This can’t be undone from Tidemark.",
+            confirmLabel: "Delete Customer",
+            destructive: true,
+          });
+          if (!ok) return;
           setError(null);
           startTransition(async () => {
             const form = new FormData();
@@ -35,6 +43,7 @@ export function DeleteCustomerForm({ id, name }: { id: string; name: string }) {
       >
         {pending ? "Deleting…" : "Delete Customer"}
       </Button>
+      {confirmSheet}
     </div>
   );
 }

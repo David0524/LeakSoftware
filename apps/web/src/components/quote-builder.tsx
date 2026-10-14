@@ -17,7 +17,8 @@ import {
   updateQuoteLine,
 } from "@/app/actions/quote-draft";
 import type { QuoteRow } from "@/lib/data";
-import { Button, Field, Select } from "./ui";
+import { useConfirm } from "./sheet";
+import { Button, Field, Select, buttonClass } from "./ui";
 
 // The phone's Quote tab for a browser (M9.5): price the findings from the price book, add
 // custom lines, adjust quantities and prices, and give a discount. Sending is in QuotePanel.
@@ -129,7 +130,7 @@ export function QuoteBuilder({
                             }),
                           )
                         }
-                        className="min-h-11 rounded-xl border border-control-border bg-surface px-3 text-[0.9375rem] disabled:opacity-50"
+                        className={buttonClass("secondary", "px-4 text-[0.9375rem] font-medium")}
                       >
                         {added ? "✓ " : "+ "}
                         {item.name} · {formatCents(item.price_cents)}
@@ -296,6 +297,7 @@ function QuoteLineRow({
       return;
     run(() => updateQuoteLine({ quoteId, lineId: line.id, ...values }));
   };
+  const [confirm, confirmSheet] = useConfirm();
   const set = (k: keyof typeof values) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setValues((v) => ({ ...v, [k]: e.target.value }));
   return (
@@ -337,8 +339,14 @@ function QuoteLineRow({
             type="button"
             kind="quiet"
             disabled={pending}
-            onClick={() => {
-              if (window.confirm(`Remove “${line.description}”?`))
+            onClick={async () => {
+              if (
+                await confirm({
+                  title: `Remove “${line.description}” from the quote?`,
+                  confirmLabel: "Remove Line",
+                  destructive: true,
+                })
+              )
                 run(() => removeQuoteLine({ quoteId, lineId: line.id }));
             }}
           >
@@ -346,6 +354,7 @@ function QuoteLineRow({
           </Button>
         </div>
       </div>
+      {confirmSheet}
     </li>
   );
 }

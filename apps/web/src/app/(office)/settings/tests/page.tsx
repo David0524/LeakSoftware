@@ -50,6 +50,7 @@ export default async function TestTypesPage() {
   return (
     <>
       <PageHeader
+        back={{ href: "/settings", label: "Settings" }}
         title="Test Types"
         subtitle="Tests techs record on the phone. Pressure and bucket tests do the math; set the pass and fail lines your shop uses."
       />

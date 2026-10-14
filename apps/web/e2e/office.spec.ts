@@ -102,8 +102,11 @@ test("owner edits the price book", async ({ page }) => {
   // Clean up.
   const saved = page.getByTestId("price-item").filter({ hasText: name });
   await saved.locator("summary").click();
-  page.once("dialog", (d) => void d.accept());
   await saved.getByRole("button", { name: "Remove Item" }).click();
+  await page
+    .getByRole("alertdialog", { name: "Remove this item from the price book?" })
+    .getByRole("button", { name: "Remove Item" })
+    .click();
   await expect(page.getByTestId("price-item").filter({ hasText: name })).toHaveCount(0);
 });
 
@@ -200,15 +203,22 @@ test("owners delete a customer only when no work is open", async ({ page }) => {
     .single();
 
   await signIn(page, OWNER, "/customers/00000000-0000-4000-8000-00000000c003");
-  page.once("dialog", (d) => void d.accept());
+  // Delete asks first, in an action sheet.
   await page.getByRole("button", { name: "Delete Customer" }).click();
+  await page
+    .getByRole("alertdialog", { name: "Delete Sam Sample?" })
+    .getByRole("button", { name: "Delete Customer" })
+    .click();
   await expect(
     page.getByText(/^Sam Sample has \d+ open jobs?\. Finish or cancel them first\.$/),
   ).toBeVisible();
 
   await page.goto(`/customers/${added!.id}`);
-  page.once("dialog", (d) => void d.accept());
   await page.getByRole("button", { name: "Delete Customer" }).click();
+  await page
+    .getByRole("alertdialog", { name: `Delete ${name}?` })
+    .getByRole("button", { name: "Delete Customer" })
+    .click();
   await page.waitForURL((url) => url.pathname === "/customers");
   await expect(page.getByText(name)).toHaveCount(0);
 });
@@ -282,12 +292,26 @@ test("on a phone: a tab bar moves between sections and nothing scrolls sideways"
   await expect(page.getByRole("heading", { level: 1, name: "Warranties" })).toBeVisible();
   await expect(tabs.getByRole("link", { name: "More" })).toHaveAttribute("aria-current", "page");
   await tabs.getByRole("link", { name: "More" }).click();
+  // Phones have no header sun/moon button: More › Appearance switches it.
+  const appearance = page.getByRole("radiogroup", { name: "Appearance" });
+  await appearance.getByRole("radio", { name: "Dark" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await appearance.getByRole("radio", { name: "Light" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  // Settings lists its sections; each one's navigation bar goes back to Settings.
   await page.getByRole("main").getByRole("link", { name: "Settings" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+  await page
+    .getByRole("main")
+    .getByRole("link", { name: /^Company and Branding/ })
+    .click();
   await expect(page.getByRole("heading", { level: 1, name: "Company and Branding" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
   await tabs.getByRole("link", { name: "Jobs" }).click();
 
-  // Jobs are cards on a phone; one opens its job.
+  // Jobs are rows of a grouped list on a phone; one opens its job.
   await page
     .getByRole("link", { name: /Sam Sample/ })
     .first()
@@ -350,25 +374,30 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
 
   // A pressure test: the calculator works it out as it's typed.
   await jobSection(tech, "Findings");
+  // Add Test opens a sheet; adding closes it.
   await tech.getByRole("button", { name: "Add Test" }).click();
-  await tech.getByLabel("Test", { exact: true }).selectOption({ label: "Pressure test" });
-  await tech.getByLabel("Line", { exact: true }).fill(itemName);
-  await tech.getByLabel("Start pressure (PSI)").fill("20");
-  await tech.getByLabel("End pressure (PSI)").fill("12");
-  await tech.getByLabel("Duration (min)").fill("15");
-  await expect(tech.getByText("Dropped 8 PSI in 15 min").first()).toBeVisible();
-  await tech.locator("form").getByRole("button", { name: "Add Test" }).click();
+  const addTest = tech.getByRole("dialog", { name: "Add Test" });
+  await addTest.getByLabel("Test", { exact: true }).selectOption({ label: "Pressure test" });
+  await addTest.getByLabel("Line", { exact: true }).fill(itemName);
+  await addTest.getByLabel("Start pressure (PSI)").fill("20");
+  await addTest.getByLabel("End pressure (PSI)").fill("12");
+  await addTest.getByLabel("Duration (min)").fill("15");
+  await expect(addTest.getByText("Dropped 8 PSI in 15 min").first()).toBeVisible();
+  await addTest.getByRole("button", { name: "Add Test" }).click();
+  await expect(addTest).toBeHidden();
   await expect(tech.getByRole("button", { name: "Edit Pressure test" })).toBeVisible();
   await expect(tech.getByText("Fail", { exact: true })).toBeVisible();
 
   // A finding, pinned on the pool diagram.
   await tech.getByRole("button", { name: "Add Finding" }).click();
-  await tech.getByLabel("What").fill(`Line break ${RUN}`);
-  await tech.getByLabel("Severity").selectOption({ label: "Major" });
-  await tech.getByLabel("Where (optional)").fill("Return line under the deck");
-  await tech.getByTestId("pin-picker").click({ position: { x: 60, y: 40 } });
-  await expect(tech.getByText("Pin placed.")).toBeVisible();
-  await tech.locator("form").getByRole("button", { name: "Add Finding" }).click();
+  const addFinding = tech.getByRole("dialog", { name: "Add Finding" });
+  await addFinding.getByLabel("What").fill(`Line break ${RUN}`);
+  await addFinding.getByLabel("Severity").selectOption({ label: "Major" });
+  await addFinding.getByLabel("Where (optional)").fill("Return line under the deck");
+  await addFinding.getByTestId("pin-picker").click({ position: { x: 60, y: 40 } });
+  await expect(addFinding.getByText("Pin placed.")).toBeVisible();
+  await addFinding.getByRole("button", { name: "Add Finding" }).click();
+  await expect(addFinding).toBeHidden();
   await expect(tech.getByText(`Line break ${RUN}`, { exact: true })).toBeVisible();
   await expect(tech.getByText(/Major · Open · Pinned on the diagram/)).toBeVisible();
   await expect(tech.getByRole("img", { name: "Pool diagram with 1 finding pins" })).toBeVisible();

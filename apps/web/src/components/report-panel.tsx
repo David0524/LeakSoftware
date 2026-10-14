@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import {
   saveText,
   sendReportAction,
@@ -10,6 +10,7 @@ import {
 import { reviewWithCustomer } from "@/app/actions/sign-off";
 import type { ReportRow } from "@/lib/data";
 import { CopyLink } from "./settings-forms";
+import { useConfirm } from "./sheet";
 import { Button, Notice, buttonClass, cx } from "./ui";
 
 function Status({ state }: { state: ReportFormState }) {
@@ -51,6 +52,9 @@ export function ReportPanel({
   // opened by Write Draft. Folding only hides it, so unsaved edits stay.
   const [open, setOpen] = useState(false);
   const bodyId = `report-${template}-draft`;
+  const [confirm, confirmSheet] = useConfirm();
+  const writeForm = useRef<HTMLFormElement>(null);
+  const confirmed = useRef(false);
 
   return (
     <section
@@ -98,20 +102,29 @@ export function ReportPanel({
       </div>
 
       <form
+        ref={writeForm}
         action={(form) => {
           setOpen(true);
           draftAction(form);
         }}
         className="mt-3 flex flex-wrap items-center gap-3"
         onSubmit={(e) => {
-          // Writing again replaces the draft's text, edits included.
-          if (
-            draft?.final_sections &&
-            !window.confirm(
-              "Write the draft again? The new draft replaces this one, including your edits.",
-            )
-          )
-            e.preventDefault();
+          // Writing again replaces the draft's text, edits included: ask first.
+          if (!draft?.final_sections || confirmed.current) {
+            confirmed.current = false;
+            return;
+          }
+          e.preventDefault();
+          void confirm({
+            title: "Write the draft again?",
+            message: "The new draft replaces this one, including your edits.",
+            confirmLabel: "Replace Draft",
+            destructive: true,
+          }).then((ok) => {
+            if (!ok) return;
+            confirmed.current = true;
+            writeForm.current?.requestSubmit();
+          });
         }}
       >
         <input type="hidden" name="job" value={jobId} />
@@ -158,7 +171,7 @@ export function ReportPanel({
                   name="text"
                   defaultValue={s.text}
                   rows={Math.min(12, Math.max(3, s.text.split("\n").length + 2))}
-                  className="block w-full rounded-xl border border-control-border bg-surface px-3 py-2"
+                  className="block w-full rounded-[10px] border border-control-border bg-surface px-3 py-2"
                 />
               </div>
             ))}
@@ -177,7 +190,7 @@ export function ReportPanel({
               </span>
             </div>
 
-            <div className="mt-6 border-t border-border pt-4">
+            <div className="mt-6 border-t-[0.5px] border-separator pt-4">
               <h4 className="font-medium">Finish version {draft.version}</h4>
               <p className="text-[0.9375rem] text-text-muted">
                 Hand the phone to the customer: they read the report and sign at the bottom. Signing
@@ -232,7 +245,7 @@ export function ReportPanel({
       </div>
 
       {latestSent ? (
-        <form className="mt-6 border-t border-border pt-4" data-testid="finished-report">
+        <form className="mt-6 border-t-[0.5px] border-separator pt-4" data-testid="finished-report">
           <input type="hidden" name="job" value={jobId} />
           <input type="hidden" name="report" value={latestSent.id} />
           <h4 className="font-medium">Version {latestSent.version} is finished</h4>
@@ -261,9 +274,9 @@ export function ReportPanel({
       ) : null}
 
       {sent.length ? (
-        <div className="mt-6 border-t border-border pt-4">
+        <div className="mt-6 border-t-[0.5px] border-separator pt-4">
           <h4 className="font-medium">Versions</h4>
-          <ul className="mt-1 divide-y divide-border">
+          <ul className="mt-1 divide-y-[0.5px] divide-separator">
             {sent.map((r) => (
               <li key={r.id} className="flex flex-wrap items-center justify-between gap-x-3 py-1">
                 <span className="text-[0.9375rem]">
@@ -306,6 +319,7 @@ export function ReportPanel({
           </ul>
         </div>
       ) : null}
+      {confirmSheet}
     </section>
   );
 }
@@ -338,7 +352,7 @@ function SendControls({
             name="to"
             type="email"
             defaultValue={customerEmail ?? ""}
-            className="block min-h-11 w-full rounded-xl border border-control-border bg-surface px-3"
+            className="block min-h-11 w-full rounded-[10px] border border-control-border bg-surface px-3"
           />
         </div>
         <Button

@@ -36,39 +36,45 @@ export function JobSections({ sections }: { sections: JobSection[] }) {
 
   return (
     <>
-      <div
-        role="tablist"
-        aria-label="Job sections"
-        className="glass glass-strong sticky top-[4.25rem] z-20 mb-4 grid grid-cols-5 gap-0.5 rounded-full p-1 after:pointer-events-none after:absolute after:inset-x-4 after:-bottom-3 after:h-3 after:bg-linear-to-b after:from-bg after:to-transparent sm:hidden"
-      >
-        {sections.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            role="tab"
-            id={`tab-${s.id}`}
-            aria-selected={active === s.id}
-            aria-controls={`part-${s.id}`}
-            onClick={() => choose(s.id)}
-            className={cx(
-              "relative min-h-11 rounded-full px-1 text-[0.8125rem] font-semibold",
-              active === s.id ? "bg-text text-bg" : "text-text",
-            )}
-          >
-            {s.label}
-            {s.badge ? (
-              <span
-                className={cx(
-                  "absolute -top-1 right-0 min-w-5 rounded-full px-1 text-[0.6875rem] leading-5",
-                  "bg-status-warning text-on-status",
-                )}
-                aria-label={`, ${s.badge} to do`}
-              >
-                {s.badge}
-              </span>
-            ) : null}
-          </button>
-        ))}
+      {/* The glass layer floats over the page; on it, the gray segmented track. */}
+      <div className="glass glass-strong sticky top-[calc(3rem+env(safe-area-inset-top))] z-20 mb-4 rounded-full p-1 after:pointer-events-none after:absolute after:inset-x-4 after:-bottom-3 after:h-3 after:bg-linear-to-b after:from-bg after:to-transparent sm:hidden">
+        <div
+          role="tablist"
+          aria-label="Job sections"
+          className="grid grid-cols-5 gap-0.5 rounded-full bg-fill p-0.5"
+        >
+          {sections.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              role="tab"
+              id={`tab-${s.id}`}
+              aria-selected={active === s.id}
+              aria-controls={`part-${s.id}`}
+              onClick={() => choose(s.id)}
+              // The iOS segmented control: the chosen part on a raised white thumb.
+              className={cx(
+                "relative min-h-11 rounded-full px-1 text-[0.8125rem] transition-colors",
+                active === s.id
+                  ? "bg-thumb font-semibold text-text shadow-[0_3px_8px_rgb(0_0_0/0.12),0_3px_1px_rgb(0_0_0/0.04)]"
+                  : "font-medium text-text",
+              )}
+            >
+              {s.label}
+              {s.badge ? (
+                <span
+                  className={cx(
+                    "absolute -top-1 right-0 min-w-5 rounded-full px-1 text-[0.6875rem] leading-5",
+                    "bg-status-warning text-on-status",
+                  )}
+                  aria-label={`, ${s.badge} to do`}
+                >
+                  {s.badge}
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </div>
       </div>
       {sections.map((s, i) => (
         <div

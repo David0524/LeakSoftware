@@ -15,6 +15,7 @@ export default async function BillingPage({ searchParams }: PageProps<"/settings
   return (
     <>
       <PageHeader
+        back={{ href: "/settings", label: "Settings" }}
         title="Tidemark Billing"
         subtitle="Your shop’s subscription to Tidemark. Separate from the payments your customers make to you."
       />

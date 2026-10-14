@@ -23,7 +23,7 @@ import {
   seesAllJobs,
 } from "@leakbook/core";
 import { GalleryImage } from "@/components/gallery-image";
-import { ContactButtons } from "@/components/contact-buttons";
+import { MailIcon, MessageIcon, PhoneIcon } from "@/components/icons";
 import { JobSections } from "@/components/job-sections";
 import { MediaActions, MediaCapture, SignatureForm } from "@/components/media-work";
 import {
@@ -35,7 +35,16 @@ import {
   TestsEditor,
   type ChecklistRow,
 } from "@/components/job-work";
-import { Card, Empty, Notice, PageHeader, SectionTitle, StatusBadge } from "@/components/ui";
+import {
+  Card,
+  Empty,
+  Grouped,
+  Notice,
+  PageHeader,
+  Row,
+  StatusBadge,
+  iconButtonClass,
+} from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import {
   auditFor,
@@ -59,7 +68,7 @@ import { RemoveSignature } from "@/components/remove-signature";
 import { ReportPanel } from "@/components/report-panel";
 import { AddressLink } from "@/components/open-in-maps";
 import { MarkLocationHere } from "@/components/pool-location";
-import { ScheduleForm } from "@/components/schedule-form";
+import { JobSchedule } from "@/components/schedule-form";
 import { emailConfigured } from "@/server/email";
 
 export const metadata: Metadata = { title: "Job · Tidemark" };
@@ -80,15 +89,8 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
 
   return (
     <>
-      <p className="mb-2">
-        <Link
-          href="/jobs"
-          className="inline-flex min-h-11 items-center gap-1 text-link underline-offset-4 hover:underline"
-        >
-          ← Jobs
-        </Link>
-      </p>
       <PageHeader
+        back={{ href: "/jobs", label: "Jobs" }}
         title={job.number ? `Job #${job.number}` : "New Job"}
         subtitle={
           <span className="flex flex-wrap items-center gap-3">
@@ -120,38 +122,36 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
             label: "Details",
             content: (
               <>
-                {/* One grouped card: customer, pool, and tech as rows (columns on wide screens). */}
-                <section className="card grid divide-y divide-border lg:grid-cols-3 lg:divide-x lg:divide-y-0">
-                  <div className="p-5">
-                    <SectionTitle>Customer</SectionTitle>
-                    {job.customer ? (
-                      <Link
-                        href={`/customers/${job.customer.id}`}
-                        className="inline-flex min-h-11 items-center text-xl font-semibold text-link underline-offset-4 hover:underline"
-                      >
-                        {job.customer.name}
-                      </Link>
-                    ) : (
-                      <p>Customer</p>
-                    )}
-                    <ContactButtons
-                      name={job.customer?.name ?? "the customer"}
-                      phone={job.customer?.phone}
-                      email={job.customer?.email}
-                    />
-                  </div>
-                  <div className="p-5">
-                    <SectionTitle>Pool</SectionTitle>
+                {/* iOS Settings-style groups: customer, pool, and who's on it (two columns
+                    on wide screens), then the On Site form. */}
+                <div className="grid items-start gap-x-6 gap-y-6 lg:grid-cols-2">
+                  <div className="space-y-6">
+                    <Grouped title="Customer">
+                      {job.customer ? (
+                        <Row
+                          href={`/customers/${job.customer.id}`}
+                          label={<span className="font-semibold">{job.customer.name}</span>}
+                        />
+                      ) : (
+                        <Row label="No customer" />
+                      )}
+                      <ContactRow
+                        name={job.customer?.name ?? "the customer"}
+                        phone={job.customer?.phone}
+                        email={job.customer?.email}
+                      />
+                    </Grouped>
+
                     {job.property ? (
-                      <>
-                        <p className="font-semibold">
-                          <AddressLink
-                            address={formatAddress(job.property)}
-                            location={propertyLocation(job.property)}
-                          />
-                        </p>
-                        <p className="text-text-muted">
-                          {[
+                      <Grouped title="Pool">
+                        <Row
+                          label={
+                            <AddressLink
+                              address={formatAddress(job.property)}
+                              location={propertyLocation(job.property)}
+                            />
+                          }
+                          detail={[
                             job.property.pool_type
                               ? POOL_TYPE_LABELS[job.property.pool_type]
                               : null,
@@ -159,71 +159,81 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                           ]
                             .filter(Boolean)
                             .join(" · ")}
-                        </p>
+                        />
                         {job.property.access_notes ? (
-                          <p className="mt-2 border-l-4 border-status-warning pl-3">
-                            {job.property.access_notes}
-                          </p>
+                          <Row>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-[0.9375rem] text-text-muted">Access</span>
+                              <span className="block">{job.property.access_notes}</span>
+                            </span>
+                          </Row>
                         ) : null}
                         {propertyLocation(job.property) ? null : (
-                          <p className="mt-1 text-[0.9375rem] text-text-muted">
-                            Not on the map yet.{" "}
+                          <Row>
+                            <span className="min-w-0 flex-1 text-[0.9375rem] text-text-muted">
+                              Not on the map yet.
+                            </span>
                             <MarkLocationHere
                               target={{ property: job.property.id }}
                               label="Mark Location Here"
                             />
-                          </p>
+                          </Row>
                         )}
-                      </>
+                      </Grouped>
+                    ) : null}
+
+                    <Grouped title="Assigned to">
+                      <Row label="Tech" value={job.techName ?? "Nobody yet"} />
+                      {job.secondTechName ? <Row label="With" value={job.secondTechName} /> : null}
+                      {job.fee_cents != null ? (
+                        <Row
+                          label="Detection fee"
+                          value={<span className="tabular-nums">{formatCents(job.fee_cents)}</span>}
+                        />
+                      ) : null}
+                    </Grouped>
+
+                    {answers.length ? (
+                      <Grouped title="When they booked">
+                        {answers.map(({ q, a }) => (
+                          <Row key={q.key}>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-[0.9375rem] text-text-muted">
+                                {q.label}
+                              </span>
+                              <span className="block">{Array.isArray(a) ? a.join(", ") : a}</span>
+                            </span>
+                          </Row>
+                        ))}
+                      </Grouped>
                     ) : null}
                   </div>
-                  <div className="p-5">
-                    <SectionTitle>Assigned to</SectionTitle>
-                    <p className="text-xl font-semibold">{job.techName ?? "Nobody yet"}</p>
-                    {job.secondTechName ? <p>With {job.secondTechName}</p> : null}
-                    {job.fee_cents != null ? (
-                      <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3">
-                        <dt className="text-text-muted">Detection fee</dt>
-                        <dd>{formatCents(job.fee_cents)}</dd>
-                      </dl>
-                    ) : null}
-                  </div>
-                </section>
 
-                <Card className="mt-5 max-w-3xl" aria-labelledby="on-site">
-                  <h2 id="on-site" className="mb-3 font-display text-xl font-bold">
-                    On Site
-                  </h2>
-                  <JobDetailsForm
-                    jobId={job.id}
-                    fee={job.fee_cents ?? null}
-                    locationMarked={job.location_marked ?? false}
-                    notes={job.summary_notes ?? ""}
-                  />
-                </Card>
-
-                {answers.length ? (
-                  <Card className="mt-5">
-                    <SectionTitle>When they booked</SectionTitle>
-                    <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-[auto_1fr]">
-                      {answers.map(({ q, a }) => (
-                        <div key={q.key} className="contents">
-                          <dt className="text-text-muted">{q.label}</dt>
-                          <dd>{Array.isArray(a) ? a.join(", ") : a}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </Card>
-                ) : null}
+                  <section aria-labelledby="on-site">
+                    <h2
+                      id="on-site"
+                      className="mb-2 font-sans text-[0.8125rem] font-normal text-text-muted uppercase"
+                    >
+                      On Site
+                    </h2>
+                    <JobDetailsForm
+                      jobId={job.id}
+                      fee={job.fee_cents ?? null}
+                      locationMarked={job.location_marked ?? false}
+                      notes={job.summary_notes ?? ""}
+                    />
+                  </section>
+                </div>
 
                 {job.type === "repair" || ["unscheduled", "scheduled"].includes(job.status) ? (
-                  <section className="mt-8" aria-labelledby="schedule">
-                    <h2 id="schedule" className="mb-3 font-display text-2xl font-bold">
+                  <section className="mt-8 max-w-2xl" aria-labelledby="schedule">
+                    <h2
+                      id="schedule"
+                      className="mb-2 font-sans text-[0.8125rem] font-normal text-text-muted uppercase"
+                    >
                       Schedule
                     </h2>
-                    <Card className="max-w-2xl">
-                      <Schedule detail={detail} tz={tz} />
-                    </Card>
+                    <Schedule detail={detail} tz={tz} />
                   </section>
                 ) : null}
 
@@ -231,7 +241,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                   <section className="mt-6" aria-labelledby="timeline">
                     <h2
                       id="timeline"
-                      className="mb-2 font-display text-sm font-semibold tracking-widest text-text-muted uppercase"
+                      className="mb-2 font-sans text-[0.8125rem] font-normal text-text-muted uppercase"
                     >
                       Timeline
                     </h2>
@@ -677,7 +687,10 @@ async function Schedule({ detail, tz }: { detail: JobDetail; tz: string }) {
       : "2";
   const seesAll = seesAllJobs(office.company.role, (await getCompany(office)).settings);
   return (
-    <ScheduleForm
+    <JobSchedule
+      tech={job.techName ?? "Nobody yet"}
+      when={job.scheduled_start ? formatSchedule(job.scheduled_start, new Date(), tz) : null}
+      fixed={job.arrival_fixed ?? false}
       jobId={job.id}
       techs={team
         .filter((m) => m.status === "active" && (seesAll || m.user_id === office.user.id))
@@ -878,11 +891,11 @@ async function Timeline({ detail, tz }: { detail: JobDetail; tz: string }) {
   const SHOWN = 3;
   const rest = events.slice(SHOWN, 200);
   return (
-    <div className="border-l-2 border-border pl-3">
+    <div className="rounded-xl bg-surface px-4 py-3">
       <ol className="space-y-1">{events.slice(0, SHOWN).map(row)}</ol>
       {rest.length ? (
         <details className="group">
-          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center font-semibold text-link [&::-webkit-details-marker]:hidden">
+          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center text-link [&::-webkit-details-marker]:hidden">
             <span className="group-open:hidden">Show {rest.length} More</span>
             <span className="hidden group-open:inline">Show Less</span>
           </summary>
@@ -890,5 +903,55 @@ async function Timeline({ detail, tz }: { detail: JobDetail; tz: string }) {
         </details>
       ) : null}
     </div>
+  );
+}
+
+/** Call, text, and email as round icon buttons on the right of the customer's number. */
+function ContactRow({
+  name,
+  phone,
+  email,
+}: {
+  name: string;
+  phone: string | null | undefined;
+  email: string | null | undefined;
+}) {
+  if (!phone && !email) return null;
+  return (
+    <Row
+      label={phone ?? email}
+      detail={phone && email ? email : undefined}
+      value={
+        <span className="flex gap-2">
+          {phone ? (
+            <>
+              <a
+                href={`tel:${phone}`}
+                aria-label={`Call ${name}, ${phone}`}
+                className={iconButtonClass()}
+              >
+                <PhoneIcon />
+              </a>
+              <a
+                href={`sms:${phone.replace(/[^\d+]/g, "")}`}
+                aria-label={`Text ${name}`}
+                className={iconButtonClass()}
+              >
+                <MessageIcon />
+              </a>
+            </>
+          ) : null}
+          {email ? (
+            <a
+              href={`mailto:${email}`}
+              aria-label={`Email ${name}, ${email}`}
+              className={iconButtonClass()}
+            >
+              <MailIcon />
+            </a>
+          ) : null}
+        </span>
+      }
+    />
   );
 }

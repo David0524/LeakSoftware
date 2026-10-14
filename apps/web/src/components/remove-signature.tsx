@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { removeSignature } from "@/app/actions/media";
+import { useConfirm } from "./sheet";
 
 /**
  * Remove a signature, after a confirm (apple-design: destructive actions get a warning).
@@ -10,18 +11,22 @@ import { removeSignature } from "@/app/actions/media";
 export function RemoveSignature({ id, jobId, name }: { id: string; jobId: string; name: string }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirm, confirmSheet] = useConfirm();
   return (
     <>
       <button
         type="button"
         disabled={pending}
         aria-label={`Remove signature of ${name}`}
-        className="-ml-3 inline-flex min-h-11 items-center rounded-full px-3 font-display text-[0.9375rem] font-bold text-status-fail hover:bg-status-fail/10 disabled:opacity-50"
-        onClick={() => {
+        className="-ml-3 inline-flex min-h-11 items-center rounded-full px-3 text-[1.0625rem] text-status-fail hover:bg-status-fail/10 disabled:opacity-50"
+        onClick={async () => {
           if (
-            !window.confirm(
-              `Remove ${name}’s signature? Reports already finished keep it; new versions won’t show it.`,
-            )
+            !(await confirm({
+              title: `Remove ${name}’s signature?`,
+              message: "Reports already finished keep it; new versions won’t show it.",
+              confirmLabel: "Remove Signature",
+              destructive: true,
+            }))
           )
             return;
           start(async () => {
@@ -37,6 +42,7 @@ export function RemoveSignature({ id, jobId, name }: { id: string; jobId: string
           {error}
         </p>
       ) : null}
+      {confirmSheet}
     </>
   );
 }

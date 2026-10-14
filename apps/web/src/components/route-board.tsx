@@ -23,7 +23,18 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { useId, useMemo, useOptimistic, useState, useTransition, type ReactNode } from "react";
+import {
+  useCallback,
+  useId,
+  useMemo,
+  useOptimistic,
+  useRef,
+  useState,
+  useTransition,
+  type MouseEvent,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import { durationLabel, type JobStatus, type LatLng } from "@leakbook/core";
 import {
   moveJob,
@@ -33,11 +44,12 @@ import {
   type Suggestion,
 } from "@/app/actions/routes";
 import { AddressLink, OpenRouteInMaps } from "./open-in-maps";
+import { Sheet } from "./sheet";
 import { Button, Notice, StatusBadge, buttonClass, cx } from "./ui";
 
 // The schedule as routes (routing, owner request 2026-10-13): each tech's day in order with
 // the driving between stops. Drag a job to another place, tech, or day (mouse, touch, or
-// keyboard); on a phone, Move… does the same in a sheet. Jobs waiting for a time sit in the
+// keyboard); on a phone, Move… (or a swipe left on the stop) does the same in a sheet. Jobs waiting for a time sit in the
 // tray with suggestions that fit them into the routes already planned.
 
 export interface BoardStop {
@@ -145,6 +157,8 @@ export function RouteBoard({
   const [dragging, setDragging] = useState<BoardStop | null>(null);
   const [moving, setMoving] = useState<BoardStop | null>(null);
   const byKey = useMemo(() => new Map(columns.map((c) => [c.key, c])), [columns]);
+  // Stable, so the open sheet isn't re-focused each time the board re-renders.
+  const closeMove = useCallback(() => setMoving(null), []);
   // A stable id keeps dnd-kit's generated ids the same on the server and in the browser.
   const dndId = useId();
 
@@ -283,7 +297,7 @@ export function RouteBoard({
           lists={lists}
           techs={techs}
           today={today}
-          onClose={() => setMoving(null)}
+          onClose={closeMove}
           onMove={(to, index) => {
             setMoving(null);
             moveTo(moving.id, to, index);
@@ -411,6 +425,7 @@ function Grip(props: Record<string, unknown> & { label: string }) {
   return (
     <button
       type="button"
+      data-grip
       aria-label={label}
       // Phones use Move… instead: dragging inside a scrolling page is fiddly, and the handle's
       // column took width from the address.
@@ -426,6 +441,68 @@ function Grip(props: Record<string, unknown> & { label: string }) {
   );
 }
 
+/** How far a swipe left opens a stop to show Move. */
+const REVEAL = 88;
+
+/**
+ * Swipe left on a stop (touch only) to show Move behind it, as in iOS lists. A tap on an
+ * open stop closes it. The visible Move… button does the same for everyone else.
+ */
+function useSwipeToReveal(enabled: boolean) {
+  const [open, setOpen] = useState(false);
+  const [drag, setDrag] = useState<number | null>(null);
+  const live = useRef<number | null>(null);
+  const gesture = useRef<{ x: number; y: number; base: number; axis: "x" | "y" | null } | null>(
+    null,
+  );
+  const swiped = useRef(false);
+  const offset = drag ?? (open ? -REVEAL : 0);
+  const end = () => {
+    const g = gesture.current;
+    gesture.current = null;
+    if (!g || g.axis !== "x") return;
+    setOpen((live.current ?? g.base) < -REVEAL / 2);
+    live.current = null;
+    setDrag(null);
+  };
+  const handlers = enabled
+    ? {
+        onPointerDown: (e: PointerEvent) => {
+          // Touch only, and not on the drag handle (wider screens).
+          if (e.pointerType !== "touch" || (e.target as Element).closest("[data-grip]")) return;
+          swiped.current = false;
+          gesture.current = { x: e.clientX, y: e.clientY, base: open ? -REVEAL : 0, axis: null };
+        },
+        onPointerMove: (e: PointerEvent) => {
+          const g = gesture.current;
+          if (!g) return;
+          const dx = e.clientX - g.x;
+          const dy = e.clientY - g.y;
+          if (!g.axis) {
+            if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+            g.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+          }
+          if (g.axis !== "x") return;
+          swiped.current = true;
+          live.current = Math.min(0, Math.max(-REVEAL - 24, g.base + dx));
+          setDrag(live.current);
+        },
+        onPointerUp: end,
+        onPointerCancel: end,
+        // A swipe isn't a tap on the link under the finger; a tap on an open stop closes it.
+        onClickCapture: (e: MouseEvent) => {
+          if (swiped.current || open) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!swiped.current) setOpen(false);
+            swiped.current = false;
+          }
+        },
+      }
+    : {};
+  return { offset, dragging: drag !== null, handlers, close: () => setOpen(false) };
+}
+
 function StopCard({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop) => void }) {
   const {
     attributes,
@@ -436,59 +513,85 @@ function StopCard({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
     transition,
     isDragging,
   } = useSortable({ id: s.id, disabled: !s.draggable });
+  const swipe = useSwipeToReveal(s.draggable);
   return (
     <article
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       data-testid="stop"
       aria-label={`${s.time ?? "No time"}, ${s.customer}`}
-      className={cx("well flex gap-1 p-2", isDragging && "opacity-40")}
+      className={cx("relative overflow-hidden rounded-2xl", isDragging && "opacity-40")}
     >
-      {s.draggable ? (
-        <Grip
-          label={`Drag ${s.customer}`}
-          ref={setActivatorNodeRef}
-          {...attributes}
-          {...listeners}
-        />
+      {swipe.offset < 0 ? (
+        // Behind the stop, shown by the swipe. Screen readers and keyboards use Move… instead.
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-hidden="true"
+          onClick={() => {
+            swipe.close();
+            onMove(s);
+          }}
+          className="absolute inset-y-0 right-0 bg-link font-semibold text-white"
+          style={{ width: Math.max(REVEAL, -swipe.offset) }}
+        >
+          Move
+        </button>
       ) : null}
-      {/* Stops that can't move (started) have no grip and no gap for one. */}
-      <div className={cx("min-w-0 flex-1", !s.draggable && "pl-1", "max-sm:pl-1")}>
-        {/* Time, number, and Move… on one row; the badge only when it says more than
-            "Scheduled" (most stops on a schedule are). */}
-        <div className="flex items-start gap-2">
-          <Link href={`/jobs/${s.id}`} className="block min-h-11 min-w-0 flex-1 hover:underline">
-            <span className="font-semibold">{s.time ?? "Saving…"}</span>
-            <span className="text-text-muted">{s.number ? ` · #${s.number}` : ""}</span>
-            <span className="block truncate">{s.customer}</span>
-          </Link>
-          {s.draggable ? (
-            <button
-              type="button"
-              className={buttonClass("quiet", "-mt-1.5 -mr-1 shrink-0 px-2")}
-              onClick={() => onMove(s)}
-            >
-              Move…
-            </button>
-          ) : null}
-        </div>
-        <p className="truncate text-[0.9375rem]">
-          <AddressLink address={s.address} location={s.location} />
-        </p>
-        {s.note ? <p className="text-[0.9375rem] text-text-muted">{s.note}</p> : null}
-        {s.status !== "scheduled" || s.lock || !s.location ? (
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-            {s.status !== "scheduled" ? <StatusBadge status={s.status} /> : null}
-            {s.lock ? (
-              <span className="rounded-sm border border-control-border px-1.5 text-[0.8125rem] font-semibold">
-                {s.lock}
-              </span>
-            ) : null}
-            {!s.location ? (
-              <span className="text-[0.8125rem] text-status-warning">No map location</span>
+      <div
+        {...swipe.handlers}
+        style={swipe.offset ? { transform: `translateX(${swipe.offset}px)` } : undefined}
+        className={cx(
+          "well relative flex touch-pan-y gap-1 p-2",
+          !swipe.dragging && "transition-transform duration-200 motion-reduce:transition-none",
+        )}
+      >
+        {s.draggable ? (
+          <Grip
+            label={`Drag ${s.customer}`}
+            ref={setActivatorNodeRef}
+            {...attributes}
+            {...listeners}
+          />
+        ) : null}
+        {/* Stops that can't move (started) have no grip and no gap for one. */}
+        <div className={cx("min-w-0 flex-1", !s.draggable && "pl-1", "max-sm:pl-1")}>
+          {/* Time, number, and Move… on one row; the badge only when it says more than
+              "Scheduled" (most stops on a schedule are). */}
+          <div className="flex items-start gap-2">
+            <Link href={`/jobs/${s.id}`} className="block min-h-11 min-w-0 flex-1 hover:underline">
+              <span className="font-semibold">{s.time ?? "Saving…"}</span>
+              <span className="text-text-muted">{s.number ? ` · #${s.number}` : ""}</span>
+              <span className="block truncate">{s.customer}</span>
+            </Link>
+            {s.draggable ? (
+              <button
+                type="button"
+                className={buttonClass("quiet", "-mt-1.5 -mr-1 shrink-0 px-2")}
+                onClick={() => onMove(s)}
+              >
+                Move…
+              </button>
             ) : null}
           </div>
-        ) : null}
+          <p className="truncate text-[0.9375rem]">
+            <AddressLink address={s.address} location={s.location} />
+          </p>
+          {s.note ? <p className="text-[0.9375rem] text-text-muted">{s.note}</p> : null}
+          {s.status !== "scheduled" || s.lock || !s.location ? (
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+              {s.status !== "scheduled" ? <StatusBadge status={s.status} /> : null}
+              {s.lock ? (
+                <span className="rounded-full bg-fill px-2.5 py-0.5 text-[0.8125rem] font-semibold">
+                  {s.lock}
+                </span>
+              ) : null}
+              {!s.location ? (
+                <span className="text-[0.8125rem] text-status-warning">No map location</span>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
     </article>
   );
@@ -720,7 +823,11 @@ function TrayCard({
         </Link>
         <p className="truncate text-[0.9375rem] text-text-muted">{j.address}</p>
         {j.note ? <p className="text-[0.9375rem] text-text-muted">{j.note}</p> : null}
-        <Suggestions target={{ job: j.id }} onPick={(s) => onSuggestion(j.id, s)}>
+        <Suggestions
+          target={{ job: j.id }}
+          onPick={(s) => onSuggestion(j.id, s)}
+          sheetTitle="Suggested Times"
+        >
           <button type="button" className={buttonClass("quiet", "px-2")} onClick={() => onMove(j)}>
             Move…
           </button>
@@ -739,74 +846,103 @@ export function Suggestions({
   onPick,
   children,
   pickLabel = "Schedule",
+  sheetTitle,
 }: {
   target: { job?: string; property?: string; hours?: number };
   onPick: (s: Suggestion) => void;
   children?: ReactNode;
   pickLabel?: string;
+  /** Show the suggestions in a sheet with this title instead of opening them in place. */
+  sheetTitle?: string;
 }) {
   const [state, setState] = useState<{ list?: Suggestion[]; note?: string; error?: string } | null>(
     null,
   );
   const [loading, start] = useTransition();
   const id = useId();
+  const close = useCallback(() => setState(null), []);
   function load() {
     start(async () => {
       const r = await suggestTimes(target);
       setState({ list: r.suggestions, note: r.note, error: r.error });
     });
   }
+  const results = state ? (
+    <div id={id} className={cx("space-y-2", !sheetTitle && "mt-2")}>
+      {state.error ? <p className="text-[0.9375rem] text-status-fail">{state.error}</p> : null}
+      {state.note ? <p className="text-[0.9375rem] text-text-muted">{state.note}</p> : null}
+      {state.list?.length ? (
+        <ul className={sheetTitle ? "grouped" : "space-y-2"} aria-label="Suggested times">
+          {state.list.map((s) => (
+            <li
+              key={`${s.techId}-${s.date}`}
+              className={cx(
+                "flex flex-wrap items-center justify-between gap-2",
+                sheetTitle ? "px-4 py-2.5" : "well p-2",
+              )}
+            >
+              <span>
+                <span className="block font-semibold">
+                  {s.dayLabel} · {s.timeLabel} · {s.techName}
+                </span>
+                <span className="block text-[0.9375rem] text-text-muted">
+                  {s.addedDriveMin > 0
+                    ? `Adds ${durationLabel(s.addedDriveMin)} of driving`
+                    : "Adds no driving"}
+                  , {s.near}
+                </span>
+              </span>
+              <Button
+                type="button"
+                kind="secondary"
+                onClick={() => {
+                  if (sheetTitle) setState(null);
+                  onPick(s);
+                }}
+                aria-label={`${pickLabel} ${s.dayLabel} at ${s.timeLabel} with ${s.techName}`}
+              >
+                {pickLabel}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  ) : null;
   return (
     <div>
       <div className="mt-1 -ml-2 flex flex-wrap gap-x-1">
-        <button
-          type="button"
-          className={buttonClass("quiet", "px-2")}
-          aria-expanded={state !== null}
-          aria-controls={id}
-          disabled={loading}
-          onClick={state ? () => setState(null) : load}
-        >
-          {loading ? "Finding Times…" : state ? "Hide Suggestions" : "Suggest Times"}
-        </button>
+        {sheetTitle ? (
+          <button
+            type="button"
+            className={buttonClass("quiet", "px-2")}
+            aria-haspopup="dialog"
+            disabled={loading}
+            onClick={load}
+          >
+            {loading ? "Finding Times…" : "Suggest Times"}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={buttonClass("quiet", "px-2")}
+            aria-expanded={state !== null}
+            aria-controls={id}
+            disabled={loading}
+            onClick={state ? () => setState(null) : load}
+          >
+            {loading ? "Finding Times…" : state ? "Hide Suggestions" : "Suggest Times"}
+          </button>
+        )}
         {children}
       </div>
-      {state ? (
-        <div id={id} className="mt-2 space-y-2">
-          {state.error ? <p className="text-[0.9375rem] text-status-fail">{state.error}</p> : null}
-          {state.note ? <p className="text-[0.9375rem] text-text-muted">{state.note}</p> : null}
-          {state.list?.length ? (
-            <ul className="space-y-2" aria-label="Suggested times">
-              {state.list.map((s) => (
-                <li
-                  key={`${s.techId}-${s.date}`}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-bg p-2"
-                >
-                  <span>
-                    <span className="block font-semibold">
-                      {s.dayLabel} · {s.timeLabel} · {s.techName}
-                    </span>
-                    <span className="block text-[0.9375rem] text-text-muted">
-                      {s.addedDriveMin > 0
-                        ? `Adds ${durationLabel(s.addedDriveMin)} of driving`
-                        : "Adds no driving"}
-                      , {s.near}
-                    </span>
-                  </span>
-                  <Button
-                    type="button"
-                    kind="secondary"
-                    onClick={() => onPick(s)}
-                    aria-label={`${pickLabel} ${s.dayLabel} at ${s.timeLabel} with ${s.techName}`}
-                  >
-                    {pickLabel}
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-      ) : null}
+      {sheetTitle ? (
+        <Sheet open={state !== null} onClose={close} title={sheetTitle}>
+          {results}
+        </Sheet>
+      ) : (
+        results
+      )}
     </div>
   );
 }
@@ -846,85 +982,74 @@ function MoveSheet({
     const at = (lists[key] ?? []).findIndex((s) => s.id === stop.id);
     return at >= 0 ? at : others.length;
   });
-  const title = useId();
+  const ids = useId();
+  // iOS form rows: the label on the left, the value on the right.
+  const row = "flex min-h-11 items-center justify-between gap-3 px-4 py-1.5";
+  const control = "min-h-11 min-w-0 max-w-[60%] bg-transparent text-right text-link";
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={title}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center"
-      onKeyDown={(e) => e.key === "Escape" && onClose()}
-    >
-      <div className="glass max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-[28px] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:rounded-[28px]">
-        <h2 id={title} className="font-display text-xl font-bold">
-          Move {stop.customer}
-        </h2>
-        <p className="text-[0.9375rem] text-text-muted">{stop.address}</p>
-        <div className="mt-4 space-y-3">
-          <label className="block">
-            <span className="block font-medium">Tech</span>
+    <Sheet open onClose={onClose} title={`Move ${stop.customer}`}>
+      <p className="mb-4 text-center text-[0.9375rem] text-text-muted">{stop.address}</p>
+      <ul className="grouped">
+        <li className={row}>
+          <label htmlFor={`${ids}-tech`}>Tech</label>
+          <select
+            id={`${ids}-tech`}
+            value={tech}
+            onChange={(e) => setTech(e.target.value)}
+            className={control}
+          >
+            {techs.length > 1 ? <option value="">Nobody yet (waits in Needs a Time)</option> : null}
+            {techs.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </li>
+        <li className={row}>
+          <label htmlFor={`${ids}-day`}>Day</label>
+          <input
+            id={`${ids}-day`}
+            type="date"
+            value={date}
+            min={today}
+            onChange={(e) => setDate(e.target.value)}
+            className={control}
+          />
+        </li>
+        {tech && known && others.length ? (
+          <li className={row}>
+            <label htmlFor={`${ids}-place`}>Place in the route</label>
             <select
-              value={tech}
-              onChange={(e) => setTech(e.target.value)}
-              className="mt-1 min-h-11 w-full rounded-xl border border-control-border bg-surface px-3"
-              autoFocus
+              id={`${ids}-place`}
+              value={Math.min(place, others.length)}
+              onChange={(e) => setPlace(Number(e.target.value))}
+              className={control}
             >
-              {techs.length > 1 ? (
-                <option value="">Nobody yet (waits in Needs a Time)</option>
-              ) : null}
-              {techs.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
+              <option value={0}>First stop</option>
+              {others.map((s, i) => (
+                <option key={s.id} value={i + 1}>
+                  After {s.customer}
+                  {s.time ? ` (${s.time})` : ""}
                 </option>
               ))}
             </select>
-          </label>
-          <label className="block">
-            <span className="block font-medium">Day</span>
-            <input
-              type="date"
-              value={date}
-              min={today}
-              onChange={(e) => setDate(e.target.value)}
-              className="mt-1 min-h-11 w-full rounded-xl border border-control-border bg-surface px-3"
-            />
-          </label>
-          {tech && known && others.length ? (
-            <label className="block">
-              <span className="block font-medium">Place in the route</span>
-              <select
-                value={Math.min(place, others.length)}
-                onChange={(e) => setPlace(Number(e.target.value))}
-                className="mt-1 min-h-11 w-full rounded-xl border border-control-border bg-surface px-3"
-              >
-                <option value={0}>First stop</option>
-                {others.map((s, i) => (
-                  <option key={s.id} value={i + 1}>
-                    After {s.customer}
-                    {s.time ? ` (${s.time})` : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-        </div>
-        <div className="mt-5 flex flex-col gap-2">
-          <Button
-            type="button"
-            onClick={() => onMove(key, tech && known ? Math.min(place, others.length) : 9_999)}
-          >
-            Move
+          </li>
+        ) : null}
+      </ul>
+      <div className="mt-5 flex flex-col gap-2">
+        <Button
+          type="button"
+          onClick={() => onMove(key, tech && known ? Math.min(place, others.length) : 9_999)}
+        >
+          Move
+        </Button>
+        {from !== TRAY ? (
+          <Button type="button" kind="secondary" onClick={() => onMove(TRAY, 0)}>
+            Take Off Schedule
           </Button>
-          {from !== TRAY ? (
-            <Button type="button" kind="secondary" onClick={() => onMove(TRAY, 0)}>
-              Take Off Schedule
-            </Button>
-          ) : null}
-          <Button type="button" kind="quiet" onClick={onClose}>
-            Cancel
-          </Button>
-        </div>
+        ) : null}
       </div>
-    </div>
+    </Sheet>
   );
 }

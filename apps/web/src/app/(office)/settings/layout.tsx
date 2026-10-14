@@ -32,7 +32,9 @@ async function OwnersOnly({ children }: { children: React.ReactNode }) {
   }
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-8 md:grid-cols-[200px_minmax(0,1fr)]">
-      <aside className="min-w-0">
+      {/* Phones and tablets: the sections are a grouped list on Settings itself, and each
+          section's navigation bar goes back to it. */}
+      <aside className="min-w-0 max-md:hidden">
         <NavLinks links={SETTINGS_SECTIONS} vertical label="Settings sections" />
       </aside>
       <div className="min-w-0">{children}</div>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { INVOICE_STATUS_LABELS, formatCents, invoiceBalance } from "@leakbook/core";
-import { ButtonLink, Empty, PageHeader } from "@/components/ui";
+import { ButtonLink, Empty, Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listInvoices, unbilledMaintenance } from "@/lib/data";
 import { MonthlyBilling } from "@/components/monthly-billing";
@@ -56,37 +56,40 @@ export default async function InvoicesPage() {
         <Empty>No invoices yet. Create one from a job once the work is done.</Empty>
       ) : (
         <>
-          {/* Phones: one card per invoice. */}
-          <ul className="space-y-3 sm:hidden">
+          {/* Phones: an inset grouped list, a row per invoice. */}
+          <Grouped className="sm:hidden">
             {invoices.map((i) => (
-              <li key={i.id}>
-                <Link href={`/jobs/${i.job_id}#invoice`} className="block card p-4 active:bg-bg">
-                  <span className="flex items-baseline justify-between gap-3">
-                    <span className="font-semibold text-link">
+              <Row
+                key={i.id}
+                href={`/jobs/${i.job_id}#invoice`}
+                label={<span className="font-semibold">{i.customer}</span>}
+                detail={
+                  <>
+                    <span className="block">
                       #{i.number}
-                      {i.period_month ? (
-                        <span className="font-normal text-text-muted">
-                          {" "}
-                          · Maintenance, {monthLabel(i.period_month)}
-                        </span>
-                      ) : i.jobNumber ? (
-                        <span className="font-normal text-text-muted"> · Job #{i.jobNumber}</span>
-                      ) : null}
+                      {i.period_month
+                        ? ` · Maintenance, ${monthLabel(i.period_month)}`
+                        : i.jobNumber
+                          ? ` · Job #${i.jobNumber}`
+                          : ""}
                     </span>
-                    <span className="font-semibold tabular-nums">{formatCents(i.total_cents)}</span>
+                    <span className="block">
+                      {INVOICE_STATUS_LABELS[i.status]}
+                      {i.sent_at ? ` · sent ${day(i.sent_at)}` : ""}
+                      {i.status === "sent" || i.status === "partially_paid"
+                        ? ` · ${formatCents(invoiceBalance(i))} due`
+                        : ""}
+                    </span>
+                  </>
+                }
+                value={
+                  <span className="font-semibold text-text tabular-nums">
+                    {formatCents(i.total_cents)}
                   </span>
-                  <span className="mt-1 block font-medium">{i.customer}</span>
-                  <span className="block text-[0.9375rem] text-text-muted">
-                    {INVOICE_STATUS_LABELS[i.status]}
-                    {i.sent_at ? ` · sent ${day(i.sent_at)}` : ""}
-                    {i.status === "sent" || i.status === "partially_paid"
-                      ? ` · ${formatCents(invoiceBalance(i))} due`
-                      : ""}
-                  </span>
-                </Link>
-              </li>
+                }
+              />
             ))}
-          </ul>
+          </Grouped>
           <div className="hidden overflow-x-auto card sm:block">
             <table className="w-full text-left">
               <thead className="border-b border-border text-[0.9375rem] text-text-muted">

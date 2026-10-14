@@ -55,7 +55,7 @@ function Totals({
     </div>
   );
   return (
-    <dl className="mt-3 space-y-1 border-t border-border pt-3 text-[0.9375rem]">
+    <dl className="mt-3 space-y-1 border-t-[0.5px] border-separator pt-3 text-[0.9375rem]">
       {row("Subtotal", formatCents(t.subtotal_cents))}
       {t.discount_cents > 0 ? row("Discount", `−${formatCents(t.discount_cents)}`) : null}
       {t.tax_cents > 0 ? row("Tax", formatCents(t.tax_cents)) : null}
@@ -140,7 +140,7 @@ export function InvoicePanel({
         <p className="text-xl font-semibold tabular-nums">{formatCents(totals.total_cents)}</p>
       </div>
 
-      <ul className="mt-3 divide-y divide-border">
+      <ul className="mt-3 divide-y-[0.5px] divide-separator">
         {invoice.lines.map((l) => (
           <li key={l.id} className="flex items-center justify-between gap-3 py-2">
             <span>

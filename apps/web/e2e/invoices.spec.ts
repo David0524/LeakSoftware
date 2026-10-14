@@ -180,8 +180,9 @@ test("the phone invoices a detection fee, and the owner voids it", async ({ page
 
   await signIn(page, OWNER, `/jobs/${PARTNER_JOB}`);
   const panel = page.getByTestId("invoice");
-  page.once("dialog", (d) => void d.accept());
+  // Voiding asks first, in an action sheet.
   await panel.getByRole("button", { name: "Void Invoice" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Void Invoice" }).click();
   await expect(page.getByText(/^Voided:/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Create Invoice" })).toBeVisible();
 

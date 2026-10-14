@@ -53,8 +53,9 @@ Status is always shown with a text label too (HELD, FAIL, EXCLUDED), never by co
 
 ## Type
 
-- **Barlow Semi Condensed** (600/700/800): headings, labels, buttons, status chips, wordmark.
+- **Barlow Semi Condensed** (600/700/800): page titles and headings, documents, and the wordmark.
 - **Public Sans** (400–700): everything else. Use tabular numbers (`font-variant-numeric: tabular-nums`) for PSI, inches, minutes, and money.
+- **Website on Apple devices** (owner, 2026-10-14: "feel like Apple"): body text, buttons, and controls use the system font (San Francisco); Public Sans is the fallback everywhere else. Titles stay in Barlow.
 - Both are free (OFL) and bundled in the app so they work offline.
 
 ## Logo ("Drop pin")

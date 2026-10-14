@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { THEME_EVENT, THEME_STORAGE_KEY, type Theme } from "@/lib/theme";
-import { cx } from "./ui";
+import { SEGMENT_TRACK, cx, segmentClass } from "./ui";
 
 function subscribe(fn: () => void) {
   addEventListener(THEME_EVENT, fn);
@@ -72,12 +72,59 @@ export function ThemeToggle({ onHeader = false }: { onHeader?: boolean }) {
       aria-label={next === "dark" ? "Dark mode" : "Light mode"}
       title={next === "dark" ? "Dark mode" : "Light mode"}
       className={cx(
-        "inline-flex size-11 items-center justify-center rounded-md",
+        "inline-flex size-11 items-center justify-center rounded-full",
         "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus",
-        onHeader ? "text-on-header hover:bg-white/10" : "text-text hover:bg-neutral-100",
+        onHeader ? "text-on-header hover:bg-white/10" : "text-text hover:bg-text/[0.06]",
       )}
     >
       {theme === "dark" ? <Sun /> : <Moon />}
     </button>
+  );
+}
+
+/**
+ * More › Appearance on phones (the header's sun/moon button is for wider screens): a row with
+ * Light and Dark as a segmented control, as in iOS Settings. Light is the default and the
+ * device's own setting is not followed (owner, 2026-10-13), so there is no Automatic.
+ */
+export function AppearanceChoice() {
+  const theme = useSyncExternalStore<Theme>(subscribe, current, () => "light");
+  const options: { value: Theme; label: string }[] = [
+    { value: "light", label: "Light" },
+    { value: "dark", label: "Dark" },
+  ];
+  return (
+    <div className="flex min-h-11 items-center justify-between gap-3">
+      <span id="appearance-label">Appearance</span>
+      <div
+        role="radiogroup"
+        aria-labelledby="appearance-label"
+        className={cx(SEGMENT_TRACK, "shrink-0 flex-nowrap")}
+        onKeyDown={(e) => {
+          const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+          if (!step) return;
+          e.preventDefault();
+          const next = theme === "dark" ? "light" : "dark";
+          choose(next);
+          e.currentTarget
+            .querySelectorAll<HTMLButtonElement>("[role=radio]")
+            [options.findIndex((o) => o.value === next)]?.focus();
+        }}
+      >
+        {options.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={theme === o.value}
+            tabIndex={theme === o.value ? 0 : -1}
+            onClick={() => choose(o.value)}
+            className={segmentClass(theme === o.value, "min-w-20")}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

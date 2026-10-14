@@ -94,10 +94,12 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await expect(page.getByText(/ · 1 leaking · 0 not applicable · 0 to do/)).toBeVisible();
 
   await page.getByRole("button", { name: "Add Finding" }).click();
-  await page.getByLabel("What").fill("Cracked skimmer throat");
-  await page.getByLabel("Severity").selectOption({ label: "Major" });
-  await page.locator("form").getByLabel("Item (optional)").selectOption({ label: "Skimmer" });
-  await page.locator("form").getByRole("button", { name: "Add Finding" }).click();
+  const addFinding = page.getByRole("dialog", { name: "Add Finding" });
+  await addFinding.getByLabel("What").fill("Cracked skimmer throat");
+  await addFinding.getByLabel("Severity").selectOption({ label: "Major" });
+  await addFinding.getByLabel("Item (optional)").selectOption({ label: "Skimmer" });
+  await addFinding.getByRole("button", { name: "Add Finding" }).click();
+  await expect(addFinding).toBeHidden();
   await expect(page.getByText("Cracked skimmer throat", { exact: true })).toBeVisible();
 
   // 5. Report: nobody home to sign, so it is finished with Customer Not Here, then texted.

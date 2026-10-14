@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-14 (owner: "the mobile website feels more like Google than Apple"; do all of it)
+- **The office website follows iOS conventions on phones.** iOS navigation bar (large title that hands off to a small frosted title as you scroll, "‹ Back" on the left, the page's main action on the right; the navy logo bar is for wider screens); New Job is a **+** in that bar instead of a floating button; segmented controls with a white thumb; tinted buttons instead of outlined ones; switches instead of checkboxes; inset grouped lists with chevrons; sheets (grabber, swipe down to close) for short tasks; action sheets instead of the browser's confirm box; swipe actions on list rows (with a visible alternative); no snackbars.
+- **Type and color:** body text and controls use the system font (San Francisco) on Apple devices; Barlow stays for titles and the logo. The page background is iOS's grouped gray (#F2F2F7) behind white rows; new tokens `fill`, `separator`, and `thumb` (`brand/tokens.json`).
+- **Home Screen app:** a web app manifest and Apple web-app settings, so "Add to Home Screen" opens Tidemark full screen on Today.
+- **Not possible on a website:** haptics (Safari has none), the system's own swipe-back (Safari provides its own), and true Liquid Glass (approximated).
+
 ## 2026-10-14 (owner: partner report is rarely needed)
 - **The partner (technical) report starts turned off.** Most shops report to homeowners; pool companies wanting a technical version is assumed rare until the design partner says otherwise. Owners turn it on in Settings › Report Templates ("Techs can send this report"); Wrap-Up and the app then show it again. Existing shops that never sent one have it off too (`20261012003000`).
 - **No further work on the partner report** unless the design partner says pool companies ask for it. The homeowner report gets the attention.

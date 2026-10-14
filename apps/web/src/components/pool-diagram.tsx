@@ -14,20 +14,18 @@ export function PoolDiagram({
   hasSpa,
   pins,
   title,
+  className = "w-full rounded-2xl border border-border bg-surface",
 }: {
   shape: DiagramShape | null | undefined;
   hasSpa: boolean;
   pins: Pin[];
   title: string;
+  /** The job page draws it as a plain rounded panel (no outline) on the grouped gray. */
+  className?: string;
 }) {
   const d = poolDiagram(shape, hasSpa);
   return (
-    <svg
-      viewBox={`0 0 ${d.width} ${d.height}`}
-      role="img"
-      aria-label={title}
-      className="w-full rounded-2xl border border-border bg-surface"
-    >
+    <svg viewBox={`0 0 ${d.width} ${d.height}`} role="img" aria-label={title} className={className}>
       <path d={d.pool} className="fill-diagram-water stroke-water" strokeWidth={2} />
       {d.spa ? (
         <>

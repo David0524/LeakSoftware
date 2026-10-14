@@ -40,6 +40,7 @@ export default async function PaymentsSettingsPage({
   return (
     <>
       <PageHeader
+        back={{ href: "/settings", label: "Settings" }}
         title="Payments and Deposits"
         subtitle="How customers pay, and the defaults for new quotes and invoices."
       />

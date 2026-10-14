@@ -66,6 +66,7 @@ export default async function ComponentsPage() {
   return (
     <>
       <PageHeader
+        back={{ href: "/settings", label: "Settings" }}
         title="Checklist Components"
         subtitle="What every inspection checks. Changes apply to new jobs; jobs already started keep their checklist."
       />

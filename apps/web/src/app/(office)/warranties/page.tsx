@@ -8,7 +8,16 @@ import {
   warrantyState,
   type WarrantyState,
 } from "@leakbook/core";
-import { Chip, Empty, PageHeader, cx, SEGMENT_TRACK, segmentClass } from "@/components/ui";
+import {
+  Chip,
+  Empty,
+  Grouped,
+  PageHeader,
+  Row,
+  cx,
+  SEGMENT_TRACK,
+  segmentClass,
+} from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getWarranties } from "@/lib/data";
 
@@ -70,45 +79,48 @@ export default async function WarrantiesPage({ searchParams }: PageProps<"/warra
               : "No expired warranties."}
         </Empty>
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <Grouped className="max-w-3xl">
           {list.map((w) => (
-            <li key={w.id} className="card p-4">
-              <div className="flex items-start justify-between gap-3">
-                <p className="font-semibold">{w.description}</p>
-                <Chip label={WARRANTY_STATE_LABELS[w.state]} className={CHIP[w.state]} />
-              </div>
-              {w.job ? (
-                <p className="mt-1">
-                  {w.job.customer ? (
-                    <Link
-                      href={`/customers/${w.job.customer.id}`}
-                      className="font-medium text-link underline-offset-4 hover:underline"
-                    >
-                      {w.job.customer.name}
-                    </Link>
-                  ) : null}
-                  {w.job.property ? (
-                    <span className="block text-[0.9375rem] text-text-muted">
-                      {formatAddress(w.job.property)}
-                    </span>
-                  ) : null}
+            <Row key={w.id}>
+              <div className="min-w-0 flex-1 py-1">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="font-semibold">{w.description}</p>
+                  <Chip label={WARRANTY_STATE_LABELS[w.state]} className={CHIP[w.state]} />
+                </div>
+                {w.job ? (
+                  <p>
+                    {w.job.customer ? (
+                      <Link
+                        href={`/customers/${w.job.customer.id}`}
+                        className="font-medium text-link underline-offset-4 hover:underline"
+                      >
+                        {w.job.customer.name}
+                      </Link>
+                    ) : null}
+                    {w.job.property ? (
+                      <span className="block text-[0.9375rem] text-text-muted">
+                        {formatAddress(w.job.property)}
+                      </span>
+                    ) : null}
+                  </p>
+                ) : null}
+                <p className="mt-1 text-[0.9375rem]">
+                  {date(w.starts_on)} – {date(w.ends_on)} · {warrantyEndsText(w.ends_on, today)}
                 </p>
-              ) : null}
-              <p className="mt-2 text-[0.9375rem]">
-                {date(w.starts_on)} – {date(w.ends_on)} · {warrantyEndsText(w.ends_on, today)}
-              </p>
-              {w.terms ? <p className="text-[0.9375rem] text-text-muted">{w.terms}</p> : null}
-              {w.job ? (
-                <Link
-                  href={`/jobs/${w.job.id}`}
-                  className="mt-1 inline-flex min-h-11 items-center text-[0.9375rem] font-semibold text-link underline-offset-4 hover:underline"
-                >
-                  Repair job{w.job.number ? ` #${w.job.number}` : ""}
-                </Link>
-              ) : null}
-            </li>
+                {w.terms ? <p className="text-[0.9375rem] text-text-muted">{w.terms}</p> : null}
+                {w.job ? (
+                  <Link
+                    href={`/jobs/${w.job.id}`}
+                    className="inline-flex min-h-11 items-center gap-1 text-[0.9375rem] font-semibold text-link"
+                  >
+                    Repair job{w.job.number ? ` #${w.job.number}` : ""}
+                    <span aria-hidden="true">›</span>
+                  </Link>
+                ) : null}
+              </div>
+            </Row>
           ))}
-        </ul>
+        </Grouped>
       )}
     </>
   );

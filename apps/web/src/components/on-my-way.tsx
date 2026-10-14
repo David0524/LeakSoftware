@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useEffect, useId, useState } from "react";
 import { localMinutes, onMyWayText } from "@leakbook/core";
+import { Sheet } from "./sheet";
 import { buttonClass } from "./ui";
 
 /**
@@ -29,58 +29,68 @@ export function OnMyWay({
   timeZone: string;
   className?: string;
 }) {
-  const [shown, setShown] = useState<string | null>(null);
-  // The notice clears itself; it never sits inside the stop's card (it used to push the card
-  // apart with the whole message).
+  const textId = useId();
+  // What just happened: the button says so for a moment (no toast), and screen readers hear it.
+  const [done, setDone] = useState<{ label: string; spoken: string } | null>(null);
+  // Neither sharing nor copying worked: the text in a sheet, to copy by hand.
+  const [manual, setManual] = useState<string | null>(null);
+  const closeManual = useCallback(() => setManual(null), []);
   useEffect(() => {
-    if (!shown) return;
-    const t = setTimeout(() => setShown(null), 8000);
+    if (!done) return;
+    const t = setTimeout(() => setDone(null), 3000);
     return () => clearTimeout(t);
-  }, [shown]);
+  }, [done]);
   async function send() {
     const arriveMin = localMinutes(new Date().toISOString(), timeZone) + Math.max(5, driveMin);
     const text = onMyWayText({ customer, tech, shop, arriveMin, windowMin });
     if (phone) {
       // "?&body=" works in both iOS and Android Messages.
       window.location.href = `sms:${phone.replace(/[^\d+]/g, "")}?&body=${encodeURIComponent(text)}`;
-      setShown(`Opened Messages: ${text}`);
+      setDone({ label: "Texted ✓", spoken: `Opened Messages with the text: ${text}` });
       return;
     }
-    try {
-      if (navigator.share) {
+    if (navigator.share) {
+      try {
         await navigator.share({ text });
+        setDone({ label: "Shared ✓", spoken: "Shared the text." });
         return;
+      } catch (e) {
+        // Closing the share sheet isn't a failure.
+        if (e instanceof DOMException && e.name === "AbortError") return;
       }
+    }
+    try {
       await navigator.clipboard.writeText(text);
-      setShown(`Copied: ${text}`);
+      setDone({ label: "Copied ✓", spoken: `Copied the text: ${text}` });
     } catch {
-      setShown(text);
+      setManual(text);
     }
   }
   return (
     <>
       <button type="button" className={buttonClass("secondary", className)} onClick={send}>
-        On My Way
+        {done?.label ?? "On My Way"}
       </button>
-      {shown
-        ? createPortal(
-            <div
-              role="status"
-              className="fixed inset-x-4 bottom-28 z-40 mx-auto flex max-w-md items-start gap-2 rounded-2xl bg-text p-3 text-[0.9375rem] text-bg shadow-lg sm:bottom-6"
-            >
-              <p className="min-w-0 flex-1">{shown}</p>
-              <button
-                type="button"
-                aria-label="Close"
-                onClick={() => setShown(null)}
-                className="-m-2 grid size-11 shrink-0 place-items-center rounded-full font-bold"
-              >
-                ✕
-              </button>
-            </div>,
-            document.body,
-          )
-        : null}
+      <span role="status" className="sr-only">
+        {done?.spoken ?? ""}
+      </span>
+      <Sheet open={manual !== null} onClose={closeManual} title="On My Way Text">
+        <p className="mb-3 text-[0.9375rem] text-text-muted">
+          This browser couldn’t share or copy it. Select the text, copy it, and send it to{" "}
+          {customer ?? "the customer"}.
+        </p>
+        <label htmlFor={textId} className="sr-only">
+          On My Way text
+        </label>
+        <textarea
+          id={textId}
+          readOnly
+          value={manual ?? ""}
+          rows={4}
+          onFocus={(e) => e.currentTarget.select()}
+          className="block w-full rounded-[10px] border border-control-border bg-surface p-3 text-text"
+        />
+      </Sheet>
     </>
   );
 }

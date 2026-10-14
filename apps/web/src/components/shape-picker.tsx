@@ -66,11 +66,12 @@ export function ShapePicker({
               disabled={disabled}
               onClick={() => onChange(on ? null : s.key)}
               className={cx(
-                "flex min-h-11 min-w-0 flex-col items-center gap-1 rounded-2xl border-2 px-0.5 pt-1.5 pb-1 text-[0.75rem] leading-tight font-semibold tracking-tight whitespace-nowrap",
+                "flex min-h-11 min-w-0 flex-col items-center gap-1 rounded-2xl px-0.5 pt-1.5 pb-1 text-[0.75rem] leading-tight font-medium whitespace-nowrap transition-colors",
                 "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-60",
+                // Chosen: tinted, with the iOS selection ring drawn inside (no outlined boxes).
                 on
-                  ? "border-link bg-link/10 text-link"
-                  : "border-transparent bg-text/[0.05] text-text",
+                  ? "bg-link/12 font-semibold text-link ring-2 ring-link ring-inset"
+                  : "bg-fill text-text hover:bg-text/[0.1]",
               )}
             >
               <svg viewBox={`0 0 ${d.width} ${d.height}`} className="w-full" aria-hidden="true">

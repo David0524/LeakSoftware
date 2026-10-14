@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import {
   formatAddress,
   maintenanceSettings,
@@ -34,16 +33,9 @@ export default async function NewJobPage() {
   const settings = company.settings as Partial<CompanySettings>;
   return (
     <>
-      <p className="mb-2">
-        <Link
-          href="/jobs"
-          className="inline-flex min-h-11 items-center gap-1 text-link underline-offset-4 hover:underline"
-        >
-          ← Jobs
-        </Link>
-      </p>
       <PageHeader
         title="New Job"
+        back={{ href: "/jobs", label: "Jobs" }}
         subtitle="A leak detection visit. Repair jobs come from accepted quotes."
       />
       <NewJobForm

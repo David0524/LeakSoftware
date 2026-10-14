@@ -39,70 +39,79 @@ export default async function SchedulingSettingsPage() {
   return (
     <>
       <PageHeader
+        back={{ href: "/settings", label: "Settings" }}
         title="Scheduling and Routes"
         subtitle="Every tech’s route starts and ends at the shop."
       />
       <div className="max-w-3xl space-y-6">
-        <Card>
+        {/* iOS grouped sections: the small header sits above each block. */}
+        <section>
           <SectionTitle>Working day</SectionTitle>
-          <SchedulingForm
-            defaults={{
-              dayStart: s.dayStart,
-              dayEnd: s.dayEnd,
-              windowMin: s.windowMin,
-              jobHours: String(s.jobMinutes / 60),
-              workDays: s.workDays,
-              visitMinutes: maintenanceSettings(company.settings).visitMinutes,
-              weeksAhead: maintenanceSettings(company.settings).weeksAhead,
-            }}
-          />
-        </Card>
+          <Card>
+            <SchedulingForm
+              defaults={{
+                dayStart: s.dayStart,
+                dayEnd: s.dayEnd,
+                windowMin: s.windowMin,
+                jobHours: String(s.jobMinutes / 60),
+                workDays: s.workDays,
+                visitMinutes: maintenanceSettings(company.settings).visitMinutes,
+                weeksAhead: maintenanceSettings(company.settings).weeksAhead,
+              }}
+            />
+          </Card>
+        </section>
 
-        <Card aria-labelledby="shop-location">
-          <h2
-            id="shop-location"
-            className="mb-3 font-display text-sm font-semibold tracking-widest text-text-muted uppercase"
-          >
-            Shop location
-          </h2>
-          <p className="font-semibold">{address || "No address yet."}</p>
-          <p className="text-[0.9375rem] text-text-muted">
-            {shopAt
-              ? company.geocoded_address === address
-                ? "On the map."
-                : "On the map, from an earlier address or the shop’s GPS."
-              : "Not on the map yet, so routes can’t count the drive from the shop."}{" "}
-            <Link href="/settings/company" className="text-link underline">
-              Change the address
-            </Link>
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            {live ? (
-              <ActionButton action={locateShop} label="Find From Address" busyLabel="Finding…" />
-            ) : null}
-            <MarkLocationHere target="shop" label="Use My Location (at the Shop)" />
-          </div>
-        </Card>
-
-        <Card>
-          <SectionTitle>Drive times</SectionTitle>
-          <p>
-            {live
-              ? "Drive times come from road maps (Mapbox) and are kept for a day."
-              : "Drive times are estimated from the distance between pools. Road drive times turn on when Tidemark’s routing service is connected."}
-          </p>
-          <p className="mt-2 text-[0.9375rem] text-text-muted">
-            {unlocated
-              ? `${unlocated} ${unlocated === 1 ? "pool has" : "pools have"} no map location yet.`
-              : "Every pool is on the map."}{" "}
-            A tech can mark a pool exactly with Mark Location Here on the job page.
-          </p>
-          {live && unlocated ? (
-            <div className="mt-3">
-              <ActionButton action={locatePools} label="Find Pool Locations" busyLabel="Finding…" />
+        <section aria-labelledby="shop-location">
+          <SectionTitle>
+            <span id="shop-location">Shop location</span>
+          </SectionTitle>
+          <Card>
+            <p className="font-semibold">{address || "No address yet."}</p>
+            <p className="text-[0.9375rem] text-text-muted">
+              {shopAt
+                ? company.geocoded_address === address
+                  ? "On the map."
+                  : "On the map, from an earlier address or the shop’s GPS."
+                : "Not on the map yet, so routes can’t count the drive from the shop."}{" "}
+              <Link href="/settings/company" className="text-link underline">
+                Change the address
+              </Link>
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              {live ? (
+                <ActionButton action={locateShop} label="Find From Address" busyLabel="Finding…" />
+              ) : null}
+              <MarkLocationHere target="shop" label="Use My Location (at the Shop)" />
             </div>
-          ) : null}
-        </Card>
+          </Card>
+        </section>
+
+        <section>
+          <SectionTitle>Drive times</SectionTitle>
+          <Card>
+            <p>
+              {live
+                ? "Drive times come from road maps (Mapbox) and are kept for a day."
+                : "Drive times are estimated from the distance between pools. Road drive times turn on when Tidemark’s routing service is connected."}
+            </p>
+            <p className="mt-2 text-[0.9375rem] text-text-muted">
+              {unlocated
+                ? `${unlocated} ${unlocated === 1 ? "pool has" : "pools have"} no map location yet.`
+                : "Every pool is on the map."}{" "}
+              A tech can mark a pool exactly with Mark Location Here on the job page.
+            </p>
+            {live && unlocated ? (
+              <div className="mt-3">
+                <ActionButton
+                  action={locatePools}
+                  label="Find Pool Locations"
+                  busyLabel="Finding…"
+                />
+              </div>
+            ) : null}
+          </Card>
+        </section>
       </div>
     </>
   );

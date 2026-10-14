@@ -61,18 +61,24 @@ export function SchedulingForm({
       <fieldset>
         <legend className="font-medium">Working days</legend>
         <p className="text-[0.9375rem] text-text-muted">Suggested times use these days.</p>
-        <div className="mt-1 flex flex-wrap gap-x-4">
+        {/* Each day is a round toggle, filled when it's a working day. */}
+        <div className="mt-2 flex flex-wrap gap-1.5">
           {DAYS.map((d, i) => (
-            <label key={d} className="flex min-h-11 items-center gap-2">
+            <label key={d} className="cursor-pointer">
               <input
                 type="checkbox"
                 name="work_days"
                 value={i}
                 defaultChecked={defaults.workDays.includes(i)}
                 aria-label={DAY_NAMES[i]}
-                className="size-5 accent-water"
+                className="peer sr-only"
               />
-              <span aria-hidden="true">{d}</span>
+              <span
+                aria-hidden="true"
+                className="grid size-11 place-items-center rounded-full bg-fill text-[0.9375rem] font-medium transition-colors peer-checked:bg-link peer-checked:text-white peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus"
+              >
+                {d}
+              </span>
             </label>
           ))}
         </div>

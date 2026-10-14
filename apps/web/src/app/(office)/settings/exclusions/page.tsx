@@ -14,6 +14,7 @@ export default async function ExclusionsPage() {
   return (
     <>
       <PageHeader
+        back={{ href: "/settings", label: "Settings" }}
         title="Exclusion Reasons"
         subtitle="Why a component wasn’t inspected. Techs must pick one, and it appears on the report."
       />

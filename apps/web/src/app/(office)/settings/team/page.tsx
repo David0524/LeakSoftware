@@ -40,6 +40,7 @@ export default async function TeamSettingsPage() {
   return (
     <>
       <PageHeader
+        back={{ href: "/settings", label: "Settings" }}
         title="Team"
         subtitle="Techs run jobs on the phone. Owners also manage settings, pricing, and payments."
       />

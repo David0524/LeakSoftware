@@ -90,7 +90,117 @@ header :focus-visible {
     background: color-mix(in srgb, var(--lb-text) 4%, var(--lb-surface));
   }
 }
+/* Sheets and action sheets slide up; the dimmed backdrop fades in. */
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+/* The phone navigation bar once the large title has scrolled under it. */
+.glass-bar {
+  background: color-mix(in srgb, var(--lb-bg) 78%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  backdrop-filter: blur(20px) saturate(1.8);
+  box-shadow: inset 0 -0.5px 0 var(--lb-separator);
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .glass-bar {
+    background: var(--lb-bg);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+/* Action sheet groups: the frosted panel iOS draws them on. */
+.glass-sheet {
+  background: color-mix(in srgb, var(--lb-surface) 88%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  backdrop-filter: blur(24px) saturate(1.6);
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .glass-sheet {
+    background: var(--lb-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@layer components {
+  /* iOS inset grouped list: one rounded white block; hairlines start where the text does. */
+  .grouped {
+    overflow: hidden;
+    border-radius: 0.75rem;
+    background: var(--lb-surface);
+  }
+  .grouped > li {
+    position: relative;
+  }
+  .grouped > li + li::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 1rem;
+    right: 0;
+    border-top: 0.5px solid var(--lb-separator);
+    pointer-events: none;
+  }
+
+  /* iOS switch: 51 x 31, green when on. It is a checkbox underneath. */
+  .ios-switch {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    flex-shrink: 0;
+    width: 51px;
+    height: 31px;
+    border-radius: 999px;
+    background: var(--lb-fill);
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  .ios-switch::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 27px;
+    height: 27px;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow:
+      0 3px 8px rgb(0 0 0 / 0.15),
+      0 3px 1px rgb(0 0 0 / 0.06);
+    transition: transform 0.2s;
+  }
+  .ios-switch:checked {
+    background: var(--lb-pass);
+  }
+  .ios-switch:checked::after {
+    transform: translateX(20px);
+  }
+  .ios-switch:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ios-switch,
+    .ios-switch::after {
+      transition: none;
+    }
+  }
+}
+
 @media (prefers-contrast: more) {
+  .ios-switch {
+    outline: 1px solid var(--lb-control-border);
+  }
+  .grouped {
+    border: 1px solid var(--lb-control-border);
+  }
   .card,
   .well {
     box-shadow: none;
@@ -104,10 +214,14 @@ h3 {
   font-family: var(--lb-font-display);
 }
 
-/* Use the bundled next/font faces first, then the token fallbacks. */
+/* Use the bundled next/font faces first, then the token fallbacks. Body text and controls use
+   the system font on Apple devices (San Francisco, owner 2026-10-14: "feel like Apple"), and
+   Public Sans everywhere else. */
 :root {
   --lb-font-display: var(--lb-font-display-face), "Arial Narrow", "Roboto Condensed", sans-serif;
-  --lb-font-body: var(--lb-font-body-face), "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --lb-font-body:
+    -apple-system, BlinkMacSystemFont, var(--lb-font-body-face), "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
 }
 
 /* Printed reports: no page background, keep the shop color bands. */

@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { cookies } from "next/headers";
 import { signOut } from "@/app/actions/auth";
 import { DeleteAccount } from "@/components/delete-account";
 import { MapsChoice } from "@/components/maps-choice";
-import { PageHeader } from "@/components/ui";
+import { AppearanceChoice } from "@/components/theme-toggle";
+import { Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { officeLinks } from "@/lib/nav";
 import { SUPPORT_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = { title: "More · Tidemark" };
 
-/** Phones: the sections that don't fit in the tab bar. */
+/**
+ * Phones: the sections that don't fit in the tab bar, then this device's settings, then help,
+ * as iOS inset grouped lists.
+ */
 export default async function MorePage() {
   const office = await getOffice();
   const rest = officeLinks(office.isOwner).slice(4);
@@ -19,54 +22,65 @@ export default async function MorePage() {
   const maps = saved === "apple" || saved === "google" ? saved : "auto";
   return (
     <>
-      <PageHeader title="More" />
-      <ul className="divide-y divide-border overflow-hidden card">
-        {rest.map((l) => (
-          <li key={l.href}>
-            <Link
-              href={l.href}
-              className="flex min-h-14 items-center justify-between px-4 text-[1.0625rem] font-medium hover:bg-text/[0.04] active:bg-text/[0.06]"
-            >
-              {l.label}
-              <span aria-hidden="true" className="text-text-muted">
-                ›
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-6 card px-4 py-1.5">
-        <MapsChoice initial={maps} />
+      <PageHeader title="More" subtitle={office.user.name ?? office.user.email} />
+      <div className="max-w-xl space-y-6">
+        <Grouped>
+          {rest.map((l) => (
+            <Row key={l.href} href={l.href} label={l.label} />
+          ))}
+        </Grouped>
+        <Grouped title="On this device">
+          <Row>
+            <div className="min-w-0 flex-1">
+              <AppearanceChoice />
+            </div>
+          </Row>
+          <Row>
+            <div className="min-w-0 flex-1">
+              <MapsChoice initial={maps} />
+            </div>
+          </Row>
+        </Grouped>
+        <Grouped title="Help">
+          {[
+            { href: `mailto:${SUPPORT_EMAIL}`, label: "Help and Support" },
+            { href: "/privacy", label: "Privacy Policy" },
+            { href: "/terms", label: "Terms of Service" },
+            { href: "/status", label: "System Status" },
+          ].map((l) => (
+            <li key={l.href}>
+              {/* Plain links: mail and the public pages are outside the office app. */}
+              <a
+                href={l.href}
+                className="flex min-h-11 items-center gap-3 px-4 py-2.5 hover:bg-text/[0.03] active:bg-text/[0.06]"
+              >
+                <span className="min-w-0 flex-1">{l.label}</span>
+                <span
+                  aria-hidden="true"
+                  className="shrink-0 text-xl leading-none text-text-muted/70"
+                >
+                  ›
+                </span>
+              </a>
+            </li>
+          ))}
+        </Grouped>
+        {/* Phones: Sign Out lives here (wider screens have it in the header), on its own
+            row, centered and red, as iOS draws it. */}
+        <form action={signOut} className="sm:hidden">
+          <ul className="grouped">
+            <li>
+              <button
+                type="submit"
+                className="flex min-h-11 w-full items-center justify-center px-4 py-2.5 text-status-fail active:bg-text/[0.06]"
+              >
+                Sign Out
+              </button>
+            </li>
+          </ul>
+        </form>
+        <DeleteAccount />
       </div>
-      <ul className="mt-6 divide-y divide-border overflow-hidden card">
-        {[
-          { href: `mailto:${SUPPORT_EMAIL}`, label: "Help and Support" },
-          { href: "/privacy", label: "Privacy Policy" },
-          { href: "/terms", label: "Terms of Service" },
-          { href: "/status", label: "System Status" },
-        ].map((l) => (
-          <li key={l.href}>
-            <a
-              href={l.href}
-              className="flex min-h-14 items-center justify-between px-4 text-[1.0625rem] font-medium hover:bg-text/[0.04] active:bg-text/[0.06]"
-            >
-              {l.label}
-              <span aria-hidden="true" className="text-text-muted">
-                ›
-              </span>
-            </a>
-          </li>
-        ))}
-      </ul>
-      <form action={signOut} className="mt-6 sm:hidden">
-        <button
-          type="submit"
-          className="flex min-h-14 w-full items-center rounded-[1.25rem] bg-surface px-4 text-[1.0625rem] font-medium text-status-fail shadow-sm active:bg-text/[0.06]"
-        >
-          Sign Out
-        </button>
-      </form>
-      <DeleteAccount />
     </>
   );
 }

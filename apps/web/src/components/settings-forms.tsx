@@ -12,6 +12,7 @@ import {
 import { contrastGrade, contrastRatio, isHexColor } from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import type { FormState } from "@/app/actions/auth";
+import { useConfirm } from "./sheet";
 import { Button, Field, TextArea, cx } from "./ui";
 
 const WHITE = tokens.color.brand.paper;
@@ -55,6 +56,9 @@ export function SettingsForm({
   onSaved?: () => void;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
+  const [ask, confirmSheet] = useConfirm();
+  const form = useRef<HTMLFormElement>(null);
+  const confirmed = useRef(false);
   const saved = useRef(onSaved);
   useEffect(() => {
     saved.current = onSaved;
@@ -63,7 +67,7 @@ export function SettingsForm({
     if (state.message && !state.error) saved.current?.();
   }, [state]);
   return (
-    <form action={formAction} className={cx(!inline && "space-y-4", className)}>
+    <form ref={form} action={formAction} className={cx(!inline && "space-y-4", className)}>
       <FieldErrors value={state.fields}>{children}</FieldErrors>
       <div className={cx("flex flex-wrap items-center gap-3", inline && "self-end")}>
         <Button
@@ -71,7 +75,21 @@ export function SettingsForm({
           kind={danger ? "danger" : primary ? "primary" : "secondary"}
           disabled={pending}
           onClick={(e) => {
-            if (confirm && !window.confirm(confirm)) e.preventDefault();
+            // Ask with an action sheet first; once confirmed, submit for real.
+            if (!confirm || confirmed.current) {
+              confirmed.current = false;
+              return;
+            }
+            e.preventDefault();
+            void ask({
+              title: confirm,
+              confirmLabel: submit,
+              destructive: danger,
+            }).then((ok) => {
+              if (!ok) return;
+              confirmed.current = true;
+              (e.target as HTMLButtonElement).click();
+            });
           }}
         >
           {pending ? "Saving…" : submit}
@@ -88,6 +106,7 @@ export function SettingsForm({
           ) : null}
         </span>
       </div>
+      {confirmSheet}
     </form>
   );
 }

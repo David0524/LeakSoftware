@@ -1,10 +1,80 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { scheduleJob } from "@/app/actions/jobs";
 import { moveJob, type RouteResult } from "@/app/actions/routes";
 import { Suggestions } from "./route-board";
+import { Sheet } from "./sheet";
 import { Button, Checkbox, Field, Notice, Select } from "./ui";
+
+type ScheduleFormProps = Parameters<typeof ScheduleForm>[0];
+
+/**
+ * The job's schedule as an iOS grouped list (tech, when), with the form in a sheet: Change
+ * Schedule opens it, and saving closes it and says so under the list.
+ */
+export function JobSchedule({
+  tech,
+  when,
+  fixed,
+  ...form
+}: Omit<ScheduleFormProps, "onSaved"> & {
+  /** Already formatted on the server. */
+  tech: string;
+  when: string | null;
+  fixed: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [done, setDone] = useState<string | null>(null);
+  const close = useCallback(() => setOpen(false), []);
+  const row = "flex min-h-11 items-center gap-3 px-4 py-2.5";
+  return (
+    <div>
+      <ul className="grouped">
+        <li className={row}>
+          <span className="flex-1">Tech</span>
+          <span className="text-right text-text-muted">{tech}</span>
+        </li>
+        <li className={row}>
+          <span className="flex-1">When</span>
+          <span className="text-right text-text-muted">{when ?? "Not scheduled"}</span>
+        </li>
+        {fixed ? (
+          <li className={row}>
+            <span className="flex-1">Time promised to the customer</span>
+            <span className="text-right text-text-muted">Yes</span>
+          </li>
+        ) : null}
+        <li>
+          <button
+            type="button"
+            onClick={() => {
+              setDone(null);
+              setOpen(true);
+            }}
+            className={`${row} w-full text-left text-link hover:bg-text/[0.03] active:bg-text/[0.06]`}
+          >
+            {when ? "Change Schedule" : "Schedule Job"}
+          </button>
+        </li>
+      </ul>
+      {done ? (
+        <p role="status" className="mt-2 px-4 text-[0.9375rem] text-status-pass">
+          {done}
+        </p>
+      ) : null}
+      <Sheet open={open} onClose={close} title="Schedule">
+        <ScheduleForm
+          {...form}
+          onSaved={(message) => {
+            setDone(message);
+            close();
+          }}
+        />
+      </Sheet>
+    </div>
+  );
+}
 
 /**
  * Assign a tech and a time. Repairs from accepted quotes start here. Suggest Times fits the
@@ -16,6 +86,7 @@ export function ScheduleForm({
   defaults,
   canSuggest = true,
   allowNobody = true,
+  onSaved,
 }: {
   jobId: string;
   techs: { value: string; label: string }[];
@@ -23,10 +94,22 @@ export function ScheduleForm({
   canSuggest?: boolean;
   /** False for a tech who sees only their own jobs: unassigning would hide it from them. */
   allowNobody?: boolean;
+  /** Called with the confirmation after a save or a picked suggestion, e.g. to close a sheet. */
+  onSaved?: (message: string) => void;
 }) {
   const [state, action, pending] = useActionState(scheduleJob, {});
   const [picked, setPicked] = useState<RouteResult>({});
   const [placing, start] = useTransition();
+  const saved = useRef(onSaved);
+  useEffect(() => {
+    saved.current = onSaved;
+  });
+  useEffect(() => {
+    if (state.message && !state.error) saved.current?.(state.message);
+  }, [state]);
+  useEffect(() => {
+    if (picked.message && !picked.error) saved.current?.(picked.message);
+  }, [picked]);
   return (
     <div className="space-y-4">
       {canSuggest ? (

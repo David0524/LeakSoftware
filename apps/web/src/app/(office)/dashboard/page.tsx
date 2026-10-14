@@ -10,7 +10,7 @@ import {
   monthLabel,
   type Dashboard,
 } from "@leakbook/core";
-import { Card, Empty, PageHeader } from "@/components/ui";
+import { Card, Empty, Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -155,7 +155,36 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <Card className="mt-5 overflow-x-auto" aria-labelledby="months-title">
+      {/* Phones: each month as a row of an inset grouped list; wider: the table. */}
+      <Grouped title="By month" className="mt-6 sm:hidden">
+        {[...d.months].reverse().map((m) => (
+          <Row
+            key={m.month}
+            label={<span className="font-semibold">{monthLabel(m.month, true)}</span>}
+            detail={
+              <>
+                <span className="block">
+                  {m.quotes_accepted} of {m.quotes_sent} quotes accepted
+                  {m.quotes_sent ? ` (${acceptanceRate(m.quotes_sent, m.quotes_accepted)})` : ""}
+                </span>
+                <span className="block">
+                  Invoiced {formatCents(m.invoiced_cents)} · still owed{" "}
+                  {formatCents(m.outstanding_cents)}
+                </span>
+              </>
+            }
+            value={
+              <span className="block">
+                <span className="block font-semibold text-text tabular-nums">
+                  {formatCents(m.collected_cents)}
+                </span>
+                <span className="block text-[0.8125rem]">collected</span>
+              </span>
+            }
+          />
+        ))}
+      </Grouped>
+      <Card className="mt-5 overflow-x-auto max-sm:hidden" aria-labelledby="months-title">
         <h2 id="months-title" className="mb-3 font-display text-xl font-bold">
           By Month
         </h2>

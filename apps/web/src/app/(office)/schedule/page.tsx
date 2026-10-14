@@ -25,8 +25,10 @@ import {
 } from "@/components/route-board";
 import { DateJump } from "@/components/date-jump";
 import {
+  Grouped,
   Notice,
   PageHeader,
+  Row,
   StatusBadge,
   buttonClass,
   cx,
@@ -46,6 +48,7 @@ import {
   type DayRoute,
   type RouteContext,
 } from "@/server/route-days";
+import { NavPlus } from "@/components/nav-bar";
 
 export const metadata: Metadata = { title: "Schedule · Tidemark" };
 
@@ -218,6 +221,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
     <>
       <PageHeader
         title="Schedule"
+        navAction={<NavPlus href="/jobs/new" label="New Job" />}
         subtitle={
           <>
             {title}
@@ -403,27 +407,25 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                     ) : null}
                   </h2>
                   {list.length === 0 ? null : (
-                    <ul className="space-y-2">
+                    <Grouped>
                       {list.map(({ s, tech }) => (
-                        <li key={s.id}>
-                          <Link
-                            href={`/jobs/${s.id}`}
-                            className="well block p-2 hover:bg-text/[0.08]"
-                          >
-                            <span className="block font-semibold">
+                        <Row
+                          key={s.id}
+                          href={`/jobs/${s.id}`}
+                          label={
+                            <span className="font-semibold">
                               {s.time} · {s.number ? `#${s.number}` : "New"}
                             </span>
-                            <span className="block text-[0.9375rem]">
-                              {s.customer}
-                              <span className="text-text-muted"> · {tech}</span>
-                            </span>
-                            <span className="mt-1 block">
-                              <StatusBadge status={s.status} />
-                            </span>
-                          </Link>
-                        </li>
+                          }
+                          detail={
+                            <>
+                              <span className="text-text">{s.customer}</span> · {tech}
+                            </>
+                          }
+                          value={<StatusBadge status={s.status} />}
+                        />
                       ))}
-                    </ul>
+                    </Grouped>
                   )}
                 </section>
               );

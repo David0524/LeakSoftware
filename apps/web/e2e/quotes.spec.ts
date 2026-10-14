@@ -162,11 +162,15 @@ test("the office opens the repair job from the accepted quote and schedules it",
   await expect(page.getByRole("heading", { name: /^Job #\d+/ })).toBeVisible();
   await expect(page.getByText("Repair", { exact: true }).first()).toBeVisible();
 
+  // The schedule form is in a sheet; saving closes it and says so on the page.
   const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
-  await page.getByLabel("Tech").selectOption({ label: "Tony Tech" });
-  await page.getByLabel("Date").fill(tomorrow);
-  await page.getByLabel("Start").fill("09:00");
-  await page.getByRole("button", { name: "Save Schedule" }).click();
+  await page.getByRole("button", { name: /^(Schedule Job|Change Schedule)$/ }).click();
+  const sheet = page.getByRole("dialog", { name: "Schedule" });
+  await sheet.getByLabel("Tech").selectOption({ label: "Tony Tech" });
+  await sheet.getByLabel("Date").fill(tomorrow);
+  await sheet.getByLabel("Start").fill("09:00");
+  await sheet.getByRole("button", { name: "Save Schedule" }).click();
+  await expect(sheet).toBeHidden();
   await expect(page.getByText("Scheduled.", { exact: true })).toBeVisible();
   await page.reload();
   await expect(

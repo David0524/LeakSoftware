@@ -20,7 +20,7 @@
   --lb-neutral-700: #33404C;
   --lb-neutral-800: #22303D;
   --lb-neutral-900: #12263A;
-  --lb-bg: #E9ECEF;
+  --lb-bg: #F2F2F7;
   --lb-surface: #FFFFFF;
   --lb-text: #12263A;
   --lb-text-muted: #5A6875;
@@ -35,6 +35,9 @@
   --lb-on-status: #FFFFFF;
   --lb-control-border: #5A6875;
   --lb-chart: #1F6FAE;
+  --lb-fill: #7676801F;
+  --lb-separator: #3C3C434A;
+  --lb-thumb: #FFFFFF;
   --lb-font-display: "Barlow Semi Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
   --lb-font-body: "Public Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -60,6 +63,9 @@
   --lb-warning: #D9A040;
   --lb-info: #6AAEE6;
   --lb-chart: #4A93D0;
+  --lb-fill: #7676803D;
+  --lb-separator: #545458A6;
+  --lb-thumb: #636366;
   color-scheme: dark;
 }
 
@@ -85,6 +91,9 @@
     --lb-warning: #D9A040;
     --lb-info: #6AAEE6;
     --lb-chart: #4A93D0;
+    --lb-fill: #7676803D;
+    --lb-separator: #545458A6;
+    --lb-thumb: #636366;
     color-scheme: dark;
   }
 }
@@ -96,7 +105,7 @@
   --lb-excluded: #5B6B7A;
   --lb-warning: #8A5A0E;
   --lb-info: #1F6FAE;
-  --lb-bg: #E9ECEF;
+  --lb-bg: #F2F2F7;
   --lb-surface: #FFFFFF;
   --lb-text: #12263A;
   --lb-text-muted: #5A6875;
@@ -111,6 +120,9 @@
   --lb-on-status: #FFFFFF;
   --lb-control-border: #5A6875;
   --lb-chart: #1F6FAE;
+  --lb-fill: #7676801F;
+  --lb-separator: #3C3C434A;
+  --lb-thumb: #FFFFFF;
   color-scheme: light;
 }
 
@@ -131,6 +143,9 @@
   --color-on-status: var(--lb-on-status);
   --color-control-border: var(--lb-control-border);
   --color-chart: var(--lb-chart);
+  --color-fill: var(--lb-fill);
+  --color-separator: var(--lb-separator);
+  --color-thumb: var(--lb-thumb);
   --color-navy: var(--lb-navy);
   --color-water: var(--lb-water);
   --color-safety: var(--lb-safety);
