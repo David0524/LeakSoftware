@@ -24,6 +24,19 @@ export function useRows<T>(table: string, companyId?: string): T[] {
   );
 }
 
+/**
+ * One job's rows of a table (checklist, photos, findings, ...). Reads through the job index,
+ * so a job screen stays quick with thousands of jobs on the phone (M11).
+ */
+export function useJobRows<T>(table: string, companyId: string, jobId: string): T[] {
+  const version = useDataVersion();
+  return useMemo(
+    () => getServices().sync.list(table, companyId, jobId) as unknown as T[],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- version signals data changes
+    [table, companyId, jobId, version],
+  );
+}
+
 export function useRow<T>(table: string, id: string | undefined): T | undefined {
   const version = useDataVersion();
   return useMemo(

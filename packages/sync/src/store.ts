@@ -17,7 +17,7 @@ export interface SqlDatabase {
  * Local tables. Every synced server table lives in sync_records as JSON, so a server schema
  * change never needs a device migration. Screens read through LocalStore.get/list.
  */
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 const SCHEMA = [
   `create table if not exists sync_records (
      table_name text not null,
@@ -109,6 +109,16 @@ export class LocalStore {
     // Version 3: the queue also carries signature images.
     if (!queueColumns.some((c) => c.name === "record_table"))
       db.run("alter table upload_queue add column record_table text not null default 'media'");
+    // Version 4 (M11): a job index, so a job's screen reads its own rows, not every row of a
+    // table (1,000 jobs and 10,000 photos on a phone).
+    const recordColumns = db.all<{ name: string }>("pragma table_xinfo(sync_records)");
+    if (!recordColumns.some((c) => c.name === "job_id"))
+      db.run(
+        "alter table sync_records add column job_id text generated always as (json_extract(data, '$.job_id')) virtual",
+      );
+    db.run(
+      "create index if not exists sync_records_job on sync_records (table_name, job_id, deleted)",
+    );
     const meta = (key: string) =>
       db.get<{ value: string }>("select value from sync_meta where key = ?", [key])?.value;
     const set = (key: string, value: string) =>
@@ -138,7 +148,7 @@ export class LocalStore {
 
   list<T extends Row = Row>(
     table: string,
-    opts: { companyId?: string; includeDeleted?: boolean } = {},
+    opts: { companyId?: string; jobId?: string; includeDeleted?: boolean } = {},
   ): T[] {
     const where = ["table_name = ?"];
     const params: unknown[] = [table];
@@ -146,10 +156,15 @@ export class LocalStore {
       where.push("company_id = ?");
       params.push(opts.companyId);
     }
+    if (opts.jobId) {
+      where.push("job_id = ?");
+      params.push(opts.jobId);
+    }
     if (!opts.includeDeleted) where.push("deleted = 0");
     return this.db
       .all<{ data: string }>(
-        `select data from sync_records where ${where.join(" and ")} order by id`,
+        // A job's rows come through the job index (SQLite would otherwise pick the company one).
+        `select data from sync_records${opts.jobId ? " indexed by sync_records_job" : ""} where ${where.join(" and ")} order by id`,
         params,
       )
       .map((r) => JSON.parse(r.data) as T);

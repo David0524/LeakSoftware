@@ -3,6 +3,7 @@ export * from "./hlc";
 export * from "./types";
 export * from "./store";
 export * from "./engine";
+export * from "./errors";
 export * from "./uploads";
 export * from "./supabase-transport";
 export * from "./nested-transaction";

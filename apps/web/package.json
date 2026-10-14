@@ -18,6 +18,7 @@
     "@dnd-kit/utilities": "3.2.2",
     "@leakbook/core": "workspace:*",
     "@leakbook/tokens": "workspace:*",
+    "@sentry/nextjs": "11.7.0",
     "@sparticuz/chromium": "^153.0.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.3",

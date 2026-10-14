@@ -25,6 +25,9 @@ export function SyncBar({ onPress }: { onPress: () => void }) {
   if (s.problems.length > 0) {
     dot = color.fail;
     label = `${s.problems.length} change${s.problems.length === 1 ? "" : "s"} could not be saved · tap for details`;
+  } else if (s.storageLow) {
+    dot = color.fail;
+    label = "Phone storage almost full · free up space so new work saves";
   } else if (s.phase === "syncing") {
     dot = color.info;
     label = "Syncing…";

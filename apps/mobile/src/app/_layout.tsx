@@ -1,11 +1,42 @@
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { Stack, type ErrorBoundaryProps } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { View } from "react-native";
+import { initMonitoring, reportError } from "../lib/monitoring";
 import { SessionProvider, useSession } from "../state/session";
+import { Button, T } from "../ui/components";
+import { color, space } from "../ui/theme";
 
+initMonitoring();
 void SplashScreen.preventAutoHideAsync();
+
+/**
+ * A screen that crashes shows this instead of a blank app (M11). Everything the tech saved is
+ * in the phone's database, so nothing is lost; Try Again re-opens the screen.
+ */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  useEffect(() => {
+    reportError(error);
+  }, [error]);
+  return (
+    <View
+      accessibilityRole="alert"
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        gap: space["3"],
+        padding: space["5"],
+        backgroundColor: color.bg,
+      }}
+    >
+      <T variant="title">Something went wrong</T>
+      <T>This screen didn’t load. Your work is saved on this phone and will still sync.</T>
+      <Button title="Try Again" onPress={() => void retry()} />
+    </View>
+  );
+}
 
 const BRAND_FONTS = {
   "Barlow-SemiBold": require("../../../../brand/fonts/BarlowSemiCondensed-SemiBold.ttf"),

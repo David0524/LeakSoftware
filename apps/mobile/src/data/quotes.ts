@@ -12,7 +12,7 @@ import type { JsonValue } from "@leakbook/sync";
 import { API_URL } from "../lib/config";
 import { getServices } from "../lib/services";
 import type { SyncService } from "../lib/sync-service";
-import { useRows } from "./hooks";
+import { useRows, useJobRows } from "./hooks";
 import { ReportServerError } from "./reports";
 
 export interface QuoteLineRow extends QuoteLine {
@@ -30,9 +30,9 @@ interface ShareLinkRow {
 
 /** The job's quotes (newest first), each with its lines and customer link token. */
 export function useJobQuotes(companyId: string, jobId: string) {
-  const quotes = useRows<Quote>("quote", companyId);
+  const quotes = useJobRows<Quote>("quote", companyId, jobId);
   const lines = useRows<QuoteLineRow>("quote_line_item", companyId);
-  const links = useRows<ShareLinkRow>("share_link", companyId);
+  const links = useJobRows<ShareLinkRow>("share_link", companyId, jobId);
   return useMemo(
     () =>
       quotes

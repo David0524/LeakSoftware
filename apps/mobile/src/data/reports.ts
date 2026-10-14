@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import type { FinalSection, NarrativeProblem } from "@leakbook/core";
 import { API_URL } from "../lib/config";
 import { getServices } from "../lib/services";
-import { useRows } from "./hooks";
+import { useJobRows } from "./hooks";
 
 export interface ReportRecord {
   id: string;
@@ -36,8 +36,8 @@ interface ShareLinkRecord {
 
 /** A job's reports, newest version first, with each one's customer link token. */
 export function useJobReports(companyId: string, jobId: string) {
-  const reports = useRows<ReportRecord>("report", companyId);
-  const links = useRows<ShareLinkRecord>("share_link", companyId);
+  const reports = useJobRows<ReportRecord>("report", companyId, jobId);
+  const links = useJobRows<ShareLinkRecord>("share_link", companyId, jobId);
   return useMemo(() => {
     const tokenOf = new Map(
       links.filter((l) => !l.revoked_at && l.report_id).map((l) => [l.report_id, l.token]),
@@ -50,7 +50,7 @@ export function useJobReports(companyId: string, jobId: string) {
 }
 
 export function useJobSignatures(companyId: string, jobId: string) {
-  const all = useRows<SignatureRecord>("signature", companyId);
+  const all = useJobRows<SignatureRecord>("signature", companyId, jobId);
   return useMemo(
     () =>
       all.filter((s) => s.job_id === jobId).sort((a, b) => a.signed_at.localeCompare(b.signed_at)),

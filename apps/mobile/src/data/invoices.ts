@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { Invoice, InvoiceLine } from "@leakbook/core";
 import { getServices } from "../lib/services";
-import { useRows } from "./hooks";
+import { useRows, useJobRows } from "./hooks";
 import { ReportServerError, call } from "./reports";
 
 export interface InvoiceLineRow extends InvoiceLine {
@@ -28,10 +28,10 @@ interface ShareLinkRow {
 
 /** The job's invoices (newest first) with lines, payments, and the customer link token. */
 export function useJobInvoices(companyId: string, jobId: string) {
-  const invoices = useRows<Invoice>("invoice", companyId);
+  const invoices = useJobRows<Invoice>("invoice", companyId, jobId);
   const lines = useRows<InvoiceLineRow>("invoice_line_item", companyId);
   const payments = useRows<PaymentRow>("payment", companyId);
-  const links = useRows<ShareLinkRow>("share_link", companyId);
+  const links = useJobRows<ShareLinkRow>("share_link", companyId, jobId);
   return useMemo(
     () =>
       invoices

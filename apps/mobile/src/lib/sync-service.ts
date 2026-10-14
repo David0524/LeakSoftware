@@ -1,8 +1,10 @@
 import NetInfo from "@react-native-community/netinfo";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppState, type NativeEventSubscription } from "react-native";
+import { Paths } from "expo-file-system";
 import {
   LocalStore,
+  StorageFullError,
   SupabaseTransport,
   SyncEngine,
   UploadQueue,
@@ -10,6 +12,7 @@ import {
   type OutboxProblem,
   type Row,
   type Uploader,
+  isStorageFull,
 } from "@leakbook/sync";
 import { API_URL } from "./config";
 import type { KeyValue } from "./database";
@@ -27,6 +30,19 @@ export interface SyncStatus {
   error: string | null;
   /** Captured files not yet in cloud storage. */
   uploads: UploadStatus;
+  /** The phone is (nearly) out of storage: new work may not save (M11). */
+  storageLow: boolean;
+}
+
+/** Below this much free space the app warns before saves start failing. */
+const LOW_STORAGE_BYTES = 200 * 1024 * 1024;
+
+function freeSpaceLow(): boolean {
+  try {
+    return Paths.availableDiskSpace < LOW_STORAGE_BYTES;
+  } catch {
+    return false;
+  }
 }
 
 export interface UploadStatus {
@@ -80,6 +96,7 @@ export class SyncService {
       initialSyncDone: kv.get("sync:initial_done") === "1",
       error: null,
       uploads: this.uploadStatus(),
+      storageLow: freeSpaceLow(),
     };
   }
 
@@ -107,6 +124,7 @@ export class SyncService {
       pending: this.store.pendingCount(),
       problems: this.store.problems(),
       uploads: this.uploadStatus(),
+      storageLow: freeSpaceLow(),
     };
     for (const fn of this.listeners) fn();
   }
@@ -134,29 +152,44 @@ export class SyncService {
   // ---------------------------------------------------------------------------
 
   insert(table: string, companyId: string, values: Record<string, JsonValue>): string {
-    const id = this.store.insert(table, companyId, values);
+    const id = this.guard(() => this.store.insert(table, companyId, values));
     this.afterWrite();
     return id;
   }
 
   write(table: string, id: string, companyId: string, values: Record<string, JsonValue>): void {
-    this.store.write(table, id, companyId, values);
+    this.guard(() => this.store.write(table, id, companyId, values));
     this.afterWrite();
   }
 
   /** Several writes as one unit: all saved or none. */
   batch<T>(fn: () => T): T {
-    const result = this.store.database.transaction(fn);
+    const result = this.guard(() => this.store.database.transaction(fn));
     this.afterWrite();
     return result;
+  }
+
+  /**
+   * Runs a local save. When the phone is out of storage the save rolls back whole and a
+   * StorageFullError explains it (the app shows it instead of crashing; see monitoring.ts).
+   */
+  private guard<T>(save: () => T): T {
+    try {
+      return save();
+    } catch (e) {
+      if (!isStorageFull(e)) throw e;
+      this.setStatus({ storageLow: true });
+      throw new StorageFullError();
+    }
   }
 
   get<T extends Row>(table: string, id: string): T | undefined {
     return this.store.get<T>(table, id);
   }
 
-  list<T extends Row>(table: string, companyId?: string): T[] {
-    return this.store.list<T>(table, companyId ? { companyId } : {});
+  /** Rows of a table, optionally for one company and one job (job rows use the job index). */
+  list<T extends Row>(table: string, companyId?: string, jobId?: string): T[] {
+    return this.store.list<T>(table, { companyId, jobId });
   }
 
   /**
@@ -169,10 +202,12 @@ export class SyncService {
     values: Record<string, JsonValue>,
     file: { localPath: string; storagePath: string; mimeType: string },
   ) {
-    this.store.database.transaction(() => {
-      this.store.write("media", id, companyId, values);
-      this.uploadQueue.enqueue({ mediaId: id, companyId, ...file });
-    });
+    this.guard(() =>
+      this.store.database.transaction(() => {
+        this.store.write("media", id, companyId, values);
+        this.uploadQueue.enqueue({ mediaId: id, companyId, ...file });
+      }),
+    );
     this.afterWrite();
   }
 
@@ -183,17 +218,19 @@ export class SyncService {
     values: Record<string, JsonValue>,
     file: { localPath: string; storagePath: string },
   ) {
-    this.store.database.transaction(() => {
-      this.store.write("signature", id, companyId, { ...values, device_id: this.store.deviceId });
-      this.uploadQueue.enqueue({
-        mediaId: id,
-        recordTable: "signature",
-        companyId,
-        localPath: file.localPath,
-        storagePath: file.storagePath,
-        mimeType: "image/svg+xml",
-      });
-    });
+    this.guard(() =>
+      this.store.database.transaction(() => {
+        this.store.write("signature", id, companyId, { ...values, device_id: this.store.deviceId });
+        this.uploadQueue.enqueue({
+          mediaId: id,
+          recordTable: "signature",
+          companyId,
+          localPath: file.localPath,
+          storagePath: file.storagePath,
+          mimeType: "image/svg+xml",
+        });
+      }),
+    );
     this.afterWrite();
   }
 
@@ -281,7 +318,17 @@ export class SyncService {
     }
 
     this.setStatus({ phase: "syncing", error: null });
-    const summary = await this.engine.sync();
+    let summary = await this.engine.sync();
+    if (summary.authFailed) {
+      // The saved sign-in was refused (expired or revoked). Try a fresh token once; if that
+      // fails too, ask the tech to sign in again. Everything stays on the phone meanwhile.
+      const refreshed = await this.supabase.auth.refreshSession();
+      if (refreshed.error || !refreshed.data.session) {
+        this.setStatus({ phase: "signed_out", error: null });
+        return;
+      }
+      summary = await this.engine.sync();
+    }
     if (summary.error) {
       const offline = /network|fetch|offline|timed? ?out/i.test(summary.error);
       this.setStatus({
@@ -382,6 +429,7 @@ export class SyncService {
       initialSyncDone: false,
       error: null,
       uploads: { waiting: 0, allPhotos: true, lastError: null },
+      storageLow: false,
     };
     this.emit(true);
   }

@@ -14,7 +14,7 @@ import {
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import type { SyncService } from "../lib/sync-service";
-import { useRows } from "./hooks";
+import { useRows, useJobRows } from "./hooks";
 
 const bySort = <T extends { sort_order: number }>(a: T, b: T) => a.sort_order - b.sort_order;
 
@@ -40,10 +40,10 @@ export function useInspectionConfig(companyId: string) {
 
 /** Everything recorded on one job. Rows are already filtered to non-deleted. */
 export function useJobInspection(companyId: string, jobId: string) {
-  const components = useRows<JobComponent>("job_component", companyId);
-  const results = useRows<ChecklistItemResult>("checklist_item_result", companyId);
-  const tests = useRows<TestResult>("test_result", companyId);
-  const findings = useRows<Finding>("finding", companyId);
+  const components = useJobRows<JobComponent>("job_component", companyId, jobId);
+  const results = useJobRows<ChecklistItemResult>("checklist_item_result", companyId, jobId);
+  const tests = useJobRows<TestResult>("test_result", companyId, jobId);
+  const findings = useJobRows<Finding>("finding", companyId, jobId);
   return useMemo(() => {
     const comps = components.filter((c) => c.job_id === jobId).sort(bySort);
     const res = results.filter((r) => r.job_id === jobId);

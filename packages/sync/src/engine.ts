@@ -1,3 +1,4 @@
+import { AuthError } from "./errors";
 import type { LocalStore } from "./store";
 import type { SyncTransport } from "./types";
 
@@ -12,6 +13,11 @@ export interface SyncSummary {
    * unsent, and go up once it is paid. Downloads continue.
    */
   readOnly?: string;
+  /**
+   * The server no longer accepts this sign-in (expired or revoked). Nothing is lost: changes
+   * stay in the outbox until the user signs in again.
+   */
+  authFailed?: boolean;
 }
 
 /** Server code for "this shop is read-only" (supabase/migrations/20261012002100_billing.sql). */
@@ -57,6 +63,7 @@ export class SyncEngine {
       await this.pull(summary);
     } catch (e) {
       summary.error = e instanceof Error ? e.message : String(e);
+      if (e instanceof AuthError) summary.authFailed = true;
     }
     summary.pending = this.store.pendingCount();
     return summary;

@@ -8,7 +8,7 @@ import {
   storeCapture,
   type CapturedFile,
 } from "../lib/media";
-import { useRows } from "./hooks";
+import { useJobRows } from "./hooks";
 
 /** What a capture is attached to. Job-level captures have no other link. */
 export interface MediaTarget {
@@ -20,7 +20,7 @@ export interface MediaTarget {
 
 /** Captures for a job, newest first. With a target, only those attached to it. */
 export function useJobMedia(companyId: string, jobId: string, target?: Omit<MediaTarget, "jobId">) {
-  const all = useRows<Media>("media", companyId);
+  const all = useJobRows<Media>("media", companyId, jobId);
   const findingId = target?.findingId;
   const componentId = target?.componentId;
   const testResultId = target?.testResultId;
