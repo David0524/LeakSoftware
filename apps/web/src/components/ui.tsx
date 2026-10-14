@@ -100,10 +100,13 @@ export function PageHeader({
   title,
   subtitle,
   actions,
+  actionsClassName,
 }: {
   title: string;
   subtitle?: ReactNode;
   actions?: ReactNode;
+  /** For example "hidden sm:flex" when phones show the action elsewhere. */
+  actionsClassName?: string;
 }) {
   return (
     <div className="mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-3 sm:mb-6">
@@ -112,7 +115,9 @@ export function PageHeader({
         {subtitle ? <p className="mt-1 text-text-muted">{subtitle}</p> : null}
       </div>
       {/* empty:hidden: an action component that renders nothing adds no blank row on phones. */}
-      {actions ? <div className="flex flex-wrap gap-3 empty:hidden">{actions}</div> : null}
+      {actions ? (
+        <div className={cx("flex flex-wrap gap-3 empty:hidden", actionsClassName)}>{actions}</div>
+      ) : null}
     </div>
   );
 }

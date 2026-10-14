@@ -26,6 +26,9 @@ const ICONS: Record<string, React.ReactNode> = {
   ),
 };
 
+/** Pages that show the floating New Job button on phones. */
+const NEW_JOB_PAGES = ["/today", "/jobs", "/schedule"];
+
 /**
  * Phones: the main sections as a tab bar along the bottom (iOS convention). With more than
  * five, the first four show and the rest are under More.
@@ -43,6 +46,26 @@ export function TabBar({ links: all }: { links: { href: string; label: string }[
       data-testid="tab-bar-layer"
       className="fixed inset-x-0 bottom-0 z-30 transform-gpu touch-manipulation px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:hidden"
     >
+      {/* New Job floats above the tab bar where people start jobs, instead of taking a row. */}
+      {NEW_JOB_PAGES.includes(path) ? (
+        <Link
+          href="/jobs/new"
+          className="absolute right-4 bottom-full mb-1 inline-flex min-h-12 items-center gap-1.5 rounded-full bg-primary pr-5 pl-4 font-display text-[1.0625rem] font-bold tracking-wide text-on-primary shadow-lg focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus active:brightness-95"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="size-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          New Job
+        </Link>
+      ) : null}
       <nav aria-label="Main" className="glass rounded-[28px] px-1">
         <ul className="flex">
           {links.map((l) => {

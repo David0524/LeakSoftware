@@ -59,6 +59,8 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
         title="Jobs"
         subtitle={<span className="hidden sm:inline">{office.company.name}</span>}
         actions={<ButtonLink href="/jobs/new">New Job</ButtonLink>}
+        // Phones use the floating New Job button above the tab bar instead.
+        actionsClassName="hidden sm:flex"
       />
       <nav
         aria-label="Filter jobs by status"
