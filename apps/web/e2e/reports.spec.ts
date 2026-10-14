@@ -123,7 +123,13 @@ test("field parity report: counts, verdicts, fee, and disclaimer", async ({ page
 
   await page.goto("/jobs?status=all&q=Riley%20Rivera");
   await page.getByRole("row").filter({ hasText: "Riley Rivera" }).getByRole("link").first().click();
-  await expect(page.getByText("With Dana Owner")).toBeVisible();
+  // The second tech: the "With" row in Assigned To shows their name.
+  await expect(
+    page
+      .getByRole("listitem")
+      .filter({ has: page.getByText("With", { exact: true }) })
+      .filter({ hasText: "Dana Owner" }),
+  ).toBeVisible();
   await expect(page.getByText("$649.00", { exact: true })).toBeVisible();
   await expect(page.getByText("Pool water level dropping")).toBeVisible();
   await openChecklist(page);
