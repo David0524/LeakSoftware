@@ -30,8 +30,9 @@ import {
   StatusBadge,
   buttonClass,
   cx,
-  iconButtonClass,
   pillClass,
+  SEGMENT_TRACK,
+  segmentClass,
 } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { mapsAppForRequest } from "@/lib/maps";
@@ -215,9 +216,27 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
 
   return (
     <>
-      <PageHeader title="Schedule" subtitle={title} />
-      {/* One row: previous, the date, next (and Today), with Day / Week / Month as icons at
-          the far right. */}
+      <PageHeader
+        title="Schedule"
+        subtitle={
+          <>
+            {title}
+            {/* Back to today sits with the date, so the control row stays one line. */}
+            {date !== today ? (
+              <>
+                {" · "}
+                <Link
+                  href={href(today)}
+                  className="-my-3 inline-block py-3 font-semibold text-link underline-offset-4 hover:underline"
+                >
+                  Today
+                </Link>
+              </>
+            ) : null}
+          </>
+        }
+      />
+      {/* One row: previous, the date, next, and Day / Week / Month at the far right. */}
       <div className="mb-3 flex items-center gap-2">
         <Link
           href={href(move(-1))}
@@ -234,21 +253,18 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
         >
           ›
         </Link>
-        {date !== today ? (
-          <Link href={href(today)} className={buttonClass("quiet", "shrink-0 px-2")}>
-            Today
-          </Link>
-        ) : null}
-        {/* One round button shows the current view; each tap moves to the next one
-            (Day, Week, Month, then Day again). */}
-        <Link
-          href={href(date, NEXT_VIEW[view])}
-          aria-label={`${VIEW_NAMES[view]} view. Switch to ${VIEW_NAMES[NEXT_VIEW[view]]}`}
-          title={`Switch to ${VIEW_NAMES[NEXT_VIEW[view]]}`}
-          className={iconButtonClass("ml-auto shrink-0")}
-        >
-          <ViewIcon view={view} />
-        </Link>
+        <nav aria-label="View" className={cx(SEGMENT_TRACK, "ml-auto shrink-0 flex-nowrap")}>
+          {(["day", "week", "month"] as const).map((v) => (
+            <Link
+              key={v}
+              href={href(date, v)}
+              aria-current={v === view ? "page" : undefined}
+              className={segmentClass(v === view, "px-3 text-[0.9375rem]")}
+            >
+              {VIEW_NAMES[v]}
+            </Link>
+          ))}
+        </nav>
       </div>
 
       {view === "day" ? (
@@ -516,30 +532,3 @@ function MonthCalendar({
 }
 
 const VIEW_NAMES = { day: "Day", week: "Week", month: "Month" } as const;
-const NEXT_VIEW = { day: "week", week: "month", month: "day" } as const;
-
-/** Day, Week, and Month as small calendar drawings for the view toggle. */
-function ViewIcon({ view }: { view: "day" | "week" | "month" }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="size-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM4 9h16" />
-      {view === "day" ? <path d="M9 13h6v4H9z" /> : null}
-      {view === "week" ? <path d="M7 14.5h10" strokeWidth="2.6" /> : null}
-      {view === "month" ? (
-        <path
-          d="M8 12.5h.01M12 12.5h.01M16 12.5h.01M8 16.5h.01M12 16.5h.01M16 16.5h.01"
-          strokeWidth="2.6"
-        />
-      ) : null}
-    </svg>
-  );
-}
