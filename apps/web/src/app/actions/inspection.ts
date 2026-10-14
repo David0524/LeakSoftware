@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  DIAGRAM_SHAPES,
   calculate,
   nextInstance,
   normalizeTestData,
@@ -351,4 +352,20 @@ export async function deleteFinding(_: FormState, form: FormData): Promise<FormS
     .eq("id", text(form, "finding"));
   if (error) return { error: error.message };
   return done(text(form, "job"), "Finding deleted.");
+}
+
+/** The pool's shape, for the diagram findings are pinned on (the job page's Findings part). */
+export async function setPoolShape(_: FormState, form: FormData): Promise<FormState> {
+  await getOffice();
+  const shape = String(form.get("shape") ?? "");
+  if (!DIAGRAM_SHAPES.some((s) => s.key === shape)) return { error: "Pick a shape." };
+  const { error } = await (
+    await createClient()
+  )
+    .from("property")
+    .update({ diagram_shape: shape })
+    .eq("id", String(form.get("property") ?? ""));
+  if (error) return { error: error.message };
+  revalidatePath(`/jobs/${String(form.get("job") ?? "")}`);
+  return {};
 }

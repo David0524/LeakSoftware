@@ -450,7 +450,13 @@ function Findings({ detail }: { detail: JobDetail }) {
         .map((s) => ({ key: s.key, name: s.name, color: s.color }))}
       components={detail.components.map((c) => ({ id: c.id, label: c.label }))}
       diagram={
-        property ? { shape: property.diagram_shape ?? null, hasSpa: property.has_spa } : null
+        property
+          ? {
+              shape: property.diagram_shape ?? null,
+              hasSpa: property.has_spa,
+              propertyId: property.id,
+            }
+          : null
       }
     />
   );

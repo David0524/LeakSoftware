@@ -185,6 +185,14 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
         access_notes: text(form, "access_notes") || null,
       };
 
+  // The create functions don't take a shape; a new pool gets it right after (rectangle is the
+  // default, so only another shape needs the extra write).
+  const shape = text(form, "diagram_shape");
+  async function saveShape(property: string) {
+    if (newProperty && shape && shape !== "rectangle")
+      await supabase.from("property").update({ diagram_shape: shape }).eq("id", property);
+  }
+
   // Leak detection, or maintenance: a single visit, or (owners) a plan that repeats.
   const kind = text(form, "job_type") === "maintenance" ? "maintenance" : "detection";
   const repeat = kind === "maintenance" ? Number(text(form, "repeat") || "0") : 0;
@@ -222,6 +230,7 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
     if (planError) return { error: planError.message };
     const made = started as { customer: string; property: string };
     await locateProperty(office, made.property);
+    await saveShape(made.property);
     revalidatePath("/jobs");
     revalidatePath("/schedule");
     revalidatePath("/today");
@@ -282,7 +291,10 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
     .select("property_id")
     .eq("id", data as string)
     .single();
-  if (made) await locateProperty(office, (made as { property_id: string }).property_id);
+  if (made) {
+    await locateProperty(office, (made as { property_id: string }).property_id);
+    await saveShape((made as { property_id: string }).property_id);
+  }
   revalidatePath("/jobs");
   revalidatePath("/schedule");
   redirect(`/jobs/${data as string}`);

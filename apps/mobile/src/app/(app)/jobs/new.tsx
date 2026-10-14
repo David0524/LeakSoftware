@@ -14,6 +14,7 @@ import {
   type PriceBookItem,
   type Customer,
   type NewJobInput,
+  type DiagramShape,
   type PoolType,
   type Property,
   seesAllJobs,
@@ -32,6 +33,7 @@ import {
   Toggle,
   Segmented,
 } from "../../../ui/components";
+import { ShapePicker } from "../../../ui/ShapePicker";
 import { color, space } from "../../../ui/theme";
 
 type When = "now" | "scheduled" | "later";
@@ -62,6 +64,7 @@ export default function NewJob() {
     scheduleTime: "",
   });
   const [poolType, setPoolType] = useState<PoolType>("gunite_plaster");
+  const [shape, setShape] = useState<DiagramShape>("rectangle");
   const [hasSpa, setHasSpa] = useState(false);
   const [accessNotes, setAccessNotes] = useState("");
   const [when, setWhen] = useState<When>("now");
@@ -145,7 +148,11 @@ export default function NewJob() {
         });
       const prop =
         propertyId ??
-        sync.insert("property", company.id, { ...records.property!, customer_id: cust });
+        sync.insert("property", company.id, {
+          ...records.property!,
+          customer_id: cust,
+          diagram_shape: shape,
+        });
       const job = sync.insert("job", company.id, {
         ...records.job,
         property_id: prop,
@@ -360,6 +367,7 @@ export default function NewJob() {
               onChange={setPoolType}
             />
             <Toggle label="Has a spa" value={hasSpa} onChange={setHasSpa} />
+            <ShapePicker value={shape} onChange={setShape} />
             <Field
               label="Access notes"
               value={accessNotes}

@@ -35,10 +35,12 @@ import {
   saveTest,
   saveWhere,
   setUpChecklist,
+  setPoolShape,
   setVerdict,
 } from "@/app/actions/inspection";
 import { PoolDiagram } from "./pool-diagram";
 import { Segmented } from "./segmented";
+import { ShapePicker } from "./shape-picker";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
 import { Button, Checkbox, Chip, Select, buttonClass, cx } from "./ui";
 
@@ -753,6 +755,8 @@ export interface FindingRow {
 interface Diagram {
   shape: DiagramShape | null;
   hasSpa: boolean;
+  /** The pool, so its shape can be changed here. */
+  propertyId?: string;
 }
 
 export function FindingsEditor({
@@ -784,6 +788,9 @@ export function FindingsEditor({
   );
   return (
     <div className="space-y-4">
+      {diagram?.propertyId ? (
+        <PoolShapeSetting jobId={jobId} propertyId={diagram.propertyId} shape={diagram.shape} />
+      ) : null}
       {findings.length === 0 && editing !== "new" ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-text-muted">No findings recorded.</p>
@@ -877,6 +884,33 @@ export function FindingsEditor({
           Add Finding
         </Button>
       ) : null}
+    </div>
+  );
+}
+
+/** The pool's shape, saved as soon as it's tapped; the diagram below redraws. */
+function PoolShapeSetting({
+  jobId,
+  propertyId,
+  shape,
+}: {
+  jobId: string;
+  propertyId: string;
+  shape: DiagramShape | null;
+}) {
+  const [value, setValue] = useState<DiagramShape>(shape ?? "rectangle");
+  const { pending, error, run } = useRun();
+  return (
+    <div>
+      <ShapePicker
+        value={value}
+        disabled={pending}
+        onChange={(next) => {
+          setValue(next);
+          run(setPoolShape, { job: jobId, property: propertyId, shape: next });
+        }}
+      />
+      <ErrorText error={error} />
     </div>
   );
 }

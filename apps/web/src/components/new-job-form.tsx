@@ -6,11 +6,13 @@ import {
   minutesToClock,
   type IntakeQuestion,
   type PoolType,
+  type DiagramShape,
 } from "@leakbook/core";
 import { createJobAction } from "@/app/actions/jobs";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
 import { Suggestions } from "./route-board";
 import { Segmented } from "./segmented";
+import { ShapePicker } from "./shape-picker";
 import { Checkbox, Select } from "./ui";
 
 interface CustomerOption {
@@ -52,6 +54,7 @@ export function NewJobForm({
   const [mode, setMode] = useState<"new" | "existing">("new");
   const [customerId, setCustomerId] = useState("");
   const [pool, setPool] = useState("new");
+  const [shape, setShape] = useState<DiagramShape>("rectangle");
   const [when, setWhen] = useState<"unscheduled" | "scheduled">("scheduled");
   const [fee, setFee] = useState("");
   // Leak detection, or maintenance: one visit, or a plan that repeats.
@@ -166,6 +169,9 @@ export function NewJobForm({
             />
             <div className="self-end">
               <Checkbox name="has_spa" label="Has a spa" />
+            </div>
+            <div className="sm:col-span-2">
+              <ShapePicker name="diagram_shape" value={shape} onChange={setShape} />
             </div>
             <div className="sm:col-span-2">
               <STextArea
