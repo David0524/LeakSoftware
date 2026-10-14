@@ -138,7 +138,7 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
         </div>
       ) : null}
 
-      <dl className="mt-6 grid gap-x-6 gap-y-1 text-[0.9375rem] sm:grid-cols-2">
+      <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-1 text-[0.9375rem]">
         {i.customer ? (
           <div>
             <dt className="text-text-muted">Billed to</dt>

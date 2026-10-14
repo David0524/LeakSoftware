@@ -115,7 +115,7 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
         </div>
       </header>
 
-      <dl className="mt-6 grid gap-x-6 gap-y-1 text-[0.9375rem] sm:grid-cols-2">
+      <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-1 text-[0.9375rem]">
         {q.customer ? (
           <div>
             <dt className="text-text-muted">Prepared for</dt>
