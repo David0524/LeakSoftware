@@ -7,6 +7,7 @@ import { AcceptForm, PayDepositForm } from "@/components/quote-actions";
 import { Notice } from "@/components/ui";
 import { publicClient } from "@/server/reports";
 import { paymentsConfigured } from "@/server/stripe";
+import { ContactLine } from "@/components/contact-line";
 
 export const metadata: Metadata = { title: "Repair Quote", robots: { index: false } };
 
@@ -104,7 +105,9 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
           ) : null}
           <div>
             <p className="font-display text-2xl font-extrabold">{c.name}</p>
-            <p className="text-[0.9375rem]">{[c.phone, c.email].filter(Boolean).join(" · ")}</p>
+            <p className="text-[0.9375rem]">
+              <ContactLine phone={c.phone} email={c.email} />
+            </p>
           </div>
         </div>
         <div className="text-left sm:text-right">

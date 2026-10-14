@@ -19,6 +19,7 @@ import { tokens } from "@leakbook/tokens";
 import type { ReactNode } from "react";
 import { MarkupOverlay } from "./markup";
 import { PoolDiagram } from "./pool-diagram";
+import { ContactLine } from "./contact-line";
 
 // The customer-facing report, rendered from the frozen snapshot and the tech-approved text
 // (BUILD_PLAN 6.3). Shop branding, not Tidemark's; Tidemark appears only in the footer.
@@ -143,7 +144,7 @@ export function ReportView(p: ReportViewProps) {
           <div>
             <p className="font-display text-2xl font-extrabold">{s.company.name}</p>
             <p className="text-[0.9375rem]">
-              {[s.company.phone, s.company.email].filter(Boolean).join(" · ")}
+              <ContactLine phone={s.company.phone} email={s.company.email} />
             </p>
           </div>
         </div>

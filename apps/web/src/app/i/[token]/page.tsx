@@ -7,6 +7,7 @@ import { PayInvoiceForm } from "@/components/invoice-actions";
 import { Notice } from "@/components/ui";
 import { publicClient } from "@/server/reports";
 import { paymentsConfigured } from "@/server/stripe";
+import { ContactLine } from "@/components/contact-line";
 
 export const metadata: Metadata = { title: "Invoice", robots: { index: false } };
 
@@ -111,14 +112,17 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
           ) : null}
           <div className="min-w-0">
             <p className="font-display text-2xl font-extrabold">{c.name}</p>
-            <p className="text-[0.9375rem]">{[c.phone, c.email].filter(Boolean).join(" · ")}</p>
+            <p className="text-[0.9375rem]">
+              <ContactLine phone={c.phone} email={c.email} />
+            </p>
           </div>
           {!print ? (
             <PdfLink href={`/i/${token}/pdf`} className="ml-auto inline-flex sm:hidden" />
           ) : null}
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-right">
+          {/* Left-aligned when it wraps under the shop on phones; right-aligned beside it. */}
+          <div className="text-left sm:text-right">
             <h1 className="font-display text-xl font-bold">{title}</h1>
             {i.sent_at ? <p className="text-[0.9375rem]">{date(i.sent_at, tz)}</p> : null}
           </div>
