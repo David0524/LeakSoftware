@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AuthCard, FormSkeleton } from "@/components/auth-card";
 import { SignInForm } from "@/components/auth-forms";
+import { Banner } from "@/components/doc-ui";
 import { getUser } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Sign In · Tidemark" };
@@ -36,9 +37,11 @@ async function SignInBody({ searchParams }: Pick<PageProps<"/sign-in">, "searchP
   return (
     <>
       {params.error ? (
-        <p role="alert" className="mb-4 text-status-fail">
-          That sign-in link has expired or was already used. Request a new one.
-        </p>
+        <div className="mb-4">
+          <Banner tone="error">
+            That sign-in link has expired or was already used. Request a new one.
+          </Banner>
+        </div>
       ) : null}
       <SignInForm next={next} />
     </>

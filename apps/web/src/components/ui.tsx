@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps, CSSProperties, ReactNode } from "react";
 import { JOB_STATUS_LABELS, type JobStatus } from "@leakbook/core";
 import { NavBar } from "./nav-bar";
 
@@ -198,6 +198,78 @@ export function Field({
         <p
           id={`${id}-note`}
           className={cx("text-[0.9375rem]", error ? "text-status-fail" : "text-text-muted")}
+        >
+          {error ?? hint}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * A form's text fields. Phones: one iOS inset grouped block, each a row with its label on the
+ * left and the field filling the rest (labelWidth lines the fields up). Wider: labels above
+ * outlined fields, as on the rest of the site.
+ */
+export function FieldGroup({
+  labelWidth,
+  className,
+  children,
+}: {
+  labelWidth: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      style={{ "--label-w": labelWidth } as CSSProperties}
+      className={cx(
+        "max-sm:overflow-hidden max-sm:rounded-xl max-sm:bg-surface max-sm:pl-4",
+        className ?? "sm:space-y-4",
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** One field in a FieldGroup. Its hint or error sits under it, in the row on phones. */
+export function GroupedField({
+  label,
+  hint,
+  error,
+  ...input
+}: ComponentProps<"input"> & { label: string; hint?: string; error?: string }) {
+  const id = input.id ?? input.name;
+  return (
+    <div className="max-sm:pr-4 max-sm:not-first:border-t-[0.5px] max-sm:not-first:border-separator">
+      <div className="max-sm:flex max-sm:min-h-11 max-sm:items-center max-sm:gap-3">
+        <label
+          htmlFor={id}
+          className="block max-sm:w-(--label-w) max-sm:shrink-0 sm:mb-1 sm:font-medium"
+        >
+          {label}
+        </label>
+        <input
+          {...input}
+          id={id}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error || hint ? `${id}-note` : undefined}
+          className={cx(
+            "block w-full min-h-11 min-w-0 text-text placeholder:text-text-muted disabled:text-text-muted",
+            "max-sm:flex-1 max-sm:rounded-md max-sm:bg-transparent max-sm:focus-visible:outline-offset-0",
+            "sm:rounded-[10px] sm:border sm:border-control-border sm:bg-surface sm:px-3 sm:py-2",
+            "sm:focus:outline-3 sm:focus:outline-offset-1 sm:focus:outline-focus sm:aria-[invalid=true]:border-status-fail",
+          )}
+        />
+      </div>
+      {error || hint ? (
+        <p
+          id={`${id}-note`}
+          className={cx(
+            "text-[0.9375rem] max-sm:pb-2.5 sm:mt-1",
+            error ? "text-status-fail" : "text-text-muted",
+          )}
         >
           {error ?? hint}
         </p>

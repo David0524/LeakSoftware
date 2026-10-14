@@ -10,7 +10,8 @@ import {
   startTrial,
   type FormState,
 } from "@/app/actions/auth";
-import { Button, Field, Notice } from "./ui";
+import { Banner } from "./doc-ui";
+import { Button, FieldGroup, GroupedField } from "./ui";
 
 /** The browser's time zone, so a new company's schedule shows local times. */
 function TimezoneInput() {
@@ -26,10 +27,42 @@ function TimezoneInput() {
 }
 
 function Messages({ state }: { state: FormState }) {
-  if (state.error) return <Notice tone="error">{state.error}</Notice>;
-  if (state.message) return <Notice tone="success">{state.message}</Notice>;
+  if (state.error) return <Banner tone="error">{state.error}</Banner>;
+  if (state.message) return <Banner tone="success">{state.message}</Banner>;
   return null;
 }
+
+/** Keyboard and autofill settings for each kind of field (iOS: the right keyboard, no caps). */
+const EMAIL = {
+  type: "email",
+  inputMode: "email",
+  autoComplete: "email",
+  autoCapitalize: "none",
+  autoCorrect: "off",
+  spellCheck: false,
+  placeholder: "name@example.com",
+} as const;
+const NAME = {
+  autoComplete: "name",
+  autoCapitalize: "words",
+  autoCorrect: "off",
+  spellCheck: false,
+  placeholder: "Full name",
+} as const;
+const COMPANY = {
+  autoComplete: "organization",
+  autoCapitalize: "words",
+  autoCorrect: "off",
+  spellCheck: false,
+  placeholder: "Your shop’s name",
+} as const;
+const PASSWORD = {
+  type: "password",
+  autoCapitalize: "none",
+  autoCorrect: "off",
+  spellCheck: false,
+  placeholder: "Required",
+} as const;
 
 export function SignInForm({ next }: { next: string }) {
   const [withLink, setWithLink] = useState(false);
@@ -40,14 +73,15 @@ export function SignInForm({ next }: { next: string }) {
     return (
       <form action={linkAction} className="space-y-4">
         <input type="hidden" name="next" value={next} />
-        <Field
-          label="Email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          defaultValue={linkState.values?.email}
-        />
+        <FieldGroup labelWidth="6rem">
+          <GroupedField
+            label="Email"
+            name="email"
+            {...EMAIL}
+            required
+            defaultValue={linkState.values?.email}
+          />
+        </FieldGroup>
         <Messages state={linkState} />
         <Button type="submit" disabled={linkPending} className="w-full">
           {linkPending ? "Sending…" : "Email Me a Sign-In Link"}
@@ -61,21 +95,22 @@ export function SignInForm({ next }: { next: string }) {
   return (
     <form action={passwordAction} className="space-y-4">
       <input type="hidden" name="next" value={next} />
-      <Field
-        label="Email"
-        name="email"
-        type="email"
-        autoComplete="email"
-        required
-        defaultValue={passwordState.values?.email}
-      />
-      <Field
-        label="Password"
-        name="password"
-        type="password"
-        autoComplete="current-password"
-        required
-      />
+      <FieldGroup labelWidth="6rem">
+        <GroupedField
+          label="Email"
+          name="email"
+          {...EMAIL}
+          required
+          defaultValue={passwordState.values?.email}
+        />
+        <GroupedField
+          label="Password"
+          name="password"
+          {...PASSWORD}
+          autoComplete="current-password"
+          required
+        />
+      </FieldGroup>
       <Messages state={passwordState} />
       <Button type="submit" disabled={passwordPending} className="w-full">
         {passwordPending ? "Signing In…" : "Sign In"}
@@ -89,47 +124,48 @@ export function SignInForm({ next }: { next: string }) {
 
 export function TrialForm() {
   const [state, action, pending] = useActionState(startTrial, {});
-  if (state.message) return <Notice tone="success">{state.message}</Notice>;
+  if (state.message) return <Banner tone="success">{state.message}</Banner>;
   return (
     <form action={action} className="space-y-4" noValidate>
       <TimezoneInput />
-      <Field
-        label="Your name"
-        name="name"
-        autoComplete="name"
-        defaultValue={state.values?.name}
-        error={state.fields?.name}
-      />
-      <Field
-        label="Company name"
-        name="company"
-        autoComplete="organization"
-        defaultValue={state.values?.company}
-        error={state.fields?.company}
-      />
-      <Field
-        label="Email"
-        name="email"
-        type="email"
-        autoComplete="email"
-        defaultValue={state.values?.email}
-        error={state.fields?.email}
-      />
-      <Field
-        label="Password"
-        name="password"
-        type="password"
-        autoComplete="new-password"
-        hint="At least 10 characters."
-        error={state.fields?.password}
-      />
+      <FieldGroup labelWidth="8.25rem">
+        <GroupedField
+          label="Your name"
+          name="name"
+          {...NAME}
+          defaultValue={state.values?.name}
+          error={state.fields?.name}
+        />
+        <GroupedField
+          label="Company name"
+          name="company"
+          {...COMPANY}
+          defaultValue={state.values?.company}
+          error={state.fields?.company}
+        />
+        <GroupedField
+          label="Email"
+          name="email"
+          {...EMAIL}
+          defaultValue={state.values?.email}
+          error={state.fields?.email}
+        />
+        <GroupedField
+          label="Password"
+          name="password"
+          {...PASSWORD}
+          autoComplete="new-password"
+          hint="At least 10 characters."
+          error={state.fields?.password}
+        />
+      </FieldGroup>
       <Messages state={state} />
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Setting Up…" : "Start Free Trial"}
       </Button>
       <p className="text-center text-text-muted">
         Already using Tidemark?{" "}
-        <Link href="/sign-in" className="text-link underline">
+        <Link href="/sign-in" className="inline-flex min-h-11 items-center text-link underline">
           Sign in
         </Link>
       </p>
@@ -142,13 +178,15 @@ export function SetupForm({ suggested }: { suggested: string }) {
   return (
     <form action={action} className="space-y-4">
       <TimezoneInput />
-      <Field
-        label="Company name"
-        name="company"
-        autoComplete="organization"
-        defaultValue={state.values?.company ?? suggested}
-        error={state.fields?.company}
-      />
+      <FieldGroup labelWidth="8.25rem">
+        <GroupedField
+          label="Company name"
+          name="company"
+          {...COMPANY}
+          defaultValue={state.values?.company ?? suggested}
+          error={state.fields?.company}
+        />
+      </FieldGroup>
       <Messages state={state} />
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Creating…" : "Create Company"}
@@ -168,7 +206,7 @@ export function InviteForm({
 }) {
   const [mode, setMode] = useState<"sign-up" | "sign-in">("sign-up");
   const [state, action, pending] = useActionState(acceptInvite, {});
-  if (state.message) return <Notice tone="success">{state.message}</Notice>;
+  if (state.message) return <Banner tone="success">{state.message}</Banner>;
 
   if (signedInAs) {
     return (
@@ -178,9 +216,9 @@ export function InviteForm({
           Signed in as <strong>{signedInAs}</strong>.
         </p>
         {signedInAs.toLowerCase() !== email.toLowerCase() ? (
-          <Notice tone="warning">
+          <Banner tone="warning">
             This invite is for {email}. Sign out and sign in with that email to accept it.
-          </Notice>
+          </Banner>
         ) : null}
         <Messages state={state} />
         <Button type="submit" disabled={pending} className="w-full">
@@ -195,24 +233,35 @@ export function InviteForm({
       <input type="hidden" name="token" value={token} />
       <input type="hidden" name="mode" value={mode} />
       <input type="hidden" name="email" value={email} />
-      <Field label="Email" name="email-shown" value={email} readOnly disabled />
-      {mode === "sign-up" ? (
-        <Field
-          label="Your name"
-          name="name"
-          autoComplete="name"
-          defaultValue={state.values?.name}
-          error={state.fields?.name}
+      <FieldGroup labelWidth={mode === "sign-up" ? "9.5rem" : "6rem"}>
+        {/* Shown (and offered to password managers as the account name), not posted. */}
+        <GroupedField
+          label="Email"
+          name="email-shown"
+          type="email"
+          autoComplete="username"
+          value={email}
+          readOnly
+          disabled
         />
-      ) : null}
-      <Field
-        label={mode === "sign-up" ? "Choose a password" : "Password"}
-        name="password"
-        type="password"
-        autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
-        hint={mode === "sign-up" ? "At least 10 characters." : undefined}
-        error={state.fields?.password}
-      />
+        {mode === "sign-up" ? (
+          <GroupedField
+            label="Your name"
+            name="name"
+            {...NAME}
+            defaultValue={state.values?.name}
+            error={state.fields?.name}
+          />
+        ) : null}
+        <GroupedField
+          label={mode === "sign-up" ? "Choose a password" : "Password"}
+          name="password"
+          {...PASSWORD}
+          autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
+          hint={mode === "sign-up" ? "At least 10 characters." : undefined}
+          error={state.fields?.password}
+        />
+      </FieldGroup>
       <Messages state={state} />
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Joining…" : mode === "sign-up" ? "Create Account and Join" : "Sign In and Join"}

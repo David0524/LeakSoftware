@@ -13,12 +13,14 @@ import {
 import { finishSignOff } from "@/app/actions/sign-off";
 import { SignaturePad, uploadSignature } from "./media-work";
 import { Segmented } from "./segmented";
-import { Button, Field, Notice, buttonClass } from "./ui";
+import { Banner } from "./doc-ui";
+import { Button, FieldGroup, GroupedField, buttonClass } from "./ui";
 
 /**
  * The bottom of the report on the review screen: the statement in plain words, the
  * customer's name filled in, a large box, and Sign. Customer Not Here finishes it unsigned
- * (apple-design: one task, the primary action in reach, a way out).
+ * (apple-design: one task, the primary action in reach, a way out). Phones: an iOS grouped
+ * form like the quote's Accept (the statement, then the name and role rows, on one white block).
  */
 export function SignOff({
   reportId,
@@ -50,8 +52,8 @@ export function SignOff({
 
   if (blocked)
     return (
-      <div className="space-y-3 border-t border-border pt-6">
-        <Notice tone="warning">{blocked}</Notice>
+      <div className="space-y-3 border-t border-border pt-6 max-sm:border-0 max-sm:pt-4">
+        <Banner tone="warning">{blocked}</Banner>
         <Link href={back} className={buttonClass("secondary")}>
           Back to Job
         </Link>
@@ -82,19 +84,24 @@ export function SignOff({
   // Shops that turned signatures off finish here without one.
   if (purposes.length === 0)
     return (
-      <div className="space-y-3 border-t border-border pt-6">
+      <div className="space-y-3 border-t border-border pt-6 max-sm:border-0 max-sm:pt-4">
         <h2 id="sign-title" className="font-display text-2xl font-bold">
           Finish Report
         </h2>
-        {error ? <Notice tone="error">{error}</Notice> : null}
-        <Button type="button" disabled={busy !== null} onClick={() => finish(false)}>
+        {error ? <Banner tone="error">{error}</Banner> : null}
+        <Button
+          type="button"
+          disabled={busy !== null}
+          onClick={() => finish(false)}
+          className="max-sm:w-full"
+        >
           {busy ? "Finishing…" : "Finish Report"}
         </Button>
       </div>
     );
 
   return (
-    <div className="space-y-4 border-t-2 border-text pt-6">
+    <div className="space-y-4 border-t-2 border-text pt-6 max-sm:border-0 max-sm:pt-4">
       <div>
         <p className="text-[0.9375rem] font-semibold text-text-muted">
           {purposes.find((p) => p.value === purpose)?.label ?? "Signature"}
@@ -112,31 +119,34 @@ export function SignOff({
           options={purposes}
         />
       ) : null}
-      <p className="text-[1.1875rem] leading-relaxed">
-        {purpose ? signatureStatement(purpose, shop, address) : ""}
-      </p>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field
+      <FieldGroup labelWidth="8.5rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
+        {/* The statement they confirm, then their name and role, as one block on phones. */}
+        <p className="text-[1.1875rem] leading-relaxed max-sm:py-3 max-sm:pr-4 sm:col-span-2">
+          {purpose ? signatureStatement(purpose, shop, address) : ""}
+        </p>
+        <GroupedField
           label="Your name"
           name="signer_name"
           value={name}
           autoComplete="name"
+          autoCapitalize="words"
+          autoCorrect="off"
+          spellCheck={false}
+          placeholder="Full name"
           onChange={(e) => setName(e.target.value)}
         />
-        <Field
+        <GroupedField
           label="Role (optional)"
           name="signer_role"
           value={role}
+          autoComplete="off"
+          autoCapitalize="words"
           placeholder="Homeowner, property manager…"
           onChange={(e) => setRole(e.target.value)}
         />
-      </div>
+      </FieldGroup>
       <SignaturePad strokes={strokes} onChange={setStrokes} />
-      {error ? (
-        <p role="alert" className="text-status-fail">
-          {error}
-        </p>
-      ) : null}
+      {error ? <Banner tone="error">{error}</Banner> : null}
       <Button
         type="button"
         disabled={busy !== null}
@@ -145,7 +155,7 @@ export function SignOff({
       >
         {busy === "sign" ? "Saving…" : "Sign"}
       </Button>
-      <div className="border-t border-border pt-4">
+      <div className="border-t border-border pt-4 max-sm:border-0 max-sm:px-4">
         <p className="text-[0.9375rem] text-text-muted">
           For the tech: nobody here to sign? Finish the report without a signature. It will say the
           customer wasn’t present.

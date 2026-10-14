@@ -52,11 +52,17 @@ const TONE_COLOR: Record<VerdictTone, string> = {
   pending: NEUTRAL["500"],
 };
 
+/** A light wash of a status color, for tile and badge backgrounds (prints with color-adjust). */
+function tint(color: string, pct = 12) {
+  return `color-mix(in srgb, ${color} ${pct}%, white)`;
+}
+
 function Badge({ tone, children }: { tone: VerdictTone; children: ReactNode }) {
   return (
     <span
-      className="inline-block shrink-0 rounded px-2 py-0.5 text-[0.9375rem] font-semibold whitespace-nowrap"
-      style={{ backgroundColor: TONE_COLOR[tone], color: tokens.color.role.light.onStatus }}
+      // A tinted pill: the verdict's color as text on a light wash of it.
+      className="inline-block shrink-0 rounded-full px-2.5 py-0.5 text-[0.875rem] font-semibold whitespace-nowrap"
+      style={{ backgroundColor: tint(TONE_COLOR[tone]), color: TONE_COLOR[tone] }}
     >
       {children}
     </span>
@@ -66,9 +72,9 @@ function Badge({ tone, children }: { tone: VerdictTone; children: ReactNode }) {
 function Tile({ count, label, tone }: { count: number; label: string; tone: VerdictTone }) {
   return (
     <div
-      // Phones: a gray tile inside the summary card, no outline. The PDF keeps the side bar.
-      className="rounded-lg border border-l-8 px-4 py-3 max-sm:rounded-xl max-sm:border-0 max-sm:bg-bg max-sm:px-3"
-      style={{ borderColor: NEUTRAL["200"], borderLeftColor: TONE_COLOR[tone] }}
+      // A tinted tile in the verdict's color; phones use a gray tile inside the summary card.
+      className="rounded-xl bg-(--tile) px-4 py-3 max-sm:bg-bg max-sm:px-3"
+      style={{ ["--tile" as string]: tint(TONE_COLOR[tone], 10) }}
     >
       <p className="font-display text-3xl font-extrabold" style={{ color: TONE_COLOR[tone] }}>
         {count}
@@ -85,10 +91,11 @@ function formatDate(iso: string | null, timeZone: string) {
 
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className={cx("report-block mt-8 break-inside-avoid-page max-sm:mt-4", PHONE_CARD)}>
+    <section className={cx("report-block mt-8 max-sm:mt-4", PHONE_CARD)}>
       <h2
         // Phones: the section's title heads its card; the shop-color rule is for the PDF.
-        className="mb-3 border-b-2 pb-1 font-display text-2xl font-bold max-sm:border-b-0 max-sm:pb-0"
+        // A long section may run onto the next page, but its title stays with its first lines.
+        className="mb-3 border-b pb-1 font-display text-2xl font-bold break-after-avoid max-sm:border-b-0 max-sm:pb-0"
         style={{ borderColor: "var(--shop)" }}
       >
         {title}
@@ -172,7 +179,9 @@ export function ReportView(p: ReportViewProps) {
       </header>
     ),
     summary: () => (
-      <section className="mt-6 grid gap-6 max-sm:gap-4 sm:grid-cols-[1fr_260px]">
+      // Wider and printed: the job details as a strip under the header, then the summary at full
+      // width. Phones: the summary card first, then the details as grouped rows.
+      <section className="mt-6 flex flex-col gap-6 max-sm:gap-4">
         <div className={PHONE_CARD}>
           <h2 className="mb-2 font-display text-2xl font-bold">
             {section("summary")?.title ?? "Summary"}
@@ -195,28 +204,27 @@ export function ReportView(p: ReportViewProps) {
           ) : null}
         </div>
         <dl
-          // Phones: an iOS grouped list of label and value rows. From sm up, and on the PDF,
-          // one column in an outlined box.
+          // Phones: an iOS grouped list of label and value rows. From sm up, and on the PDF, a
+          // three-column strip on a light gray panel.
           className={cx(
-            "grid grid-cols-2 gap-x-4 rounded-lg border p-4 text-[0.9375rem] sm:block",
-            "max-sm:block max-sm:border-0 max-sm:p-0 max-sm:text-[1.0625rem]",
+            "grid grid-cols-3 gap-x-6 gap-y-3 rounded-xl bg-neutral-50 px-5 py-4 text-[0.9375rem] sm:order-first",
+            "max-sm:block max-sm:bg-transparent max-sm:p-0 max-sm:text-[1.0625rem]",
             PHONE_GROUP,
           )}
-          style={{ borderColor: NEUTRAL["200"] }}
         >
           <div className={PHONE_ROW}>
             <dt className={cx("text-text-muted", PHONE_LABEL)}>Property</dt>
-            <dd className={cx("mb-2 font-medium", PHONE_VALUE)}>{s.property.address}</dd>
+            <dd className={cx("font-medium", PHONE_VALUE)}>{s.property.address}</dd>
           </div>
           {s.customer ? (
             <div className={PHONE_ROW}>
               <dt className={cx("text-text-muted", PHONE_LABEL)}>Prepared for</dt>
-              <dd className={cx("mb-2 font-medium", PHONE_VALUE)}>{s.customer.name}</dd>
+              <dd className={cx("font-medium", PHONE_VALUE)}>{s.customer.name}</dd>
             </div>
           ) : null}
           <div className={PHONE_ROW}>
             <dt className={cx("text-text-muted", PHONE_LABEL)}>Pool</dt>
-            <dd className={cx("mb-2", PHONE_VALUE)}>
+            <dd className={PHONE_VALUE}>
               {[
                 s.property.pool_type ? POOL_TYPE_LABELS[s.property.pool_type as PoolType] : null,
                 s.property.has_spa ? "with spa" : null,
@@ -228,7 +236,7 @@ export function ReportView(p: ReportViewProps) {
           {performed && checklist ? (
             <div className={PHONE_ROW}>
               <dt className={cx("text-text-muted", PHONE_LABEL)}>Date performed</dt>
-              <dd className={cx("mb-2", PHONE_VALUE)}>{formatDate(performed, tz)}</dd>
+              <dd className={PHONE_VALUE}>{formatDate(performed, tz)}</dd>
             </div>
           ) : null}
           {techs.length ? (
@@ -236,13 +244,13 @@ export function ReportView(p: ReportViewProps) {
               <dt className={cx("text-text-muted", PHONE_LABEL)}>
                 {techs.length > 1 ? "Technicians" : "Technician"}
               </dt>
-              <dd className={cx("mb-2", PHONE_VALUE)}>{techs.join(" and ")}</dd>
+              <dd className={PHONE_VALUE}>{techs.join(" and ")}</dd>
             </div>
           ) : null}
           {s.job.fee_cents != null ? (
             <div className={PHONE_ROW}>
               <dt className={cx("text-text-muted", PHONE_LABEL)}>Leak detection fee</dt>
-              <dd className={cx("mb-2", PHONE_VALUE)}>{formatCents(s.job.fee_cents)}</dd>
+              <dd className={PHONE_VALUE}>{formatCents(s.job.fee_cents)}</dd>
             </div>
           ) : null}
           {s.job.number ? (
@@ -287,9 +295,13 @@ export function ReportView(p: ReportViewProps) {
     diagram: () =>
       s.findings.some((f) => f.pin_x != null) ? (
         <section
-          className={cx("report-block mt-6 max-w-xl break-inside-avoid max-sm:mt-4", PHONE_CARD)}
+          className={cx(
+            "report-block mx-auto mt-6 break-inside-avoid max-sm:mt-4 sm:max-w-sm print:mt-4 print:max-w-xs",
+            PHONE_CARD,
+          )}
         >
           <PoolDiagram
+            className="w-full"
             shape={s.property.diagram_shape as never}
             hasSpa={s.property.has_spa}
             title={`Pool diagram with ${s.findings.length} numbered findings`}
@@ -357,8 +369,8 @@ export function ReportView(p: ReportViewProps) {
           <div className="report-checklist">
             {checklist.map((sec) => (
               <div key={sec.section} className="mt-4 first:mt-0">
-                <h3 className="font-display text-xl font-bold">{sec.title}</h3>
-                <ul className="mt-1">
+                <h3 className="font-display text-xl font-bold break-after-avoid">{sec.title}</h3>
+                <ul className="mt-1 sm:grid sm:grid-cols-2 sm:gap-x-8">
                   {sec.items.map((item) => (
                     <li
                       key={item.id}
@@ -411,7 +423,7 @@ export function ReportView(p: ReportViewProps) {
       photos.length ? (
         <Block title="Photos">
           <ul className="grid gap-4 sm:grid-cols-2">
-            {photos.map((m, i) => {
+            {photos.map((m) => {
               const w = m.width ?? 4;
               const h = m.height ?? 3;
               const where =
@@ -419,7 +431,7 @@ export function ReportView(p: ReportViewProps) {
                 (m.component_id && labelOf.get(m.component_id)) ||
                 null;
               return (
-                <li key={m.id} className={`break-inside-avoid ${i === 0 ? "sm:col-span-2" : ""}`}>
+                <li key={m.id} className="break-inside-avoid">
                   <div className="relative">
                     {/* eslint-disable-next-line @next/next/no-img-element -- signed storage URL */}
                     <img
@@ -444,17 +456,18 @@ export function ReportView(p: ReportViewProps) {
       s.signatures.length || s.sign_off?.unsigned_reason ? (
         <Block title="Signatures">
           {s.signatures.length ? (
-            <ul className="grid gap-4 sm:grid-cols-2">
+            <ul className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
               {s.signatures.map((sig) => (
                 <li key={sig.id} className="break-inside-avoid">
                   {sig.image_path && p.urls.get(sig.image_path) ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
-                    <img
-                      src={p.urls.get(sig.image_path)}
-                      alt={`Signature of ${sig.signer_name}`}
-                      className="h-20 w-auto border-b"
-                      style={{ borderColor: NEUTRAL["500"] }}
-                    />
+                    <div className="mb-1 border-b" style={{ borderColor: NEUTRAL["500"] }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element -- signed storage URL */}
+                      <img
+                        src={p.urls.get(sig.image_path)}
+                        alt={`Signature of ${sig.signer_name}`}
+                        className="h-20 w-auto"
+                      />
+                    </div>
                   ) : null}
                   <p className="font-medium">{sig.signer_name}</p>
                   <p className="text-[0.9375rem]">

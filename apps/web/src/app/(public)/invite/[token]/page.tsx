@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AuthCard, FormSkeleton } from "@/components/auth-card";
 import { InviteForm } from "@/components/auth-forms";
-import { Notice } from "@/components/ui";
+import { Banner } from "@/components/doc-ui";
 import { getUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -28,15 +28,15 @@ async function InviteBody({ params }: Pick<PageProps<"/invite/[token]">, "params
   const invite = (data as { company_name: string; email: string; role: string }[] | null)?.[0];
   if (!invite) {
     return (
-      <Notice tone="warning">
+      <Banner tone="warning">
         This invite link is no longer valid. It may have expired or been used. Ask your shop’s owner
         to send a new one.
-      </Notice>
+      </Banner>
     );
   }
   return (
     <>
-      <p className="mb-6">
+      <p className="mb-6 max-sm:px-2 max-sm:text-center">
         <strong>{invite.company_name}</strong> invited you to Tidemark as{" "}
         {invite.role === "owner" ? "an owner" : "a tech"}.
       </p>
