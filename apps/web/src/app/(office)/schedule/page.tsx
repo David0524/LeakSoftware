@@ -16,6 +16,7 @@ import {
   scheduleDays,
   type MapsApp,
   type ScheduleView,
+  dateFormat,
 } from "@leakbook/core";
 import {
   RouteBoard,
@@ -191,7 +192,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
     view === "day"
       ? formatDay(date, "long")
       : view === "month"
-        ? new Intl.DateTimeFormat("en-US", {
+        ? dateFormat("en-US", {
             month: "long",
             year: "numeric",
             timeZone: "UTC",
@@ -289,7 +290,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                   d === date ? "bg-text text-bg" : d === today ? "text-link" : "hover:bg-surface",
                 )}
               >
-                {new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "UTC" }).format(at)}
+                {dateFormat("en-US", { weekday: "short", timeZone: "UTC" }).format(at)}
                 <span className="font-display text-xl font-bold">{at.getUTCDate()}</span>
               </Link>
             );

@@ -1,13 +1,13 @@
 "use client";
 
 import { useActionState } from "react";
-import { formatCents } from "@leakbook/core";
+import { formatCents, dateFormat } from "@leakbook/core";
 import { billMaintenanceMonth } from "@/app/actions/invoices";
 import type { UnbilledMonth } from "@/lib/data";
 import { Button, Notice, SectionTitle } from "./ui";
 
 const monthName = (month: string) =>
-  new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(
+  dateFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(
     new Date(`${month}T12:00:00Z`),
   );
 

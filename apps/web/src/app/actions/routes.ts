@@ -25,6 +25,7 @@ import {
   type PlannedStop,
   type SlotSuggestion,
   type TechDay,
+  dateFormat,
 } from "@leakbook/core";
 import { getOffice, requireOwner, type Office } from "@/lib/auth";
 import { getTeam } from "@/lib/data";
@@ -417,7 +418,7 @@ export async function suggestTimes(target: {
     }
   }
   const found = suggestSlots({ location, durationMin }, days, ctx.depot, hours, drive, 5);
-  const fmt = new Intl.DateTimeFormat("en-US", {
+  const fmt = dateFormat("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",

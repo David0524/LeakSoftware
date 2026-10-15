@@ -7,6 +7,7 @@ import {
   warrantyEndsText,
   warrantyState,
   type WarrantyState,
+  dateFormat,
 } from "@leakbook/core";
 import {
   Chip,
@@ -30,9 +31,7 @@ const CHIP: Record<WarrantyState, string> = {
   expired: "bg-status-excluded",
 };
 const date = (d: string) =>
-  new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(
-    new Date(`${d}T12:00:00Z`),
-  );
+  dateFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${d}T12:00:00Z`));
 
 /** Repairs still under warranty, the ones ending soon, and the ones that ended. */
 export default async function WarrantiesPage({ searchParams }: PageProps<"/warranties">) {

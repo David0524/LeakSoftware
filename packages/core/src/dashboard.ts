@@ -1,3 +1,4 @@
+import { dateFormat } from "./intl";
 // Owner dashboard (M10): what the database adds up (public.owner_dashboard), put into words.
 
 export interface DashboardMonth {
@@ -18,7 +19,7 @@ export interface Dashboard {
 
 /** "Oct 2026", or "October 2026" with `long`. */
 export function monthLabel(month: string, long = false): string {
-  return new Intl.DateTimeFormat("en-US", {
+  return dateFormat("en-US", {
     month: long ? "long" : "short",
     year: "numeric",
     timeZone: "UTC",

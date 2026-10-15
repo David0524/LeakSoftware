@@ -89,6 +89,9 @@ interface OutboxRow {
 
 export class LocalStore {
   readonly clock: HybridClock;
+  /** Changes per table, so screens redo only the lists whose table changed. */
+  private readonly changes = new Map<string, number>();
+  private cleared = 0;
 
   private constructor(
     private readonly db: SqlDatabase,
@@ -360,11 +363,13 @@ export class LocalStore {
           const k = `${r.table_name}:${r.id}`;
           return !seen.has(k) && !local.has(k);
         });
-      for (const r of gone)
+      for (const r of gone) {
+        this.touched(r.table_name);
         this.db.run("delete from sync_records where table_name = ? and id = ?", [
           r.table_name,
           r.id,
         ]);
+      }
       return gone.length;
     });
   }
@@ -400,7 +405,20 @@ export class LocalStore {
     this.saveClock();
   }
 
+  /**
+   * A token that changes whenever a row of `table` is written, pulled, or removed. Screens
+   * re-read a table only when its token changes: a checklist tap no longer re-reads every job.
+   */
+  tableVersion(table: string): string {
+    return `${this.cleared}.${this.changes.get(table) ?? 0}`;
+  }
+
+  private touched(table: string): void {
+    this.changes.set(table, (this.changes.get(table) ?? 0) + 1);
+  }
+
   private putRecord(table: string, row: Row): void {
+    this.touched(table);
     this.db.run(
       `insert into sync_records (table_name, id, company_id, data, deleted) values (?, ?, ?, ?, ?)
        on conflict (table_name, id) do update set company_id = excluded.company_id, data = excluded.data, deleted = excluded.deleted`,
@@ -419,6 +437,7 @@ export class LocalStore {
    * Keeps the device id and clock. Callers must warn about unsent changes first.
    */
   clearAll(): void {
+    this.cleared += 1;
     this.db.transaction(() => {
       this.db.run("delete from sync_records");
       this.db.run("delete from sync_outbox");

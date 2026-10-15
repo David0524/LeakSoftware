@@ -12,6 +12,7 @@ import {
   type TimedRoute,
   type WorkDay,
 } from "./routing";
+import { dateFormat } from "./intl";
 
 // ---------------------------------------------------------------------------
 // Settings › Scheduling
@@ -86,7 +87,7 @@ export function weekday(date: string): number {
 
 /** Minutes after midnight, in the shop's time zone, of an instant. */
 export function localMinutes(iso: string, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
+  const parts = dateFormat("en-US", {
     timeZone,
     hourCycle: "h23",
     hour: "2-digit",

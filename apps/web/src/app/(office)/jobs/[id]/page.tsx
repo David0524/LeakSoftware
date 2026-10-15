@@ -21,6 +21,7 @@ import {
   type PriceBookItem,
   type Media,
   seesAllJobs,
+  dateFormat,
 } from "@leakbook/core";
 import { GalleryImage } from "@/components/gallery-image";
 import { MailIcon, MessageIcon, PhoneIcon } from "@/components/icons";
@@ -671,7 +672,7 @@ async function Schedule({ detail, tz }: { detail: JobDetail; tz: string }) {
   const team = await getTeam(office);
   const { job } = detail;
   const local = (iso: string) => {
-    const parts = new Intl.DateTimeFormat("en-CA", {
+    const parts = dateFormat("en-CA", {
       timeZone: tz,
       year: "numeric",
       month: "2-digit",

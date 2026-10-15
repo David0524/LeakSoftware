@@ -113,6 +113,11 @@ export class SyncService {
     return this.dataVersion;
   }
 
+  /** Changes when a row of `table` changes (see LocalStore.tableVersion). */
+  tableVersion(table: string): string {
+    return this.store.tableVersion(table);
+  }
+
   get status(): SyncStatus {
     return this.statusValue;
   }

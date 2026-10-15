@@ -14,6 +14,7 @@ import {
   type ReportSnapshot,
   type ReportTemplateKey,
   type VerdictTone,
+  dateFormat,
 } from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import type { ReactNode } from "react";
@@ -86,7 +87,7 @@ function Tile({ count, label, tone }: { count: number; label: string; tone: Verd
 
 function formatDate(iso: string | null, timeZone: string) {
   if (!iso) return "";
-  return new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone }).format(new Date(iso));
+  return dateFormat("en-US", { dateStyle: "long", timeZone }).format(new Date(iso));
 }
 
 function Block({ title, children }: { title: string; children: ReactNode }) {

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { formatCents, lineTotal, textOnBrand } from "@leakbook/core";
+import { formatCents, lineTotal, textOnBrand, dateFormat } from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import { PayInvoiceForm } from "@/components/invoice-actions";
 import { cx } from "@/components/ui";
@@ -78,7 +78,7 @@ export default function CustomerInvoicePage({ params, searchParams }: PageProps<
 }
 
 const date = (iso: string, timeZone: string) =>
-  new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone }).format(
+  dateFormat("en-US", { dateStyle: "long", timeZone }).format(
     new Date(iso.length === 10 ? `${iso}T12:00:00Z` : iso),
   );
 

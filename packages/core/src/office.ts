@@ -3,6 +3,7 @@
 import { JOB_STATUS_LABELS, type JobStatus } from "./job-status";
 import { localDate } from "./job-list";
 import { zonedTimeToIso } from "./forms";
+import { dateFormat } from "./intl";
 
 // ---------------------------------------------------------------------------
 // Schedule
@@ -95,7 +96,7 @@ export function groupSchedule<T extends Scheduled>(
 }
 
 export function formatTime(iso: string, timeZone: string): string {
-  return new Intl.DateTimeFormat("en-US", {
+  return dateFormat("en-US", {
     hour: "numeric",
     minute: "2-digit",
     timeZone,
@@ -103,7 +104,7 @@ export function formatTime(iso: string, timeZone: string): string {
 }
 
 export function formatDay(date: string, style: "short" | "long" = "short"): string {
-  return new Intl.DateTimeFormat("en-US", {
+  return dateFormat("en-US", {
     weekday: style === "long" ? "long" : "short",
     month: style === "long" ? "long" : "short",
     day: "numeric",

@@ -1,4 +1,5 @@
 import type { Property } from "./models";
+import { dateFormat } from "./intl";
 
 export interface NewJobInput {
   customerId?: string;
@@ -47,7 +48,7 @@ export function zonedTimeToIso(date: string, time: string, timeZone: string): st
   const [hh, mm] = (time || "08:00").split(":").map(Number) as [number, number];
   const guess = Date.UTC(y, m - 1, d, hh, mm);
   const offset = (instant: number) => {
-    const parts = new Intl.DateTimeFormat("en-US", {
+    const parts = dateFormat("en-US", {
       timeZone,
       hourCycle: "h23",
       year: "numeric",

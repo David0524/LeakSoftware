@@ -20,3 +20,4 @@ export * from "./routing";
 export * from "./route-plan";
 export * from "./weather";
 export * from "./maintenance";
+export * from "./intl";

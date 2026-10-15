@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { INVOICE_STATUS_LABELS, formatCents, invoiceBalance } from "@leakbook/core";
+import { INVOICE_STATUS_LABELS, formatCents, invoiceBalance, dateFormat } from "@leakbook/core";
 import { ButtonLink, Empty, Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listInvoices, unbilledMaintenance } from "@/lib/data";
@@ -17,14 +17,14 @@ export default async function InvoicesPage() {
   const open = invoices.filter((i) => i.status === "sent" || i.status === "partially_paid");
   const owed = open.reduce((sum, i) => sum + invoiceBalance(i), 0);
   const tz = office.company.timezone;
-  const thisMonth = `${new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", timeZone: tz }).format(new Date())}-01`;
+  const thisMonth = `${dateFormat("en-CA", { year: "numeric", month: "2-digit", timeZone: tz }).format(new Date())}-01`;
   const monthLabel = (month: string) =>
-    new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(
+    dateFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(
       new Date(`${month}T12:00:00Z`),
     );
   const day = (iso: string | null) =>
     iso
-      ? new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: tz }).format(
+      ? dateFormat("en-US", { dateStyle: "medium", timeZone: tz }).format(
           new Date(iso.length === 10 ? `${iso}T12:00:00Z` : iso),
         )
       : "";

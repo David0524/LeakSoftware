@@ -1,4 +1,5 @@
 import type { Job } from "./models";
+import { dateFormat } from "./intl";
 
 export interface JobGroups<T extends Job = Job> {
   /** Scheduled today, or in progress regardless of date. */
@@ -15,7 +16,7 @@ const OPEN = new Set(["unscheduled", "scheduled", "in_progress"]);
 
 /** Calendar date (YYYY-MM-DD) of an instant in a time zone. */
 export function localDate(instant: Date, timeZone: string): string {
-  return new Intl.DateTimeFormat("en-CA", {
+  return dateFormat("en-CA", {
     timeZone,
     year: "numeric",
     month: "2-digit",
@@ -35,7 +36,11 @@ export function groupJobs<T extends Job>(jobs: T[], now: Date, timeZone: string)
 
   for (const j of jobs) {
     if (j.deleted_at) continue;
-    const day = j.scheduled_start ? localDate(new Date(j.scheduled_start), timeZone) : null;
+    // Only open jobs need their day; finished ones (most of a shop's history) skip the date math.
+    const day =
+      OPEN.has(j.status) && j.scheduled_start
+        ? localDate(new Date(j.scheduled_start), timeZone)
+        : null;
     if (j.status === "in_progress" || (OPEN.has(j.status) && day === today)) {
       groups.today.push(j);
     } else if (OPEN.has(j.status) && day && day > today) {
@@ -63,13 +68,13 @@ export function formatSchedule(
 ): string {
   if (!start) return "Not scheduled";
   const d = new Date(start);
-  const time = new Intl.DateTimeFormat("en-US", {
+  const time = dateFormat("en-US", {
     timeZone,
     hour: "numeric",
     minute: "2-digit",
   }).format(d);
   if (localDate(d, timeZone) === localDate(now, timeZone)) return time;
-  const date = new Intl.DateTimeFormat("en-US", {
+  const date = dateFormat("en-US", {
     timeZone,
     weekday: "short",
     month: "short",

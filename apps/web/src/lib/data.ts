@@ -47,24 +47,23 @@ export interface TeamMember {
 /** Cached per request: several parts of a page ask for the team. */
 export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
   const supabase = await db();
+  // Names come with the memberships (membership_user_profile_fkey): one round trip, not two.
   const members = must(
     await supabase
       .from("membership")
-      .select("id, user_id, role, status")
+      .select(
+        "id, user_id, role, status, profile:profile!membership_user_profile_fkey(id, full_name, email)",
+      )
       .eq("company_id", office.company.id)
       .is("deleted_at", null),
-  ) as { id: string; user_id: string; role: "owner" | "tech"; status: "active" | "disabled" }[];
-  const profiles = members.length
-    ? (must(
-        await supabase
-          .from("profile")
-          .select("id, full_name, email")
-          .in(
-            "id",
-            members.map((m) => m.user_id),
-          ),
-      ) as { id: string; full_name: string | null; email: string | null }[])
-    : [];
+  ) as unknown as {
+    id: string;
+    user_id: string;
+    role: "owner" | "tech";
+    status: "active" | "disabled";
+    profile: { id: string; full_name: string | null; email: string | null } | null;
+  }[];
+  const profiles = members.flatMap((m) => (m.profile ? [m.profile] : []));
   const byId = new Map(profiles.map((p) => [p.id, p]));
   return members
     .map((m) => {

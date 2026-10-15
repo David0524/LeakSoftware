@@ -28,6 +28,27 @@ describe("LocalStore", () => {
     expect(s.pendingCount()).toBe(2);
   });
 
+  it("tells screens which tables changed, so others are not re-read", () => {
+    const s = store();
+    const jobs = s.tableVersion("job");
+    const results = s.tableVersion("checklist_item_result");
+    s.insert("checklist_item_result", C, { job_id: "j", status: "inspected" });
+    expect(s.tableVersion("job")).toBe(jobs);
+    expect(s.tableVersion("checklist_item_result")).not.toBe(results);
+
+    s.applyPage({
+      rows: [{ xid: "1", table: "job", row: { id: "j1", company_id: C, status: "done" } }],
+      done: true,
+      cursor: {},
+      server_hlc: "1800000000000-0000-server",
+    });
+    expect(s.tableVersion("job")).not.toBe(jobs);
+
+    const customers = s.tableVersion("customer");
+    s.clearAll();
+    expect(s.tableVersion("customer")).not.toBe(customers);
+  });
+
   it("refuses server-managed columns", () => {
     const s = store();
     expect(() => s.insert("customer", C, { company_id: "x" })).toThrow(/managed by the server/);

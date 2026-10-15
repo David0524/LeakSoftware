@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { formatCents, lineTotal, textOnBrand } from "@leakbook/core";
+import { formatCents, lineTotal, textOnBrand, dateFormat } from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import { AcceptForm, PayDepositForm } from "@/components/quote-actions";
 import { cx } from "@/components/ui";
@@ -74,7 +74,7 @@ export default function CustomerQuotePage({ params, searchParams }: PageProps<"/
 }
 
 const date = (iso: string, timeZone: string, withTime = false) =>
-  new Intl.DateTimeFormat("en-US", {
+  dateFormat("en-US", {
     dateStyle: "long",
     ...(withTime ? { timeStyle: "short" } : {}),
     timeZone,

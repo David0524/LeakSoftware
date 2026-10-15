@@ -1,3 +1,4 @@
+import { dateFormat } from "./intl";
 // Tidemark billing (M10): the shop's subscription state, as public.company_access returns
 // it, put into words for the banner and the Billing page.
 
@@ -54,8 +55,7 @@ export function accessNotice(a: CompanyAccess, now: Date = new Date()): AccessNo
 
 /** One line for the Billing page: where the subscription stands. */
 export function billingSummary(a: CompanyAccess, now: Date = new Date()): string {
-  const day = (iso: string) =>
-    new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(new Date(iso));
+  const day = (iso: string) => dateFormat("en-US", { dateStyle: "long" }).format(new Date(iso));
   if (a.plan === "demo") return "Demo shop: no subscription needed.";
   if (a.locked) return "Read-only until the subscription is paid. Nothing has been deleted.";
   switch (a.status) {
