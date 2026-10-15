@@ -83,14 +83,14 @@ test("homeowner report: draft, edit, email, and the customer's link", async ({ p
 test("partner report: draft, send by text, technical page and PDF", async ({ page }) => {
   // The partner report starts off (owner, 2026-10-14); the owner turns it on in Settings.
   await signIn(page, OWNER, "/settings/reports");
-  const settings = page
-    .locator("section")
-    .filter({ has: page.getByRole("heading", { name: "Partner report" }) });
+  // Each template is a row that opens its settings in a sheet.
+  await page.getByRole("button", { name: /^Partner report/ }).click();
+  const settings = page.getByRole("dialog", { name: "Partner report" });
   const enabled = settings.getByLabel("Techs can send this report");
   if (!(await enabled.isChecked())) {
     await enabled.check();
     await settings.getByRole("button", { name: "Save" }).click();
-    await expect(settings.getByText("Saved.")).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
   }
   await openSampleJob(page, "Sam Sample", true);
   const panel = await writeDraft(page, "partner");

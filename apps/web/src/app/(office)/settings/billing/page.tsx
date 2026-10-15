@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { billingSummary } from "@leakbook/core";
 import { BillingButton } from "@/components/billing-buttons";
-import { Card, Notice, PageHeader, SectionTitle } from "@/components/ui";
+import { Banner } from "@/components/doc-ui";
+import { SettingsSection } from "@/components/settings-forms";
+import { PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getAccess } from "@/lib/data";
 import { billingConfigured } from "@/server/billing";
@@ -19,42 +21,45 @@ export default async function BillingPage({ searchParams }: PageProps<"/settings
         title="Tidemark Billing"
         subtitle="Your shop’s subscription to Tidemark. Separate from the payments your customers make to you."
       />
-      <Card className="max-w-2xl space-y-4">
-        <SectionTitle>Subscription</SectionTitle>
-        {subscribed ? (
-          <Notice tone="success">
-            Thank you. Your subscription is being set up; this page updates in a moment.
-          </Notice>
-        ) : null}
-        {!access ? (
-          <p>Billing isn’t available until the database is updated.</p>
-        ) : (
-          <>
-            <p className="text-xl font-semibold">{billingSummary(access)}</p>
-            {access.locked ? (
-              <Notice tone="error">
-                Your team can still see every job, report, photo, and invoice, but can’t change
-                anything until the subscription is paid. Nothing has been deleted.
-              </Notice>
+      <div className="max-w-2xl">
+        <SettingsSection title="Subscription" boxed>
+          <div className="space-y-4">
+            {subscribed ? (
+              <Banner tone="success">
+                Thank you. Your subscription is being set up; this page updates in a moment.
+              </Banner>
             ) : null}
-            {access.plan === "demo" ? null : !billingConfigured() ? (
-              <Notice tone="warning">
-                Subscriptions aren’t set up on this Tidemark server yet.
-              </Notice>
-            ) : access.subscribed ? (
-              <BillingButton kind="manage" />
+            {!access ? (
+              <p>Billing isn’t available until the database is updated.</p>
             ) : (
               <>
-                <p className="text-text-muted">
-                  One price per shop, billed monthly. Any days left on your free trial carry over:
-                  you’re charged when the trial ends.
-                </p>
-                <BillingButton kind="subscribe" />
+                <p className="text-xl font-semibold">{billingSummary(access)}</p>
+                {access.locked ? (
+                  <Banner tone="error">
+                    Your team can still see every job, report, photo, and invoice, but can’t change
+                    anything until the subscription is paid. Nothing has been deleted.
+                  </Banner>
+                ) : null}
+                {access.plan === "demo" ? null : !billingConfigured() ? (
+                  <Banner tone="warning">
+                    Subscriptions aren’t set up on this Tidemark server yet.
+                  </Banner>
+                ) : access.subscribed ? (
+                  <BillingButton kind="manage" />
+                ) : (
+                  <>
+                    <p className="text-text-muted">
+                      One price per shop, billed monthly. Any days left on your free trial carry
+                      over: you’re charged when the trial ends.
+                    </p>
+                    <BillingButton kind="subscribe" />
+                  </>
+                )}
               </>
             )}
-          </>
-        )}
-      </Card>
+          </div>
+        </SettingsSection>
+      </div>
     </>
   );
 }

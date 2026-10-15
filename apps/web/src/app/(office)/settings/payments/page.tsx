@@ -1,8 +1,15 @@
 import type { Metadata } from "next";
 import { bpsToPercent } from "@leakbook/core";
 import { savePayments } from "@/app/actions/settings";
-import { SField, SettingsForm } from "@/components/settings-forms";
-import { Card, Notice, PageHeader, SectionTitle, Select } from "@/components/ui";
+import { Banner } from "@/components/doc-ui";
+import {
+  SField,
+  SSelect,
+  SettingsFields,
+  SettingsForm,
+  SettingsSection,
+} from "@/components/settings-forms";
+import { PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany, getPaymentAccount } from "@/lib/data";
 import { siteOrigin } from "@/lib/origin";
@@ -36,6 +43,8 @@ export default async function PaymentsSettingsPage({
   const company = await getCompany(office);
   const s = company.settings as Settings;
   const deposit = s.deposit ?? {};
+  // One orange button per page: while Stripe setup is pending, that is the main action.
+  const setupPending = paymentsConfigured() && !account?.charges_enabled;
 
   return (
     <>
@@ -44,94 +53,104 @@ export default async function PaymentsSettingsPage({
         title="Payments and Deposits"
         subtitle="How customers pay, and the defaults for new quotes and invoices."
       />
-      <Card className="mb-6 max-w-2xl space-y-3">
-        <SectionTitle>Online payments</SectionTitle>
-        {!paymentsConfigured() ? (
-          <Notice tone="warning">
-            Online payments aren’t set up on this Tidemark server yet. Customers can still accept
-            quotes.
-          </Notice>
-        ) : account?.charges_enabled ? (
-          <>
-            <p>
-              <strong>Ready.</strong> Customers can pay deposits and invoices by card or bank
-              account. Money goes to your Stripe account
-              {account.payouts_enabled ? "" : "; finish your Stripe details to receive payouts"}.
-            </p>
-            <a
-              href="https://dashboard.stripe.com"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex min-h-11 items-center font-semibold text-link underline"
-            >
-              Open Stripe Dashboard
-            </a>
-          </>
-        ) : (
-          <>
-            <p>
-              Connect a Stripe account so customers can pay deposits and invoices online by card or
-              bank account. Your shop is the seller; payments go straight to your account.
-            </p>
-            {account?.details_submitted ? (
-              <p className="text-[0.9375rem] text-text-muted">
-                Stripe is reviewing your details. This page updates when they finish.
-              </p>
-            ) : null}
-            <PaymentsSetupButton label={account ? "Continue Stripe Setup" : "Set Up Payments"} />
-          </>
-        )}
-      </Card>
-      <Card className="max-w-2xl">
-        <SettingsForm action={savePayments} primary>
-          <Select
-            label="Deposit on accepted quotes"
-            name="deposit_type"
-            defaultValue={deposit.type === "fixed" ? "fixed" : "percent"}
-            options={[
-              { value: "percent", label: "Percentage of the quote" },
-              { value: "fixed", label: "Fixed amount" },
-            ]}
-          />
-          <div className="grid gap-4 sm:grid-cols-3">
-            <SField
-              label="Deposit percentage"
-              name="deposit_percent"
-              inputMode="decimal"
-              defaultValue={bpsToPercent(deposit.value_bps ?? 5000)}
-              hint="Used when the deposit is a percentage."
-            />
-            <SField
-              label="Fixed deposit ($)"
-              name="deposit_fixed"
-              inputMode="decimal"
-              defaultValue={dollars(deposit.value_cents)}
-              hint="Used when the deposit is fixed."
-            />
-            <SField
-              label="Minimum deposit ($)"
-              name="deposit_minimum"
-              inputMode="decimal"
-              defaultValue={dollars(deposit.minimum_cents)}
-            />
+      <div className="max-w-2xl space-y-6">
+        <SettingsSection title="Online payments" boxed>
+          <div className="space-y-3">
+            {!paymentsConfigured() ? (
+              <Banner tone="warning">
+                Online payments aren’t set up on this Tidemark server yet. Customers can still
+                accept quotes.
+              </Banner>
+            ) : account?.charges_enabled ? (
+              <>
+                <p>
+                  <strong>Ready.</strong> Customers can pay deposits and invoices by card or bank
+                  account. Money goes to your Stripe account
+                  {account.payouts_enabled ? "" : "; finish your Stripe details to receive payouts"}
+                  .
+                </p>
+                <a
+                  href="https://dashboard.stripe.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-h-11 items-center font-semibold text-link underline"
+                >
+                  Open Stripe Dashboard
+                </a>
+              </>
+            ) : (
+              <>
+                <p>
+                  Connect a Stripe account so customers can pay deposits and invoices online by card
+                  or bank account. Your shop is the seller; payments go straight to your account.
+                </p>
+                {account?.details_submitted ? (
+                  <p className="text-[0.9375rem] text-text-muted">
+                    Stripe is reviewing your details. This page updates when they finish.
+                  </p>
+                ) : null}
+                <PaymentsSetupButton
+                  label={account ? "Continue Stripe Setup" : "Set Up Payments"}
+                />
+              </>
+            )}
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <SField
-              label="Sales tax rate (%)"
-              name="tax_rate"
-              inputMode="decimal"
-              defaultValue={bpsToPercent(s.tax_rate_bps ?? 0)}
-              hint="Applied to taxable price book items."
-            />
-            <SField
-              label="Largest discount a tech can give (%)"
-              name="tech_discount_limit"
-              inputMode="decimal"
-              defaultValue={bpsToPercent(s.tech_discount_limit_bps ?? 1000)}
-            />
-          </div>
-        </SettingsForm>
-      </Card>
+        </SettingsSection>
+        <SettingsSection title="Deposits, tax, and discounts">
+          <SettingsForm action={savePayments} primary={!setupPending} full>
+            <SettingsFields labelWidth="10rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
+              <SSelect
+                label="Deposit on accepted quotes"
+                name="deposit_type"
+                defaultValue={deposit.type === "fixed" ? "fixed" : "percent"}
+                options={[
+                  { value: "percent", label: "Percentage of the quote" },
+                  { value: "fixed", label: "Fixed amount" },
+                ]}
+                className="sm:col-span-2"
+              />
+            </SettingsFields>
+            <SettingsFields labelWidth="10rem" className="sm:grid sm:grid-cols-3 sm:gap-4">
+              <SField
+                label="Deposit percentage"
+                name="deposit_percent"
+                inputMode="decimal"
+                defaultValue={bpsToPercent(deposit.value_bps ?? 5000)}
+                hint="Used when the deposit is a percentage."
+              />
+              <SField
+                label="Fixed deposit ($)"
+                name="deposit_fixed"
+                inputMode="decimal"
+                defaultValue={dollars(deposit.value_cents)}
+                hint="Used when the deposit is fixed."
+              />
+              <SField
+                label="Minimum deposit ($)"
+                name="deposit_minimum"
+                inputMode="decimal"
+                defaultValue={dollars(deposit.minimum_cents)}
+              />
+            </SettingsFields>
+            <SettingsFields labelWidth="10rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
+              <SField
+                label="Sales tax rate (%)"
+                name="tax_rate"
+                inputMode="decimal"
+                defaultValue={bpsToPercent(s.tax_rate_bps ?? 0)}
+                hint="Applied to taxable price book items."
+              />
+              <SField
+                label="Largest discount a tech can give (%)"
+                name="tech_discount_limit"
+                inputMode="decimal"
+                defaultValue={bpsToPercent(s.tech_discount_limit_bps ?? 1000)}
+                stacked
+              />
+            </SettingsFields>
+          </SettingsForm>
+        </SettingsSection>
+      </div>
     </>
   );
 }

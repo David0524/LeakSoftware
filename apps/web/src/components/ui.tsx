@@ -233,20 +233,57 @@ export function FieldGroup({
   );
 }
 
-/** One field in a FieldGroup. Its hint or error sits under it, in the row on phones. */
+/** Phones: one row of a FieldGroup, with a hairline above it that starts where the text does. */
+export const GROUP_ROW =
+  "max-sm:pr-4 max-sm:not-first:border-t-[0.5px] max-sm:not-first:border-separator";
+
+/** A field's hint or error, under it (in its row on phones). */
+function FieldNote({ id, hint, error }: { id: string; hint?: string; error?: string }) {
+  return error || hint ? (
+    <p
+      id={`${id}-note`}
+      className={cx(
+        "text-[0.9375rem] max-sm:pb-2.5 sm:mt-1",
+        error ? "text-status-fail" : "text-text-muted",
+      )}
+    >
+      {error ?? hint}
+    </p>
+  ) : null;
+}
+
+/**
+ * One field in a FieldGroup. Its hint or error sits under it, in the row on phones. `stacked`
+ * puts a long label above the field on phones too. className goes on the row (grid spans).
+ */
 export function GroupedField({
   label,
   hint,
   error,
+  stacked = false,
+  className,
   ...input
-}: ComponentProps<"input"> & { label: string; hint?: string; error?: string }) {
+}: ComponentProps<"input"> & {
+  label: string;
+  hint?: string;
+  error?: string;
+  stacked?: boolean;
+}) {
   const id = input.id ?? input.name;
   return (
-    <div className="max-sm:pr-4 max-sm:not-first:border-t-[0.5px] max-sm:not-first:border-separator">
-      <div className="max-sm:flex max-sm:min-h-11 max-sm:items-center max-sm:gap-3">
+    <div className={cx(GROUP_ROW, className)}>
+      <div
+        className={cx(
+          "max-sm:flex max-sm:min-h-11 max-sm:gap-3",
+          stacked ? "max-sm:flex-col max-sm:gap-0 max-sm:pt-2.5" : "max-sm:items-center",
+        )}
+      >
         <label
           htmlFor={id}
-          className="block max-sm:w-(--label-w) max-sm:shrink-0 sm:mb-1 sm:font-medium"
+          className={cx(
+            "block max-sm:shrink-0 sm:mb-1 sm:font-medium",
+            !stacked && "max-sm:w-(--label-w)",
+          )}
         >
           {label}
         </label>
@@ -263,17 +300,100 @@ export function GroupedField({
           )}
         />
       </div>
-      {error || hint ? (
-        <p
-          id={`${id}-note`}
+      <FieldNote id={String(id)} hint={hint} error={error} />
+    </div>
+  );
+}
+
+/** A choice in a FieldGroup: the label on the left, the chosen value on the right (phones). */
+export function GroupedSelect({
+  label,
+  hint,
+  error,
+  options,
+  className,
+  ...select
+}: ComponentProps<"select"> & {
+  label: string;
+  hint?: string;
+  error?: string;
+  options: { value: string; label: string }[];
+}) {
+  const id = select.id ?? select.name;
+  return (
+    <div className={cx(GROUP_ROW, className)}>
+      <div className="max-sm:flex max-sm:min-h-11 max-sm:items-center max-sm:gap-3">
+        <label
+          htmlFor={id}
+          className="block max-sm:w-(--label-w) max-sm:shrink-0 sm:mb-1 sm:font-medium"
+        >
+          {label}
+        </label>
+        <select
+          {...select}
+          id={id}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error || hint ? `${id}-note` : undefined}
           className={cx(
-            "text-[0.9375rem] max-sm:pb-2.5 sm:mt-1",
-            error ? "text-status-fail" : "text-text-muted",
+            "block min-h-11 w-full min-w-0 text-text",
+            "max-sm:flex-1 max-sm:rounded-md max-sm:bg-transparent max-sm:text-right max-sm:text-text-muted max-sm:[text-align-last:right]",
+            "sm:rounded-[10px] sm:border sm:border-control-border sm:bg-surface sm:px-3 sm:py-2",
+            "sm:focus:outline-3 sm:focus:outline-offset-1 sm:focus:outline-focus",
           )}
         >
-          {error ?? hint}
-        </p>
-      ) : null}
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <FieldNote id={String(id)} hint={hint} error={error} />
+    </div>
+  );
+}
+
+/** Longer text in a FieldGroup: the label above, the text below it, in one row on phones. */
+export function GroupedTextArea({
+  label,
+  hint,
+  error,
+  className,
+  ...input
+}: ComponentProps<"textarea"> & { label: string; hint?: string; error?: string }) {
+  const id = input.id ?? input.name;
+  return (
+    <div className={cx(GROUP_ROW, "max-sm:pt-2.5", className)}>
+      <label htmlFor={id} className="block sm:mb-1 sm:font-medium">
+        {label}
+      </label>
+      <textarea
+        {...input}
+        id={id}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error || hint ? `${id}-note` : undefined}
+        className={cx(
+          "block min-h-24 w-full text-text placeholder:text-text-muted",
+          "max-sm:rounded-md max-sm:bg-transparent max-sm:py-2 max-sm:focus-visible:outline-offset-0",
+          "sm:rounded-[10px] sm:border sm:border-control-border sm:bg-surface sm:px-3 sm:py-2",
+          "sm:focus:outline-3 sm:focus:outline-offset-1 sm:focus:outline-focus sm:aria-[invalid=true]:border-status-fail",
+        )}
+      />
+      <FieldNote id={String(id)} hint={hint} error={error} />
+    </div>
+  );
+}
+
+/** A switch as a row of a FieldGroup (switches belong in list rows: toggles.md). */
+export function GroupedSwitch({
+  hint,
+  className,
+  ...input
+}: ComponentProps<"input"> & { label: string; hint?: string }) {
+  return (
+    <div className={cx(GROUP_ROW, className)}>
+      <Checkbox {...input} />
+      {hint ? <p className="text-[0.9375rem] text-text-muted max-sm:pb-2.5">{hint}</p> : null}
     </div>
   );
 }

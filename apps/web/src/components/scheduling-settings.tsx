@@ -3,8 +3,8 @@
 import { useState, useTransition } from "react";
 import { saveScheduling, type RouteResult } from "@/app/actions/routes";
 import { Segmented } from "./segmented";
-import { FieldError, SField, SettingsForm } from "./settings-forms";
-import { Button } from "./ui";
+import { FieldError, SField, SettingsFields, SettingsForm } from "./settings-forms";
+import { Button, GROUP_ROW, cx } from "./ui";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -25,8 +25,8 @@ export function SchedulingForm({
 }) {
   const [window, setWindow] = useState(String(defaults.windowMin) as "0" | "60" | "120" | "240");
   return (
-    <SettingsForm action={saveScheduling} primary>
-      <div className="grid gap-4 sm:grid-cols-3">
+    <SettingsForm action={saveScheduling} primary full>
+      <SettingsFields labelWidth="9.5rem" className="sm:grid sm:grid-cols-3 sm:gap-4">
         <SField label="Day starts" name="day_start" type="time" defaultValue={defaults.dayStart} />
         <SField
           label="Back at the shop by"
@@ -41,8 +41,8 @@ export function SchedulingForm({
           defaultValue={defaults.jobHours}
           hint="For jobs booked without an end time."
         />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      </SettingsFields>
+      <SettingsFields labelWidth="9.5rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
         <SField
           label="Maintenance visit (minutes)"
           name="visit_minutes"
@@ -56,34 +56,37 @@ export function SchedulingForm({
           inputMode="numeric"
           defaultValue={String(defaults.weeksAhead)}
           hint="How far ahead plans put visits on the schedule."
+          stacked
         />
-      </div>
-      <fieldset>
-        <legend className="font-medium">Working days</legend>
-        <p className="text-[0.9375rem] text-text-muted">Suggested times use these days.</p>
-        {/* Each day is a round toggle, filled when it's a working day. */}
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {DAYS.map((d, i) => (
-            <label key={d} className="cursor-pointer">
-              <input
-                type="checkbox"
-                name="work_days"
-                value={i}
-                defaultChecked={defaults.workDays.includes(i)}
-                aria-label={DAY_NAMES[i]}
-                className="peer sr-only"
-              />
-              <span
-                aria-hidden="true"
-                className="grid size-11 place-items-center rounded-full bg-fill text-[0.9375rem] font-medium transition-colors peer-checked:bg-link peer-checked:text-white peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus"
-              >
-                {d}
-              </span>
-            </label>
-          ))}
-        </div>
-        <FieldError name="work_days" />
-      </fieldset>
+      </SettingsFields>
+      <SettingsFields>
+        <fieldset className={cx(GROUP_ROW, "max-sm:py-2.5")}>
+          <legend className="sm:font-medium">Working days</legend>
+          <p className="text-[0.9375rem] text-text-muted">Suggested times use these days.</p>
+          {/* Each day is a round toggle, filled when it's a working day. */}
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {DAYS.map((d, i) => (
+              <label key={d} className="cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="work_days"
+                  value={i}
+                  defaultChecked={defaults.workDays.includes(i)}
+                  aria-label={DAY_NAMES[i]}
+                  className="peer sr-only"
+                />
+                <span
+                  aria-hidden="true"
+                  className="grid size-11 place-items-center rounded-full bg-fill text-[0.9375rem] font-medium transition-colors peer-checked:bg-link peer-checked:text-white peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus"
+                >
+                  {d}
+                </span>
+              </label>
+            ))}
+          </div>
+          <FieldError name="work_days" />
+        </fieldset>
+      </SettingsFields>
       <div>
         <Segmented
           label="Arrival time customers are told"
@@ -97,7 +100,7 @@ export function SchedulingForm({
             { value: "240", label: "4-Hour Window" },
           ]}
         />
-        <p className="mt-1 text-[0.9375rem] text-text-muted">
+        <p className="mt-1 px-4 text-[0.9375rem] text-text-muted sm:px-0">
           {window === "0"
             ? "On My Way texts say “about 10:15 AM”."
             : `On My Way texts give a ${Number(window) / 60}-hour window, like “between 10:00 AM and ${

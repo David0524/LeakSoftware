@@ -6,8 +6,18 @@ import {
   saveNextJobNumber,
   saveReportText,
 } from "@/app/actions/settings";
-import { ColorField, FieldError, SField, SettingsForm } from "@/components/settings-forms";
-import { Card, Checkbox, PageHeader, Select, TextArea } from "@/components/ui";
+import {
+  ColorField,
+  FieldError,
+  SField,
+  SSelect,
+  STextArea,
+  SSwitch,
+  SettingsFields,
+  SettingsForm,
+  SettingsSection,
+} from "@/components/settings-forms";
+import { GROUP_ROW, PageHeader, cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
@@ -60,11 +70,10 @@ export default async function CompanySettingsPage() {
         title="Company and Branding"
         subtitle="Shown on reports, quotes, and invoices."
       />
-      <div className="space-y-6">
-        <Card>
-          <h2 className="mb-4 font-display text-xl font-bold">Company profile</h2>
-          <SettingsForm action={saveCompany}>
-            <div className="grid gap-4 sm:grid-cols-2">
+      <div className="max-w-2xl space-y-6">
+        <SettingsSection title="Company profile">
+          <SettingsForm action={saveCompany} full>
+            <SettingsFields labelWidth="7.5rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
               <SField label="Company name" name="name" defaultValue={company.name} required />
               <SField
                 label="Legal name"
@@ -85,11 +94,9 @@ export default async function CompanySettingsPage() {
                 defaultValue={str("address_line2")}
               />
               <SField label="City" name="city" defaultValue={str("city")} />
-              <div className="grid grid-cols-2 gap-4">
-                <SField label="State" name="state" maxLength={2} defaultValue={str("state")} />
-                <SField label="ZIP" name="postal_code" defaultValue={str("postal_code")} />
-              </div>
-              <Select
+              <SField label="State" name="state" maxLength={2} defaultValue={str("state")} />
+              <SField label="ZIP" name="postal_code" defaultValue={str("postal_code")} />
+              <SSelect
                 label="Time zone"
                 name="timezone"
                 defaultValue={company.timezone}
@@ -101,110 +108,114 @@ export default async function CompanySettingsPage() {
                 type="url"
                 defaultValue={str("review_url")}
                 hint="Your Google or Yelp page. Review requests link here."
+                className="sm:col-span-2"
               />
-            </div>
+            </SettingsFields>
           </SettingsForm>
-        </Card>
+        </SettingsSection>
 
-        <Card>
-          <h2 className="mb-1 font-display text-xl font-bold">Reminders and Reviews</h2>
-          <p className="mb-4 text-text-muted">
-            Emails sent once a day, in the morning. They stop when a quote is accepted or an invoice
-            is paid, and customers can turn them off from any of them.
-          </p>
-          <SettingsForm action={saveFollowups}>
-            <div className="grid gap-4 sm:grid-cols-2">
+        <SettingsSection title="Reminders and Reviews">
+          <SettingsForm action={saveFollowups} full>
+            <p className="px-4 text-[0.9375rem] text-text-muted sm:px-0">
+              Emails sent once a day, in the morning. They stop when a quote is accepted or an
+              invoice is paid, and customers can turn them off from any of them.
+            </p>
+            <SettingsFields className="sm:grid sm:grid-cols-2 sm:gap-4">
               <SField
                 label="Quote reminders (days after sending)"
                 name="quote_days"
                 defaultValue={(settings.reminders?.quote_days ?? [3, 7]).join(", ")}
                 hint="For quotes not yet accepted. Leave empty for none."
+                stacked
               />
               <SField
                 label="Invoice reminders (days after sending)"
                 name="invoice_days"
                 defaultValue={(settings.reminders?.invoice_days ?? [7, 14, 30]).join(", ")}
                 hint="For invoices not yet paid in full. Leave empty for none."
+                stacked
               />
-            </div>
-            <Checkbox
-              name="review_requests"
-              label="Ask for a review after a job is paid"
-              defaultChecked={settings.review_requests ?? true}
-            />
-            {company.review_url ? null : (
-              <p className="text-[0.9375rem] text-text-muted">
-                Add your review link under Company profile to send review requests.
-              </p>
-            )}
+            </SettingsFields>
+            <SettingsFields>
+              <SSwitch
+                name="review_requests"
+                label="Ask for a review after a job is paid"
+                defaultChecked={settings.review_requests ?? true}
+                hint={
+                  company.review_url
+                    ? undefined
+                    : "Add your review link under Company profile to send review requests."
+                }
+              />
+            </SettingsFields>
           </SettingsForm>
-        </Card>
+        </SettingsSection>
 
-        <Card>
-          <h2 className="mb-4 font-display text-xl font-bold">Report terms</h2>
-          <SettingsForm action={saveReportText}>
-            <TextArea
-              label="Disclaimer"
-              name="report_disclaimer"
-              rows={8}
-              defaultValue={str("report_disclaimer")}
-              hint="Printed at the end of every report, as written. Reports already sent keep the text they were sent with."
-            />
-            <FieldError name="report_disclaimer" />
+        <SettingsSection title="Report terms">
+          <SettingsForm action={saveReportText} full>
+            <SettingsFields>
+              <STextArea
+                label="Disclaimer"
+                name="report_disclaimer"
+                rows={8}
+                defaultValue={str("report_disclaimer")}
+                hint="Printed at the end of every report, as written. Reports already sent keep the text they were sent with."
+              />
+            </SettingsFields>
           </SettingsForm>
-        </Card>
+        </SettingsSection>
 
-        <Card>
-          <h2 className="mb-4 font-display text-xl font-bold">Job numbers</h2>
-          <SettingsForm action={saveNextJobNumber}>
-            <SField
-              label="Next job number"
-              name="next_job_number"
-              type="number"
-              inputMode="numeric"
-              min={lastNumber + 1}
-              defaultValue={String(lastNumber + 1)}
-              hint={
-                lastNumber
-                  ? `The last job is #${lastNumber}. To continue from your old system, enter a higher number.`
-                  : "To continue from your old system, enter your next number."
-              }
-            />
+        <SettingsSection title="Job numbers">
+          <SettingsForm action={saveNextJobNumber} full>
+            <SettingsFields labelWidth="9.5rem">
+              <SField
+                label="Next job number"
+                name="next_job_number"
+                type="number"
+                inputMode="numeric"
+                min={lastNumber + 1}
+                defaultValue={String(lastNumber + 1)}
+                hint={
+                  lastNumber
+                    ? `The last job is #${lastNumber}. To continue from your old system, enter a higher number.`
+                    : "To continue from your old system, enter your next number."
+                }
+              />
+            </SettingsFields>
           </SettingsForm>
-        </Card>
+        </SettingsSection>
 
-        <Card>
-          <h2 className="mb-4 font-display text-xl font-bold">Branding</h2>
-          <SettingsForm action={saveBranding}>
-            <div className="space-y-2">
-              <label htmlFor="logo" className="block font-medium">
-                Logo
-              </label>
-              {logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
-                <img
-                  src={logoUrl}
-                  alt={`${company.name} logo`}
-                  className="max-h-20 rounded-md border border-border bg-paper p-2"
+        <SettingsSection title="Branding">
+          <SettingsForm action={saveBranding} full>
+            <SettingsFields className="sm:space-y-6">
+              <div className={cx("space-y-2", GROUP_ROW, "max-sm:py-2.5")}>
+                <label htmlFor="logo" className="block sm:font-medium">
+                  Logo
+                </label>
+                {logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
+                  <img
+                    src={logoUrl}
+                    alt={`${company.name} logo`}
+                    className="max-h-20 rounded-md border border-border bg-paper p-2"
+                  />
+                ) : (
+                  <p className="text-text-muted">
+                    No logo yet. Reports show your company name instead.
+                  </p>
+                )}
+                <input
+                  id="logo"
+                  name="logo"
+                  type="file"
+                  accept="image/png,image/jpeg,image/svg+xml"
+                  className="block w-full min-h-11 file:mr-3 file:min-h-11 file:rounded-full file:border-0 file:bg-link/12 file:px-4 file:font-semibold file:text-link"
                 />
-              ) : (
-                <p className="text-text-muted">
-                  No logo yet. Reports show your company name instead.
+                <p className="text-[0.9375rem] text-text-muted">
+                  PNG, JPEG, or SVG, under 2 MB. A wide logo works best.
                 </p>
-              )}
-              <input
-                id="logo"
-                name="logo"
-                type="file"
-                accept="image/png,image/jpeg,image/svg+xml"
-                className="block w-full min-h-11 file:mr-3 file:min-h-11 file:rounded-md file:border-2 file:border-text file:text-text file:bg-surface file:px-4 file:font-display file:font-bold"
-              />
-              <p className="text-[0.9375rem] text-text-muted">
-                PNG, JPEG, or SVG, under 2 MB. A wide logo works best.
-              </p>
-              <FieldError name="logo" />
-            </div>
-            <div className="grid gap-6 sm:grid-cols-2">
+                <FieldError name="logo" />
+              </div>
               <ColorField
                 name="brand_primary"
                 label="Main color"
@@ -216,9 +227,9 @@ export default async function CompanySettingsPage() {
                 defaultValue={company.brand_secondary}
                 optional
               />
-            </div>
+            </SettingsFields>
           </SettingsForm>
-        </Card>
+        </SettingsSection>
       </div>
     </>
   );

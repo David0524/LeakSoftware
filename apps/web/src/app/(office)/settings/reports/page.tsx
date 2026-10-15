@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import { saveReportTemplate } from "@/app/actions/settings";
-import { SField, STextArea, SettingsForm } from "@/components/settings-forms";
-import { Card, Checkbox, PageHeader } from "@/components/ui";
+import {
+  SField,
+  STextArea,
+  SSwitch,
+  SettingsFields,
+  SettingsForm,
+} from "@/components/settings-forms";
+import { SettingsListPage, SheetRow } from "@/components/settings-list";
+import { Grouped } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listConfig } from "@/lib/data";
 
@@ -27,47 +34,54 @@ export default async function ReportTemplatesPage() {
   const order = ["homeowner", "partner", "insurance"];
   templates.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
   return (
-    <>
-      <PageHeader
-        back={{ href: "/settings", label: "Settings" }}
-        title="Report Templates"
-        subtitle="The wording and tone of written reports. The facts (tests, findings, photos) always come from the job."
-      />
-      <div className="space-y-6">
+    <SettingsListPage
+      title="Report Templates"
+      subtitle="The wording and tone of written reports. The facts (tests, findings, photos) always come from the job."
+    >
+      <Grouped>
         {templates.map((t) =>
           t.key === "insurance" ? (
-            <Card key={t.id}>
-              <h2 className="font-display text-xl font-bold">
-                {t.name} <span className="font-normal text-text-muted">· Coming soon</span>
-              </h2>
-              <p className="mt-1 text-text-muted">{ABOUT.insurance}</p>
-            </Card>
+            <SheetRow
+              key={t.id}
+              title={t.name}
+              label={t.name}
+              detail={ABOUT.insurance}
+              value="Coming soon"
+            />
           ) : (
-            <Card key={t.id}>
-              <h2 className="font-display text-xl font-bold">{t.name}</h2>
-              <p className="mt-1 mb-4 text-text-muted">{ABOUT[t.key]}</p>
-              <SettingsForm action={saveReportTemplate}>
+            <SheetRow
+              key={t.id}
+              title={t.name}
+              label={t.name}
+              detail={ABOUT[t.key]}
+              value={t.enabled ? "On" : "Off"}
+            >
+              <SettingsForm action={saveReportTemplate} primary full>
                 <input type="hidden" name="id" value={t.id} />
-                <SField label="Name" name="name" id={`name-${t.id}`} defaultValue={t.name} />
-                <STextArea
-                  label="Tone and instructions"
-                  name="tone"
-                  id={`tone-${t.id}`}
-                  rows={5}
-                  defaultValue={t.tone}
-                  hint="How the written summary should sound, e.g. “Friendly, no jargon, short paragraphs.”"
-                />
-                <Checkbox
-                  label="Techs can send this report"
-                  name="enabled"
-                  id={`enabled-${t.id}`}
-                  defaultChecked={t.enabled}
-                />
+                <SettingsFields labelWidth="5rem">
+                  <SField label="Name" name="name" id={`name-${t.id}`} defaultValue={t.name} />
+                  <STextArea
+                    label="Tone and instructions"
+                    name="tone"
+                    id={`tone-${t.id}`}
+                    rows={5}
+                    defaultValue={t.tone}
+                    hint="How the written summary should sound, e.g. “Friendly, no jargon, short paragraphs.”"
+                  />
+                </SettingsFields>
+                <SettingsFields>
+                  <SSwitch
+                    label="Techs can send this report"
+                    name="enabled"
+                    id={`enabled-${t.id}`}
+                    defaultChecked={t.enabled}
+                  />
+                </SettingsFields>
               </SettingsForm>
-            </Card>
+            </SheetRow>
           ),
         )}
-      </div>
-    </>
+      </Grouped>
+    </SettingsListPage>
   );
 }

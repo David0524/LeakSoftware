@@ -79,25 +79,38 @@ export function NavBar({
   );
 }
 
-/** A round "+" for the navigation bar (New Job and the like), named for screen readers. */
-export function NavPlus({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      href={href}
-      aria-label={label}
-      className="grid size-11 place-items-center rounded-full text-link active:bg-link/10"
+/**
+ * A round "+" for the navigation bar (New Job and the like), named for screen readers. With
+ * onClick instead of href it is a button (e.g. opening an Add sheet).
+ */
+export function NavPlus({
+  href,
+  onClick,
+  label,
+}: {
+  label: string;
+} & ({ href: string; onClick?: never } | { href?: never; onClick: () => void })) {
+  const className = "grid size-11 place-items-center rounded-full text-link active:bg-link/10";
+  const plus = (
+    <svg
+      viewBox="0 0 24 24"
+      className="size-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      aria-hidden="true"
     >
-      <svg
-        viewBox="0 0 24 24"
-        className="size-6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        aria-hidden="true"
-      >
-        <path d="M12 5v14M5 12h14" />
-      </svg>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+  return href != null ? (
+    <Link href={href} aria-label={label} className={className}>
+      {plus}
     </Link>
+  ) : (
+    <button type="button" onClick={onClick} aria-label={label} className={className}>
+      {plus}
+    </button>
   );
 }

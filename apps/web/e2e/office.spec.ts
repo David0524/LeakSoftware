@@ -83,26 +83,32 @@ test("owner views the M4 sample job", async ({ page }) => {
 test("owner edits the price book", async ({ page }) => {
   await signIn(page, OWNER, "/settings/price-book");
   const name = `E2E fitting ${RUN}`;
-  const add = page.locator("form").filter({ has: page.getByRole("button", { name: "Add Item" }) });
+  // Items are rows that open in a sheet; Add Item opens an empty one. When a save works, the
+  // sheet closes and the page says what happened.
+  await page.getByRole("button", { name: "Add Item", exact: true }).click();
+  const add = page.getByRole("dialog", { name: "Add Item" });
   await add.getByLabel("Name").fill(name);
   await add.getByLabel("Price ($)").fill("123.45");
   await add.getByLabel("Category").fill("Test items");
   await add.getByRole("button", { name: "Add Item" }).click();
-  await expect(add.getByText(`Added ${name}.`)).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: `Added ${name}.` })).toBeVisible();
+  await expect(add).toHaveCount(0);
 
   const item = page.getByTestId("price-item").filter({ hasText: name });
   await expect(item).toContainText("$123.45");
-  await item.locator("summary").click();
-  await item.getByLabel("Price ($)").fill("150");
-  await item.getByRole("button", { name: "Save Item" }).click();
-  await expect(item.getByText("Saved.")).toBeVisible();
+  await item.getByRole("button").click();
+  const edit = page.getByRole("dialog", { name });
+  await edit.getByLabel("Price ($)").fill("150");
+  await edit.getByRole("button", { name: "Save Item" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+  await expect(item).toContainText("$150.00");
   await page.reload();
   await expect(page.getByTestId("price-item").filter({ hasText: name })).toContainText("$150.00");
 
   // Clean up.
   const saved = page.getByTestId("price-item").filter({ hasText: name });
-  await saved.locator("summary").click();
-  await saved.getByRole("button", { name: "Remove Item" }).click();
+  await saved.getByRole("button").click();
+  await page.getByRole("dialog", { name }).getByRole("button", { name: "Remove Item" }).click();
   await page
     .getByRole("alertdialog", { name: "Remove this item from the price book?" })
     .getByRole("button", { name: "Remove Item" })
@@ -113,15 +119,22 @@ test("owner edits the price book", async ({ page }) => {
 test("owner invites a tech, who joins and cannot reach settings", async ({ page, browser }) => {
   const email = `e2e-tech-${RUN}@demo.leakbook.test`;
   await signIn(page, OWNER, "/settings/team");
-  const invite = page
-    .locator("form")
-    .filter({ has: page.getByRole("button", { name: "Create Invite" }) });
+  // Invite Someone opens the invite form in a sheet; it closes once the invite is made.
+  await page.getByRole("button", { name: "Invite Someone", exact: true }).click();
+  const invite = page.getByRole("dialog", { name: "Invite Someone" });
   await invite.getByLabel("Email").fill(email);
   await invite.getByRole("button", { name: "Create Invite" }).click();
-  await expect(invite.getByText(`Invite created for ${email}`)).toBeVisible();
+  await expect(
+    page.getByRole("status").filter({ hasText: `Invite created for ${email}` }),
+  ).toBeVisible();
 
+  // The open invite is a row; its sheet holds the link.
   const card = page.getByTestId("invite").filter({ hasText: email });
-  const link = await card.getByLabel("Invite link").inputValue();
+  await card.getByRole("button").click();
+  const link = await page
+    .getByRole("dialog", { name: email })
+    .getByLabel("Invite link")
+    .inputValue();
   expect(link).toMatch(/\/invite\/[0-9a-f]{48}$/);
 
   // The invitee opens the link in a fresh browser.
@@ -150,9 +163,13 @@ test("owner invites a tech, who joins and cannot reach settings", async ({ page,
   await page.reload();
   const person = page.locator("li").filter({ hasText: email });
   await expect(person).toContainText("E2E Tech");
-  await person.getByLabel("Access").selectOption("disabled");
-  await person.getByRole("button", { name: "Save" }).click();
-  await expect(person.getByText("Saved.")).toBeVisible();
+  // The person's row opens their role and access in a sheet.
+  await person.getByRole("button").click();
+  const member = page.getByRole("dialog", { name: "E2E Tech" });
+  await member.getByLabel("Access").selectOption("disabled");
+  await member.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+  await expect(person).toContainText("Turned off");
 });
 
 test("the demo tech cannot reach settings", async ({ page }) => {

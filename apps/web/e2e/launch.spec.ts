@@ -23,14 +23,14 @@ test("privacy, terms, and status pages are public", async ({ page, request }) =>
 test("a tech deletes their account and can't sign in again", async ({ page, browser }) => {
   const email = `e2e-leaver-${RUN}@demo.leakbook.test`;
   await signIn(page, OWNER, "/settings/team");
-  const invite = page
-    .locator("form")
-    .filter({ has: page.getByRole("button", { name: "Create Invite" }) });
+  // Invite Someone opens the invite form in a sheet; the open invite's row holds the link.
+  await page.getByRole("button", { name: "Invite Someone", exact: true }).click();
+  const invite = page.getByRole("dialog", { name: "Invite Someone" });
   await invite.getByLabel("Email").fill(email);
   await invite.getByRole("button", { name: "Create Invite" }).click();
+  await page.getByTestId("invite").filter({ hasText: email }).getByRole("button").click();
   const link = await page
-    .getByTestId("invite")
-    .filter({ hasText: email })
+    .getByRole("dialog", { name: email })
     .getByLabel("Invite link")
     .inputValue();
 

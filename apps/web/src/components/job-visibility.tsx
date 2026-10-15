@@ -12,7 +12,7 @@ import { SettingsForm } from "./settings-forms";
 export function JobVisibilityForm({ seesAll }: { seesAll: boolean }) {
   const [value, setValue] = useState<"all" | "own">(seesAll ? "all" : "own");
   return (
-    <SettingsForm action={saveJobVisibility}>
+    <SettingsForm action={saveJobVisibility} full>
       <Segmented
         label="Techs see"
         name="techs_see"
@@ -23,7 +23,7 @@ export function JobVisibilityForm({ seesAll }: { seesAll: boolean }) {
           { value: "own", label: "Only Their Own" },
         ]}
       />
-      <p className="text-[0.9375rem] text-text-muted">
+      <p className="px-4 text-[0.9375rem] text-text-muted sm:px-0">
         {value === "all"
           ? "Techs see every job and everyone’s schedule."
           : "Techs see only jobs they’re on (as the tech or second tech), on the website and on their phones. Customers stay visible to everyone."}
