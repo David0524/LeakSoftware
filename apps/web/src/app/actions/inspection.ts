@@ -355,6 +355,20 @@ export async function deleteFinding(_: FormState, form: FormData): Promise<FormS
 }
 
 /** The pool's shape, for the diagram findings are pinned on (the job page's Findings part). */
+/** Whether the pool has a spa, set next to its shape (the diagram draws the spa). */
+export async function setPoolSpa(_: FormState, form: FormData): Promise<FormState> {
+  await getOffice();
+  const { error } = await (
+    await createClient()
+  )
+    .from("property")
+    .update({ has_spa: form.get("spa") === "true" })
+    .eq("id", String(form.get("property") ?? ""));
+  if (error) return { error: error.message };
+  revalidatePath(`/jobs/${String(form.get("job") ?? "")}`);
+  return {};
+}
+
 export async function setPoolShape(_: FormState, form: FormData): Promise<FormState> {
   await getOffice();
   // Empty clears it (not known yet).

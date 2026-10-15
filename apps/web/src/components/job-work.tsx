@@ -44,6 +44,7 @@ import {
   saveWhere,
   setUpChecklist,
   setPoolShape,
+  setPoolSpa,
   setVerdict,
 } from "@/app/actions/inspection";
 import { PoolDiagram } from "./pool-diagram";
@@ -1141,6 +1142,7 @@ function FindingForm({
   // The pool's shape is set here, next to the pin (owner, 2026-10-15): saved as soon as it's
   // tapped, and the pin diagram redraws.
   const [shape, setShape] = useState<DiagramShape | null>(diagram?.shape ?? null);
+  const [spa, setSpa] = useState(diagram?.hasSpa ?? false);
   const shapeSave = useRun();
   // In a sheet: the sheet carries the title and Cancel.
   return (
@@ -1212,12 +1214,26 @@ function FindingForm({
               });
             }}
           />
+          <Checkbox
+            label="Has a spa"
+            checked={spa}
+            disabled={shapeSave.pending}
+            onChange={(e) => {
+              const next = e.target.checked;
+              setSpa(next);
+              shapeSave.run(setPoolSpa, {
+                job: jobId,
+                property: diagram.propertyId!,
+                spa: String(next),
+              });
+            }}
+          />
           <ErrorText error={shapeSave.error} />
         </div>
       ) : null}
       {diagram ? (
         <PinPicker
-          diagram={{ ...diagram, shape }}
+          diagram={{ ...diagram, shape, hasSpa: spa }}
           pin={pin}
           color={severities.find((s) => s.key === severity)?.color}
           onChange={setPin}
