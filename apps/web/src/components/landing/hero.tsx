@@ -10,18 +10,18 @@ import { SIGNATURE_PATH } from "./signature-path";
 // The home page's package choice (Leak Detection or Pool Maintenance), shared by the hero and
 // the pricing section so both follow the visitor's pick.
 const PackageContext = createContext<{ pkg: PlanId; setPkg: (p: PlanId) => void }>({
-  pkg: "leak",
+  pkg: "maintenance",
   setPkg: () => {},
 });
 export const usePackage = () => useContext(PackageContext);
 export function PackageProvider({ children }: { children: ReactNode }) {
-  const [pkg, setPkg] = useState<PlanId>("leak");
+  const [pkg, setPkg] = useState<PlanId>("maintenance");
   return <PackageContext value={{ pkg, setPkg }}>{children}</PackageContext>;
 }
 
 export const PACKAGE_OPTIONS: { value: PlanId; label: string }[] = [
-  { value: "leak", label: "Leak Detection" },
   { value: "maintenance", label: "Pool Maintenance" },
+  { value: "leak", label: "Leak Detection" },
 ];
 
 /** The package switch: a segmented control, as in the app. */
@@ -91,7 +91,11 @@ export function Hero() {
           <HeroPhone key={pkg} pkg={pkg} />
           <figcaption className="sr-only">{copy.demo}</figcaption>
           <Floater className="top-24 -left-52" delay={0.6}>
-            <Verdict tone="pass">Not Leaking</Verdict>
+            {pkg === "leak" ? (
+              <Verdict tone="pass">Not Leaking</Verdict>
+            ) : (
+              <Verdict tone="pass">Done</Verdict>
+            )}
           </Floater>
           <Floater className="top-56 -right-56" delay={1.1}>
             <span className="text-status-pass">✓</span>{" "}
@@ -250,7 +254,7 @@ export function StopCard({
           {n}
         </span>
         <span className="font-display text-[0.85rem] font-bold">{time}</span>
-        {tag ? (
+        {tag && !next ? (
           <span className="rounded-full bg-fill px-2 py-0.5 text-[0.62rem] font-semibold">
             {tag}
           </span>

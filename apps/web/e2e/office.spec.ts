@@ -16,7 +16,7 @@ test.describe.configure({ mode: "serial" });
 
 test("signed-out visitors see the home page and are sent to sign in", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Find the leak");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Clean the pool");
   await page.goto("/jobs");
   await expect(page).toHaveURL(/\/sign-in\?next=%2Fjobs/);
 

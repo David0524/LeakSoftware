@@ -2,7 +2,7 @@
 
 import { cx } from "../ui";
 import { Laptop, OfficeBar, Verdict } from "./device";
-import { PhoneGlyph, PoolDiagram, Signature, SummaryTiles } from "./hero";
+import { PhoneGlyph, PoolDiagram, Signature, SummaryTiles, usePackage } from "./hero";
 import { useCountUp, useSteps } from "./motion";
 
 // The home page's feature demos. Each loops through a few steps while it is on screen.
@@ -24,13 +24,22 @@ function Tap({ show, className }: { show: boolean; className: string }) {
 // Plan Route
 // ---------------------------------------------------------------------------
 
-const STOPS = [
-  { id: "a", name: "Derek Simmons", place: "Tempe", fixed: true },
-  { id: "b", name: "Sunrise Villas HOA", place: "Peoria" },
-  { id: "c", name: "Desert Oasis Pool Service", place: "Phoenix" },
-  { id: "d", name: "Leah Nguyen", place: "Gilbert" },
-  { id: "e", name: "Leah Nguyen · Cleaning", place: "Gilbert" },
-];
+const STOPS = {
+  leak: [
+    { id: "a", name: "Derek Simmons", place: "Tempe" },
+    { id: "b", name: "Sunrise Villas HOA", place: "Peoria" },
+    { id: "c", name: "Desert Oasis Pool Service", place: "Phoenix" },
+    { id: "d", name: "Leah Nguyen", place: "Gilbert" },
+    { id: "e", name: "Brooks Family", place: "Gilbert" },
+  ],
+  maintenance: [
+    { id: "a", name: "Garcia Residence", place: "Tempe" },
+    { id: "b", name: "Palm Court HOA", place: "Peoria" },
+    { id: "c", name: "Marcus Bell · Pump repair", place: "Phoenix" },
+    { id: "d", name: "Leah Nguyen", place: "Gilbert" },
+    { id: "e", name: "Brooks Family", place: "Gilbert" },
+  ],
+};
 const BEFORE = {
   order: ["a", "b", "c", "d", "e"],
   times: ["8:30 AM", "1:36 PM", "3:42 PM", "5:56 PM", "7:26 PM"],
@@ -45,6 +54,8 @@ const ROW = 58;
 
 export function PlanRouteDemo() {
   const { ref, step } = useSteps<HTMLDivElement>([2600, 700, 3800], 2);
+  const { pkg } = usePackage();
+  const stops = STOPS[pkg];
   const after = step === 2;
   const plan = after ? AFTER : BEFORE;
   return (
@@ -77,8 +88,8 @@ export function PlanRouteDemo() {
           <Tap show={step === 1} className="-top-1 left-6" />
         </span>
       </div>
-      <div className="relative mt-3" style={{ height: ROW * STOPS.length }}>
-        {STOPS.map((s) => {
+      <div className="relative mt-3" style={{ height: ROW * stops.length }}>
+        {stops.map((s) => {
           const i = plan.order.indexOf(s.id);
           const moved = BEFORE.order.indexOf(s.id) !== AFTER.order.indexOf(s.id);
           return (
@@ -121,6 +132,7 @@ export function PlanRouteDemo() {
 
 export function OnMyWayDemo() {
   const { ref, step } = useSteps<HTMLDivElement>([1800, 700, 3400, 1600], 2);
+  const { pkg } = usePackage();
   const texted = step >= 2;
   return (
     <div ref={ref} aria-hidden="true" className="relative select-none">
@@ -147,9 +159,11 @@ export function OnMyWayDemo() {
             </span>
           </span>
         </div>
-        <p className="mt-1 font-semibold">Sunrise Villas HOA</p>
+        <p className="mt-1 font-semibold">
+          {pkg === "leak" ? "Sunrise Villas HOA" : "Palm Court HOA"}
+        </p>
         <p className="text-[0.85rem] text-link underline-offset-4">
-          9800 W Sunrise Blvd, Peoria, AZ
+          {pkg === "leak" ? "9800 W Sunrise Blvd, Peoria, AZ" : "2150 W Palm Ln, Phoenix, AZ"}
         </p>
       </div>
       <div
@@ -159,7 +173,7 @@ export function OnMyWayDemo() {
         )}
       >
         <div className="max-w-[85%] rounded-[1.25rem] rounded-br-md bg-[#0a84ff] px-4 py-2.5 text-[0.9rem] text-white">
-          Hi, this is Jake from Demo Leak Co. I’m on my way and should be there about 10:15 AM.
+          Hi, this is Jake from {SHOP[pkg]}. I’m on my way and should be there about 10:15 AM.
         </div>
       </div>
       <p
@@ -242,8 +256,14 @@ export function DiagramDemo() {
 // Works with no signal
 // ---------------------------------------------------------------------------
 
+const OFFLINE_ROWS = {
+  leak: ["Return 3 · Leaking", "Photo · Return 3 fitting", "Finding · Return 3 line break"],
+  maintenance: ["Vacuum · Done", "Photo · Filter gauge at 24 PSI", "Visit done · Palm Court HOA"],
+};
+
 export function OfflineDemo() {
   const { ref, step } = useSteps<HTMLDivElement>([1200, 1200, 1200, 1400, 2600], 4);
+  const { pkg } = usePackage();
   const offline = step < 3;
   const queued = Math.min(step + 1, 3);
   return (
@@ -276,24 +296,22 @@ export function OfflineDemo() {
         </span>
       </div>
       <div className="mt-3 space-y-1.5">
-        {["Return 3 · Leaking", "Photo · Return 3 fitting", "Finding · Return 3 line break"].map(
-          (t, i) => (
-            <div
-              key={t}
-              className={cx(
-                "well flex items-center justify-between px-3 py-2 text-[0.85rem] transition-all duration-500",
-                i < queued || !offline ? "opacity-100" : "translate-y-1 opacity-0",
-              )}
+        {OFFLINE_ROWS[pkg].map((t, i) => (
+          <div
+            key={t}
+            className={cx(
+              "well flex items-center justify-between px-3 py-2 text-[0.85rem] transition-all duration-500",
+              i < queued || !offline ? "opacity-100" : "translate-y-1 opacity-0",
+            )}
+          >
+            {t}
+            <span
+              className={cx("text-[0.75rem]", offline ? "text-text-muted" : "text-status-pass")}
             >
-              {t}
-              <span
-                className={cx("text-[0.75rem]", offline ? "text-text-muted" : "text-status-pass")}
-              >
-                {offline ? "Waiting" : "Sent"}
-              </span>
-            </div>
-          ),
-        )}
+              {offline ? "Waiting" : "Sent"}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -363,19 +381,39 @@ export function ReportDemo() {
 // Quote and pay
 // ---------------------------------------------------------------------------
 
+const SHOP = { leak: "Demo Leak Co.", maintenance: "Demo Pool Co." };
+const QUOTE = {
+  leak: {
+    lines: [
+      ["Repair Return 3 line under the deck", "$1,150.00"],
+      ["Pressure test after repair", "$125.00"],
+      ["Replace light niche seal", "$185.00"],
+    ],
+    total: "$1,460.00",
+    deposit: "$730.00",
+  },
+  maintenance: {
+    lines: [
+      ["Replace pump motor, 1.5 HP", "$685.00"],
+      ["Replace filter cartridges", "$210.00"],
+      ["Labor", "$150.00"],
+    ],
+    total: "$1,045.00",
+    deposit: "$522.50",
+  },
+};
+
 export function QuoteDemo() {
   const { ref, step } = useSteps<HTMLDivElement>([1600, 900, 700, 3600], 3);
+  const { pkg } = usePackage();
+  const q = QUOTE[pkg];
   const on = step >= 1;
   const accepted = step === 3;
   return (
     <div ref={ref} aria-hidden="true" className="relative card p-5 select-none">
       <p className="font-display text-lg font-bold">Repair Quote #1002</p>
       <div className="mt-3 space-y-1.5 text-[0.9rem]">
-        {[
-          ["Repair Return 3 line under the deck", "$1,150.00"],
-          ["Pressure test after repair", "$125.00"],
-          ["Replace light niche seal", "$185.00"],
-        ].map(([l, p]) => (
+        {q.lines.map(([l, p]) => (
           <div key={l} className="flex justify-between gap-3">
             <span>{l}</span>
             <span className="tabular-nums">{p}</span>
@@ -383,15 +421,15 @@ export function QuoteDemo() {
         ))}
         <div className="flex justify-between border-t border-separator pt-2 font-bold">
           <span>Total</span>
-          <span className="tabular-nums">$1,460.00</span>
+          <span className="tabular-nums">{q.total}</span>
         </div>
         <div className="flex justify-between text-text-muted">
           <span>Deposit due when you accept</span>
-          <span className="tabular-nums">$730.00</span>
+          <span className="tabular-nums">{q.deposit}</span>
         </div>
       </div>
       <div className="well mt-4 flex items-center justify-between gap-3 px-4 py-3 text-[0.9rem]">
-        <span>I accept this quote and ask Demo Leak Co. to do the work.</span>
+        <span>I accept this quote and ask {SHOP[pkg]} to do the work.</span>
         <span
           className={cx(
             "relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors duration-300",
@@ -414,7 +452,7 @@ export function QuoteDemo() {
             step === 2 && "scale-[0.98]",
           )}
         >
-          {accepted ? "Accepted · Deposit $730.00 paid ✓" : "Accept Quote"}
+          {accepted ? `Accepted · Deposit ${q.deposit} paid ✓` : "Accept Quote"}
         </div>
         <Tap show={step === 2} className="top-0 left-1/2" />
       </div>
@@ -424,11 +462,14 @@ export function QuoteDemo() {
 
 export function PayDemo() {
   const { ref, step } = useSteps<HTMLDivElement>([1800, 700, 3200], 2);
+  const { pkg } = usePackage();
+  const leak = pkg === "leak";
+  const amount = leak ? "$375.00" : "$225.00";
   const paid = step === 2;
   return (
     <div ref={ref} aria-hidden="true" className="relative card p-5 select-none">
       <div className="flex justify-between">
-        <p className="font-display text-lg font-bold">Invoice #1024</p>
+        <p className="font-display text-lg font-bold">{leak ? "Invoice #1024" : "Invoice #2210"}</p>
         <span
           className={cx(
             "rounded-full px-3 py-1 text-[0.8rem] font-semibold transition-colors duration-500",
@@ -441,12 +482,12 @@ export function PayDemo() {
         </span>
       </div>
       <div className="mt-3 flex justify-between text-[0.9rem]">
-        <span>Leak detection</span>
-        <span className="tabular-nums">$375.00</span>
+        <span>{leak ? "Leak detection" : "Pool service, October · 5 visits"}</span>
+        <span className="tabular-nums">{amount}</span>
       </div>
       <div className="mt-1 flex justify-between font-bold">
         <span>Balance due</span>
-        <span className="tabular-nums">{paid ? "$0.00" : "$375.00"}</span>
+        <span className="tabular-nums">{paid ? "$0.00" : amount}</span>
       </div>
       <div className="relative mt-4">
         <div
@@ -638,6 +679,45 @@ export function PlanDemo() {
         </div>
         <p className="text-[0.8rem] text-text-muted">Drafted November 1 for the office to send</p>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Pool maintenance: the service checklist
+// ---------------------------------------------------------------------------
+
+const SERVICE = [
+  { name: "Skim the surface", tone: "pass" as const, label: "Done" },
+  { name: "Brush walls and steps", tone: "pass" as const, label: "Done" },
+  { name: "Vacuum", tone: "pass" as const, label: "Done" },
+  { name: "Empty baskets", tone: "pass" as const, label: "Done" },
+  { name: "Filter pressure", tone: "warn" as const, label: "Attention" },
+  { name: "Test and balance water", tone: "pass" as const, label: "Done" },
+];
+
+export function ServiceChecklistDemo() {
+  const { ref, step } = useSteps<HTMLDivElement>([4600, 600], 0);
+  return (
+    <div ref={ref} aria-hidden="true" className="card px-4 py-2 select-none">
+      {step === 0 ? (
+        <div className="divide-y divide-separator">
+          {SERVICE.map((r, i) => (
+            <div key={r.name} className="flex items-center justify-between gap-3 py-2">
+              <span className="text-[0.95rem]">{r.name}</span>
+              <Verdict
+                tone={r.tone}
+                className="lp-pop min-w-[6.4rem]"
+                style={{ animationDelay: `${0.2 + i * 0.35}s` }}
+              >
+                {r.label}
+              </Verdict>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="h-[18.5rem]" />
+      )}
     </div>
   );
 }

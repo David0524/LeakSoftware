@@ -9,7 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Tidemark",
     short_name: "Tidemark",
-    description: "Inspection reports, repair quotes, and invoicing for pool leak detection shops.",
+    description:
+      "Routes, checklists, quotes, and invoicing for pool service and leak detection shops.",
     start_url: "/today",
     scope: "/",
     display: "standalone",

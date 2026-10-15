@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { extraUsers, formatCents, monthlyPriceCents, PLANS, type PlanId } from "@leakbook/core";
-import { ButtonLink, cx } from "../ui";
-import { usePackage } from "./hero";
+import { ButtonLink } from "../ui";
+import { PackageSwitch, usePackage } from "./hero";
 
 const FEATURES: Record<PlanId, string[]> = {
   leak: [
@@ -34,10 +34,17 @@ const BLURB: Record<PlanId, string> = {
 };
 
 export function Pricing() {
-  const { pkg, setPkg } = usePackage();
+  const { pkg } = usePackage();
   const [users, setUsers] = useState(4);
+  const plan = PLANS[pkg];
+  const total = monthlyPriceCents(plan, users);
+  const extra = extraUsers(plan, users);
+  const dollars = (c: number) => formatCents(c).replace(/\.00$/, "");
   return (
     <div>
+      <div className="mb-8 flex justify-center">
+        <PackageSwitch label="Show pricing for" />
+      </div>
       <div className="flex flex-col items-center gap-2">
         <p id="team-size" className="font-medium">
           People on your team
@@ -78,82 +85,51 @@ export function Pricing() {
         </p>
       </div>
 
-      <div className="mx-auto mt-10 grid max-w-4xl gap-5 md:grid-cols-2">
-        {(["leak", "maintenance"] as const).map((id) => {
-          const plan = PLANS[id];
-          const total = monthlyPriceCents(plan, users);
-          const extra = extraUsers(plan, users);
-          const chosen = pkg === id;
-          return (
-            <section
-              key={id}
-              aria-labelledby={`plan-${id}`}
-              data-testid={`plan-${id}`}
-              onClick={() => setPkg(id)}
-              className={cx(
-                "card flex flex-col p-6 transition-shadow sm:p-7",
-                chosen && "ring-2 ring-link",
-              )}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <h3 id={`plan-${id}`} className="font-display text-2xl font-extrabold">
-                  {plan.name}
-                </h3>
-                {chosen ? (
-                  <span className="rounded-full bg-link/12 px-3 py-1 text-[0.8125rem] font-semibold text-link">
-                    Your pick
-                  </span>
-                ) : null}
-              </div>
-              <p className="text-text-muted">{BLURB[id]}</p>
-              <p className="mt-5 flex items-baseline gap-1">
-                <span
-                  className="font-display text-5xl font-extrabold tabular-nums"
-                  data-testid={`price-${id}`}
-                >
-                  {formatCents(total).replace(/\.00$/, "")}
-                </span>
-                <span className="text-text-muted">/ month</span>
-              </p>
-              <p className="mt-1 text-[0.9375rem] text-text-muted">
-                {formatCents(plan.baseCents).replace(/\.00$/, "")} includes {plan.includedUsers}{" "}
-                people, then {formatCents(plan.perUserCents).replace(/\.00$/, "")} each
-                {extra
-                  ? ` (${extra} more: +${formatCents(extra * plan.perUserCents).replace(/\.00$/, "")})`
-                  : ""}
-                .
-              </p>
-              <ul className="mt-6 flex-1 space-y-2.5">
-                {FEATURES[id].map((f) => (
-                  <li key={f} className="flex gap-2.5">
-                    <svg
-                      viewBox="0 0 20 20"
-                      className="mt-1 size-4 shrink-0 text-status-pass"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.4"
-                      aria-hidden="true"
-                    >
-                      <path d="M4 10.5l4 4 8-9" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-              <ButtonLink
-                href="/sign-up"
-                kind={chosen ? "primary" : "secondary"}
-                className="mt-7 w-full"
+      <section
+        key={pkg}
+        aria-labelledby={`plan-${pkg}`}
+        data-testid={`plan-${pkg}`}
+        className="lp-rise card mx-auto mt-10 flex max-w-xl flex-col p-6 sm:p-8"
+      >
+        <h3 id={`plan-${pkg}`} className="font-display text-2xl font-extrabold">
+          {plan.name}
+        </h3>
+        <p className="text-text-muted">{BLURB[pkg]}</p>
+        <p className="mt-5 flex items-baseline gap-1">
+          <span className="font-display text-6xl font-extrabold tabular-nums" data-testid="price">
+            {dollars(total)}
+          </span>
+          <span className="text-text-muted">/ month</span>
+        </p>
+        <p className="mt-1 text-[0.9375rem] text-text-muted">
+          {dollars(plan.baseCents)} includes {plan.includedUsers} people, then{" "}
+          {dollars(plan.perUserCents)} each
+          {extra ? ` (${extra} more: +${dollars(extra * plan.perUserCents)})` : ""}.
+        </p>
+        <ul className="mt-6 grid gap-2.5 sm:grid-cols-2 sm:gap-x-6">
+          {FEATURES[pkg].map((f) => (
+            <li key={f} className="flex gap-2.5">
+              <svg
+                viewBox="0 0 20 20"
+                className="mt-1 size-4 shrink-0 text-status-pass"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                aria-hidden="true"
               >
-                Start Free Trial
-              </ButtonLink>
-            </section>
-          );
-        })}
-      </div>
+                <path d="M4 10.5l4 4 8-9" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span>{f}</span>
+            </li>
+          ))}
+        </ul>
+        <ButtonLink href="/sign-up" kind="accent" className="mt-7 w-full">
+          Start Free Trial
+        </ButtonLink>
+      </section>
       <p className="mt-6 text-center text-[0.9375rem] text-text-muted">
-        30 days free on either package. No card needed. Customer payments go to your own Stripe
-        account at Stripe’s usual fees.
+        30 days free. No card needed. Customer payments go to your own Stripe account at Stripe’s
+        usual fees.
       </p>
     </div>
   );

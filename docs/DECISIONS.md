@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-15 (owner: Pool Maintenance first; each package shows only its own)
+- **The home page opens on Pool Maintenance**; Leak Detection is the other side of the switch (hero and pricing switches move together).
+- **Each package shows only what applies to it.** Maintenance: the service checklist, plans, repair quotes for pumps and filters, the monthly service invoice, its own questions, and "Clean it. Bill it. Get paid." Leak Detection: tests, the pool diagram, the report, leak repair quotes, its own questions, and "Find it. Report it. Get paid." Shared: On My Way, offline, Plan Route, the dashboard. Pricing shows the chosen package's card only.
+- **The site description** now names both: "Routes, checklists, quotes, and invoicing for pool service and leak detection shops."
+
 ## 2026-10-15 (owner: "Go ahead" on blue buttons)
 - **Primary buttons are filled blue with white text** in the app, the website, and customer pages (`role.primary` `#1A63A0`, 6.3:1; dark `#2B78B8`, 4.7:1), the same blue as links and tinted buttons: one accent, filled for the main action, tinted for the rest, as on iOS. Navy on orange read as signage, competed with the blue, and sat too close to the Leaking and Attention colors.
 - **Orange is the brand accent:** the logo dot, a display highlight ("Get paid."), and on the marketing site the Start Free Trial button, at most one per screenful (hero and closing band; the header's is tinted blue). Orange buttons keep navy text. PDFs don't show buttons, so they are unchanged.

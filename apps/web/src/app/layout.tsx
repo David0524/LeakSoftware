@@ -7,7 +7,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Tidemark",
-  description: "Inspection reports, repair quotes, and invoicing for pool leak detection shops.",
+  description:
+    "Routes, checklists, quotes, and invoicing for pool service and leak detection shops.",
   // Added to an iPhone's Home Screen, the site opens full screen like an app. Its launch images
   // (page color and the mark, light and dark, per screen size) keep it from flashing white;
   // regenerate them with `node brand/scripts/build_splash.mjs`.
