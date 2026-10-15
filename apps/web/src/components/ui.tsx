@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ComponentProps, CSSProperties, ReactNode } from "react";
+import { useId, type ComponentProps, type CSSProperties, type ReactNode } from "react";
 import { JOB_STATUS_LABELS, type JobStatus } from "@leakbook/core";
 import { NavBar } from "./nav-bar";
 
@@ -181,7 +181,10 @@ export function Field({
   className,
   ...input
 }: ComponentProps<"input"> & { label: string; hint?: string; error?: string }) {
-  const id = input.id ?? input.name;
+  // Unique even when two forms share a field name: recently visited pages stay mounted (hidden),
+  // so an id taken from the name alone can point a label at another page's field.
+  const auto = useId();
+  const id = input.id ?? `${input.name ?? "field"}-${auto}`;
   return (
     <div className={cx("space-y-1", className)}>
       <label htmlFor={id} className="block font-medium">
@@ -269,7 +272,8 @@ export function GroupedField({
   error?: string;
   stacked?: boolean;
 }) {
-  const id = input.id ?? input.name;
+  const auto = useId();
+  const id = input.id ?? `${input.name ?? "field"}-${auto}`;
   return (
     <div className={cx(GROUP_ROW, className)}>
       <div
@@ -319,7 +323,8 @@ export function GroupedSelect({
   error?: string;
   options: { value: string; label: string }[];
 }) {
-  const id = select.id ?? select.name;
+  const auto = useId();
+  const id = select.id ?? `${select.name ?? "field"}-${auto}`;
   return (
     <div className={cx(GROUP_ROW, className)}>
       <div className="max-sm:flex max-sm:min-h-11 max-sm:items-center max-sm:gap-3">
@@ -361,7 +366,8 @@ export function GroupedTextArea({
   className,
   ...input
 }: ComponentProps<"textarea"> & { label: string; hint?: string; error?: string }) {
-  const id = input.id ?? input.name;
+  const auto = useId();
+  const id = input.id ?? `${input.name ?? "field"}-${auto}`;
   return (
     <div className={cx(GROUP_ROW, "max-sm:pt-2.5", className)}>
       <label htmlFor={id} className="block sm:mb-1 sm:font-medium">
@@ -404,7 +410,8 @@ export function TextArea({
   className,
   ...input
 }: ComponentProps<"textarea"> & { label: string; hint?: string }) {
-  const id = input.id ?? input.name;
+  const auto = useId();
+  const id = input.id ?? `${input.name ?? "field"}-${auto}`;
   return (
     <div className={cx("space-y-1", className)}>
       <label htmlFor={id} className="block font-medium">
@@ -425,7 +432,8 @@ export function Select({
   label: string;
   options: { value: string; label: string }[];
 }) {
-  const id = select.id ?? select.name;
+  const auto = useId();
+  const id = select.id ?? `${select.name ?? "field"}-${auto}`;
   return (
     <div className={cx("space-y-1", className)}>
       <label htmlFor={id} className="block font-medium">
