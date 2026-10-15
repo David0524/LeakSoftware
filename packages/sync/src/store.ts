@@ -375,6 +375,50 @@ export class LocalStore {
   }
 
   /**
+   * Remove jobs that no longer belong on this phone (`keep` says which do), with everything
+   * under them: checklist, tests, findings, photos, reports, quotes and their lines, invoices
+   * and their lines, payments, signatures, links, messages, and warranties. A job with unsent
+   * changes anywhere in it stays. The server stopped sending these jobs (it keeps a shorter
+   * window), so they will not come back unless they change. Returns the jobs removed.
+   */
+  pruneJobs(keep: (job: Row) => boolean): number {
+    return this.db.transaction(() => {
+      const gone = this.list("job", { includeDeleted: true }).filter((j) => !keep(j));
+      let removed = 0;
+      for (const job of gone) {
+        const rows = this.db.all<{ table_name: string; id: string }>(
+          `with q as (select id from sync_records where table_name = 'quote' and job_id = ?),
+                i as (select id from sync_records where table_name = 'invoice' and job_id = ?)
+           select table_name, id from sync_records
+            where (table_name = 'job' and id = ?)
+               or job_id = ?
+               or (table_name = 'warranty' and json_extract(data, '$.repair_job_id') = ?)
+               or json_extract(data, '$.quote_id') in (select id from q)
+               or json_extract(data, '$.invoice_id') in (select id from i)`,
+          [job.id, job.id, job.id, job.id, job.id],
+        );
+        const unsent = rows.some(
+          (r) =>
+            this.db.get<{ n: number }>(
+              "select count(*) as n from sync_outbox where table_name = ? and row_id = ?",
+              [r.table_name, r.id],
+            )!.n > 0,
+        );
+        if (unsent) continue;
+        for (const r of rows) {
+          this.touched(r.table_name);
+          this.db.run("delete from sync_records where table_name = ? and id = ?", [
+            r.table_name,
+            r.id,
+          ]);
+        }
+        removed += 1;
+      }
+      return removed;
+    });
+  }
+
+  /**
    * Apply one page of server rows and its cursor atomically. Pending local edits are laid
    * back over each row so unpushed work never disappears from the screen.
    */

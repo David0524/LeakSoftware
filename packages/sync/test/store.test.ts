@@ -28,6 +28,49 @@ describe("LocalStore", () => {
     expect(s.pendingCount()).toBe(2);
   });
 
+  it("drops jobs that aged off phones with everything under them, unless unsent", () => {
+    const s = store();
+    const row = (table: string, r: Record<string, unknown>) => ({
+      xid: "1",
+      table,
+      row: { company_id: C, ...r } as never,
+    });
+    s.applyPage({
+      rows: [
+        row("job", { id: "old", status: "done" }),
+        row("job_component", { id: "jc", job_id: "old" }),
+        row("quote", { id: "q", job_id: "old" }),
+        row("quote_line_item", { id: "ql", quote_id: "q" }),
+        row("invoice", { id: "i", job_id: "old" }),
+        row("payment", { id: "pay", invoice_id: "i" }),
+        row("warranty", { id: "w", repair_job_id: "old" }),
+        row("customer", { id: "cu" }),
+        row("job", { id: "kept", status: "done" }),
+        row("job_component", { id: "jc2", job_id: "kept" }),
+      ],
+      done: true,
+      cursor: {},
+      server_hlc: "1800000000000-0000-server",
+    });
+    // An unsent change inside the second job keeps it on the phone.
+    s.write("job_component", "jc2", C, { label: "Edited offline" });
+
+    expect(s.pruneJobs(() => false)).toBe(1);
+    for (const [t, id] of [
+      ["job", "old"],
+      ["job_component", "jc"],
+      ["quote", "q"],
+      ["quote_line_item", "ql"],
+      ["invoice", "i"],
+      ["payment", "pay"],
+      ["warranty", "w"],
+    ])
+      expect(s.get(t!, id!)).toBeUndefined();
+    expect(s.get("customer", "cu")).toBeDefined();
+    expect(s.get("job", "kept")).toBeDefined();
+    expect(s.get("job_component", "jc2")).toBeDefined();
+  });
+
   it("tells screens which tables changed, so others are not re-read", () => {
     const s = store();
     const jobs = s.tableVersion("job");

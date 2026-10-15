@@ -1,6 +1,7 @@
 import { AuthError } from "./errors";
 import type { LocalStore } from "./store";
 import type { SyncTransport } from "./types";
+import { jobOnPhones, PHONE_HISTORY_MARGIN_DAYS } from "@leakbook/core";
 
 export interface SyncSummary {
   pushed: number;
@@ -28,6 +29,8 @@ export interface SyncEngineOptions {
   pushBatch?: number;
   /** Rows per sync_pull page. */
   pullPage?: number;
+  /** The clock, for which jobs have aged off phones (tests set it). */
+  now?: () => Date;
 }
 
 /**
@@ -39,6 +42,7 @@ export class SyncEngine {
   private running: Promise<SyncSummary> | null = null;
   private readonly pushBatch: number;
   private readonly pullPage: number;
+  private readonly now: () => Date;
 
   constructor(
     private readonly store: LocalStore,
@@ -47,6 +51,7 @@ export class SyncEngine {
   ) {
     this.pushBatch = Math.min(opts.pushBatch ?? 200, 500);
     this.pullPage = opts.pullPage ?? 500;
+    this.now = opts.now ?? (() => new Date());
   }
 
   sync(): Promise<SyncSummary> {
@@ -134,5 +139,14 @@ export class SyncEngine {
     // Only after a complete pull: an interrupted one starts over next time.
     if (seen) this.store.keepOnly(seen);
     if (scope !== null) this.store.setScope(scope);
+    // Finished jobs leave the phone a week after the server stops sending them.
+    const now = this.now();
+    this.store.pruneJobs((job) =>
+      jobOnPhones(
+        job as unknown as Parameters<typeof jobOnPhones>[0],
+        now,
+        PHONE_HISTORY_MARGIN_DAYS,
+      ),
+    );
   }
 }
