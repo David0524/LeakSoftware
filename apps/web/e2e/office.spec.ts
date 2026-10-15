@@ -240,6 +240,58 @@ test("owners delete a customer only when no work is open", async ({ page }) => {
   await expect(page.getByText(name)).toHaveCount(0);
 });
 
+// Owner request, 2026-10-15: "There is no way to change a homeowner's address."
+test("the office edits a customer's contact details and pool address", async ({ page }) => {
+  const tech = await signedInClient(TECH.email, TECH.password);
+  const { data: job } = await tech
+    .from("job")
+    .select("company_id")
+    .eq("id", "00000000-0000-4000-8000-00000000e001")
+    .single();
+  const name = `Moving ${RUN}`;
+  const { data: added } = await tech
+    .from("customer")
+    .insert({ company_id: job!.company_id, name })
+    .select("id")
+    .single();
+  await tech.from("property").insert({
+    company_id: job!.company_id,
+    customer_id: added!.id,
+    address_line1: "1 Old Street",
+    city: "Phoenix",
+    state: "AZ",
+  });
+
+  await signIn(page, OWNER, `/customers/${added!.id}`);
+  await page.getByRole("button", { name: "Edit Contact Details" }).click();
+  const contact = page.getByRole("dialog", { name: "Contact Details" });
+  await contact.getByLabel("Phone").fill("(602) 555-0199");
+  await contact.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+  await expect(contact).toHaveCount(0);
+  await expect(page.getByRole("listitem").filter({ hasText: "Phone" })).toContainText(
+    "(602) 555-0199",
+  );
+
+  await page.getByRole("button", { name: /1 Old Street/ }).click();
+  const pool = page.getByRole("dialog", { name: "Pool Details" });
+  await pool.getByLabel("Street").fill("2 New Street");
+  await pool.getByLabel("ZIP").fill("85004");
+  await pool.getByRole("button", { name: "Save" }).click();
+  await expect(pool).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /2 New Street, Phoenix, AZ 85004/ })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("button", { name: /2 New Street, Phoenix, AZ 85004/ })).toBeVisible();
+
+  // Tidy up: no jobs, so the customer can go.
+  await page.getByRole("button", { name: "Delete Customer" }).click();
+  await page
+    .getByRole("alertdialog", { name: `Delete ${name}?` })
+    .getByRole("button", { name: "Delete Customer" })
+    .click();
+  await page.waitForURL((url) => url.pathname === "/customers");
+});
+
 test("the office adds a job for a new customer, with its checklist ready", async ({ page }) => {
   await signIn(page, OWNER);
   await page.getByRole("link", { name: "New Job" }).click();

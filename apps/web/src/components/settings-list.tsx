@@ -69,6 +69,24 @@ export function SettingsListPage({
 }
 
 /**
+ * For pages that use SheetRow outside a SettingsListPage (a customer's page): shows what the
+ * last sheet did once it has closed, above the page's content.
+ */
+export function SheetNotices({ children }: { children: ReactNode }) {
+  const [notice, setNotice] = useState<string | null>(null);
+  return (
+    <Notify value={setNotice}>
+      {notice ? (
+        <div className="mb-4 max-w-2xl">
+          <Banner tone="success">{notice}</Banner>
+        </div>
+      ) : null}
+      {children}
+    </Notify>
+  );
+}
+
+/**
  * One row of a settings list: the name (and a line of detail) on the left, a key value on the
  * right, and a chevron. Tapping it opens `children` (the edit form) in a sheet titled `title`.
  * Use inside Grouped. Without children the row only shows (nothing to edit).

@@ -76,7 +76,12 @@ test("a weekly cleaning plan puts visits on the route, and a visit is marked don
   await expect(page.getByTestId("plan")).toContainText("1 done");
 
   // 4. Paused: upcoming visits leave the schedule.
-  await page.getByTestId("plan").getByRole("button", { name: "Pause" }).click();
+  // The plan is a row; its sheet holds Pause, End Plan, and the plan's details.
+  await page.getByTestId("plan").getByRole("button").click();
+  await page
+    .getByRole("dialog", { name: "Maintenance Plan" })
+    .getByRole("button", { name: "Pause" })
+    .click();
   await expect(page.getByText("Paused. Upcoming visits are off the schedule.")).toBeVisible();
   const nextWeek = new Date(Date.parse(`${day}T12:00:00Z`) + 7 * 86_400_000)
     .toISOString()

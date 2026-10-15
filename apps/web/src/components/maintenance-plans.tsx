@@ -5,7 +5,8 @@ import { formatDay, planSummary, upcomingVisitDates, type ServicePlan } from "@l
 import { endPlan, savePlan, setPlanPaused } from "@/app/actions/maintenance";
 import { Segmented } from "./segmented";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
-import { Button, Select, buttonClass, cx } from "./ui";
+import { SheetRow } from "./settings-list";
+import { Grouped, Row, Select } from "./ui";
 
 // Maintenance on the customer's page, per pool (owner request, 2026-10-13): the plan in one
 // line, its next visits, and owners can add, change, pause, or end it.
@@ -24,95 +25,81 @@ interface Props {
 }
 
 export function MaintenancePlans(p: Props) {
-  const [editing, setEditing] = useState<string | "new" | null>(null);
   const names = new Map(p.techs.map((t) => [t.id, t.name]));
   return (
-    <div className="mt-4">
-      <h3 className="mb-2 text-[0.8125rem] text-text-muted uppercase">Maintenance</h3>
-      {p.plans.length === 0 && editing !== "new" ? (
-        <p className="text-[0.9375rem] text-text-muted">No regular cleaning for this pool.</p>
-      ) : null}
-      <ul className="space-y-2">
-        {p.plans.map((plan) => {
-          const next = upcomingVisitDates(plan, p.today, 3);
-          return (
-            <li key={plan.id} className="well p-3" data-testid="plan">
-              {editing === plan.id ? (
-                <PlanForm {...p} plan={plan} onDone={() => setEditing(null)} />
-              ) : (
-                <>
-                  <p className="font-semibold">{planSummary(plan)}</p>
-                  <p className="text-[0.9375rem] text-text-muted">
-                    {[
-                      plan.assigned_user_id
-                        ? (names.get(plan.assigned_user_id) ?? "Teammate")
-                        : "No tech yet",
-                      plan.paused
-                        ? "Paused"
-                        : next.length
-                          ? `Next ${next.map((d) => formatDay(d)).join(", ")}`
-                          : "No more visits",
-                      plan.ends_on ? `Ends ${formatDay(plan.ends_on)}` : null,
-                      `${p.doneCounts[plan.id] ?? 0} done`,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                  {plan.notes ? <p className="text-[0.9375rem]">{plan.notes}</p> : null}
-                  {p.canEdit ? (
-                    <div className="-ml-2 flex flex-wrap items-center">
-                      <button
-                        type="button"
-                        className={buttonClass("quiet", "px-2")}
-                        onClick={() => setEditing(plan.id)}
-                      >
-                        Edit
-                      </button>
-                      <SettingsForm
-                        action={setPlanPaused}
-                        submit={plan.paused ? "Resume" : "Pause"}
-                        inline
-                        className="flex"
-                      >
-                        <input type="hidden" name="plan" value={plan.id} />
-                        <input type="hidden" name="customer" value={p.customerId} />
-                        <input type="hidden" name="paused" value={String(!plan.paused)} />
-                      </SettingsForm>
-                      <SettingsForm
-                        action={endPlan}
-                        submit="End Plan"
-                        inline
-                        danger
-                        className="flex"
-                        confirm="End this plan? Its upcoming visits leave the schedule; finished visits are kept."
-                      >
-                        <input type="hidden" name="plan" value={plan.id} />
-                        <input type="hidden" name="customer" value={p.customerId} />
-                      </SettingsForm>
-                    </div>
-                  ) : null}
-                </>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-      {p.canEdit ? (
-        editing === "new" ? (
-          <div className="well mt-2 p-3">
-            <PlanForm {...p} plan={null} onDone={() => setEditing(null)} />
-          </div>
-        ) : (
-          <button
-            type="button"
-            className={buttonClass("secondary", "mt-2")}
-            onClick={() => setEditing("new")}
+    <Grouped
+      title="Maintenance"
+      footer={p.plans.length === 0 && !p.canEdit ? "No regular cleaning for this pool." : undefined}
+    >
+      {p.plans.map((plan) => {
+        const next = upcomingVisitDates(plan, p.today, 3);
+        const detail = [
+          plan.assigned_user_id ? (names.get(plan.assigned_user_id) ?? "Teammate") : "No tech yet",
+          plan.paused
+            ? "Paused"
+            : next.length
+              ? `Next ${next.map((d) => formatDay(d)).join(", ")}`
+              : "No more visits",
+          plan.ends_on ? `Ends ${formatDay(plan.ends_on)}` : null,
+          `${p.doneCounts[plan.id] ?? 0} done`,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        return (
+          <SheetRow
+            key={plan.id}
+            testId="plan"
+            title="Maintenance Plan"
+            label={<span className="font-semibold">{planSummary(plan)}</span>}
+            detail={
+              <>
+                {detail}
+                {plan.notes ? <span className="block">{plan.notes}</span> : null}
+              </>
+            }
           >
-            Add Maintenance Plan
-          </button>
-        )
+            {p.canEdit ? (
+              <div className="space-y-6">
+                <div className="flex flex-wrap gap-2">
+                  <SettingsForm
+                    action={setPlanPaused}
+                    submit={plan.paused ? "Resume" : "Pause"}
+                    inline
+                    className="flex"
+                  >
+                    <input type="hidden" name="plan" value={plan.id} />
+                    <input type="hidden" name="customer" value={p.customerId} />
+                    <input type="hidden" name="paused" value={String(!plan.paused)} />
+                  </SettingsForm>
+                  <SettingsForm
+                    action={endPlan}
+                    submit="End Plan"
+                    inline
+                    danger
+                    className="flex"
+                    confirm="End this plan? Its upcoming visits leave the schedule; finished visits are kept."
+                  >
+                    <input type="hidden" name="plan" value={plan.id} />
+                    <input type="hidden" name="customer" value={p.customerId} />
+                  </SettingsForm>
+                </div>
+                <PlanForm {...p} plan={plan} />
+              </div>
+            ) : null}
+          </SheetRow>
+        );
+      })}
+      {p.canEdit ? (
+        <SheetRow
+          title="Add Maintenance Plan"
+          label={<span className="text-link">Add Maintenance Plan</span>}
+        >
+          <PlanForm {...p} plan={null} />
+        </SheetRow>
+      ) : p.plans.length === 0 ? (
+        <Row label={<span className="text-text-muted">No regular cleaning</span>} />
       ) : null}
-    </div>
+    </Grouped>
   );
 }
 
@@ -123,14 +110,14 @@ function PlanForm({
   techs,
   today,
   visitMinutes,
-  onDone,
-}: Props & { plan: ServicePlan | null; onDone: () => void }) {
+}: Props & { plan: ServicePlan | null }) {
   const [every, setEvery] = useState(String(plan?.interval_weeks ?? 1) as "1" | "2" | "3" | "4");
   return (
     <SettingsForm
       action={savePlan}
       submit={plan ? "Save Plan" : "Add Plan"}
-      onSaved={onDone}
+      primary
+      full
       className="space-y-3"
     >
       <input type="hidden" name="plan" value={plan?.id ?? ""} />
@@ -200,9 +187,6 @@ function PlanForm({
         defaultValue={plan?.notes ?? ""}
         hint="Gate code, dog in the yard, chemicals to bring."
       />
-      <Button type="button" kind="quiet" className={cx("px-0")} onClick={onDone}>
-        Cancel
-      </Button>
     </SettingsForm>
   );
 }

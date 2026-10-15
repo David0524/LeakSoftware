@@ -62,10 +62,25 @@ export async function scheduleJob(_: FormState, form: FormData): Promise<FormSta
   return { message: "Scheduled." };
 }
 
-/** Office: the customer's email and the other addresses that also get reports (M8.5). */
-export async function saveCustomerEmails(_: FormState, form: FormData): Promise<FormState> {
+const CUSTOMER_KINDS = [
+  "homeowner",
+  "pool_company",
+  "builder",
+  "insurer",
+  "property_manager",
+  "other",
+] as const;
+const POOL_TYPES = ["gunite_plaster", "vinyl", "fiberglass", "other"] as const;
+
+/** Office: a customer's name, contact details, the other emails that get reports, and notes. */
+export async function saveCustomer(_: FormState, form: FormData): Promise<FormState> {
   const office = await getOffice();
   const id = text(form, "customer");
+  const name = text(form, "name");
+  if (!name) return { fields: { name: "Enter the customer’s name." } };
+  const kind = text(form, "kind");
+  if (!(CUSTOMER_KINDS as readonly string[]).includes(kind))
+    return { fields: { kind: "Pick one." } };
   const email = text(form, "email");
   if (email && !/^\S+@\S+\.\S+$/.test(email))
     return { fields: { email: "Enter an email like name@example.com." } };
@@ -77,14 +92,70 @@ export async function saveCustomerEmails(_: FormState, form: FormData): Promise<
   const { error } = await supabase
     .from("customer")
     .update({
+      name,
+      kind,
+      company_name: text(form, "company_name") || null,
+      phone: text(form, "phone") || null,
       email: email || null,
       cc_emails: cc,
+      notes: text(form, "notes") || null,
       marketing_opt_out: form.get("no_followups") === "on",
     })
     .eq("id", id)
     .eq("company_id", office.company.id);
   if (error) return { error: error.message };
   revalidatePath(`/customers/${id}`);
+  revalidatePath("/customers");
+  return { message: "Saved." };
+}
+
+/**
+ * Office: a pool's address and details. A new address drops the old map location (it belonged
+ * to the old address) and looks the new one up when routing is set up.
+ */
+export async function savePool(_: FormState, form: FormData): Promise<FormState> {
+  const office = await getOffice();
+  const id = text(form, "property");
+  const line1 = text(form, "address_line1");
+  if (!line1) return { fields: { address_line1: "Enter the street address." } };
+  const poolType = text(form, "pool_type");
+  if (poolType && !(POOL_TYPES as readonly string[]).includes(poolType))
+    return { fields: { pool_type: "Pick one." } };
+  const address = {
+    address_line1: line1,
+    address_line2: text(form, "address_line2") || null,
+    city: text(form, "city") || null,
+    state: text(form, "state").toUpperCase() || null,
+    postal_code: text(form, "postal_code") || null,
+  };
+  const supabase = await createClient();
+  const { data: before } = await supabase
+    .from("property")
+    .select("customer_id, address_line1, address_line2, city, state, postal_code")
+    .eq("id", id)
+    .eq("company_id", office.company.id)
+    .maybeSingle();
+  if (!before) return { error: "This pool is gone. Refresh the page." };
+  const moved = (Object.keys(address) as (keyof typeof address)[]).some(
+    (k) => (before[k] ?? null) !== address[k],
+  );
+  const { error } = await supabase
+    .from("property")
+    .update({
+      ...address,
+      pool_type: poolType || null,
+      has_spa: form.get("has_spa") === "on",
+      access_notes: text(form, "access_notes") || null,
+      ...(moved
+        ? { latitude: null, longitude: null, geocoded_address: null, location_source: null }
+        : {}),
+    })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  if (moved) await locateProperty(office, id);
+  revalidatePath(`/customers/${before.customer_id}`);
+  revalidatePath("/jobs", "layout");
+  revalidatePath("/schedule");
   return { message: "Saved." };
 }
 

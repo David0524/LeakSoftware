@@ -3,25 +3,27 @@ import { notFound } from "next/navigation";
 import {
   JOB_TYPE_LABELS,
   POOL_TYPE_LABELS,
+  directionsHref,
   formatAddress,
   formatSchedule,
   localDate,
   maintenanceSettings,
+  type PoolType,
 } from "@leakbook/core";
-import { saveCustomerEmails } from "@/app/actions/jobs";
+import { saveCustomer, savePool } from "@/app/actions/jobs";
 import { DeleteCustomerForm } from "@/components/delete-customer";
 import { MaintenancePlans } from "@/components/maintenance-plans";
-import { SField, SettingsForm } from "@/components/settings-forms";
-import { ContactButtons } from "@/components/contact-buttons";
 import {
-  Checkbox,
-  Empty,
-  Grouped,
-  PageHeader,
-  Row,
-  SectionTitle,
-  StatusBadge,
-} from "@/components/ui";
+  SField,
+  SSelect,
+  SSwitch,
+  STextArea,
+  SettingsFields,
+  SettingsForm,
+} from "@/components/settings-forms";
+import { SheetNotices, SheetRow } from "@/components/settings-list";
+import { ContactButtons } from "@/components/contact-buttons";
+import { Empty, Grouped, PageHeader, Row, StatusBadge } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany, getCustomer, getTeam } from "@/lib/data";
 
@@ -53,103 +55,199 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
     if (j.service_plan_id && j.status === "done")
       doneCounts[j.service_plan_id] = (doneCounts[j.service_plan_id] ?? 0) + 1;
 
+  const kindOptions = Object.entries(KIND).map(([value, label]) => ({ value, label }));
+  const poolOptions = [
+    { value: "", label: "Not sure" },
+    ...(Object.keys(POOL_TYPE_LABELS) as PoolType[]).map((k) => ({
+      value: k,
+      label: POOL_TYPE_LABELS[k],
+    })),
+  ];
+  const cc = customer.cc_emails ?? [];
+
+  // Laid out like a contact card in iOS (owner, 2026-10-15: "this page doesn't look very
+  // Apple"): call, text, and email up top, details as grouped rows, and each group's details
+  // edited in a sheet ("There is no way to change a homeowner's address").
   return (
-    <>
+    <SheetNotices>
       <PageHeader
         title={customer.name}
         back={{ href: "/customers", label: "Customers" }}
         subtitle={[KIND[customer.kind], customer.company_name].filter(Boolean).join(" · ")}
       />
-      <div className="grid items-start gap-6 lg:grid-cols-3">
-        <div className="space-y-6">
-          <section aria-labelledby="contact-title">
-            <SectionTitle>
-              <span id="contact-title">Contact</span>
-            </SectionTitle>
-            <div className="card px-4 py-3">
-              {customer.phone || customer.email ? (
-                <div className="-mt-2">
-                  <ContactButtons
-                    name={customer.name}
-                    phone={customer.phone}
-                    email={customer.email}
-                  />
-                </div>
-              ) : (
-                <p className="text-text-muted">No contact details.</p>
-              )}
-              {customer.notes ? <p className="mt-3 whitespace-pre-line">{customer.notes}</p> : null}
-            </div>
-          </section>
-          <section aria-labelledby="emails-title">
-            <SectionTitle>
-              <span id="emails-title">Emails</span>
-            </SectionTitle>
-            <div className="card p-4">
-              <SettingsForm action={saveCustomerEmails}>
-                <input type="hidden" name="customer" value={customer.id} />
+      <div className="-mt-2 mb-6">
+        <ContactButtons name={customer.name} phone={customer.phone} email={customer.email} />
+      </div>
+      <div className="grid items-start gap-8 lg:grid-cols-3">
+        <Grouped title="Contact">
+          <Row label="Phone" value={customer.phone ?? "None"} />
+          <Row
+            label="Email"
+            value={<span className="break-all">{customer.email ?? "None"}</span>}
+          />
+          {cc.length ? (
+            <Row label="Other emails" detail={<span className="break-all">{cc.join(", ")}</span>} />
+          ) : null}
+          <Row
+            label="Reminder and review emails"
+            value={customer.marketing_opt_out ? "Off" : "On"}
+          />
+          {customer.notes ? (
+            <Row
+              label="Notes"
+              detail={<span className="whitespace-pre-line">{customer.notes}</span>}
+            />
+          ) : null}
+          <SheetRow
+            title="Contact Details"
+            label={<span className="text-link">Edit Contact Details</span>}
+          >
+            <SettingsForm action={saveCustomer} primary full>
+              <input type="hidden" name="customer" value={customer.id} />
+              <SettingsFields labelWidth="6.5rem">
+                <SField label="Name" name="name" defaultValue={customer.name} required />
+                <SSelect
+                  label="Type"
+                  name="kind"
+                  defaultValue={customer.kind}
+                  options={kindOptions}
+                />
                 <SField
-                  label="Main email"
+                  label="Company"
+                  name="company_name"
+                  defaultValue={customer.company_name ?? ""}
+                  placeholder="Optional"
+                />
+                <SField
+                  label="Phone"
+                  name="phone"
+                  type="tel"
+                  defaultValue={customer.phone ?? ""}
+                  autoComplete="off"
+                />
+                <SField
+                  label="Email"
                   name="email"
                   type="email"
                   defaultValue={customer.email ?? ""}
+                  autoComplete="off"
                 />
+              </SettingsFields>
+              <SettingsFields>
                 <SField
                   label="Other emails"
                   name="cc_emails"
-                  defaultValue={(customer.cc_emails ?? []).join(" ")}
+                  defaultValue={cc.join(" ")}
                   hint="They get reports too. Separate with spaces."
+                  stacked
                 />
-                <Checkbox
+                <STextArea label="Notes" name="notes" defaultValue={customer.notes ?? ""} />
+                <SSwitch
                   name="no_followups"
                   label="No reminder or review emails"
                   defaultChecked={customer.marketing_opt_out ?? false}
                 />
-              </SettingsForm>
-            </div>
-          </section>
-        </div>
+              </SettingsFields>
+            </SettingsForm>
+          </SheetRow>
+        </Grouped>
+
         <div className="space-y-8 lg:col-span-2">
-          {properties.length === 0 ? <Empty>No properties.</Empty> : null}
-          {properties.map((p) => {
+          {properties.length === 0 ? <Empty>No pools.</Empty> : null}
+          {properties.map((p, i) => {
+            const address = formatAddress(p);
             // Maintenance visits are summed up by their plan, not listed one by one.
             const visits = jobs.filter((j) => j.property_id === p.id && j.type !== "maintenance");
             return (
-              <section key={p.id} aria-label={formatAddress(p)} className="space-y-6">
-                <div className="card p-4">
-                  <h2 className="font-display text-xl font-bold">{formatAddress(p)}</h2>
-                  <p className="text-text-muted">
-                    {[
+              <section key={p.id} aria-label={address} className="space-y-8">
+                <Grouped title={properties.length > 1 ? `Pool ${i + 1}` : "Pool"}>
+                  <SheetRow
+                    title="Pool Details"
+                    label={<span className="font-semibold">{address}</span>}
+                    detail={[
                       p.pool_type ? POOL_TYPE_LABELS[p.pool_type] : null,
                       p.has_spa ? "Pool and spa" : "Pool",
                     ]
                       .filter(Boolean)
                       .join(" · ")}
-                  </p>
-                  {p.access_notes ? (
-                    <p className="mt-2 rounded-xl bg-status-warning/10 px-3 py-2">
-                      {p.access_notes}
-                    </p>
-                  ) : null}
-                  <MaintenancePlans
-                    customerId={customer.id}
-                    propertyId={p.id}
-                    plans={plans.filter((plan) => plan.property_id === p.id)}
-                    techs={techs}
-                    today={today}
-                    visitMinutes={maintenanceSettings(company.settings).visitMinutes}
-                    doneCounts={doneCounts}
-                    canEdit={office.isOwner}
+                    value={<span className="text-link">Edit</span>}
+                  >
+                    <SettingsForm action={savePool} primary full>
+                      <input type="hidden" name="property" value={p.id} />
+                      <SettingsFields labelWidth="6.5rem">
+                        <SField
+                          label="Street"
+                          name="address_line1"
+                          defaultValue={p.address_line1 ?? ""}
+                          autoComplete="off"
+                          required
+                        />
+                        <SField
+                          label="Unit"
+                          name="address_line2"
+                          defaultValue={p.address_line2 ?? ""}
+                          placeholder="Optional"
+                          autoComplete="off"
+                        />
+                        <SField
+                          label="City"
+                          name="city"
+                          defaultValue={p.city ?? ""}
+                          autoComplete="off"
+                        />
+                        <SField
+                          label="State"
+                          name="state"
+                          defaultValue={p.state ?? ""}
+                          maxLength={2}
+                          autoComplete="off"
+                        />
+                        <SField
+                          label="ZIP"
+                          name="postal_code"
+                          defaultValue={p.postal_code ?? ""}
+                          inputMode="numeric"
+                          autoComplete="off"
+                        />
+                      </SettingsFields>
+                      <SettingsFields labelWidth="6.5rem">
+                        <SSelect
+                          label="Pool type"
+                          name="pool_type"
+                          defaultValue={p.pool_type ?? ""}
+                          options={poolOptions}
+                        />
+                        <SSwitch name="has_spa" label="Has a spa" defaultChecked={p.has_spa} />
+                        <STextArea
+                          label="Access notes"
+                          name="access_notes"
+                          defaultValue={p.access_notes ?? ""}
+                          hint="Gate code, dog, where to park."
+                        />
+                      </SettingsFields>
+                    </SettingsForm>
+                  </SheetRow>
+                  {p.access_notes ? <Row label="Access notes" detail={p.access_notes} /> : null}
+                  <Row
+                    href={directionsHref({ address })}
+                    label={<span className="text-link">Get Directions</span>}
                   />
-                </div>
-                {visits.length === 0 ? (
-                  <div>
-                    <SectionTitle>Leak detection and repairs</SectionTitle>
-                    <p className="card px-4 py-3 text-text-muted">No visits yet.</p>
-                  </div>
-                ) : (
-                  <Grouped title="Leak detection and repairs">
-                    {visits.map((j) => (
+                </Grouped>
+                <MaintenancePlans
+                  customerId={customer.id}
+                  propertyId={p.id}
+                  plans={plans.filter((plan) => plan.property_id === p.id)}
+                  techs={techs}
+                  today={today}
+                  visitMinutes={maintenanceSettings(company.settings).visitMinutes}
+                  doneCounts={doneCounts}
+                  canEdit={office.isOwner}
+                />
+                <Grouped title="Leak detection and repairs">
+                  {visits.length === 0 ? (
+                    <Row label={<span className="text-text-muted">No visits yet</span>} />
+                  ) : (
+                    visits.map((j) => (
                       <Row
                         key={j.id}
                         href={`/jobs/${j.id}`}
@@ -173,9 +271,9 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                         }
                         value={<StatusBadge status={j.status} />}
                       />
-                    ))}
-                  </Grouped>
-                )}
+                    ))
+                  )}
+                </Grouped>
               </section>
             );
           })}
@@ -186,15 +284,13 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
           <h2 id="delete-customer" className="sr-only">
             Delete Customer
           </h2>
-          <div className="card p-4">
-            <p className="mb-3 text-[0.9375rem] text-text-muted">
-              Removes {customer.name} and their pools from Tidemark. Only possible when every job is
-              paid or canceled; finished jobs, reports, and invoices are kept.
-            </p>
-            <DeleteCustomerForm id={customer.id} name={customer.name} />
-          </div>
+          <DeleteCustomerForm id={customer.id} name={customer.name} />
+          <p className="mt-2 px-4 text-[0.8125rem] text-text-muted">
+            Removes {customer.name} and their pools from Tidemark. Only possible when every job is
+            paid or canceled; finished jobs, reports, and invoices are kept.
+          </p>
         </section>
       ) : null}
-    </>
+    </SheetNotices>
   );
 }
