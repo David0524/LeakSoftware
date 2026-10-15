@@ -15,6 +15,7 @@ const ICONS = {
   add: { sf: "plus", ion: "add" },
   settings: { sf: "gearshape", ion: "settings-outline" },
   chevron: { sf: "chevron.forward", ion: "chevron-forward" },
+  checkmark: { sf: "checkmark", ion: "checkmark" },
   call: { sf: "phone.fill", ion: "call" },
   directions: { sf: "location", ion: "navigate-outline" },
   microphone: { sf: "mic.fill", ion: "mic" },

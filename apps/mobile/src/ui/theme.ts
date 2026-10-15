@@ -1,6 +1,6 @@
 import { Platform, type TextStyle } from "react-native";
 import { tokens, fieldTheme } from "@leakbook/tokens";
-import type { JobStatus } from "@leakbook/core";
+import type { InvoiceStatus, JobStatus, QuoteStatus } from "@leakbook/core";
 
 /** iOS follows Apple's conventions (owner, 2026-10-14); Android keeps its own. */
 export const ios = Platform.OS === "ios";
@@ -90,4 +90,22 @@ export const JOB_STATUS_COLOR: Record<JobStatus, string> = {
   paid: tokens.color.status.pass,
   canceled: tokens.color.status.excluded,
   done: tokens.color.status.pass,
+};
+
+/** Status pills on the Quote tab. */
+export const QUOTE_STATUS_COLOR: Record<QuoteStatus, string> = {
+  draft: tokens.color.status.excluded,
+  sent: tokens.color.status.info,
+  accepted: tokens.color.status.pass,
+  declined: tokens.color.status.fail,
+  expired: tokens.color.status.excluded,
+};
+
+/** Status pills on the invoice. */
+export const INVOICE_STATUS_COLOR: Record<InvoiceStatus, string> = {
+  draft: tokens.color.status.excluded,
+  sent: tokens.color.status.info,
+  partially_paid: tokens.color.status.warning,
+  paid: tokens.color.status.pass,
+  void: tokens.color.status.excluded,
 };

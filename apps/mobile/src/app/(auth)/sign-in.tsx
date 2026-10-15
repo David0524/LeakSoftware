@@ -1,9 +1,10 @@
 import { router } from "expo-router";
-import { useState } from "react";
-import { View } from "react-native";
-import { Button, Field, Notice, Screen, T } from "../../ui/components";
+import { useRef, useState } from "react";
+import { View, type TextInput } from "react-native";
+import { Button, FieldGroup, FieldRow, Notice, Screen } from "../../ui/components";
 import { useSession } from "../../state/session";
-import { BrandHeader } from "../../ui/BrandHeader";
+import { AuthTitle, BrandHeader } from "../../ui/BrandHeader";
+import { color, ios } from "../../ui/theme";
 
 export default function SignIn() {
   const { signIn } = useSession();
@@ -11,6 +12,7 @@ export default function SignIn() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const passwordRef = useRef<TextInput>(null);
 
   async function submit() {
     if (!email.trim() || !password) {
@@ -25,29 +27,44 @@ export default function SignIn() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      <BrandHeader />
+    <View style={{ flex: 1, backgroundColor: color.bg }}>
+      {ios ? null : <BrandHeader />}
       <Screen>
-        <T variant="title">Sign In</T>
-        {error ? <Notice tone="error">{error}</Notice> : null}
-        <Field
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          autoComplete="email"
-          keyboardType="email-address"
-          textContentType="username"
-        />
-        <Field
-          label="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoComplete="password"
-          textContentType="password"
-          onSubmitEditing={submit}
-        />
+        <AuthTitle title="Sign In" />
+        {error ? (
+          <Notice tone="error" tinted>
+            {error}
+          </Notice>
+        ) : null}
+        <FieldGroup labelWidth={96}>
+          <FieldRow
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            placeholder={ios ? "name@company.com" : undefined}
+            autoCapitalize="none"
+            autoCorrect={false}
+            spellCheck={false}
+            autoComplete="email"
+            keyboardType="email-address"
+            textContentType="username"
+            next={passwordRef}
+          />
+          <FieldRow
+            ref={passwordRef}
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            placeholder={ios ? "Required" : undefined}
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="current-password"
+            textContentType="password"
+            returnKeyType="go"
+            onSubmitEditing={submit}
+          />
+        </FieldGroup>
         <Button title="Sign In" onPress={submit} loading={busy} />
         <Button title="Create an Account" kind="quiet" onPress={() => router.push("/sign-up")} />
         {__DEV__ ? (

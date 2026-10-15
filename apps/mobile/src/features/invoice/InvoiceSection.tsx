@@ -14,11 +14,27 @@ import { createJobInvoice, sendJobInvoice, useJobInvoices } from "../../data/inv
 import { reportsOnline } from "../../data/reports";
 import { API_URL } from "../../lib/config";
 import { useCompany } from "../../state/session";
-import { Button, Card, Field, Notice, Row, Section, T } from "../../ui/components";
-import { space } from "../../ui/theme";
+import {
+  AmountRow,
+  Block,
+  Button,
+  Card,
+  FieldGroup,
+  FieldRow,
+  Group,
+  Notice,
+  Pill,
+  Row,
+  Section,
+  T,
+} from "../../ui/components";
+import { INVOICE_STATUS_COLOR, ios, space } from "../../ui/theme";
 
-/** Send by Email and Send by Text share one row. */
+/** Send by Email and Send by Text share one row (Android). */
 const halfButton: ViewStyle = { flex: 1, paddingHorizontal: space["2"] };
+
+/** On iPhone, text outside grouped blocks lines up with the rows' text. */
+const inset = ios ? { paddingHorizontal: space["4"] } : null;
 
 const INVOICEABLE = ["in_progress", "report_sent", "quote_sent", "quote_accepted", "invoiced"];
 
@@ -72,7 +88,7 @@ export function InvoiceSection({ job, customer }: { job: Job; customer: Customer
 
   if (!invoice) {
     return (
-      <Section title="Invoice">
+      <Section title="Invoice" grouped>
         <Card>
           <T variant="muted">
             {job.type === "repair"
@@ -100,65 +116,107 @@ export function InvoiceSection({ job, customer }: { job: Job; customer: Customer
   const totals = draft ? invoiceTotals(invoice.lines, invoice.discount_cents, rate) : invoice;
   const balance = invoiceBalance(invoice);
 
+  const heading = (
+    <Row style={[{ justifyContent: "space-between" }, inset]}>
+      <T variant="heading" style={{ flexShrink: 1 }}>{`#${invoice.number ?? ""}`}</T>
+      <Pill
+        label={INVOICE_STATUS_LABELS[invoice.status]}
+        color={INVOICE_STATUS_COLOR[invoice.status]}
+      />
+    </Row>
+  );
+  const taxNote =
+    totals.tax_cents > 0 ? `Includes ${formatCents(totals.tax_cents)} tax` : undefined;
+  const lineLabel = (l: (typeof invoice.lines)[number]) =>
+    `${l.description}${l.quantity !== 1 ? ` × ${l.quantity}` : ""}`;
+  const sendButtons = [
+    <Button
+      key="email"
+      title="Send by Email"
+      style={ios ? undefined : halfButton}
+      loading={busy === "email"}
+      disabled={busy !== null || !reportsOnline}
+      onPress={() => void run("email")}
+    />,
+    <Button
+      key="text"
+      title="Send by Text"
+      kind="secondary"
+      style={ios ? undefined : halfButton}
+      loading={busy === "text"}
+      disabled={busy !== null || !reportsOnline}
+      onPress={() => void run("text")}
+    />,
+  ];
+
   return (
-    <Section title="Invoice">
-      <Card>
-        <Row style={{ justifyContent: "space-between" }}>
-          <T variant="heading">
-            #{invoice.number ?? ""} · {INVOICE_STATUS_LABELS[invoice.status]}
-          </T>
-          <T variant="strong">{formatCents(totals.total_cents)}</T>
-        </Row>
-        {invoice.lines.map((l) => (
-          <Row key={l.id} style={{ justifyContent: "space-between" }}>
-            <T variant="small" style={{ flex: 1 }}>
-              {l.description}
-              {l.quantity !== 1 ? ` × ${l.quantity}` : ""}
+    <Section title="Invoice" grouped>
+      {ios ? (
+        // iPhone: number and status, then lines and the total as a grouped list.
+        <>
+          {heading}
+          <Group>
+            {invoice.lines.map((l) => (
+              <AmountRow key={l.id} label={lineLabel(l)} value={formatCents(lineTotal(l))} />
+            ))}
+            <AmountRow label="Total" value={formatCents(totals.total_cents)} strong />
+            {!draft ? (
+              <AmountRow
+                label={invoice.status === "paid" ? "Paid in full" : "Balance due"}
+                value={invoice.status === "paid" ? undefined : formatCents(balance)}
+                strong
+              />
+            ) : null}
+          </Group>
+          {taxNote ? (
+            <T variant="muted" style={inset}>
+              {taxNote}
             </T>
-            <T variant="small">{formatCents(lineTotal(l))}</T>
+          ) : null}
+        </>
+      ) : (
+        <Card>
+          <Row style={{ justifyContent: "space-between" }}>
+            {heading}
+            <T variant="strong">{formatCents(totals.total_cents)}</T>
           </Row>
-        ))}
-        {totals.tax_cents > 0 ? (
-          <T variant="muted">Includes {formatCents(totals.tax_cents)} tax</T>
-        ) : null}
-        {!draft ? (
-          <T variant="strong">
-            {invoice.status === "paid" ? "Paid in full" : `Balance due ${formatCents(balance)}`}
-          </T>
-        ) : null}
-      </Card>
+          {invoice.lines.map((l) => (
+            <Row key={l.id} style={{ justifyContent: "space-between" }}>
+              <T variant="small" style={{ flex: 1 }}>
+                {lineLabel(l)}
+              </T>
+              <T variant="small">{formatCents(lineTotal(l))}</T>
+            </Row>
+          ))}
+          {taxNote ? <T variant="muted">{taxNote}</T> : null}
+          {!draft ? (
+            <T variant="strong">
+              {invoice.status === "paid" ? "Paid in full" : `Balance due ${formatCents(balance)}`}
+            </T>
+          ) : null}
+        </Card>
+      )}
 
       {draft ? (
-        <Card>
-          <T variant="muted">
-            Sending locks the invoice. To change lines, use the office view before sending.
-          </T>
-          <Field
-            label="Customer email"
-            value={to ?? customer?.email ?? ""}
-            onChangeText={setTo}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            textContentType="emailAddress"
-          />
-          <Row style={{ gap: space["2"] }}>
-            <Button
-              title="Send by Email"
-              style={halfButton}
-              loading={busy === "email"}
-              disabled={busy !== null || !reportsOnline}
-              onPress={() => void run("email")}
+        <Block note="Sending locks the invoice. To change lines, use the office view before sending.">
+          {/* The customer's address, so iPhone doesn't offer to fill in the tech's own. */}
+          <FieldGroup>
+            <FieldRow
+              label="Customer email"
+              layout="stacked"
+              value={to ?? customer?.email ?? ""}
+              onChangeText={setTo}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              autoComplete="off"
+              textContentType="none"
+              returnKeyType="done"
             />
-            <Button
-              title="Send by Text"
-              kind="secondary"
-              style={halfButton}
-              loading={busy === "text"}
-              disabled={busy !== null || !reportsOnline}
-              onPress={() => void run("text")}
-            />
-          </Row>
-        </Card>
+          </FieldGroup>
+          {ios ? sendButtons : <Row style={{ gap: space["2"] }}>{sendButtons}</Row>}
+        </Block>
       ) : invoice.token && invoice.status !== "paid" ? (
         <Button
           title="Share Payment Link"

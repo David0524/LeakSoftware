@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { View } from "react-native";
+import { useRef, useState } from "react";
+import { View, type TextInput } from "react-native";
 import {
   MIN_INK,
   checklistTally,
@@ -23,7 +23,17 @@ import { finishReportFromPhone, useJobReports } from "../../../../data/reports";
 import { OutcomeChip } from "../../../../features/inspection/OutcomeChip";
 import { currentPosition, storeSignatureSvg } from "../../../../lib/media";
 import { useCompany, useSession } from "../../../../state/session";
-import { Button, Card, Choice, Field, Notice, Row, Screen, T } from "../../../../ui/components";
+import {
+  Button,
+  Card,
+  FieldGroup,
+  FieldRow,
+  Notice,
+  PickerRow,
+  Row,
+  Screen,
+  T,
+} from "../../../../ui/components";
 import { SignaturePad } from "../../../../ui/SignaturePad";
 import { color } from "../../../../ui/theme";
 
@@ -52,6 +62,7 @@ export default function ReviewScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"sign" | "away" | null>(null);
   const [drawing, setDrawing] = useState(false);
+  const roleRef = useRef<TextInput>(null);
 
   if (!job) {
     return (
@@ -195,31 +206,46 @@ export default function ReviewScreen() {
           <>
             <T variant="title">Please Sign</T>
             {purposes.length > 1 ? (
-              <Choice
-                label="Signing for"
-                options={purposes}
-                value={purpose}
-                onChange={setPurpose}
-              />
+              <FieldGroup>
+                <PickerRow
+                  label="Signing for"
+                  options={purposes}
+                  value={purpose}
+                  onChange={setPurpose}
+                />
+              </FieldGroup>
             ) : null}
             {purpose ? (
               <T style={{ fontSize: 19, lineHeight: 26 }}>
                 {signatureStatement(purpose, company.name, address || null)}
               </T>
             ) : null}
-            <Field
-              label="Your name"
-              value={name ?? customer?.name ?? ""}
-              onChangeText={setName}
-              autoCapitalize="words"
-              textContentType="name"
-            />
-            <Field
-              label="Role (optional)"
-              value={role}
-              onChangeText={setRole}
-              placeholder="Homeowner, property manager…"
-            />
+            {/* The customer types here, so iPhone doesn't offer the tech's own name. */}
+            <FieldGroup>
+              <FieldRow
+                label="Your name"
+                layout="stacked"
+                value={name ?? customer?.name ?? ""}
+                onChangeText={setName}
+                autoCapitalize="words"
+                autoCorrect={false}
+                autoComplete="off"
+                textContentType="none"
+                next={roleRef}
+              />
+              <FieldRow
+                ref={roleRef}
+                label="Role (optional)"
+                layout="stacked"
+                value={role}
+                onChangeText={setRole}
+                placeholder="Homeowner, property manager…"
+                autoCapitalize="sentences"
+                autoComplete="off"
+                textContentType="none"
+                returnKeyType="done"
+              />
+            </FieldGroup>
             <SignaturePad
               strokes={strokes}
               onDrawing={setDrawing}

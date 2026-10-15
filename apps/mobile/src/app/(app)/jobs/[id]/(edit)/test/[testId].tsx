@@ -1,12 +1,13 @@
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { useMemo, useState } from "react";
-import { View } from "react-native";
+import { createRef, useMemo, useState, type RefObject } from "react";
+import type { TextInput } from "react-native";
 import {
   calculate,
   normalizeTestData,
   validateTestData,
   type Outcome,
   type TestData,
+  type TestType,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useInspectionConfig, useJobInspection } from "../../../../../../data/inspection";
@@ -15,10 +16,11 @@ import { MediaSection } from "../../../../../../features/media/MediaSection";
 import {
   Button,
   Card,
-  Choice,
-  Field,
+  FieldGroup,
+  FieldRow,
   HeaderButton,
   Notice,
+  PickerRow,
   Screen,
   T,
   Segmented,
@@ -28,7 +30,23 @@ import { OUTCOME_STYLE } from "../../../../../../features/inspection/OutcomeChip
 import { confirmDeleteTest } from "../../../../../../features/inspection/remove";
 import { haptics } from "../../../../../../ui/haptics";
 import { useSheetLock } from "../../../../../../ui/sheet";
-import { color, ios } from "../../../../../../ui/theme";
+import { ios } from "../../../../../../ui/theme";
+
+type SchemaField = TestType["field_schema"]["fields"][number];
+
+/**
+ * The form's fields in runs: a long-text field gets its own block (on iPhone, under its label
+ * as a header); the fields between share one.
+ */
+function runs(fields: SchemaField[]): SchemaField[][] {
+  const out: SchemaField[][] = [];
+  for (const f of fields) {
+    const last = out[out.length - 1];
+    if (f.type === "textarea" || !last || last[0]!.type === "textarea") out.push([f]);
+    else last.push(f);
+  }
+  return out;
+}
 
 /** Record or edit one test. The form comes from the test type's field schema. */
 export default function TestScreen() {
@@ -70,6 +88,14 @@ export default function TestScreen() {
 
   const calc = useMemo(() => (type ? calculate(type, values as TestData) : null), [type, values]);
 
+  // Return moves from one typed field to the next, as in iOS forms.
+  const [inputs] = useState(() => new Map<string, RefObject<TextInput | null>>());
+  const inputRef = (key: string) => {
+    let r = inputs.get(key);
+    if (!r) inputs.set(key, (r = createRef<TextInput>()));
+    return r;
+  };
+
   if (!type || (params.testId !== "new" && !existing)) {
     return (
       <Screen>
@@ -79,6 +105,28 @@ export default function TestScreen() {
   }
   const testType = type;
   const outcome = chosenOutcome ?? calc?.suggested ?? null;
+
+  // Typed fields, in order, for moving on with Return.
+  const typed = testType.field_schema.fields.filter((f) => f.type !== "select");
+  const nextOf = (key: string) => {
+    const i = typed.findIndex((f) => f.key === key);
+    const n = typed[i + 1];
+    return n ? inputRef(n.key) : undefined;
+  };
+  const component = (
+    <PickerRow
+      key="component"
+      label="Component"
+      options={[
+        { value: "", label: "None" },
+        ...insp.components.map((c) => ({ value: c.id, label: c.label })),
+      ]}
+      value={componentId ?? ""}
+      onChange={(v) => setComponentId(v || null)}
+    />
+  );
+  const groups = runs(testType.field_schema.fields);
+  const startsAlone = groups[0]?.[0]?.type === "textarea";
 
   function cancel() {
     if (!dirty) return router.back();
@@ -135,41 +183,47 @@ export default function TestScreen() {
             : null),
         }}
       />
-      <Choice
-        label="Component"
-        options={[
-          { value: "", label: "None" },
-          ...insp.components.map((c) => ({ value: c.id, label: c.label })),
-        ]}
-        value={componentId ?? ""}
-        onChange={(v) => setComponentId(v || null)}
-      />
-
-      {testType.field_schema.fields.map((f) =>
-        f.type === "select" ? (
-          <View key={f.key}>
-            <Choice
-              label={f.label}
-              options={(f.options ?? []).map((o) => ({ value: o, label: o }))}
-              value={values[f.key] || null}
-              onChange={(v) => setValues((s) => ({ ...s, [f.key]: v }))}
+      {startsAlone || groups.length === 0 ? <FieldGroup>{component}</FieldGroup> : null}
+      {groups.map((run, gi) =>
+        run[0]!.type === "textarea" ? (
+          <FieldGroup key={run[0]!.key} title={run[0]!.label}>
+            <FieldRow
+              ref={inputRef(run[0]!.key)}
+              label={run[0]!.label}
+              value={values[run[0]!.key] ?? ""}
+              onChangeText={(v) => setValues((s) => ({ ...s, [run[0]!.key]: v }))}
+              multiline
+              error={errors[run[0]!.key]}
             />
-            {errors[f.key] ? (
-              <T variant="small" style={{ color: color.fail }}>
-                {errors[f.key]}
-              </T>
-            ) : null}
-          </View>
+          </FieldGroup>
         ) : (
-          <Field
-            key={f.key}
-            label={f.unit ? `${f.label} (${f.unit})` : f.label}
-            value={values[f.key] ?? ""}
-            onChangeText={(v) => setValues((s) => ({ ...s, [f.key]: v }))}
-            keyboardType={f.type === "number" ? "decimal-pad" : "default"}
-            multiline={f.type === "textarea"}
-            error={errors[f.key]}
-          />
+          <FieldGroup key={run[0]!.key} labelWidth={150}>
+            {gi === 0 ? component : null}
+            {run.map((f) =>
+              f.type === "select" ? (
+                <PickerRow
+                  key={f.key}
+                  label={f.label}
+                  options={(f.options ?? []).map((o) => ({ value: o, label: o }))}
+                  value={values[f.key] || null}
+                  onChange={(v) => setValues((s) => ({ ...s, [f.key]: v }))}
+                  error={errors[f.key]}
+                />
+              ) : (
+                <FieldRow
+                  key={f.key}
+                  ref={inputRef(f.key)}
+                  next={nextOf(f.key)}
+                  label={f.unit ? `${f.label} (${f.unit})` : f.label}
+                  value={values[f.key] ?? ""}
+                  onChangeText={(v) => setValues((s) => ({ ...s, [f.key]: v }))}
+                  keyboardType={f.type === "number" ? "decimal-pad" : "default"}
+                  autoCapitalize={f.type === "number" ? "none" : "sentences"}
+                  error={errors[f.key]}
+                />
+              ),
+            )}
+          </FieldGroup>
         ),
       )}
 
@@ -184,6 +238,7 @@ export default function TestScreen() {
       ) : null}
 
       <Segmented
+        grouped
         label="Outcome"
         options={testType.result_options.map((o) => ({
           value: o,
@@ -195,7 +250,9 @@ export default function TestScreen() {
       {chosenOutcome && calc?.suggested && chosenOutcome !== calc.suggested ? (
         <Notice tone="warning">You changed the suggested outcome. Add a note saying why.</Notice>
       ) : null}
-      <Field label="Notes" value={notes} onChangeText={setNotes} multiline />
+      <FieldGroup>
+        <FieldRow label="Notes" value={notes} onChangeText={setNotes} multiline />
+      </FieldGroup>
       <MediaSection
         target={{ jobId, testResultId: existing?.id }}
         disabledReason={existing ? undefined : "Save the test first, then add photos."}

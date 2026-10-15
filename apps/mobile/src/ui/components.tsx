@@ -1,6 +1,20 @@
-import { Children, Fragment, isValidElement, useContext, type ReactNode } from "react";
+import {
+  Children,
+  createContext,
+  Fragment,
+  isValidElement,
+  useCallback,
+  useContext,
+  useId,
+  useRef,
+  type ReactNode,
+  type Ref,
+  type RefObject,
+} from "react";
 import {
   ActivityIndicator,
+  InputAccessoryView,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -33,12 +47,13 @@ import {
 import { haptics } from "./haptics";
 import { Icon, type IconName } from "./Icon";
 import { SwipeToDelete } from "./SwipeRow";
+import { chooseAction } from "./confirm";
 
 // ---------------------------------------------------------------------------
 // Text
 // ---------------------------------------------------------------------------
 
-type Variant = "title" | "heading" | "label" | "body" | "strong" | "small" | "muted";
+type Variant = "largeTitle" | "title" | "heading" | "label" | "body" | "strong" | "small" | "muted";
 
 export function T({
   variant = "body",
@@ -72,6 +87,13 @@ export function T({
 const MAX_TEXT_SCALE = 2.4;
 
 const text = StyleSheet.create({
+  // iOS large title size (34 pt), in the brand's title face. Sign-in and setup screens.
+  largeTitle: {
+    fontFamily: font.displayExtraBold,
+    fontSize: 34,
+    lineHeight: 40,
+    color: color.text,
+  },
   title: { fontFamily: font.displayExtraBold, fontSize: 28, lineHeight: 32, color: color.text },
   heading: { fontFamily: font.displayBold, fontSize: 20, lineHeight: 24, color: color.text },
   // Section and field labels. On iPhone, the system's grouped-list header (13 pt caps).
@@ -170,12 +192,28 @@ export function Section({
 
 export function Notice({
   tone = "info",
+  tinted = false,
   children,
 }: {
   tone?: "info" | "warning" | "error";
+  /**
+   * A banner tinted in the tone's color instead of a white card with a colored edge, read out
+   * as soon as it appears (sign-in errors).
+   */
+  tinted?: boolean;
   children: ReactNode;
 }) {
   const c = tone === "error" ? color.fail : tone === "warning" ? color.warning : color.info;
+  if (tinted)
+    return (
+      <View
+        style={[styles.banner, { backgroundColor: tint(c, 0.12) }]}
+        accessibilityRole="alert"
+        accessibilityLiveRegion="polite"
+      >
+        <T variant="small">{children}</T>
+      </View>
+    );
   return (
     <View style={[styles.notice, { borderLeftColor: c }]}>
       <T variant="small">{children}</T>
@@ -240,12 +278,19 @@ export function Field({
   label,
   error,
   hint,
+  ref,
   ...input
-}: TextInputProps & { label: string; error?: string; hint?: string }) {
+}: TextInputProps & {
+  label: string;
+  error?: string;
+  hint?: string;
+  ref?: Ref<TextInput>;
+}) {
   return (
     <View style={styles.field}>
       <T variant="label">{label}</T>
       <TextInput
+        ref={ref}
         placeholderTextColor={color.textMuted}
         {...input}
         accessibilityLabel={label}
@@ -309,15 +354,22 @@ export function Segmented<V extends string>({
   options,
   value,
   onChange,
+  grouped = false,
 }: {
   label?: string;
   options: { value: V; label: string }[];
   value: V | null;
   onChange: (v: V) => void;
+  /** Among grouped form rows: on iPhone the label lines up with the rows' text. */
+  grouped?: boolean;
 }) {
   return (
     <View style={styles.field}>
-      {label ? <T variant="label">{label}</T> : null}
+      {label ? (
+        <View style={grouped && ios ? styles.groupedHead : null}>
+          <T variant="label">{label}</T>
+        </View>
+      ) : null}
       <View style={styles.segmented} accessibilityRole="tablist">
         {options.map((o) => {
           const on = o.value === value;
@@ -545,6 +597,366 @@ export function ListRow({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Grouped forms (iPhone): fields as rows of an inset grouped list, as in iOS Settings and
+// Contacts. Android keeps its outlined fields (Field) and chips (Choice) unchanged.
+// ---------------------------------------------------------------------------
+
+/** Width of the leading labels in a FieldGroup, so the fields line up. */
+const LabelWidth = createContext(112);
+
+/**
+ * A block of form fields. iPhone: one inset grouped block with hairlines between rows, under an
+ * optional header (the label for rows that show none). Android: the fields stacked as before,
+ * each with its own label, so `title` is not shown there.
+ */
+export function FieldGroup({
+  title,
+  footer,
+  labelWidth = 112,
+  children,
+}: {
+  /** iPhone only: the header above the block. */
+  title?: string;
+  /** A note under the block, on both platforms. */
+  footer?: string;
+  /** Width of the rows' leading labels (at the default text size). */
+  labelWidth?: number;
+  children: ReactNode;
+}) {
+  if (!ios)
+    return (
+      <View style={styles.fieldStack}>
+        {children}
+        {footer ? <T variant="muted">{footer}</T> : null}
+      </View>
+    );
+  return (
+    <View style={styles.section}>
+      {title ? (
+        <View style={styles.groupedHead}>
+          <T variant="label">{title}</T>
+        </View>
+      ) : null}
+      <LabelWidth.Provider value={labelWidth}>
+        <Group>{children}</Group>
+      </LabelWidth.Provider>
+      {footer ? (
+        <View style={styles.groupedHead}>
+          <T variant="muted">{footer}</T>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+const NUMERIC_KEYBOARDS = new Set(["decimal-pad", "number-pad", "numeric", "phone-pad"]);
+
+/**
+ * A text field as a row of a FieldGroup (iPhone): the label leads at a fixed width and the
+ * borderless field fills the rest. `layout`:
+ * - "inline" (default): label, then the field.
+ * - "stacked": the label in small type above the field, for long labels or placeholders.
+ * - "full": no visible label; the field fills the row and the label is its placeholder (or
+ *   the group's header names it). Multiline fields default to this.
+ * At the largest text sizes inline rows stack, so labels never squeeze the field.
+ * A hint or error shows inside the row at 15 pt. `next` moves to that field on Return (or the
+ * Next button above a number pad). Android renders the ordinary Field.
+ */
+export function FieldRow({
+  label,
+  error,
+  hint,
+  layout,
+  next,
+  wrap = false,
+  ref,
+  ...input
+}: TextInputProps & {
+  label: string;
+  error?: string;
+  hint?: string;
+  layout?: "inline" | "stacked" | "full";
+  /** The field Return moves to. */
+  next?: RefObject<TextInput | null>;
+  /**
+   * A one-value field whose text wraps instead of scrolling sideways (iPhone): Return still
+   * ends the entry and never adds a line.
+   */
+  wrap?: boolean;
+  ref?: Ref<TextInput>;
+}) {
+  const own = useRef<TextInput | null>(null);
+  const setRef = useCallback(
+    (node: TextInput | null) => {
+      own.current = node;
+      if (typeof ref === "function") ref(node);
+      else if (ref) ref.current = node;
+    },
+    [ref],
+  );
+  const accessoryId = `field-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const labelWidth = useContext(LabelWidth);
+  const { fontScale } = useWindowDimensions();
+
+  const flow: TextInputProps = next
+    ? {
+        returnKeyType: "next",
+        submitBehavior: "submit",
+        onSubmitEditing: () => next.current?.focus(),
+      }
+    : {};
+
+  if (!ios) return <Field ref={ref} label={label} error={error} hint={hint} {...flow} {...input} />;
+
+  const multiline = Boolean(input.multiline);
+  const mode = layout ?? (multiline ? "full" : "inline");
+  // Large accessibility text sizes: a fixed-width label would squeeze the field to nothing.
+  const shown = mode === "inline" && fontScale >= 1.35 ? "stacked" : mode;
+  const numeric = NUMERIC_KEYBOARDS.has(String(input.keyboardType ?? ""));
+  const scaledWidth = labelWidth * Math.min(fontScale, 1.35);
+
+  const field = (
+    <TextInput
+      ref={setRef}
+      placeholderTextColor={color.textMuted}
+      clearButtonMode={multiline || wrap ? undefined : "while-editing"}
+      maxFontSizeMultiplier={MAX_TEXT_SCALE}
+      inputAccessoryViewID={numeric ? accessoryId : undefined}
+      {...flow}
+      {...(wrap ? { multiline: true, submitBehavior: "blurAndSubmit" as const } : null)}
+      {...input}
+      placeholder={input.placeholder ?? (shown === "full" ? label : undefined)}
+      accessibilityLabel={label}
+      accessibilityHint={error ?? hint}
+      style={[
+        styles.rowInput,
+        // Under a caption or alone: the field's own height, so long text can grow the row.
+        shown !== "inline" && styles.rowInputBlock,
+        shown === "stacked" && styles.rowInputStacked,
+        multiline && styles.rowMultiline,
+        wrap && shown !== "stacked" && styles.rowWrap,
+      ]}
+    />
+  );
+
+  return (
+    // Tapping anywhere on the row, the label too, puts the cursor in the field.
+    <Pressable
+      onPress={() => own.current?.focus()}
+      accessible={false}
+      style={[
+        styles.formRow,
+        shown !== "inline" && styles.formRowStacked,
+        (error || hint) && styles.formRowNote,
+      ]}
+    >
+      {shown === "inline" ? (
+        <View style={styles.formInline}>
+          <Text
+            style={[styles.rowLabel, { width: scaledWidth }]}
+            maxFontSizeMultiplier={MAX_TEXT_SCALE}
+            importantForAccessibility="no"
+            accessibilityElementsHidden
+          >
+            {label}
+          </Text>
+          {field}
+        </View>
+      ) : (
+        <>
+          {shown === "stacked" ? (
+            <Text
+              style={styles.rowCaption}
+              maxFontSizeMultiplier={MAX_TEXT_SCALE}
+              importantForAccessibility="no"
+              accessibilityElementsHidden
+            >
+              {label}
+            </Text>
+          ) : null}
+          {field}
+        </>
+      )}
+      {error ? (
+        <T variant="small" style={{ color: color.fail }}>
+          {error}
+        </T>
+      ) : hint ? (
+        <T variant="muted">{hint}</T>
+      ) : null}
+      {numeric ? (
+        // Number pads have no Return key: a bar above them moves on or closes the keyboard.
+        <InputAccessoryView nativeID={accessoryId} backgroundColor={color.bg}>
+          <View style={styles.accessory}>
+            <Pressable
+              accessibilityRole="button"
+              hitSlop={8}
+              style={styles.headerButton}
+              onPress={() => (next ? next.current?.focus() : Keyboard.dismiss())}
+            >
+              <Text style={[styles.headerButtonText, face.semiBold, { color: color.link }]}>
+                {next ? "Next" : "Done"}
+              </Text>
+            </Pressable>
+          </View>
+        </InputAccessoryView>
+      ) : null}
+    </Pressable>
+  );
+}
+
+/**
+ * Choose one of several values. iPhone: a row showing the current value with a chevron that
+ * opens an action sheet of the choices. Android: the chips (Choice) as before.
+ */
+export function PickerRow<V extends string>({
+  label,
+  options,
+  value,
+  onChange,
+  error,
+  placeholder = "Choose",
+}: {
+  label: string;
+  options: { value: V; label: string }[];
+  value: V | null;
+  onChange: (v: V) => void;
+  error?: string;
+  /** Shown when nothing is chosen yet (iPhone). */
+  placeholder?: string;
+}) {
+  if (!ios)
+    return (
+      <View style={styles.field}>
+        <Choice label={label} options={options} value={value} onChange={onChange} />
+        {error ? (
+          <T variant="small" style={{ color: color.fail }}>
+            {error}
+          </T>
+        ) : null}
+      </View>
+    );
+  const current = options.find((o) => o.value === value)?.label;
+  return (
+    <ListRow
+      title={label}
+      detail={current ?? placeholder}
+      subtitle={
+        error ? (
+          <T variant="small" style={{ color: color.fail }}>
+            {error}
+          </T>
+        ) : undefined
+      }
+      accessibilityLabel={`${label}, ${current ?? placeholder}`}
+      accessibilityHint={error}
+      onPress={() =>
+        chooseAction({
+          title: label,
+          actions: options.map((o) => ({
+            label: o.value === value ? `${o.label} ✓` : o.label,
+            onPress: () => {
+              if (o.value === value) return;
+              haptics.selection();
+              onChange(o.value);
+            },
+          })),
+        })
+      }
+    />
+  );
+}
+
+/**
+ * A row of a grouped list with an amount on the right: quote and invoice lines and totals.
+ * `strong` for the total. Use inside a Group.
+ */
+export function AmountRow({
+  label,
+  value,
+  strong = false,
+}: {
+  label: string;
+  value?: string;
+  strong?: boolean;
+}) {
+  const v = strong ? "strong" : "body";
+  return (
+    <View style={[styles.listRow, styles.rowPad]}>
+      <T variant={v} style={{ flex: 1 }}>
+        {label}
+      </T>
+      {value ? (
+        <T variant={v} style={styles.amount}>
+          {value}
+        </T>
+      ) : null}
+    </View>
+  );
+}
+
+/** A status label: a pill in the status color with white text (quote and invoice states). */
+export function Pill({ label, color: bg }: { label: string; color: string }) {
+  return (
+    <View style={[styles.chip, { backgroundColor: bg }]}>
+      <Text style={styles.chipText} maxFontSizeMultiplier={MAX_TEXT_SCALE}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+/**
+ * A titled part of a screen with an optional note, holding grouped rows and buttons. iPhone:
+ * a grouped-list header and the note lined up with the rows' text, on the gray page. Android:
+ * a card with a heading, as before.
+ */
+export function Block({
+  title,
+  note,
+  action,
+  children,
+}: {
+  title?: string;
+  /** A short explanation under the title. */
+  note?: string;
+  /** A small action at the end of the header (a link). */
+  action?: ReactNode;
+  children?: ReactNode;
+}) {
+  const noteEl = note ? <T variant="muted">{note}</T> : null;
+  if (!ios)
+    return (
+      <Card>
+        {title || action ? (
+          <Row style={{ justifyContent: "space-between" }}>
+            {title ? <T variant="heading">{title}</T> : null}
+            {action}
+          </Row>
+        ) : null}
+        {noteEl}
+        {children}
+      </Card>
+    );
+  return (
+    <View style={styles.section}>
+      {title || action ? (
+        <View style={[styles.sectionHead, styles.groupedHead]}>
+          {title ? (
+            <View style={{ flexShrink: 1 }}>
+              <T variant="label">{title}</T>
+            </View>
+          ) : null}
+          {action}
+        </View>
+      ) : null}
+      {noteEl ? <View style={styles.groupedHead}>{noteEl}</View> : null}
+      {children}
+    </View>
+  );
+}
+
 /**
  * A navigation bar button: text (Cancel, Save) or an icon (+, settings). Blue on iPhone's light
  * bar, white on Android's navy app bar.
@@ -620,6 +1032,7 @@ const styles = StyleSheet.create({
   },
   section: { gap: space["2"] },
   sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  banner: { borderRadius: 12, paddingHorizontal: space["4"], paddingVertical: space["3"] },
   notice: {
     backgroundColor: color.surface,
     borderLeftWidth: 4,
@@ -718,4 +1131,33 @@ const styles = StyleSheet.create({
   rowSolid: { backgroundColor: color.surface },
   rowBody: { flex: 1, gap: 2 },
   rowDetail: { color: color.textMuted, textAlign: "right", flexShrink: 1 },
+  amount: { textAlign: "right", fontVariant: ["tabular-nums"] },
+  // A header or note over a grouped block, lined up with the rows' text.
+  groupedHead: { paddingHorizontal: space["4"] },
+  fieldStack: { gap: space["4"] },
+  formRow: { paddingHorizontal: space["4"], minHeight: touch, justifyContent: "center" },
+  formRowStacked: { paddingTop: 10, paddingBottom: 6, gap: 2 },
+  formRowNote: { paddingBottom: 10 },
+  formInline: { flexDirection: "row", alignItems: "center", gap: space["3"] },
+  rowLabel: { ...face.regular, fontSize: 17, color: color.text },
+  rowCaption: { ...face.regular, fontSize: 15, color: color.textMuted },
+  rowInput: {
+    flex: 1,
+    minHeight: touch,
+    paddingVertical: 0,
+    ...face.regular,
+    fontSize: 17,
+    color: color.text,
+  },
+  rowInputBlock: { flex: 0, alignSelf: "stretch" },
+  rowInputStacked: { minHeight: 34 },
+  rowMultiline: { minHeight: 96, paddingTop: 11, paddingBottom: 11, textAlignVertical: "top" },
+  rowWrap: { paddingTop: 11, paddingBottom: 11 },
+  accessory: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    paddingHorizontal: space["3"],
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: color.separator,
+  },
 });

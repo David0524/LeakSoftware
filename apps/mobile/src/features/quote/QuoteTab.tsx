@@ -1,6 +1,6 @@
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
-import { Pressable, Share, View } from "react-native";
+import { useMemo, useRef, useState } from "react";
+import { Pressable, Share, View, type TextInput } from "react-native";
 import {
   QUOTE_STATUS_LABELS,
   discountAllowed,
@@ -11,6 +11,7 @@ import {
   quoteTotals,
   suggestItems,
   type Job,
+  type PriceBookItem,
 } from "@leakbook/core";
 import { useInspectionConfig, useJobInspection } from "../../data/inspection";
 import {
@@ -28,10 +29,28 @@ import {
 } from "../../data/quotes";
 import { reportsOnline } from "../../data/reports";
 import { useCompany, useSession } from "../../state/session";
-import { Button, Card, Field, Notice, Row, T } from "../../ui/components";
-import { color } from "../../ui/theme";
+import {
+  AmountRow,
+  Block,
+  Button,
+  Card,
+  Field,
+  FieldGroup,
+  FieldRow,
+  Group,
+  ListRow,
+  Notice,
+  Pill,
+  Row,
+  T,
+} from "../../ui/components";
+import { Icon } from "../../ui/Icon";
+import { color, ios, QUOTE_STATUS_COLOR, space } from "../../ui/theme";
 import { confirmDestructive } from "../../ui/confirm";
 import { SwipeToDelete } from "../../ui/SwipeRow";
+
+/** On iPhone, text outside grouped blocks lines up with the rows' text. */
+const inset = ios ? { paddingHorizontal: space["4"] } : null;
 
 /** Build a repair quote from the findings and price book (works offline), then send it. */
 export function QuoteTab({ job }: { job: Job }) {
@@ -88,7 +107,7 @@ function DraftQuote({ job, quote }: { job: Job; quote: JobQuote }) {
   const onQuote = new Set(quote.lines.map((l) => l.price_book_item_id).filter(Boolean));
 
   const edit = (key: string, fallback: string) => edits[key] ?? fallback;
-  const commit = (lineId: string, field: "description" | "quantity" | "price") => {
+  const commit = (lineId: string, field: LineField) => {
     const key = `${lineId}:${field}`;
     const value = edits[key];
     setEdits(({ [key]: _, ...rest }) => rest);
@@ -146,164 +165,82 @@ function DraftQuote({ job, quote }: { job: Job; quote: JobQuote }) {
     }
   }
 
+  const discountField = (
+    <FieldRow
+      label="Discount ($)"
+      value={discount ?? (quote.discount_cents ? (quote.discount_cents / 100).toFixed(2) : "")}
+      onChangeText={setDiscountText}
+      onBlur={saveDiscount}
+      keyboardType="decimal-pad"
+      placeholder={ios ? "0.00" : undefined}
+      hint={isOwner ? undefined : `Up to ${limitBps / 100}% of the subtotal.`}
+    />
+  );
+
   return (
     <View style={{ gap: 16 }}>
       {findings.length ? (
-        <Card>
-          <T variant="heading">Add From Findings</T>
-          {findings.map((f) => {
-            const items = suggestionsFor(f.job_component_id);
-            return (
-              <View key={f.id} style={{ gap: 6 }}>
-                <T variant="strong">{f.title}</T>
-                {items.length === 0 ? (
-                  <T variant="muted">No price book items for this component. Add a custom line.</T>
-                ) : (
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                    {items.map((item) => {
-                      const added = onQuote.has(item.id);
-                      return (
-                        <Pressable
-                          key={item.id}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Add ${item.name}, ${formatCents(item.price_cents)}`}
-                          accessibilityState={{ disabled: added }}
-                          disabled={added}
-                          onPress={() => addItem(sync, company, quote, item, f.id)}
-                          style={{
-                            minHeight: 44,
-                            justifyContent: "center",
-                            paddingHorizontal: 12,
-                            borderRadius: 6,
-                            borderWidth: 1,
-                            borderColor: color.controlBorder,
-                            backgroundColor: color.surface,
-                            opacity: added ? 0.5 : 1,
-                          }}
-                        >
-                          <T variant="small">
-                            {added ? "✓ " : "+ "}
-                            {item.name} · {formatCents(item.price_cents)}
-                          </T>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                )}
-              </View>
-            );
-          })}
-        </Card>
+        <Block title="Add From Findings">
+          {findings.map((f) => (
+            <FindingSuggestions
+              key={f.id}
+              title={f.title}
+              items={suggestionsFor(f.job_component_id)}
+              added={(item) => onQuote.has(item.id)}
+              onAdd={(item) => addItem(sync, company, quote, item, f.id)}
+            />
+          ))}
+        </Block>
       ) : null}
 
-      <Card>
-        <T variant="heading">Lines</T>
-        {quote.lines.length === 0 ? <T variant="muted">No lines yet.</T> : null}
-        {quote.lines.map((l) => {
-          const remove = () =>
-            confirmDestructive({
-              title: "Remove this line?",
-              message: l.description,
-              confirm: "Remove",
-              cancel: "Keep",
-              onConfirm: () => removeLine(sync, company, quote, l.id),
-            });
-          return (
-            // Swipe left to remove, or use the line's Remove button (also for screen readers).
-            <SwipeToDelete key={l.id} label="Remove" onDelete={remove}>
-              <View
-                style={{
-                  gap: 8,
-                  paddingBottom: 8,
-                  borderBottomWidth: 1,
-                  borderBottomColor: color.border,
-                  backgroundColor: color.surface,
-                }}
-              >
-                <Field
-                  label="Description"
-                  value={edit(`${l.id}:description`, l.description)}
-                  onChangeText={(v) => setEdits((e) => ({ ...e, [`${l.id}:description`]: v }))}
-                  onBlur={() => commit(l.id, "description")}
-                />
-                <Row style={{ gap: 12, alignItems: "flex-end" }}>
-                  <View style={{ flex: 1 }}>
-                    <Field
-                      label="Qty"
-                      value={edit(`${l.id}:quantity`, String(Number(l.quantity)))}
-                      onChangeText={(v) => setEdits((e) => ({ ...e, [`${l.id}:quantity`]: v }))}
-                      onBlur={() => commit(l.id, "quantity")}
-                      keyboardType="decimal-pad"
-                    />
-                  </View>
-                  <View style={{ flex: 2 }}>
-                    <Field
-                      label="Price each ($)"
-                      value={edit(`${l.id}:price`, (l.unit_price_cents / 100).toFixed(2))}
-                      onChangeText={(v) => setEdits((e) => ({ ...e, [`${l.id}:price`]: v }))}
-                      onBlur={() => commit(l.id, "price")}
-                      keyboardType="decimal-pad"
-                    />
-                  </View>
-                  {/* Line total and Remove close the Qty and Price row instead of their own row. */}
-                  <View style={{ alignItems: "flex-end", gap: 4, paddingBottom: 2 }}>
-                    <T variant="strong">{formatCents(lineTotal(l))}</T>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Remove ${l.description || "line"}`}
-                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                      onPress={remove}
-                    >
-                      <T variant="strong" style={{ color: color.link }}>
-                        Remove
-                      </T>
-                    </Pressable>
-                  </View>
-                </Row>
-              </View>
-            </SwipeToDelete>
-          );
-        })}
-        <Row style={{ gap: 12, alignItems: "flex-start" }}>
-          <View style={{ flex: 2 }}>
-            <Field
-              label="Work"
-              value={custom.description}
-              onChangeText={(v) => setCustom((c) => ({ ...c, description: v }))}
-              placeholder="Patch skimmer throat"
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Field
-              label="Price ($)"
-              value={custom.price}
-              onChangeText={(v) => setCustom((c) => ({ ...c, price: v }))}
-              keyboardType="decimal-pad"
-            />
-          </View>
-        </Row>
-        <Button title="Add Line" kind="secondary" onPress={addCustom} />
-      </Card>
+      <Block title="Lines">
+        {quote.lines.length === 0 ? (
+          <T variant="muted" style={inset}>
+            No lines yet.
+          </T>
+        ) : null}
+        {quote.lines.map((l) => (
+          <LineEditor
+            key={l.id}
+            line={l}
+            edit={edit}
+            setEdit={(field, v) => setEdits((e) => ({ ...e, [`${l.id}:${field}`]: v }))}
+            commit={(field) => commit(l.id, field)}
+            remove={() =>
+              confirmDestructive({
+                title: "Remove this line?",
+                message: l.description,
+                confirm: "Remove",
+                cancel: "Keep",
+                onConfirm: () => removeLine(sync, company, quote, l.id),
+              })
+            }
+          />
+        ))}
+        <NewLine custom={custom} setCustom={setCustom} onAdd={addCustom} />
+      </Block>
 
-      <Card>
-        <Field
-          label="Discount ($)"
-          value={discount ?? (quote.discount_cents ? (quote.discount_cents / 100).toFixed(2) : "")}
-          onChangeText={setDiscountText}
-          onBlur={saveDiscount}
-          keyboardType="decimal-pad"
-          hint={isOwner ? undefined : `Up to ${limitBps / 100}% of the subtotal.`}
-        />
-        <Totals totals={totals} />
-      </Card>
+      {ios ? (
+        // iPhone: one grouped block, the discount typed in its own row above the totals.
+        <Group>
+          {discountField}
+          {totalLines(totals).map((t) => (
+            <AmountRow key={t.label} {...t} />
+          ))}
+        </Group>
+      ) : (
+        <Card>
+          {discountField}
+          <Totals totals={totals} />
+        </Card>
+      )}
 
       {error ? <Notice tone="error">{error}</Notice> : null}
 
-      <Card>
-        <T variant="heading">Customer Decision</T>
-        <T variant="muted">
-          Sign on site to accept now (works offline), or send the quote to accept and pay online.
-        </T>
+      <Block
+        title="Customer Decision"
+        note="Sign on site to accept now (works offline), or send the quote to accept and pay online."
+      >
         <Button
           title="Customer Signs Now"
           disabled={quote.lines.length === 0}
@@ -317,27 +254,305 @@ function DraftQuote({ job, quote }: { job: Job; quote: JobQuote }) {
           onPress={() => void send()}
         />
         {!reportsOnline ? (
-          <T variant="muted">This app isn’t connected to the Tidemark server, so it can’t send.</T>
+          <T variant="muted" style={inset}>
+            This app isn’t connected to the Tidemark server, so it can’t send.
+          </T>
         ) : null}
-      </Card>
+      </Block>
     </View>
   );
 }
 
-function Totals({ totals }: { totals: ReturnType<typeof quoteTotals> }) {
-  const row = (label: string, value: string, strong = false) => (
-    <Row key={label} style={{ justifyContent: "space-between" }}>
-      <T variant={strong ? "strong" : "body"}>{label}</T>
-      <T variant={strong ? "strong" : "body"}>{value}</T>
-    </Row>
+/**
+ * A finding and the price book items that fit it. iPhone: a grouped block, one row per item
+ * with + to add (a checkmark once added). Android: buttons in the card, as before.
+ */
+function FindingSuggestions({
+  title,
+  items,
+  added,
+  onAdd,
+}: {
+  title: string;
+  items: PriceBookItem[];
+  added: (item: PriceBookItem) => boolean;
+  onAdd: (item: PriceBookItem) => void;
+}) {
+  const none = "No price book items for this component. Add a custom line.";
+  if (ios)
+    return (
+      <Group>
+        <ListRow>
+          <T variant="strong">{title}</T>
+        </ListRow>
+        {items.length === 0 ? (
+          <ListRow>
+            <T variant="muted">{none}</T>
+          </ListRow>
+        ) : null}
+        {items.map((item) =>
+          added(item) ? (
+            <ListRow
+              key={item.id}
+              title={item.name}
+              detail={formatCents(item.price_cents)}
+              trailing={
+                <Icon name="checkmark" size={17} color={color.textMuted} weight="semibold" />
+              }
+            />
+          ) : (
+            <ListRow
+              key={item.id}
+              title={item.name}
+              detail={formatCents(item.price_cents)}
+              accessibilityLabel={`Add ${item.name}, ${formatCents(item.price_cents)}`}
+              chevron={false}
+              trailing={<Icon name="add" size={20} color={color.link} weight="semibold" />}
+              onPress={() => onAdd(item)}
+            />
+          ),
+        )}
+      </Group>
+    );
+  return (
+    <View style={{ gap: 6 }}>
+      <T variant="strong">{title}</T>
+      {items.length === 0 ? (
+        <T variant="muted">{none}</T>
+      ) : (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {items.map((item) => {
+            const on = added(item);
+            return (
+              <Pressable
+                key={item.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Add ${item.name}, ${formatCents(item.price_cents)}`}
+                accessibilityState={{ disabled: on }}
+                disabled={on}
+                onPress={() => onAdd(item)}
+                style={{
+                  minHeight: 44,
+                  justifyContent: "center",
+                  paddingHorizontal: 12,
+                  borderRadius: 6,
+                  borderWidth: 1,
+                  borderColor: color.controlBorder,
+                  backgroundColor: color.surface,
+                  opacity: on ? 0.5 : 1,
+                }}
+              >
+                <T variant="small">
+                  {on ? "✓ " : "+ "}
+                  {item.name} · {formatCents(item.price_cents)}
+                </T>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}
+
+type LineField = "description" | "quantity" | "price";
+
+/** One quote line to edit. iPhone: a grouped block; Android: fields in the card, as before. */
+function LineEditor({
+  line: l,
+  edit,
+  setEdit,
+  commit,
+  remove,
+}: {
+  line: JobQuote["lines"][number];
+  edit: (key: string, fallback: string) => string;
+  setEdit: (field: LineField, v: string) => void;
+  commit: (field: LineField) => void;
+  remove: () => void;
+}) {
+  const qtyRef = useRef<TextInput>(null);
+  const priceRef = useRef<TextInput>(null);
+  const description = edit(`${l.id}:description`, l.description);
+  const quantity = edit(`${l.id}:quantity`, String(Number(l.quantity)));
+  const price = edit(`${l.id}:price`, (l.unit_price_cents / 100).toFixed(2));
+  const removeButton = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Remove ${l.description || "line"}`}
+      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+      onPress={remove}
+      style={ios ? { minHeight: 44, justifyContent: "center" } : undefined}
+    >
+      <T variant={ios ? "body" : "strong"} style={{ color: ios ? color.fail : color.link }}>
+        Remove
+      </T>
+    </Pressable>
+  );
+
+  if (ios)
+    return (
+      // Swipe left to remove, or use the line's Remove button (also for screen readers).
+      <View style={{ borderRadius: 12, overflow: "hidden" }}>
+        <SwipeToDelete label="Remove" onDelete={remove}>
+          <Group>
+            <FieldRow
+              label="Description"
+              value={description}
+              onChangeText={(v) => setEdit("description", v)}
+              onBlur={() => commit("description")}
+              next={qtyRef}
+            />
+            <FieldRow
+              ref={qtyRef}
+              label="Qty"
+              value={quantity}
+              onChangeText={(v) => setEdit("quantity", v)}
+              onBlur={() => commit("quantity")}
+              keyboardType="decimal-pad"
+              next={priceRef}
+            />
+            <FieldRow
+              ref={priceRef}
+              label="Price each ($)"
+              value={price}
+              onChangeText={(v) => setEdit("price", v)}
+              onBlur={() => commit("price")}
+              keyboardType="decimal-pad"
+            />
+            {/* Remove, and the line's total on the right. */}
+            <Row style={{ justifyContent: "space-between", paddingHorizontal: space["4"] }}>
+              {removeButton}
+              <T variant="strong" style={{ fontVariant: ["tabular-nums"] }}>
+                {formatCents(lineTotal(l))}
+              </T>
+            </Row>
+          </Group>
+        </SwipeToDelete>
+      </View>
+    );
+
+  return (
+    // Swipe left to remove, or use the line's Remove button (also for screen readers).
+    <SwipeToDelete label="Remove" onDelete={remove}>
+      <View
+        style={{
+          gap: 8,
+          paddingBottom: 8,
+          borderBottomWidth: 1,
+          borderBottomColor: color.border,
+          backgroundColor: color.surface,
+        }}
+      >
+        <Field
+          label="Description"
+          value={description}
+          onChangeText={(v) => setEdit("description", v)}
+          onBlur={() => commit("description")}
+        />
+        <Row style={{ gap: 12, alignItems: "flex-end" }}>
+          <View style={{ flex: 1 }}>
+            <Field
+              label="Qty"
+              value={quantity}
+              onChangeText={(v) => setEdit("quantity", v)}
+              onBlur={() => commit("quantity")}
+              keyboardType="decimal-pad"
+            />
+          </View>
+          <View style={{ flex: 2 }}>
+            <Field
+              label="Price each ($)"
+              value={price}
+              onChangeText={(v) => setEdit("price", v)}
+              onBlur={() => commit("price")}
+              keyboardType="decimal-pad"
+            />
+          </View>
+          {/* Line total and Remove close the Qty and Price row instead of their own row. */}
+          <View style={{ alignItems: "flex-end", gap: 4, paddingBottom: 2 }}>
+            <T variant="strong">{formatCents(lineTotal(l))}</T>
+            {removeButton}
+          </View>
+        </Row>
+      </View>
+    </SwipeToDelete>
+  );
+}
+
+type Custom = { description: string; price: string };
+
+/** A custom line: what the work is and its price, then Add Line. */
+function NewLine({
+  custom,
+  setCustom,
+  onAdd,
+}: {
+  custom: Custom;
+  setCustom: (update: (c: Custom) => Custom) => void;
+  onAdd: () => void;
+}) {
+  const priceRef = useRef<TextInput>(null);
+  const work = (
+    <FieldRow
+      label="Work"
+      value={custom.description}
+      onChangeText={(v) => setCustom((c) => ({ ...c, description: v }))}
+      placeholder="Patch skimmer throat"
+      next={priceRef}
+    />
+  );
+  const price = (
+    <FieldRow
+      ref={priceRef}
+      label="Price ($)"
+      value={custom.price}
+      onChangeText={(v) => setCustom((c) => ({ ...c, price: v }))}
+      keyboardType="decimal-pad"
+      placeholder={ios ? "0.00" : undefined}
+    />
   );
   return (
+    <>
+      {ios ? (
+        <FieldGroup>
+          {work}
+          {price}
+        </FieldGroup>
+      ) : (
+        <Row style={{ gap: 12, alignItems: "flex-start" }}>
+          <View style={{ flex: 2 }}>{work}</View>
+          <View style={{ flex: 1 }}>{price}</View>
+        </Row>
+      )}
+      <Button title="Add Line" kind="secondary" onPress={onAdd} />
+    </>
+  );
+}
+
+/** Subtotal to deposit, the total in bold. */
+function totalLines(totals: ReturnType<typeof quoteTotals>) {
+  return [
+    { label: "Subtotal", value: formatCents(totals.subtotal_cents) },
+    totals.discount_cents
+      ? { label: "Discount", value: `−${formatCents(totals.discount_cents)}` }
+      : null,
+    totals.tax_cents ? { label: "Tax", value: formatCents(totals.tax_cents) } : null,
+    { label: "Total", value: formatCents(totals.total_cents), strong: true },
+    totals.deposit_cents ? { label: "Deposit", value: formatCents(totals.deposit_cents) } : null,
+  ].filter((t) => t !== null);
+}
+
+/** Android: the totals as lines of text in the card. */
+function Totals({ totals }: { totals: ReturnType<typeof quoteTotals> }) {
+  return (
     <View style={{ gap: 4 }}>
-      {row("Subtotal", formatCents(totals.subtotal_cents))}
-      {totals.discount_cents ? row("Discount", `−${formatCents(totals.discount_cents)}`) : null}
-      {totals.tax_cents ? row("Tax", formatCents(totals.tax_cents)) : null}
-      {row("Total", formatCents(totals.total_cents), true)}
-      {totals.deposit_cents ? row("Deposit", formatCents(totals.deposit_cents)) : null}
+      {totalLines(totals).map((t) => (
+        <Row key={t.label} style={{ justifyContent: "space-between" }}>
+          <T variant={t.strong ? "strong" : "body"}>{t.label}</T>
+          <T variant={t.strong ? "strong" : "body"}>{t.value}</T>
+        </Row>
+      ))}
     </View>
   );
 }
@@ -346,39 +561,64 @@ function SentQuote({ job, quote }: { job: Job; quote: JobQuote }) {
   const company = useCompany();
   const { services } = useSession();
   const link = quoteLink(quote.token);
+  const totals = {
+    subtotal_cents: quote.subtotal_cents,
+    discount_cents: quote.discount_cents,
+    tax_cents: quote.tax_cents,
+    total_cents: quote.total_cents,
+    deposit_cents: quote.deposit_cents,
+  };
+  const heading = (
+    <Row style={[{ justifyContent: "space-between" }, inset]}>
+      <T variant="heading" style={{ flexShrink: 1 }}>
+        {`Quote${quote.number ? ` #${quote.number}` : ""}`}
+      </T>
+      <Pill label={QUOTE_STATUS_LABELS[quote.status]} color={QUOTE_STATUS_COLOR[quote.status]} />
+    </Row>
+  );
+  const decision =
+    quote.status === "accepted" ? (
+      <T variant="body" style={inset}>
+        Accepted by {quote.accepted_by_name}
+        {quote.accepted_at ? ` on ${new Date(quote.accepted_at).toLocaleDateString()}` : ""}. The
+        office schedules the repair.
+      </T>
+    ) : (
+      <T variant="muted" style={inset}>
+        Waiting for the customer to accept.
+      </T>
+    );
   return (
     <View style={{ gap: 16 }}>
-      <Card>
-        <T variant="heading">
-          Quote{quote.number ? ` #${quote.number}` : ""} · {QUOTE_STATUS_LABELS[quote.status]}
-        </T>
-        {quote.lines.map((l) => (
-          <Row key={l.id} style={{ justifyContent: "space-between" }}>
-            <T variant="small" style={{ flex: 1 }}>
-              {l.description}
-            </T>
-            <T variant="small">{formatCents(lineTotal(l))}</T>
-          </Row>
-        ))}
-        <Totals
-          totals={{
-            subtotal_cents: quote.subtotal_cents,
-            discount_cents: quote.discount_cents,
-            tax_cents: quote.tax_cents,
-            total_cents: quote.total_cents,
-            deposit_cents: quote.deposit_cents,
-          }}
-        />
-        {quote.status === "accepted" ? (
-          <T variant="body">
-            Accepted by {quote.accepted_by_name}
-            {quote.accepted_at ? ` on ${new Date(quote.accepted_at).toLocaleDateString()}` : ""}.
-            The office schedules the repair.
-          </T>
-        ) : (
-          <T variant="muted">Waiting for the customer to accept.</T>
-        )}
-      </Card>
+      {ios ? (
+        // iPhone: the lines and totals as a grouped list, amounts on the right.
+        <>
+          {heading}
+          <Group>
+            {quote.lines.map((l) => (
+              <AmountRow key={l.id} label={l.description} value={formatCents(lineTotal(l))} />
+            ))}
+            {totalLines(totals).map((t) => (
+              <AmountRow key={t.label} {...t} />
+            ))}
+          </Group>
+          {decision}
+        </>
+      ) : (
+        <Card>
+          {heading}
+          {quote.lines.map((l) => (
+            <Row key={l.id} style={{ justifyContent: "space-between" }}>
+              <T variant="small" style={{ flex: 1 }}>
+                {l.description}
+              </T>
+              <T variant="small">{formatCents(lineTotal(l))}</T>
+            </Row>
+          ))}
+          <Totals totals={totals} />
+          {decision}
+        </Card>
+      )}
       {link ? (
         <Button
           title="Share Quote Link"

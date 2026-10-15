@@ -1,5 +1,6 @@
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import type { TextInput } from "react-native";
 import { validateFinding, type FindingStatus, type Job, type Property } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useRow } from "../../../../../../data/hooks";
@@ -8,10 +9,11 @@ import { useCompany, useSession } from "../../../../../../state/session";
 import { MediaSection } from "../../../../../../features/media/MediaSection";
 import {
   Button,
-  Choice,
-  Field,
+  FieldGroup,
+  FieldRow,
   HeaderButton,
   Notice,
+  PickerRow,
   Screen,
   Section,
   T,
@@ -22,7 +24,7 @@ import { confirmDeleteFinding } from "../../../../../../features/inspection/remo
 import { haptics } from "../../../../../../ui/haptics";
 import { PoolDiagram } from "../../../../../../ui/PoolDiagram";
 import { useSheetLock } from "../../../../../../ui/sheet";
-import { color, ios } from "../../../../../../ui/theme";
+import { color, ios, space } from "../../../../../../ui/theme";
 
 /** Record a leak: what, where, how serious, and a pin on the pool diagram. */
 export default function FindingScreen() {
@@ -51,6 +53,7 @@ export default function FindingScreen() {
   const [status, setStatus] = useState<FindingStatus>(existing?.status ?? "open");
   const [notes, setNotes] = useState(existing?.notes ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const locationRef = useRef<TextInput>(null);
 
   // Anything changed since the sheet opened? Then Cancel asks first, and on iPhone a swipe down
   // doesn't close the sheet by accident (as in New Job).
@@ -121,47 +124,65 @@ export default function FindingScreen() {
             : null),
         }}
       />
-      <Field
-        label="What did you find?"
-        value={title}
-        onChangeText={setTitle}
-        error={errors.title}
-        placeholder="Return 3 line break"
-      />
+      <FieldGroup>
+        <FieldRow
+          label="What did you find?"
+          layout="stacked"
+          value={title}
+          onChangeText={setTitle}
+          error={errors.title}
+          placeholder="Return 3 line break"
+          autoCapitalize="sentences"
+          next={locationRef}
+        />
+      </FieldGroup>
       <Segmented
+        grouped
         label="Severity"
         options={config.severities.map((s) => ({ value: s.key, label: s.name }))}
         value={severity || null}
         onChange={setSeverity}
       />
       {errors.severity_key ? (
-        <T variant="small" style={{ color: color.fail }}>
+        <T
+          variant="small"
+          style={[{ color: color.fail }, ios && { paddingHorizontal: space["4"] }]}
+        >
           {errors.severity_key}
         </T>
       ) : null}
-      <Choice
-        label="Component"
-        options={[
-          { value: "", label: "None" },
-          ...insp.components.map((c) => ({ value: c.id, label: c.label })),
-        ]}
-        value={componentId ?? ""}
-        onChange={(v) => setComponentId(v || null)}
-      />
-      <Field
-        label="Location"
-        value={location}
-        onChangeText={setLocation}
-        placeholder="Between pad and pool, 6 ft from the fitting"
-      />
+      <FieldGroup>
+        <PickerRow
+          label="Component"
+          options={[
+            { value: "", label: "None" },
+            ...insp.components.map((c) => ({ value: c.id, label: c.label })),
+          ]}
+          value={componentId ?? ""}
+          onChange={(v) => setComponentId(v || null)}
+        />
+        <FieldRow
+          ref={locationRef}
+          label="Location"
+          layout="stacked"
+          wrap
+          value={location}
+          onChangeText={setLocation}
+          placeholder="Between pad and pool, 6 ft from the fitting"
+          returnKeyType="done"
+        />
+      </FieldGroup>
 
       <Section
+        grouped
         title="Pin on the diagram"
         action={
           pin ? <Button title="Clear Pin" kind="quiet" onPress={() => setPin(null)} /> : undefined
         }
       >
-        <T variant="muted">{pin ? "Tap again to move the pin." : "Tap where the leak is."}</T>
+        <T variant="muted" style={ios && { paddingHorizontal: space["4"] }}>
+          {pin ? "Tap again to move the pin." : "Tap where the leak is."}
+        </T>
         {property ? (
           <PoolDiagram
             shape={property.diagram_shape}
@@ -185,6 +206,7 @@ export default function FindingScreen() {
 
       {existing ? (
         <Segmented
+          grouped
           label="Status"
           options={[
             { value: "open", label: "Open" },
@@ -196,7 +218,9 @@ export default function FindingScreen() {
           onChange={setStatus}
         />
       ) : null}
-      <Field label="Notes" value={notes} onChangeText={setNotes} multiline />
+      <FieldGroup>
+        <FieldRow label="Notes" value={notes} onChangeText={setNotes} multiline />
+      </FieldGroup>
       <MediaSection
         target={{ jobId, findingId: existing?.id }}
         disabledReason={existing ? undefined : "Save the finding first, then add photos."}

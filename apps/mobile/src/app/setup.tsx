@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { Button, Card, Field, Notice, Screen, T } from "../ui/components";
-import { BrandHeader } from "../ui/BrandHeader";
+import { Block, Button, FieldGroup, FieldRow, Notice, Screen, T } from "../ui/components";
+import { AuthTitle, BrandHeader } from "../ui/BrandHeader";
 import { useSession, useSyncStatus } from "../state/session";
-import { color } from "../ui/theme";
+import { color, ios } from "../ui/theme";
 
 /** Shown after sign-in until this phone has a company: first download, create, or join. */
 export default function Setup() {
@@ -44,8 +44,9 @@ export default function Setup() {
     const offline = status.phase === "offline";
     return (
       <View style={{ flex: 1, backgroundColor: color.bg }}>
-        <BrandHeader />
+        {ios ? null : <BrandHeader />}
         <Screen>
+          <AuthTitle />
           {offline ? (
             <Notice tone="warning">
               Connect to the internet once so this phone can download your company. After that, it
@@ -67,42 +68,66 @@ export default function Setup() {
 
   return (
     <View style={{ flex: 1, backgroundColor: color.bg }}>
-      <BrandHeader />
+      {ios ? null : <BrandHeader />}
       <Screen>
-        <T variant="title">Set Up Your Company</T>
-        <T variant="muted">Signed in as {user?.email}</T>
-        {error ? <Notice tone="error">{error}</Notice> : null}
-        <Card>
-          <T variant="heading">Start a New Company</T>
-          <T variant="muted">You’ll be the owner. You can invite your techs after.</T>
-          <Field
-            label="Company name"
-            value={companyName}
-            onChangeText={setCompanyName}
-            autoCapitalize="words"
-          />
+        <AuthTitle title="Set Up Your Company" />
+        <T variant="muted" style={ios && { textAlign: "center" }}>
+          Signed in as {user?.email}
+        </T>
+        {error ? (
+          <Notice tone="error" tinted>
+            {error}
+          </Notice>
+        ) : null}
+        <Block
+          title="Start a New Company"
+          note="You’ll be the owner. You can invite your techs after."
+        >
+          <FieldGroup labelWidth={132}>
+            <FieldRow
+              label="Company name"
+              value={companyName}
+              onChangeText={setCompanyName}
+              placeholder={ios ? "Required" : undefined}
+              autoCapitalize="words"
+              autoComplete="organization"
+              textContentType="organizationName"
+              returnKeyType="go"
+              onSubmitEditing={() => void call("create")}
+            />
+          </FieldGroup>
           <Button
             title="Create Company"
             onPress={() => void call("create")}
             loading={busy === "create"}
           />
-        </Card>
-        <Card>
-          <T variant="heading">Join Your Team</T>
-          <T variant="muted">Use the invite code your owner sent to {user?.email}.</T>
-          <Field
-            label="Invite code"
-            value={inviteCode}
-            onChangeText={setInviteCode}
-            autoCapitalize="none"
-          />
+        </Block>
+        <Block
+          title="Join Your Team"
+          note={`Use the invite code your owner sent to ${user?.email ?? ""}.`}
+        >
+          <FieldGroup labelWidth={132}>
+            <FieldRow
+              label="Invite code"
+              value={inviteCode}
+              onChangeText={setInviteCode}
+              placeholder={ios ? "From your email" : undefined}
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              autoComplete="off"
+              textContentType="none"
+              returnKeyType={ios ? "join" : "go"}
+              onSubmitEditing={() => void call("join")}
+            />
+          </FieldGroup>
           <Button
             title="Join"
             kind="secondary"
             onPress={() => void call("join")}
             loading={busy === "join"}
           />
-        </Card>
+        </Block>
         <Button title="Sign Out" kind="quiet" onPress={() => void signOut()} />
       </Screen>
     </View>

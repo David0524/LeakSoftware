@@ -1,6 +1,6 @@
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
-import { Linking, Pressable, Share, View, type ViewStyle } from "react-native";
+import { useMemo, useRef, useState, type ReactNode } from "react";
+import { Linking, Pressable, Share, View, type TextInput, type ViewStyle } from "react-native";
 import {
   SIGNATURE_PURPOSE_LABELS,
   enabledSignaturePurposes,
@@ -21,12 +21,34 @@ import {
 } from "../../data/reports";
 import { API_URL } from "../../lib/config";
 import { useCompany, useSession } from "../../state/session";
-import { Button, Card, Field, Notice, Row, Segmented, T } from "../../ui/components";
-import { color, space } from "../../ui/theme";
+import {
+  Block,
+  Button,
+  FieldGroup,
+  FieldRow,
+  Group,
+  ListRow,
+  Notice,
+  Row,
+  Segmented,
+  T,
+} from "../../ui/components";
+import { color, ios, space } from "../../ui/theme";
 import { confirmDestructive } from "../../ui/confirm";
 
-/** Send by Email and Send by Text share one row. */
+/** Send by Email and Send by Text share one row (Android). */
 const halfButton: ViewStyle = { flex: 1, paddingHorizontal: space["2"] };
+
+/** On iPhone, text outside grouped blocks lines up with the rows' text. */
+const inset = ios ? { paddingHorizontal: space["4"] } : null;
+
+/**
+ * Send by Email and Send by Text: full-width and stacked on iPhone, so the labels never
+ * squeeze at large text sizes; side by side on Android, as before.
+ */
+function SendButtons({ children }: { children: ReactNode }) {
+  return ios ? <>{children}</> : <Row style={{ gap: space["2"] }}>{children}</Row>;
+}
 
 type Template = "homeowner" | "partner";
 
@@ -76,6 +98,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
   const [to, setTo] = useState<string | null>(null);
   const email = (to ?? customer?.email ?? "").trim();
   const [otherEmails, setOtherEmails] = useState<string | null>(null);
+  const otherRef = useRef<TextInput>(null);
 
   /** Other emails are saved on the customer, so later reports and quotes use them too. */
   function saveOtherEmails() {
@@ -170,78 +193,117 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
     }
   }
 
-  // The email fields, shared by sending a draft and sending a finished version.
+  // The email fields, shared by sending a draft and sending a finished version. They hold the
+  // customer's addresses, so iPhone doesn't offer to fill in the tech's own.
   const sendFields = () => (
-    <>
-      <Field
+    <FieldGroup>
+      <FieldRow
         label="Customer email"
+        layout="stacked"
         value={to ?? customer?.email ?? ""}
         onChangeText={setTo}
         keyboardType="email-address"
         autoCapitalize="none"
-        textContentType="emailAddress"
+        autoCorrect={false}
+        spellCheck={false}
+        autoComplete="off"
+        textContentType="none"
+        next={customer ? otherRef : undefined}
       />
       {customer ? (
-        <Field
+        <FieldRow
+          ref={otherRef}
           label="Other emails (optional)"
+          layout="stacked"
           value={otherEmails ?? (customer.cc_emails ?? []).join(" ")}
           onChangeText={setOtherEmails}
           onBlur={saveOtherEmails}
           keyboardType="email-address"
           autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
+          autoComplete="off"
+          textContentType="none"
+          returnKeyType="done"
           hint="They get the report too. Separate with spaces."
         />
       ) : null}
-    </>
+    </FieldGroup>
+  );
+
+  const signButton = ownSheet ? (
+    <Pressable
+      accessibilityRole="button"
+      hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+      style={{ flexShrink: 1, minHeight: ios ? 44 : undefined, justifyContent: "center" }}
+      onPress={() => router.push(`/jobs/${job.id}/signature`)}
+    >
+      <T variant="strong" style={{ color: color.link, textAlign: "right" }}>
+        Sign Work Authorization
+      </T>
+    </Pressable>
+  ) : null;
+  const signedOn = (s: (typeof signatures)[number]) =>
+    `${SIGNATURE_PURPOSE_LABELS[s.purpose] ?? s.purpose} · ${new Date(s.signed_at).toLocaleString()}`;
+  const removeButton = (s: (typeof signatures)[number]) => (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Remove signature of ${s.signer_name}`}
+      hitSlop={8}
+      style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: ios ? 0 : 8 }}
+      onPress={() => removeSignature(s.id, s.signer_name)}
+    >
+      <T variant={ios ? "body" : "strong"} style={{ color: color.fail }}>
+        Remove
+      </T>
+    </Pressable>
+  );
+  const noSignatures = (
+    <T variant="muted" style={inset}>
+      The customer signs at the end of the report: Review with Customer.
+    </T>
   );
 
   return (
     <View style={{ gap: 16 }}>
-      <Card>
-        <Row style={{ justifyContent: "space-between" }}>
-          <T variant="heading">Signatures</T>
-          {ownSheet ? (
-            <Pressable
-              accessibilityRole="button"
-              hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
-              style={{ flexShrink: 1 }}
-              onPress={() => router.push(`/jobs/${job.id}/signature`)}
-            >
-              <T variant="strong" style={{ color: color.link, textAlign: "right" }}>
-                Sign Work Authorization
-              </T>
-            </Pressable>
-          ) : null}
-        </Row>
-        {signatures.map((s) => (
-          <Row key={s.id} style={{ justifyContent: "space-between" }}>
-            <View style={{ flex: 1 }}>
-              <T variant="strong">{s.signer_name}</T>
-              <T variant="muted">
-                {SIGNATURE_PURPOSE_LABELS[s.purpose] ?? s.purpose} ·{" "}
-                {new Date(s.signed_at).toLocaleString()}
-              </T>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Remove signature of ${s.signer_name}`}
-              hitSlop={8}
-              style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 8 }}
-              onPress={() => removeSignature(s.id, s.signer_name)}
-            >
-              <T variant="strong" style={{ color: color.fail }}>
-                Remove
-              </T>
-            </Pressable>
-          </Row>
-        ))}
-        {signatures.length === 0 ? (
-          <T variant="muted">The customer signs at the end of the report: Review with Customer.</T>
-        ) : null}
-      </Card>
+      <Block title="Signatures" action={signButton}>
+        {ios ? (
+          // iPhone: a grouped list; swipe left on a row to remove it, or use its Remove button.
+          signatures.length ? (
+            <Group>
+              {signatures.map((s) => (
+                <ListRow
+                  key={s.id}
+                  title={s.signer_name}
+                  subtitle={signedOn(s)}
+                  trailing={removeButton(s)}
+                  onDelete={() => removeSignature(s.id, s.signer_name)}
+                  deleteLabel="Remove"
+                />
+              ))}
+            </Group>
+          ) : (
+            noSignatures
+          )
+        ) : (
+          <>
+            {signatures.map((s) => (
+              <Row key={s.id} style={{ justifyContent: "space-between" }}>
+                <View style={{ flex: 1 }}>
+                  <T variant="strong">{s.signer_name}</T>
+                  <T variant="muted">{signedOn(s)}</T>
+                </View>
+                {removeButton(s)}
+              </Row>
+            ))}
+            {signatures.length === 0 ? noSignatures : null}
+          </>
+        )}
+      </Block>
 
       {templates.length > 1 ? (
         <Segmented
+          grouped
           label="Report for"
           options={templates}
           value={template}
@@ -278,7 +340,9 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
         />
       ) : null}
       {draft?.final_sections && draft.model && draft.model !== PLAIN_MODEL ? (
-        <T variant="muted">AI draft: read every word before sending.</T>
+        <T variant="muted" style={inset}>
+          AI draft: read every word before sending.
+        </T>
       ) : null}
       {error?.at === "draft" ? <Notice tone="error">{error.text}</Notice> : null}
       {message ? <Notice>{message}</Notice> : null}
@@ -291,56 +355,51 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
             </Notice>
           ) : null}
           {sections.map((s) => (
-            <Field
-              key={`${draft.id}-${s.key}`}
-              label={s.title}
-              value={edits[s.key] ?? s.text}
-              onChangeText={(v) => setEdits((e) => ({ ...e, [s.key]: v }))}
-              onBlur={saveEdits}
-              multiline
-            />
+            // iPhone: the section's title as the header of a full-width text block.
+            <FieldGroup key={`${draft.id}-${s.key}`} title={s.title}>
+              <FieldRow
+                label={s.title}
+                value={edits[s.key] ?? s.text}
+                onChangeText={(v) => setEdits((e) => ({ ...e, [s.key]: v }))}
+                onBlur={saveEdits}
+                multiline
+              />
+            </FieldGroup>
           ))}
-          <Card>
-            <T variant="heading">Finish version {draft.version}</T>
+          <Block
+            title={`Finish version ${draft.version}`}
+            note={
+              waiting.length
+                ? `Signed by ${waiting.map((w) => w.signer_name).join(", ")}. Finish the report to lock this version with the signature.`
+                : "Hand the phone to the customer: they read the report and sign at the bottom. Signing locks this version."
+            }
+          >
             {waiting.length ? (
-              <>
-                <T variant="muted">
-                  {`Signed by ${waiting.map((w) => w.signer_name).join(", ")}. Finish the report to lock this version with the signature.`}
-                </T>
-                <Button
-                  title="Finish Report"
-                  loading={busy === "finish"}
-                  disabled={busy !== null || !reportsOnline}
-                  onPress={() => void run("finish")}
-                />
-              </>
+              <Button
+                title="Finish Report"
+                loading={busy === "finish"}
+                disabled={busy !== null || !reportsOnline}
+                onPress={() => void run("finish")}
+              />
             ) : (
-              <>
-                <T variant="muted">
-                  Hand the phone to the customer: they read the report and sign at the bottom.
-                  Signing locks this version.
-                </T>
-                <Button
-                  title="Review with Customer"
-                  disabled={busy !== null}
-                  onPress={() => {
-                    saveEdits();
-                    router.push(`/jobs/${job.id}/review?template=${template}`);
-                  }}
-                />
-              </>
+              <Button
+                title="Review with Customer"
+                disabled={busy !== null}
+                onPress={() => {
+                  saveEdits();
+                  router.push(`/jobs/${job.id}/review?template=${template}`);
+                }}
+              />
             )}
             {error?.at === "finish" ? <Notice tone="error">{error.text}</Notice> : null}
-          </Card>
-          <Card>
-            <T variant="heading">Send Without a Signature</T>
-            <T variant="muted">Sending locks this version.</T>
+          </Block>
+          <Block title="Send Without a Signature" note="Sending locks this version.">
             {sendFields()}
-            <Row style={{ gap: space["2"] }}>
+            <SendButtons>
               <Button
                 title="Send by Email"
                 kind="secondary"
-                style={halfButton}
+                style={ios ? undefined : halfButton}
                 loading={busy === "email"}
                 disabled={busy !== null || !reportsOnline}
                 onPress={() => void run("email")}
@@ -348,27 +407,28 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
               <Button
                 title="Send by Text"
                 kind="secondary"
-                style={halfButton}
+                style={ios ? undefined : halfButton}
                 loading={busy === "text"}
                 disabled={busy !== null || !reportsOnline}
                 onPress={() => void run("text")}
               />
-            </Row>
+            </SendButtons>
             {error?.at === "send" && !finished ? <Notice tone="error">{error.text}</Notice> : null}
-          </Card>
+          </Block>
         </>
       ) : null}
 
       {finished ? (
-        <Card>
-          <T variant="heading">{`Version ${finished.version} is finished`}</T>
-          <T variant="muted">Send it to the customer, or open the PDF.</T>
+        <Block
+          title={`Version ${finished.version} is finished`}
+          note="Send it to the customer, or open the PDF."
+        >
           {sendFields()}
-          <Row style={{ gap: space["2"] }}>
+          <SendButtons>
             <Button
               title="Send by Email"
               kind={draft?.final_sections ? "secondary" : "primary"}
-              style={halfButton}
+              style={ios ? undefined : halfButton}
               loading={busy === "email"}
               disabled={busy !== null || !reportsOnline}
               onPress={() => void run("email", finished.id)}
@@ -376,12 +436,12 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
             <Button
               title="Send by Text"
               kind="secondary"
-              style={halfButton}
+              style={ios ? undefined : halfButton}
               loading={busy === "text"}
               disabled={busy !== null || !reportsOnline}
               onPress={() => void run("text", finished.id)}
             />
-          </Row>
+          </SendButtons>
           {finished.token && API_URL ? (
             <Button
               title="Open PDF"
@@ -390,35 +450,61 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
             />
           ) : null}
           {error?.at === "send" && finished ? <Notice tone="error">{error.text}</Notice> : null}
-        </Card>
+        </Block>
       ) : null}
 
       {sent.length ? (
-        <Card>
-          <T variant="heading">Versions</T>
-          {sent.map((r) => (
-            <Row key={r.id} style={{ justifyContent: "space-between" }}>
-              <T variant="small">
-                Version {r.version}
-                {r.sent_at ? ` · ${new Date(r.sent_at).toLocaleDateString()}` : ""}
-                {r.status === "superseded" ? " · replaced" : ""}
-              </T>
-              {r.token && API_URL ? (
-                <Pressable
-                  accessibilityRole="link"
-                  accessibilityLabel={`View version ${r.version}`}
-                  hitSlop={12}
-                  style={{ minHeight: 44, justifyContent: "center" }}
-                  onPress={() => void Linking.openURL(`${API_URL}/r/${r.token}`)}
-                >
-                  <T variant="strong" style={{ color: color.link }}>
-                    View
-                  </T>
-                </Pressable>
-              ) : null}
-            </Row>
-          ))}
-        </Card>
+        <Block title="Versions">
+          {ios ? (
+            // iPhone: a grouped list; a row with a link opens that version.
+            <Group>
+              {sent.map((r) => {
+                const label = `Version ${r.version}${r.sent_at ? ` · ${new Date(r.sent_at).toLocaleDateString()}` : ""}${r.status === "superseded" ? " · replaced" : ""}`;
+                const url = r.token && API_URL ? `${API_URL}/r/${r.token}` : null;
+                return url ? (
+                  <ListRow
+                    key={r.id}
+                    title={label}
+                    accessibilityRole="link"
+                    accessibilityLabel={`View version ${r.version}`}
+                    chevron={false}
+                    trailing={
+                      <T variant="body" style={{ color: color.link }}>
+                        View
+                      </T>
+                    }
+                    onPress={() => void Linking.openURL(url)}
+                  />
+                ) : (
+                  <ListRow key={r.id} title={label} />
+                );
+              })}
+            </Group>
+          ) : (
+            sent.map((r) => (
+              <Row key={r.id} style={{ justifyContent: "space-between" }}>
+                <T variant="small">
+                  Version {r.version}
+                  {r.sent_at ? ` · ${new Date(r.sent_at).toLocaleDateString()}` : ""}
+                  {r.status === "superseded" ? " · replaced" : ""}
+                </T>
+                {r.token && API_URL ? (
+                  <Pressable
+                    accessibilityRole="link"
+                    accessibilityLabel={`View version ${r.version}`}
+                    hitSlop={12}
+                    style={{ minHeight: 44, justifyContent: "center" }}
+                    onPress={() => void Linking.openURL(`${API_URL}/r/${r.token}`)}
+                  >
+                    <T variant="strong" style={{ color: color.link }}>
+                      View
+                    </T>
+                  </Pressable>
+                ) : null}
+              </Row>
+            ))
+          )}
+        </Block>
       ) : null}
     </View>
   );

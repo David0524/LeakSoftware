@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { View } from "react-native";
+import { useRef, useState } from "react";
+import type { TextInput } from "react-native";
 import {
   MIN_INK,
   enabledSignaturePurposes,
@@ -17,9 +17,20 @@ import {
 import { useRow } from "../../../../data/hooks";
 import { currentPosition, storeSignatureSvg } from "../../../../lib/media";
 import { useCompany, useSession } from "../../../../state/session";
-import { Button, Choice, Field, Notice, Row, Screen, T } from "../../../../ui/components";
+import {
+  Button,
+  FieldGroup,
+  FieldRow,
+  Notice,
+  PickerRow,
+  Row,
+  Screen,
+  Section,
+  T,
+} from "../../../../ui/components";
 import { haptics } from "../../../../ui/haptics";
 import { SignaturePad } from "../../../../ui/SignaturePad";
+import { ios, space } from "../../../../ui/theme";
 
 /** Capture a customer's signature on the job. Works offline; the drawing uploads later. */
 export default function SignatureScreen() {
@@ -41,6 +52,7 @@ export default function SignatureScreen() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [drawing, setDrawing] = useState(false);
+  const roleRef = useRef<TextInput>(null);
 
   if (!job) {
     return (
@@ -97,26 +109,46 @@ export default function SignatureScreen() {
   // holds still while a finger is on the pad, so a drag draws instead of moving the page.
   return (
     <Screen scrollEnabled={!drawing}>
-      {purposes.length > 1 ? (
-        <Choice label="Signature for" options={purposes} value={purpose} onChange={setPurpose} />
-      ) : (
-        <T variant="strong">{purposes[0]!.label}</T>
+      {purposes.length > 1 ? null : (
+        <T variant="strong" style={ios && { paddingHorizontal: space["4"] }}>
+          {purposes[0]!.label}
+        </T>
       )}
-      <Field
-        label="Signer’s name"
-        value={name ?? customer?.name ?? ""}
-        onChangeText={setName}
-        autoCapitalize="words"
-        textContentType="name"
-      />
-      <Field
-        label="Role (optional)"
-        value={role}
-        onChangeText={setRole}
-        placeholder="Homeowner, property manager…"
-      />
-      <View style={{ gap: 8 }}>
-        <T variant="label">Signature</T>
+      {/* The signer is the customer, so iPhone doesn't offer to fill in the tech's own name. */}
+      <FieldGroup labelWidth={130}>
+        {purposes.length > 1 ? (
+          <PickerRow
+            label="Signature for"
+            options={purposes}
+            value={purpose}
+            onChange={setPurpose}
+          />
+        ) : null}
+        <FieldRow
+          label="Signer’s name"
+          layout="stacked"
+          value={name ?? customer?.name ?? ""}
+          onChangeText={setName}
+          autoCapitalize="words"
+          autoCorrect={false}
+          autoComplete="off"
+          textContentType="none"
+          next={roleRef}
+        />
+        <FieldRow
+          ref={roleRef}
+          label="Role (optional)"
+          layout="stacked"
+          value={role}
+          onChangeText={setRole}
+          placeholder="Homeowner, property manager…"
+          autoCapitalize="sentences"
+          autoComplete="off"
+          textContentType="none"
+          returnKeyType="done"
+        />
+      </FieldGroup>
+      <Section title="Signature" grouped>
         <SignaturePad
           strokes={strokes}
           onDrawing={setDrawing}
@@ -133,7 +165,7 @@ export default function SignatureScreen() {
             disabled={strokes.length === 0}
           />
         </Row>
-      </View>
+      </Section>
       {error ? <Notice tone="error">{error}</Notice> : null}
       <Button title="Save Signature" onPress={() => void save()} loading={saving} />
     </Screen>

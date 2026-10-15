@@ -1,7 +1,8 @@
 import { router } from "expo-router";
 import { useState } from "react";
-import { Button, Field, Notice, Screen, T } from "../../ui/components";
+import { Button, FieldGroup, FieldRow, Notice, Screen, T } from "../../ui/components";
 import { useSession } from "../../state/session";
+import { ios, space } from "../../ui/theme";
 
 /** Restore an expired sign-in without touching local data. */
 export default function Reauth() {
@@ -24,15 +25,30 @@ export default function Reauth() {
 
   return (
     <Screen>
-      <T variant="muted">Signed in as {user?.email}. Everything on this phone stays put.</T>
-      {error ? <Notice tone="error">{error}</Notice> : null}
-      <Field
-        label="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        onSubmitEditing={submit}
-      />
+      <T variant="muted" style={ios && { paddingHorizontal: space["4"] }}>
+        Signed in as {user?.email}. Everything on this phone stays put.
+      </T>
+      {error ? (
+        <Notice tone="error" tinted>
+          {error}
+        </Notice>
+      ) : null}
+      <FieldGroup labelWidth={96}>
+        <FieldRow
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          placeholder={ios ? "Required" : undefined}
+          secureTextEntry
+          autoFocus
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="current-password"
+          textContentType="password"
+          returnKeyType="go"
+          onSubmitEditing={submit}
+        />
+      </FieldGroup>
       <Button title="Sign In" onPress={submit} loading={busy} />
     </Screen>
   );
