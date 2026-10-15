@@ -22,3 +22,4 @@ export * from "./weather";
 export * from "./maintenance";
 export * from "./intl";
 export * from "./phone-history";
+export * from "./plans";

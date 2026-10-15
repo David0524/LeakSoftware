@@ -258,3 +258,111 @@ input[type="date"]::-webkit-date-and-time-value,
 input[type="time"]::-webkit-date-and-time-value {
   text-align: left;
 }
+
+/*
+ * Home page demos (components/landing): short, one-shot entrances replayed when a demo's step
+ * restarts. With Reduce Motion they don't run; the demos then rest on their last step.
+ */
+@keyframes lp-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  70% {
+    transform: scale(1.06);
+  }
+}
+@keyframes lp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes lp-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-36px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(4px);
+  }
+  80% {
+    transform: translateY(-2px);
+  }
+}
+@keyframes lp-ripple {
+  from {
+    opacity: 0.45;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+@keyframes lp-bar {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes lp-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes lp-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+.lp-pop {
+  animation: lp-pop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.lp-rise {
+  animation: lp-rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.lp-drop {
+  animation: lp-drop 0.7s cubic-bezier(0.3, 0.8, 0.3, 1) both;
+}
+.lp-ripple {
+  animation: lp-ripple 0.8s ease-out both;
+}
+.lp-bar {
+  transform-origin: bottom;
+  animation: lp-bar 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.lp-grow {
+  transform-origin: left;
+  animation: lp-grow 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.lp-blink {
+  animation: lp-blink 1.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-pop,
+  .lp-rise,
+  .lp-drop,
+  .lp-ripple,
+  .lp-bar,
+  .lp-grow,
+  .lp-blink {
+    animation: none;
+  }
+}
+/* The signature's reveal: a clip that widens left to right, as if written. */
+@keyframes lp-wipe {
+  from {
+    transform: scaleX(0);
+  }
+}
+.lp-wipe {
+  transform-box: fill-box;
+  transform-origin: left;
+  animation: lp-wipe 1.8s cubic-bezier(0.5, 0, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-wipe {
+    animation: none;
+  }
+}

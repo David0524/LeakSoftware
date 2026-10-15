@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-15 (owner: two packages, their prices, and a real home page)
+- **Two packages:** Leak Detection ($100 a month) and Pool Maintenance ($69 a month). Each includes 2 people; each person after that is $25 (Leak Detection) or $20 (Pool Maintenance) a month. Owners, office staff, and techs each count. The rule is `packages/core/src/plans.ts` (integer cents, tested). This replaces the placeholder flat price (2026-10-12). **Not built yet:** billing still charges one Stripe price per shop (M10); per-package prices, counting people, and limiting a shop to its package's features are follow-ups for the owner to schedule.
+- **Home page** (owner: "like the landing page of any SaaS software", Lovable as the reference): a centered hero with a package switch (the headline and a looping phone demo follow it), feature sections with small working demos built from the app's own pieces (stop cards, verdict pills, the pool diagram, the report, quote and pay, Plan Route, the dashboard, offline sync, maintenance plans), pricing with a team-size stepper, questions, and a navy closing band. The header is the frosted bar with Features and Pricing links.
+- **No gradient** (brand/BRAND.md): where Lovable has a color wash, the hero has the app's pool diagram drawn large in flat water colors. Demos are illustrations (hidden from screen readers, each section says it in words), only run while on screen, and rest on a still frame with Reduce Motion.
+- **The report demo's signature** is "Sam Sample" in Herr Von Muellerhoff (SIL Open Font License), turned into a path that writes itself.
+
 ## 2026-10-15 (owner: "make this app faster ... so everything feels lighter and older content loads faster")
 - **Measured first** (Playwright and curl against the live site, plus a local copy of the database scaled to three years: 9,300 jobs, 3,000 customers, 68,000 checklist results). The gaps: pages waited on chains of database round trips (the customer page made 8 in a row), and every row-security check ran a membership lookup per row, so anything over history got slower as a shop grew (counting three years of photos: 0.8 s).
 - **Related rows come back together:** jobs embed their pool, its owner, and the billed customer; the customer page is one query; the job page starts its Wrap-Up panels with the job. Each saved round trip is about 0.1 s in production.
