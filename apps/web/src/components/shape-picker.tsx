@@ -48,7 +48,9 @@ export function ShapePicker({
       <div
         role="radiogroup"
         aria-labelledby={id}
-        className="grid max-w-md grid-cols-5 gap-2"
+        // Fixed-width tiles centered in the row: a long name can't push the row off center,
+        // and on a narrow screen (or large text) they wrap instead of overflowing.
+        className="flex flex-wrap justify-center gap-1.5"
         onKeyDown={onKeyDown}
       >
         {DIAGRAM_SHAPES.map((s) => {
@@ -66,7 +68,7 @@ export function ShapePicker({
               disabled={disabled}
               onClick={() => onChange(on ? null : s.key)}
               className={cx(
-                "flex min-h-11 min-w-0 flex-col items-center gap-1 rounded-2xl px-0.5 pt-1.5 pb-1 text-[0.75rem] leading-tight font-medium whitespace-nowrap transition-colors",
+                "flex min-h-11 w-16 flex-col items-center gap-1 rounded-2xl px-0.5 pt-1.5 pb-1 text-[0.75rem] leading-tight font-medium transition-colors",
                 "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-60",
                 // Chosen: tinted, with the iOS selection ring drawn inside (no outlined boxes).
                 on

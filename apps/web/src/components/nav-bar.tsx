@@ -37,7 +37,7 @@ export function NavBar({
   return (
     <div
       className={cx(
-        "fixed inset-x-0 top-0 z-30 pt-[env(safe-area-inset-top)] transition-colors sm:hidden",
+        "nav-main fixed inset-x-0 top-0 z-30 pt-[env(safe-area-inset-top)] transition-colors sm:hidden",
         collapsed ? "glass-bar" : "bg-transparent",
       )}
     >

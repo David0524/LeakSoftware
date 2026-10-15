@@ -1004,9 +1004,6 @@ export function FindingsEditor({
   const remove = (f: FindingRow) => run(deleteFinding, { job: jobId, finding: f.id }, close);
   return (
     <div className="space-y-4">
-      {diagram?.propertyId ? (
-        <PoolShapeSetting jobId={jobId} propertyId={diagram.propertyId} shape={diagram.shape} />
-      ) : null}
       {findings.length === 0 ? (
         <p className="text-text-muted">No findings recorded.</p>
       ) : (
@@ -1119,34 +1116,6 @@ export function FindingsEditor({
   );
 }
 
-/** The pool's shape, saved as soon as it's tapped; the diagram below redraws. */
-function PoolShapeSetting({
-  jobId,
-  propertyId,
-  shape,
-}: {
-  jobId: string;
-  propertyId: string;
-  shape: DiagramShape | null;
-}) {
-  const [value, setValue] = useState<DiagramShape | null>(shape);
-  const { pending, error, run } = useRun();
-  return (
-    <div className="rounded-xl bg-surface px-4 py-3">
-      <ShapePicker
-        value={value}
-        hint={value ? undefined : "Not picked yet. Pick one so the diagram matches the pool."}
-        disabled={pending}
-        onChange={(next) => {
-          setValue(next);
-          run(setPoolShape, { job: jobId, property: propertyId, shape: next ?? "" });
-        }}
-      />
-      <ErrorText error={error} />
-    </div>
-  );
-}
-
 const STATUSES = Object.keys(FINDING_STATUS_LABELS) as FindingStatus[];
 
 function FindingForm({
@@ -1169,6 +1138,10 @@ function FindingForm({
   const [pin, setPin] = useState<{ x: number; y: number } | null>(
     finding?.pinX != null && finding.pinY != null ? { x: finding.pinX, y: finding.pinY } : null,
   );
+  // The pool's shape is set here, next to the pin (owner, 2026-10-15): saved as soon as it's
+  // tapped, and the pin diagram redraws.
+  const [shape, setShape] = useState<DiagramShape | null>(diagram?.shape ?? null);
+  const shapeSave = useRun();
   // In a sheet: the sheet carries the title and Cancel.
   return (
     <SettingsForm
@@ -1224,9 +1197,27 @@ function FindingForm({
         onChange={setStatus}
         options={STATUSES.map((s) => ({ value: s, label: FINDING_STATUS_LABELS[s] }))}
       />
+      {diagram?.propertyId ? (
+        <div>
+          <ShapePicker
+            value={shape}
+            hint={shape ? undefined : "Pick one so the diagram matches the pool."}
+            disabled={shapeSave.pending}
+            onChange={(next) => {
+              setShape(next);
+              shapeSave.run(setPoolShape, {
+                job: jobId,
+                property: diagram.propertyId!,
+                shape: next ?? "",
+              });
+            }}
+          />
+          <ErrorText error={shapeSave.error} />
+        </div>
+      ) : null}
       {diagram ? (
         <PinPicker
-          diagram={diagram}
+          diagram={{ ...diagram, shape }}
           pin={pin}
           color={severities.find((s) => s.key === severity)?.color}
           onChange={setPin}

@@ -12,8 +12,8 @@ export interface JobSection {
 }
 
 /**
- * The job page in parts. Phones get a segmented switcher in the glass layer under the
- * header, one part at a time (the page was 15 screens long); wider screens keep one page.
+ * The job page in parts. Phones get a segmented switcher pinned under the navigation bar,
+ * one part at a time (the page was 15 screens long); wider screens keep one page.
  * The part shown is kept in the URL (#checklist) so a reload or a shared link returns to it.
  */
 export function JobSections({ sections }: { sections: JobSection[] }) {
@@ -36,8 +36,10 @@ export function JobSections({ sections }: { sections: JobSection[] }) {
 
   return (
     <>
-      {/* The glass layer floats over the page; on it, the gray segmented track. */}
-      <div className="glass glass-strong sticky top-[calc(3rem+env(safe-area-inset-top))] z-20 mb-4 rounded-full p-1 after:pointer-events-none after:absolute after:inset-x-4 after:-bottom-3 after:h-3 after:bg-linear-to-b after:from-bg after:to-transparent sm:hidden">
+      {/* As in iOS: the segmented control sits on the page, and once scrolled it stays under
+          the navigation bar on the same frosted bar, one hairline below both (no floating
+          card). */}
+      <div className="nav-accessory glass-bar sticky top-[calc(2.75rem+env(safe-area-inset-top))] z-20 -mx-4 mb-4 px-4 py-2 sm:hidden">
         <div
           role="tablist"
           aria-label="Job sections"

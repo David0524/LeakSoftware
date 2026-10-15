@@ -115,6 +115,11 @@ header :focus-visible {
     backdrop-filter: none;
   }
 }
+/* A bar pinned under the navigation bar (the job's section switcher) extends it: one
+   hairline, under the accessory, not between the two. */
+body:has(.nav-accessory) .nav-main.glass-bar {
+  box-shadow: none;
+}
 /* Action sheet groups: the frosted panel iOS draws them on. */
 .glass-sheet {
   background: color-mix(in srgb, var(--lb-surface) 88%, transparent);
