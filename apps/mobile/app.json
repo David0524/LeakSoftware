@@ -66,7 +66,8 @@
           "locationWhenInUsePermission": "Tidemark tags photos with where they were taken so reports show they were taken on site."
         }
       ],
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
