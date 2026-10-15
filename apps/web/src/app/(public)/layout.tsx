@@ -29,7 +29,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
               Sign In
             </Link>
             <span className="hidden sm:block">
-              <Link href="/sign-up" className={buttonClass("primary")}>
+              <Link href="/sign-up" className={buttonClass("secondary")}>
                 Start Free Trial
               </Link>
             </span>

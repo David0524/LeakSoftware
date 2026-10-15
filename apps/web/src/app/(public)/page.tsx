@@ -150,7 +150,7 @@ export default function Home() {
             Try Tidemark free for 30 days with your whole crew. No card needed.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <ButtonLink href="/sign-up" className="px-7">
+            <ButtonLink href="/sign-up" kind="accent" className="px-7">
               Start Free Trial
             </ButtonLink>
             <ButtonLink href="/sign-in" kind="onDark" className="px-7">

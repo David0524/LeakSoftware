@@ -77,7 +77,7 @@ export function Hero() {
         </h1>
         <p className="mt-6 max-w-2xl text-[1.1875rem] text-text-muted text-balance">{copy.sub}</p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <ButtonLink href="/sign-up" className="px-7">
+          <ButtonLink href="/sign-up" kind="accent" className="px-7">
             Start Free Trial
           </ButtonLink>
           <ButtonLink href="#pricing" kind="secondary" className="px-7">

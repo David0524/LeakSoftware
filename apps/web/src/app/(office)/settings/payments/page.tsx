@@ -43,7 +43,7 @@ export default async function PaymentsSettingsPage({
   const company = await getCompany(office);
   const s = company.settings as Settings;
   const deposit = s.deposit ?? {};
-  // One orange button per page: while Stripe setup is pending, that is the main action.
+  // One filled button per page: while Stripe setup is pending, that is the main action.
   const setupPending = paymentsConfigured() && !account?.charges_enabled;
 
   return (

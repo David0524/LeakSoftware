@@ -265,9 +265,9 @@ export function Button({
 
 // Pills styled like iOS buttons, as on the website (owner, 2026-10-14): primary is the filled
 // one, secondary and danger are tinted (a light fill of the text color, no outline; Android's
-// "tonal" button), quiet is plain text. Orange is only for the primary action.
+// "tonal" button), quiet is plain text. Primary is filled blue with white text, the same
+// blue as links and tinted buttons (owner, 2026-10-15; brand/BRAND.md).
 const buttonKinds = {
-  // Navy on safety orange: white on orange is too faint in sun (brand/BRAND.md).
   primary: { box: { backgroundColor: color.primary }, text: { color: color.onPrimary } },
   secondary: { box: { backgroundColor: tint(color.link, 0.12) }, text: { color: color.link } },
   quiet: { box: { backgroundColor: "transparent" }, text: { color: color.link } },

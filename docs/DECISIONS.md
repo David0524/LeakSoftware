@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-15 (owner: "Go ahead" on blue buttons)
+- **Primary buttons are filled blue with white text** in the app, the website, and customer pages (`role.primary` `#1A63A0`, 6.3:1; dark `#2B78B8`, 4.7:1), the same blue as links and tinted buttons: one accent, filled for the main action, tinted for the rest, as on iOS. Navy on orange read as signage, competed with the blue, and sat too close to the Leaking and Attention colors.
+- **Orange is the brand accent:** the logo dot, a display highlight ("Get paid."), and on the marketing site the Start Free Trial button, at most one per screenful (hero and closing band; the header's is tinted blue). Orange buttons keep navy text. PDFs don't show buttons, so they are unchanged.
+
 ## 2026-10-15 (owner: two packages, their prices, and a real home page)
 - **Two packages:** Leak Detection ($100 a month) and Pool Maintenance ($69 a month). Each includes 2 people; each person after that is $25 (Leak Detection) or $20 (Pool Maintenance) a month. Owners, office staff, and techs each count. The rule is `packages/core/src/plans.ts` (integer cents, tested). This replaces the placeholder flat price (2026-10-12). **Not built yet:** billing still charges one Stripe price per shop (M10); per-package prices, counting people, and limiting a shop to its package's features are follow-ups for the owner to schedule.
 - **Home page** (owner: "like the landing page of any SaaS software", Lovable as the reference): a centered hero with a package switch (the headline and a looping phone demo follow it), feature sections with small working demos built from the app's own pieces (stop cards, verdict pills, the pool diagram, the report, quote and pay, Plan Route, the dashboard, offline sync, maintenance plans), pricing with a team-size stepper, questions, and a navy closing band. The header is the frosted bar with Features and Pricing links.

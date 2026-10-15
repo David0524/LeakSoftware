@@ -72,7 +72,7 @@ export function SettingsForm({
   children?: ReactNode;
   className?: string;
   danger?: boolean;
-  /** The page's main form. Orange is used once per page (house rule). */
+  /** The page's main form. One filled (primary) button per page (house rule). */
   primary?: boolean;
   /** Ask before submitting, e.g. "Remove this item?". */
   confirm?: string;

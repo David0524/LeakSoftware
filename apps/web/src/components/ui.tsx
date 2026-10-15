@@ -9,19 +9,23 @@ export function cx(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(" ");
 }
 
-type ButtonKind = "primary" | "secondary" | "quiet" | "danger" | "onDark";
+type ButtonKind = "primary" | "secondary" | "quiet" | "danger" | "onDark" | "accent";
 
 // Pills (owner, 2026-10-13: "utilize more pills"), styled like iOS buttons (owner, 2026-10-14:
 // "feel like Apple"): primary is the filled one, secondary and danger are tinted (a light fill
 // of the text color, no outline), quiet is plain text.
 const BUTTON: Record<ButtonKind, string> = {
-  // Navy on safety orange: white on orange is too faint (brand/BRAND.md).
-  primary: "bg-primary text-on-primary hover:brightness-95",
+  // Filled blue with white text, the same blue as links and tinted buttons, as on iOS
+  // (owner, 2026-10-15; brand/BRAND.md).
+  primary: "bg-primary text-on-primary hover:brightness-110 active:brightness-95",
   secondary: "bg-link/12 text-link hover:bg-link/18 active:bg-link/24",
   quiet: "text-link hover:bg-link/10",
   danger: "bg-status-fail/12 text-status-fail hover:bg-status-fail/18 active:bg-status-fail/24",
   // On the navy brand band (the home page hero).
   onDark: "border border-on-header text-on-header hover:bg-white/10",
+  // The brand's safety orange, for the marketing site's Start Free Trial only (one per
+  // screenful). Navy text: white on orange is too faint (brand/BRAND.md).
+  accent: "bg-safety text-navy hover:brightness-95",
 };
 
 export function buttonClass(kind: ButtonKind = "primary", extra?: string) {
