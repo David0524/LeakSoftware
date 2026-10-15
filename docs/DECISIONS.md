@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-15 (owner: "make this app faster ... so everything feels lighter and older content loads faster")
+- **Measured first** (Playwright and curl against the live site, plus a local copy of the database scaled to three years: 9,300 jobs, 3,000 customers, 68,000 checklist results). The gaps: pages waited on chains of database round trips (the customer page made 8 in a row), and every row-security check ran a membership lookup per row, so anything over history got slower as a shop grew (counting three years of photos: 0.8 s).
+- **Related rows come back together:** jobs embed their pool, its owner, and the billed customer; the customer page is one query; the job page starts its Wrap-Up panels with the job. Each saved round trip is about 0.1 s in production.
+- **Row security looks up the caller's companies once per query** (`20261012003200_fast_row_security.sql`), with the same answers as before (tenant-isolation and visibility tests unchanged). At three years of history: last month's jobs 32 → 3 ms, a year of jobs 291 → 5 ms, all photos 827 → 5 ms. New tables run `app.speed_up_policies()` after creating policies.
+- **Team names load with the team** (`membership` → `profile` key, `20261012003300`).
+
 ## 2026-10-14 (owner: "the mobile website feels more like Google than Apple"; do all of it)
 - **The office website follows iOS conventions on phones.** iOS navigation bar (large title that hands off to a small frosted title as you scroll, "‹ Back" on the left, the page's main action on the right; the navy logo bar is for wider screens); New Job is a **+** in that bar instead of a floating button; segmented controls with a white thumb; tinted buttons instead of outlined ones; switches instead of checkboxes; inset grouped lists with chevrons; sheets (grabber, swipe down to close) for short tasks; action sheets instead of the browser's confirm box; swipe actions on list rows (with a visible alternative); no snackbars.
 - **Type and color:** body text and controls use the system font (San Francisco) on Apple devices; Barlow stays for titles and the logo. The page background is iOS's grouped gray (#F2F2F7) behind white rows; new tokens `fill`, `separator`, and `thumb` (`brand/tokens.json`).

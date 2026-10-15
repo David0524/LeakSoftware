@@ -14,7 +14,7 @@ Offline-first field app and office web app for pool leak detection shops.
 - Config, not code: checklist components, test types, severities, exclusion reasons, report templates, and the price book are database rows seeded in `supabase/seed.sql`.
 - Every business table has `company_id` and RLS. To add one (see `supabase/migrations/20261012000100_foundation.sql` header):
   1. Create it with `company_id` and composite foreign keys `(parent_id, company_id)`, then `select app.make_synced('public.<table>')`.
-  2. Register it in `app.sync_table` with read/write roles and client-writable columns, and generate its policies and grants the same way `20261012000600_access.sql` does. Never grant by hand.
+  2. Register it in `app.sync_table` with read/write roles and client-writable columns, and generate its policies and grants the same way `20261012000600_access.sql` does. Never grant by hand. Then `select app.speed_up_policies();` so its policies check membership once per query, not per row (`280_fast_row_security` fails until you do).
   3. Add a row for it in `tests.make_company()` (`supabase/tests/001_helpers.test.sql`). `010_tenant_isolation` then checks it for owners and techs automatically, and fails if a company table is unregistered.
 - The device's SQLite database is the UI's source of truth. Every local write goes through the sync layer (row + outbox in one transaction). Never call Supabase directly from screens for synced data.
 - Money is integer cents. IDs are UUIDv7 generated on the device.
