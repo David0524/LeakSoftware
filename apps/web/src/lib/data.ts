@@ -92,11 +92,41 @@ export interface JobRow extends Job {
   secondTechName: string | null;
 }
 
-async function attach(office: Office, jobs: Job[]): Promise<JobRow[]> {
+/**
+ * A job with its pool, the pool's owner, and the customer billed, in the same response. Each
+ * of these was its own round trip to the database after the jobs came back.
+ */
+const JOB_SELECT =
+  "*, property:property!job_property_id_company_id_fkey(*, owner:customer!property_customer_id_company_id_fkey(*)), bill_to:customer!job_bill_to_customer_id_company_id_fkey(*)";
+
+type EmbeddedJob = Job & {
+  property?: (Property & { owner?: Customer | null }) | null;
+  bill_to?: Customer | null;
+};
+
+/** Starts loading the team now, so it arrives alongside the page's own query. */
+function preloadTeam(office: Office) {
+  getTeam(office).catch(() => {});
+}
+
+async function attach(office: Office, jobs: EmbeddedJob[]): Promise<JobRow[]> {
+  // Jobs loaded with JOB_SELECT carry their pool and customers: only the team is left.
+  if (jobs.every((j) => j.property !== undefined)) {
+    const team = await getTeam(office);
+    const techById = new Map(team.map((t) => [t.user_id, t.name]));
+    return jobs.map(({ property: embedded, bill_to, ...j }) => {
+      const { owner, ...property } = embedded ?? ({} as Property & { owner?: Customer | null });
+      return {
+        ...j,
+        property: embedded ? (property as Property) : null,
+        customer: bill_to ?? owner ?? null,
+        techName: j.assigned_user_id ? (techById.get(j.assigned_user_id) ?? "Teammate") : null,
+        secondTechName: j.second_tech_id ? (techById.get(j.second_tech_id) ?? "Teammate") : null,
+      };
+    });
+  }
   const supabase = await db();
   const propertyIds = [...new Set(jobs.map((j) => j.property_id))];
-  // Pools then their customers, while the team loads alongside (each was waiting on the
-  // one before it: four round trips in a row on every job list and job page).
   const poolsAndCustomers = async () => {
     const properties = propertyIds.length
       ? (must(await supabase.from("property").select("*").in("id", propertyIds)) as Property[])
@@ -153,10 +183,11 @@ export async function listJobs(
   opts: { limit?: number; search?: string } = {},
 ): Promise<JobRow[]> {
   const supabase = await db();
+  preloadTeam(office);
   const limit = Math.min(opts.limit ?? 50, 500);
   let q = supabase
     .from("job")
-    .select("*")
+    .select(JOB_SELECT)
     .eq("company_id", office.company.id)
     .is("deleted_at", null)
     .order("scheduled_start", { ascending: true, nullsFirst: false })
@@ -185,32 +216,34 @@ export async function listJobs(
     if (terms.length === 0) return [];
     q = q.or(terms.join(","));
   }
-  return attach(office, must(await q) as Job[]);
+  return attach(office, must(await q) as EmbeddedJob[]);
 }
 
 export async function jobsBetween(office: Office, fromIso: string, toIso: string) {
   const supabase = await db();
+  preloadTeam(office);
   const jobs = must(
     await supabase
       .from("job")
-      .select("*")
+      .select(JOB_SELECT)
       .eq("company_id", office.company.id)
       .is("deleted_at", null)
       .neq("status", "canceled")
       .gte("scheduled_start", fromIso)
       .lt("scheduled_start", toIso)
       .order("scheduled_start"),
-  ) as Job[];
+  ) as EmbeddedJob[];
   return attach(office, jobs);
 }
 
 /** Booked jobs with nobody assigned, from `fromIso` on (they wait in Needs a Time). */
 export async function unassignedFrom(office: Office, fromIso: string): Promise<JobRow[]> {
   const supabase = await db();
+  preloadTeam(office);
   const jobs = must(
     await supabase
       .from("job")
-      .select("*")
+      .select(JOB_SELECT)
       .eq("company_id", office.company.id)
       .is("deleted_at", null)
       .eq("status", "scheduled")
@@ -218,7 +251,7 @@ export async function unassignedFrom(office: Office, fromIso: string): Promise<J
       .gte("scheduled_start", fromIso)
       .order("scheduled_start")
       .limit(200),
-  ) as Job[];
+  ) as EmbeddedJob[];
   return attach(office, jobs);
 }
 
@@ -246,17 +279,18 @@ export async function getJob(office: Office, id: string): Promise<JobDetail | nu
       data: T[] | null;
       error: { message: string } | null;
     }>;
-  // Everything starts at once; only the customer and pool wait for the job row.
+  // Everything starts at once, the job's pool and customers in the same response.
+  preloadTeam(office);
   const jobRow = (async () => {
     const job = must(
       await supabase
         .from("job")
-        .select("*")
+        .select(JOB_SELECT)
         .eq("company_id", office.company.id)
         .eq("id", id)
         .is("deleted_at", null)
         .maybeSingle(),
-    ) as Job | null;
+    ) as EmbeddedJob | null;
     return job ? (await attach(office, [job]))[0]! : null;
   })();
   const [row, components, results, tests, findings, media, types, testTypes, severities] =
@@ -360,51 +394,59 @@ export async function listCustomers(office: Office, search: string) {
 
 export async function getCustomer(office: Office, id: string) {
   const supabase = await db();
-  const customer = must(
+  preloadTeam(office);
+  // The customer, their pools, each pool's jobs and plans: one round trip instead of four.
+  const row = must(
     await supabase
       .from("customer")
-      .select("*")
+      .select(
+        `*, properties:property!property_customer_id_company_id_fkey(*, jobs:job!job_property_id_company_id_fkey(*, bill_to:customer!job_bill_to_customer_id_company_id_fkey(*)), plans:service_plan!service_plan_property_id_company_id_fkey(*))`,
+      )
       .eq("company_id", office.company.id)
       .eq("id", id)
       .is("deleted_at", null)
+      .is("properties.deleted_at", null)
+      .is("properties.jobs.deleted_at", null)
+      .is("properties.plans.deleted_at", null)
+      .order("address_line1", { referencedTable: "properties" })
       .maybeSingle(),
-  ) as Customer | null;
-  if (!customer) return null;
-  const properties = must(
-    await supabase
-      .from("property")
-      .select("*")
-      .eq("customer_id", id)
-      .is("deleted_at", null)
-      .order("address_line1"),
-  ) as Property[];
-  const jobs = properties.length
-    ? (must(
-        await supabase
-          .from("job")
-          .select("*")
-          .in(
-            "property_id",
-            properties.map((p) => p.id),
-          )
-          .is("deleted_at", null)
-          .order("scheduled_start", { ascending: false, nullsFirst: true }),
-      ) as Job[])
-    : [];
-  const plans = properties.length
-    ? (must(
-        await supabase
-          .from("service_plan")
-          .select("*")
-          .in(
-            "property_id",
-            properties.map((p) => p.id),
-          )
-          .is("deleted_at", null)
-          .order("starts_on"),
-      ) as ServicePlan[])
-    : [];
-  return { customer, properties, plans, jobs: await attach(office, jobs) };
+  ) as
+    | (Customer & {
+        properties: (Property & {
+          jobs: (Job & { bill_to: Customer | null })[];
+          plans: ServicePlan[];
+        })[];
+      })
+    | null;
+  if (!row) return null;
+  const { properties: pools, ...customer } = row;
+  const properties = pools.map((p) => {
+    const pool: Partial<(typeof pools)[number]> = { ...p };
+    delete pool.jobs;
+    delete pool.plans;
+    return pool as Property;
+  });
+  const plans = pools
+    .flatMap((p) => p.plans)
+    .sort((a, b) => (a.starts_on ?? "").localeCompare(b.starts_on ?? ""));
+  const jobs: EmbeddedJob[] = pools
+    .flatMap((p) =>
+      p.jobs.map((j) => ({
+        ...j,
+        property: { ...properties.find((x) => x.id === p.id)!, owner: customer as Customer },
+      })),
+    )
+    // Newest first, unscheduled at the top.
+    .sort((a, b) =>
+      a.scheduled_start === b.scheduled_start
+        ? 0
+        : !a.scheduled_start
+          ? -1
+          : !b.scheduled_start
+            ? 1
+            : b.scheduled_start.localeCompare(a.scheduled_start),
+    );
+  return { customer: customer as Customer, properties, plans, jobs: await attach(office, jobs) };
 }
 
 // ---------------------------------------------------------------------------
@@ -427,7 +469,8 @@ export const getCompany = cache(async (office: Office) => {
   };
 });
 
-export async function listConfig<T>(office: Office, table: string): Promise<T[]> {
+/** Cached per request, so a page can start loading it before the part that shows it. */
+const listConfigCached = cache(async (office: Office, table: string): Promise<unknown[]> => {
   const supabase = await db();
   const rows = must(
     await supabase
@@ -435,8 +478,12 @@ export async function listConfig<T>(office: Office, table: string): Promise<T[]>
       .select("*")
       .eq("company_id", office.company.id)
       .is("deleted_at", null),
-  ) as (T & { sort_order?: number })[];
+  ) as { sort_order?: number }[];
   return rows.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+});
+
+export function listConfig<T>(office: Office, table: string): Promise<T[]> {
+  return listConfigCached(office, table) as Promise<T[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -455,7 +502,7 @@ export interface ReportRow {
   token: string | null;
 }
 
-export async function getReports(office: Office, jobId: string) {
+export const getReports = cache(async function getReports(office: Office, jobId: string) {
   const supabase = await db();
   const [reports, links, templates, messages] = await Promise.all([
     supabase
@@ -504,7 +551,7 @@ export async function getReports(office: Office, jobId: string) {
       template: string;
     }[],
   };
-}
+});
 
 export type { ComponentType, ExclusionReason, SeverityLevel, TestType };
 
@@ -546,7 +593,10 @@ export interface QuoteRow {
   repairNumber: number | null;
 }
 
-export async function getQuotes(office: Office, jobId: string): Promise<QuoteRow[]> {
+export const getQuotes = cache(async function getQuotes(
+  office: Office,
+  jobId: string,
+): Promise<QuoteRow[]> {
   const supabase = await db();
   const quotes = must(
     await supabase
@@ -599,7 +649,7 @@ export async function getQuotes(office: Office, jobId: string): Promise<QuoteRow
         (j) => j.id === q.repair_job_id,
       )?.number ?? null,
   }));
-}
+});
 
 export interface PaymentAccountState {
   stripe_account_id: string;
@@ -609,7 +659,9 @@ export interface PaymentAccountState {
 }
 
 /** The shop's Stripe account (owners only; techs get null). */
-export async function getPaymentAccount(office: Office): Promise<PaymentAccountState | null> {
+export const getPaymentAccount = cache(async function getPaymentAccount(
+  office: Office,
+): Promise<PaymentAccountState | null> {
   const supabase = await db();
   const { data } = await supabase
     .from("stripe_account")
@@ -617,7 +669,7 @@ export async function getPaymentAccount(office: Office): Promise<PaymentAccountS
     .eq("company_id", office.company.id)
     .maybeSingle();
   return (data as PaymentAccountState | null) ?? null;
-}
+});
 
 // ---------------------------------------------------------------------------
 // Invoices (M9)
@@ -657,7 +709,10 @@ const INVOICE_COLUMNS =
   "id, job_id, number, status, subtotal_cents, discount_cents, tax_cents, credit_cents, total_cents, amount_paid_cents, due_date, notes, sent_at, paid_at";
 
 /** A job's invoices, newest first, with lines, payments, and the customer link. */
-export async function getInvoices(office: Office, jobId: string): Promise<InvoiceRow[]> {
+export const getInvoices = cache(async function getInvoices(
+  office: Office,
+  jobId: string,
+): Promise<InvoiceRow[]> {
   const supabase = await db();
   const invoices = must(
     await supabase
@@ -702,7 +757,7 @@ export async function getInvoices(office: Office, jobId: string): Promise<Invoic
       (must(links) as { token: string; invoice_id: string }[]).find((l) => l.invoice_id === i.id)
         ?.token ?? null,
   }));
-}
+});
 
 export interface InvoiceListRow {
   id: string;
@@ -779,7 +834,10 @@ export interface SignatureRow {
 }
 
 /** Signatures taken on a job (customer acknowledgement, work authorization, completion). */
-export async function getSignatures(office: Office, jobId: string): Promise<SignatureRow[]> {
+export const getSignatures = cache(async function getSignatures(
+  office: Office,
+  jobId: string,
+): Promise<SignatureRow[]> {
   const supabase = await db();
   return must(
     await supabase
@@ -790,7 +848,7 @@ export async function getSignatures(office: Office, jobId: string): Promise<Sign
       .is("deleted_at", null)
       .order("signed_at"),
   ) as SignatureRow[];
-}
+});
 
 export interface WarrantyRow {
   id: string;

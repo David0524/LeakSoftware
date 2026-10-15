@@ -41,11 +41,15 @@ const KIND: Record<string, string> = {
 export default async function CustomerPage({ params }: PageProps<"/customers/[id]">) {
   const { id } = await params;
   const office = await getOffice();
-  const data = await getCustomer(office, id);
+  // All three at once: each used to wait for the one before.
+  const [data, team, company] = await Promise.all([
+    getCustomer(office, id),
+    getTeam(office),
+    getCompany(office),
+  ]);
   if (!data) notFound();
   const { customer, properties, plans, jobs } = data;
   const now = new Date();
-  const [team, company] = await Promise.all([getTeam(office), getCompany(office)]);
   const techs = team
     .filter((t) => t.status === "active")
     .map((t) => ({ id: t.user_id, name: t.name }));

@@ -76,6 +76,15 @@ export const metadata: Metadata = { title: "Job · Tidemark" };
 export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   const { id } = await params;
   const office = await getOffice();
+  // Start the Wrap-Up panels' queries now, alongside the job: they need only its id, and
+  // each used to wait for the whole job to load first. The panels pick up these requests.
+  const quiet = (p: Promise<unknown>) => p.catch(() => {});
+  quiet(getReports(office, id));
+  quiet(getSignatures(office, id));
+  quiet(getInvoices(office, id));
+  quiet(getQuotes(office, id));
+  quiet(listConfig(office, "price_book_item"));
+  if (office.isOwner) quiet(getPaymentAccount(office));
   const [detail, company] = await Promise.all([getJob(office, id), getCompany(office)]);
   if (!detail) notFound();
   const { job } = detail;
