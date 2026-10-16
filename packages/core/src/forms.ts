@@ -88,6 +88,8 @@ export interface NewJobDetails {
   accessNotes: string;
   timing: JobTiming;
   assignedUserId: string | null;
+  /** Leak detection (default) or a pool service visit. */
+  jobType?: "detection" | "maintenance";
 }
 
 type Values = Record<string, string | number | boolean | null>;
@@ -125,7 +127,7 @@ export function newJobRecords(
         has_spa: d.hasSpa,
         access_notes: blankToNull(d.accessNotes),
       };
-  const job: Values = { type: "detection", assigned_user_id: d.assignedUserId };
+  const job: Values = { type: d.jobType ?? "detection", assigned_user_id: d.assignedUserId };
   if (d.timing.kind === "now") {
     job.status = "in_progress";
     job.started_at = d.timing.at.toISOString();

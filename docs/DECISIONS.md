@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-16 (owner: pool care and leak detection are separate experiences; pool company requests)
+- **Services setting** (Settings › Company › Services: Pool Care, Leak Detection, or Both), saved as `company.settings.services` and synced to phones with the company row; shops from before the split have Both. Going forward a shop is usually one or the other, each its own subscription; Both is mainly for the demo. Core: `companyServices`, `offersLeak`, `offersPool`.
+- **What each hides.** Pool Care hides leak detection: the Leak Detection job choice, detection fee, booking questions, second tech, and pool shape on New Job; Tests and Findings on visits; Warranties; the Test Types, Severities, Exclusion Reasons, and Report Templates settings; and report terms. Leak Detection hides pool care: maintenance plans, Maintenance to Bill, the maintenance scheduling fields, and the chemical calculator. Existing jobs of the other kind still open.
+- **Pool service visits** have no Tests or Findings tab, and now take repair quotes (pumps, filters), on the website and the phones. Phones can create pool service visits (New Job follows the setting; with Both it asks).
+- **Fixed:** the phone's checklist skipped the service section, so pool service items didn't show on phones.
+- **Chemical calculator** (pool company request): website (Chemicals, and a button on pool service visits) and phone (Settings › Tools, and the visit screen). Enter the pool's size (gallons, or shape and measurements) and readings. It says what to add, in order: alkalinity, pH, calcium, stabilizer, salt, then chlorine. It also gives the saturation index. Doses are standard per-10,000-gallon chart amounts (`packages/core/src/chemistry.ts`, tested). Readings aren't saved yet; saving them on the visit is a follow-up if wanted.
+- **Company texting with a shared inbox** (pool company request, like Housecall Pro): proposed in `docs/plans/company-texting.md`, not built. It needs the owner's choice of provider, number, and who pays, plus US carrier registration per shop.
+
 ## 2026-10-15 (owner: Pool Maintenance first; each package shows only its own)
 - **The home page opens on Pool Maintenance**; Leak Detection is the other side of the switch (hero and pricing switches move together).
 - **Each package shows only what applies to it.** Maintenance: the service checklist, plans, repair quotes for pumps and filters, the monthly service invoice, its own questions, and "Clean it. Bill it. Get paid." Leak Detection: tests, the pool diagram, the report, leak repair quotes, its own questions, and "Find it. Report it. Get paid." Shared: On My Way, offline, Plan Route, the dashboard. Pricing shows the chosen package's card only.

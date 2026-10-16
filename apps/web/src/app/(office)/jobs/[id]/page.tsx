@@ -45,6 +45,7 @@ import {
   Row,
   StatusBadge,
   iconButtonClass,
+  ButtonLink,
 } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import {
@@ -298,30 +299,40 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                 ) : (
                   <SetUpChecklist jobId={job.id} />
                 )}
+                {job.type === "maintenance" ? (
+                  <ButtonLink href="/chemicals" kind="secondary" className="mt-4">
+                    Chemical Calculator
+                  </ButtonLink>
+                ) : null}
               </section>
             ),
           },
-          {
-            id: "findings",
-            label: "Findings",
-            content: (
-              <>
-                <section aria-labelledby="tests">
-                  <h2 id="tests" className="mb-3 font-display text-2xl font-bold">
-                    Tests
-                  </h2>
-                  <Tests detail={detail} tz={tz} />
-                </section>
+          // Tests and findings are leak detection; a pool service visit has none.
+          ...(job.type === "maintenance"
+            ? []
+            : [
+                {
+                  id: "findings",
+                  label: "Findings",
+                  content: (
+                    <>
+                      <section aria-labelledby="tests">
+                        <h2 id="tests" className="mb-3 font-display text-2xl font-bold">
+                          Tests
+                        </h2>
+                        <Tests detail={detail} tz={tz} />
+                      </section>
 
-                <section className="mt-8" aria-labelledby="findings">
-                  <h2 id="findings" className="mb-3 font-display text-2xl font-bold">
-                    Findings
-                  </h2>
-                  <Findings detail={detail} />
-                </section>
-              </>
-            ),
-          },
+                      <section className="mt-8" aria-labelledby="findings">
+                        <h2 id="findings" className="mb-3 font-display text-2xl font-bold">
+                          Findings
+                        </h2>
+                        <Findings detail={detail} />
+                      </section>
+                    </>
+                  ),
+                },
+              ]),
           {
             id: "photos",
             label: "Photos",
@@ -353,7 +364,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                   <Signatures detail={detail} tz={tz} />
                 </section>
 
-                {job.type === "detection" ? (
+                {job.type === "detection" || job.type === "maintenance" ? (
                   <section className="mt-8" aria-labelledby="quotes">
                     <h2 id="quotes" className="mb-3 font-display text-2xl font-bold">
                       Quotes

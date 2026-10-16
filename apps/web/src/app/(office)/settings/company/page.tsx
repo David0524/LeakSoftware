@@ -17,10 +17,12 @@ import {
   SettingsForm,
   SettingsSection,
 } from "@/components/settings-forms";
+import { ServicesForm } from "@/components/services-form";
 import { GROUP_ROW, PageHeader, cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
+import { companyServices, offersLeak } from "@leakbook/core";
 
 export const metadata: Metadata = { title: "Company Settings · Tidemark" };
 
@@ -71,6 +73,10 @@ export default async function CompanySettingsPage() {
         subtitle="Shown on reports, quotes, and invoices."
       />
       <div className="max-w-2xl space-y-6">
+        <SettingsSection title="Services">
+          <ServicesForm services={companyServices(company.settings)} />
+        </SettingsSection>
+
         <SettingsSection title="Company profile">
           <SettingsForm action={saveCompany} full>
             <SettingsFields labelWidth="7.5rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
@@ -151,19 +157,21 @@ export default async function CompanySettingsPage() {
           </SettingsForm>
         </SettingsSection>
 
-        <SettingsSection title="Report terms">
-          <SettingsForm action={saveReportText} full>
-            <SettingsFields>
-              <STextArea
-                label="Disclaimer"
-                name="report_disclaimer"
-                rows={8}
-                defaultValue={str("report_disclaimer")}
-                hint="Printed at the end of every report, as written. Reports already sent keep the text they were sent with."
-              />
-            </SettingsFields>
-          </SettingsForm>
-        </SettingsSection>
+        {offersLeak(company.settings) ? (
+          <SettingsSection title="Report terms">
+            <SettingsForm action={saveReportText} full>
+              <SettingsFields>
+                <STextArea
+                  label="Disclaimer"
+                  name="report_disclaimer"
+                  rows={8}
+                  defaultValue={str("report_disclaimer")}
+                  hint="Printed at the end of every report, as written. Reports already sent keep the text they were sent with."
+                />
+              </SettingsFields>
+            </SettingsForm>
+          </SettingsSection>
+        ) : null}
 
         <SettingsSection title="Job numbers">
           <SettingsForm action={saveNextJobNumber} full>

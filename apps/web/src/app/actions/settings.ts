@@ -221,6 +221,24 @@ export async function revokeInvite(_: FormState, form: FormData): Promise<FormSt
   return done("/settings/team", "Invite revoked.");
 }
 
+/** Owners: what the shop does, pool care, leak detection, or both (owner, 2026-10-16). */
+export async function saveServices(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const choice = text(form, "services");
+  if (choice !== "pool" && choice !== "leak" && choice !== "both")
+    return { error: "Pick what your shop does." };
+  const { data: company } = await supabase
+    .from("company")
+    .select("settings")
+    .eq("id", office.company.id)
+    .single();
+  const settings = { ...((company?.settings ?? {}) as Record<string, unknown>), services: choice };
+  const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
+  if (error) return failed(error);
+  revalidatePath("/", "layout");
+  return { message: "Saved." };
+}
+
 /** Owners: techs see every job, or only their own (owner request, 2026-10-13). */
 export async function saveJobVisibility(_: FormState, form: FormData): Promise<FormState> {
   const { office, supabase } = await owner();

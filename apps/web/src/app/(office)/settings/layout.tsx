@@ -4,7 +4,8 @@ import { NavLinks } from "@/components/nav-links";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { Notice } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { SETTINGS_SECTIONS } from "@/lib/settings-sections";
+import { getCompany } from "@/lib/data";
+import { settingsSections } from "@/lib/settings-sections";
 
 // Each section names itself; a tech (who sees only the notice below) still gets a title.
 export const metadata: Metadata = { title: "Settings · Tidemark" };
@@ -35,7 +36,11 @@ async function OwnersOnly({ children }: { children: React.ReactNode }) {
       {/* Phones and tablets: the sections are a grouped list on Settings itself, and each
           section's navigation bar goes back to it. */}
       <aside className="min-w-0 max-md:hidden">
-        <NavLinks links={SETTINGS_SECTIONS} vertical label="Settings sections" />
+        <NavLinks
+          links={settingsSections((await getCompany(office)).settings)}
+          vertical
+          label="Settings sections"
+        />
       </aside>
       <div className="min-w-0">{children}</div>
     </div>

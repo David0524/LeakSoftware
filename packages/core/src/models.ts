@@ -24,7 +24,32 @@ export interface CompanySettings {
   intake_questions?: IntakeQuestion[];
   /** Techs see every job (default), or only their own (owner setting, 2026-10-13). */
   techs_see_all_jobs?: boolean;
+  /** What the shop does, which decides what the app shows (owner, 2026-10-16). */
+  services?: Services;
 }
+
+/**
+ * The shop's line of work: pool care (cleaning routes and repairs), leak detection, or both.
+ * Each is its own experience (and, later, its own subscription). Shops from before the split
+ * have both.
+ */
+export type Services = "pool" | "leak" | "both";
+
+export const SERVICES_LABELS: Record<Services, string> = {
+  pool: "Pool Care",
+  leak: "Leak Detection",
+  both: "Both",
+};
+
+export function companyServices(settings: unknown): Services {
+  const v = (settings as Partial<CompanySettings> | null)?.services;
+  return v === "pool" || v === "leak" || v === "both" ? v : "both";
+}
+
+/** Whether the shop does leak detection (leak jobs, tests, findings, reports, warranties). */
+export const offersLeak = (settings: unknown) => companyServices(settings) !== "pool";
+/** Whether the shop does pool care (cleaning plans, the service checklist, monthly billing). */
+export const offersPool = (settings: unknown) => companyServices(settings) !== "leak";
 
 /** Whether this member sees every job: owners always; techs unless the owner limits them. */
 export function seesAllJobs(role: string | null | undefined, settings: unknown): boolean {

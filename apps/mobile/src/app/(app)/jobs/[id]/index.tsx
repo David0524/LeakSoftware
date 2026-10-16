@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { router, Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Linking, Platform, Pressable, StyleSheet, TextInput, View } from "react-native";
 import {
@@ -189,37 +189,46 @@ export default function JobDetail() {
       </Group>
       {property?.access_notes ? <Notice tone="warning">{property.access_notes}</Notice> : null}
 
-      <Group>
-        <ListRow>
-          <Row>
-            <T variant="body" style={{ flex: 1 }}>
-              Detection fee ($)
-            </T>
-            <TextInput
-              accessibilityLabel="Detection fee ($)"
-              value={fee ?? (job.fee_cents != null ? (job.fee_cents / 100).toFixed(2) : "")}
-              onChangeText={setFee}
-              onBlur={() => {
-                if (fee === null) return;
-                const cents = fee.trim() ? parseDollars(fee) : null;
-                if (cents === null && fee.trim()) return setFee(null);
-                update({ fee_cents: cents });
-                setFee(null);
-              }}
-              keyboardType="decimal-pad"
-              placeholder="0.00"
-              placeholderTextColor={color.textMuted}
-              style={styles.feeInput}
-            />
-          </Row>
-        </ListRow>
-        <Toggle
-          inList
-          label="Leak location marked"
-          value={job.location_marked ?? false}
-          onChange={(v) => update({ location_marked: v })}
+      {/* Leak detection only: the fee and whether the leak was marked. */}
+      {job.type === "maintenance" ? (
+        <Button
+          title="Chemical Calculator"
+          kind="secondary"
+          onPress={() => router.push("/chemicals")}
         />
-      </Group>
+      ) : (
+        <Group>
+          <ListRow>
+            <Row>
+              <T variant="body" style={{ flex: 1 }}>
+                Detection fee ($)
+              </T>
+              <TextInput
+                accessibilityLabel="Detection fee ($)"
+                value={fee ?? (job.fee_cents != null ? (job.fee_cents / 100).toFixed(2) : "")}
+                onChangeText={setFee}
+                onBlur={() => {
+                  if (fee === null) return;
+                  const cents = fee.trim() ? parseDollars(fee) : null;
+                  if (cents === null && fee.trim()) return setFee(null);
+                  update({ fee_cents: cents });
+                  setFee(null);
+                }}
+                keyboardType="decimal-pad"
+                placeholder="0.00"
+                placeholderTextColor={color.textMuted}
+                style={styles.feeInput}
+              />
+            </Row>
+          </ListRow>
+          <Toggle
+            inList
+            label="Leak location marked"
+            value={job.location_marked ?? false}
+            onChange={(v) => update({ location_marked: v })}
+          />
+        </Group>
+      )}
 
       {/* The primary action full width; the others side by side as half-width pills. */}
       <View style={{ gap: space["2"] }}>
@@ -250,10 +259,17 @@ export default function JobDetail() {
       <Segmented
         options={[
           { value: "checklist", label: "Checklist" },
-          { value: "tests", label: "Tests" },
-          { value: "findings", label: "Findings" },
+          // Tests and findings are leak detection; a pool service visit has none.
+          ...(job.type === "maintenance"
+            ? []
+            : [
+                { value: "tests" as const, label: "Tests" },
+                { value: "findings" as const, label: "Findings" },
+              ]),
           { value: "report", label: "Report" },
-          ...(job.type === "detection" ? [{ value: "quote" as const, label: "Quote" }] : []),
+          ...(job.type === "detection" || job.type === "maintenance"
+            ? [{ value: "quote" as const, label: "Quote" }]
+            : []),
         ]}
         value={tab}
         onChange={setTab}

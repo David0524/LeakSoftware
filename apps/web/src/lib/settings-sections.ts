@@ -1,3 +1,5 @@
+import { offersLeak } from "@leakbook/core";
+
 /** Settings pages, in the order shown in the settings sidebar. */
 export const SETTINGS_SECTIONS = [
   { href: "/settings/company", label: "Company and Branding" },
@@ -12,3 +14,18 @@ export const SETTINGS_SECTIONS = [
   { href: "/settings/exclusions", label: "Exclusion Reasons" },
   { href: "/settings/reports", label: "Report Templates" },
 ];
+
+/** Leak detection's settings: hidden for pool care shops (company services setting). */
+const LEAK_ONLY = [
+  "/settings/tests",
+  "/settings/severities",
+  "/settings/exclusions",
+  "/settings/reports",
+];
+
+/** The settings pages this shop uses. */
+export function settingsSections(settings: unknown) {
+  return offersLeak(settings)
+    ? SETTINGS_SECTIONS
+    : SETTINGS_SECTIONS.filter((s) => !LEAK_ONLY.includes(s.href));
+}

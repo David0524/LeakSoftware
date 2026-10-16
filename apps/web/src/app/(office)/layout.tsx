@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { accessNotice } from "@leakbook/core";
 import { cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getAccess } from "@/lib/data";
+import { getAccess, getCompany } from "@/lib/data";
 import { officeLinks } from "@/lib/nav";
 
 /**
@@ -60,7 +60,8 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
 
 async function PhoneTabs() {
   const office = await getOffice();
-  return <TabBar links={officeLinks(office.isOwner)} />;
+  const company = await getCompany(office);
+  return <TabBar links={officeLinks(office.isOwner, company.settings)} />;
 }
 
 /** Trial ending, payment failed, or read-only (M10 billing). */
@@ -94,7 +95,8 @@ async function AccessBanner() {
 
 async function OfficeNav() {
   const office = await getOffice();
-  const links = officeLinks(office.isOwner);
+  const company = await getCompany(office);
+  const links = officeLinks(office.isOwner, company.settings);
   return (
     <>
       <NavLinks links={links} className="hidden sm:flex" />

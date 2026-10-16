@@ -6,6 +6,7 @@ import { MapsChoice } from "@/components/maps-choice";
 import { AppearanceChoice } from "@/components/theme-toggle";
 import { Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
+import { getCompany } from "@/lib/data";
 import { officeLinks } from "@/lib/nav";
 import { SUPPORT_EMAIL } from "@/lib/site";
 
@@ -17,7 +18,8 @@ export const metadata: Metadata = { title: "More · Tidemark" };
  */
 export default async function MorePage() {
   const office = await getOffice();
-  const rest = officeLinks(office.isOwner).slice(4);
+  const company = await getCompany(office);
+  const rest = officeLinks(office.isOwner, company.settings).slice(4);
   const saved = (await cookies()).get("lb_maps")?.value;
   const maps = saved === "apple" || saved === "google" ? saved : "auto";
   return (

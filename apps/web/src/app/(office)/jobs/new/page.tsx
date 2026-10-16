@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import {
+  companyServices,
   formatAddress,
   maintenanceSettings,
   seesAllJobs,
@@ -36,7 +37,11 @@ export default async function NewJobPage() {
       <PageHeader
         title="New Job"
         back={{ href: "/jobs", label: "Jobs" }}
-        subtitle="A leak detection visit. Repair jobs come from accepted quotes."
+        subtitle={
+          companyServices(company.settings) === "pool"
+            ? "A pool service visit, or a plan that repeats. Repair jobs come from accepted quotes."
+            : "Repair jobs come from accepted quotes."
+        }
       />
       <NewJobForm
         customers={customers.map((c) => ({
@@ -49,6 +54,7 @@ export default async function NewJobPage() {
           .filter((m) => m.status === "active")
           .map((m) => ({ id: m.user_id, name: m.name }))}
         canPlan={office.isOwner}
+        services={companyServices(company.settings)}
         visitMinutes={maintenanceSettings(company.settings).visitMinutes}
         lockedTech={seesAllJobs(office.company.role, company.settings) ? undefined : office.user.id}
         fees={prices

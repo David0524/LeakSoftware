@@ -18,6 +18,7 @@ import {
   type PoolType,
   type Property,
   seesAllJobs,
+  companyServices,
 } from "@leakbook/core";
 import { useRows } from "../../../data/hooks";
 import { useCompany, useSession } from "../../../state/session";
@@ -53,6 +54,12 @@ export default function NewJob() {
   const priceBook = useRows<PriceBookItem>("price_book_item", company.id);
   const questions = company.settings.intake_questions ?? [];
   const team = services.sync.team().filter((p) => p.id !== user?.id);
+  // What the shop does decides the kind of job (company services setting, 2026-10-16).
+  const offered = companyServices(company.settings);
+  const [jobType, setJobType] = useState<"detection" | "maintenance">(
+    offered === "pool" ? "maintenance" : "detection",
+  );
+  const maintenance = jobType === "maintenance";
 
   const [customerId, setCustomerId] = useState<string | undefined>();
   const [search, setSearch] = useState("");
@@ -144,7 +151,7 @@ export default function NewJob() {
     if (when === "scheduled" && !input.scheduleDate) e.scheduleDate = "Pick a date.";
     setErrors(e);
     const feeCents = feeText.trim() ? parseDollars(feeText) : null;
-    const badFee = Boolean(feeText.trim()) && (feeCents === null || feeCents < 0);
+    const badFee = !maintenance && Boolean(feeText.trim()) && (feeCents === null || feeCents < 0);
     setFeeError(badFee ? "Enter a price like 649." : undefined);
     if (Object.keys(e).length > 0 || badFee) return;
 
@@ -153,6 +160,7 @@ export default function NewJob() {
       hasSpa,
       accessNotes,
       assignedUserId: assignToMe || !seesAll ? (user?.id ?? null) : null,
+      jobType,
       timing:
         when === "now"
           ? { kind: "now", at: new Date() }
@@ -185,19 +193,20 @@ export default function NewJob() {
         ...records.job,
         property_id: prop,
         bill_to_customer_id: cust,
-        fee_cents: feeCents,
-        second_tech_id: secondTech === "none" ? null : secondTech,
-        intake: answers,
+        // Pool service visits have no detection fee, second tech, or booking questions.
+        fee_cents: maintenance ? null : feeCents,
+        second_tech_id: maintenance || secondTech === "none" ? null : secondTech,
+        intake: maintenance ? {} : answers,
       });
       // The checklist is ready the moment the job opens, even offline.
       const existingProperty = properties.find((p) => p.id === prop);
       const spa = existingProperty ? existingProperty.has_spa : hasSpa;
       const type = existingProperty ? (existingProperty.pool_type ?? null) : poolType;
-      for (const planned of planComponents(componentTypes, {
-        has_pool: true,
-        has_spa: spa,
-        pool_type: type,
-      })) {
+      for (const planned of planComponents(
+        componentTypes,
+        { has_pool: true, has_spa: spa, pool_type: type },
+        jobType,
+      )) {
         const componentId = sync.insert("job_component", company.id, { job_id: job, ...planned });
         sync.insert("checklist_item_result", company.id, {
           job_id: job,
@@ -219,6 +228,17 @@ export default function NewJob() {
             headerLeft: () => <HeaderButton title="Cancel" onPress={cancel} />,
             gestureEnabled: !dirty,
           }}
+        />
+      ) : null}
+      {offered === "both" ? (
+        <Segmented
+          label="Job"
+          value={jobType}
+          onChange={setJobType}
+          options={[
+            { value: "detection", label: "Leak Detection" },
+            { value: "maintenance", label: "Pool Service" },
+          ]}
         />
       ) : null}
       <Section title="Customer">
@@ -300,7 +320,7 @@ export default function NewJob() {
         )}
       </Section>
 
-      {questions.length > 0 ? (
+      {questions.length > 0 && !maintenance ? (
         <Section title="Booking">
           {questions.map((q) =>
             q.type === "multi" ? (
@@ -407,12 +427,14 @@ export default function NewJob() {
               onChange={setPoolType}
             />
             <Toggle label="Has a spa" value={hasSpa} onChange={setHasSpa} />
-            <ShapePicker
-              value={shape}
-              onChange={setShape}
-              label="Pool shape (optional)"
-              hint="Leave it blank if you don’t know yet; set it later on Findings."
-            />
+            {maintenance ? null : (
+              <ShapePicker
+                value={shape}
+                onChange={setShape}
+                label="Pool shape (optional)"
+                hint="Leave it blank if you don’t know yet; set it later on Findings."
+              />
+            )}
             <Field
               label="Access notes"
               value={accessNotes}
@@ -476,7 +498,7 @@ export default function NewJob() {
         {seesAll ? (
           <Toggle label="Assign to me" value={assignToMe} onChange={setAssignToMe} />
         ) : null}
-        {team.length > 0 ? (
+        {team.length > 0 && !maintenance ? (
           <Choice
             label="Second tech"
             options={[

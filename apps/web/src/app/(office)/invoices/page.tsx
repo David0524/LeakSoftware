@@ -1,18 +1,20 @@
+import { offersPool } from "@leakbook/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { INVOICE_STATUS_LABELS, formatCents, invoiceBalance, dateFormat } from "@leakbook/core";
 import { ButtonLink, Empty, Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { listInvoices, unbilledMaintenance } from "@/lib/data";
+import { listInvoices, unbilledMaintenance, getCompany } from "@/lib/data";
 import { MonthlyBilling } from "@/components/monthly-billing";
 
 export const metadata: Metadata = { title: "Invoices · Tidemark" };
 
 export default async function InvoicesPage() {
   const office = await getOffice();
-  const [invoices, unbilled] = await Promise.all([
+  const [invoices, unbilled, company] = await Promise.all([
     listInvoices(office),
     unbilledMaintenance(office),
+    getCompany(office),
   ]);
   const open = invoices.filter((i) => i.status === "sent" || i.status === "partially_paid");
   const owed = open.reduce((sum, i) => sum + invoiceBalance(i), 0);
@@ -51,7 +53,9 @@ export default async function InvoicesPage() {
           ) : null
         }
       />
-      <MonthlyBilling months={unbilled} thisMonth={thisMonth} />
+      {offersPool(company.settings) ? (
+        <MonthlyBilling months={unbilled} thisMonth={thisMonth} />
+      ) : null}
       {invoices.length === 0 ? (
         <Empty>No invoices yet. Create one from a job once the work is done.</Empty>
       ) : (

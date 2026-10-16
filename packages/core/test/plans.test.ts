@@ -20,3 +20,20 @@ describe("plan prices", () => {
     expect(monthlyPriceCents(PLANS.leak, -3)).toBe(10_000);
   });
 });
+
+describe("services", () => {
+  it("default to both, and say which experiences a shop has", async () => {
+    const { companyServices, offersLeak, offersPool } = await import("../src");
+    expect(companyServices(null)).toBe("both");
+    expect(companyServices({ services: "nonsense" })).toBe("both");
+    expect([offersLeak({ services: "pool" }), offersPool({ services: "pool" })]).toEqual([
+      false,
+      true,
+    ]);
+    expect([offersLeak({ services: "leak" }), offersPool({ services: "leak" })]).toEqual([
+      true,
+      false,
+    ]);
+    expect([offersLeak({}), offersPool({})]).toEqual([true, true]);
+  });
+});

@@ -1,5 +1,6 @@
 import Constants from "expo-constants";
 import { router } from "expo-router";
+import { offersPool } from "@leakbook/core";
 import { useState } from "react";
 import { ActivityIndicator, Alert, Linking, View } from "react-native";
 import { call } from "../../data/reports";
@@ -158,6 +159,18 @@ export default function Settings() {
               />
             </Card>
           ))}
+        </Section>
+      ) : null}
+
+      {company && offersPool(company.settings) ? (
+        <Section title="Tools" grouped>
+          <Group>
+            <ListRow
+              title="Chemical Calculator"
+              chevron
+              onPress={() => router.push("/chemicals")}
+            />
+          </Group>
         </Section>
       ) : null}
 

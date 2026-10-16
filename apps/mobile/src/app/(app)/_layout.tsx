@@ -29,6 +29,7 @@ export default function AppLayout() {
       <Stack.Screen name="jobs/[id]/media/[mediaId]" options={{ title: "Photo" }} />
       <Stack.Screen name="jobs/[id]/signature" options={{ title: "Signature" }} />
       <Stack.Screen name="jobs/[id]/review" options={{ title: "Review and Sign" }} />
+      <Stack.Screen name="chemicals" options={{ title: "Chemical Calculator" }} />
       <Stack.Screen
         name="settings"
         options={{ title: "Settings", headerLargeTitleEnabled: true }}

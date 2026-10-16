@@ -12,7 +12,10 @@ const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frid
 /** Settings › Scheduling: the working day routes are planned in, and arrival windows. */
 export function SchedulingForm({
   defaults,
+  pool = true,
 }: {
+  /** The shop does pool care: show the maintenance plan settings. */
+  pool?: boolean;
   defaults: {
     dayStart: string;
     dayEnd: string;
@@ -42,23 +45,31 @@ export function SchedulingForm({
           hint="For jobs booked without an end time."
         />
       </SettingsFields>
-      <SettingsFields labelWidth="9.5rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
-        <SField
-          label="Maintenance visit (minutes)"
-          name="visit_minutes"
-          inputMode="numeric"
-          defaultValue={String(defaults.visitMinutes)}
-          hint="For new maintenance plans."
-        />
-        <SField
-          label="Schedule maintenance ahead (weeks)"
-          name="weeks_ahead"
-          inputMode="numeric"
-          defaultValue={String(defaults.weeksAhead)}
-          hint="How far ahead plans put visits on the schedule."
-          stacked
-        />
-      </SettingsFields>
+      {pool ? (
+        <SettingsFields labelWidth="9.5rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
+          <SField
+            label="Maintenance visit (minutes)"
+            name="visit_minutes"
+            inputMode="numeric"
+            defaultValue={String(defaults.visitMinutes)}
+            hint="For new maintenance plans."
+          />
+          <SField
+            label="Schedule maintenance ahead (weeks)"
+            name="weeks_ahead"
+            inputMode="numeric"
+            defaultValue={String(defaults.weeksAhead)}
+            hint="How far ahead plans put visits on the schedule."
+            stacked
+          />
+        </SettingsFields>
+      ) : (
+        // Leak detection only: the maintenance settings keep their values.
+        <>
+          <input type="hidden" name="visit_minutes" value={defaults.visitMinutes} />
+          <input type="hidden" name="weeks_ahead" value={defaults.weeksAhead} />
+        </>
+      )}
       <SettingsFields>
         <fieldset className={cx(GROUP_ROW, "max-sm:py-2.5")}>
           <legend className="sm:font-medium">Working days</legend>

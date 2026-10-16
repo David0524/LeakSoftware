@@ -7,13 +7,14 @@ import {
   type IntakeQuestion,
   type PoolType,
   type DiagramShape,
+  type Services,
 } from "@leakbook/core";
 import { createJobAction } from "@/app/actions/jobs";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
 import { Suggestions } from "./route-board";
 import { Segmented } from "./segmented";
 import { ShapePicker } from "./shape-picker";
-import { Checkbox, SectionTitle, Select } from "./ui";
+import { Checkbox, cx, SectionTitle, Select } from "./ui";
 
 interface CustomerOption {
   id: string;
@@ -43,7 +44,10 @@ export function NewJobForm({
   lockedTech,
   canPlan = false,
   visitMinutes = 30,
+  services = "both",
 }: {
+  /** What the shop does: the job choice only shows for shops doing both. */
+  services?: Services;
   customers: CustomerOption[];
   team: { id: string; name: string }[];
   fees: { id: string; name: string; cents: number }[];
@@ -62,7 +66,9 @@ export function NewJobForm({
   const [when, setWhen] = useState<"unscheduled" | "scheduled">("scheduled");
   const [fee, setFee] = useState("");
   // Leak detection, or maintenance: one visit, or a plan that repeats.
-  const [kind, setKind] = useState<"detection" | "maintenance">("detection");
+  const [kind, setKind] = useState<"detection" | "maintenance">(
+    services === "pool" ? "maintenance" : "detection",
+  );
   const [repeat, setRepeat] = useState<"0" | "1" | "2" | "4">("0");
   const maintenance = kind === "maintenance";
   const plan = maintenance && canPlan && repeat !== "0";
@@ -174,7 +180,7 @@ export function NewJobForm({
             <div className="self-end">
               <Checkbox name="has_spa" label="Has a spa" />
             </div>
-            <div className="sm:col-span-2">
+            <div className={cx("sm:col-span-2", maintenance && "hidden")}>
               <ShapePicker
                 name="diagram_shape"
                 value={shape}
@@ -196,16 +202,20 @@ export function NewJobForm({
 
       <Section title="Visit">
         <div ref={visit} className="space-y-4">
-          <Segmented
-            label="Job"
-            name="job_type"
-            value={kind}
-            onChange={setKind}
-            options={[
-              { value: "detection", label: "Leak Detection" },
-              { value: "maintenance", label: "Maintenance" },
-            ]}
-          />
+          {services === "both" ? (
+            <Segmented
+              label="Job"
+              name="job_type"
+              value={kind}
+              onChange={setKind}
+              options={[
+                { value: "detection", label: "Leak Detection" },
+                { value: "maintenance", label: "Pool Service" },
+              ]}
+            />
+          ) : (
+            <input type="hidden" name="job_type" value={kind} />
+          )}
           {maintenance && canPlan ? (
             <Segmented
               label="Repeats"

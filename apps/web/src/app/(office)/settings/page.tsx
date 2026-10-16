@@ -1,11 +1,16 @@
+import { offersLeak } from "@leakbook/core";
 import { Grouped, PageHeader, Row } from "@/components/ui";
-import { SETTINGS_SECTIONS } from "@/lib/settings-sections";
+import { getOffice } from "@/lib/auth";
+import { getCompany } from "@/lib/data";
+import { settingsSections } from "@/lib/settings-sections";
 
 /**
  * Settings, as iOS lays it out: the sections in grouped lists, each row opening its page.
  * Wider screens also have them in the sidebar.
  */
-export default function SettingsIndex() {
+export default async function SettingsIndex() {
+  const company = await getCompany(await getOffice());
+  const sections = settingsSections(company.settings);
   const groups = [
     { title: "Your shop", hrefs: ["/settings/company", "/settings/team", "/settings/scheduling"] },
     {
@@ -13,7 +18,7 @@ export default function SettingsIndex() {
       hrefs: ["/settings/price-book", "/settings/payments", "/settings/billing"],
     },
     {
-      title: "Checklists and reports",
+      title: offersLeak(company.settings) ? "Checklists and reports" : "Checklists",
       hrefs: [
         "/settings/components",
         "/settings/tests",
@@ -31,7 +36,9 @@ export default function SettingsIndex() {
     "/settings/price-book": "Repair items for quotes",
     "/settings/payments": "How customers pay, and deposits",
     "/settings/billing": "Your shop’s Tidemark subscription",
-    "/settings/components": "What every inspection checks",
+    "/settings/components": offersLeak(company.settings)
+      ? "What every inspection checks"
+      : "What every visit checks",
     "/settings/tests": "Tests techs record on the phone",
     "/settings/severities": "How serious a finding is",
     "/settings/exclusions": "Why a component wasn’t inspected",
@@ -39,7 +46,7 @@ export default function SettingsIndex() {
   };
   // A section not placed in a group above still shows, at the end.
   const placed = groups.flatMap((g) => g.hrefs);
-  const rest = SETTINGS_SECTIONS.filter((s) => !placed.includes(s.href)).map((s) => s.href);
+  const rest = sections.filter((s) => !placed.includes(s.href)).map((s) => s.href);
   if (rest.length) groups.at(-1)!.hrefs.push(...rest);
   return (
     <>
@@ -47,9 +54,11 @@ export default function SettingsIndex() {
       <div className="max-w-xl space-y-6">
         {groups.map((g) => (
           <Grouped key={g.title} title={g.title}>
-            {SETTINGS_SECTIONS.filter((s) => g.hrefs.includes(s.href)).map((s) => (
-              <Row key={s.href} href={s.href} label={s.label} detail={detail[s.href]} />
-            ))}
+            {sections
+              .filter((s) => g.hrefs.includes(s.href))
+              .map((s) => (
+                <Row key={s.href} href={s.href} label={s.label} detail={detail[s.href]} />
+              ))}
           </Grouped>
         ))}
       </div>

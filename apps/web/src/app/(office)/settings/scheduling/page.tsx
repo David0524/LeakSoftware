@@ -1,3 +1,4 @@
+import { offersPool } from "@leakbook/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
@@ -47,6 +48,7 @@ export default async function SchedulingSettingsPage() {
       <div className="max-w-2xl space-y-6">
         <SettingsSection title="Working day">
           <SchedulingForm
+            pool={offersPool(company.settings)}
             defaults={{
               dayStart: s.dayStart,
               dayEnd: s.dayEnd,

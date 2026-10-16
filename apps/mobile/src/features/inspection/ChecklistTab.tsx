@@ -25,7 +25,9 @@ import { color, ios, space } from "../../ui/theme";
 import { confirmRemoveComponent } from "./remove";
 import { currentVerdict, verdictOptions, verdictValues, type Verdict } from "./verdict";
 
-const SECTIONS: ChecklistSection[] = ["visual", "plumbing", "bond_beam", "other"];
+// "service" is the pool service checklist (maintenance visits); it was missing, so service
+// items didn't show on phones.
+const SECTIONS: ChecklistSection[] = ["service", "visual", "plumbing", "bond_beam", "other"];
 
 /** The checklist in the shop's sections, one verdict per item (works offline). */
 export function ChecklistTab({ job, property }: { job: Job; property?: Property }) {

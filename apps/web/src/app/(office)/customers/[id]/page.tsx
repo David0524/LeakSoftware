@@ -1,3 +1,4 @@
+import { offersLeak, offersPool } from "@leakbook/core";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
@@ -237,17 +238,21 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                     label={<span className="text-link">Get Directions</span>}
                   />
                 </Grouped>
-                <MaintenancePlans
-                  customerId={customer.id}
-                  propertyId={p.id}
-                  plans={plans.filter((plan) => plan.property_id === p.id)}
-                  techs={techs}
-                  today={today}
-                  visitMinutes={maintenanceSettings(company.settings).visitMinutes}
-                  doneCounts={doneCounts}
-                  canEdit={office.isOwner}
-                />
-                <Grouped title="Leak detection and repairs">
+                {offersPool(company.settings) ? (
+                  <MaintenancePlans
+                    customerId={customer.id}
+                    propertyId={p.id}
+                    plans={plans.filter((plan) => plan.property_id === p.id)}
+                    techs={techs}
+                    today={today}
+                    visitMinutes={maintenanceSettings(company.settings).visitMinutes}
+                    doneCounts={doneCounts}
+                    canEdit={office.isOwner}
+                  />
+                ) : null}
+                <Grouped
+                  title={offersLeak(company.settings) ? "Leak detection and repairs" : "Repairs"}
+                >
                   {visits.length === 0 ? (
                     <Row label={<span className="text-text-muted">No visits yet</span>} />
                   ) : (
