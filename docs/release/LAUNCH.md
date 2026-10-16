@@ -34,43 +34,88 @@ npx eas-cli@latest build --profile production --platform android
   (`SENTRY_DISABLE_AUTO_UPLOAD`).
 - Set `EXPO_PUBLIC_API_URL` to the website's address in the EAS production environment.
 
-## 3. App Store listing (draft)
+## 3. App Store listing (draft, both packages, 2026-10-16)
 
-- **Name:** Tidemark
-- **Subtitle (30):** Pool leak detection reports
+One app with two packages (owner): Pool Care and Leak Detection, and Both for the rarer shop.
+The listing leads with what both share and names each package; each shop sees only its own.
+
+- **Name (30):** Tidemark
+- **Subtitle (30):** Pool service & leak detection (29)
 - **Category:** Business (secondary: Productivity)
-- **Keywords (100):** pool,leak,detection,inspection,report,pressure test,dye test,spa,quote,invoice,field service
+- **Keywords (100):** pool,route,cleaning,chemical,calculator,leak,detection,pressure test,report,quote,invoice,texting (97)
+- **Promotional text (170):** Routes, checklists, reports, and texting for pool service and leak
+  detection crews. Works with no signal and syncs when you're back. (132)
 - **Description:**
-  > Tidemark is the field app for pool leak detection shops. Run the whole inspection on site,
-  > even with no signal: a checklist for every skimmer, return, light, and drain; pressure
-  > and dye tests that do the math; findings pinned on a pool diagram; photos with markup,
-  > videos, and voice notes. The customer reads the report on your phone and signs. Back at
-  > the office, send a branded report, quote the repair, and get paid by card or bank.
+  > Tidemark is the field app for pool companies: route cleaning crews and leak detection
+  > techs alike. Your shop picks its package, and the app shows only what you use.
   >
-  > Requires a Tidemark shop account (free 30-day trial at tidemark.app).
-- **Support URL:** `https://<site>/status` · **Privacy URL:** `https://<site>/privacy`
+  > POOL CARE
+  > • Today's route in order, with drive times and directions in Apple Maps or Google Maps
+  > • A service checklist for every visit, with photos
+  > • A chemical calculator that says what to add, in jugs and pounds, in the right order
+  > • Repair quotes for pumps and filters, and the monthly service invoice
+  >
+  > LEAK DETECTION
+  > • A checklist for every skimmer, return, light, and drain
+  > • Pressure and bucket tests that do the math
+  > • Findings pinned on a drawing of the pool
+  > • The customer reads the report on your phone and signs on the spot
+  >
+  > EVERY SHOP
+  > • Works without a signal and syncs when you're back
+  > • Photos with markup, videos, and voice notes
+  > • On My Way texts with an arrival time
+  > • One company number for texts and calls, with a shared inbox the whole team sees
+  > • Quotes customers accept and pay online, by card or bank
+  >
+  > Requires a Tidemark shop account. Owners start a free 30-day trial at tidemark.app and invite
+  > their techs.
+- **What's New (first release):** First release.
+- **Support URL:** `https://<site>/status` · **Privacy URL:** `https://<site>/privacy` ·
+  **Marketing URL:** `https://<site>/`
+- **Age rating:** 4+ (no objectionable content).
 - **Account deletion:** Settings › Delete My Account (also on the website under More).
-- **Review notes and demo account:** sign in as `tech@demo.leakbook.test` / `leakbook-demo`
-  (the demo shop's tech; the data is made up). Use Today, open a job, work the checklist,
-  add a photo, then Report › Review with Customer.
+- **Purchases:** none in the app, and the app doesn't link to plans or prices (shops subscribe on
+  the website; App Store Review Guideline 3.1.3(f) "Free Stand-alone Apps"/multiplatform
+  services). Keep it that way.
+- **Review notes and demo account:** sign in as the demo shop's tech (credentials in
+  `apps/web/e2e/helpers.ts`; the data is made up; the demo shop is set to Both). Use Today, open a
+  job, work the checklist, add a photo, then Report › Review with Customer. Settings › Tools has
+  the chemical calculator and Messages. Texting and calls run in demo mode on the review build:
+  nothing is sent.
 
 ### App Privacy answers (App Store) / Data safety (Google Play)
 
 | Data | Collected | Linked to the user | Why |
 |---|---|---|---|
-| Name, email (team member) | Yes | Yes | Account, app functionality |
+| Name, email, mobile number (team member) | Yes | Yes | Account, app functionality (calls ring the person's own mobile) |
 | Customers' names, phone numbers, emails, addresses | Yes (entered by the shop) | Yes | App functionality |
+| Text messages and photos in texts with customers | Yes | Yes | App functionality (shared inbox) |
+| Call records and voicemail recordings and transcripts | Yes | Yes | App functionality |
 | Precise location | Yes, only when a photo is taken and allowed | Yes | Photo location on reports |
 | Photos and videos, audio (voice notes) | Yes | Yes | App functionality |
-| Other user content (reports, signatures) | Yes | Yes | App functionality |
+| Other user content (reports, signatures, pool readings) | Yes | Yes | App functionality |
 | Crash and error data | Yes | No | App functionality (Sentry, no personal data) |
 | Tracking or advertising | No | — | — |
 
+The privacy policy must name the processors: Supabase (database and files), Vercel (website),
+Twilio (texts and calls), Deepgram (voice-note and voicemail transcription), Anthropic (report
+summaries), Resend (email), Stripe (payments), Mapbox (drive times), Sentry (errors).
+
 ## 4. Screenshots needed
 
-iPhone 6.9" and 6.5", iPad 13" (the app supports tablets), and Android phone:
-Today with a route; a job's checklist; a finding pinned on the pool diagram; photo markup;
-Review with Customer (report and signature); the sent report on a phone.
+Sizes: iPhone 6.9" and 6.5", iPad 13" (the app supports tablets), and an Android phone. Ten at
+most; the first three carry the page. Use the demo shop set to Both.
+
+1. Today with a route of stops (both packages)
+2. A pool service visit's checklist (Pool Care)
+3. The chemical calculator's What to Add (Pool Care)
+4. A leak job's checklist with a leaking line (Leak Detection)
+5. A finding pinned on the pool diagram (Leak Detection)
+6. Photo markup
+7. Review with Customer: the report and the signature
+8. Messages: a conversation with a customer
+9. The sent report on a customer's phone
 
 ## 5. Done when (BUILD_PLAN M11)
 
