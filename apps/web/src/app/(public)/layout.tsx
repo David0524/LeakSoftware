@@ -43,6 +43,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
           {[
             { href: "/privacy", label: "Privacy" },
             { href: "/terms", label: "Terms" },
+            { href: "/security", label: "Security" },
             { href: "/status", label: "Status" },
             { href: `mailto:${SUPPORT_EMAIL}`, label: "Support" },
           ].map((l) => (

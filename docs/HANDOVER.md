@@ -36,6 +36,13 @@ entries in `docs/DECISIONS.md` (2026-10-15 and 2026-10-16 cover everything below
   passes, since sign-up calls the new form. The pool price book is approved as drafted. Demo code
   VIP26 gets a new shop past the payment page without a card (`app.access_code`). The app's welcome cards and tips have not been seen on a device: check them in
   the first TestFlight build.
+- **Data protection (2026-10-16):** customer links expire after 180 days and can be turned
+  off; two-step sign-in (enforced by the database); limited techs see only their customers'
+  conversations; `/security` page; DPA draft in `docs/legal/`. **Someone who lost their
+  authenticator:** after checking it's really them (from their account's email), remove their
+  factors in the Supabase dashboard (Authentication › Users › the user › MFA factors) and run
+  `select set_two_step('<user id>', false);` in the SQL editor. Two-step's app screens have
+  not been seen on a device.
 - **Milestones:** M0 to M11 are built (see the 2026-10-14 handover in git history for
   M11). Since then the work has been owner requests, listed below.
 

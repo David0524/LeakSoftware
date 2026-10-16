@@ -61,6 +61,17 @@ export default function PrivacyPage() {
         </ul>
       </section>
       <section>
+        <h2>How we protect it</h2>
+        <p>
+          Each shop’s records are walled off in the database, phones store them encrypted, customer
+          links expire, and anyone can add two-step sign-in. The details are on our{" "}
+          <a className="text-link underline" href="/security">
+            Security
+          </a>{" "}
+          page.
+        </p>
+      </section>
+      <section>
         <h2>How long we keep it</h2>
         <p>
           While the shop uses Tidemark. Sent reports and original photos aren’t changed after the

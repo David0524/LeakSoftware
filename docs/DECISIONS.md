@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-16 (owner: "How do we protect customer data. Both our users and their clients"; "Just do as much as you can"; "I trust your judgement")
+- **Customer links last 180 days** (`20261012003900_link_expiry.sql`), and anyone on the shop's team can turn one off from the job page (Customer Links). Sending again after expiry makes a new link; the daily job turns expired links off so a dead one is never reused. 180 days covers quotes, invoices, and their reminders with room to spare; a homeowner who needs an old report asks the shop to send it again.
+- **Two-step sign-in** (authenticator app, Supabase TOTP), optional for everyone, under More › Two-Step Sign-In on the website (the app's Settings links there). It is enforced by the database, not just the screens: with it on, every membership check also requires that the session passed the code (`aal2`), so a stolen password opens nothing through the website, the app, or the API (`20261012004000_two_step.sql`). The website and the app ask for the code after the password; the app also notices when two-step was turned on elsewhere and stops syncing until the code is in. Lost phone: support turns it off (see HANDOVER). Not required for owners yet; worth requiring once shops are used to it.
+- **Limited techs see only their own customers' conversations** (`20261012004100_conversation_visibility.sql`): with "techs see only their own jobs", a tech sees a conversation, its texts, and its calls only when its customer has a job they're on. Texts from numbers that aren't a customer stay with the office.
+- **A public Security page** (`/security`, linked from the footer and the privacy policy) says plainly what protects shops and their customers; only what's built. **The privacy policy** now covers pool service, texts and calls, and lists Twilio.
+- **A draft data-processing addendum** for shops (`docs/legal/dpa-draft.md`), for a lawyer to review: Tidemark as processor, the subprocessors, 72-hour breach notice, deletion within 30 days of leaving.
+- **Backups:** daily backups come with Supabase Pro (owner: "I will get Supabase pro eventually"). Until then there's no backup beyond Supabase's own; nothing else changed for it.
+
 ## 2026-10-16 (owner: "Use the pool prices as drafted"; "When making a new account, you should be sent to a payment page. Add a demo code - make it VIP26")
 - **The pool price book is approved as drafted** (see the entry below).
 - **Every new shop ends onboarding on the payment page**, whether or not the server has Stripe. With Stripe it's Start 14-Day Free Trial (card on Stripe's page). Without Stripe the button is off and the page says card payments aren't connected yet; there's no longer a way to finish without a card or a code.
