@@ -16,20 +16,14 @@ entries in `docs/DECISIONS.md` (2026-10-15 and 2026-10-16 cover everything below
     Postgres can't infer from that clause; the error was ignored. It's now a plain insert, with
     a duplicate (23505) treated as already logged, the same as incoming texts. Lesson: don't
     use PostgREST `onConflict` against a partial unique index.
-- **First thing to do: `pnpm db:deploy`.** It applies `20261012003500_company_texting.sql`,
-  which is **still not on the dev project**. The last session couldn't run it: the Supabase
-  token in the `api.supabase.com` network secret was missing, then rejected with
-  `HTTP 401: JWT could not be decoded`. The owner has since fixed the token; a new session
-  should pick it up.
-  - Start with `pnpm db:deploy -- --dry-run`. It should list one pending migration.
-  - If it still says "JWT could not be decoded", the secret's value is wrong: it must be a
-    personal access token (`sbp_…`) sent as `Authorization: Bearer sbp_…`. Tell the owner;
-    never ask for the token in chat or print it.
-- **Then check the live site** as the demo owner (`signIn` from `e2e/helpers.ts`, read-only,
-  credentials never printed): Messages and Settings › Phone and Texting. Before the deploy,
-  Messages showed "Something went wrong" (the tables don't exist yet) and Phone and Texting
-  rendered with the demo-mode notice. After the deploy, Messages should show an empty inbox.
-  Don't take a number on the live site: that leaves data behind.
+- **Texting migration is deployed** (2026-10-16): `pnpm db:deploy` applied
+  `20261012003500_company_texting.sql`; the dev project has 35 applied, 0 pending. The
+  `api.supabase.com` network secret must be a personal access token (`sbp_…`, from the
+  Supabase account's Access Tokens page, not a project's publishable or secret key) sent as
+  `Authorization: Bearer sbp_…`. Never print it.
+- **Live site checked** as the demo owner (read-only): Messages shows the empty inbox ("No
+  messages yet"), and Settings › Phone and Texting shows the demo-mode notice, Get a New
+  Number, Use Your Shop's Number, and Your Mobile Number. No number was taken.
 - **Milestones:** M0 to M11 are built (see the 2026-10-14 handover in git history for
   M11). Since then the work has been owner requests, listed below.
 
