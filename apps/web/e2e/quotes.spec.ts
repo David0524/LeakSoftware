@@ -180,3 +180,33 @@ test("the office opens the repair job from the accepted quote and schedules it",
       .first(),
   ).toBeVisible();
 });
+
+test("the office turns a customer link off, and it stops working", async ({ page, browser }) => {
+  // Owner, 2026-10-16 ("How do we protect customer data"): links last 180 days and the team
+  // can turn one off at once.
+  const quote = await draftQuote([["Patch skimmer throat", 22_500]]);
+  const link = await sendFromOffice(page, quote.number);
+  const phone = await browser.newContext(PHONE);
+  const customer = await phone.newPage();
+  await customer.goto(link);
+  await expect(
+    customer.getByRole("heading", { name: `Repair Quote #${quote.number}` }),
+  ).toBeVisible();
+
+  // The newest quote link is listed first, with how long it lasts.
+  await page.reload();
+  const quoteLinks = page.getByTestId("customer-link").filter({ hasText: /^Quote/ });
+  const row = quoteLinks.first();
+  await expect(row).toContainText("Works until");
+  const before = await quoteLinks.count();
+  await row.getByRole("button", { name: "Turn Off" }).click();
+  await page
+    .getByRole("alertdialog", { name: "Turn off this quote link?" })
+    .getByRole("button", { name: "Turn Off Link" })
+    .click();
+  await expect(quoteLinks).toHaveCount(before - 1);
+
+  await customer.reload();
+  await expect(customer.getByRole("heading", { name: "Page not found" })).toBeVisible();
+  await phone.close();
+});

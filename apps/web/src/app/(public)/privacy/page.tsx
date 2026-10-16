@@ -7,14 +7,14 @@ export const metadata: Metadata = { title: "Privacy Policy · Tidemark" };
 /** Privacy policy (M11): needed for the App Store and Google Play listings. Draft. */
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy Policy" updated="October 14, 2026">
+    <LegalPage title="Privacy Policy" updated="October 16, 2026">
       <section>
         <h2>Who this covers</h2>
         <p>
-          Tidemark is software for pool leak detection shops. Shops use it to run inspections, send
-          reports, quotes, and invoices, and schedule their techs. This policy covers the shop’s
-          team (owners and techs) and the shop’s customers whose information the shop keeps in
-          Tidemark.
+          Tidemark is software for pool service and pool leak detection shops. Shops use it to run
+          service visits and inspections, send reports, quotes, and invoices, text and call their
+          customers, and schedule their techs. This policy covers the shop’s team (owners and techs)
+          and the shop’s customers whose information the shop keeps in Tidemark.
         </p>
       </section>
       <section>
@@ -23,8 +23,13 @@ export default function PrivacyPage() {
           <li>Team accounts: name, email, and sign-in details.</li>
           <li>
             Shop records the shop enters: customers’ names, phone numbers, emails, and pool
-            addresses; inspection checklists, tests, findings, photos, videos, voice notes and their
-            transcripts, signatures, reports, quotes, invoices, and payments.
+            addresses; visit plans, service checklists, and water readings; inspection checklists,
+            tests, findings, photos, videos, voice notes and their transcripts, signatures, reports,
+            quotes, invoices, and payments.
+          </li>
+          <li>
+            Texts and calls between the shop’s number and its customers: messages, pictures, call
+            times, and voicemails.
           </li>
           <li>
             Where photos were taken, when the tech allows location, so reports show they were taken
@@ -50,6 +55,7 @@ export default function PrivacyPage() {
           <li>Resend: sending report, quote, and invoice emails.</li>
           <li>Anthropic: writing report drafts from inspection data, when the shop uses it.</li>
           <li>Deepgram: turning voice notes into text.</li>
+          <li>Twilio: the shop’s phone number, texts, calls, and voicemail.</li>
           <li>Mapbox: placing pool addresses on the map and planning routes.</li>
           <li>Sentry: error reports.</li>
         </ul>

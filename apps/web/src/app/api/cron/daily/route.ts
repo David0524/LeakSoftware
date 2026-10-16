@@ -23,11 +23,14 @@ export async function GET(request: Request) {
   const { data: visits, error } = await admin.rpc("extend_service_plans");
   // Last month's finished visits become one draft invoice per customer (20261012002900).
   const billed = await admin.rpc("bill_maintenance_due", { at: when.toISOString() });
+  // Customer links past their 180 days are turned off, so the next send makes a new one.
+  const links = await admin.rpc("expire_share_links");
   // Tidemark prices follow each shop's package and people; this catches anything missed.
   const prices = await syncAllSubscriptionPrices(admin);
   return Response.json({
     followups,
     subscriptionPrices: prices,
+    expiredLinks: links.error ? links.error.message : links.data,
     maintenanceVisits: error ? error.message : visits,
     monthlyInvoices: billed.error ? billed.error.message : billed.data,
   });

@@ -24,6 +24,7 @@ import {
   seesAllJobs,
   dateFormat,
 } from "@leakbook/core";
+import { CustomerLinks } from "@/components/customer-links";
 import { GalleryImage } from "@/components/gallery-image";
 import { Thread } from "@/components/inbox";
 import { MailIcon, MessageIcon, PhoneIcon } from "@/components/icons";
@@ -177,6 +178,10 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                         />
                       </Suspense>
                     ) : null}
+
+                    <Suspense fallback={null}>
+                      <CustomerLinks jobId={job.id} tz={tz} />
+                    </Suspense>
 
                     {job.property ? (
                       <Grouped title="Pool">
