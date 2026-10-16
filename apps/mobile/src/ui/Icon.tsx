@@ -17,6 +17,7 @@ const ICONS = {
   chevron: { sf: "chevron.forward", ion: "chevron-forward" },
   checkmark: { sf: "checkmark", ion: "checkmark" },
   call: { sf: "phone.fill", ion: "call" },
+  message: { sf: "message", ion: "chatbubble-outline" },
   directions: { sf: "location", ion: "navigate-outline" },
   microphone: { sf: "mic.fill", ion: "mic" },
   video: { sf: "video.fill", ion: "videocam" },

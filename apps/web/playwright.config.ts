@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import { E2E_CRON_SECRET, E2E_WEBHOOK_SECRET } from "./e2e/backend";
+import { E2E_CRON_SECRET, E2E_TWILIO_TOKEN, E2E_WEBHOOK_SECRET } from "./e2e/backend";
 import { OUTBOX } from "./e2e/outbox";
 
 /**
@@ -53,6 +53,10 @@ export default defineConfig({
           CRON_SECRET: E2E_CRON_SECRET,
           STRIPE_CONNECT_WEBHOOK_SECRET: "",
           STRIPE_SECRET_KEY: "",
+          // Twilio's webhooks are signed by the tests; with no account, texts aren't sent.
+          TWILIO_ACCOUNT_SID: "",
+          TWILIO_AUTH_TOKEN: E2E_TWILIO_TOKEN,
+          TWILIO_MESSAGING_SERVICE_SID: "",
           ...(process.env.PW_CHROMIUM_PATH ? { CHROMIUM_PATH: process.env.PW_CHROMIUM_PATH } : {}),
         },
       },

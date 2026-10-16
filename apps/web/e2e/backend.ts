@@ -12,6 +12,9 @@ export const E2E_WEBHOOK_SECRET = "whsec_leakbook_e2e";
 /** CRON_SECRET of the started app, so tests can run the daily job (playwright.config.ts). */
 export const E2E_CRON_SECRET = "cron_leakbook_e2e";
 
+/** Twilio auth token of the started app: the tests sign Twilio's webhooks with it. */
+export const E2E_TWILIO_TOKEN = "twilio_leakbook_e2e";
+
 /** A signed-in client, acting the way the phone app does (RLS applies). */
 export async function signedInClient(email: string, password: string): Promise<SupabaseClient> {
   const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {

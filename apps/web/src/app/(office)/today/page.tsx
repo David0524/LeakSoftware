@@ -18,6 +18,7 @@ import { WeatherBadge } from "@/components/weather-badge";
 import { AddressLink, OpenRouteInMaps } from "@/components/open-in-maps";
 import { Empty, PageHeader, StatusBadge, cx, iconButtonClass, pillClass } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
+import { getLine } from "@/lib/messages";
 import { mapsAppForRequest } from "@/lib/maps";
 import { loadRoutes, routeContext, routeKey, shopToday } from "@/server/route-days";
 import { NavPlus } from "@/components/nav-bar";
@@ -35,7 +36,11 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   // The route context (company settings) and the day's jobs load together.
   const ctxP = routeContext(office);
   const day = shopToday(office);
-  const [ctx, { routes, team }] = await Promise.all([ctxP, loadRoutes(office, ctxP, [day])]);
+  const [ctx, { routes, team }, line] = await Promise.all([
+    ctxP,
+    loadRoutes(office, ctxP, [day]),
+    getLine(office),
+  ]);
   const techs = team.filter(
     (t) => t.status === "active" || routes.has(routeKey(t.user_id, ctx.today)),
   );
@@ -182,6 +187,8 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                               windowMin={ctx.settings.windowMin}
                               timeZone={ctx.timeZone}
                               className="px-3"
+                              viaCompany={line?.status === "active"}
+                              jobId={j.id}
                             />
                           ) : null}
                         </span>

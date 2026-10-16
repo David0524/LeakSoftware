@@ -31,6 +31,15 @@ export default function AppLayout() {
       <Stack.Screen name="jobs/[id]/review" options={{ title: "Review and Sign" }} />
       <Stack.Screen name="chemicals" options={{ title: "Chemical Calculator" }} />
       <Stack.Screen
+        name="messages/index"
+        options={{ title: "Messages", headerLargeTitleEnabled: true }}
+      />
+      <Stack.Screen name="messages/[id]" options={{ title: "Conversation" }} />
+      <Stack.Screen
+        name="messages/new"
+        options={{ title: "New Message", presentation: ios ? "modal" : "card" }}
+      />
+      <Stack.Screen
         name="settings"
         options={{ title: "Settings", headerLargeTitleEnabled: true }}
       />

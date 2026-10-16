@@ -7,6 +7,13 @@ import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase/config";
  * or null when the token is missing or invalid. RLS and the database functions check access.
  */
 export async function clientFromRequest(request: Request): Promise<SupabaseClient | null> {
+  return (await bearerSession(request))?.db ?? null;
+}
+
+/** The phone's signed-in user and a client acting as them, or null. */
+export async function bearerSession(
+  request: Request,
+): Promise<{ db: SupabaseClient; userId: string } | null> {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) return null;
   const options = { auth: { persistSession: false, autoRefreshToken: false } };
@@ -16,10 +23,11 @@ export async function clientFromRequest(request: Request): Promise<SupabaseClien
     token,
   );
   if (error || !data.user) return null;
-  return createClient(supabaseUrl, supabaseAnonKey, {
+  const db = createClient(supabaseUrl, supabaseAnonKey, {
     ...options,
     global: { headers: { authorization: `Bearer ${token}` } },
   });
+  return { db, userId: data.user.id };
 }
 
 export function jsonError(message: string, status: number) {

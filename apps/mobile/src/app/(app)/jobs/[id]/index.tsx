@@ -9,6 +9,7 @@ import {
   nativeMapsUrl,
   propertyLocation,
   parseDollars,
+  toE164,
   userTransitions,
   type Customer,
   type Job,
@@ -17,6 +18,7 @@ import {
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useRow } from "../../../../data/hooks";
+import { useConversations, useLine } from "../../../../data/texting";
 import { useCompany, useSession } from "../../../../state/session";
 import {
   Button,
@@ -59,6 +61,9 @@ export default function JobDetail() {
   const job = useRow<Job>("job", id);
   const property = useRow<Property>("property", job?.property_id);
   const customer = useRow<Customer>("customer", job?.bill_to_customer_id ?? property?.customer_id);
+  // Company texting: text the customer from the company number (the shared inbox).
+  const line = useLine(company.id);
+  const conversations = useConversations(company.id);
   const [tab, setTab] = useState<Tab>("checklist");
   const [notes, setNotes] = useState<string | null>(null);
   const [fee, setFee] = useState<string | null>(null);
@@ -144,15 +149,36 @@ export default function JobDetail() {
         <ListRow
           trailing={
             customer?.phone ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Call ${customer.phone}`}
-                hitSlop={4}
-                onPress={() => void Linking.openURL(`tel:${customer.phone}`)}
-                style={({ pressed }) => [styles.callButton, pressed && { opacity: 0.8 }]}
-              >
-                <Icon name="call" size={20} color={color.navy} />
-              </Pressable>
+              <Row style={{ gap: space["2"] }}>
+                {line?.status === "active" ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Text ${customer.name} from the company number`}
+                    hitSlop={4}
+                    onPress={() => {
+                      const phone = toE164(customer.phone);
+                      const existing = conversations.find((c) => c.phone === phone);
+                      router.push(
+                        existing
+                          ? `/messages/${existing.id}`
+                          : `/messages/new?customer=${customer.id}&job=${job.id}`,
+                      );
+                    }}
+                    style={({ pressed }) => [styles.callButton, pressed && { opacity: 0.8 }]}
+                  >
+                    <Icon name="message" size={20} color={color.navy} />
+                  </Pressable>
+                ) : null}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Call ${customer.phone}`}
+                  hitSlop={4}
+                  onPress={() => void Linking.openURL(`tel:${customer.phone}`)}
+                  style={({ pressed }) => [styles.callButton, pressed && { opacity: 0.8 }]}
+                >
+                  <Icon name="call" size={20} color={color.navy} />
+                </Pressable>
+              </Row>
             ) : undefined
           }
         >

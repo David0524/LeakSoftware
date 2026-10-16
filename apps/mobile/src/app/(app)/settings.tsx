@@ -1,7 +1,7 @@
 import Constants from "expo-constants";
 import { router } from "expo-router";
-import { offersPool } from "@leakbook/core";
-import { useState } from "react";
+import { formatPhone, offersPool, toE164 } from "@leakbook/core";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Linking, View } from "react-native";
 import { call } from "../../data/reports";
 import { API_URL } from "../../lib/config";
@@ -10,6 +10,7 @@ import {
   Button,
   Card,
   Choice,
+  Field,
   Group,
   ListRow,
   Notice,
@@ -19,6 +20,50 @@ import {
 } from "../../ui/components";
 import { confirmDestructive } from "../../ui/confirm";
 import { color, ios, space } from "../../ui/theme";
+
+/**
+ * My mobile number (company texting): calls I place from the company number ring it first,
+ * and incoming calls can ring it. Saved to my profile on the server.
+ */
+function MyPhone() {
+  const { services } = useSession();
+  const [phone, setPhone] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    services.sync
+      .myPhone()
+      .then((p) => setPhone((now) => now ?? (p ? formatPhone(toE164(p) ?? p) : "")))
+      .catch(() => {});
+  }, [services]);
+  async function save() {
+    const e164 = toE164(phone);
+    if (!e164) return Alert.alert("Check the number", "Enter a US mobile number.");
+    setSaving(true);
+    try {
+      await services.sync.saveMyPhone(e164);
+      setPhone(formatPhone(e164));
+      Alert.alert("Saved", "Calls you place from Messages ring this number first.");
+    } catch (e) {
+      Alert.alert("Couldn’t save", e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+  return (
+    <Section title="My mobile number">
+      <Field
+        label="Mobile"
+        value={phone ?? ""}
+        onChangeText={setPhone}
+        keyboardType="phone-pad"
+        textContentType="telephoneNumber"
+        autoComplete="tel"
+        hint="Calls you place from Messages ring here first, then connect from the company number."
+      />
+      <Button title="Save Number" kind="secondary" onPress={() => void save()} loading={saving} />
+    </Section>
+  );
+}
 
 /** A note under a grouped list, lined up with the rows' text on iPhone. */
 const footer = { paddingHorizontal: ios ? space["4"] : 0 };
@@ -162,17 +207,20 @@ export default function Settings() {
         </Section>
       ) : null}
 
-      {company && offersPool(company.settings) ? (
-        <Section title="Tools" grouped>
-          <Group>
+      <Section title="Tools" grouped>
+        <Group>
+          <ListRow title="Messages" chevron onPress={() => router.push("/messages")} />
+          {company && offersPool(company.settings) ? (
             <ListRow
               title="Chemical Calculator"
               chevron
               onPress={() => router.push("/chemicals")}
             />
-          </Group>
-        </Section>
-      ) : null}
+          ) : null}
+        </Group>
+      </Section>
+
+      <MyPhone />
 
       {API_URL ? (
         <Section title="Help" grouped>

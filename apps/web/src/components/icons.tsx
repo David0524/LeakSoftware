@@ -37,3 +37,18 @@ export const MailIcon = ({ className }: { className?: string }) => (
     <path d="m4 7 8 6 8-6" />
   </Icon>
 );
+
+export const CameraIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" />
+    <circle cx="12" cy="13" r="3.5" />
+  </Icon>
+);
+
+export const VoicemailIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <circle cx="6.5" cy="12" r="3.5" />
+    <circle cx="17.5" cy="12" r="3.5" />
+    <path d="M6.5 15.5h11" />
+  </Icon>
+);

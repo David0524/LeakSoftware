@@ -48,7 +48,7 @@ create or replace function tests.make_company(label text) returns jsonb
 language plpgsql as $$
 declare
   c uuid; o uuid; t uuid; cust uuid; prop uuid; j uuid; jc uuid; tr uuid; f uuid;
-  rep uuid; q uuid; qli uuid; inv uuid;
+  rep uuid; q uuid; qli uuid; inv uuid; conv uuid;
 begin
   o := tests.create_user(label || '-owner@test.local');
   t := tests.create_user(label || '-tech@test.local');
@@ -94,6 +94,15 @@ begin
   -- Paused, so it makes no visits here (200_maintenance tests the visits).
   insert into service_plan (company_id, customer_id, property_id, assigned_user_id, starts_on, paused)
     values (c, cust, prop, t, current_date, true);
+  -- Company texting: a number per shop, made unique by the label.
+  insert into phone_line (company_id, number)
+    values (c, '+1555' || lpad((abs(hashtext(label)) % 10000000)::text, 7, '0'));
+  insert into conversation (company_id, phone, customer_id)
+    values (c, '+16025550100', cust) returning id into conv;
+  insert into text_message (company_id, conversation_id, direction, body, status)
+    values (c, conv, 'in', 'Is the tech on the way?', 'received');
+  insert into call_log (company_id, conversation_id, direction, status)
+    values (c, conv, 'in', 'missed');
   insert into stripe_account (company_id, stripe_account_id) values (c, 'acct_' || label);
   insert into subscription (company_id) values (c);
   insert into invite (company_id, email, role) values (c, 'new-' || label || '@test.local', 'tech');
@@ -102,7 +111,8 @@ begin
   insert into storage.objects (bucket_id, name) values
     ('media', c || '/' || j || '/photo.jpg'),
     ('company-assets', c || '/logo.png'),
-    ('documents', c || '/' || j || '/report.pdf');
+    ('documents', c || '/' || j || '/report.pdf'),
+    ('texts', c || '/' || conv || '/picture.jpg');
 
   return jsonb_build_object('company', c, 'owner', o, 'tech', t, 'customer', cust,
     'property', prop, 'job', j, 'report', rep, 'quote', q, 'invoice', inv);

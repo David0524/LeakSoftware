@@ -24,3 +24,4 @@ export * from "./intl";
 export * from "./phone-history";
 export * from "./plans";
 export * from "./chemistry";
+export * from "./texting";

@@ -27,6 +27,7 @@ import { ContactButtons } from "@/components/contact-buttons";
 import { Empty, Grouped, PageHeader, Row, StatusBadge } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany, getCustomer, getTeam } from "@/lib/data";
+import { getLine } from "@/lib/messages";
 
 export const metadata: Metadata = { title: "Customer · Tidemark" };
 
@@ -43,10 +44,11 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
   const { id } = await params;
   const office = await getOffice();
   // All three at once: each used to wait for the one before.
-  const [data, team, company] = await Promise.all([
+  const [data, team, company, line] = await Promise.all([
     getCustomer(office, id),
     getTeam(office),
     getCompany(office),
+    getLine(office),
   ]);
   if (!data) notFound();
   const { customer, properties, plans, jobs } = data;
@@ -81,7 +83,12 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
         subtitle={[KIND[customer.kind], customer.company_name].filter(Boolean).join(" · ")}
       />
       <div className="-mt-2 mb-6">
-        <ContactButtons name={customer.name} phone={customer.phone} email={customer.email} />
+        <ContactButtons
+          name={customer.name}
+          phone={customer.phone}
+          email={customer.email}
+          textHref={line?.status === "active" ? `/messages/new?customer=${customer.id}` : undefined}
+        />
       </div>
       <div className="grid items-start gap-8 lg:grid-cols-3">
         <Grouped title="Contact">

@@ -2,13 +2,15 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 import { localMinutes, onMyWayText } from "@leakbook/core";
+import { sendMessage } from "@/app/actions/texting";
 import { Sheet } from "./sheet";
 import { buttonClass } from "./ui";
 
 /**
- * On My Way: a text to the customer with an arrival time (now plus the drive), sent from the
- * tech's own phone: the Messages app when the customer has a phone number, otherwise the
- * share sheet. Nothing is sent by Tidemark.
+ * On My Way: a text to the customer with an arrival time (now plus the drive). With a company
+ * number (company texting) Tidemark sends it from that number, into the shared inbox.
+ * Otherwise it goes from the tech's own phone: the Messages app when the customer has a phone
+ * number, else the share sheet.
  */
 export function OnMyWay({
   phone,
@@ -19,6 +21,8 @@ export function OnMyWay({
   windowMin,
   timeZone,
   className,
+  viaCompany = false,
+  jobId,
 }: {
   phone: string | null;
   customer: string | null;
@@ -28,6 +32,9 @@ export function OnMyWay({
   windowMin: number;
   timeZone: string;
   className?: string;
+  /** The shop has a working company number. */
+  viaCompany?: boolean;
+  jobId?: string;
 }) {
   const textId = useId();
   // What just happened: the button says so for a moment (no toast), and screen readers hear it.
@@ -43,6 +50,20 @@ export function OnMyWay({
   async function send() {
     const arriveMin = localMinutes(new Date().toISOString(), timeZone) + Math.max(5, driveMin);
     const text = onMyWayText({ customer, tech, shop, arriveMin, windowMin });
+    if (phone && viaCompany) {
+      const form = new FormData();
+      form.set("phone", phone);
+      form.set("body", text);
+      if (jobId) form.set("job_id", jobId);
+      setDone({ label: "Sending…", spoken: "" });
+      const sent = await sendMessage({}, form);
+      setDone(
+        sent.error
+          ? { label: "Not Sent", spoken: sent.error }
+          : { label: "Texted ✓", spoken: `Texted from the company number: ${text}` },
+      );
+      return;
+    }
     if (phone) {
       // "?&body=" works in both iOS and Android Messages.
       window.location.href = `sms:${phone.replace(/[^\d+]/g, "")}?&body=${encodeURIComponent(text)}`;

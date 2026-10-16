@@ -1,4 +1,4 @@
-# Company texting (proposal, not built)
+# Company texting (built 2026-10-16; see docs/DECISIONS.md)
 
 Owner request, 2026-10-16, from the pool company: texts should come from the company's number,
 not each tech's phone, and the whole team should see the same conversation with each customer,
@@ -50,6 +50,10 @@ that a link was texted (`message.channel = 'sms_device'`).
   - A Messages screen on the website and the phone.
 
 ## Decisions for the owner
+
+Answered 2026-10-16: Twilio; the number is still open (new or existing both work, existing
+numbers are finished by Tidemark); Tidemark pays; calls as Housecall Pro does them; pictures
+on, with a switch to turn them off.
 
 1. **Provider:** Twilio (recommended) or another?
 2. **Number:** a new number per shop, or text-enable each shop's existing number?

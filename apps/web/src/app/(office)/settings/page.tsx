@@ -12,7 +12,10 @@ export default async function SettingsIndex() {
   const company = await getCompany(await getOffice());
   const sections = settingsSections(company.settings);
   const groups = [
-    { title: "Your shop", hrefs: ["/settings/company", "/settings/team", "/settings/scheduling"] },
+    {
+      title: "Your shop",
+      hrefs: ["/settings/company", "/settings/team", "/settings/scheduling", "/settings/phone"],
+    },
     {
       title: "Money",
       hrefs: ["/settings/price-book", "/settings/payments", "/settings/billing"],
@@ -33,6 +36,7 @@ export default async function SettingsIndex() {
     "/settings/company": "Shown on reports, quotes, and invoices",
     "/settings/team": "Techs, owners, and invites",
     "/settings/scheduling": "Working day, shop location, and drive times",
+    "/settings/phone": "The company number for texts and calls",
     "/settings/price-book": "Repair items for quotes",
     "/settings/payments": "How customers pay, and deposits",
     "/settings/billing": "Your shop’s Tidemark subscription",

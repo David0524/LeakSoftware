@@ -1,6 +1,7 @@
 import NetInfo from "@react-native-community/netinfo";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AppState, type NativeEventSubscription } from "react-native";
+import { uuidv7 } from "@leakbook/core";
 import { Paths } from "expo-file-system";
 import {
   LocalStore,
@@ -386,6 +387,48 @@ export class SyncService {
     } catch {
       // Offline or server unavailable; the transcript stays "not yet".
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Company texting (owner, 2026-10-16): pictures and my own mobile number. Texts and calls
+  // sync as rows; these few calls need a signal.
+  // ---------------------------------------------------------------------------
+
+  /** Signed links (an hour) for pictures in texts. */
+  async textPictureUrls(paths: string[]): Promise<Map<string, string>> {
+    const urls = new Map<string, string>();
+    if (!paths.length) return urls;
+    const { data } = await this.supabase.storage.from("texts").createSignedUrls(paths, 3600);
+    for (const s of data ?? []) if (s.path && s.signedUrl) urls.set(s.path, s.signedUrl);
+    return urls;
+  }
+
+  /** Put a photo in the shop's texts folder, ready to send. Returns its path. */
+  async uploadTextPicture(companyId: string, uri: string, type: string): Promise<string> {
+    const ext = type.split("/")[1] ?? "jpeg";
+    const path = `${companyId}/out/${uuidv7()}.${ext}`;
+    const body = await (await fetch(uri)).arrayBuffer();
+    const { error } = await this.supabase.storage
+      .from("texts")
+      .upload(path, body, { contentType: type });
+    if (error) throw new Error(error.message);
+    return path;
+  }
+
+  async myPhone(): Promise<string | null> {
+    const { data: session } = await this.supabase.auth.getSession();
+    const id = session.session?.user.id;
+    if (!id) return null;
+    const { data } = await this.supabase.from("profile").select("phone").eq("id", id).maybeSingle();
+    return (data?.phone as string | null) ?? null;
+  }
+
+  async saveMyPhone(phone: string): Promise<void> {
+    const { data: session } = await this.supabase.auth.getSession();
+    const id = session.session?.user.id;
+    if (!id) throw new Error("Sign in again to continue.");
+    const { error } = await this.supabase.from("profile").update({ phone }).eq("id", id);
+    if (error) throw new Error(error.message);
   }
 
   // ---------------------------------------------------------------------------

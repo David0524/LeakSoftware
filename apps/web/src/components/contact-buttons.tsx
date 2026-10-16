@@ -9,10 +9,13 @@ export function ContactButtons({
   name,
   phone,
   email,
+  textHref,
 }: {
   name: string;
   phone: string | null | undefined;
   email: string | null | undefined;
+  /** With a company number, texts go out from it (the Messages inbox), not this device. */
+  textHref?: string;
 }) {
   if (!phone && !email) return null;
   return (
@@ -27,7 +30,7 @@ export function ContactButtons({
             <PhoneIcon />
           </a>
           <a
-            href={`sms:${phone.replace(/[^\d+]/g, "")}`}
+            href={textHref ?? `sms:${phone.replace(/[^\d+]/g, "")}`}
             aria-label={`Text ${name}`}
             className={iconButtonClass()}
           >
