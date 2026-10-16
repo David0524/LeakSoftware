@@ -1,4 +1,4 @@
-# Handover (2026-10-16)
+# Handover (2026-10-16, updated)
 
 For the next chat picking up Tidemark. Read `CLAUDE.md` first, then this, then the newest
 entries in `docs/DECISIONS.md` (2026-10-15 and 2026-10-16 cover everything below).
@@ -7,14 +7,29 @@ entries in `docs/DECISIONS.md` (2026-10-15 and 2026-10-16 cover everything below
 
 - **Branch:** `claude/cool-keller-efjc00`. Push only there and don't open PRs. Pushing deploys
   the website (https://leaksoftware-web.vercel.app).
-- **Last commit:** `6ae0932` (chemical calculator). Its CI run was still going when this was
-  written. **First thing to do:** check that run.
-  - If it's green, run `pnpm db:deploy`. That applies `20261012003500_company_texting.sql`,
-    which is **not on the dev project yet**. Then open Messages and Settings › Phone and
-    Texting on the live site.
-  - If it's red, fix it before anything else. The last three runs failed only in
-    `e2e/texting.spec.ts`. Each failure was fixed: a customer embed on a composite key, then
-    the test picking the wrong element named "Message". The test hasn't passed in CI yet.
+- **Last code commit:** `03ec976`. **CI is green** on it, and `e2e/texting.spec.ts` passes in CI
+  (36 of 36). Two fixes got it there:
+  - `b0d885c` (test): the reply text shows both in the conversation and as the thread list's
+    preview, so the test now looks inside the "Conversation with …" region.
+  - `03ec976` (app bug): incoming calls were never logged. `call_log` was upserted with
+    `ON CONFLICT (provider_sid)`, but `call_log_provider` is a partial unique index, which
+    Postgres can't infer from that clause; the error was ignored. It's now a plain insert, with
+    a duplicate (23505) treated as already logged, the same as incoming texts. Lesson: don't
+    use PostgREST `onConflict` against a partial unique index.
+- **First thing to do: `pnpm db:deploy`.** It applies `20261012003500_company_texting.sql`,
+  which is **still not on the dev project**. The last session couldn't run it: the Supabase
+  token in the `api.supabase.com` network secret was missing, then rejected with
+  `HTTP 401: JWT could not be decoded`. The owner has since fixed the token; a new session
+  should pick it up.
+  - Start with `pnpm db:deploy -- --dry-run`. It should list one pending migration.
+  - If it still says "JWT could not be decoded", the secret's value is wrong: it must be a
+    personal access token (`sbp_…`) sent as `Authorization: Bearer sbp_…`. Tell the owner;
+    never ask for the token in chat or print it.
+- **Then check the live site** as the demo owner (`signIn` from `e2e/helpers.ts`, read-only,
+  credentials never printed): Messages and Settings › Phone and Texting. Before the deploy,
+  Messages showed "Something went wrong" (the tables don't exist yet) and Phone and Texting
+  rendered with the demo-mode notice. After the deploy, Messages should show an empty inbox.
+  Don't take a number on the live site: that leaves data behind.
 - **Milestones:** M0 to M11 are built (see the 2026-10-14 handover in git history for
   M11). Since then the work has been owner requests, listed below.
 
@@ -92,6 +107,12 @@ scratchpad, which the next chat can't open.
   `pnpm test` (logic) and `pnpm test:db` (SQL).
 - **CI:** also builds the website and runs Playwright against Supabase in Docker. Check the
   last run before pushing again. A push cancels the run in progress.
+- **Watching CI:** the repository is public, so `curl -sS
+  https://api.github.com/repos/David0524/LeakSoftware/actions/runs?head_sha=<sha>` works without
+  a token. Wait on it with a background command, not repeated sleeps. Failed Playwright runs
+  upload a `playwright-report` artifact; its `data/*.md` holds the page snapshot at the failure.
+- **`pnpm test:db` locally** needs pgTAP: `apt-get install -y postgresql-16-pgtap` if
+  `session-start.sh` didn't install it.
 - **Database deploys:** run `pnpm db:deploy` only after CI is green on the migration's commit.
 - **Seeing a page locally:**
   - Build with `pnpm exec next build`.
