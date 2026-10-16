@@ -14,6 +14,15 @@ body {
   line-height: 1.5;
 }
 
+/* Placeholders in iOS's light placeholder gray, so an example never reads as a typed value
+   (owner, 2026-10-16). In @layer base so placeholder: utilities still win. */
+@layer base {
+  ::placeholder {
+    color: var(--lb-placeholder);
+    opacity: 1;
+  }
+}
+
 /* One visible focus ring everywhere, in the brand focus color. */
 :focus-visible {
   outline: 3px solid var(--lb-focus);

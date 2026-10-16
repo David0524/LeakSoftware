@@ -291,7 +291,7 @@ export function Field({
       <T variant="label">{label}</T>
       <TextInput
         ref={ref}
-        placeholderTextColor={color.textMuted}
+        placeholderTextColor={color.placeholder}
         {...input}
         accessibilityLabel={label}
         style={[
@@ -736,7 +736,7 @@ export function FieldRow({
   const field = (
     <TextInput
       ref={setRef}
-      placeholderTextColor={color.textMuted}
+      placeholderTextColor={color.placeholder}
       clearButtonMode={multiline || wrap ? undefined : "while-editing"}
       maxFontSizeMultiplier={MAX_TEXT_SCALE}
       inputAccessoryViewID={numeric ? accessoryId : undefined}

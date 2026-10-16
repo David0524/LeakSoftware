@@ -53,7 +53,7 @@ export function AcceptForm({
               defaultValue={defaultName}
               placeholder="Full name"
               required
-              className="min-h-11 min-w-0 flex-1 rounded-md bg-transparent text-text placeholder:text-text-muted focus-visible:outline-offset-0"
+              className="min-h-11 min-w-0 flex-1 rounded-md bg-transparent text-text placeholder:text-placeholder focus-visible:outline-offset-0"
             />
           </div>
           {/* The hairline starts where the text does, as in an iOS grouped list. */}

@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-16 (owner: calculator "pop up card from the bottom", everyday measures, "in line with others online", gallon commas, placeholder text)
+- **What to Add is a bar docked at the bottom** on phones and tablets (above the tab bar), with a live one-line summary ("½ jug muriatic acid · 1 more"). Tapping it opens a sheet with the steps: the website's sheet, and an iOS page sheet in the phone app (swipe down or Done). Wide screens keep it beside the readings.
+- **Amounts read the way a tech measures them** (`measure` on each step, `jugMeasure`/`dryMeasure` in `packages/core/src/chemistry.ts`): liquids as a splash (under 6 fl oz), cups up to 3, then 1-gallon jugs by the quarter (by the half past 4); dry products as a scoop (under 6 oz), then pounds (nearest ½ lb to 10, pound to 40, 5 lb past that); salt in 40 lb bags. The exact amount shows under it ("About 65 fl oz").
+- **The doses were checked** against the chemistry and published labels and charts. Matching already: chlorine (10.7 fl oz of 12.5% per ppm per 10,000 gal; charts say 10.6), cal-hypo, muriatic acid for alkalinity (25.6 fl oz per 10 ppm, the "about a quart" rule), calcium chloride, stabilizer, salt. Corrected: acid for pH 16 → 13 fl oz of 31.45% per 0.2 at 100 ppm alkalinity (labels say 12 to 16; Pool Nerd works out to 12.8; kept low because too much acid is the worse mistake); 14.5% muriatic and dry acid now account for density and purity (60 fl oz and 34 oz per 10 ppm alkalinity); baking soda 1.5 → 1.4 lb per 10 ppm (the chemistry).
+- **Gallons get thousands commas as they're typed** (website and phone app).
+- **Placeholders are iOS's light placeholder gray** (new `placeholder` brand token, light and dark), so an example like "20,000" never reads as a typed value.
+
 ## 2026-10-16 (owner: iOS feel, unread, On My Way, Phone and Texting fields, calculator)
 - **Every new page feels like iOS, not Android** ("Consider iPhone/Swift design principles"). Now a house rule in `CLAUDE.md`.
 - **Mark as unread, for the whole team.** Unread is one shared flag per conversation. Website: swipe a conversation right for Unread (or Read), with a full swipe acting on release, as in iOS Messages, and Mark as Unread inside a conversation, which goes back to the list so opening it doesn't mark it read again. Phone app: the same swipe right in Messages, plus a VoiceOver action.

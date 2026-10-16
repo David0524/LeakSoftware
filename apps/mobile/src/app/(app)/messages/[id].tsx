@@ -226,7 +226,7 @@ export default function Conversation() {
               value={body}
               onChangeText={setBody}
               placeholder="Text message"
-              placeholderTextColor={color.textMuted}
+              placeholderTextColor={color.placeholder}
               accessibilityLabel="Message"
               multiline
               maxLength={1600}

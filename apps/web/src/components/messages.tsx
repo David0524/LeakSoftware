@@ -71,7 +71,7 @@ export function Composer({
             autoComplete="off"
             required
             placeholder="Mobile number"
-            className="block min-h-11 w-full rounded-[10px] border border-control-border bg-surface px-3 text-text placeholder:text-text-muted focus:outline-3 focus:outline-focus"
+            className="block min-h-11 w-full rounded-[10px] border border-control-border bg-surface px-3 text-text placeholder:text-placeholder focus:outline-3 focus:outline-focus"
           />
         </div>
       ) : null}
@@ -112,7 +112,7 @@ export function Composer({
               form.current?.requestSubmit();
             }
           }}
-          className="block min-h-11 min-w-0 flex-1 resize-y rounded-[1.375rem] border border-control-border bg-surface px-4 py-2.5 text-text placeholder:text-text-muted focus:outline-3 focus:outline-focus"
+          className="block min-h-11 min-w-0 flex-1 resize-y rounded-[1.375rem] border border-control-border bg-surface px-4 py-2.5 text-text placeholder:text-placeholder focus:outline-3 focus:outline-focus"
         />
         <Button type="submit" disabled={pending}>
           {pending ? "Sending…" : "Send"}

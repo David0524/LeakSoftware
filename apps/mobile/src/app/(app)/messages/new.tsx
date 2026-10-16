@@ -38,7 +38,7 @@ export default function NewMessage() {
         value={body}
         onChangeText={setBody}
         placeholder="Text message"
-        placeholderTextColor={color.textMuted}
+        placeholderTextColor={color.placeholder}
         accessibilityLabel="Message"
         multiline
         autoFocus

@@ -4,14 +4,17 @@ import { useId, useState, type ComponentProps } from "react";
 import {
   ACID_PRODUCTS,
   calculateChemistry,
+  doseSummary,
   CHLORINE_PRODUCTS,
   type AcidProduct,
+  type ChemistryResult,
   type ChlorineProduct,
   type Readings,
   type Sanitizer,
   surfaceFor,
 } from "@leakbook/core";
 import { Segmented } from "./segmented";
+import { Sheet } from "./sheet";
 import { cx, Select } from "./ui";
 
 // The pool chemical calculator (owner, 2026-10-16). Live: every change recalculates. Nothing is
@@ -58,7 +61,7 @@ function NumField({
           aria-describedby={unit ? `${id}-unit` : undefined}
           className={cx(
             "block min-h-11 w-full rounded-[10px] border border-control-border bg-surface px-3 py-2 text-text tabular-nums",
-            "placeholder:text-text-muted focus:outline-3 focus:outline-offset-1 focus:outline-focus",
+            "placeholder:text-placeholder focus:outline-3 focus:outline-offset-1 focus:outline-focus",
             unit && "pr-16",
           )}
         />
@@ -75,6 +78,78 @@ function NumField({
   );
 }
 
+/** Gallons with thousands commas as they're typed: "20000" shows as "20,000". */
+function withCommas(text: string): string {
+  const digits = text
+    .replace(/\D/g, "")
+    .replace(/^0+(?=\d)/, "")
+    .slice(0, 7);
+  return digits ? Number(digits).toLocaleString("en-US") : "";
+}
+
+/** The readings as pills, the steps in order, and the saturation index. */
+function Doses({ result }: { result: ChemistryResult }) {
+  return (
+    <>
+      <ul className="flex flex-wrap gap-2" aria-label="Readings">
+        {result.statuses.map((s) => (
+          <li
+            key={s.key}
+            className={cx(
+              "rounded-full px-3 py-1 text-[0.9375rem] font-semibold",
+              s.status === "ok"
+                ? "bg-status-pass/12 text-status-pass"
+                : "bg-status-warning/12 text-status-warning",
+            )}
+          >
+            {s.label} {s.key === "ph" ? s.value.toFixed(1) : s.value}
+            <span className="font-normal">
+              {" "}
+              · {s.status === "ok" ? "OK" : s.status === "low" ? "Low" : "High"}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {result.steps.length === 0 ? (
+        <p className="mt-4 font-semibold text-status-pass">Balanced. Nothing to add.</p>
+      ) : (
+        <ol className="mt-4 space-y-3" data-testid="doses">
+          {result.steps.map((s, i) => (
+            <li key={s.key + s.product} className="well flex gap-3 p-4">
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-primary font-display font-bold text-on-primary">
+                {i + 1}
+              </span>
+              <div className="min-w-0">
+                {/* The everyday measure first (owner, 2026-10-16: "half jug of chlorine,
+                    splash of acid"), the exact amount under it. */}
+                {s.measure ? (
+                  <p className="font-display text-2xl leading-tight font-extrabold">{s.measure}</p>
+                ) : null}
+                <p className="font-semibold">{s.product}</p>
+                {s.amount ? (
+                  <p className="text-[0.9375rem] text-text-muted tabular-nums">About {s.amount}</p>
+                ) : null}
+                <p className="text-[0.9375rem] text-text-muted">{s.why}</p>
+                {s.note ? <p className="mt-1 text-[0.9375rem]">{s.note}</p> : null}
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+      {result.lsi !== null ? (
+        <p className="mt-4 text-[0.9375rem]">
+          Saturation index{" "}
+          <span className="font-semibold tabular-nums">
+            {result.lsi > 0 ? "+" : ""}
+            {result.lsi.toFixed(1)}
+          </span>{" "}
+          · {result.lsiLabel}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 export function ChemCalculator({
   initialGallons,
   poolType,
@@ -83,12 +158,16 @@ export function ChemCalculator({
   /** The pool's recorded type, from a visit: it sets the calcium target. */
   poolType?: string | null;
 }) {
-  const [gallonsText, setGallonsText] = useState(initialGallons ? String(initialGallons) : "");
+  const [gallonsText, setGallonsText] = useState(
+    initialGallons ? withCommas(String(initialGallons)) : "",
+  );
   const surface = surfaceFor(poolType);
   const [sanitizer, setSanitizer] = useState<Sanitizer>("chlorine");
   const [values, setValues] = useState<Record<string, string>>({});
   const [chlorine, setChlorine] = useState<ChlorineProduct>("liquid12");
   const [acid, setAcid] = useState<AcidProduct>("muriatic31");
+  const [sheet, setSheet] = useState(false);
+  const closeSheet = () => setSheet(false);
 
   // Pool size by gallons only (owner, 2026-10-16).
   const gallons = num(gallonsText) ?? 0;
@@ -96,80 +175,15 @@ export function ChemCalculator({
     READINGS.map((r) => [r.key, num(values[r.key] ?? "")]),
   );
   const result = calculateChemistry({ gallons, surface, sanitizer, readings, chlorine, acid });
-  const anyReading = result.statuses.length > 0;
+  const ready = result.statuses.length > 0 && gallons > 0;
+  const line = doseSummary(result, ready);
 
   return (
-    // What to Add comes first (owner, 2026-10-16: "bring the steps to the top"); wide screens
-    // keep it in the right-hand column beside the readings.
+    // Readings fill the page. What to Add is a bar docked at the bottom that opens a sheet
+    // (owner, 2026-10-16: "a pop up card from the bottom"); wide screens show it beside the
+    // readings instead.
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-      <section
-        aria-labelledby="dose-title"
-        aria-live="polite"
-        className="card p-5 lg:sticky lg:top-20 lg:order-2"
-      >
-        <h2 id="dose-title" className="font-display text-xl font-bold">
-          What to Add
-        </h2>
-        {!anyReading || gallons <= 0 ? (
-          <p className="mt-2 text-text-muted">Add the gallons and a reading below.</p>
-        ) : (
-          <>
-            <ul className="mt-3 flex flex-wrap gap-2" aria-label="Readings">
-              {result.statuses.map((s) => (
-                <li
-                  key={s.key}
-                  className={cx(
-                    "rounded-full px-3 py-1 text-[0.9375rem] font-semibold",
-                    s.status === "ok"
-                      ? "bg-status-pass/12 text-status-pass"
-                      : "bg-status-warning/12 text-status-warning",
-                  )}
-                >
-                  {s.label} {s.key === "ph" ? s.value.toFixed(1) : s.value}
-                  <span className="font-normal">
-                    {" "}
-                    · {s.status === "ok" ? "OK" : s.status === "low" ? "Low" : "High"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {result.steps.length === 0 ? (
-              <p className="mt-4 font-semibold text-status-pass">Balanced. Nothing to add.</p>
-            ) : (
-              <ol className="mt-4 space-y-3" data-testid="doses">
-                {result.steps.map((s, i) => (
-                  <li key={s.key + s.product} className="well flex gap-3 p-4">
-                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-link font-display font-bold text-white">
-                      {i + 1}
-                    </span>
-                    <div className="min-w-0">
-                      {s.amount ? (
-                        <p className="font-display text-2xl leading-tight font-extrabold tabular-nums">
-                          {s.amount}
-                        </p>
-                      ) : null}
-                      <p className="font-semibold">{s.product}</p>
-                      <p className="text-[0.9375rem] text-text-muted">{s.why}</p>
-                      {s.note ? <p className="mt-1 text-[0.9375rem]">{s.note}</p> : null}
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            )}
-            {result.lsi !== null ? (
-              <p className="mt-4 text-[0.9375rem]">
-                Saturation index{" "}
-                <span className="font-semibold tabular-nums">
-                  {result.lsi > 0 ? "+" : ""}
-                  {result.lsi.toFixed(1)}
-                </span>{" "}
-                · {result.lsiLabel}
-              </p>
-            ) : null}
-          </>
-        )}
-      </section>
-      <div className="space-y-6 lg:order-1">
+      <div className="space-y-6">
         <section aria-labelledby="pool-title" className="card space-y-4 p-5">
           <h2 id="pool-title" className="font-display text-xl font-bold">
             Pool
@@ -178,23 +192,21 @@ export function ChemCalculator({
             label="Gallons"
             inputMode="numeric"
             value={gallonsText}
-            onChange={(e) => setGallonsText(e.target.value)}
+            onChange={(e) => setGallonsText(withCommas(e.target.value))}
             placeholder="20,000"
             unit="gal"
             className="max-w-xs"
           />
-          <div className="flex flex-wrap gap-x-6 gap-y-4">
-            <Segmented
-              label="Sanitizer"
-              name="sanitizer"
-              value={sanitizer}
-              onChange={setSanitizer}
-              options={[
-                { value: "chlorine", label: "Chlorine" },
-                { value: "salt", label: "Salt" },
-              ]}
-            />
-          </div>
+          <Segmented
+            label="Sanitizer"
+            name="sanitizer"
+            value={sanitizer}
+            onChange={setSanitizer}
+            options={[
+              { value: "chlorine", label: "Chlorine" },
+              { value: "salt", label: "Salt" },
+            ]}
+          />
         </section>
 
         <section aria-labelledby="readings-title" className="card space-y-4 p-5">
@@ -231,7 +243,47 @@ export function ChemCalculator({
             />
           </div>
         </section>
+        {/* Room to scroll the last fields clear of the docked bar. */}
+        <div aria-hidden="true" className="h-20 lg:hidden" />
       </div>
+
+      <section aria-labelledby="dose-title" className="card p-5 max-lg:hidden lg:sticky lg:top-20">
+        <h2 id="dose-title" className="mb-3 font-display text-xl font-bold">
+          What to Add
+        </h2>
+        {ready ? (
+          <Doses result={result} />
+        ) : (
+          <p className="text-text-muted">Add the gallons and a reading.</p>
+        )}
+      </section>
+
+      {/* Phones and tablets: the docked bar, above the tab bar on phones. */}
+      <div className="fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 px-3 sm:bottom-4 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setSheet(true)}
+          disabled={!ready}
+          aria-haspopup="dialog"
+          className="glass mx-auto flex min-h-14 w-full max-w-xl items-center gap-3 rounded-[22px] px-4 py-2 text-left disabled:cursor-default"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="block text-[0.8125rem] font-semibold text-text-muted uppercase">
+              What to Add
+            </span>
+            <span
+              aria-live="polite"
+              className={cx("block truncate font-semibold", !ready && "text-text-muted")}
+            >
+              {line}
+            </span>
+          </span>
+          {ready ? <span className="shrink-0 font-semibold text-link">Show</span> : null}
+        </button>
+      </div>
+      <Sheet open={sheet} onClose={closeSheet} title="What to Add" cancelLabel="Close">
+        <Doses result={result} />
+      </Sheet>
     </div>
   );
 }

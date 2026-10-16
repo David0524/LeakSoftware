@@ -147,7 +147,7 @@ export function JobStatusActions({
 
 // Inputs inside a grouped row. Outlined in color.controlBorder so they read in direct sun.
 const ROW_INPUT =
-  "rounded-[10px] border border-control-border bg-surface px-3 text-text placeholder:text-text-muted " +
+  "rounded-[10px] border border-control-border bg-surface px-3 text-text placeholder:text-placeholder " +
   "focus:outline-3 focus:outline-offset-1 focus:outline-focus";
 
 /** On Site, as an iOS grouped form: label left and the control right, notes full width. */

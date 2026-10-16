@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateChemistry,
+  dryMeasure,
   fluidAmount,
+  jugMeasure,
   poolGallons,
   saturationIndex,
   targets,
@@ -39,6 +41,21 @@ describe("amounts in words", () => {
     expect(weightAmount(56)).toBe("3.5 lb");
     expect(weightAmount(16 * 42.4)).toBe("42 lb");
   });
+
+  it("and the way it's poured or weighed out on the deck", () => {
+    expect(jugMeasure(4)).toBe("A splash");
+    expect(jugMeasure(8)).toBe("1 cup");
+    expect(jugMeasure(20)).toBe("2½ cups");
+    expect(jugMeasure(64)).toBe("½ jug");
+    expect(jugMeasure(100)).toBe("¾ jug");
+    expect(jugMeasure(150)).toBe("1¼ jugs");
+    expect(jugMeasure(128 * 5.3)).toBe("5½ jugs");
+    expect(dryMeasure(3)).toBe("A scoop");
+    expect(dryMeasure(12)).toBe("1 lb");
+    expect(dryMeasure(16 * 3.3)).toBe("3½ lb");
+    expect(dryMeasure(16 * 23.4)).toBe("23 lb");
+    expect(dryMeasure(16 * 133, 40)).toBe("3½ bags");
+  });
 });
 
 describe("doses", () => {
@@ -56,6 +73,7 @@ describe("doses", () => {
         key: "fc",
         product: "Liquid chlorine 12.5%",
         amount: "64 fl oz",
+        measure: "½ jug",
         why: "Free chlorine 1 → 4",
       }),
     ]);
@@ -64,9 +82,13 @@ describe("doses", () => {
   });
 
   it("lowers pH with acid, more when alkalinity is high", () => {
-    // 8.0 → 7.5 is 2.5 × 0.2; 16 fl oz × 2.5 × 2 (20,000 gal) = 80 fl oz at 100 ppm TA.
-    expect(run({ ph: 8.0, ta: 100 }).steps[0]).toMatchObject({ key: "ph", amount: "80 fl oz" });
-    expect(run({ ph: 8.0, ta: 110 }).steps[0]).toMatchObject({ amount: "88 fl oz" }); // more buffer
+    // 8.0 → 7.5 is 2.5 × 0.2; 13 fl oz × 2.5 × 2 (20,000 gal) = 65 fl oz at 100 ppm TA.
+    expect(run({ ph: 8.0, ta: 100 }).steps[0]).toMatchObject({
+      key: "ph",
+      amount: "65 fl oz",
+      measure: "½ jug",
+    });
+    expect(run({ ph: 8.0, ta: 110 }).steps[0]).toMatchObject({ amount: "72 fl oz" }); // more buffer
     expect(run({ ph: 7.0, ta: 100 }).steps[0]).toMatchObject({
       product: "Soda ash",
       amount: "1.9 lb",
@@ -76,28 +98,36 @@ describe("doses", () => {
   it("fixes alkalinity before pH", () => {
     const r = run({ ph: 7.0, ta: 60 });
     expect(r.steps.map((s) => s.key)).toEqual(["ta", "ph"]);
-    // +40 ppm: 4 × 1.5 lb × 2 = 12 lb of baking soda.
-    expect(r.steps[0]).toMatchObject({ product: "Baking soda", amount: "12 lb" });
+    // +40 ppm: 4 × 1.4 lb × 2 = 11.2 lb of baking soda.
+    expect(r.steps[0]).toMatchObject({
+      product: "Baking soda",
+      amount: "11.2 lb",
+      measure: "11 lb",
+    });
   });
 
   it("calcium and stabilizer go up by product, down by draining", () => {
     expect(run({ ch: 150 }).steps[0]).toMatchObject({
       product: "Calcium chloride 77%",
-      amount: "50 lb",
+      amount: "48 lb",
     });
     expect(run({ ch: 150 }, { surface: "vinyl" }).steps).toEqual([]);
     expect(run({ cya: 120 }).steps[0]).toMatchObject({
       product: "Drain and refill about 70%",
       amount: null,
     });
-    expect(run({ cya: 0 }).steps[0]).toMatchObject({ key: "cya", amount: "6.5 lb" });
+    expect(run({ cya: 0 }).steps[0]).toMatchObject({ key: "cya", amount: "6.7 lb" });
   });
 
   it("salt pools aim higher on stabilizer and check salt", () => {
     expect(targets("plaster", "salt").cya.target).toBe(70);
     const r = run({ salt: 2400, cya: 70 }, { sanitizer: "salt" });
     // +800 ppm in 20,000 gal: 8 × 8.34 lb × 2 = 133 lb.
-    expect(r.steps[0]).toMatchObject({ product: "Pool salt", amount: "133 lb" });
+    expect(r.steps[0]).toMatchObject({
+      product: "Pool salt",
+      amount: "133 lb",
+      measure: "3½ bags",
+    });
   });
 
   it("free chlorine target follows stabilizer", () => {
@@ -121,6 +151,16 @@ describe("wording", () => {
   it("shows half-ppm chlorine targets", () => {
     // Stabilizer 30: minimum 2.5 ppm, aim 3.5.
     expect(run({ fc: 1, cya: 30 }).steps[0]).toMatchObject({ why: "Free chlorine 1 → 3.5" });
+  });
+});
+
+describe("summary", () => {
+  it("names the first step in everyday words, and how many more", async () => {
+    const { doseSummary } = await import("../src");
+    const r = run({ ph: 8.0, ta: 100, fc: 1, cya: 40 });
+    expect(doseSummary(r, true)).toBe("½ jug muriatic acid · 1 more");
+    expect(doseSummary(run({ fc: 4, ph: 7.5 }), true)).toBe("Balanced. Nothing to add.");
+    expect(doseSummary(r, false)).toBe("Add the gallons and a reading");
   });
 });
 

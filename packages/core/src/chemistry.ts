@@ -112,18 +112,23 @@ export const ACID_PRODUCTS: Record<AcidProduct, string> = {
   dryacid: "Dry acid (sodium bisulfate)",
 };
 
-// Amounts per 10,000 gallons. Liquids in fluid ounces, solids in ounces by weight.
+// Amounts per 10,000 gallons. Liquids in fluid ounces, solids in ounces by weight. Checked
+// against the chemistry and published charts and labels (owner, 2026-10-16: "confirm that
+// your calculator is in line with others"); see docs/DECISIONS.md.
 const PER_10K = {
-  // +1 ppm free chlorine
+  // +1 ppm free chlorine (stoichiometry: 10.2 fl oz of 12.5%; charts say 10.6 to 10.7)
   chlorine: { liquid12: 10.7, liquid10: 13.4, calhypo65: 2.0, calhypo73: 1.8 },
-  // -0.2 pH at 100 ppm alkalinity (more alkalinity takes more acid)
-  acidPh: { muriatic31: 16, muriatic145: 34.7, dryacid: 20 },
-  // -10 ppm total alkalinity
-  acidTa: { muriatic31: 25.6, muriatic145: 55.5, dryacid: 32 },
+  // -0.2 pH at 100 ppm alkalinity (more alkalinity takes more acid). Labels say 12 to 16 fl oz
+  // of 31.45%; this stays near the low end, since too much acid is the worse mistake.
+  // 14.5% and dry acid follow from the alkalinity ratios below.
+  acidPh: { muriatic31: 13, muriatic145: 30.5, dryacid: 17.3 },
+  // -10 ppm total alkalinity: 7.6 mol of acid. 31.45% muriatic (1.16 g/mL) 25.6 fl oz;
+  // 14.5% (1.07 g/mL) 60 fl oz; dry acid (94.5% sodium bisulfate) 34 oz.
+  acidTa: { muriatic31: 25.6, muriatic145: 60, dryacid: 34 },
   sodaAshPh: 6, // +0.2 pH, oz
-  bakingSodaTa: 24, // +10 ppm TA, oz (1.5 lb)
-  calciumChlorideCh: 20, // +10 ppm CH, oz (1.25 lb of 77%)
-  cyaUp: 13, // +10 ppm CYA, oz
+  bakingSodaTa: 22.4, // +10 ppm TA, oz (1.4 lb)
+  calciumChlorideCh: 19.3, // +10 ppm CH, oz (1.2 lb of 77%)
+  cyaUp: 13.3, // +10 ppm CYA, oz
   saltUp: 133.4, // +100 ppm salt, oz (8.34 lb)
 } as const;
 
@@ -138,8 +143,13 @@ export interface DoseStep {
   key: ReadingKey;
   /** What to add, or what to do ("Drain and refill about 25%"). */
   product: string;
-  /** The amount in words ("1 gal 26 fl oz", "3.5 lb"); null when the step is an action. */
+  /** The exact amount ("1 gal 26 fl oz", "3.5 lb"); null when the step is an action. */
   amount: string | null;
+  /**
+   * The same amount the way a tech measures it on the deck (owner, 2026-10-16: "half jug of
+   * chlorine, splash of acid"): "A splash", "2 cups", "½ jug", "3½ lb", "2 bags".
+   */
+  measure: string | null;
   /** Why, in words: "pH 8.0 → 7.5". */
   why: string;
   note?: string;
@@ -187,6 +197,45 @@ export function fluidAmount(flOz: number): string {
   const gal = Math.floor(oz / 128);
   const rest = oz - gal * 128;
   return rest ? `${gal} gal ${rest} fl oz` : `${gal} gal`;
+}
+
+/** ¼, ½, ¾ as characters: 1.5 → "1½", 0.25 → "¼". */
+function fraction(n: number): string {
+  const whole = Math.floor(n);
+  const part = { 0: "", 0.25: "¼", 0.5: "½", 0.75: "¾" }[n - whole] ?? "";
+  return whole ? `${whole}${part}` : part || "0";
+}
+
+/**
+ * Liquids the way they're poured: a splash (under 6 fl oz), cups up to 3, then 1-gallon jugs
+ * by the quarter (by the half past 4 jugs).
+ */
+export function jugMeasure(flOz: number): string {
+  if (flOz < 6) return "A splash";
+  if (flOz <= 24) {
+    const cups = Math.max(0.5, Math.round((flOz / 8) * 2) / 2);
+    return `${fraction(cups)} ${cups > 1 ? "cups" : "cup"}`;
+  }
+  const jugs = flOz / 128;
+  const step = jugs > 4 ? 0.5 : 0.25;
+  const n = Math.max(0.25, Math.round(jugs / step) * step);
+  return `${fraction(n)} ${n > 1 ? "jugs" : "jug"}`;
+}
+
+/**
+ * Dry products by the scoop or the pound, rounded the way they're weighed out: a scoop (under
+ * 6 oz), then the nearest ½ lb up to 10 lb, the nearest pound to 40, and 5 lb past that.
+ * Salt goes by the 40 lb bag.
+ */
+export function dryMeasure(oz: number, bag?: number): string {
+  if (bag) {
+    const bags = Math.max(0.5, Math.round((oz / 16 / bag) * 2) / 2);
+    return `${fraction(bags)} ${bags > 1 ? "bags" : "bag"}`;
+  }
+  if (oz < 6) return "A scoop";
+  const lb = oz / 16;
+  const step = lb <= 10 ? 0.5 : lb <= 40 ? 1 : 5;
+  return `${fraction(Math.max(0.5, Math.round(lb / step) * step))} lb`;
 }
 
 /** "10 oz", "3.5 lb". */
@@ -245,6 +294,26 @@ export function saturationIndex(r: Readings, sanitizer: Sanitizer): number | nul
   return Math.round(lsi * 10) / 10;
 }
 
+/**
+ * One line for the calculator's docked bar: the first step in everyday words, without the
+ * product's strength, and how many more ("½ jug muriatic acid · 1 more").
+ */
+export function doseSummary(result: ChemistryResult, ready: boolean): string {
+  if (!ready) return "Add the gallons and a reading";
+  const [first, ...rest] = result.steps;
+  if (!first) return "Balanced. Nothing to add.";
+  const product = first.product.replace(/ \d+(\.\d+)?%/, "");
+  const what = first.measure ? `${first.measure} ${product.toLowerCase()}` : product;
+  return rest.length ? `${what} · ${rest.length} more` : what;
+}
+
+/** The exact amount and the everyday measure, for a liquid (fl oz) or a dry product (oz). */
+function dose(qty: number, liquid: boolean, bag?: number) {
+  return liquid
+    ? { amount: fluidAmount(qty), measure: jugMeasure(qty) }
+    : { amount: weightAmount(qty), measure: dryMeasure(qty, bag) };
+}
+
 export function calculateChemistry(input: ChemistryInput): ChemistryResult {
   const { gallons, surface, sanitizer, readings: r, chlorine, acid } = input;
   const t = targets(surface, sanitizer, r.cya);
@@ -279,6 +348,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
     key,
     product: `Drain and refill about ${Math.min(90, Math.ceil(((from - to) / from) * 20) * 5)}%`,
     amount: null,
+    measure: null,
     why: why(key, from, to),
     note: "Nothing added lowers it; fresh water does.",
   });
@@ -292,7 +362,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
       steps.push({
         key: "ta",
         product: "Baking soda",
-        amount: weightAmount((d / 10) * PER_10K.bakingSodaTa * k),
+        ...dose((d / 10) * PER_10K.bakingSodaTa * k, false),
         why: why("ta", ta.value, ta.range.target),
       });
     } else {
@@ -300,7 +370,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
       steps.push({
         key: "ta",
         product: ACID_PRODUCTS[acid],
-        amount: isLiquid(acid) ? fluidAmount(amt) : weightAmount(amt),
+        ...dose(amt, isLiquid(acid)),
         why: why("ta", ta.value, ta.range.target),
         note: "Add in two or three doses a few hours apart, running the pump, and aerate to bring pH back up.",
       });
@@ -317,7 +387,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
       steps.push({
         key: "ph",
         product: "Soda ash",
-        amount: weightAmount((d / 0.2) * PER_10K.sodaAshPh * buffer * k),
+        ...dose((d / 0.2) * PER_10K.sodaAshPh * buffer * k, false),
         why: why("ph", ph.value, ph.range.target),
       });
     } else {
@@ -325,7 +395,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
       steps.push({
         key: "ph",
         product: ACID_PRODUCTS[acid],
-        amount: isLiquid(acid) ? fluidAmount(amt) : weightAmount(amt),
+        ...dose(amt, isLiquid(acid)),
         why: why("ph", ph.value, ph.range.target),
         note: "Pour into the deep end with the pump running. Add acid to water, never water to acid.",
       });
@@ -337,7 +407,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
     steps.push({
       key: "ch",
       product: "Calcium chloride 77%",
-      amount: weightAmount(((ch.range.target - ch.value) / 10) * PER_10K.calciumChlorideCh * k),
+      ...dose(((ch.range.target - ch.value) / 10) * PER_10K.calciumChlorideCh * k, false),
       why: why("ch", ch.value, ch.range.target),
     });
   } else if (ch?.status === "high") {
@@ -349,7 +419,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
     steps.push({
       key: "cya",
       product: "Stabilizer (cyanuric acid)",
-      amount: weightAmount(((cya.range.target - cya.value) / 10) * PER_10K.cyaUp * k),
+      ...dose(((cya.range.target - cya.value) / 10) * PER_10K.cyaUp * k, false),
       why: why("cya", cya.value, cya.range.target),
       note: "Dissolves slowly; put it in a sock in the skimmer basket. Retest in a week.",
     });
@@ -362,7 +432,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
     steps.push({
       key: "salt",
       product: "Pool salt",
-      amount: weightAmount(((salt.range.target - salt.value) / 100) * PER_10K.saltUp * k),
+      ...dose(((salt.range.target - salt.value) / 100) * PER_10K.saltUp * k, false, 40),
       why: why("salt", salt.value, salt.range.target),
       note: "Brush it toward the main drain until it dissolves.",
     });
@@ -377,7 +447,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
     steps.push({
       key: "fc",
       product: CHLORINE_PRODUCTS[chlorine],
-      amount: isLiquid(chlorine) ? fluidAmount(amt) : weightAmount(amt),
+      ...dose(amt, isLiquid(chlorine)),
       why: why("fc", fc.value, fc.range.target),
       ...(chlorine.startsWith("calhypo")
         ? { note: "Also raises calcium a little. Pre-dissolve in a bucket of pool water." }
@@ -388,6 +458,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
       key: "fc",
       product: "Hold off on chlorine",
       amount: null,
+      measure: null,
       why: why("fc", fc.value, fc.range.target),
       note: "Sun and time bring it down. Don't swim above 10 ppm.",
     });

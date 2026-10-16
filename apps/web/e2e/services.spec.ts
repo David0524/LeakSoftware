@@ -45,15 +45,41 @@ test("a shop's services decide what the office shows", async ({ page }) => {
 test("the chemical calculator says what to add", async ({ page }) => {
   await signIn(page, OWNER, "/chemicals");
   await page.getByLabel("Gallons").fill("20000");
+  // Thousands commas as it's typed.
+  await expect(page.getByLabel("Gallons")).toHaveValue("20,000");
   await page.getByLabel("Free Chlorine").fill("1");
   await page.getByLabel("pH").fill("8.0");
   await page.getByLabel("Alkalinity").fill("100");
   await page.getByLabel("Stabilizer").fill("40");
   const doses = page.getByTestId("doses");
-  // pH first (alkalinity is fine), then chlorine; amounts from packages/core chemistry.
+  // pH first (alkalinity is fine), then chlorine; amounts from packages/core chemistry, in
+  // jugs first and fluid ounces under them.
   await expect(doses.getByRole("listitem")).toHaveCount(2);
-  await expect(doses.getByRole("listitem").nth(0)).toContainText("80 fl oz");
+  await expect(doses.getByRole("listitem").nth(0)).toContainText("½ jug");
+  await expect(doses.getByRole("listitem").nth(0)).toContainText("About 65 fl oz");
   await expect(doses.getByRole("listitem").nth(0)).toContainText("Muriatic acid 31.45%");
-  await expect(doses.getByRole("listitem").nth(1)).toContainText("64 fl oz");
+  await expect(doses.getByRole("listitem").nth(1)).toContainText("About 64 fl oz");
   await expect(doses.getByRole("listitem").nth(1)).toContainText("Liquid chlorine 12.5%");
+});
+
+test("on a phone, what to add is a bar at the bottom that opens a sheet", async ({ browser }) => {
+  const phone = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  });
+  const page = await phone.newPage();
+  await signIn(page, OWNER, "/chemicals");
+  const bar = page.getByRole("button", { name: /What to Add/ });
+  await expect(bar).toContainText("Add the gallons and a reading");
+  await page.getByLabel("Gallons").fill("20000");
+  await page.getByLabel("pH").fill("8.0");
+  await page.getByLabel("Alkalinity").fill("100");
+  await expect(bar).toContainText("½ jug muriatic acid");
+  await bar.click();
+  const sheet = page.getByRole("dialog", { name: "What to Add" });
+  await expect(sheet.getByTestId("doses").getByRole("listitem")).toHaveCount(1);
+  await sheet.getByRole("button", { name: "Close" }).click();
+  await expect(sheet).toHaveCount(0);
+  await phone.close();
 });

@@ -253,7 +253,7 @@ export default function JobDetail() {
                 }}
                 keyboardType="decimal-pad"
                 placeholder="0.00"
-                placeholderTextColor={color.textMuted}
+                placeholderTextColor={color.placeholder}
                 style={styles.feeInput}
               />
             </Row>

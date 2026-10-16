@@ -52,6 +52,7 @@ export const tokens = {
         "chart": "#1F6FAE",
         "fill": "#7676801F",
         "separator": "#3C3C434A",
+        "placeholder": "#3C3C434C",
         "thumb": "#FFFFFF"
       },
       "dark": {
@@ -77,6 +78,7 @@ export const tokens = {
         "chart": "#4A93D0",
         "fill": "#7676803D",
         "separator": "#545458A6",
+        "placeholder": "#EBEBF54C",
         "thumb": "#636366"
       }
     }

@@ -175,7 +175,7 @@ export function SectionTitle({ children }: { children: ReactNode }) {
 // fields are visible in direct sun (house rule).
 const INPUT =
   "block w-full min-h-11 rounded-[10px] border border-control-border bg-surface px-3 py-2 text-text " +
-  "placeholder:text-text-muted focus:outline-3 focus:outline-offset-1 focus:outline-focus " +
+  "placeholder:text-placeholder focus:outline-3 focus:outline-offset-1 focus:outline-focus " +
   "aria-[invalid=true]:border-status-fail";
 
 export function Field({
@@ -301,7 +301,7 @@ export function GroupedField({
           aria-invalid={error ? true : undefined}
           aria-describedby={error || hint ? `${id}-note` : undefined}
           className={cx(
-            "block w-full min-h-11 min-w-0 text-text placeholder:text-text-muted disabled:text-text-muted",
+            "block w-full min-h-11 min-w-0 text-text placeholder:text-placeholder disabled:text-text-muted",
             "max-sm:flex-1 max-sm:rounded-md max-sm:bg-transparent max-sm:focus-visible:outline-offset-0",
             "sm:rounded-[10px] sm:border sm:border-control-border sm:bg-surface sm:px-3 sm:py-2",
             "sm:focus:outline-3 sm:focus:outline-offset-1 sm:focus:outline-focus sm:aria-[invalid=true]:border-status-fail",
@@ -383,7 +383,7 @@ export function GroupedTextArea({
         aria-invalid={error ? true : undefined}
         aria-describedby={error || hint ? `${id}-note` : undefined}
         className={cx(
-          "block min-h-24 w-full text-text placeholder:text-text-muted",
+          "block min-h-24 w-full text-text placeholder:text-placeholder",
           "max-sm:rounded-md max-sm:bg-transparent max-sm:py-2 max-sm:focus-visible:outline-offset-0",
           "sm:rounded-[10px] sm:border sm:border-control-border sm:bg-surface sm:px-3 sm:py-2",
           "sm:focus:outline-3 sm:focus:outline-offset-1 sm:focus:outline-focus sm:aria-[invalid=true]:border-status-fail",

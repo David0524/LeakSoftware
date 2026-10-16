@@ -37,6 +37,7 @@
   --lb-chart: #1F6FAE;
   --lb-fill: #7676801F;
   --lb-separator: #3C3C434A;
+  --lb-placeholder: #3C3C434C;
   --lb-thumb: #FFFFFF;
   --lb-font-display: "Barlow Semi Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
   --lb-font-body: "Public Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -65,6 +66,7 @@
   --lb-chart: #4A93D0;
   --lb-fill: #7676803D;
   --lb-separator: #545458A6;
+  --lb-placeholder: #EBEBF54C;
   --lb-thumb: #636366;
   color-scheme: dark;
 }
@@ -93,6 +95,7 @@
     --lb-chart: #4A93D0;
     --lb-fill: #7676803D;
     --lb-separator: #545458A6;
+    --lb-placeholder: #EBEBF54C;
     --lb-thumb: #636366;
     color-scheme: dark;
   }
@@ -122,6 +125,7 @@
   --lb-chart: #1F6FAE;
   --lb-fill: #7676801F;
   --lb-separator: #3C3C434A;
+  --lb-placeholder: #3C3C434C;
   --lb-thumb: #FFFFFF;
   color-scheme: light;
 }
@@ -145,6 +149,7 @@
   --color-chart: var(--lb-chart);
   --color-fill: var(--lb-fill);
   --color-separator: var(--lb-separator);
+  --color-placeholder: var(--lb-placeholder);
   --color-thumb: var(--lb-thumb);
   --color-navy: var(--lb-navy);
   --color-water: var(--lb-water);
