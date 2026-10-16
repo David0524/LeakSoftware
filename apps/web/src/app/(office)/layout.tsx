@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { signOut, switchCompany } from "@/app/actions/auth";
 import { Logo } from "@/components/logo";
@@ -10,6 +11,7 @@ import { getOffice } from "@/lib/auth";
 import { getAccess, getCompany } from "@/lib/data";
 import { unreadCount } from "@/lib/messages";
 import { officeLinks } from "@/lib/nav";
+import { onboardingAvailable } from "@/server/billing";
 
 /**
  * Office shell. The header frame renders at once; everything that depends on who is signed
@@ -69,6 +71,8 @@ async function PhoneTabs() {
 async function AccessBanner() {
   const office = await getOffice();
   const access = await getAccess(office);
+  // A new shop's owner finishes onboarding before anything else (owner, 2026-10-16).
+  if (office.isOwner && access?.onboarded === false && onboardingAvailable()) redirect("/welcome");
   const notice = access ? accessNotice(access) : null;
   if (!notice) return null;
   return (

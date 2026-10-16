@@ -177,7 +177,8 @@ function Body() {
             <span className="text-safety">Get paid.</span>
           </h2>
           <p className="mt-5 max-w-xl text-[1.1875rem] text-neutral-200">
-            Try Tidemark free for 30 days with your whole crew. No card needed.
+            Try Tidemark free for 14 days with your whole crew. Cancel before then and you pay
+            nothing.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <ButtonLink
@@ -208,7 +209,7 @@ const SHARED: [string, string][] = [
   ],
   [
     "What happens after the free trial?",
-    "Subscribe any time during the 30 days and keep everything you’ve entered. If you don’t, your shop becomes read-only; nothing is deleted.",
+    "You add a card when you sign up, and the first charge is on day 15. Cancel any time before then in Settings and you won’t be charged. A canceled shop becomes read-only; nothing is deleted.",
   ],
 ];
 

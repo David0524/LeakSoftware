@@ -49,8 +49,8 @@ export default async function BillingPage({ searchParams }: PageProps<"/settings
                 ) : (
                   <>
                     <p className="text-text-muted">
-                      One price per shop, billed monthly. Any days left on your free trial carry
-                      over: you’re charged when the trial ends.
+                      Billed monthly by your package and the people on your team. Any days left on
+                      your free trial carry over: you’re charged when the trial ends.
                     </p>
                     <BillingButton kind="subscribe" />
                   </>

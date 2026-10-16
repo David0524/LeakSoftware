@@ -1,4 +1,5 @@
 import { adminClient } from "@/server/admin";
+import { syncAllSubscriptionPrices } from "@/server/billing";
 import { runFollowups } from "@/server/followups";
 import { siteOrigin } from "@/lib/origin";
 
@@ -22,8 +23,11 @@ export async function GET(request: Request) {
   const { data: visits, error } = await admin.rpc("extend_service_plans");
   // Last month's finished visits become one draft invoice per customer (20261012002900).
   const billed = await admin.rpc("bill_maintenance_due", { at: when.toISOString() });
+  // Tidemark prices follow each shop's package and people; this catches anything missed.
+  const prices = await syncAllSubscriptionPrices(admin);
   return Response.json({
     followups,
+    subscriptionPrices: prices,
     maintenanceVisits: error ? error.message : visits,
     monthlyInvoices: billed.error ? billed.error.message : billed.data,
   });

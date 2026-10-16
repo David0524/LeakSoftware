@@ -25,3 +25,18 @@ if [ -d "$SKILL_DIR/.git" ]; then
   git -C "$SKILL_DIR" checkout --quiet "$APPLE_DESIGN_COMMIT" 2>/dev/null \
     || echo "session-start: apple-design skill is not at the pinned commit" >&2
 fi
+
+# App onboarding questionnaire skill (owner, 2026-10-16): designs the new-shop onboarding.
+# MIT, prompt text only. Pinned to a reviewed commit.
+ONBOARDING_COMMIT=5bc4786d80f2c23de60b3ba02773e919ed8fd091
+ONBOARDING_DIR="$HOME/.claude/skills/app-onboarding-questionnaire"
+if [ ! -d "$ONBOARDING_DIR/.git" ]; then
+  git clone --quiet https://github.com/adamlyttleapps/claude-skill-app-onboarding-questionnaire.git \
+    "$ONBOARDING_DIR" 2>/dev/null \
+    || echo "session-start: could not download the app-onboarding-questionnaire skill" >&2
+fi
+if [ -d "$ONBOARDING_DIR/.git" ]; then
+  git -C "$ONBOARDING_DIR" fetch --quiet origin "$ONBOARDING_COMMIT" 2>/dev/null || true
+  git -C "$ONBOARDING_DIR" checkout --quiet "$ONBOARDING_COMMIT" 2>/dev/null \
+    || echo "session-start: app-onboarding-questionnaire skill is not at the pinned commit" >&2
+fi

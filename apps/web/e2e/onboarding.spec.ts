@@ -1,0 +1,49 @@
+import { expect, test } from "@playwright/test";
+import { adminClient } from "./backend";
+import { RUN } from "./helpers";
+
+// New-shop onboarding for Pool Maintenance (owner, 2026-10-16): its own questions, the
+// chlorine the techs carry, and a sample visit whose What to Add follows the readings. The
+// leak detection flow runs in new-shop.spec.ts. Phones: an iPhone-sized window.
+
+test.use({ viewport: { width: 390, height: 844 } });
+
+test("a new pool company sets up its shop and tries a visit", async ({ page }) => {
+  test.skip(
+    !adminClient(),
+    "Needs SUPABASE_SERVICE_ROLE_KEY (CI runs it against Supabase in Docker).",
+  );
+  await page.goto("/sign-up?package=pool");
+  await page.getByLabel("Your name").fill("Robin Route");
+  await page.getByLabel("Company name").fill(`Blue Lagoon Pools ${RUN}`);
+  await page.getByLabel("Email").fill(`pool-owner-${RUN}@newshop.test`);
+  await page.getByLabel("Password").fill("tidemark-pool-shop");
+  await page.getByRole("button", { name: "Start Free Trial" }).click();
+
+  await page.waitForURL((url) => url.pathname === "/welcome");
+  await expect(
+    page.getByRole("heading", { name: "Every pool on your route, handled." }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Get Started" }).click();
+  // The questions can be skipped; the usual three answers show.
+  await page.getByRole("button", { name: "Skip" }).click();
+  await expect(page.getByRole("heading", { name: /^Set up Blue Lagoon Pools/ })).toBeVisible();
+  await page.getByRole("radio", { name: "Cal-hypo 65%" }).click();
+  await page.getByRole("button", { name: "Save and Continue" }).click();
+
+  await expect(page.getByRole("heading", { name: "Try a visit" })).toBeVisible();
+  const steps = page.getByTestId("demo-steps");
+  await expect(steps).toContainText("Cal-hypo 65%");
+  // Raise the chlorine to the target: chlorine drops off the list.
+  for (let i = 0; i < 6; i++)
+    await page.getByRole("button", { name: "Raise Free chlorine" }).click();
+  await expect(steps).not.toContainText("Cal-hypo");
+  await page.getByRole("button", { name: "Finish Visit" }).click();
+  await expect(page.getByTestId("onboarding-sample")).toContainText("Pool service");
+  await page.getByRole("button", { name: "Keep Going" }).click();
+  await expect(page.getByTestId("onboarding-price")).toContainText("$79");
+  await expect(page.getByText("Unlimited pools", { exact: false })).toBeVisible();
+  await page.getByRole("button", { name: "Finish Setup" }).click();
+  await page.waitForURL((url) => url.pathname === "/welcome/done");
+  await expect(page.getByTestId("next-steps")).toContainText("Add your customers");
+});

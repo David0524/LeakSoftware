@@ -40,13 +40,16 @@ export function Segmented<T extends string>({
         className={SEGMENT_TRACK}
         onKeyDown={onKeyDown}
       >
-        {options.map((o) => (
+        {options.map((o, i) => (
           <button
             key={o.value}
             type="button"
             role="radio"
             aria-checked={value === o.value}
-            tabIndex={value === o.value ? 0 : -1}
+            // Nothing chosen yet: the first segment takes the Tab stop.
+            tabIndex={
+              value === o.value || (i === 0 && !options.some((x) => x.value === value)) ? 0 : -1
+            }
             onClick={() => onChange(o.value)}
             className={segmentClass(value === o.value)}
           >

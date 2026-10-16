@@ -26,6 +26,11 @@ entries in `docs/DECISIONS.md` (2026-10-15 and 2026-10-16 cover everything below
 - **Live site checked** as the demo owner (read-only): Messages shows the empty inbox ("No
   messages yet"), and Settings › Phone and Texting shows the demo-mode notice, Get a New
   Number, Use Your Shop's Number, and Your Mobile Number. No number was taken.
+- **Onboarding and card-first trials (2026-10-16):** migration `20261012003600_onboarding.sql`
+  needs `pnpm db:deploy` once CI is green. The website is safe before it: without the
+  migration, `company_access` has no `onboarded`, so nobody is sent to onboarding. After it, new
+  shops on a server with `STRIPE_SECRET_KEY` must add a card. Owner to-do in Stripe: turn on
+  trial-ending reminder emails and the customer portal (no price ids needed any more).
 - **Milestones:** M0 to M11 are built (see the 2026-10-14 handover in git history for
   M11). Since then the work has been owner requests, listed below.
 
@@ -97,8 +102,8 @@ scratchpad, which the next chat can't open.
 
 - **Owner decisions:**
   - Texting number choice: a new number or the shop's existing one (both are supported).
-  - Billing per package and tier: `plans.ts` has the flat tiers (DECISIONS 2026-10-16), but Stripe
-    still charges one price. Plan: `docs/plans/package-billing.md`.
+  - Billing per package and people is built (DECISIONS 2026-10-16); check it once in Stripe
+    test mode: sign up, add a test card, invite a third person, and see the proration.
   - Competitor prices on the home page (`competitorPrices`, dated October 2026) need re-checking
     at least quarterly.
   - Launch items in `docs/release/LAUNCH.md`: bundle ID, Apple/Google accounts, Sentry, final

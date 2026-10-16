@@ -2,10 +2,13 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { parseServices, safePath, type Services } from "@leakbook/core";
 import { ACTIVE_COMPANY_COOKIE, getOffice, getUser } from "@/lib/auth";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
+import { adminClient } from "@/server/admin";
+import { billingConfigured, syncSubscriptionPrice } from "@/server/billing";
 
 export interface FormState {
   error?: string;
@@ -79,6 +82,17 @@ async function saveServices(
   await supabase.from("company").update({ settings }).eq("id", companyId);
 }
 
+/**
+ * New shops add a card for the 14-day trial (owner, 2026-10-16) when this server has Stripe
+ * billing. Set after the shop's first write (its services): until the card is in, it's
+ * read-only.
+ */
+async function requireCard(companyId: string) {
+  const admin = adminClient();
+  if (!admin || !billingConfigured()) return;
+  await admin.from("subscription").update({ card_required: true }).eq("company_id", companyId);
+}
+
 /** Start a trial: create the account and the company in one step. */
 export async function startTrial(_: FormState, form: FormData): Promise<FormState> {
   const values = {
@@ -122,7 +136,8 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
   });
   if (companyError) return { error: companyError.message, values };
   await saveServices(supabase, String(companyId), values.services);
-  redirect("/home");
+  await requireCard(String(companyId));
+  redirect("/welcome");
 }
 
 /** Accounts confirmed by email create their company here. */
@@ -138,7 +153,8 @@ export async function createCompany(_: FormState, form: FormData): Promise<FormS
   });
   if (error) return { error: error.message, values: { company } };
   await saveServices(supabase, String(companyId), parseServices(text(form, "services")) ?? "pool");
-  redirect("/home");
+  await requireCard(String(companyId));
+  redirect("/welcome");
 }
 
 /** Join a company from an invite link, creating the account first if needed. */
@@ -178,6 +194,8 @@ export async function acceptInvite(_: FormState, form: FormData): Promise<FormSt
 
   const { data: companyId, error } = await supabase.rpc("accept_invite", { invite_token: token });
   if (error) return { error: error.message };
+  // One more person on the team: the Tidemark price may move up a tier.
+  after(() => syncSubscriptionPrice(String(companyId)).catch(() => null));
   (await cookies()).set(ACTIVE_COMPANY_COOKIE, String(companyId), {
     path: "/",
     sameSite: "lax",

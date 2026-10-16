@@ -1,7 +1,11 @@
 import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
-import { applyBillingEvent, subscriptionStatus } from "../src/server/billing";
+import {
+  applyBillingEvent,
+  subscriptionStatus,
+  syncSubscriptionPrice,
+} from "../src/server/billing";
 
 /** Records `from("subscription").update(values).eq(column, value)` calls. */
 function fakeDb() {
@@ -92,6 +96,57 @@ describe("Tidemark billing events", () => {
       db,
     );
     expect(applied).toBe(false);
+    expect(updates).toHaveLength(0);
+  });
+});
+
+/** Answers the reads syncSubscriptionPrice makes: subscription, company, and member count. */
+function priceDb(services: string, people: number) {
+  const rows: Record<string, unknown> = {
+    subscription: { stripe_subscription_id: "sub_1", plan: "standard", status: "trialing" },
+    company: { settings: { services } },
+  };
+  return {
+    from(table: string) {
+      const q = {
+        select: () => q,
+        eq: () => q,
+        maybeSingle: async () => ({ data: rows[table], error: null }),
+        single: async () => ({ data: rows[table], error: null }),
+        then: (done: (v: unknown) => unknown) => done({ count: people, error: null }),
+      };
+      return q;
+    },
+  } as unknown as SupabaseClient;
+}
+
+function fakeStripe(unitAmount: number) {
+  const updates: unknown[] = [];
+  const stripe = {
+    subscriptions: {
+      retrieve: async () => ({
+        id: "sub_1",
+        items: { data: [{ id: "si_1", price: { unit_amount: unitAmount, product: "prod_1" } }] },
+      }),
+      update: async (_id: string, params: unknown) => updates.push(params),
+    },
+  } as unknown as Stripe;
+  return { stripe, updates };
+}
+
+describe("Tidemark price by package and people", () => {
+  it("moves a growing pool shop to the next tier, prorated", async () => {
+    const { stripe, updates } = fakeStripe(7_900);
+    expect(await syncSubscriptionPrice("co_1", stripe, priceDb("pool", 3))).toBe(14_900);
+    expect(updates[0]).toMatchObject({
+      items: [{ id: "si_1", price_data: { product: "prod_1", unit_amount: 14_900 } }],
+      proration_behavior: "create_prorations",
+    });
+  });
+
+  it("charges Both as Pool Maintenance plus $49, and leaves a right price alone", async () => {
+    const { stripe, updates } = fakeStripe(7_900 + 4_900);
+    expect(await syncSubscriptionPrice("co_1", stripe, priceDb("both", 2))).toBeNull();
     expect(updates).toHaveLength(0);
   });
 });

@@ -1,6 +1,10 @@
 # Charging per package and tier (plan, 2026-10-16)
 
-For the owner to approve before anything is built. Today every shop's subscription is one
+**Built on 2026-10-16** (DECISIONS), with one change from this plan: no Stripe prices at all.
+Checkout and later changes send the amount (`price_data`), so the owner creates nothing in
+Stripe. Decisions 1 to 4 below were taken as proposed.
+
+Originally for the owner to approve before anything is built. Today every shop's subscription is one
 Stripe price (`STRIPE_BILLING_PRICE_ID`), whatever its package or size. The prices the website
 shows are in `packages/core/src/plans.ts` (owner, 2026-10-16; see DECISIONS):
 

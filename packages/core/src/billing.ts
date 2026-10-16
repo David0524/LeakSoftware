@@ -8,6 +8,10 @@ export interface CompanyAccess {
   trial_ends_at: string | null;
   current_period_end: string | null;
   subscribed: boolean;
+  /** A new shop that hasn't added its card yet (it's read-only until it does). */
+  needs_card?: boolean;
+  /** False until the owner finishes new-shop onboarding. */
+  onboarded?: boolean;
   locked: boolean;
 }
 
@@ -25,6 +29,12 @@ export interface AccessNotice {
 
 /** The banner every member sees, or null when there's nothing to say. */
 export function accessNotice(a: CompanyAccess, now: Date = new Date()): AccessNotice | null {
+  if (a.needs_card) {
+    return {
+      tone: "warning",
+      text: "Almost there: an owner needs to finish setting up this shop on the website to start the free trial.",
+    };
+  }
   if (a.locked) {
     return {
       tone: "error",
@@ -57,6 +67,7 @@ export function accessNotice(a: CompanyAccess, now: Date = new Date()): AccessNo
 export function billingSummary(a: CompanyAccess, now: Date = new Date()): string {
   const day = (iso: string) => dateFormat("en-US", { dateStyle: "long" }).format(new Date(iso));
   if (a.plan === "demo") return "Demo shop: no subscription needed.";
+  if (a.needs_card) return "Add a card to start your 14-day free trial.";
   if (a.locked) return "Read-only until the subscription is paid. Nothing has been deleted.";
   switch (a.status) {
     case "trialing":

@@ -8,8 +8,9 @@ steps need the real services, once the keys are set in Vercel.
 ## Setup (owner, once)
 1. Vercel: set `CRON_SECRET` (any long random string). Vercel Cron then calls
    `/api/cron/daily` every morning (`apps/web/vercel.json`).
-2. Stripe (platform account, test mode first): create a product "Tidemark" with a monthly
-   price. Put the price id in Vercel as `STRIPE_BILLING_PRICE_ID`.
+2. Stripe (platform account, test mode first): nothing to create. Since 2026-10-16 the price
+   comes from `packages/core/src/plans.ts` (package and people), sent with each Checkout, so
+   `STRIPE_SECRET_KEY` is enough. With it set, new shops must add a card in onboarding.
 3. Stripe webhook endpoint `https://<site>/api/stripe/webhook` (the same one as payments): add
    the events `customer.subscription.created`, `customer.subscription.updated`, and
    `customer.subscription.deleted` (`checkout.session.completed` is already there).

@@ -68,7 +68,7 @@ The listing leads with what both share and names each package; each shop sees on
   > • One company number for texts and calls, with a shared inbox the whole team sees
   > • Quotes customers accept and pay online, by card or bank
   >
-  > Requires a Tidemark shop account. Owners start a free 30-day trial at tidemark.app and invite
+  > Requires a Tidemark shop account. Owners start a free 14-day trial at tidemark.app and invite
   > their techs.
 - **What's New (first release):** First release.
 - **Support URL:** `https://<site>/status` · **Privacy URL:** `https://<site>/privacy` ·

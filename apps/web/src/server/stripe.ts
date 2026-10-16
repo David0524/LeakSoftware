@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { adminClient } from "./admin";
-import { applyBillingEvent } from "./billing";
+import { applyBillingEvent, finishOnboarding } from "./billing";
 
 // Payments (BUILD_PLAN 6.4): Stripe Connect with Standard accounts and direct charges, so
 // the shop is the merchant of record. Deposits and invoices are Checkout Sessions on the
@@ -341,6 +341,10 @@ export async function applyEvent(
   let outcome: WebhookOutcome = "ignored";
   // The shop's own Tidemark subscription (M10), on the platform account.
   if (await applyBillingEvent(event, d)) {
+    // A new shop's card is in: its onboarding choices apply (also done on the return page).
+    const company = (event.data.object as { metadata?: { company_id?: string } }).metadata
+      ?.company_id;
+    if (event.type === "checkout.session.completed" && company) await finishOnboarding(d, company);
     await rpc(d, "stripe_claim_event", { event_id: event.id, event_type: event.type });
     return "applied";
   }

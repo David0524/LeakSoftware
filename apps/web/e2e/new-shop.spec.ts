@@ -36,14 +36,56 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   // One app, two packages: this shop does leak detection.
   await page.getByRole("radio", { name: "Leak Detection" }).click();
   await page.getByRole("button", { name: "Start Free Trial" }).click();
-  // A new owner on a computer lands on the Dashboard.
+
+  // Onboarding for leak detection (owner, 2026-10-16): a goal, what's in the way, the shop's
+  // choices, a sample inspection report in the shop's color, then the trial. This server has
+  // no Stripe key, so it finishes without a card.
+  await page.waitForURL((url) => url.pathname === "/welcome");
+  await expect(page.getByRole("heading", { name: "Reports that sell the repair." })).toBeVisible();
+  await page.getByRole("button", { name: "Get Started" }).click();
+  await page.getByRole("radio", { name: /Win more repair jobs/ }).click();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("checkbox", { name: /Reports take my evenings/ }).click();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByText("Finish the report on site", { exact: false })).toBeVisible();
+  await page.getByRole("button", { name: "Set Up My Shop" }).click();
+  await page.getByRole("button", { name: "More people" }).click();
+  await expect(page.getByText(/^Team: \$99 a month/)).toBeVisible();
+  await page.getByRole("radio", { name: "Red" }).click();
+  await page.getByRole("radio", { name: "25%" }).click();
+  await page.getByRole("button", { name: "Save and Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Try an inspection" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Mark 4 More" })).toBeDisabled();
+  for (const spot of ["Skimmer", "Main drain", "Return lines", "Light niche"]) {
+    await page
+      .getByRole("radiogroup", { name: spot })
+      .getByRole("radio", { name: spot === "Skimmer" ? "Leaking" : "Not Leaking", exact: true })
+      .click();
+  }
+  await page.getByRole("button", { name: "Write Report" }).click();
+  await expect(page.getByTestId("onboarding-sample")).toContainText("We found a leak: skimmer.");
+  await page.getByRole("button", { name: "Keep Going" }).click();
+  await expect(page.getByTestId("onboarding-price")).toContainText("$99");
+  await page.getByRole("button", { name: "Finish Setup" }).click();
+  await page.waitForURL((url) => url.pathname === "/welcome/done");
+  await expect(page.getByTestId("next-steps")).toContainText("Set up customer payments");
+  await page.getByRole("link", { name: "Start Using Tidemark" }).click();
+  // A new owner on a computer lands on the Dashboard; onboarding doesn't come back.
   await page.waitForURL((url) => url.pathname === "/dashboard");
   await page.goto("/settings/billing");
-  await expect(page.getByText(/Free trial: (29|30) days left/)).toBeVisible();
+  await expect(page.getByText(/Free trial: (13|14) days left/)).toBeVisible();
 
   const owner = await signedInClient(OWNER.email, OWNER.password);
   const { data: membership } = await owner.from("membership").select("company_id").single();
   const companyId = membership!.company_id as string;
+  // The choices were applied: the report color and a 25% deposit.
+  const { data: chosen } = await owner
+    .from("company")
+    .select("brand_primary, settings")
+    .eq("id", companyId)
+    .single();
+  expect(chosen!.brand_primary).toBe("#A12B2B");
+  expect(chosen!.settings.deposit.value_bps).toBe(2500);
 
   // 2. Connect Stripe: onboarding made the account; Stripe reports it ready.
   const account = `acct_new_${RUN}`;
@@ -137,14 +179,14 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await quotePanel.getByRole("button", { name: "Send Quote" }).click();
   const quoteLink = await quotePanel.getByLabel("Customer link").inputValue();
 
-  // 7. The customer accepts on a phone and pays the 50% deposit.
+  // 7. The customer accepts on a phone and pays the 25% deposit chosen in onboarding.
   const phone = await browser.newContext(PHONE);
   const customer = await phone.newPage();
   await customer.goto(quoteLink);
   await customer.getByLabel("Your name").fill(CUSTOMER.name);
   await customer.getByLabel(/I accept this quote/).check();
   await customer.getByRole("button", { name: "Accept Quote" }).click();
-  await expect(customer.getByRole("button", { name: "Pay $112.50 Deposit" })).toBeVisible();
+  await expect(customer.getByRole("button", { name: "Pay $56.25 Deposit" })).toBeVisible();
   const { data: quote } = await owner
     .from("quote")
     .select("id, company_id, repair_job_id")
@@ -158,7 +200,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
       `cs_dep_new_${RUN}`,
       quote!,
       "paid",
-      11_250,
+      5_625,
     ),
   );
 
@@ -172,7 +214,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await invoice.getByRole("button", { name: "Send Without Email" }).click();
   const invoiceLink = await invoice.getByLabel("Customer link").inputValue();
   await customer.goto(invoiceLink);
-  await expect(customer.getByRole("button", { name: "Pay $112.50" })).toBeVisible();
+  await expect(customer.getByRole("button", { name: "Pay $168.75" })).toBeVisible();
   const { data: inv } = await owner
     .from("invoice")
     .select("id")
@@ -186,7 +228,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
       `cs_inv_new_${RUN}`,
       quote!,
       "paid",
-      11_250,
+      16_875,
       {
         kind: "invoice_payment",
         invoice_id: inv!.id as string,

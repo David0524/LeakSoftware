@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import {
   configKey,
   isHexColor,
@@ -13,6 +14,7 @@ import {
 } from "@leakbook/core";
 import { requireOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { syncSubscriptionPrice } from "@/server/billing";
 import { locateCompany } from "@/server/route-days";
 import type { FormState } from "./auth";
 
@@ -235,6 +237,8 @@ export async function saveServices(_: FormState, form: FormData): Promise<FormSt
   const settings = { ...((company?.settings ?? {}) as Record<string, unknown>), services: choice };
   const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
   if (error) return failed(error);
+  // The package sets the Tidemark price.
+  after(() => syncSubscriptionPrice(office.company.id).catch(() => null));
   revalidatePath("/", "layout");
   return { message: "Saved." };
 }
@@ -292,6 +296,8 @@ export async function updateMember(_: FormState, form: FormData): Promise<FormSt
         ? "The company needs at least one active owner."
         : error.message,
     };
+  // Turning a teammate off or on changes the people billed.
+  after(() => syncSubscriptionPrice(office.company.id).catch(() => null));
   return done("/settings/team");
 }
 

@@ -52,7 +52,8 @@ begin
       geocoded_address = '200 W Washington St, Phoenix, AZ 85003'
   where id = demo_company;
   -- The demo shop never runs out of trial (M10 billing).
-  update public.subscription set status = 'active', plan = 'demo' where company_id = demo_company;
+  update public.subscription set status = 'active', plan = 'demo', onboarded_at = now()
+  where company_id = demo_company;
 
   insert into public.membership (company_id, user_id, role) values (demo_company, tech_id, 'tech');
 

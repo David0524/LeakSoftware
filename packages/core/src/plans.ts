@@ -105,3 +105,16 @@ export function competitorPrices(users: number, pools: number): CompetitorPrice[
     },
   ];
 }
+
+/** The plan a shop's services put it on: Both is Pool Maintenance plus `BOTH_ADDON_CENTS`. */
+export function planForServices(services: "pool" | "leak" | "both"): Plan {
+  return services === "leak" ? PLANS.leak : PLANS.maintenance;
+}
+
+/** What a shop pays a month for its services and number of people (Tidemark billing). */
+export function servicesPriceCents(services: "pool" | "leak" | "both", users: number): Cents {
+  return (
+    monthlyPriceCents(planForServices(services), users) +
+    (services === "both" ? BOTH_ADDON_CENTS : 0)
+  );
+}
