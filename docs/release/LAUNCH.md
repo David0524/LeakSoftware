@@ -52,7 +52,7 @@ The listing leads with what both share and names each package; each shop sees on
   > POOL CARE
   > • Today's route in order, with drive times and directions in Apple Maps or Google Maps
   > • A service checklist for every visit, with photos
-  > • A chemical calculator that says what to add, in jugs and pounds, in the right order
+  > • A chemical calculator that says what to add, in gallons and pounds, in the right order
   > • Repair quotes for pumps and filters, and the monthly service invoice
   >
   > LEAK DETECTION

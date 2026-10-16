@@ -3,7 +3,7 @@ import {
   calculateChemistry,
   dryMeasure,
   fluidAmount,
-  jugMeasure,
+  gallonMeasure,
   poolGallons,
   saturationIndex,
   targets,
@@ -43,18 +43,18 @@ describe("amounts in words", () => {
   });
 
   it("and the way it's poured or weighed out on the deck", () => {
-    expect(jugMeasure(4)).toBe("A splash");
-    expect(jugMeasure(8)).toBe("1 cup");
-    expect(jugMeasure(20)).toBe("2½ cups");
-    expect(jugMeasure(64)).toBe("½ jug");
-    // Thirds under a jug, so near-equal amounts read the same.
-    expect(jugMeasure(47)).toBe("⅓ jug");
-    expect(jugMeasure(48)).toBe("⅓ jug");
-    expect(jugMeasure(85)).toBe("⅔ jug");
-    expect(jugMeasure(120)).toBe("1 jug");
-    expect(jugMeasure(100)).toBe("¾ jug");
-    expect(jugMeasure(150)).toBe("1¼ jugs");
-    expect(jugMeasure(128 * 5.3)).toBe("5½ jugs");
+    expect(gallonMeasure(4)).toBe("A splash");
+    expect(gallonMeasure(8)).toBe("1 cup");
+    expect(gallonMeasure(20)).toBe("2½ cups");
+    expect(gallonMeasure(64)).toBe("½ gallon");
+    // Thirds under a gallon, so near-equal amounts read the same.
+    expect(gallonMeasure(47)).toBe("⅓ gallon");
+    expect(gallonMeasure(48)).toBe("⅓ gallon");
+    expect(gallonMeasure(85)).toBe("⅔ gallon");
+    expect(gallonMeasure(120)).toBe("1 gallon");
+    expect(gallonMeasure(100)).toBe("¾ gallon");
+    expect(gallonMeasure(150)).toBe("1¼ gallons");
+    expect(gallonMeasure(128 * 5.3)).toBe("5½ gallons");
     expect(dryMeasure(3)).toBe("A scoop");
     expect(dryMeasure(12)).toBe("1 lb");
     expect(dryMeasure(16 * 3.3)).toBe("3½ lb");
@@ -78,7 +78,7 @@ describe("doses", () => {
         key: "fc",
         product: "Liquid chlorine 12.5%",
         amount: "64 fl oz",
-        measure: "½ jug",
+        measure: "½ gallon",
         why: "Free chlorine 1 → 4",
       }),
     ]);
@@ -91,7 +91,7 @@ describe("doses", () => {
     expect(run({ ph: 8.0, ta: 100 }).steps[0]).toMatchObject({
       key: "ph",
       amount: "65 fl oz",
-      measure: "½ jug",
+      measure: "½ gallon",
     });
     expect(run({ ph: 8.0, ta: 110 }).steps[0]).toMatchObject({ amount: "72 fl oz" }); // more buffer
     expect(run({ ph: 7.0, ta: 100 }).steps[0]).toMatchObject({
@@ -163,7 +163,7 @@ describe("summary", () => {
   it("names the first step in everyday words, and how many more", async () => {
     const { doseSummary } = await import("../src");
     const r = run({ ph: 8.0, ta: 100, fc: 1, cya: 40 });
-    expect(doseSummary(r, true)).toBe("½ jug muriatic acid · 1 more");
+    expect(doseSummary(r, true)).toBe("½ gallon muriatic acid · 1 more");
     expect(doseSummary(run({ fc: 4, ph: 7.5 }), true)).toBe("Balanced. Nothing to add.");
     expect(doseSummary(r, false)).toBe("Add the gallons and a reading");
   });

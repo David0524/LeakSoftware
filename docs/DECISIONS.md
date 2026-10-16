@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-16 (owner: calculator liquids in gallons, "different states have different jug standards")
+- **Liquids read in gallons, not jugs:** "½ gallon", "⅓ gallon", "1½ gallons" (`gallonMeasure`, which replaces `jugMeasure`). Under one gallon, quarters and thirds; quarters to 4 gallons; halves past that. Small amounts stay "A splash" (under 6 fl oz) and cups (up to 3). The exact amount in fluid ounces stays under it ("About 65 fl oz").
+
 ## 2026-10-16 (owner: desktop Messages "in this big open space"; mark as unread on the list, "maybe even a right click"; one app, two packages)
 - **Messages on a computer works like Messages on a Mac:** opening it shows the newest conversation filling the right side, with the conversations on the left; each side scrolls on its own and the reply box sits at the bottom. Phones still show the list first (`?list=1` always shows the list, e.g. Back from a conversation in a narrow window).
 - **Mark as unread from the list, every way:** a Read/Unread button on hover (or keyboard focus), a right-click menu (Mark as Unread or Read, Open Conversation), and the swipe on touch screens. Marking the open conversation unread sticks; it's marked read again only when a new message comes in while it's open.

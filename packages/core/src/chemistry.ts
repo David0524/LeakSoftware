@@ -146,8 +146,9 @@ export interface DoseStep {
   /** The exact amount ("1 gal 26 fl oz", "3.5 lb"); null when the step is an action. */
   amount: string | null;
   /**
-   * The same amount the way a tech measures it on the deck (owner, 2026-10-16: "half jug of
-   * chlorine, splash of acid"): "A splash", "2 cups", "½ jug", "3½ lb", "2 bags".
+   * The same amount the way a tech measures it on the deck (owner, 2026-10-16): "A splash",
+   * "2 cups", "½ gallon", "3½ lb", "2 bags". Liquids go by the gallon, not the jug: jug sizes
+   * differ from state to state.
    */
   measure: string | null;
   /** Why, in words: "pH 8.0 → 7.5". */
@@ -206,8 +207,8 @@ function fraction(n: number): string {
   return whole ? `${whole}${part}` : part || "0";
 }
 
-/** Parts of a jug under one, nearest first: thirds too, so 47 and 48 fl oz both read ⅓. */
-const PART_JUG: [number, string][] = [
+/** Parts of a gallon under one: thirds too, so 47 and 48 fl oz both read ⅓. */
+const PART_GALLON: [number, string][] = [
   [0.25, "¼"],
   [1 / 3, "⅓"],
   [0.5, "½"],
@@ -216,25 +217,25 @@ const PART_JUG: [number, string][] = [
 ];
 
 /**
- * Liquids the way they're poured: a splash (under 6 fl oz), cups up to 3, then 1-gallon jugs:
- * quarters and thirds under one jug, quarters to 4, halves past that.
+ * Liquids the way they're poured: a splash (under 6 fl oz), cups up to 3, then gallons:
+ * quarters and thirds under one gallon, quarters to 4, halves past that.
  */
-export function jugMeasure(flOz: number): string {
+export function gallonMeasure(flOz: number): string {
   if (flOz < 6) return "A splash";
   if (flOz <= 24) {
     const cups = Math.max(0.5, Math.round((flOz / 8) * 2) / 2);
     return `${fraction(cups)} ${cups > 1 ? "cups" : "cup"}`;
   }
-  const jugs = flOz / 128;
-  if (jugs < 0.875) {
-    const [, part] = PART_JUG.reduce((a, b) =>
-      Math.abs(b[0] - jugs) < Math.abs(a[0] - jugs) ? b : a,
+  const gallons = flOz / 128;
+  if (gallons < 0.875) {
+    const [, part] = PART_GALLON.reduce((a, b) =>
+      Math.abs(b[0] - gallons) < Math.abs(a[0] - gallons) ? b : a,
     );
-    return `${part} jug`;
+    return `${part} gallon`;
   }
-  const step = jugs > 4 ? 0.5 : 0.25;
-  const n = Math.max(0.25, Math.round(jugs / step) * step);
-  return `${fraction(n)} ${n > 1 ? "jugs" : "jug"}`;
+  const step = gallons > 4 ? 0.5 : 0.25;
+  const n = Math.max(0.25, Math.round(gallons / step) * step);
+  return `${fraction(n)} ${n > 1 ? "gallons" : "gallon"}`;
 }
 
 /**
@@ -311,7 +312,7 @@ export function saturationIndex(r: Readings, sanitizer: Sanitizer): number | nul
 
 /**
  * One line for the calculator's docked bar: the first step in everyday words, without the
- * product's strength, and how many more ("½ jug muriatic acid · 1 more").
+ * product's strength, and how many more ("½ gallon muriatic acid · 1 more").
  */
 export function doseSummary(result: ChemistryResult, ready: boolean): string {
   if (!ready) return "Add the gallons and a reading";
@@ -325,7 +326,7 @@ export function doseSummary(result: ChemistryResult, ready: boolean): string {
 /** The exact amount and the everyday measure, for a liquid (fl oz) or a dry product (oz). */
 function dose(qty: number, liquid: boolean, bag?: number) {
   return liquid
-    ? { amount: fluidAmount(qty), measure: jugMeasure(qty) }
+    ? { amount: fluidAmount(qty), measure: gallonMeasure(qty) }
     : { amount: weightAmount(qty), measure: dryMeasure(qty, bag) };
 }
 

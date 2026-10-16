@@ -53,9 +53,9 @@ test("the chemical calculator says what to add", async ({ page }) => {
   await page.getByLabel("Stabilizer").fill("40");
   const doses = page.getByTestId("doses");
   // pH first (alkalinity is fine), then chlorine; amounts from packages/core chemistry, in
-  // jugs first and fluid ounces under them.
+  // gallons first and fluid ounces under them.
   await expect(doses.getByRole("listitem")).toHaveCount(2);
-  await expect(doses.getByRole("listitem").nth(0)).toContainText("½ jug");
+  await expect(doses.getByRole("listitem").nth(0)).toContainText("½ gallon");
   await expect(doses.getByRole("listitem").nth(0)).toContainText("About 65 fl oz");
   await expect(doses.getByRole("listitem").nth(0)).toContainText("Muriatic acid 31.45%");
   await expect(doses.getByRole("listitem").nth(1)).toContainText("About 64 fl oz");
@@ -75,7 +75,7 @@ test("on a phone, what to add is a bar at the bottom that opens a sheet", async 
   await page.getByLabel("Gallons").fill("20000");
   await page.getByLabel("pH").fill("8.0");
   await page.getByLabel("Alkalinity").fill("100");
-  await expect(bar).toContainText("½ jug muriatic acid");
+  await expect(bar).toContainText("½ gallon muriatic acid");
   await bar.click();
   const sheet = page.getByRole("dialog", { name: "What to Add" });
   await expect(sheet.getByTestId("doses").getByRole("listitem")).toHaveCount(1);

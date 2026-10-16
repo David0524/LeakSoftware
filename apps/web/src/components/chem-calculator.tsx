@@ -123,8 +123,8 @@ function Doses({ result }: { result: ChemistryResult }) {
                 {i + 1}
               </span>
               <div className="min-w-0">
-                {/* The everyday measure first (owner, 2026-10-16: "half jug of chlorine,
-                    splash of acid"), the exact amount under it. */}
+                {/* The everyday measure first ("½ gallon", owner 2026-10-16), the exact
+                    amount under it. */}
                 {s.measure ? (
                   <p className="font-display text-2xl leading-tight font-extrabold">{s.measure}</p>
                 ) : null}
