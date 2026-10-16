@@ -1,23 +1,49 @@
 import { describe, expect, it } from "vitest";
-import { extraUsers, monthlyPriceCents, PLANS } from "../src";
+import { competitorPrices, extraUsers, monthlyPriceCents, planTier, PLANS } from "../src";
 
 describe("plan prices", () => {
-  it("cover two people for the base price", () => {
-    for (const users of [1, 2]) {
-      expect(monthlyPriceCents(PLANS.leak, users)).toBe(10_000);
-      expect(monthlyPriceCents(PLANS.maintenance, users)).toBe(6_900);
-    }
+  it("are flat tiers by team size", () => {
+    const pool = (n: number) => monthlyPriceCents(PLANS.maintenance, n);
+    expect([1, 2].map(pool)).toEqual([7_900, 7_900]);
+    expect([3, 6].map(pool)).toEqual([14_900, 14_900]);
+    expect([7, 12].map(pool)).toEqual([24_900, 24_900]);
+    expect(pool(14)).toBe(24_900 + 2 * 1_500);
+    expect(planTier(PLANS.maintenance, 5).name).toBe("Team");
+    const leak = (n: number) => monthlyPriceCents(PLANS.leak, n);
+    expect([leak(1), leak(2), leak(4), leak(6)]).toEqual([4_900, 9_900, 9_900, 9_900 + 2 * 2_500]);
   });
-  it("add each person after two", () => {
-    expect(monthlyPriceCents(PLANS.leak, 3)).toBe(12_500);
-    expect(monthlyPriceCents(PLANS.leak, 6)).toBe(20_000);
-    expect(monthlyPriceCents(PLANS.maintenance, 3)).toBe(8_900);
-    expect(monthlyPriceCents(PLANS.maintenance, 6)).toBe(14_900);
+  it("charge pool maintenance at least as much as leak detection for teams of 3 to 10", () => {
+    // Owner-approved tiers (2026-10-16): more at 1, 3-5, and 7-9 people, the same at 6 and 10.
+    // Less only at 2 people (Starter $79, leak Team $99) and from 11 people, where leak's
+    // per-person price passes Fleet.
+    const pool = (n: number) => monthlyPriceCents(PLANS.maintenance, n);
+    const leak = (n: number) => monthlyPriceCents(PLANS.leak, n);
+    for (let n = 3; n <= 10; n++) expect(pool(n)).toBeGreaterThanOrEqual(leak(n));
+    expect([6, 10].map((n) => pool(n) - leak(n))).toEqual([0, 0]);
+    expect(pool(2)).toBeLessThan(leak(2));
+    expect(pool(11)).toBeLessThan(leak(11));
   });
   it("treat odd team sizes sensibly", () => {
     expect(extraUsers(PLANS.leak, 0)).toBe(0);
-    expect(extraUsers(PLANS.leak, 4.7)).toBe(2);
-    expect(monthlyPriceCents(PLANS.leak, -3)).toBe(10_000);
+    expect(extraUsers(PLANS.leak, 6.7)).toBe(2);
+    expect(monthlyPriceCents(PLANS.leak, -3)).toBe(4_900);
+  });
+});
+
+describe("the comparison on the website", () => {
+  it("uses each competitor's public pricing", () => {
+    // 4 people (3 techs, 1 office), 200 pools.
+    expect(competitorPrices(4, 200).map((c) => c.monthlyCents)).toEqual([40_000, 24_500, 20_000]);
+    // A one-person shop with 20 pools pays Skimmer's minimum.
+    expect(competitorPrices(1, 20)[0]!.monthlyCents).toBe(9_800);
+  });
+  it("shows Tidemark as the lowest for typical pool companies", () => {
+    // Team sizes 1 to 13, each tech running about 70 pools.
+    for (let n = 1; n <= 13; n++) {
+      const pools = Math.max(1, n - 1) * 70;
+      const ours = monthlyPriceCents(PLANS.maintenance, n);
+      for (const c of competitorPrices(n, pools)) expect(ours).toBeLessThan(c.monthlyCents);
+    }
   });
 });
 

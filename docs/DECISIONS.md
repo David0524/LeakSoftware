@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-16 (owner: pricing, "I don't want to charge per pool"; "maintenance should maybe be more expensive than leaks"; "include the comparison calculator")
+- **Flat tiers by team size, unlimited pools** (`packages/core/src/plans.ts`). Pool Maintenance: Starter $79 (up to 2 people), Team $149 (up to 6), Fleet $249 (up to 12), then $15 per extra person. Leak Detection: Solo $49 (1 person), Team $99 (up to 4), then $25 per extra person. Both: a Pool Maintenance tier plus $49. Replaces $69/$100 with 2 people included. Reason: per-pool pricing (Skimmer's $2) taxes growth; a flat price is predictable and undercuts every pool-care competitor checked at 1 to 12 people.
+- **Pool Maintenance is not above Leak Detection at every size:** lower at 2 people ($79 vs $99) and from 11 people up; equal at 6 and 10. Kept as recommended; the tests state this.
+- **The home page compares Pool Maintenance with Skimmer, Pool Brain, and Pool Office Manager** for the visitor's team size and pools, with the yearly saving and a dated fine print (`COMPETITORS_CHECKED`). No leak detection comparison: Jobber ($29) and LeakTronics ($25) are cheaper for a single person. Competitor prices must be re-checked before each pricing change and at least quarterly; update `competitorPrices` and the date together.
+- **Stripe still charges one price** until the billing plan (`docs/plans/package-billing.md`) is built.
+
 ## 2026-10-16 (owner: calculator liquids in gallons, "different states have different jug standards")
 - **Liquids read in gallons, not jugs:** "½ gallon", "⅓ gallon", "1½ gallons" (`gallonMeasure`, which replaces `jugMeasure`). Under one gallon, quarters and thirds; quarters to 4 gallons; halves past that. Small amounts stay "A splash" (under 6 fl oz) and cups (up to 3). The exact amount in fluid ounces stays under it ("About 65 fl oz").
 

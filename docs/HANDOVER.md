@@ -43,7 +43,7 @@ entries in `docs/DECISIONS.md` (2026-10-15 and 2026-10-16 cover everything below
 | `6ae0932` | Chemical calculator: pool size in gallons only (shape and measurements removed). The website uses outlined number boxes, which are now visible on phones. |
 | `1d0e3b5` (+ `c608693`, `e63c95d`) | **Company texting and calls**, like Housecall Pro. Details below. |
 | `626d418` | **Pool care and leak detection are separate experiences.** Settings › Company › Services is Pool Care, Leak Detection, or Both; it hides the other side's features (DECISIONS lists exactly what). **Chemical calculator** on the website (Chemicals) and the phone (Settings › Tools, and on pool service visits). |
-| `060f965`, `af7c18d` | Public home page: a real SaaS landing page with two packages. Pool Maintenance ($69) is the default and Leak Detection ($100) is the toggle; each includes 2 people, extra people cost $20/$25. Live demos are built from app parts. Prices are in `packages/core/src/plans.ts`. |
+| `060f965`, `af7c18d` | Public home page: a real SaaS landing page with two packages. Pool Maintenance is the default and Leak Detection is the toggle (prices: flat tiers, DECISIONS 2026-10-16). Live demos are built from app parts. Prices are in `packages/core/src/plans.ts`. |
 | `c20e8ca` | Primary buttons are filled blue with white text; orange is an accent only. |
 
 A 74-second promo video was also made. It isn't in the repo; it lived in the old session's
@@ -97,7 +97,10 @@ scratchpad, which the next chat can't open.
 
 - **Owner decisions:**
   - Texting number choice: a new number or the shop's existing one (both are supported).
-  - Billing per package and per person: `plans.ts` exists, but Stripe still charges one price.
+  - Billing per package and tier: `plans.ts` has the flat tiers (DECISIONS 2026-10-16), but Stripe
+    still charges one price. Plan: `docs/plans/package-billing.md`.
+  - Competitor prices on the home page (`competitorPrices`, dated October 2026) need re-checking
+    at least quarterly.
   - Launch items in `docs/release/LAUNCH.md`: bundle ID, Apple/Google accounts, Sentry, final
     terms and privacy text, domain.
 - **Never checked on a real device:**

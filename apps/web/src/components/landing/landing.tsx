@@ -224,7 +224,7 @@ const FAQ: Record<PlanId, [string, string][]> = {
     ],
     [
       "Who counts as a person on the team?",
-      "Anyone who signs in: owners, office staff, and techs. The price includes 2 people; each person after that is $20 a month.",
+      "Anyone who signs in: owners, office staff, and techs. Starter is $79 for up to 2 people, Team $149 for up to 6, Fleet $249 for up to 12, then $15 a month for each extra person. Pools are unlimited.",
     ],
     ...SHARED,
   ],
@@ -239,7 +239,7 @@ const FAQ: Record<PlanId, [string, string][]> = {
     ],
     [
       "Who counts as a person on the team?",
-      "Anyone who signs in: owners, office staff, and techs. The price includes 2 people; each person after that is $25 a month.",
+      "Anyone who signs in: owners, office staff, and techs. Solo is $49 for 1 person, Team $99 for up to 4, then $25 a month for each extra person.",
     ],
     ...SHARED,
   ],

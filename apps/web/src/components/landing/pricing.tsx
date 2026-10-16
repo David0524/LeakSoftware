@@ -1,7 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { extraUsers, formatCents, monthlyPriceCents, PLANS, type PlanId } from "@leakbook/core";
+import {
+  competitorPrices,
+  COMPETITORS_CHECKED,
+  extraUsers,
+  formatCents,
+  monthlyPriceCents,
+  planTier,
+  PLANS,
+  type PlanId,
+} from "@leakbook/core";
 import { ButtonLink } from "../ui";
 import { PackageSwitch, signUpHref, usePackage } from "./hero";
 
@@ -38,8 +47,8 @@ export function Pricing() {
   const [users, setUsers] = useState(4);
   const plan = PLANS[pkg];
   const total = monthlyPriceCents(plan, users);
+  const tier = planTier(plan, users);
   const extra = extraUsers(plan, users);
-  const dollars = (c: number) => formatCents(c).replace(/\.00$/, "");
   return (
     <div>
       <div className="mb-8 flex justify-center">
@@ -92,7 +101,7 @@ export function Pricing() {
         className="lp-rise card mx-auto mt-10 flex max-w-xl flex-col p-6 sm:p-8"
       >
         <h3 id={`plan-${pkg}`} className="font-display text-2xl font-extrabold">
-          {plan.name}
+          {plan.name} <span className="text-text-muted">· {tier.name}</span>
         </h3>
         <p className="text-text-muted">{BLURB[pkg]}</p>
         <p className="mt-5 flex items-baseline gap-1">
@@ -101,10 +110,13 @@ export function Pricing() {
           </span>
           <span className="text-text-muted">/ month</span>
         </p>
-        <p className="mt-1 text-[0.9375rem] text-text-muted">
-          {dollars(plan.baseCents)} includes {plan.includedUsers} people, then{" "}
-          {dollars(plan.perUserCents)} each
-          {extra ? ` (${extra} more: +${dollars(extra * plan.perUserCents)})` : ""}.
+        <p className="mt-1 text-[0.9375rem] text-text-muted" data-testid="tiers">
+          {plan.tiers
+            .map((t) => `${t.name} ${dollars(t.priceCents)} up to ${people(t.upTo)}`)
+            .join(" · ")}
+          , then {dollars(plan.perExtraCents)} for each extra person
+          {extra ? ` (${extra} more: +${dollars(extra * plan.perExtraCents)})` : ""}.
+          {pkg === "maintenance" ? " Unlimited pools: adding to your route never costs more." : ""}
         </p>
         <ul className="mt-6 grid gap-2.5 sm:grid-cols-2 sm:gap-x-6">
           {FEATURES[pkg].map((f) => (
@@ -127,10 +139,102 @@ export function Pricing() {
           Start Free Trial
         </ButtonLink>
       </section>
+      {pkg === "maintenance" ? <Compare users={users} /> : null}
       <p className="mt-6 text-center text-[0.9375rem] text-text-muted">
         30 days free. No card needed. Customer payments go to your own Stripe account at Stripe’s
         usual fees.
       </p>
     </div>
+  );
+}
+
+const dollars = (c: number) => formatCents(c).replace(/\.00$/, "");
+const people = (n: number) => (n === 1 ? "1 person" : `${n} people`);
+
+/**
+ * What the same pool company pays elsewhere (owner, 2026-10-16), for the team size above and a
+ * route size chosen here. Tidemark's price never depends on pools; Skimmer's does. Prices are
+ * the competitors' public pricing, dated in the fine print.
+ */
+function Compare({ users }: { users: number }) {
+  const [pools, setPools] = useState(150);
+  const ours = monthlyPriceCents(PLANS.maintenance, users);
+  const rows = [
+    { name: "Tidemark", basis: "Flat price, unlimited pools", monthlyCents: ours, us: true },
+    ...competitorPrices(users, pools).map((c) => ({ ...c, us: false })),
+  ];
+  const top = Math.max(...rows.map((r) => r.monthlyCents));
+  const others = rows.filter((r) => !r.us);
+  const cheapest = Math.min(...others.map((r) => r.monthlyCents));
+  const yearly = (cheapest - ours) * 12;
+  return (
+    <section
+      aria-labelledby="compare-title"
+      data-testid="compare"
+      className="card mx-auto mt-6 flex max-w-xl flex-col gap-5 p-6 sm:p-8"
+    >
+      <div>
+        <h3 id="compare-title" className="font-display text-2xl font-extrabold">
+          Compare What You’d Pay
+        </h3>
+        <p className="text-text-muted">
+          For {people(users)} and the pools on your route, per month.
+        </p>
+      </div>
+      <div className="flex flex-col gap-2">
+        <label htmlFor="compare-pools" className="flex items-baseline justify-between font-medium">
+          <span>Pools on your route</span>
+          <output
+            htmlFor="compare-pools"
+            className="font-display text-2xl font-extrabold tabular-nums"
+          >
+            {pools}
+          </output>
+        </label>
+        <input
+          id="compare-pools"
+          type="range"
+          min={10}
+          max={600}
+          step={10}
+          value={pools}
+          onChange={(e) => setPools(Number(e.target.value))}
+          className="w-full accent-primary"
+        />
+      </div>
+      <ul className="flex flex-col gap-3" aria-label="Monthly price by company">
+        {rows.map((r) => (
+          <li key={r.name} className="flex flex-col gap-1">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className={r.us ? "font-semibold" : undefined}>
+                {r.name}
+                <span className="block text-[0.8125rem] text-text-muted">{r.basis}</span>
+              </span>
+              <span
+                className={`font-display text-xl font-extrabold tabular-nums${r.us ? " text-link" : ""}`}
+              >
+                {dollars(r.monthlyCents)}
+              </span>
+            </div>
+            <div className="h-2 rounded-full bg-fill" aria-hidden="true">
+              <div
+                className={`h-2 rounded-full ${r.us ? "bg-primary" : "bg-text-muted/45"}`}
+                style={{ width: `${Math.max(3, (r.monthlyCents / top) * 100)}%` }}
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+      {yearly > 0 ? (
+        <p className="rounded-2xl bg-link/10 px-4 py-3 font-semibold" data-testid="savings">
+          You’d save {dollars(yearly)} a year compared with the next lowest price.
+        </p>
+      ) : null}
+      <p className="text-[0.8125rem] text-text-muted">
+        Other prices from each company’s public pricing as of {COMPETITORS_CHECKED}:{" "}
+        {others.map((o) => `${o.name}, ${o.basis}`).join("; ")}. Pool Brain counts everyone but one
+        office person as a field tech. Prices change; check each company for its current price.
+      </p>
+    </section>
   );
 }
