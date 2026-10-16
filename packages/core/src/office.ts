@@ -247,3 +247,22 @@ function describe(
   if (created) return `Added ${noun}${label ? ` “${label}”` : ""}`;
   return `Updated ${noun}${label ? ` “${label}”` : ""}: ${changed.map((f) => f.replace(/_/g, " ")).join(", ")}`;
 }
+
+/**
+ * A same-site path to go to after signing in, or the fallback: only "/path", never "//host",
+ * "/\\host" (browsers read the backslash as a slash), or anything with control characters
+ * (security review 2026-10-16: open redirect).
+ */
+export function safePath(next: unknown, fallback = "/home"): string {
+  if (typeof next !== "string" || !next.startsWith("/")) return fallback;
+  const unsafe = [...next].some(
+    (c) => c === "\\" || c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127,
+  );
+  if (next.startsWith("//") || unsafe) return fallback;
+  try {
+    const url = new URL(next, "https://tidemark.invalid");
+    return url.origin === "https://tidemark.invalid" ? next : fallback;
+  } catch {
+    return fallback;
+  }
+}

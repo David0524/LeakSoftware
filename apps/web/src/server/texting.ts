@@ -5,6 +5,7 @@ import {
   formatPhone,
   inBusinessHours,
   optKeyword,
+  isUsNumber,
   toE164,
 } from "@leakbook/core";
 import { adminClient } from "./admin";
@@ -86,6 +87,18 @@ export async function conversationFor(db: Db, companyId: string, phone: string) 
     .insert({ company_id: companyId, phone, customer_id: customer?.id ?? null })
     .select("id, customer_id, opted_out")
     .single();
+  if (error?.code === "23505") {
+    // Another webhook made it first (carriers split a text and its picture into two
+    // messages that arrive together): use that one, so neither message is lost.
+    const { data: again } = await db
+      .from("conversation")
+      .select("id, customer_id, opted_out")
+      .eq("company_id", companyId)
+      .eq("phone", phone)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (again) return again as { id: string; customer_id: string | null; opted_out: boolean };
+  }
   if (error) throw new TextingError(error.message);
   return made as { id: string; customer_id: string | null; opted_out: boolean };
 }
@@ -115,7 +128,21 @@ export interface SendInput {
 /** Send a text from the company number, as the signed-in person. */
 export async function sendCompanyText(user: Db, userId: string, input: SendInput, origin: string) {
   const body = input.body.trim();
-  const pictures = input.pictures ?? [];
+  // The phone app's API passes JSON straight through: check its shape (security review
+  // 2026-10-16), up to 10 pictures, images only.
+  const raw: unknown = input.pictures ?? [];
+  if (
+    !Array.isArray(raw) ||
+    raw.length > 10 ||
+    raw.some(
+      (p) =>
+        typeof p?.path !== "string" ||
+        typeof p?.type !== "string" ||
+        !/^image\/[a-z0-9.+-]+$/i.test(p.type),
+    )
+  )
+    throw new TextingError("Send up to 10 photos.");
+  const pictures = raw as Picture[];
   if (!body && pictures.length === 0) throw new TextingError("Write a message first.");
   if (body.length > 1600) throw new TextingError("That’s too long for a text.");
 
@@ -152,10 +179,12 @@ export async function sendCompanyText(user: Db, userId: string, input: SendInput
     if (!data) throw new TextingError("Sign in again.");
     companyId = input.companyId;
   }
+  if (!isUsNumber(phone)) throw new TextingError("Tidemark texts US and Canadian numbers only.");
 
   const db = admin();
   const line = await activeLine(db, companyId);
-  if (!line)
+  // A pending line (the shop's own number, not set up yet) isn't Tidemark's to send from.
+  if (line?.status !== "active")
     throw new TextingError("Set up a company number first (Settings › Phone and Texting).");
   if (pictures.length && !line.pictures)
     throw new TextingError("Pictures in texts are turned off.");
@@ -236,7 +265,8 @@ async function optedOut(db: Db, conversationId: string) {
 export async function receiveText(params: Record<string, string>): Promise<Response> {
   const db = admin();
   const line = await lineByNumber(db, params.To ?? "");
-  const from = toE164(params.From) ?? params.From;
+  // Short codes and named senders aren't customers: nothing to file them under.
+  const from = toE164(params.From);
   if (!line || !from) return twiml("");
   const conv = await conversationFor(db, line.company_id, from);
 
@@ -373,6 +403,12 @@ export async function incomingCall(params: Record<string, string>, origin: strin
   const company = await companyInfo(db, line.company_id);
   const phones = await ringPhones(db, line);
   if (!phones.length || !inBusinessHours(new Date(), company.timezone, company.settings)) {
+    // Straight to voicemail: a missed call for the team, even if they hang up without leaving
+    // a message (a recording turns it into a voicemail). Security review 2026-10-16.
+    if (params.CallSid) {
+      await db.from("call_log").update({ status: "missed" }).eq("provider_sid", params.CallSid);
+    }
+    if (conv) await touch(db, conv.id, "Missed call", true);
     return voicemail(origin, greetingFor(line, company.name));
   }
   // Everyone's phone rings at once; the first to answer gets the call. The customer's number
@@ -447,11 +483,13 @@ export async function startCall(user: Db, userId: string, conversationId: string
   if (!conv) throw new TextingError("That conversation isn’t there.");
   const db = admin();
   const line = await activeLine(db, conv.company_id as string);
-  if (!line)
+  if (line?.status !== "active")
     throw new TextingError("Set up a company number first (Settings › Phone and Texting).");
+  if (!isUsNumber(conv.phone as string))
+    throw new TextingError("Tidemark calls US and Canadian numbers only.");
   const { data: me } = await db.from("profile").select("phone").eq("id", userId).single();
   const mine = toE164(me?.phone as string | null);
-  if (!mine)
+  if (!isUsNumber(mine))
     throw new TextingError(
       "Add your mobile number first (Settings › Phone and Texting, or Settings in the phone app).",
     );

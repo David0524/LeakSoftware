@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { parseServices, type Services } from "@leakbook/core";
+import { parseServices, safePath, type Services } from "@leakbook/core";
 import { ACTIVE_COMPANY_COOKIE, getOffice, getUser } from "@/lib/auth";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
@@ -23,9 +23,7 @@ export interface PayState extends FormState {
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 
 /** Only same-site paths, so a crafted link cannot send someone elsewhere after sign-in. */
-function safeNext(next: string, fallback = "/home") {
-  return next.startsWith("/") && !next.startsWith("//") ? next : fallback;
-}
+const safeNext = (next: string) => safePath(next);
 
 const origin = siteOrigin;
 

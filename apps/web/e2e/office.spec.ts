@@ -51,6 +51,11 @@ test("owners land on the Dashboard on a computer, and on Today on a phone", asyn
   await mobile.getByRole("button", { name: "Sign In", exact: true }).click();
   await mobile.waitForURL((url) => url.pathname === "/today");
   await phone.close();
+
+  // Signed in, a crafted sign-in link stays on the site.
+  await page.goto("/sign-in?next=//example.com");
+  await page.waitForURL((url) => url.pathname === "/home" || url.pathname === "/dashboard");
+  expect(new URL(page.url()).host).not.toBe("example.com");
 });
 
 test("owner signs in and sees jobs", async ({ page }) => {

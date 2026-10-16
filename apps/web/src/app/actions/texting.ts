@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { toE164, uuidv7 } from "@leakbook/core";
+import { isUsNumber, toE164, uuidv7 } from "@leakbook/core";
 import { getOffice, requireOwner } from "@/lib/auth";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
@@ -66,16 +66,46 @@ async function addLine(number: string, source: "new" | "existing", providerSid: 
   return { message: source === "new" ? "Your number is ready." : "We’ll set up your number." };
 }
 
-/** Buy a new local number (Tidemark pays for it). */
+/**
+ * Buy a new local number (Tidemark pays for it). The shop's one line is reserved first, so a
+ * double-click or two owners at once can't buy two numbers (security review 2026-10-16); if
+ * buying fails, the reservation is let go.
+ */
 export async function takeNumber(_: FormState, form: FormData): Promise<FormState> {
-  await requireOwner();
+  const office = await requireOwner();
   const number = toE164(text(form, "number"));
-  if (!number) return { error: "Pick a number." };
+  if (!isUsNumber(number)) return { error: "Pick a number." };
+  const db = adminClient();
+  if (!db) return { error: "Texting isn’t set up on this server." };
+  const id = uuidv7();
+  const { error: held } = await db.from("phone_line").insert({
+    id,
+    company_id: office.company.id,
+    number,
+    source: "new",
+    status: "pending",
+  });
+  if (held) {
+    if (held.code !== "23505") return { error: held.message };
+    return {
+      error: (await activeLine(db, office.company.id))
+        ? "This shop already has a number."
+        : "Another shop uses that number.",
+    };
+  }
   try {
-    return await addLine(number, "new", await buyNumber(number, await siteOrigin()));
+    const providerSid = await buyNumber(number, await siteOrigin());
+    const { error } = await db
+      .from("phone_line")
+      .update({ status: "active", provider_sid: providerSid })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
   } catch (e) {
+    await db.from("phone_line").update({ status: "released" }).eq("id", id);
     return { error: message(e) };
   }
+  revalidatePath("/", "layout");
+  return { message: "Your number is ready." };
 }
 
 /** Use the shop's existing number (set up by Tidemark: ported or registered for texting). */
@@ -220,7 +250,7 @@ export async function setUnread(conversationId: string, unread: boolean) {
 export async function saveMyPhone(_: FormState, form: FormData): Promise<FormState> {
   const office = await getOffice();
   const phone = toE164(text(form, "phone"));
-  if (!phone) return { fields: { phone: "Enter a US mobile number." } };
+  if (!isUsNumber(phone)) return { fields: { phone: "Enter a US mobile number." } };
   const supabase = await createClient();
   const { error } = await supabase.from("profile").update({ phone }).eq("id", office.user.id);
   if (error) return { error: error.message };

@@ -56,6 +56,13 @@ test("customers text and call the company number, and the team answers", async (
   expect(line).toBeTruthy();
 
   try {
+    // Texts go to US and Canadian numbers only, so nobody runs up international charges.
+    await page.goto("/messages/new");
+    await page.getByLabel("To").fill("+44 7700 900123");
+    await page.getByRole("textbox", { name: "Message" }).fill("Hello");
+    await page.getByRole("button", { name: "Send" }).click();
+    await expect(page.getByText("Tidemark texts US and Canadian numbers only.")).toBeVisible();
+
     // Only Twilio can post to the webhooks.
     const forged = await request.post("/api/twilio/sms", {
       form: { From: customer, To: line!.number, Body: "hi" },

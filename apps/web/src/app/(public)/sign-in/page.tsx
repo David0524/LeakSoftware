@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { safePath } from "@leakbook/core";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -32,8 +33,9 @@ export default function SignInPage({ searchParams }: PageProps<"/sign-in">) {
 
 async function SignInBody({ searchParams }: Pick<PageProps<"/sign-in">, "searchParams">) {
   const params = await searchParams;
-  const next = typeof params.next === "string" ? params.next : "/home";
-  if (await getUser()) redirect(next.startsWith("/") ? next : "/home");
+  // Only same-site paths (security review 2026-10-16: "//evil.com" was let through).
+  const next = safePath(params.next);
+  if (await getUser()) redirect(next);
   return (
     <>
       {params.error ? (
