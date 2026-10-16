@@ -8,6 +8,7 @@ import { accessNotice } from "@leakbook/core";
 import { cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getAccess, getCompany } from "@/lib/data";
+import { unreadCount } from "@/lib/messages";
 import { officeLinks } from "@/lib/nav";
 
 /**
@@ -60,8 +61,8 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
 
 async function PhoneTabs() {
   const office = await getOffice();
-  const company = await getCompany(office);
-  return <TabBar links={officeLinks(office.isOwner, company.settings)} />;
+  const [company, unread] = await Promise.all([getCompany(office), unreadCount(office)]);
+  return <TabBar links={officeLinks(office.isOwner, company.settings, unread)} />;
 }
 
 /** Trial ending, payment failed, or read-only (M10 billing). */
@@ -95,8 +96,8 @@ async function AccessBanner() {
 
 async function OfficeNav() {
   const office = await getOffice();
-  const company = await getCompany(office);
-  const links = officeLinks(office.isOwner, company.settings);
+  const [company, unread] = await Promise.all([getCompany(office), unreadCount(office)]);
+  const links = officeLinks(office.isOwner, company.settings, unread);
   return (
     <>
       <NavLinks links={links} className="hidden sm:flex" />

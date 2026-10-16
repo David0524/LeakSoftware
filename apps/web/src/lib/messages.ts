@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import { toE164 } from "@leakbook/core";
 import type { Office } from "./auth";
 import { createClient } from "./supabase/server";
 
@@ -144,6 +145,48 @@ export async function getThread(office: Office, conversationId: string) {
   ].sort((a, b) => a.at.localeCompare(b.at));
 
   return { conversation: conv as unknown as ConversationRow, items };
+}
+
+/** Conversations waiting on the team (the Customers tab's badge). */
+export const unreadCount = cache(async (office: Office): Promise<number> => {
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("conversation")
+    .select("id", { count: "exact", head: true })
+    .eq("company_id", office.company.id)
+    .eq("unread", true)
+    .is("deleted_at", null);
+  return count ?? 0;
+});
+
+/**
+ * The shop's conversation with a customer (the job page's Messages group): theirs, or one
+ * from their number that isn't linked to a customer yet. The latest `last` items.
+ */
+export async function getCustomerThread(
+  office: Office,
+  customer: { id: string; phone?: string | null },
+  last = 4,
+) {
+  const supabase = await createClient();
+  const phone = toE164(customer.phone);
+  const { data } = await supabase
+    .from("conversation")
+    .select("id")
+    .eq("company_id", office.company.id)
+    .is("deleted_at", null)
+    .or(
+      phone
+        ? `customer_id.eq.${customer.id},and(customer_id.is.null,phone.eq.${phone})`
+        : `customer_id.eq.${customer.id}`,
+    )
+    .order("last_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+  const thread = await getThread(office, data.id as string);
+  if (!thread) return null;
+  return { ...thread, items: thread.items.slice(-last), total: thread.items.length };
 }
 
 /** The signed-in person's own mobile number (calls ring it). */

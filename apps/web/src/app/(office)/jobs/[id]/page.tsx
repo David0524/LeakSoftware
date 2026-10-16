@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import {
   JOB_TYPE_LABELS,
   MEDIA_KIND_LABELS,
@@ -24,6 +25,7 @@ import {
   dateFormat,
 } from "@leakbook/core";
 import { GalleryImage } from "@/components/gallery-image";
+import { Thread } from "@/components/inbox";
 import { MailIcon, MessageIcon, PhoneIcon } from "@/components/icons";
 import { JobSections } from "@/components/job-sections";
 import { MediaActions, MediaCapture, SignatureForm } from "@/components/media-work";
@@ -62,6 +64,7 @@ import {
   signedMediaUrls,
   type JobDetail,
 } from "@/lib/data";
+import { getCustomerThread, getLine } from "@/lib/messages";
 import { siteOrigin } from "@/lib/origin";
 import { CreateInvoice, InvoicePanel } from "@/components/invoice-panel";
 import { QuoteBuilder, StartQuote } from "@/components/quote-builder";
@@ -87,13 +90,19 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   quiet(getQuotes(office, id));
   quiet(listConfig(office, "price_book_item"));
   if (office.isOwner) quiet(getPaymentAccount(office));
-  const [detail, company] = await Promise.all([getJob(office, id), getCompany(office)]);
+  const [detail, company, line] = await Promise.all([
+    getJob(office, id),
+    getCompany(office),
+    getLine(office),
+  ]);
   if (!detail) notFound();
   const { job } = detail;
   const tz = office.company.timezone;
   const tally = checklistTally(detail.components, [...detail.results.values()]);
   const total = detail.components.length;
   const questions = (company.settings as Partial<CompanySettings>).intake_questions ?? [];
+  // With a company number, texts go out from it (Messages), not this device.
+  const texting = line?.status === "active";
   const answers = questions
     .map((q) => ({ q, a: job.intake?.[q.key] }))
     .filter(({ a }) => (Array.isArray(a) ? a.length > 0 : !!a));
@@ -150,8 +159,24 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                         name={job.customer?.name ?? "the customer"}
                         phone={job.customer?.phone}
                         email={job.customer?.email}
+                        textHref={
+                          texting && job.customer
+                            ? `/messages/new?customer=${job.customer.id}&job=${job.id}`
+                            : undefined
+                        }
                       />
                     </Grouped>
+
+                    {job.customer ? (
+                      <Suspense fallback={null}>
+                        <JobMessages
+                          customer={job.customer}
+                          jobId={job.id}
+                          texting={texting}
+                          tz={tz}
+                        />
+                      </Suspense>
+                    ) : null}
 
                     {job.property ? (
                       <Grouped title="Pool">
@@ -927,15 +952,64 @@ async function Timeline({ detail, tz }: { detail: JobDetail; tz: string }) {
   );
 }
 
+/**
+ * Texts and calls with the customer on the company number (owner, 2026-10-16: messages
+ * belong with the job): the latest few, and the way into the whole conversation.
+ */
+async function JobMessages({
+  customer,
+  jobId,
+  texting,
+  tz,
+}: {
+  customer: { id: string; name: string; phone?: string | null };
+  jobId: string;
+  texting: boolean;
+  tz: string;
+}) {
+  const office = await getOffice();
+  const [thread, team] = await Promise.all([getCustomerThread(office, customer), getTeam(office)]);
+  if (!thread && !texting) return null;
+  const names = new Map(team.map((t) => [t.user_id, t.name]));
+  return (
+    <Grouped title="Messages">
+      {thread ? (
+        <>
+          <li className="px-4 py-3">
+            <Thread items={thread.items} names={names} timeZone={tz} />
+          </li>
+          <Row
+            href={`/messages/${thread.conversation.id}`}
+            label={
+              <span className="text-link">
+                {texting ? "Open Conversation" : "See All Messages"}
+              </span>
+            }
+            value={thread.total > thread.items.length ? `${thread.total} in all` : undefined}
+          />
+        </>
+      ) : (
+        <Row
+          href={`/messages/new?customer=${customer.id}&job=${jobId}`}
+          label={<span className="text-link">Text {customer.name}</span>}
+          detail="From the company number. Replies show up here and in Messages."
+        />
+      )}
+    </Grouped>
+  );
+}
+
 /** Call, text, and email as round icon buttons on the right of the customer's number. */
 function ContactRow({
   name,
   phone,
   email,
+  textHref,
 }: {
   name: string;
   phone: string | null | undefined;
   email: string | null | undefined;
+  textHref?: string;
 }) {
   if (!phone && !email) return null;
   return (
@@ -954,7 +1028,7 @@ function ContactRow({
                 <PhoneIcon />
               </a>
               <a
-                href={`sms:${phone.replace(/[^\d+]/g, "")}`}
+                href={textHref ?? `sms:${phone.replace(/[^\d+]/g, "")}`}
                 aria-label={`Text ${name}`}
                 className={iconButtonClass()}
               >

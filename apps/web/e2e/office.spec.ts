@@ -52,6 +52,16 @@ test("owner views the M4 sample job", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /^Job #\d+/ })).toBeVisible();
   await expect(page.getByText("7408 E Osborn Rd, Scottsdale, AZ 85251").first()).toBeVisible();
 
+  // Texts with Sam about this job (seed_demo_messages.sql): the latest few, then the whole
+  // conversation in Messages.
+  const texts = page.getByRole("list", { name: "Messages" });
+  await expect(texts.getByText(/Return 3 line is leaking/)).toBeVisible();
+  await expect(texts.getByText("How soon can you fix the return line?")).toBeVisible();
+  await page.getByRole("link", { name: /^(See All Messages|Open Conversation)/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Sam Sample" })).toBeVisible();
+  await expect(page.getByText(/auto-fill runs all the time/)).toBeVisible();
+  await page.goBack();
+
   // Checklist: verdicts by section, the leaking line with where, the drain with its reason.
   await openChecklist(page);
   await expect(page.getByLabel("Return 3", { exact: true })).toHaveValue("leaking");
@@ -346,6 +356,17 @@ test("on a phone: a tab bar moves between sections and nothing scrolls sideways"
       390,
     );
   }
+  // Messages shares the Customers tab: a switch at the top of both pages.
+  await tabs.getByRole("link", { name: "Customers" }).click();
+  const people = page.getByRole("navigation", { name: "Customers and Messages" });
+  await people.getByRole("link", { name: /^Messages/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Messages" })).toBeVisible();
+  await expect(tabs.getByRole("link", { name: "Customers" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await people.getByRole("link", { name: "Customers" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Customers" })).toBeVisible();
   // A tap just beside or below the floating bar lands on the bar's layer, not on the
   // page underneath (the Jobs list's cards run under it).
   const before = page.url();

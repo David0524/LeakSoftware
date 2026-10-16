@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { formatAddress } from "@leakbook/core";
+import { PeopleSwitch } from "@/components/inbox";
 import { Button, Empty, Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listCustomers } from "@/lib/data";
+import { unreadCount } from "@/lib/messages";
 
 export const metadata: Metadata = { title: "Customers · Tidemark" };
 
@@ -10,7 +12,10 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
   const office = await getOffice();
   const { q } = await searchParams;
   const search = typeof q === "string" ? q : "";
-  const customers = await listCustomers(office, search);
+  const [customers, unread] = await Promise.all([
+    listCustomers(office, search),
+    unreadCount(office),
+  ]);
 
   return (
     <>
@@ -22,6 +27,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
           </span>
         }
       />
+      <PeopleSwitch current="customers" unread={unread} />
       <form role="search" className="mb-5 flex max-w-xl gap-2">
         <label htmlFor="q" className="sr-only">
           Search customers

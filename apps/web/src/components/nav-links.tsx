@@ -3,7 +3,28 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import type { OfficeLink } from "@/lib/nav";
 import { cx } from "./ui";
+
+/** Whether the page at `path` is in this section (or one it holds, like Messages). */
+const inSection = (path: string, l: OfficeLink) =>
+  [l.href, ...(l.also ?? [])].some((h) => path === h || path.startsWith(`${h}/`));
+
+/** The unread count on a section (iOS tab badge; the caller colors it), read as "N unread". */
+function Badge({ count, className }: { count?: number; className?: string }) {
+  if (!count) return null;
+  return (
+    <span
+      className={cx(
+        "min-w-5 rounded-full px-1.5 text-center text-[0.75rem] leading-5 font-semibold tabular-nums",
+        className,
+      )}
+    >
+      {count > 99 ? "99+" : count}
+      <span className="sr-only"> unread</span>
+    </span>
+  );
+}
 
 interface Icon {
   /** The outline drawn when the tab isn't selected (and in the desktop lists). */
@@ -115,10 +136,12 @@ function TabIcon({ href, selected }: { href: string; selected: boolean }) {
  * five, the first four show and the rest are under More. As on iOS, the selected tab is the
  * filled symbol in the tint color; there is no highlight behind it.
  */
-export function TabBar({ links: all }: { links: { href: string; label: string }[] }) {
+export function TabBar({ links: all }: { links: OfficeLink[] }) {
   const path = usePathname();
   const overflow = all.length > 5 ? all.slice(4) : [];
-  const links = overflow.length ? [...all.slice(0, 4), { href: "/more", label: "More" }] : all;
+  const links: OfficeLink[] = overflow.length
+    ? [...all.slice(0, 4), { href: "/more", label: "More" }]
+    : all;
   return (
     // The full-width layer under the floating bar catches taps that miss it (the margins
     // beside it and the strip below it), so they never reach the page underneath. Its own
@@ -132,10 +155,8 @@ export function TabBar({ links: all }: { links: { href: string; label: string }[
         <ul className="flex">
           {links.map((l) => {
             const active =
-              path === l.href ||
-              path.startsWith(`${l.href}/`) ||
-              (l.href === "/more" &&
-                overflow.some((o) => path === o.href || path.startsWith(`${o.href}/`)));
+              inSection(path, l) ||
+              (l.href === "/more" && overflow.some((o) => inSection(path, o)));
             return (
               <li key={l.href} className="flex-1">
                 <Link
@@ -146,7 +167,13 @@ export function TabBar({ links: all }: { links: { href: string; label: string }[
                     active ? "text-link" : "text-text-muted",
                   )}
                 >
-                  <TabIcon href={l.href} selected={active} />
+                  <span className="relative">
+                    <TabIcon href={l.href} selected={active} />
+                    <Badge
+                      count={l.badge}
+                      className="absolute -top-1 left-4 bg-primary text-on-primary"
+                    />
+                  </span>
                   {l.label}
                 </Link>
               </li>
@@ -164,7 +191,7 @@ export function NavLinks({
   label = "Main",
   className,
 }: {
-  links: { href: string; label: string }[];
+  links: OfficeLink[];
   vertical?: boolean;
   label?: string;
   className?: string;
@@ -198,18 +225,19 @@ export function NavLinks({
   return (
     <nav aria-label={label} className={cx("flex flex-wrap gap-1", className)}>
       {links.map((l) => {
-        const active = path === l.href || path.startsWith(`${l.href}/`);
+        const active = inSection(path, l);
         return (
           <Link
             key={l.href}
             href={l.href}
             aria-current={active ? "page" : undefined}
             className={cx(
-              "min-h-11 content-center rounded-md px-3 font-display text-[1.0625rem] font-semibold tracking-wide",
+              "inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 font-display text-[1.0625rem] font-semibold tracking-wide",
               active ? "bg-white/15" : "hover:bg-white/10",
             )}
           >
             {l.label}
+            <Badge count={l.badge} className="bg-on-header font-sans text-header" />
           </Link>
         );
       })}

@@ -37,8 +37,9 @@ test("customers text and call the company number, and the team answers", async (
   );
   test.setTimeout(180_000);
   const admin = adminClient()!;
-  // A made-up customer number (555-01xx is reserved for fiction).
-  const customer = `+148055501${String(Math.floor(Math.random() * 100)).padStart(2, "0")}`;
+  // A made-up customer number (555-01xx is reserved for fiction), from 555-0150 up so it
+  // never lands in the demo shop's sample conversation with Sam Sample (555-0123).
+  const customer = `+148055501${50 + Math.floor(Math.random() * 50)}`;
 
   // The owner takes a number.
   await signIn(page, OWNER, "/settings/phone");

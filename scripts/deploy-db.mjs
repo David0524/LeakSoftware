@@ -87,5 +87,8 @@ if (flag("--seed") && !flag("--dry-run")) {
   // Idempotent: regular cleaning plans for demo customers, once.
   await query(readFileSync(join(root, "supabase", "seed_demo_maintenance.sql"), "utf8"));
   console.log("seed: demo maintenance checked");
+  // Idempotent: sample texts with Sam Sample about the sample inspection, once.
+  await query(readFileSync(join(root, "supabase", "seed_demo_messages.sql"), "utf8"));
+  console.log("seed: demo messages checked");
 }
 console.log("done");

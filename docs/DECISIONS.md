@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-16 (owner: "place some sample messages in a job"; messaging "needs to be more reachable ... shared with the contacts tab")
+- **Messages shares the Customers tab** on the website (phones and wider screens). Messages is no longer its own section, which on phones put it under More. Both pages open with a **Customers | Messages** segmented switch, and the Customers tab stays selected on either. The tab shows the number of unread conversations as a badge (blue, like the inbox's unread dots), and the switch shows it on Messages.
+- **Jobs show their messages.** The job's Details has a Messages group under Customer with the latest four texts and calls with that customer, then Open Conversation (See All Messages without a working number). With a working company number and no conversation yet, it offers Text {name}. The customer row's text button sends from the company number when there is one, as on the customer page.
+- **Sample texts for demos** (`supabase/seed_demo_messages.sql`, idempotent, run with the other demo seeds and by `pnpm db:deploy -- --seed`): the demo shop's conversation with Sam Sample about the sample inspection. Sam asks the day before, the shop books it, On My Way, the result, and Sam's unread reply. The shop's texts are tied to the sample job.
+- **Not changed:** the phone app's Messages (Settings › Tools › Messages, and the job's text button). It has no tab bar to share.
+
 ## 2026-10-16 (owner: chemical calculator "I can't see the text boxes"; "only measure by gallons")
 - **The pool is entered in gallons only;** the Measure option and pool shape are gone from the calculator (website and phone).
 - **The website calculator uses outlined number boxes at every width,** two per row on phones, with the unit inside the box. Phone-style grouped rows inside a white card had no visible edge.

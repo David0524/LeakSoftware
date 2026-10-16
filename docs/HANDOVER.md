@@ -31,6 +31,7 @@ entries in `docs/DECISIONS.md` (2026-10-15 and 2026-10-16 cover everything below
 
 | Commit | What |
 |---|---|
+| (this commit) | Messages moved into the Customers tab; the job page shows its messages; sample texts with Sam Sample (`seed_demo_messages.sql`). |
 | `6ae0932` | Chemical calculator: pool size in gallons only (shape and measurements removed). The website uses outlined number boxes, which are now visible on phones. |
 | `1d0e3b5` (+ `c608693`, `e63c95d`) | **Company texting and calls**, like Housecall Pro. Details below. |
 | `626d418` | **Pool care and leak detection are separate experiences.** Settings › Company › Services is Pool Care, Leak Detection, or Both; it hides the other side's features (DECISIONS lists exactly what). **Chemical calculator** on the website (Chemicals) and the phone (Settings › Tools, and on pool service visits). |
@@ -62,7 +63,9 @@ scratchpad, which the next chat can't open.
   - Click to call rings your own mobile first, then connects you from the company number.
   - Each person's mobile number is `profile.phone`.
 - **Website:**
-  - Messages inbox.
+  - Messages inbox, inside the Customers tab (a Customers | Messages switch; unread badge on
+    the tab).
+  - The job's Details shows the latest texts with the customer (Messages group).
   - Settings › Phone and Texting: take a number, or enter the shop's existing one (stays
     pending until Tidemark finishes it by hand); photos switch; who rings; greeting.
   - The customer page's Text button and On My Way on Today send from the company number when
