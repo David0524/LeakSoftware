@@ -4,10 +4,8 @@ import {
   ACID_PRODUCTS,
   calculateChemistry,
   CHLORINE_PRODUCTS,
-  poolGallons,
   type AcidProduct,
   type ChlorineProduct,
-  type PoolShapeForVolume,
   type Readings,
   type Sanitizer,
   type Surface,
@@ -45,24 +43,15 @@ const READINGS: { key: keyof Readings; label: string; hint?: string }[] = [
 ];
 
 export default function Chemicals() {
-  const [sizeBy, setSizeBy] = useState<"measure" | "gallons">("measure");
   const [gallonsText, setGallonsText] = useState("");
-  const [shape, setShape] = useState<PoolShapeForVolume>("rectangle");
-  const [dims, setDims] = useState({ length: "", width: "", shallow: "", deep: "" });
   const [surface, setSurface] = useState<Surface>("plaster");
   const [sanitizer, setSanitizer] = useState<Sanitizer>("chlorine");
   const [values, setValues] = useState<Record<string, string>>({});
   const [chlorine, setChlorine] = useState<ChlorineProduct>("liquid12");
   const [acid, setAcid] = useState<AcidProduct>("muriatic31");
 
-  const measured = poolGallons(
-    shape,
-    num(dims.length) ?? 0,
-    shape === "round" ? 0 : (num(dims.width) ?? 0),
-    num(dims.shallow) ?? 0,
-    num(dims.deep) ?? num(dims.shallow) ?? 0,
-  );
-  const gallons = sizeBy === "gallons" ? (num(gallonsText) ?? 0) : measured;
+  // Pool size by gallons only (owner, 2026-10-16).
+  const gallons = num(gallonsText) ?? 0;
   const readings: Readings = Object.fromEntries(
     READINGS.map((r) => [r.key, num(values[r.key] ?? "")]),
   );
@@ -71,69 +60,15 @@ export default function Chemicals() {
 
   return (
     <Screen>
-      <Segmented
-        label="Pool Size"
-        value={sizeBy}
-        onChange={setSizeBy}
-        options={[
-          { value: "measure", label: "Measure" },
-          { value: "gallons", label: "Gallons" },
-        ]}
-      />
-      {sizeBy === "gallons" ? (
-        <FieldGroup>
-          <FieldRow
-            label="Gallons"
-            keyboardType="number-pad"
-            value={gallonsText}
-            onChangeText={setGallonsText}
-            placeholder="20,000"
-          />
-        </FieldGroup>
-      ) : (
-        <>
-          <Segmented
-            value={shape}
-            onChange={setShape}
-            options={[
-              { value: "rectangle", label: "Rectangle" },
-              { value: "kidney", label: "Kidney" },
-              { value: "oval", label: "Oval" },
-              { value: "round", label: "Round" },
-            ]}
-          />
-          <FieldGroup
-            footer={gallons > 0 ? `About ${gallons.toLocaleString("en-US")} gallons` : undefined}
-          >
-            <FieldRow
-              label={shape === "round" ? "Across (ft)" : "Length (ft)"}
-              keyboardType="decimal-pad"
-              value={dims.length}
-              onChangeText={(v) => setDims({ ...dims, length: v })}
-            />
-            {shape === "round" ? null : (
-              <FieldRow
-                label="Width (ft)"
-                keyboardType="decimal-pad"
-                value={dims.width}
-                onChangeText={(v) => setDims({ ...dims, width: v })}
-              />
-            )}
-            <FieldRow
-              label="Shallow (ft)"
-              keyboardType="decimal-pad"
-              value={dims.shallow}
-              onChangeText={(v) => setDims({ ...dims, shallow: v })}
-            />
-            <FieldRow
-              label="Deep (ft)"
-              keyboardType="decimal-pad"
-              value={dims.deep}
-              onChangeText={(v) => setDims({ ...dims, deep: v })}
-            />
-          </FieldGroup>
-        </>
-      )}
+      <FieldGroup title="Pool">
+        <FieldRow
+          label="Gallons"
+          keyboardType="number-pad"
+          value={gallonsText}
+          onChangeText={setGallonsText}
+          placeholder="20,000"
+        />
+      </FieldGroup>
       <Segmented
         label="Surface"
         value={surface}

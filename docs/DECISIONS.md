@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-16 (owner: chemical calculator "I can't see the text boxes"; "only measure by gallons")
+- **The pool is entered in gallons only;** the Measure option and pool shape are gone from the calculator (website and phone).
+- **The website calculator uses outlined number boxes at every width,** two per row on phones, with the unit inside the box. Phone-style grouped rows inside a white card had no visible edge.
+
 ## 2026-10-16 (owner: company texting and calls: "Twilio is fine", "We will pay", calls "follow" Housecall Pro, pictures "Yes for now")
 - **Twilio, one Tidemark account, Tidemark pays.** Numbers, texts, and calls are on Tidemark's Twilio account (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_MESSAGING_SERVICE_SID` for the registered A2P 10DLC campaign). No Twilio SDK: its REST API and webhook signatures in `apps/web/src/server/twilio.ts`. Without the keys the server runs in **demo mode**: numbers are made up (555-01xx), texts are saved as sent, and no call is placed.
 - **One company number per shop** (`phone_line`), set up by an owner in Settings › Phone and Texting: a new local number by area code (live at once), or the shop's existing number (saved as pending; Tidemark finishes porting or registering it by hand, since the number choice is still open).

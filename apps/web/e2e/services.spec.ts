@@ -44,7 +44,6 @@ test("a shop's services decide what the office shows", async ({ page }) => {
 
 test("the chemical calculator says what to add", async ({ page }) => {
   await signIn(page, OWNER, "/chemicals");
-  await page.getByRole("radio", { name: "Gallons" }).click();
   await page.getByLabel("Gallons").fill("20000");
   await page.getByLabel("Free Chlorine").fill("1");
   await page.getByLabel("pH").fill("8.0");
