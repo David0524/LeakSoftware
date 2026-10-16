@@ -123,3 +123,13 @@ describe("wording", () => {
     expect(run({ fc: 1, cya: 30 }).steps[0]).toMatchObject({ why: "Free chlorine 1 → 3.5" });
   });
 });
+
+describe("surface", () => {
+  it("comes from the pool's type, plaster when unknown", async () => {
+    const { surfaceFor } = await import("../src");
+    expect(surfaceFor("vinyl")).toBe("vinyl");
+    expect(surfaceFor("fiberglass")).toBe("fiberglass");
+    expect(surfaceFor("gunite_plaster")).toBe("plaster");
+    expect(surfaceFor(null)).toBe("plaster");
+  });
+});

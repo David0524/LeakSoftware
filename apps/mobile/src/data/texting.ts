@@ -93,8 +93,12 @@ export function useThread(companyId: string, conversationId: string): ThreadItem
 
 /** Opening a conversation marks it read for the whole team. */
 export function markRead(companyId: string, conversation: ConversationRow) {
-  if (conversation.unread)
-    getServices().sync.write("conversation", conversation.id, companyId, { unread: false });
+  if (conversation.unread) setUnread(companyId, conversation.id, false);
+}
+
+/** Unread or read for the whole team (owner, 2026-10-16: unread is shared). */
+export function setUnread(companyId: string, conversationId: string, unread: boolean) {
+  getServices().sync.write("conversation", conversationId, companyId, { unread });
 }
 
 /** Text from the company number. The text syncs back down with its delivery status. */

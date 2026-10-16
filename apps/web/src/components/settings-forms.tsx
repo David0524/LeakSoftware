@@ -345,9 +345,19 @@ export function CopyLink({
  * A text field that shows its error from the surrounding SettingsForm. Inside SettingsFields
  * it is a grouped row (`stacked` puts a long label above the field on phones).
  */
+/** Typed fields; dates and times draw their own value. */
+const TYPED = new Set([undefined, "text", "tel", "email", "url", "number", "password", "search"]);
+
 export function SField({ stacked, ...props }: Parameters<typeof Field>[0] & { stacked?: boolean }) {
   const error = useFieldError(String(props.name));
-  if (use(InGroup)) return <GroupedField {...props} stacked={stacked} error={error} />;
+  if (use(InGroup)) {
+    // A grouped row's field has no outline, so an empty one needs a placeholder to show where
+    // to type: "Required" or "Optional" when none is given, as in iOS Settings.
+    const placeholder =
+      props.placeholder ??
+      (TYPED.has(props.type) ? (props.required ? "Required" : "Optional") : undefined);
+    return <GroupedField {...props} placeholder={placeholder} stacked={stacked} error={error} />;
+  }
   return <Field {...props} error={error} />;
 }
 

@@ -124,4 +124,105 @@ const styles = StyleSheet.create({
   // The label stays at the row's trailing edge while the red area grows.
   actionHit: { flex: 1, alignItems: "flex-end", justifyContent: "center", paddingRight: 20 },
   actionText: { ...face.semiBold, fontSize: 17, color: color.onStatus },
+  leading: { backgroundColor: color.link },
+  // The label stays at the row's leading edge while the blue area grows.
+  leadingHit: { flex: 1, alignItems: "flex-start", justifyContent: "center", paddingLeft: 20 },
 });
+
+/**
+ * Swipe right to reveal a blue action at the row's leading edge (Unread or Read in Messages);
+ * a full swipe acts on release, as in iOS Messages and Mail. Not destructive, so it acts
+ * without asking. As with SwipeToDelete, the swipe is never the only way: the row offers the
+ * same accessibility action (see ListRow's leadingAction).
+ */
+export function SwipeLeading({
+  label,
+  onPress,
+  children,
+}: {
+  label: string;
+  onPress: () => void;
+  children: ReactNode;
+}) {
+  const ref = useRef<SwipeableMethods>(null);
+  const [rowWidth, setRowWidth] = useState(0);
+  const armed = useRef(false);
+
+  function arm(on: boolean) {
+    if (on && !armed.current) haptics.light();
+    armed.current = on;
+  }
+
+  function act() {
+    armed.current = false;
+    ref.current?.close();
+    onPress();
+  }
+
+  return (
+    <View onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}>
+      <ReanimatedSwipeable
+        ref={ref}
+        friction={1}
+        leftThreshold={ACTION_WIDTH / 2}
+        overshootLeft
+        dragOffsetFromLeftEdge={12}
+        onSwipeableWillOpen={() => {
+          if (armed.current) act();
+        }}
+        onSwipeableClose={() => {
+          armed.current = false;
+        }}
+        renderLeftActions={(_progress, translation) => (
+          <LeadingAction
+            translation={translation}
+            fullAt={rowWidth * FULL_SWIPE}
+            label={label}
+            onPress={act}
+            onArm={arm}
+          />
+        )}
+      >
+        {children}
+      </ReanimatedSwipeable>
+    </View>
+  );
+}
+
+function LeadingAction({
+  translation,
+  fullAt,
+  label,
+  onPress,
+  onArm,
+}: {
+  translation: SharedValue<number>;
+  fullAt: number;
+  label: string;
+  onPress: () => void;
+  onArm: (on: boolean) => void;
+}) {
+  useAnimatedReaction(
+    () => fullAt > 0 && translation.value > fullAt,
+    (now, before) => {
+      if (now !== before) scheduleOnRN(onArm, now);
+    },
+  );
+  const grow = useAnimatedStyle(() => ({
+    width: Math.max(ACTION_WIDTH, translation.value),
+  }));
+  return (
+    <Animated.View style={[styles.action, styles.leading, grow]}>
+      <Pressable
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        onPress={onPress}
+        style={styles.leadingHit}
+      >
+        <Text style={styles.actionText} numberOfLines={1} maxFontSizeMultiplier={1.6}>
+          {label}
+        </Text>
+      </Pressable>
+    </Animated.View>
+  );
+}

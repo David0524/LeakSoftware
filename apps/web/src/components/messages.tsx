@@ -2,7 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useId, useRef, useState, useTransition } from "react";
-import { callCustomer, markRead, sendMessage, type SendState } from "@/app/actions/texting";
+import {
+  callCustomer,
+  markRead,
+  sendMessage,
+  setUnread,
+  type SendState,
+} from "@/app/actions/texting";
 import { Banner } from "./doc-ui";
 import { CameraIcon, PhoneIcon } from "./icons";
 import { Button, cx, iconButtonClass } from "./ui";
@@ -145,6 +151,35 @@ export function CallButton({ conversationId, name }: { conversationId: string; n
           <Banner tone={result.error ? "error" : "info"}>{result.error ?? result.message}</Banner>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Mark as Unread from inside a conversation (the way without swiping): unread for the whole
+ * team, then back to the list, as in Mail, so opening it here doesn't mark it read again.
+ */
+export function MarkUnreadButton({ conversationId }: { conversationId: string }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="flex flex-col items-end gap-2">
+      <Button
+        type="button"
+        kind="secondary"
+        disabled={pending}
+        onClick={() =>
+          start(async () => {
+            const r = await setUnread(conversationId, true);
+            if (r.error) setError("Couldn’t mark it unread. Try again.");
+            else router.push("/messages");
+          })
+        }
+      >
+        Mark as Unread
+      </Button>
+      {error ? <Banner tone="error">{error}</Banner> : null}
     </div>
   );
 }

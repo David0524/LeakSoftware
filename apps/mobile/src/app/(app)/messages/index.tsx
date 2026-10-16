@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { formatPhone } from "@leakbook/core";
 import { View } from "react-native";
-import { useConversations, useLine } from "../../../data/texting";
+import { setUnread, useConversations, useLine } from "../../../data/texting";
 import { useCompany } from "../../../state/session";
 import { Group, ListRow, Notice, Screen, Section, T } from "../../../ui/components";
 import { color, space } from "../../../ui/theme";
@@ -39,6 +39,11 @@ export default function Messages() {
                 key={c.id}
                 accessibilityLabel={`${c.name}${c.unread ? ", unread" : ""}, ${c.last_preview ?? ""}`}
                 onPress={() => router.push(`/messages/${c.id}`)}
+                // As in iOS Messages: swipe right for Unread (or Read), for the whole team.
+                leadingAction={{
+                  label: c.unread ? "Read" : "Unread",
+                  onPress: () => setUnread(company.id, c.id, !c.unread),
+                }}
                 leading={
                   <View
                     style={{

@@ -9,7 +9,7 @@ import {
   type ChlorineProduct,
   type Readings,
   type Sanitizer,
-  type Surface,
+  surfaceFor,
 } from "@leakbook/core";
 import { Segmented } from "./segmented";
 import { cx, Select } from "./ui";
@@ -75,9 +75,16 @@ function NumField({
   );
 }
 
-export function ChemCalculator({ initialGallons }: { initialGallons?: number | null }) {
+export function ChemCalculator({
+  initialGallons,
+  poolType,
+}: {
+  initialGallons?: number | null;
+  /** The pool's recorded type, from a visit: it sets the calcium target. */
+  poolType?: string | null;
+}) {
   const [gallonsText, setGallonsText] = useState(initialGallons ? String(initialGallons) : "");
-  const [surface, setSurface] = useState<Surface>("plaster");
+  const surface = surfaceFor(poolType);
   const [sanitizer, setSanitizer] = useState<Sanitizer>("chlorine");
   const [values, setValues] = useState<Record<string, string>>({});
   const [chlorine, setChlorine] = useState<ChlorineProduct>("liquid12");
@@ -92,94 +99,19 @@ export function ChemCalculator({ initialGallons }: { initialGallons?: number | n
   const anyReading = result.statuses.length > 0;
 
   return (
+    // What to Add comes first (owner, 2026-10-16: "bring the steps to the top"); wide screens
+    // keep it in the right-hand column beside the readings.
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-      <div className="space-y-6">
-        <section aria-labelledby="pool-title" className="card space-y-4 p-5">
-          <h2 id="pool-title" className="font-display text-xl font-bold">
-            Pool
-          </h2>
-          <NumField
-            label="Gallons"
-            inputMode="numeric"
-            value={gallonsText}
-            onChange={(e) => setGallonsText(e.target.value)}
-            placeholder="20,000"
-            unit="gal"
-            className="max-w-xs"
-          />
-          <div className="flex flex-wrap gap-x-6 gap-y-4">
-            <Segmented
-              label="Surface"
-              name="surface"
-              value={surface}
-              onChange={setSurface}
-              options={[
-                { value: "plaster", label: "Plaster" },
-                { value: "vinyl", label: "Vinyl" },
-                { value: "fiberglass", label: "Fiberglass" },
-              ]}
-            />
-            <Segmented
-              label="Sanitizer"
-              name="sanitizer"
-              value={sanitizer}
-              onChange={setSanitizer}
-              options={[
-                { value: "chlorine", label: "Chlorine" },
-                { value: "salt", label: "Salt" },
-              ]}
-            />
-          </div>
-        </section>
-
-        <section aria-labelledby="readings-title" className="card space-y-4 p-5">
-          <h2 id="readings-title" className="font-display text-xl font-bold">
-            Readings
-          </h2>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            {READINGS.filter((r) => r.key !== "salt" || sanitizer === "salt").map((r) => (
-              <NumField
-                key={r.key}
-                label={r.label}
-                unit={r.hint || undefined}
-                inputMode="decimal"
-                value={values[r.key] ?? ""}
-                onChange={(e) => setValues({ ...values, [r.key]: e.target.value })}
-              />
-            ))}
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
-            <Select
-              label="Chlorine"
-              value={chlorine}
-              onChange={(e) => setChlorine(e.target.value as ChlorineProduct)}
-              options={Object.entries(CHLORINE_PRODUCTS).map(([value, label]) => ({
-                value,
-                label,
-              }))}
-            />
-            <Select
-              label="Acid"
-              value={acid}
-              onChange={(e) => setAcid(e.target.value as AcidProduct)}
-              options={Object.entries(ACID_PRODUCTS).map(([value, label]) => ({ value, label }))}
-            />
-          </div>
-        </section>
-      </div>
-
       <section
         aria-labelledby="dose-title"
         aria-live="polite"
-        className="card p-5 lg:sticky lg:top-20"
+        className="card p-5 lg:sticky lg:top-20 lg:order-2"
       >
         <h2 id="dose-title" className="font-display text-xl font-bold">
           What to Add
         </h2>
         {!anyReading || gallons <= 0 ? (
-          <p className="mt-2 text-text-muted">
-            Enter the pool’s size and at least one reading to see how much to add.
-          </p>
+          <p className="mt-2 text-text-muted">Add the gallons and a reading below.</p>
         ) : (
           <>
             <ul className="mt-3 flex flex-wrap gap-2" aria-label="Readings">
@@ -234,13 +166,72 @@ export function ChemCalculator({ initialGallons }: { initialGallons?: number | n
                 · {result.lsiLabel}
               </p>
             ) : null}
-            <p className="mt-4 text-[0.9375rem] text-text-muted">
-              Amounts are starting points from standard dosing charts. Add in portions with the pump
-              running, follow the product label, and retest.
-            </p>
           </>
         )}
       </section>
+      <div className="space-y-6 lg:order-1">
+        <section aria-labelledby="pool-title" className="card space-y-4 p-5">
+          <h2 id="pool-title" className="font-display text-xl font-bold">
+            Pool
+          </h2>
+          <NumField
+            label="Gallons"
+            inputMode="numeric"
+            value={gallonsText}
+            onChange={(e) => setGallonsText(e.target.value)}
+            placeholder="20,000"
+            unit="gal"
+            className="max-w-xs"
+          />
+          <div className="flex flex-wrap gap-x-6 gap-y-4">
+            <Segmented
+              label="Sanitizer"
+              name="sanitizer"
+              value={sanitizer}
+              onChange={setSanitizer}
+              options={[
+                { value: "chlorine", label: "Chlorine" },
+                { value: "salt", label: "Salt" },
+              ]}
+            />
+          </div>
+        </section>
+
+        <section aria-labelledby="readings-title" className="card space-y-4 p-5">
+          <h2 id="readings-title" className="font-display text-xl font-bold">
+            Readings
+          </h2>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            {READINGS.filter((r) => r.key !== "salt" || sanitizer === "salt").map((r) => (
+              <NumField
+                key={r.key}
+                label={r.label}
+                unit={r.hint || undefined}
+                inputMode="decimal"
+                value={values[r.key] ?? ""}
+                onChange={(e) => setValues({ ...values, [r.key]: e.target.value })}
+              />
+            ))}
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+            <Select
+              label="Chlorine"
+              value={chlorine}
+              onChange={(e) => setChlorine(e.target.value as ChlorineProduct)}
+              options={Object.entries(CHLORINE_PRODUCTS).map(([value, label]) => ({
+                value,
+                label,
+              }))}
+            />
+            <Select
+              label="Acid"
+              value={acid}
+              onChange={(e) => setAcid(e.target.value as AcidProduct)}
+              options={Object.entries(ACID_PRODUCTS).map(([value, label]) => ({ value, label }))}
+            />
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

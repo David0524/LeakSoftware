@@ -1,16 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useId, useState } from "react";
-import { localMinutes, onMyWayText } from "@leakbook/core";
+import { localMinutes, onMyWayText, type OnMyWayVia } from "@leakbook/core";
 import { sendMessage } from "@/app/actions/texting";
-import { Sheet } from "./sheet";
+import { Sheet, useConfirm } from "./sheet";
 import { buttonClass } from "./ui";
 
 /**
- * On My Way: a text to the customer with an arrival time (now plus the drive). With a company
- * number (company texting) Tidemark sends it from that number, into the shared inbox.
- * Otherwise it goes from the tech's own phone: the Messages app when the customer has a phone
- * number, else the share sheet.
+ * On My Way: a text to the customer with an arrival time (now plus the drive). By default
+ * (Settings › Phone and Texting, owner 2026-10-16) Tidemark sends it from the company number,
+ * into the shared Messages; without a working number it asks before using the tech's phone.
+ * Shops can choose the tech's own phone instead: the Messages app when the customer has a
+ * phone number, else the share sheet.
  */
 export function OnMyWay({
   phone,
@@ -21,7 +22,9 @@ export function OnMyWay({
   windowMin,
   timeZone,
   className,
-  viaCompany = false,
+  via = "messages",
+  lineActive = false,
+  isOwner = false,
   jobId,
 }: {
   phone: string | null;
@@ -32,8 +35,11 @@ export function OnMyWay({
   windowMin: number;
   timeZone: string;
   className?: string;
+  /** Where the shop sends On My Way from. */
+  via?: OnMyWayVia;
   /** The shop has a working company number. */
-  viaCompany?: boolean;
+  lineActive?: boolean;
+  isOwner?: boolean;
   jobId?: string;
 }) {
   const textId = useId();
@@ -42,6 +48,7 @@ export function OnMyWay({
   // Neither sharing nor copying worked: the text in a sheet, to copy by hand.
   const [manual, setManual] = useState<string | null>(null);
   const closeManual = useCallback(() => setManual(null), []);
+  const [confirm, confirmSheet] = useConfirm();
   useEffect(() => {
     if (!done) return;
     const t = setTimeout(() => setDone(null), 3000);
@@ -50,7 +57,17 @@ export function OnMyWay({
   async function send() {
     const arriveMin = localMinutes(new Date().toISOString(), timeZone) + Math.max(5, driveMin);
     const text = onMyWayText({ customer, tech, shop, arriveMin, windowMin });
-    if (phone && viaCompany) {
+    if (phone && via === "messages" && !lineActive) {
+      const fromPhone = await confirm({
+        title: "On My Way goes out from your company number, which isn’t working yet.",
+        message: isOwner
+          ? "Set it up in Settings › Phone and Texting. You can send this one from your phone."
+          : "Ask an owner to set it up. You can send this one from your phone.",
+        confirmLabel: "Send From My Phone",
+      });
+      if (!fromPhone) return;
+    }
+    if (phone && via === "messages" && lineActive) {
       const form = new FormData();
       form.set("phone", phone);
       form.set("body", text);
@@ -92,6 +109,7 @@ export function OnMyWay({
       <button type="button" className={buttonClass("secondary", className)} onClick={send}>
         {done?.label ?? "On My Way"}
       </button>
+      {confirmSheet}
       <span role="status" className="sr-only">
         {done?.spoken ?? ""}
       </span>

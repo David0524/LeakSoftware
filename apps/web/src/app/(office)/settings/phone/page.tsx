@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { formatPhone, toE164 } from "@leakbook/core";
+import { formatPhone, onMyWayVia, toE164 } from "@leakbook/core";
 import { cancelNumber, keepNumber, saveLine, saveMyPhone } from "@/app/actions/texting";
+import { OnMyWayForm } from "@/components/on-my-way-form";
 import { NumberPicker } from "@/components/phone-settings";
 import {
   SField,
@@ -12,7 +13,7 @@ import {
 } from "@/components/settings-forms";
 import { Checkbox, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getTeam } from "@/lib/data";
+import { getCompany, getTeam } from "@/lib/data";
 import { getLine, myPhone } from "@/lib/messages";
 import { createClient } from "@/lib/supabase/server";
 import { twilioConfigured } from "@/server/twilio";
@@ -26,7 +27,12 @@ export const metadata: Metadata = { title: "Phone and Texting · Tidemark" };
 export default async function PhoneSettingsPage() {
   const office = await getOffice();
   const supabase = await createClient();
-  const [line, team, mine] = await Promise.all([getLine(office), getTeam(office), myPhone(office)]);
+  const [line, team, mine, company] = await Promise.all([
+    getLine(office),
+    getTeam(office),
+    myPhone(office),
+    getCompany(office),
+  ]);
   const active = team.filter((t) => t.status === "active");
   const { data: profiles } = await supabase
     .from("profile")
@@ -90,6 +96,7 @@ export default async function PhoneSettingsPage() {
                     name="number"
                     type="tel"
                     autoComplete="off"
+                    placeholder="(480) 555-0100"
                     required
                     hint="Tidemark registers it for texting. It takes a few days."
                   />
@@ -144,6 +151,10 @@ export default async function PhoneSettingsPage() {
           </SettingsSection>
         ) : null}
 
+        <SettingsSection title="On My Way">
+          <OnMyWayForm via={onMyWayVia(company.settings)} />
+        </SettingsSection>
+
         <SettingsSection title="Your mobile number">
           <SettingsForm action={saveMyPhone}>
             <SettingsFields labelWidth="6rem">
@@ -152,6 +163,7 @@ export default async function PhoneSettingsPage() {
                 name="phone"
                 type="tel"
                 autoComplete="tel"
+                placeholder="(480) 555-0100"
                 defaultValue={mine ? formatPhone(toE164(mine) ?? mine) : ""}
                 hint="Calls you place ring here first, then connect from the company number. Each person adds their own on the phone app or here."
               />

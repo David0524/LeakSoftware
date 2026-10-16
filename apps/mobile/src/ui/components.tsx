@@ -46,7 +46,7 @@ import {
 } from "./theme";
 import { haptics } from "./haptics";
 import { Icon, type IconName } from "./Icon";
-import { SwipeToDelete } from "./SwipeRow";
+import { SwipeLeading, SwipeToDelete } from "./SwipeRow";
 import { chooseAction } from "./confirm";
 
 // ---------------------------------------------------------------------------
@@ -481,6 +481,7 @@ export function ListRow({
   accessibilityRole,
   onDelete,
   deleteLabel = "Delete",
+  leadingAction,
   children,
 }: {
   title?: string;
@@ -504,6 +505,11 @@ export function ListRow({
   onDelete?: () => void;
   /** The swipe and accessibility action's name, as on the visible button ("Remove"). */
   deleteLabel?: string;
+  /**
+   * Swipe right for a blue action (Unread in Messages), plus the same accessibility action.
+   * Not for rows that also delete.
+   */
+  leadingAction?: { label: string; onPress: () => void };
   /** Free-form content in place of title and subtitle. */
   children?: ReactNode;
 }) {
@@ -556,12 +562,23 @@ export function ListRow({
           if (e.nativeEvent.actionName === "delete") onDelete();
         },
       }
-    : null;
+    : leadingAction
+      ? {
+          accessibilityActions: [{ name: "leading", label: leadingAction.label }],
+          onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) => {
+            if (e.nativeEvent.actionName === "leading") leadingAction.onPress();
+          },
+        }
+      : null;
   const swipe = (row: ReactNode) =>
     onDelete ? (
       <SwipeToDelete label={deleteLabel} onDelete={onDelete}>
         {row}
       </SwipeToDelete>
+    ) : leadingAction ? (
+      <SwipeLeading label={leadingAction.label} onPress={leadingAction.onPress}>
+        {row}
+      </SwipeLeading>
     ) : (
       row
     );
@@ -586,8 +603,8 @@ export function ListRow({
       style={({ pressed }) => [
         styles.listRow,
         styles.rowPad,
-        // A swipeable row slides over the red action, so it needs its own background.
-        onDelete && styles.rowSolid,
+        // A swipeable row slides over its action, so it needs its own background.
+        (onDelete || leadingAction) && styles.rowSolid,
         // iOS highlights the pressed row in gray; Android ripples.
         ios && pressed && { backgroundColor: color.neutral200 },
       ]}

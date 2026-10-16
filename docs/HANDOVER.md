@@ -66,6 +66,8 @@ scratchpad, which the next chat can't open.
   - Messages inbox: its tab also holds Customers (a Messages | Customers switch; unread badge
     on the tab).
   - The job's Details shows the latest texts with the customer (Messages group).
+  - Swipe a conversation right for Unread/Read (shared by the team); Mark as Unread inside it.
+  - On My Way: Tidemark Messages by default, or the tech's phone (Phone and Texting setting).
   - Settings › Phone and Texting: take a number, or enter the shop's existing one (stays
     pending until Tidemark finishes it by hand); photos switch; who rings; greeting.
   - The customer page's Text button and On My Way on Today send from the company number when

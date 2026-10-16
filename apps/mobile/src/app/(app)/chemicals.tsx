@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 import {
@@ -8,7 +9,7 @@ import {
   type ChlorineProduct,
   type Readings,
   type Sanitizer,
-  type Surface,
+  surfaceFor,
 } from "@leakbook/core";
 import {
   Block,
@@ -25,7 +26,8 @@ import {
 import { color, ios, radius, space } from "../../ui/theme";
 
 // The pool chemical calculator (owner, 2026-10-16): the pool's size and today's readings in,
-// what to add out, in order. Nothing is saved. The math is packages/core/src/chemistry.ts.
+// what to add out, in order, shown first. Nothing is saved. The math is
+// packages/core/src/chemistry.ts. A visit opens it with the pool's gallons and type.
 
 const num = (v: string) => {
   const n = Number(v.replace(/,/g, ""));
@@ -43,8 +45,12 @@ const READINGS: { key: keyof Readings; label: string; hint?: string }[] = [
 ];
 
 export default function Chemicals() {
-  const [gallonsText, setGallonsText] = useState("");
-  const [surface, setSurface] = useState<Surface>("plaster");
+  const params = useLocalSearchParams<{ gallons?: string; pool?: string }>();
+  const [gallonsText, setGallonsText] = useState(
+    Number(params.gallons) > 0 ? String(Math.round(Number(params.gallons))) : "",
+  );
+  // The surface only moves the calcium target; it comes from the pool (owner, 2026-10-16).
+  const surface = surfaceFor(params.pool);
   const [sanitizer, setSanitizer] = useState<Sanitizer>("chlorine");
   const [values, setValues] = useState<Record<string, string>>({});
   const [chlorine, setChlorine] = useState<ChlorineProduct>("liquid12");
@@ -60,75 +66,7 @@ export default function Chemicals() {
 
   return (
     <Screen>
-      <FieldGroup title="Pool">
-        <FieldRow
-          label="Gallons"
-          keyboardType="number-pad"
-          value={gallonsText}
-          onChangeText={setGallonsText}
-          placeholder="20,000"
-        />
-      </FieldGroup>
-      <Segmented
-        label="Surface"
-        value={surface}
-        onChange={setSurface}
-        options={[
-          { value: "plaster", label: "Plaster" },
-          { value: "vinyl", label: "Vinyl" },
-          { value: "fiberglass", label: "Fiberglass" },
-        ]}
-      />
-      <Segmented
-        label="Sanitizer"
-        value={sanitizer}
-        onChange={setSanitizer}
-        options={[
-          { value: "chlorine", label: "Chlorine" },
-          { value: "salt", label: "Salt" },
-        ]}
-      />
-      <FieldGroup title="Readings" labelWidth={128}>
-        {READINGS.filter((r) => r.key !== "salt" || sanitizer === "salt").map((r) => (
-          <FieldRow
-            key={r.key}
-            label={r.label}
-            hint={r.hint}
-            keyboardType="decimal-pad"
-            value={values[r.key] ?? ""}
-            onChangeText={(v) => setValues({ ...values, [r.key]: v })}
-          />
-        ))}
-      </FieldGroup>
-      <Group>
-        <PickerRow
-          label="Chlorine"
-          value={chlorine}
-          onChange={setChlorine}
-          options={Object.entries(CHLORINE_PRODUCTS).map(([value, label]) => ({
-            value: value as ChlorineProduct,
-            label,
-          }))}
-        />
-        <PickerRow
-          label="Acid"
-          value={acid}
-          onChange={setAcid}
-          options={Object.entries(ACID_PRODUCTS).map(([value, label]) => ({
-            value: value as AcidProduct,
-            label,
-          }))}
-        />
-      </Group>
-
-      <Block
-        title="What to Add"
-        note={
-          ready
-            ? "Starting points from standard dosing charts. Add in portions with the pump running, follow the label, and retest."
-            : "Enter the pool’s size and at least one reading."
-        }
-      >
+      <Block title="What to Add" note={ready ? undefined : "Add the gallons and a reading below."}>
         {ready && result.steps.length === 0 ? (
           <Card>
             <T variant="strong" style={{ color: color.pass }}>
@@ -173,6 +111,56 @@ export default function Chemicals() {
           </View>
         ) : null}
       </Block>
+      <FieldGroup title="Pool">
+        <FieldRow
+          label="Gallons"
+          keyboardType="number-pad"
+          value={gallonsText}
+          onChangeText={setGallonsText}
+          placeholder="20,000"
+        />
+      </FieldGroup>
+      <Segmented
+        label="Sanitizer"
+        value={sanitizer}
+        onChange={setSanitizer}
+        options={[
+          { value: "chlorine", label: "Chlorine" },
+          { value: "salt", label: "Salt" },
+        ]}
+      />
+      <FieldGroup title="Readings" labelWidth={128}>
+        {READINGS.filter((r) => r.key !== "salt" || sanitizer === "salt").map((r) => (
+          <FieldRow
+            key={r.key}
+            label={r.label}
+            hint={r.hint}
+            keyboardType="decimal-pad"
+            value={values[r.key] ?? ""}
+            onChangeText={(v) => setValues({ ...values, [r.key]: v })}
+          />
+        ))}
+      </FieldGroup>
+      <Group>
+        <PickerRow
+          label="Chlorine"
+          value={chlorine}
+          onChange={setChlorine}
+          options={Object.entries(CHLORINE_PRODUCTS).map(([value, label]) => ({
+            value: value as ChlorineProduct,
+            label,
+          }))}
+        />
+        <PickerRow
+          label="Acid"
+          value={acid}
+          onChange={setAcid}
+          options={Object.entries(ACID_PRODUCTS).map(([value, label]) => ({
+            value: value as AcidProduct,
+            label,
+          }))}
+        />
+      </Group>
     </Screen>
   );
 }

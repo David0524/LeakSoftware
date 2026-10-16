@@ -37,3 +37,12 @@ describe("services", () => {
     expect([offersLeak({}), offersPool({})]).toEqual([true, true]);
   });
 });
+
+describe("on my way", () => {
+  it("goes out from Tidemark Messages unless the shop chose the tech's phone", async () => {
+    const { onMyWayVia } = await import("../src");
+    expect(onMyWayVia(null)).toBe("messages");
+    expect(onMyWayVia({ on_my_way: "nonsense" })).toBe("messages");
+    expect(onMyWayVia({ on_my_way: "phone" })).toBe("phone");
+  });
+});

@@ -3,7 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatPhone } from "@leakbook/core";
 import { ConversationList, Thread, conversationName } from "@/components/inbox";
-import { AutoRefresh, CallButton, Composer, MarkRead, ScrollToEnd } from "@/components/messages";
+import {
+  AutoRefresh,
+  CallButton,
+  Composer,
+  MarkRead,
+  MarkUnreadButton,
+  ScrollToEnd,
+} from "@/components/messages";
 import { Notice, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getTeam } from "@/lib/data";
@@ -43,7 +50,12 @@ export default async function ConversationPage({ params }: PageProps<"/messages/
             )}
           </>
         }
-        actions={active ? <CallButton conversationId={c.id} name={name} /> : undefined}
+        actions={
+          <div className="flex items-start gap-2">
+            <MarkUnreadButton conversationId={c.id} />
+            {active ? <CallButton conversationId={c.id} name={name} /> : null}
+          </div>
+        }
       />
       <div className="grid max-w-5xl gap-6 md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
         <div className="min-w-0 max-md:hidden">

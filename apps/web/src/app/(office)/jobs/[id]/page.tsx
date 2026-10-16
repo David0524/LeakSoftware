@@ -325,7 +325,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                   <SetUpChecklist jobId={job.id} />
                 )}
                 {job.type === "maintenance" ? (
-                  <ButtonLink href="/chemicals" kind="secondary" className="mt-4">
+                  <ButtonLink href={chemicalsHref(job.property)} kind="secondary" className="mt-4">
                     Chemical Calculator
                   </ButtonLink>
                 ) : null}
@@ -950,6 +950,16 @@ async function Timeline({ detail, tz }: { detail: JobDetail; tz: string }) {
       ) : null}
     </div>
   );
+}
+
+/** The calculator, with the pool's gallons and type filled in. */
+function chemicalsHref(
+  pool: { approx_gallons?: number | null; pool_type?: string | null } | null | undefined,
+) {
+  const q = new URLSearchParams();
+  if (pool?.approx_gallons) q.set("gallons", String(pool.approx_gallons));
+  if (pool?.pool_type) q.set("pool", pool.pool_type);
+  return `/chemicals${q.size ? `?${q}` : ""}`;
 }
 
 /**

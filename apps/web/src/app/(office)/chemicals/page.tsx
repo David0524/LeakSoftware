@@ -4,15 +4,20 @@ import { PageHeader } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Chemical Calculator · Tidemark" };
 
-/** Pool care: how much of each chemical to add, from the pool's size and today's readings. */
-export default function ChemicalsPage() {
+/**
+ * Pool care: how much of each chemical to add, from the pool's size and today's readings. A
+ * visit opens it with the pool's gallons and type (?gallons=&pool=).
+ */
+export default async function ChemicalsPage({ searchParams }: PageProps<"/chemicals">) {
+  const { gallons, pool } = await searchParams;
+  const size = Number(gallons);
   return (
     <>
-      <PageHeader
-        title="Chemical Calculator"
-        subtitle="Enter the pool’s size and your test readings. Tidemark works out what to add, in order."
+      <PageHeader title="Chemical Calculator" />
+      <ChemCalculator
+        initialGallons={Number.isFinite(size) && size > 0 ? Math.round(size) : null}
+        poolType={typeof pool === "string" ? pool : null}
       />
-      <ChemCalculator />
     </>
   );
 }

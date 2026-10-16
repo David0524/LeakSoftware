@@ -39,6 +39,15 @@ export function poolGallons(
 // ---------------------------------------------------------------------------
 
 export type Surface = "plaster" | "vinyl" | "fiberglass";
+
+/**
+ * The surface only moves the calcium target (plaster 250 to 450 ppm, vinyl and fiberglass 150
+ * to 250). The calculator doesn't ask (owner, 2026-10-16): it uses the pool's recorded type
+ * when it has one, and plaster otherwise, the most common.
+ */
+export function surfaceFor(poolType: string | null | undefined): Surface {
+  return poolType === "vinyl" || poolType === "fiberglass" ? poolType : "plaster";
+}
 export type Sanitizer = "chlorine" | "salt";
 
 export interface Readings {

@@ -201,9 +201,19 @@ export async function callCustomer(conversationId: string): Promise<FormState> {
 
 /** Opening a conversation marks it read for the team. */
 export async function markRead(conversationId: string) {
+  await setUnread(conversationId, false);
+}
+
+/**
+ * Mark a conversation unread (or read) for the whole team: unread is shared, as in a team
+ * inbox (owner, 2026-10-16: "Remember this is shared across the entire team").
+ */
+export async function setUnread(conversationId: string, unread: boolean) {
   const supabase = await createClient();
-  await supabase.from("conversation").update({ unread: false }).eq("id", conversationId);
+  const { error } = await supabase.from("conversation").update({ unread }).eq("id", conversationId);
+  if (error) return { error: error.message };
   revalidatePath("/messages", "layout");
+  return {};
 }
 
 /** My own mobile number: calls I place ring it first, and incoming calls can ring it. */

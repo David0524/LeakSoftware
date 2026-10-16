@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatPhone } from "@leakbook/core";
 import type { ConversationRow, Line, ThreadItem } from "@/lib/messages";
+import { InboxRow } from "./conversation-row";
 import { PhoneIcon, VoicemailIcon } from "./icons";
 import { Empty, Notice, SEGMENT_TRACK, cx, segmentClass } from "./ui";
 
@@ -72,38 +73,15 @@ export function ConversationList({
   return (
     <ul className="grouped" aria-label="Conversations">
       {conversations.map((c) => (
-        <li key={c.id}>
-          <Link
-            href={`/messages/${c.id}`}
-            aria-current={c.id === current ? "page" : undefined}
-            className={cx(
-              "flex min-h-11 items-start gap-3 px-4 py-2.5 hover:bg-text/[0.03] active:bg-text/[0.06]",
-              c.id === current && "bg-link/10 hover:bg-link/10",
-            )}
-          >
-            <span
-              aria-hidden="true"
-              className={cx(
-                "mt-2 size-2.5 shrink-0 rounded-full",
-                c.unread ? "bg-link" : "bg-transparent",
-              )}
-            />
-            <span className="min-w-0 flex-1">
-              <span className="flex items-baseline gap-2">
-                <span className={cx("min-w-0 flex-1 truncate", c.unread && "font-semibold")}>
-                  {conversationName(c)}
-                  {c.unread ? <span className="sr-only">, unread</span> : null}
-                </span>
-                <span className="shrink-0 text-[0.9375rem] text-text-muted">
-                  {when(c.last_at, timeZone)}
-                </span>
-              </span>
-              <span className="block truncate text-[0.9375rem] text-text-muted">
-                {c.last_preview || " "}
-              </span>
-            </span>
-          </Link>
-        </li>
+        <InboxRow
+          key={c.id}
+          id={c.id}
+          name={conversationName(c)}
+          when={when(c.last_at, timeZone)}
+          preview={c.last_preview ?? ""}
+          unread={c.unread}
+          current={c.id === current}
+        />
       ))}
     </ul>
   );

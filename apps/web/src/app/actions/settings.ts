@@ -239,6 +239,24 @@ export async function saveServices(_: FormState, form: FormData): Promise<FormSt
   return { message: "Saved." };
 }
 
+/** Owners: where On My Way texts go out from (owner, 2026-10-16). */
+export async function saveOnMyWay(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const choice = text(form, "on_my_way");
+  if (choice !== "messages" && choice !== "phone")
+    return { error: "Pick where On My Way texts go out from." };
+  const { data: company } = await supabase
+    .from("company")
+    .select("settings")
+    .eq("id", office.company.id)
+    .single();
+  const settings = { ...((company?.settings ?? {}) as Record<string, unknown>), on_my_way: choice };
+  const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
+  if (error) return failed(error);
+  revalidatePath("/", "layout");
+  return { message: "Saved." };
+}
+
 /** Owners: techs see every job, or only their own (owner request, 2026-10-13). */
 export async function saveJobVisibility(_: FormState, form: FormData): Promise<FormState> {
   const { office, supabase } = await owner();

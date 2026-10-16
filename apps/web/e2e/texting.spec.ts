@@ -123,6 +123,22 @@ test("customers text and call the company number, and the team answers", async (
     await page.reload();
     await expect(thread.getByText(/replied STOP/)).toBeVisible();
     await expect(thread.getByRole("textbox", { name: "Message" })).toHaveCount(0);
+
+    // Anyone can mark it unread again, for the whole team (owner, 2026-10-16): back in the
+    // list it shows unread, and the database says so.
+    await page.getByRole("button", { name: "Mark as Unread" }).click();
+    await expect(page).toHaveURL(/\/messages$/);
+    await expect(
+      page
+        .getByRole("link", { name: /unread/ })
+        .filter({ hasText: `(480) 555-01${customer.slice(-2)}` }),
+    ).toBeVisible();
+    const { data: conv } = await admin
+      .from("conversation")
+      .select("unread")
+      .eq("phone", customer)
+      .single();
+    expect(conv?.unread).toBe(true);
   } finally {
     // Give the number back, so the next run takes one again.
     await admin.from("phone_line").update({ status: "released" }).eq("id", line!.id);

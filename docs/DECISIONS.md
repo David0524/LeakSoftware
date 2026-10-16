@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-16 (owner: iOS feel, unread, On My Way, Phone and Texting fields, calculator)
+- **Every new page feels like iOS, not Android** ("Consider iPhone/Swift design principles"). Now a house rule in `CLAUDE.md`.
+- **Mark as unread, for the whole team.** Unread is one shared flag per conversation. Website: swipe a conversation right for Unread (or Read), with a full swipe acting on release, as in iOS Messages, and Mark as Unread inside a conversation, which goes back to the list so opening it doesn't mark it read again. Phone app: the same swipe right in Messages, plus a VoiceOver action.
+- **On My Way sends from Tidemark Messages by default,** with a setting in Settings › Phone and Texting › On My Way: Tidemark Messages (company number, kept in the shared inbox) or Tech's Phone (opens the phone's Messages app). With Tidemark Messages and no working company number, an action sheet says so and offers Send From My Phone. Stored as `company.settings.on_my_way`.
+- **Phone and Texting fields are visible:** the grouped rows had no outline and no placeholder. Phone fields show a sample number, and every grouped settings field without its own placeholder now shows "Required" or "Optional", as iOS Settings does.
+- **Chemical calculator:** What to Add comes first (the right-hand column on wide screens), the page's subtitle and the "starting points" note are gone, and so is Surface. Surface only moved the calcium target (plaster 250 to 450 ppm, vinyl and fiberglass 150 to 250), so the calculator takes it from the pool's recorded type when opened from a visit (which also fills in the gallons) and uses plaster, the most common, otherwise (`surfaceFor`).
+
 ## 2026-10-16 (owner: "I still don't like the loading times in between screens"; "do both and measure")
 - **The website keeps screens visited in the last minute** (`experimental.staleTimes.dynamic: 60` in `apps/web/next.config.ts`). Going back to a tab is instant: measured locally with the same script, 1.4–2.0 s became 0.09–0.17 s. The trade-off: a teammate's change can take up to a minute to show on a screen you just visited. Your own saves refresh at once (the save actions revalidate), and Messages refreshes itself every 20 seconds.
 - **Loading tabs ahead of a tap was tried and not shipped.** In this Next.js version, data loaded ahead must be in `"use cache: private"`, and the Supabase client's `connection()` call is refused there. Removing that call broke other pages (clock errors while loading ahead), and catching the error still failed and made Jobs slower (4.4 s). Doing it properly means reworking how every page reads its data. Not scheduled.
