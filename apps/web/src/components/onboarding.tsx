@@ -20,6 +20,7 @@ import {
   type Services,
 } from "@leakbook/core";
 import { finishWithoutCard, saveOnboarding, startCheckout } from "@/app/actions/onboarding";
+import { Logo } from "./logo";
 import { Segmented } from "./segmented";
 import { Button, cx } from "./ui";
 
@@ -82,7 +83,7 @@ export function Onboarding({
   const [readings, setReadings] = useState({ fc: 0.5, ph: 8.0, ta: 70 });
   const [marks, setMarks] = useState<Partial<Record<string, Mark>>>({});
   const heading = useRef<HTMLHeadingElement>(null);
-  const moved = useRef(false);
+  const shown = useRef(step);
 
   const index = STEPS.indexOf(step);
   const go = (to: Step) => setStep(to);
@@ -93,10 +94,8 @@ export function Onboarding({
   // Each new step starts at the top with its title read out, like a pushed screen. Not the
   // first one: the page opens there anyway.
   useEffect(() => {
-    if (!moved.current) {
-      moved.current = true;
-      return;
-    }
+    if (shown.current === step) return;
+    shown.current = step;
     window.scrollTo({ top: 0 });
     heading.current?.focus();
   }, [step]);
@@ -267,53 +266,71 @@ export function Onboarding({
 
   const showBack = index > 0 && step !== "saving";
   const canSkip = step === "goal" || step === "pains" || step === "how";
+  // Phones: full screen, the action pinned above the home indicator. Wider screens: a setup
+  // window centered under the logo, like a Mac setup assistant, with the action inside it.
   return (
-    <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-8">
-      <nav aria-label="Setup" className="sticky top-0 z-10 -mx-4 bg-bg/90 px-4 backdrop-blur">
-        <div className="flex min-h-11 items-center justify-between">
-          {showBack ? (
-            <button
-              type="button"
-              onClick={back}
-              className="-ml-2 min-h-11 px-2 text-[1.0625rem] text-link"
-            >
-              ‹ Back
-            </button>
-          ) : (
-            <span />
-          )}
-          {canSkip ? (
-            <button
-              type="button"
-              onClick={() => go("setup")}
-              className="-mr-2 min-h-11 px-2 text-[1.0625rem] text-link"
-            >
-              Skip
-            </button>
-          ) : null}
-        </div>
-        <div
-          role="progressbar"
-          aria-label="Setup progress"
-          aria-valuemin={1}
-          aria-valuemax={STEPS.length}
-          aria-valuenow={index + 1}
-          className="h-1 overflow-hidden rounded-full bg-fill"
-        >
-          <div
-            className="h-1 rounded-full bg-primary transition-[width] duration-300 motion-reduce:transition-none"
-            style={{ width: `${((index + 1) / STEPS.length) * 100}%` }}
-          />
-        </div>
-      </nav>
-      <div className="flex-1 pt-6" data-testid={`onboarding-${step}`}>
-        {body}
+    <div className="flex flex-1 flex-col sm:items-center sm:px-6 sm:pb-12">
+      <div className="mt-10 mb-6 hidden sm:block">
+        <Logo height={36} />
       </div>
-      {action ? (
-        <div className="sticky bottom-0 -mx-4 mt-6 bg-bg/90 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur [&>button]:w-full">
-          {action}
+      <div
+        className={cx(
+          "mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-8",
+          "sm:max-w-lg sm:flex-none sm:rounded-[1.25rem] sm:bg-surface sm:px-10 sm:pt-6 sm:pb-10",
+          "sm:shadow-[0_1px_2px_rgb(18_38_58/0.06),0_6px_20px_rgb(18_38_58/0.05)]",
+          // Lists and cards inside the window sit on the page gray, as in a grouped sheet.
+          "sm:[&_.card]:bg-bg sm:[&_.card]:shadow-none sm:[&_.grouped]:bg-bg",
+        )}
+      >
+        <nav
+          aria-label="Setup"
+          className="sticky top-0 z-10 -mx-4 bg-bg/90 px-4 backdrop-blur sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:backdrop-blur-none"
+        >
+          <div className="flex min-h-11 items-center justify-between">
+            {showBack ? (
+              <button
+                type="button"
+                onClick={back}
+                className="-ml-2 min-h-11 px-2 text-[1.0625rem] text-link"
+              >
+                ‹ Back
+              </button>
+            ) : (
+              <span />
+            )}
+            {canSkip ? (
+              <button
+                type="button"
+                onClick={() => go("setup")}
+                className="-mr-2 min-h-11 px-2 text-[1.0625rem] text-link"
+              >
+                Skip
+              </button>
+            ) : null}
+          </div>
+          <div
+            role="progressbar"
+            aria-label="Setup progress"
+            aria-valuemin={1}
+            aria-valuemax={STEPS.length}
+            aria-valuenow={index + 1}
+            className="h-1 overflow-hidden rounded-full bg-fill"
+          >
+            <div
+              className="h-1 rounded-full bg-primary transition-[width] duration-300 motion-reduce:transition-none"
+              style={{ width: `${((index + 1) / STEPS.length) * 100}%` }}
+            />
+          </div>
+        </nav>
+        <div className="flex-1 pt-6" data-testid={`onboarding-${step}`}>
+          {body}
         </div>
-      ) : null}
+        {action ? (
+          <div className="sticky bottom-0 -mx-4 mt-6 bg-bg/90 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mx-0 sm:mt-8 sm:bg-transparent sm:p-0 sm:backdrop-blur-none [&>button]:w-full">
+            {action}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -903,7 +920,7 @@ function TrialOffer({
           {state.error}
         </p>
       ) : null}
-      <div className="sticky bottom-0 -mx-4 mt-6 bg-bg/90 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur">
+      <div className="sticky bottom-0 -mx-4 mt-6 bg-bg/90 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mx-0 sm:mt-8 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
         <Button type="submit" disabled={pending} className="w-full">
           {billing ? "Start 14-Day Free Trial" : "Finish Setup"}
         </Button>
