@@ -61,6 +61,12 @@ const ICONS: Record<string, Icon> = {
     cut: "M4 8.5h16M8 12h3M8 16h3M13 12h3",
     extra: "M7 3v3M17 3v3",
   },
+  "/messages": {
+    line: <path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z" />,
+    shape: "M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z",
+    cut: "M8 11h.01M12 11h.01M16 11h.01",
+    cutWidth: 2.6,
+  },
   "/customers": {
     line: (
       <path d="M16 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM21 20v-1a4 4 0 0 0-3-3.9M16 4.1a3.5 3.5 0 0 1 0 6.8" />

@@ -346,7 +346,7 @@ test("on a phone: a tab bar moves between sections and nothing scrolls sideways"
   for (const [label, heading] of [
     ["Today", "Today"],
     ["Schedule", "Schedule"],
-    ["Customers", "Customers"],
+    ["Messages", "Messages"],
     ["More", "More"],
     ["Jobs", "Jobs"],
   ] as const) {
@@ -356,17 +356,17 @@ test("on a phone: a tab bar moves between sections and nothing scrolls sideways"
       390,
     );
   }
-  // Messages shares the Customers tab: a switch at the top of both pages.
-  await tabs.getByRole("link", { name: "Customers" }).click();
-  const people = page.getByRole("navigation", { name: "Customers and Messages" });
-  await people.getByRole("link", { name: /^Messages/ }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Messages" })).toBeVisible();
-  await expect(tabs.getByRole("link", { name: "Customers" })).toHaveAttribute(
+  // Customers shares the Messages tab: a switch at the top of both pages.
+  await tabs.getByRole("link", { name: "Messages" }).click();
+  const people = page.getByRole("navigation", { name: "Messages and Customers" });
+  await people.getByRole("link", { name: "Customers" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Customers" })).toBeVisible();
+  await expect(tabs.getByRole("link", { name: "Messages" })).toHaveAttribute(
     "aria-current",
     "page",
   );
-  await people.getByRole("link", { name: "Customers" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Customers" })).toBeVisible();
+  await people.getByRole("link", { name: /^Messages/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Messages" })).toBeVisible();
   // A tap just beside or below the floating bar lands on the bar's layer, not on the
   // page underneath (the Jobs list's cards run under it).
   const before = page.url();

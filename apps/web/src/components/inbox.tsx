@@ -19,8 +19,8 @@ function when(iso: string, timeZone: string, now = new Date()) {
 }
 
 /**
- * Customers and Messages share a tab (owner, 2026-10-16): this switch sits at the top of
- * both, as a segmented control of links, with the unread count on Messages.
+ * Messages and Customers share a tab, Messages first (owner, 2026-10-16): this switch sits at
+ * the top of both, as a segmented control of links, with the unread count on Messages.
  */
 export function PeopleSwitch({
   current,
@@ -30,11 +30,11 @@ export function PeopleSwitch({
   unread: number;
 }) {
   return (
-    <nav aria-label="Customers and Messages" className={cx(SEGMENT_TRACK, "mb-5 flex-nowrap")}>
+    <nav aria-label="Messages and Customers" className={cx(SEGMENT_TRACK, "mb-5 flex-nowrap")}>
       {(
         [
-          { key: "customers", href: "/customers", label: "Customers" },
           { key: "messages", href: "/messages", label: "Messages" },
+          { key: "customers", href: "/customers", label: "Customers" },
         ] as const
       ).map((o) => (
         <Link
