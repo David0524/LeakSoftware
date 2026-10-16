@@ -133,6 +133,14 @@ export default function Settings() {
             title={user?.email ?? ""}
             subtitle={`${company?.name ?? ""} · ${membership?.role === "owner" ? "Owner" : "Tech"}`}
           />
+          {API_URL ? (
+            // Set up on the website, where the code can be scanned (owner, 2026-10-16).
+            <ListRow
+              title="Two-Step Sign-In"
+              accessibilityRole="link"
+              onPress={() => open("/more/two-step")}
+            />
+          ) : null}
           {/* This phone's details. */}
           <ListRow
             title="Local data"

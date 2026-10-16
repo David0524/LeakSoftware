@@ -7,6 +7,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { AppState } from "react-native";
+import type { Session, User } from "@supabase/supabase-js";
 import type { Company, Membership } from "@leakbook/core";
 import { getServices, type Services } from "../lib/services";
 import { useRows, useSyncStatus } from "../data/hooks";
@@ -24,6 +26,14 @@ interface SessionValue {
   company: Company | null;
   membership: Membership | null;
   setActiveCompany(id: string): void;
+  /**
+   * Two-step sign-in (owner, 2026-10-16): the account has an authenticator code and this
+   * session hasn't passed it. Shop data stays closed (the database refuses it), so the app
+   * shows the code screen and doesn't sync until the code is in.
+   */
+  needsCode: boolean;
+  verifyCode(code: string): Promise<string | null>;
+  cancelCode(): Promise<void>;
   signIn(email: string, password: string): Promise<string | null>;
   signUp(
     fullName: string,
@@ -44,6 +54,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return raw ? (JSON.parse(raw) as SignedInUser) : null;
   });
   const [activeId, setActiveId] = useState<string | null>(() => kv.get("active_company"));
+  const [needsCode, setNeedsCode] = useState(false);
 
   const remember = useCallback(
     (u: SignedInUser) => {
@@ -60,9 +71,33 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user) sync.start();
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) remember({ id: session.user.id, email: session.user.email ?? "" });
+      if (!session?.user) return;
+      // A session still waiting on its code isn't let in yet (two-step sign-in).
+      if (waitingOnCode(session)) {
+        sync.stop();
+        setNeedsCode(true);
+        return;
+      }
+      remember({ id: session.user.id, email: session.user.email ?? "" });
     });
-    return () => data.subscription.unsubscribe();
+    // Two-step turned on elsewhere (the website) while this phone was signed in: checked
+    // when the app opens and comes back to the front, with the account's current factors.
+    const check = async () => {
+      const { data: u } = await supabase.auth.getUser();
+      const { data: s } = await supabase.auth.getSession();
+      if (u.user && s.session && waitingOnCode(s.session, u.user)) {
+        sync.stop();
+        setNeedsCode(true);
+      }
+    };
+    void check();
+    const app = AppState.addEventListener("change", (state) => {
+      if (state === "active") void check();
+    });
+    return () => {
+      data.subscription.unsubscribe();
+      app.remove();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- subscribe once
   }, []);
 
@@ -80,6 +115,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     companies,
     company,
     membership,
+    needsCode,
+    verifyCode: async (code) => {
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const factor = factors?.totp.find((f) => f.status === "verified");
+      if (!factor) return "This account has no authenticator set up. Sign in again.";
+      const { data, error } = await supabase.auth.mfa.challengeAndVerify({
+        factorId: factor.id,
+        code: code.replace(/\s+/g, ""),
+      });
+      if (error || !data) return "That code didn't work. Try the newest one.";
+      const { data: s } = await supabase.auth.getSession();
+      setNeedsCode(false);
+      if (s.session?.user) remember({ id: s.session.user.id, email: s.session.user.email ?? "" });
+      return null;
+    },
+    cancelCode: async () => {
+      setNeedsCode(false);
+      await value.signOut();
+    },
     setActiveCompany: (id) => {
       kv.set("active_company", id);
       setActiveId(id);
@@ -90,6 +144,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         password,
       });
       if (error) return friendlyAuthError(error.message);
+      if (waitingOnCode(data.session, data.user)) {
+        setNeedsCode(true);
+        return null;
+      }
       remember({ id: data.user.id, email: data.user.email ?? email.trim() });
       return null;
     },
@@ -114,6 +172,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   };
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
+}
+
+/** Whether a session must still pass the account's authenticator code (aal1 with a factor). */
+function waitingOnCode(session: Session, user: User = session.user): boolean {
+  const verified = (user.factors ?? []).some((f) => f.status === "verified");
+  return verified && accessLevel(session.access_token) !== "aal2";
+}
+
+function accessLevel(token: string): string | null {
+  try {
+    const part = token.split(".")[1]!.replace(/-/g, "+").replace(/_/g, "/");
+    return (JSON.parse(atob(part)) as { aal?: string }).aal ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export function useSession(): SessionValue {

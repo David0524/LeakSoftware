@@ -26,6 +26,15 @@ async function SetupBody() {
   const user = await getUser();
   if (!user) redirect("/sign-in?next=/setup");
   const supabase = await createClient();
+  // With two-step on, memberships stay hidden until the code (owner, 2026-10-16).
+  if (user.aal !== "aal2") {
+    const { data: profile } = await supabase
+      .from("profile")
+      .select("two_step")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile?.two_step) redirect("/sign-in/verify");
+  }
   const { count } = await supabase
     .from("membership")
     .select("id", { count: "exact", head: true })

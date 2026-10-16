@@ -25,6 +25,8 @@ export interface SignedInUser {
   id: string;
   email: string | null;
   user_metadata: Record<string, unknown>;
+  /** aal2 once the session passed the two-step code (Supabase MFA); aal1 with a password only. */
+  aal: string;
 }
 
 /**
@@ -41,6 +43,7 @@ export const getUser = cache(async (): Promise<SignedInUser | null> => {
     id: c.sub,
     email: typeof c.email === "string" ? c.email : null,
     user_metadata: (c.user_metadata as Record<string, unknown> | undefined) ?? {},
+    aal: typeof c.aal === "string" ? c.aal : "aal1",
   };
 });
 
@@ -59,8 +62,11 @@ export const getOffice = cache(async (): Promise<Office> => {
       .eq("user_id", user.id)
       .eq("status", "active")
       .is("deleted_at", null),
-    supabase.from("profile").select("full_name").eq("id", user.id).maybeSingle(),
+    supabase.from("profile").select("full_name, two_step").eq("id", user.id).maybeSingle(),
   ]);
+  // Two-step sign-in (owner, 2026-10-16): with it on, a password-only session sees no shop
+  // data (the database refuses it), so the code comes first.
+  if (profile?.two_step && user.aal !== "aal2") redirect("/sign-in/verify");
   const rows = (memberships ?? []) as unknown as {
     role: Role;
     company: { id: string; name: string; timezone: string } | null;

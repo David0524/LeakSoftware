@@ -69,18 +69,26 @@ export default function RootLayout() {
   );
 }
 
-/** Signed out: auth screens. Signed in without a company: setup. Otherwise: the app. */
+/**
+ * Signed out: auth screens. Waiting on a two-step code: the code screen. Signed in without a
+ * company: setup. Otherwise: the app.
+ */
 function RootStack() {
-  const { user, company } = useSession();
+  const { user, company, needsCode } = useSession();
+  // Two-step sign-in: the code screen comes before anything else (owner, 2026-10-16).
+  const signedIn = Boolean(user) && !needsCode;
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={!user}>
+      <Stack.Protected guard={!user && !needsCode}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
-      <Stack.Protected guard={Boolean(user) && !company}>
+      <Stack.Protected guard={needsCode}>
+        <Stack.Screen name="code" />
+      </Stack.Protected>
+      <Stack.Protected guard={signedIn && !company}>
         <Stack.Screen name="setup" />
       </Stack.Protected>
-      <Stack.Protected guard={Boolean(user) && Boolean(company)}>
+      <Stack.Protected guard={signedIn && Boolean(company)}>
         <Stack.Screen name="(app)" />
       </Stack.Protected>
     </Stack>

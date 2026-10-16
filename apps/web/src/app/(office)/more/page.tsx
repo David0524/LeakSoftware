@@ -9,6 +9,7 @@ import { Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 import { officeLinks } from "@/lib/nav";
+import { createClient } from "@/lib/supabase/server";
 import { SUPPORT_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = { title: "More · Tidemark" };
@@ -21,6 +22,14 @@ export default async function MorePage() {
   const office = await getOffice();
   const company = await getCompany(office);
   const rest = officeLinks(office.isOwner, company.settings).slice(4);
+  const { data: profile } = await (
+    await createClient()
+  )
+    .from("profile")
+    .select("two_step")
+    .eq("id", office.user.id)
+    .maybeSingle();
+  const twoStep = Boolean(profile?.two_step);
   const saved = (await cookies()).get("lb_maps")?.value;
   const maps = saved === "apple" || saved === "google" ? saved : "auto";
   return (
@@ -31,6 +40,14 @@ export default async function MorePage() {
           {rest.map((l) => (
             <Row key={l.href} href={l.href} label={l.label} />
           ))}
+        </Grouped>
+        <Grouped title="Your account">
+          <Row
+            href="/more/two-step"
+            label="Two-Step Sign-In"
+            value={twoStep ? "On" : "Off"}
+            detail="A code from your phone after your password"
+          />
         </Grouped>
         <Grouped title="On this device">
           <Row>
