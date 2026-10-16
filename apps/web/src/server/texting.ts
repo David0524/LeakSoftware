@@ -360,16 +360,16 @@ export async function incomingCall(params: Record<string, string>, origin: strin
   if (!line) return twiml(`<Say>This number isn’t in service.</Say><Hangup/>`);
   const from = toE164(params.From);
   const conv = from ? await conversationFor(db, line.company_id, from) : null;
-  await db.from("call_log").upsert(
-    {
-      company_id: line.company_id,
-      conversation_id: conv?.id ?? null,
-      direction: "in",
-      status: "ringing",
-      provider_sid: params.CallSid,
-    },
-    { onConflict: "provider_sid", ignoreDuplicates: true },
-  );
+  // Each call once: Twilio retries a webhook that didn't answer in time. (A plain insert: the
+  // unique index on provider_sid is partial, which ON CONFLICT (provider_sid) can't use.)
+  const { error } = await db.from("call_log").insert({
+    company_id: line.company_id,
+    conversation_id: conv?.id ?? null,
+    direction: "in",
+    status: "ringing",
+    provider_sid: params.CallSid ?? null,
+  });
+  if (error && error.code !== "23505") throw new TextingError(error.message);
   const company = await companyInfo(db, line.company_id);
   const phones = await ringPhones(db, line);
   if (!phones.length || !inBusinessHours(new Date(), company.timezone, company.settings)) {
