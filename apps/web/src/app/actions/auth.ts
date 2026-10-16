@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { parseServices, type Services } from "@leakbook/core";
 import { ACTIVE_COMPANY_COOKIE, getOffice, getUser } from "@/lib/auth";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
@@ -66,12 +67,27 @@ export async function sendSignInLink(_: FormState, form: FormData): Promise<Form
   return { message: `If ${email} has an account, a sign-in link is on its way.` };
 }
 
+/**
+ * Pool Care, Leak Detection, or Both, chosen when signing up (owner, 2026-10-16: one app, two
+ * packages). Saved on the new company's settings; the owner can change it in Settings.
+ */
+async function saveServices(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  companyId: string,
+  services: Services,
+) {
+  const { data } = await supabase.from("company").select("settings").eq("id", companyId).single();
+  const settings = { ...((data?.settings ?? {}) as Record<string, unknown>), services };
+  await supabase.from("company").update({ settings }).eq("id", companyId);
+}
+
 /** Start a trial: create the account and the company in one step. */
 export async function startTrial(_: FormState, form: FormData): Promise<FormState> {
   const values = {
     name: text(form, "name"),
     company: text(form, "company"),
     email: text(form, "email"),
+    services: parseServices(text(form, "services")) ?? "pool",
   };
   const password = String(form.get("password") ?? "");
   const fields: Record<string, string> = {};
@@ -86,7 +102,7 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
     email: values.email,
     password,
     options: {
-      data: { full_name: values.name, company_name: values.company },
+      data: { full_name: values.name, company_name: values.company, services: values.services },
       emailRedirectTo: `${await origin()}/auth/confirm?next=/setup`,
     },
   });
@@ -102,11 +118,12 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
   if (!data.session) {
     return { message: `Check ${values.email} for a link to confirm your account.` };
   }
-  const { error: companyError } = await supabase.rpc("create_company", {
+  const { data: companyId, error: companyError } = await supabase.rpc("create_company", {
     company_name: values.company,
     company_timezone: text(form, "timezone") || null,
   });
   if (companyError) return { error: companyError.message, values };
+  await saveServices(supabase, String(companyId), values.services);
   redirect("/home");
 }
 
@@ -117,11 +134,12 @@ export async function createCompany(_: FormState, form: FormData): Promise<FormS
   const company = text(form, "company");
   if (!company) return { fields: { company: "Enter your company name." } };
   const supabase = await createClient();
-  const { error } = await supabase.rpc("create_company", {
+  const { data: companyId, error } = await supabase.rpc("create_company", {
     company_name: company,
     company_timezone: text(form, "timezone") || null,
   });
   if (error) return { error: error.message, values: { company } };
+  await saveServices(supabase, String(companyId), parseServices(text(form, "services")) ?? "pool");
   redirect("/home");
 }
 

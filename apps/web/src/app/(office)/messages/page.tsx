@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { userAgent } from "next/server";
 import { ConversationList, LineNotice, PeopleSwitch } from "@/components/inbox";
 import { AutoRefresh } from "@/components/messages";
 import { ButtonLink, PageHeader } from "@/components/ui";
@@ -9,7 +12,7 @@ import { formatPhone } from "@leakbook/core";
 export const metadata: Metadata = { title: "Messages · Tidemark" };
 
 /** The shop's shared inbox: texts and calls with customers on the company number. */
-export default async function MessagesPage() {
+export default async function MessagesPage({ searchParams }: PageProps<"/messages">) {
   const office = await getOffice();
   const [line, conversations, unread] = await Promise.all([
     getLine(office),
@@ -17,6 +20,14 @@ export default async function MessagesPage() {
     unreadCount(office),
   ]);
   const active = line?.status === "active";
+  // On a computer or tablet the latest conversation opens beside the list, as on a Mac (owner,
+  // 2026-10-16); phones show the list.
+  // ?list=1 (Back from a conversation) always shows the list, e.g. in a narrow window.
+  const { list } = await searchParams;
+  const { device } = userAgent({ headers: await headers() });
+  if (!list && device.type !== "mobile" && conversations[0]) {
+    redirect(`/messages/${conversations[0].id}`);
+  }
   return (
     <>
       <PageHeader

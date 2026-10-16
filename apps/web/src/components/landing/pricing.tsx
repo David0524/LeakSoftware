@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { extraUsers, formatCents, monthlyPriceCents, PLANS, type PlanId } from "@leakbook/core";
 import { ButtonLink } from "../ui";
-import { PackageSwitch, usePackage } from "./hero";
+import { PackageSwitch, signUpHref, usePackage } from "./hero";
 
 const FEATURES: Record<PlanId, string[]> = {
   leak: [
@@ -123,7 +123,7 @@ export function Pricing() {
             </li>
           ))}
         </ul>
-        <ButtonLink href="/sign-up" kind="accent" className="mt-7 w-full">
+        <ButtonLink href={signUpHref(pkg)} kind="accent" className="mt-7 w-full">
           Start Free Trial
         </ButtonLink>
       </section>

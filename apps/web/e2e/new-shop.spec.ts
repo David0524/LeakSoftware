@@ -33,6 +33,8 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await page.getByLabel("Company name").fill(OWNER.company);
   await page.getByLabel("Email").fill(OWNER.email);
   await page.getByLabel("Password").fill(OWNER.password);
+  // One app, two packages: this shop does leak detection.
+  await page.getByRole("radio", { name: "Leak Detection" }).click();
   await page.getByRole("button", { name: "Start Free Trial" }).click();
   // A new owner on a computer lands on the Dashboard.
   await page.waitForURL((url) => url.pathname === "/dashboard");

@@ -66,6 +66,11 @@ export function companyServices(settings: unknown): Services {
 }
 
 /** Whether the shop does leak detection (leak jobs, tests, findings, reports, warranties). */
+/** A services value from a form or a link, or null when it isn't one. */
+export function parseServices(v: unknown): Services | null {
+  return v === "pool" || v === "leak" || v === "both" ? v : null;
+}
+
 export const offersLeak = (settings: unknown) => companyServices(settings) !== "pool";
 /** Whether the shop does pool care (cleaning plans, the service checklist, monthly billing). */
 export const offersPool = (settings: unknown) => companyServices(settings) !== "leak";

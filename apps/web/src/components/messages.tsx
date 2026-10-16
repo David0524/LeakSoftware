@@ -157,7 +157,8 @@ export function CallButton({ conversationId, name }: { conversationId: string; n
 
 /**
  * Mark as Unread from inside a conversation (the way without swiping): unread for the whole
- * team, then back to the list, as in Mail, so opening it here doesn't mark it read again.
+ * team. Phones go back to the list, as in Mail; wider screens, where the list is beside it,
+ * stay (MarkRead won't mark it read again until a new message comes in).
  */
 export function MarkUnreadButton({ conversationId }: { conversationId: string }) {
   const router = useRouter();
@@ -173,7 +174,8 @@ export function MarkUnreadButton({ conversationId }: { conversationId: string })
           start(async () => {
             const r = await setUnread(conversationId, true);
             if (r.error) setError("Couldn’t mark it unread. Try again.");
-            else router.push("/messages");
+            else if (window.matchMedia("(min-width: 768px)").matches) router.refresh();
+            else router.push("/messages?list=1");
           })
         }
       >
@@ -184,11 +186,27 @@ export function MarkUnreadButton({ conversationId }: { conversationId: string })
   );
 }
 
-/** Opening a conversation marks it read for the whole team. */
-export function MarkRead({ conversationId, unread }: { conversationId: string; unread: boolean }) {
+/**
+ * Opening a conversation marks it read for the whole team, and so does a new message while it
+ * is open. Marking it unread while looking at it sticks: the same latest message is never
+ * marked read twice.
+ */
+export function MarkRead({
+  conversationId,
+  unread,
+  lastAt,
+}: {
+  conversationId: string;
+  unread: boolean;
+  lastAt: string;
+}) {
+  const seen = useRef<string | null>(null);
   useEffect(() => {
+    const key = `${conversationId}@${lastAt}`;
+    if (seen.current === key) return;
+    seen.current = key;
     if (unread) void markRead(conversationId);
-  }, [conversationId, unread]);
+  }, [conversationId, unread, lastAt]);
   return null;
 }
 

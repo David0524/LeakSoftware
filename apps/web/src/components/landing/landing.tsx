@@ -16,7 +16,7 @@ import {
   ReportDemo,
   ServiceChecklistDemo,
 } from "./demos";
-import { Hero, PackageProvider, usePackage } from "./hero";
+import { Hero, PackageProvider, signUpHref, usePackage } from "./hero";
 import { Pricing } from "./pricing";
 
 // The home page's body. Everything follows the package switch (Pool Maintenance first, owner
@@ -180,7 +180,11 @@ function Body() {
             Try Tidemark free for 30 days with your whole crew. No card needed.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <ButtonLink href="/sign-up" kind="accent" className="px-7">
+            <ButtonLink
+              href={signUpHref(leak ? "leak" : "maintenance")}
+              kind="accent"
+              className="px-7"
+            >
               Start Free Trial
             </ButtonLink>
             <ButtonLink href="/sign-in" kind="onDark" className="px-7">

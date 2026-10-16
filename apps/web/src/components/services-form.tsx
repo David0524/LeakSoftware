@@ -13,13 +13,14 @@ const NOTE: Record<Services, string> = {
 };
 
 /**
- * Settings › Company: what the shop does. Each line of work is its own experience on the
- * website and the phones (owner, 2026-10-16); "Both" is mainly for demos.
+ * What the shop does: Pool Care, Leak Detection, or Both, with what each shows. One app, two
+ * packages, and a combination for the rarer shop that does both (owner, 2026-10-16). Used
+ * when signing up and in Settings › Company. Posts as `services`.
  */
-export function ServicesForm({ services }: { services: Services }) {
-  const [value, setValue] = useState<Services>(services);
+export function ServicesChoice({ initial }: { initial: Services }) {
+  const [value, setValue] = useState<Services>(initial);
   return (
-    <SettingsForm action={saveServices} full>
+    <div className="space-y-2">
       <Segmented
         label="Your shop does"
         name="services"
@@ -31,7 +32,18 @@ export function ServicesForm({ services }: { services: Services }) {
           { value: "both", label: "Both" },
         ]}
       />
-      <p className="px-4 text-[0.9375rem] text-text-muted sm:px-0">{NOTE[value]}</p>
+      <p className="text-[0.9375rem] text-text-muted">{NOTE[value]}</p>
+    </div>
+  );
+}
+
+/** Settings › Company: what the shop does. */
+export function ServicesForm({ services }: { services: Services }) {
+  return (
+    <SettingsForm action={saveServices} full>
+      <div className="px-4 sm:px-0">
+        <ServicesChoice initial={services} />
+      </div>
     </SettingsForm>
   );
 }

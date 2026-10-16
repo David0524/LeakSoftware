@@ -76,7 +76,7 @@ test("owner views the M4 sample job", async ({ page }) => {
   await expect(texts.getByText(/Return 3 line is leaking/)).toBeVisible();
   await expect(texts.getByText("How soon can you fix the return line?")).toBeVisible();
   await page.getByRole("link", { name: /^(See All Messages|Open Conversation)/ }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Sam Sample" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sam Sample" })).toBeVisible();
   await expect(page.getByText(/auto-fill runs all the time/)).toBeVisible();
   await page.goBack();
 
@@ -357,6 +357,8 @@ test("on a phone: a tab bar moves between sections and nothing scrolls sideways"
     viewport: { width: 390, height: 844 },
     isMobile: true,
     hasTouch: true,
+    // An iPhone's browser: Messages shows the list first on phones.
+    userAgent: devices["iPhone 13"].userAgent,
   });
   const page = await phone.newPage();
   await signIn(page, OWNER);

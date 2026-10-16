@@ -10,7 +10,9 @@ import {
   startTrial,
   type FormState,
 } from "@/app/actions/auth";
+import { parseServices, type Services } from "@leakbook/core";
 import { Banner } from "./doc-ui";
+import { ServicesChoice } from "./services-form";
 import { Button, FieldGroup, GroupedField } from "./ui";
 
 /** The browser's time zone, so a new company's schedule shows local times. */
@@ -122,7 +124,7 @@ export function SignInForm({ next }: { next: string }) {
   );
 }
 
-export function TrialForm() {
+export function TrialForm({ services = "pool" }: { services?: Services }) {
   const [state, action, pending] = useActionState(startTrial, {});
   if (state.message) return <Banner tone="success">{state.message}</Banner>;
   return (
@@ -159,6 +161,7 @@ export function TrialForm() {
           error={state.fields?.password}
         />
       </FieldGroup>
+      <ServicesChoice initial={parseServices(state.values?.services) ?? services} />
       <Messages state={state} />
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Setting Up…" : "Start Free Trial"}
@@ -173,7 +176,7 @@ export function TrialForm() {
   );
 }
 
-export function SetupForm({ suggested }: { suggested: string }) {
+export function SetupForm({ suggested, services }: { suggested: string; services: Services }) {
   const [state, action, pending] = useActionState(createCompany, {});
   return (
     <form action={action} className="space-y-4">
@@ -187,6 +190,7 @@ export function SetupForm({ suggested }: { suggested: string }) {
           error={state.fields?.company}
         />
       </FieldGroup>
+      <ServicesChoice initial={services} />
       <Messages state={state} />
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Creating…" : "Create Company"}

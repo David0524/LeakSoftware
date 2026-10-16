@@ -74,10 +74,10 @@ test("customers text and call the company number, and the team answers", async (
     expect(text.status()).toBe(200);
     expect(await text.text()).toContain("<Response>");
 
-    // The team sees it, unread, and answers from the company number.
+    // The team sees it and answers from the company number. On a computer, Messages opens the
+    // newest conversation beside the list (owner, 2026-10-16).
     await page.goto("/messages");
-    const row = page.getByRole("link", { name: /unread/ }).filter({ hasText: RUN });
-    await row.click();
+    await expect(page).toHaveURL(/\/messages\/[0-9a-f-]+$/);
     // The thread list beside it previews the latest message, so look inside the conversation.
     const thread = page.getByRole("region", { name: /^Conversation with / });
     await expect(thread.getByText(`Is the tech still coming today? ${RUN}`)).toBeVisible();
@@ -124,21 +124,24 @@ test("customers text and call the company number, and the team answers", async (
     await expect(thread.getByText(/replied STOP/)).toBeVisible();
     await expect(thread.getByRole("textbox", { name: "Message" })).toHaveCount(0);
 
-    // Anyone can mark it unread again, for the whole team (owner, 2026-10-16): back in the
-    // list it shows unread, and the database says so.
-    await page.getByRole("button", { name: "Mark as Unread" }).click();
-    await expect(page).toHaveURL(/\/messages$/);
-    await expect(
-      page
-        .getByRole("link", { name: /unread/ })
-        .filter({ hasText: `(480) 555-01${customer.slice(-2)}` }),
-    ).toBeVisible();
-    const { data: conv } = await admin
-      .from("conversation")
-      .select("unread")
-      .eq("phone", customer)
-      .single();
-    expect(conv?.unread).toBe(true);
+    // Anyone can mark it unread again, for the whole team (owner, 2026-10-16): the list beside
+    // it shows it unread, it stays unread while open, and the database says so.
+    const unreadNow = async () =>
+      (await admin.from("conversation").select("unread").eq("phone", customer).single()).data
+        ?.unread;
+    const listed = page
+      .getByRole("list", { name: "Conversations" })
+      .getByRole("listitem")
+      .filter({ hasText: `(480) 555-01${customer.slice(-2)}` });
+    await page.getByRole("button", { name: "Mark as Unread", exact: true }).click();
+    await expect(listed.getByRole("link", { name: /unread/ })).toBeVisible();
+    await expect.poll(unreadNow).toBe(true);
+
+    // A right click on the row in the list marks it read again.
+    await listed.getByRole("link").click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Mark as Read" }).click();
+    await expect(listed.getByRole("link", { name: /unread/ })).toHaveCount(0);
+    await expect.poll(unreadNow).toBe(false);
   } finally {
     // Give the number back, so the next run takes one again.
     await admin.from("phone_line").update({ status: "released" }).eq("id", line!.id);

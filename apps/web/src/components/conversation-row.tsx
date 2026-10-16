@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition, type PointerEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  type MouseEvent,
+  type PointerEvent,
+} from "react";
 import { setUnread } from "@/app/actions/texting";
 import { cx } from "./ui";
 
@@ -11,10 +18,13 @@ const ACTION_WIDTH = 88;
 const FULL_SWIPE = 0.55;
 
 /**
- * One conversation in the inbox. As in iOS Messages, a swipe right shows a blue Unread (or
- * Read) button, and a full swipe acts on release. Unread is shared by the whole team (owner,
- * 2026-10-16). Mouse, keyboard, and VoiceOver users use Mark as Unread inside the
- * conversation instead, so the hidden button stays out of the tab order until it shows.
+ * One conversation in the inbox. Unread is shared by the whole team (owner, 2026-10-16), and
+ * every way of using the list can change it:
+ * - touch: as in iOS Messages, a swipe right shows a blue Unread (or Read) button, and a full
+ *   swipe acts on release;
+ * - mouse: a Mark as Unread (or Read) button on hover, and a right-click menu, as in Mail on
+ *   the Mac;
+ * - keyboard and VoiceOver: that button shows when it has focus.
  */
 export function InboxRow({
   id,
@@ -46,9 +56,33 @@ export function InboxRow({
   // A swipe ends with a click on the row; that click must not open the conversation.
   const swallow = useRef(false);
   const offset = dx ?? (open ? ACTION_WIDTH : 0);
+  // The right-click menu, where it was opened.
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menu) return;
+    menuRef.current?.querySelector<HTMLElement>("[role=menuitem]")?.focus();
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent && e.key !== "Escape") return;
+      if (e.type === "pointerdown" && menuRef.current?.contains(e.target as Node)) return;
+      setMenu(null);
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", close);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [menu]);
+  const markLabel = isUnread ? "Mark as Read" : "Mark as Unread";
 
   function toggle() {
     setOpen(false);
+    setMenu(null);
     const next = !isUnread;
     setShown({ value: next, was: unread });
     start(async () => {
@@ -87,8 +121,17 @@ export function InboxRow({
     else setOpen(live.current > ACTION_WIDTH / 2);
   }
 
+  function contextMenu(e: MouseEvent) {
+    e.preventDefault();
+    // Kept inside the window.
+    setMenu({
+      x: Math.min(e.clientX, window.innerWidth - 220),
+      y: Math.min(e.clientY, window.innerHeight - 110),
+    });
+  }
+
   return (
-    <li className="relative overflow-hidden">
+    <li className="group relative overflow-hidden">
       {offset > 0 ? (
         <button
           type="button"
@@ -111,6 +154,7 @@ export function InboxRow({
           drag.current = null;
           setDx(null);
         }}
+        onContextMenu={contextMenu}
         onClickCapture={(e) => {
           if (swallow.current || open) {
             swallow.current = false;
@@ -148,7 +192,46 @@ export function InboxRow({
             </span>
           </span>
         </Link>
+        {/* Mouse and keyboard: shown on hover or focus, over the date. Touch swipes instead. */}
+        <button
+          type="button"
+          onClick={toggle}
+          disabled={pending}
+          aria-label={`${markLabel}: ${name}`}
+          className="absolute top-2 right-3 min-h-9 rounded-full bg-surface px-3 text-[0.8125rem] font-semibold text-link opacity-0 shadow-[0_1px_4px_rgb(0_0_0/0.15)] group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:hidden"
+        >
+          {isUnread ? "Read" : "Unread"}
+        </button>
       </div>
+      {menu ? (
+        <div
+          ref={menuRef}
+          role="menu"
+          aria-label={name}
+          style={{ left: menu.x, top: menu.y }}
+          className="glass-sheet fixed z-50 w-52 overflow-hidden rounded-xl py-1 shadow-lg"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={toggle}
+            className="block min-h-10 w-full px-4 text-left hover:bg-link hover:text-on-primary focus-visible:bg-link focus-visible:text-on-primary focus-visible:outline-none"
+          >
+            {markLabel}
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setMenu(null);
+              router.push(`/messages/${id}`);
+            }}
+            className="block min-h-10 w-full px-4 text-left hover:bg-link hover:text-on-primary focus-visible:bg-link focus-visible:text-on-primary focus-visible:outline-none"
+          >
+            Open Conversation
+          </button>
+        </div>
+      ) : null}
     </li>
   );
 }

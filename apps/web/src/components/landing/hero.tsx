@@ -9,6 +9,9 @@ import { SIGNATURE_PATH } from "./signature-path";
 
 // The home page's package choice (Leak Detection or Pool Maintenance), shared by the hero and
 // the pricing section so both follow the visitor's pick.
+/** Start Free Trial with the package shown: the sign-up form's Pool Care or Leak Detection. */
+export const signUpHref = (pkg: PlanId) => `/sign-up?package=${pkg === "leak" ? "leak" : "pool"}`;
+
 const PackageContext = createContext<{ pkg: PlanId; setPkg: (p: PlanId) => void }>({
   pkg: "maintenance",
   setPkg: () => {},
@@ -77,7 +80,7 @@ export function Hero() {
         </h1>
         <p className="mt-6 max-w-2xl text-[1.1875rem] text-text-muted text-balance">{copy.sub}</p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <ButtonLink href="/sign-up" kind="accent" className="px-7">
+          <ButtonLink href={signUpHref(pkg)} kind="accent" className="px-7">
             Start Free Trial
           </ButtonLink>
           <ButtonLink href="#pricing" kind="secondary" className="px-7">
