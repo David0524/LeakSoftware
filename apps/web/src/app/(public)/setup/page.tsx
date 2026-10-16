@@ -30,6 +30,6 @@ async function SetupBody() {
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id)
     .is("deleted_at", null);
-  if (count) redirect("/today");
+  if (count) redirect("/home");
   return <SetupForm suggested={String(user.user_metadata?.company_name ?? "")} />;
 }

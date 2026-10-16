@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { devices, expect, test } from "@playwright/test";
 import {
   OWNER,
   RUN,
@@ -26,13 +26,31 @@ test("signed-out visitors see the home page and are sent to sign in", async ({ p
   await expect(page.getByRole("alert").filter({ hasText: "don’t match" })).toBeVisible();
 });
 
-test("signing in opens Today", async ({ page }) => {
+test("owners land on the Dashboard on a computer, and on Today on a phone", async ({
+  page,
+  browser,
+}) => {
   await page.goto("/sign-in");
   await page.getByLabel("Email").fill(OWNER.email);
   await page.getByLabel("Password").fill(OWNER.password);
   await page.getByRole("button", { name: "Sign In", exact: true }).click();
-  await page.waitForURL((url) => url.pathname === "/today");
-  await expect(page.getByRole("heading", { name: "Today", exact: true })).toBeVisible();
+  await page.waitForURL((url) => url.pathname === "/dashboard");
+  await expect(page.getByRole("heading", { level: 1, name: "Dashboard" })).toBeVisible();
+  // The Dashboard leads the header; the logo comes back to it.
+  const nav = page.getByRole("navigation", { name: "Main" });
+  await expect(nav.getByRole("link").first()).toHaveText("Dashboard");
+  await page.goto("/jobs");
+  await page.getByRole("link", { name: "Tidemark, Home" }).click();
+  await page.waitForURL((url) => url.pathname === "/dashboard");
+
+  const phone = await browser.newContext({ ...devices["iPhone 13"] });
+  const mobile = await phone.newPage();
+  await mobile.goto("/sign-in");
+  await mobile.getByLabel("Email").fill(OWNER.email);
+  await mobile.getByLabel("Password").fill(OWNER.password);
+  await mobile.getByRole("button", { name: "Sign In", exact: true }).click();
+  await mobile.waitForURL((url) => url.pathname === "/today");
+  await phone.close();
 });
 
 test("owner signs in and sees jobs", async ({ page }) => {

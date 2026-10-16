@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-16 (owner: "A business owner wants the Dashboard to be the main page on desktop")
+- **Owners at a computer or tablet land on the Dashboard** after signing in, signing up, joining, or switching company, and from the logo (`/home` decides: owner and not a phone → Dashboard, else Today). The Dashboard also leads the header's sections on wider screens.
+- **Phones and techs are unchanged:** they land on Today, the tab bar still starts with Today, and the Home Screen app opens on Today. Today stays in the header for owners on a computer.
+
 ## 2026-10-16 (owner: calculator "pop up card from the bottom", everyday measures, "in line with others online", gallon commas, placeholder text)
 - **What to Add is a bar docked at the bottom** on phones and tablets (above the tab bar), with a live one-line summary ("½ jug muriatic acid · 1 more"). Tapping it opens a sheet with the steps: the website's sheet, and an iOS page sheet in the phone app (swipe down or Done). Wide screens keep it beside the readings.
 - **Amounts read the way a tech measures them** (`measure` on each step, `jugMeasure`/`dryMeasure` in `packages/core/src/chemistry.ts`): liquids as a splash (under 6 fl oz), cups up to 3, then 1-gallon jugs by the quarter (by the half past 4); dry products as a scoop (under 6 oz), then pounds (nearest ½ lb to 10, pound to 40, 5 lb past that); salt in 40 lb bags. The exact amount shows under it ("About 65 fl oz").

@@ -29,8 +29,8 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
       <header className="glass-brand sticky top-0 z-30 text-on-header max-sm:hidden">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2">
           <Link
-            href="/today"
-            aria-label="Tidemark, Today"
+            href="/home"
+            aria-label="Tidemark, Home"
             className="inline-flex min-h-11 items-center"
           >
             <Logo height={30} onDark />
@@ -98,9 +98,12 @@ async function OfficeNav() {
   const office = await getOffice();
   const [company, unread] = await Promise.all([getCompany(office), unreadCount(office)]);
   const links = officeLinks(office.isOwner, company.settings, unread);
+  // On a computer the Dashboard leads for owners (owner, 2026-10-16); phones keep Today first.
+  const dashboard = links.find((l) => l.href === "/dashboard");
+  const desktop = dashboard ? [dashboard, ...links.filter((l) => l !== dashboard)] : links;
   return (
     <>
-      <NavLinks links={links} className="hidden sm:flex" />
+      <NavLinks links={desktop} className="hidden sm:flex" />
       <div className="ml-auto flex items-center gap-3 text-[0.9375rem]">
         {office.companies.length > 1 ? (
           <form action={switchCompany} className="flex items-center gap-2">
