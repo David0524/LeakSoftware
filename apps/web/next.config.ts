@@ -27,6 +27,11 @@ const nextConfig: NextConfig = {
   },
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // Keep screens visited in the last minute, so going back to a tab is instant (owner,
+    // 2026-10-16: the wait between screens). Saving anything refreshes them at once.
+    staleTimes: { dynamic: 60 },
+  },
   turbopack: {
     rules: {
       "*.css": {
