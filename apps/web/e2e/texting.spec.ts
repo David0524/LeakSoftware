@@ -78,7 +78,7 @@ test("customers text and call the company number, and the team answers", async (
     const row = page.getByRole("link", { name: /unread/ }).filter({ hasText: RUN });
     await row.click();
     await expect(page.getByText(`Is the tech still coming today? ${RUN}`)).toBeVisible();
-    await page.getByLabel("Message").fill(`Yes, about 20 minutes out. ${RUN}`);
+    await page.getByRole("textbox", { name: "Message" }).fill(`Yes, about 20 minutes out. ${RUN}`);
     await page.getByRole("button", { name: "Send" }).click();
     await expect(page.getByText(`Yes, about 20 minutes out. ${RUN}`)).toBeVisible();
     await expect(page.getByText(/· Sent ·/)).toBeVisible();
@@ -119,7 +119,7 @@ test("customers text and call the company number, and the team answers", async (
     });
     await page.reload();
     await expect(page.getByText(/replied STOP/)).toBeVisible();
-    await expect(page.getByLabel("Message")).toHaveCount(0);
+    await expect(page.getByRole("textbox", { name: "Message" })).toHaveCount(0);
   } finally {
     // Give the number back, so the next run takes one again.
     await admin.from("phone_line").update({ status: "released" }).eq("id", line!.id);
