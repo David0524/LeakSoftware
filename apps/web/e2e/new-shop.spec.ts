@@ -38,8 +38,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await page.getByRole("button", { name: "Start Free Trial" }).click();
 
   // Onboarding for leak detection (owner, 2026-10-16): a goal, what's in the way, the shop's
-  // choices, a sample inspection report in the shop's color, then the trial. This server has
-  // no Stripe key, so it finishes without a card.
+  // choices, a sample inspection report in the shop's color, then the payment page.
   await page.waitForURL((url) => url.pathname === "/welcome");
   await expect(page.getByRole("heading", { name: "Reports that sell the repair." })).toBeVisible();
   await page.getByRole("button", { name: "Get Started" }).click();
@@ -66,8 +65,20 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await expect(page.getByTestId("onboarding-sample")).toContainText("We found a leak: skimmer.");
   await page.getByRole("button", { name: "Keep Going" }).click();
   await expect(page.getByTestId("onboarding-price")).toContainText("$99");
-  await page.getByRole("button", { name: "Finish Setup" }).click();
+  // In with the demo code (CI has no Stripe keys), then back on an ordinary trial as if the
+  // card were in, since this test goes on to subscribe and to be locked when canceled.
+  await page.getByLabel("Demo code").fill("VIP26");
+  await page.getByRole("button", { name: "Apply" }).click();
   await page.waitForURL((url) => url.pathname === "/welcome/done");
+  const { data: shop } = await admin!
+    .from("company")
+    .select("id")
+    .eq("name", OWNER.company)
+    .single();
+  await admin!
+    .from("subscription")
+    .update({ plan: "standard", status: "trialing", access_code: null })
+    .eq("company_id", shop!.id);
   await expect(page.getByTestId("next-steps")).toContainText("Set up customer payments");
   await page.getByRole("link", { name: "Start Using Tidemark" }).click();
   // A new owner on a computer lands on the Dashboard; onboarding doesn't come back.

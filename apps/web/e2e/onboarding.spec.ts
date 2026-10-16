@@ -43,7 +43,14 @@ test("a new pool company sets up its shop and tries a visit", async ({ page }) =
   await page.getByRole("button", { name: "Keep Going" }).click();
   await expect(page.getByTestId("onboarding-price")).toContainText("$79");
   await expect(page.getByText("Unlimited pools", { exact: false })).toBeVisible();
-  await page.getByRole("button", { name: "Finish Setup" }).click();
+  // The payment page (owner, 2026-10-16). CI has no Stripe keys, so cards can't be taken and
+  // the demo code is the way in; a wrong code is refused.
+  await expect(page.getByRole("button", { name: "Start 14-Day Free Trial" })).toBeDisabled();
+  await page.getByLabel("Demo code").fill("VIP25");
+  await page.getByRole("button", { name: "Apply" }).click();
+  await expect(page.getByText("That code isn’t valid.")).toBeVisible();
+  await page.getByLabel("Demo code").fill("vip26");
+  await page.getByRole("button", { name: "Apply" }).click();
   await page.waitForURL((url) => url.pathname === "/welcome/done");
   await expect(page.getByTestId("next-steps")).toContainText("Add your customers");
 });

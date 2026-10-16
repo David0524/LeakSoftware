@@ -6,12 +6,8 @@ import { requireOwner } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 import { siteOrigin } from "@/lib/origin";
 import { adminClient } from "@/server/admin";
-import {
-  BillingNotConfigured,
-  billingConfigured,
-  finishOnboarding,
-  subscribeUrl,
-} from "@/server/billing";
+import { createClient } from "@/lib/supabase/server";
+import { BillingNotConfigured, finishOnboarding, subscribeUrl } from "@/server/billing";
 import type { FormState } from "./auth";
 
 // New-shop onboarding (owner, 2026-10-16). The shop is read-only until its card is in, so
@@ -56,10 +52,25 @@ export async function startCheckout(): Promise<FormState> {
   redirect(url);
 }
 
-/** Servers without Stripe billing (development, tests): finish without a card. */
-export async function finishWithoutCard(): Promise<FormState> {
+/**
+ * Owners: a demo code instead of a card (owner, 2026-10-16: VIP26). A valid code makes the
+ * shop a demo shop (no card, no charge); the onboarding choices apply and setup is done.
+ */
+export async function redeemCode(_: FormState, form: FormData): Promise<FormState> {
   const office = await requireOwner();
-  if (billingConfigured()) return { error: "Add a card to start your free trial." };
+  const code = String(form.get("code") ?? "").trim();
+  if (!code) return { fields: { code: "Enter your code." } };
+  const { error } = await (
+    await createClient()
+  ).rpc("redeem_access_code", {
+    target_company: office.company.id,
+    code,
+  });
+  if (error)
+    return {
+      fields: { code: error.code === "22023" ? "That code isn’t valid." : error.message },
+      values: { code },
+    };
   const admin = adminClient();
   if (admin) await finishOnboarding(admin, office.company.id);
   redirect("/welcome/done");

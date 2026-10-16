@@ -1,6 +1,7 @@
 import "server-only";
 import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase/config";
 import { emailConfigured } from "./email";
+import { paymentsConfigured } from "./stripe";
 
 export interface Health {
   ok: boolean;
@@ -45,6 +46,12 @@ export async function checkHealth(): Promise<Health> {
       name: "Email",
       ok: emailConfigured(),
       detail: emailConfigured() ? "Set up" : "Not set up (reports go out by text)",
+    },
+    {
+      // Card payments: customers paying shops, and shops paying for Tidemark.
+      name: "Card payments",
+      ok: paymentsConfigured(),
+      detail: paymentsConfigured() ? "Set up" : "Not set up (Stripe keys missing)",
     },
   ];
   return {

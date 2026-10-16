@@ -33,8 +33,8 @@ entries in `docs/DECISIONS.md` (2026-10-15 and 2026-10-16 cover everything below
   trial-ending reminder emails and the customer portal (no price ids needed any more).
 - **Package defaults, walkthrough (2026-10-16):** migration `20261012003700_package_defaults.sql`
   changes `create_company` (a third argument, `company_services`); deploy it right after CI
-  passes, since sign-up calls the new form. The pool price book prices are drafts for the owner
-  (DECISIONS). The app's welcome cards and tips have not been seen on a device: check them in
+  passes, since sign-up calls the new form. The pool price book is approved as drafted. Demo code
+  VIP26 gets a new shop past the payment page without a card (`app.access_code`). The app's welcome cards and tips have not been seen on a device: check them in
   the first TestFlight build.
 - **Milestones:** M0 to M11 are built (see the 2026-10-14 handover in git history for
   M11). Since then the work has been owner requests, listed below.

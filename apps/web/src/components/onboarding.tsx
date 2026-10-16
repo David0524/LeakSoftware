@@ -19,7 +19,7 @@ import {
   type OnboardingPackage,
   type Services,
 } from "@leakbook/core";
-import { finishWithoutCard, saveOnboarding, startCheckout } from "@/app/actions/onboarding";
+import { redeemCode, saveOnboarding, startCheckout } from "@/app/actions/onboarding";
 import { Logo } from "./logo";
 import { Segmented } from "./segmented";
 import { Button, cx } from "./ui";
@@ -889,11 +889,14 @@ function TrialOffer({
   title: (text: ReactNode, sub?: ReactNode) => ReactNode;
 }) {
   const content = ONBOARDING[pkg];
-  const [state, act, pending] = useActionState(billing ? startCheckout : finishWithoutCard, {});
+  const [state, act, pending] = useActionState(startCheckout, {});
   const tier = planTier(planForServices(services), people);
   const price = dollars(servicesPriceCents(services, people));
+  // Every new shop ends on this payment page (owner, 2026-10-16). Without Stripe on the
+  // server, cards can't be taken yet; a demo code (VIP26) still gets a shop in.
+  const [showCode, setShowCode] = useState(!billing);
   return (
-    <form action={act}>
+    <div>
       {title(content.promise)}
       <div className="card p-5">
         <p className="font-display text-5xl font-extrabold" data-testid="onboarding-price">
@@ -920,16 +923,72 @@ function TrialOffer({
           {state.error}
         </p>
       ) : null}
-      <div className="sticky bottom-0 -mx-4 mt-6 bg-bg/90 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mx-0 sm:mt-8 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
-        <Button type="submit" disabled={pending} className="w-full">
-          {billing ? "Start 14-Day Free Trial" : "Finish Setup"}
+      {showCode ? <DemoCode /> : null}
+      <form
+        action={act}
+        className="sticky bottom-0 -mx-4 mt-6 bg-bg/90 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mx-0 sm:mt-8 sm:bg-transparent sm:p-0 sm:backdrop-blur-none"
+      >
+        <Button type="submit" disabled={pending || !billing} className="w-full">
+          Start 14-Day Free Trial
         </Button>
         <p className="mt-3 text-center text-[0.9375rem] text-text-muted">
           {billing
             ? `Add a card on Stripe’s secure page. You won’t be charged until ${trialEnds ? longDate(trialEnds) : "14 days from today"}; cancel before then in Settings › Tidemark Billing and you never will be.`
-            : "This server doesn’t take cards, so setup finishes here."}
+            : "Card payments aren’t connected yet. Use a demo code above to continue."}
         </p>
+        {billing && !showCode ? (
+          <button
+            type="button"
+            onClick={() => setShowCode(true)}
+            className="mx-auto mt-1 block min-h-11 px-3 text-link"
+          >
+            Have a Demo Code?
+          </button>
+        ) : null}
+      </form>
+    </div>
+  );
+}
+
+/** A demo code instead of a card (VIP26): the shop gets in with no card and no charge. */
+function DemoCode() {
+  const [state, act, pending] = useActionState(redeemCode, {});
+  const error = state.fields?.code;
+  return (
+    <form action={act} className="mt-6">
+      <label
+        htmlFor="demo-code"
+        className="mb-1 block px-4 text-[0.8125rem] text-text-muted uppercase"
+      >
+        Demo code
+      </label>
+      <div className="grouped flex items-center gap-2 py-1 pr-1 pl-4">
+        <input
+          id="demo-code"
+          name="code"
+          defaultValue={state.values?.code ?? ""}
+          autoCapitalize="characters"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          placeholder="Enter code"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "demo-code-error" : undefined}
+          className="min-h-11 min-w-0 flex-1 bg-transparent text-[1.0625rem] uppercase outline-none placeholder:normal-case"
+        />
+        <Button type="submit" kind="secondary" disabled={pending}>
+          Apply
+        </Button>
       </div>
+      {error ? (
+        <p
+          id="demo-code-error"
+          role="alert"
+          className="mt-2 px-4 text-[0.9375rem] text-status-fail"
+        >
+          {error}
+        </p>
+      ) : null}
     </form>
   );
 }
