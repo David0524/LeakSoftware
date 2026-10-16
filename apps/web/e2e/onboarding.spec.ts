@@ -17,6 +17,7 @@ test("a new pool company sets up its shop and tries a visit", async ({ page }) =
   await page.getByLabel("Your name").fill("Robin Route");
   await page.getByLabel("Company name").fill(`Blue Lagoon Pools ${RUN}`);
   await page.getByLabel("Email").fill(`pool-owner-${RUN}@newshop.test`);
+  await page.getByLabel("Mobile phone").fill("480-555-0142");
   await page.getByLabel("Password").fill("tidemark-pool-shop");
   await page.getByRole("button", { name: "Start Free Trial" }).click();
 

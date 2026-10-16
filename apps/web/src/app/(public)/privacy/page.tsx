@@ -20,7 +20,11 @@ export default function PrivacyPage() {
       <section>
         <h2>What we keep</h2>
         <ul>
-          <li>Team accounts: name, email, and sign-in details.</li>
+          <li>Team accounts: name, email, phone, and sign-in details.</li>
+          <li>
+            If you start signing up for Tidemark and don’t finish, what you entered (name, company,
+            email, phone) so we can follow up. Ask us to delete it at any time.
+          </li>
           <li>
             Shop records the shop enters: customers’ names, phone numbers, emails, and pool
             addresses; visit plans, service checklists, and water readings; inspection checklists,

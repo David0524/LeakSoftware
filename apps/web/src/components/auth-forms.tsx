@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState, type FocusEvent } from "react";
 import {
   acceptInvite,
   createCompany,
@@ -10,6 +10,7 @@ import {
   startTrial,
   type FormState,
 } from "@/app/actions/auth";
+import { captureLead } from "@/app/actions/leads";
 import { parseServices, type Services } from "@leakbook/core";
 import { Banner } from "./doc-ui";
 import { ServicesChoice } from "./services-form";
@@ -57,6 +58,12 @@ const COMPANY = {
   autoCorrect: "off",
   spellCheck: false,
   placeholder: "Your shop’s name",
+} as const;
+const PHONE = {
+  type: "tel",
+  inputMode: "tel",
+  autoComplete: "tel",
+  placeholder: "(555) 555-0100",
 } as const;
 const PASSWORD = {
   type: "password",
@@ -126,9 +133,26 @@ export function SignInForm({ next }: { next: string }) {
 
 export function TrialForm({ services = "pool" }: { services?: Services }) {
   const [state, action, pending] = useActionState(startTrial, {});
+  // Leads (owner, 2026-10-16): once the email is valid, what's typed so far is kept, so
+  // Tidemark can help people who don't finish. Sent again only when something changed.
+  const sent = useRef("");
+  function keep(e: FocusEvent<HTMLFormElement>) {
+    const f = new FormData(e.currentTarget);
+    const fields = {
+      email: String(f.get("email") ?? "").trim(),
+      name: String(f.get("name") ?? ""),
+      company: String(f.get("company") ?? ""),
+      phone: String(f.get("phone") ?? ""),
+      services: String(f.get("services") ?? ""),
+    };
+    const key = JSON.stringify(fields);
+    if (!/^\S+@\S+\.\S+$/.test(fields.email) || key === sent.current) return;
+    sent.current = key;
+    void captureLead(fields);
+  }
   if (state.message) return <Banner tone="success">{state.message}</Banner>;
   return (
-    <form action={action} className="space-y-4" noValidate>
+    <form action={action} onBlur={keep} className="space-y-4" noValidate>
       <TimezoneInput />
       <FieldGroup labelWidth="8.25rem">
         <GroupedField
@@ -153,6 +177,13 @@ export function TrialForm({ services = "pool" }: { services?: Services }) {
           error={state.fields?.email}
         />
         <GroupedField
+          label="Mobile phone"
+          name="phone"
+          {...PHONE}
+          defaultValue={state.values?.phone}
+          error={state.fields?.phone}
+        />
+        <GroupedField
           label="Password"
           name="password"
           {...PASSWORD}
@@ -166,6 +197,9 @@ export function TrialForm({ services = "pool" }: { services?: Services }) {
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Setting Up…" : "Start Free Trial"}
       </Button>
+      <p className="text-center text-[0.8125rem] text-text-muted">
+        We may call or text to help you get set up.
+      </p>
       <p className="text-center text-text-muted">
         Already using Tidemark?{" "}
         <Link href="/sign-in" className="inline-flex min-h-11 items-center text-link underline">

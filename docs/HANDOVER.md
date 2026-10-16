@@ -43,6 +43,8 @@ entries in `docs/DECISIONS.md` (2026-10-15 and 2026-10-16 cover everything below
   factors in the Supabase dashboard (Authentication › Users › the user › MFA factors) and run
   `select set_two_step('<user id>', false);` in the SQL editor. Two-step's app screens have
   not been seen on a device.
+- **Leads (2026-10-16):** `/admin/leads`. To see it: set `TIDEMARK_STAFF_EMAILS` on Vercel to the
+  owner's email, turn on two-step sign-in (More › Two-Step Sign-In), sign in again.
 - **Milestones:** M0 to M11 are built (see the 2026-10-14 handover in git history for
   M11). Since then the work has been owner requests, listed below.
 

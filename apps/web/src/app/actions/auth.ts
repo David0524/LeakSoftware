@@ -3,12 +3,13 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
-import { parseServices, safePath } from "@leakbook/core";
+import { isUsNumber, parseServices, safePath, toE164 } from "@leakbook/core";
 import { ACTIVE_COMPANY_COOKIE, getOffice, getUser } from "@/lib/auth";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/server/admin";
 import { billingConfigured, syncSubscriptionPrice } from "@/server/billing";
+import { saveLead } from "@/server/leads";
 
 export interface FormState {
   error?: string;
@@ -88,6 +89,7 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
     name: text(form, "name"),
     company: text(form, "company"),
     email: text(form, "email"),
+    phone: text(form, "phone"),
     services: parseServices(text(form, "services")) ?? "pool",
   };
   const password = String(form.get("password") ?? "");
@@ -95,6 +97,9 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
   if (!values.name) fields.name = "Enter your name.";
   if (!values.company) fields.company = "Enter your company name.";
   if (!/^\S+@\S+\.\S+$/.test(values.email)) fields.email = "Enter a valid email.";
+  // A number to call (owner, 2026-10-16: leads), US or Canada like texting.
+  const phone = toE164(values.phone);
+  if (!isUsNumber(phone)) fields.phone = "Enter a US or Canadian phone number.";
   if (password.length < 10) fields.password = "Use at least 10 characters.";
   if (Object.keys(fields).length) return { fields, values };
 
@@ -103,7 +108,12 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
     email: values.email,
     password,
     options: {
-      data: { full_name: values.name, company_name: values.company, services: values.services },
+      data: {
+        full_name: values.name,
+        company_name: values.company,
+        services: values.services,
+        phone,
+      },
       emailRedirectTo: `${await origin()}/auth/confirm?next=/setup`,
     },
   });
@@ -116,6 +126,8 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
       values,
     };
   }
+  // On the leads list, now with the account, whether or not they go on to pay.
+  await saveLead({ ...values, phone: phone ?? undefined, userId: data.user?.id });
   if (!data.session) {
     return { message: `Check ${values.email} for a link to confirm your account.` };
   }
@@ -127,6 +139,7 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
     company_services: values.services,
   });
   if (companyError) return { error: companyError.message, values };
+  await supabase.from("profile").update({ phone }).eq("id", data.session.user.id);
   await requireCard(String(companyId));
   redirect("/welcome");
 }
