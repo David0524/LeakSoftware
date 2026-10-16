@@ -58,7 +58,7 @@ test("customers text and call the company number, and the team answers", async (
   try {
     // Texts go to US and Canadian numbers only, so nobody runs up international charges.
     await page.goto("/messages/new");
-    await page.getByLabel("To").fill("+44 7700 900123");
+    await page.getByLabel("To", { exact: true }).fill("+44 7700 900123");
     await page.getByRole("textbox", { name: "Message" }).fill("Hello");
     await page.getByRole("button", { name: "Send" }).click();
     await expect(page.getByText("Tidemark texts US and Canadian numbers only.")).toBeVisible();
