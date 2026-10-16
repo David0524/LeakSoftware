@@ -86,7 +86,8 @@ test("on a phone, what to add is a bar at the bottom that opens a sheet", async 
 
 test("a pool visit item added in settings lands on pool visits", async ({ page }) => {
   // It used to land on the leak checklist (owner, 2026-10-16: "be more thorough").
-  await signIn(page, OWNER, "/settings/components?list=pool");
+  await signIn(page, OWNER, "/settings/components");
+  await page.goto("/settings/components?list=pool");
   const name = `E2E salt cell check ${Date.now().toString(36)}`;
   await page.getByRole("button", { name: "Add Component", exact: true }).click();
   const add = page.getByRole("dialog", { name: "Add Component" });
