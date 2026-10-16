@@ -1,62 +1,112 @@
-# Handover (2026-10-14)
+# Handover (2026-10-16)
 
-For the next session or account picking up Tidemark. Read `CLAUDE.md` first, then this, then
-the newest entries in `docs/DECISIONS.md`.
+For the next chat picking up Tidemark. Read `CLAUDE.md` first, then this, then the newest
+entries in `docs/DECISIONS.md` (2026-10-15 and 2026-10-16 cover everything below).
 
 ## Where things are
 
-- **Branch:** `claude/cool-keller-efjc00`. Everything is pushed. CI was green on the last commit
-  (`eae9639`).
-- **Milestones:** M0 to M10 done, plus the extras below. **M11 (launch hardening) is built as
-  far as code goes**; its "Done when" (the design partner uses a TestFlight build on real jobs
-  for a week with no data loss) is waiting on the owner's Apple account. Steps are in
-  `docs/release/LAUNCH.md`.
-- **Dev database:** the owner applies migrations from another chat with `pnpm db:deploy`.
-  `20261012002600_report_sign_off.sql` is applied (the owner has signed reports with it).
-  Run `pnpm db:deploy` after pulling to apply `20261012002800` and `20261012002900`.
+- **Branch:** `claude/cool-keller-efjc00`. Push only there and don't open PRs. Pushing deploys
+  the website (https://leaksoftware-web.vercel.app).
+- **Last commit:** `6ae0932` (chemical calculator). Its CI run was still going when this was
+  written. **First thing to do:** check that run.
+  - If it's green, run `pnpm db:deploy`. That applies `20261012003500_company_texting.sql`,
+    which is **not on the dev project yet**. Then open Messages and Settings › Phone and
+    Texting on the live site.
+  - If it's red, fix it before anything else. The last three runs failed only in
+    `e2e/texting.spec.ts`. Each failure was fixed: a customer embed on a composite key, then
+    the test picking the wrong element named "Message". The test hasn't passed in CI yet.
+- **Milestones:** M0 to M11 are built (see the 2026-10-14 handover in git history for
+  M11). Since then the work has been owner requests, listed below.
 
-## What this stretch added (newest first)
+## What was built 2026-10-15 and 2026-10-16 (newest first)
 
 | Commit | What |
 |---|---|
-| `eae9639` | Signing in opens Today. Desktop schedule shows every tech; phones keep one-person chips. Speed: Sentry's browser code loads only when set up; Jobs pages 50 at a time with Show More and search; job page, Today, and schedule start their reads together; team and company read once per page. |
-| `605c399` | M11 design review (`docs/design/2026-10-14-m11-review.md`) with every Critical and High fixed: link `#1A63A0` and warning `#8A5A0E` tokens, website text in rem, app text scales with Dynamic Type, 44 pt links. Cancel Job moved to the end of Details; Sign Out on More on phones; skip link; "min short" reads "min late". |
-| `c74eaa0` | EAS build profiles, Delete My Account (app Settings and website More), draft privacy and terms, `/status` and `/api/health`, `docs/release/LAUNCH.md`. |
-| `eaf5664` | Sentry (web and app, off without a DSN, no customer data); error and not-found screens; offline edge cases (revoked sign-in, full storage, app update with unsent changes) with tests; a job index on the phone database (1,000 jobs and 10,000 photos tested). |
-| `b3b506d` | Signatures: the newest of each kind replaces the old one on a new version; signatures can be removed. |
-| `340b37d`, `e439656` | Design pass: pills, soft cards, round icon buttons for call/text/email. Logo goes to Today. |
-| `33767f4` | Review with Customer: the customer reads the report on the tech's phone and signs at the bottom; signing finishes and locks the version; Customer Not Here; the PDF never waits for a signature. |
-| `309a105` | New Job books maintenance (one visit or a plan); schedule month view, date picker, chips; shorter Today cards. |
+| `6ae0932` | Chemical calculator: pool size in gallons only (shape and measurements removed). The website uses outlined number boxes, which are now visible on phones. |
+| `1d0e3b5` (+ `c608693`, `e63c95d`) | **Company texting and calls**, like Housecall Pro. Details below. |
+| `626d418` | **Pool care and leak detection are separate experiences.** Settings › Company › Services is Pool Care, Leak Detection, or Both; it hides the other side's features (DECISIONS lists exactly what). **Chemical calculator** on the website (Chemicals) and the phone (Settings › Tools, and on pool service visits). |
+| `060f965`, `af7c18d` | Public home page: a real SaaS landing page with two packages. Pool Maintenance ($69) is the default and Leak Detection ($100) is the toggle; each includes 2 people, extra people cost $20/$25. Live demos are built from app parts. Prices are in `packages/core/src/plans.ts`. |
+| `c20e8ca` | Primary buttons are filled blue with white text; orange is an accent only. |
+
+A 74-second promo video was also made. It isn't in the repo; it lived in the old session's
+scratchpad, which the next chat can't open.
+
+## Company texting: how it works
+
+- **Tables:** `phone_line`, `conversation`, `text_message`, `call_log`, plus a private `texts`
+  storage bucket.
+  - Only the server writes texts and calls.
+  - Members read them and mark them read (unread is shared by the team).
+  - Owners change the line's settings.
+  - pgTAP test: `300_company_texting`.
+- **Server:**
+  - `apps/web/src/server/twilio.ts`: Twilio REST API (no SDK) and webhook signatures.
+  - `apps/web/src/server/texting.ts`: send, receive, calls and voicemail.
+  - Webhook routes live under `app/api/twilio/*`.
+  - Phone API: `POST /api/texts`, `POST /api/calls`, `GET /api/calls/[id]/recording`.
+- **Demo mode:** without `TWILIO_ACCOUNT_SID`, numbers are made up (555-01xx) and texts are
+  saved as sent. Nothing goes out.
+- **Calls:**
+  - In working hours, all chosen mobiles ring at once (the owners by default).
+  - After hours, or when nobody answers, the caller leaves a voicemail, which is recorded and
+    transcribed.
+  - Click to call rings your own mobile first, then connects you from the company number.
+  - Each person's mobile number is `profile.phone`.
+- **Website:**
+  - Messages inbox.
+  - Settings › Phone and Texting: take a number, or enter the shop's existing one (stays
+    pending until Tidemark finishes it by hand); photos switch; who rings; greeting.
+  - The customer page's Text button and On My Way on Today send from the company number when
+    one is active.
+- **Phone:**
+  - Settings › Tools › Messages (list and conversation).
+  - A text button on the job.
+  - "My mobile number" in Settings.
+- **To make it real:** the owner needs a Twilio account and A2P 10DLC registration, which give
+  the three `TWILIO_*` env vars on Vercel. `SUPABASE_SERVICE_ROLE_KEY` on Vercel is also
+  required for sending and webhooks.
+- **Not built:**
+  - push notifications for new texts;
+  - automatic reminder texts;
+  - report, quote, and invoice links through the company number;
+  - per-tech visibility of conversations.
 
 ## Open items
 
-**Owner decisions** (also in `docs/release/LAUNCH.md`):
-- Bundle ID: still `com.leakbook.app`; recommended `app.tidemark.field` before the first upload.
-- Apple Developer (company, needs D-U-N-S), Google Play, Sentry project, uptime monitor on `/api/health`.
-- Final privacy policy and terms text (pages are marked drafts); support mailbox
-  (`support@tidemark.app` placeholder, `SUPPORT_EMAIL`); domain purchase.
-
-**Questions for the design partner (the owner's cousin):** checklist items and test thresholds,
-real report examples and readers, typical repair prices, whether repairs are taxed and the
-deposit, where jobs come from and who pays, how monthly maintenance billing should look,
-water-chemistry readings and post-visit emails, pricing and pilot. List in BUILD_PLAN
-section 10 and DECISIONS.
-
-**M11 review:** every finding is fixed (see the review's Fixes section). The app's findings
-were fixed from reading code; they still need a check on an iPhone with large text and
-VoiceOver.
-
-**Built 2026-10-14 (second pass):** job visibility reaches the server functions and stored
-files (`20261012002800`); monthly maintenance invoices (`20261012002900`, Invoices page
-"Maintenance to Bill", daily run on the 1st). See DECISIONS.
+- **Owner decisions:**
+  - Texting number choice: a new number or the shop's existing one (both are supported).
+  - Billing per package and per person: `plans.ts` exists, but Stripe still charges one price.
+  - Launch items in `docs/release/LAUNCH.md`: bundle ID, Apple/Google accounts, Sentry, final
+    terms and privacy text, domain.
+- **Never checked on a real device:**
+  - the services split, the calculator, and Messages on the phone app;
+  - the M11 large-text and VoiceOver fixes.
+- **Calculator:** readings aren't saved on the visit. Saving them is a possible follow-up if
+  wanted.
+- **Old pending tasks:** M8.5 field-parity items depend on the design partner's answers
+  (BUILD_PLAN section 10).
 
 ## Working notes
 
-- Run `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:db` before
-  every commit; CI also builds the website and runs Playwright against Supabase in Docker.
-- Pushing cancels the CI run in progress.
-- `DB_TIMING=1` logs every database call with its start time, to spot calls that wait on each
-  other.
-- Never kill processes by pattern (`pkill -f`, `pgrep -f` in a command that contains the
-  pattern); it kills the shell. Find the PID and kill that.
-- The repository is public: no customer details, keys, or the partner's disclaimer text.
+- **Before every commit:** `pnpm format:check && pnpm lint && pnpm typecheck`, plus
+  `pnpm test` (logic) and `pnpm test:db` (SQL).
+- **CI:** also builds the website and runs Playwright against Supabase in Docker. Check the
+  last run before pushing again. A push cancels the run in progress.
+- **Database deploys:** run `pnpm db:deploy` only after CI is green on the migration's commit.
+- **Seeing a page locally:**
+  - Build with `pnpm exec next build`.
+  - Start it with `pnpm exec next start -p 3100` in `apps/web`; it talks to the dev project.
+  - Drive it with a throwaway Playwright spec using `signIn` from `e2e/helpers.ts`. Never print
+    those demo credentials.
+  - Run the spec with `E2E_BASE_URL=http://localhost:3100 NODE_USE_ENV_PROXY=1
+    PW_CHROMIUM_PATH=/opt/pw-browsers/chromium`.
+  - Delete the spec afterwards.
+  - Don't run e2e specs against dev that leave data behind.
+- **Processes:** never kill them by pattern (`pkill -f`). Find the PID, check its command
+  line, and kill that one.
+- **Public repo:** no customer details, keys, or the partner's disclaimer text. Never print
+  the Supabase access token.
+- **Next.js:** this version differs from older docs (`apps/web/AGENTS.md`). After adding a
+  route, run `npx next typegen` in `apps/web` so `PageProps`/`RouteContext` types know it.
+- **PostgREST embeds:** on the composite foreign keys, name the constraint, e.g.
+  `customer!conversation_customer_id_company_id_fkey(name)`. A bare `customer_id(...)` fails.
