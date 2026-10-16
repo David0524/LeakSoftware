@@ -146,7 +146,7 @@ async function Leads({
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <span className="text-right text-[0.9375rem]">
+                    <span className="text-[0.9375rem] sm:text-right">
                       {l.phone ? formatPhone(l.phone) : "No phone"}
                       <span className="block text-text-muted">{l.email}</span>
                     </span>
@@ -170,7 +170,7 @@ async function Leads({
                 </div>
                 <form action={saveLeadNotes} className="mt-3 flex flex-wrap items-end gap-2">
                   <input type="hidden" name="id" value={l.id} />
-                  <label className="min-w-0 flex-1">
+                  <label className="w-full min-w-0 sm:w-auto sm:flex-1">
                     <span className="sr-only">Notes for {l.name ?? l.email}</span>
                     <textarea
                       name="notes"
