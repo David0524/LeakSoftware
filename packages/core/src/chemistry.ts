@@ -206,9 +206,18 @@ function fraction(n: number): string {
   return whole ? `${whole}${part}` : part || "0";
 }
 
+/** Parts of a jug under one, nearest first: thirds too, so 47 and 48 fl oz both read ⅓. */
+const PART_JUG: [number, string][] = [
+  [0.25, "¼"],
+  [1 / 3, "⅓"],
+  [0.5, "½"],
+  [2 / 3, "⅔"],
+  [0.75, "¾"],
+];
+
 /**
- * Liquids the way they're poured: a splash (under 6 fl oz), cups up to 3, then 1-gallon jugs
- * by the quarter (by the half past 4 jugs).
+ * Liquids the way they're poured: a splash (under 6 fl oz), cups up to 3, then 1-gallon jugs:
+ * quarters and thirds under one jug, quarters to 4, halves past that.
  */
 export function jugMeasure(flOz: number): string {
   if (flOz < 6) return "A splash";
@@ -217,6 +226,12 @@ export function jugMeasure(flOz: number): string {
     return `${fraction(cups)} ${cups > 1 ? "cups" : "cup"}`;
   }
   const jugs = flOz / 128;
+  if (jugs < 0.875) {
+    const [, part] = PART_JUG.reduce((a, b) =>
+      Math.abs(b[0] - jugs) < Math.abs(a[0] - jugs) ? b : a,
+    );
+    return `${part} jug`;
+  }
   const step = jugs > 4 ? 0.5 : 0.25;
   const n = Math.max(0.25, Math.round(jugs / step) * step);
   return `${fraction(n)} ${n > 1 ? "jugs" : "jug"}`;

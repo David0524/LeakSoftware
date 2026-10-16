@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   useTransition,
+  type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
 } from "react";
@@ -123,11 +124,24 @@ export function InboxRow({
 
   function contextMenu(e: MouseEvent) {
     e.preventDefault();
+    // The keyboard's menu key (or Shift+F10) gives no pointer position: open it by the row.
+    let { clientX: x, clientY: y } = e;
+    if (x === 0 && y === 0) {
+      const r = e.currentTarget.getBoundingClientRect();
+      x = r.left + 24;
+      y = r.bottom - 8;
+    }
     // Kept inside the window.
-    setMenu({
-      x: Math.min(e.clientX, window.innerWidth - 220),
-      y: Math.min(e.clientY, window.innerHeight - 110),
-    });
+    setMenu({ x: Math.min(x, window.innerWidth - 220), y: Math.min(y, window.innerHeight - 110) });
+  }
+  /** Up and down move between the menu's items, as in any menu (menus.md). */
+  function menuKeys(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    const items = [...e.currentTarget.querySelectorAll<HTMLElement>("[role=menuitem]")];
+    const i = items.indexOf(document.activeElement as HTMLElement);
+    const next = (i + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+    items[next]?.focus();
   }
 
   return (
@@ -208,6 +222,7 @@ export function InboxRow({
           ref={menuRef}
           role="menu"
           aria-label={name}
+          onKeyDown={menuKeys}
           style={{ left: menu.x, top: menu.y }}
           className="glass-sheet fixed z-50 w-52 overflow-hidden rounded-xl py-1 shadow-lg"
         >

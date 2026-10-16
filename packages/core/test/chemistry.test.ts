@@ -47,6 +47,11 @@ describe("amounts in words", () => {
     expect(jugMeasure(8)).toBe("1 cup");
     expect(jugMeasure(20)).toBe("2½ cups");
     expect(jugMeasure(64)).toBe("½ jug");
+    // Thirds under a jug, so near-equal amounts read the same.
+    expect(jugMeasure(47)).toBe("⅓ jug");
+    expect(jugMeasure(48)).toBe("⅓ jug");
+    expect(jugMeasure(85)).toBe("⅔ jug");
+    expect(jugMeasure(120)).toBe("1 jug");
     expect(jugMeasure(100)).toBe("¾ jug");
     expect(jugMeasure(150)).toBe("1¼ jugs");
     expect(jugMeasure(128 * 5.3)).toBe("5½ jugs");

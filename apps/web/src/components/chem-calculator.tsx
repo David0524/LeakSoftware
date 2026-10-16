@@ -97,9 +97,12 @@ function Doses({ result }: { result: ChemistryResult }) {
             key={s.key}
             className={cx(
               "rounded-full px-3 py-1 text-[0.9375rem] font-semibold",
+              // On white with a colored outline: a tinted fill on the sheet's gray left the
+              // green at 3.96:1 (design review 2026-10-16); on white it is 5:1.
+              "bg-surface ring-1",
               s.status === "ok"
-                ? "bg-status-pass/12 text-status-pass"
-                : "bg-status-warning/12 text-status-warning",
+                ? "text-status-pass ring-status-pass/40"
+                : "text-status-warning ring-status-warning/40",
             )}
           >
             {s.label} {s.key === "ph" ? s.value.toFixed(1) : s.value}

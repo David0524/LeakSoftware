@@ -16,7 +16,7 @@ const NOTE: Record<OnMyWayVia, string> = {
 export function OnMyWayForm({ via }: { via: OnMyWayVia }) {
   const [value, setValue] = useState<OnMyWayVia>(via);
   return (
-    <SettingsForm action={saveOnMyWay} full>
+    <SettingsForm action={saveOnMyWay}>
       <Segmented
         label="Send from"
         name="on_my_way"
