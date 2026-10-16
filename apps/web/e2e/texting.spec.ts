@@ -77,11 +77,13 @@ test("customers text and call the company number, and the team answers", async (
     await page.goto("/messages");
     const row = page.getByRole("link", { name: /unread/ }).filter({ hasText: RUN });
     await row.click();
-    await expect(page.getByText(`Is the tech still coming today? ${RUN}`)).toBeVisible();
+    // The thread list beside it previews the latest message, so look inside the conversation.
+    const thread = page.getByRole("region", { name: /^Conversation with / });
+    await expect(thread.getByText(`Is the tech still coming today? ${RUN}`)).toBeVisible();
     await page.getByRole("textbox", { name: "Message" }).fill(`Yes, about 20 minutes out. ${RUN}`);
     await page.getByRole("button", { name: "Send" }).click();
-    await expect(page.getByText(`Yes, about 20 minutes out. ${RUN}`)).toBeVisible();
-    await expect(page.getByText(/· Sent ·/)).toBeVisible();
+    await expect(thread.getByText(`Yes, about 20 minutes out. ${RUN}`)).toBeVisible();
+    await expect(thread.getByText(/· Sent ·/)).toBeVisible();
 
     // They call; nobody's phone is set up to ring, so it goes to voicemail.
     const call = await twilio(request, "/api/twilio/voice", {
@@ -106,8 +108,8 @@ test("customers text and call the company number, and the team answers", async (
       TranscriptionText: "Call me back about the gate code.",
     });
     await page.reload();
-    await expect(page.getByText(/Voicemail · 14 sec/)).toBeVisible();
-    await expect(page.getByText("“Call me back about the gate code.”")).toBeVisible();
+    await expect(thread.getByText(/Voicemail · 14 sec/)).toBeVisible();
+    await expect(thread.getByText("“Call me back about the gate code.”")).toBeVisible();
 
     // STOP turns texts off for that customer.
     await twilio(request, "/api/twilio/sms", {
@@ -118,8 +120,8 @@ test("customers text and call the company number, and the team answers", async (
       NumMedia: "0",
     });
     await page.reload();
-    await expect(page.getByText(/replied STOP/)).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "Message" })).toHaveCount(0);
+    await expect(thread.getByText(/replied STOP/)).toBeVisible();
+    await expect(thread.getByRole("textbox", { name: "Message" })).toHaveCount(0);
   } finally {
     // Give the number back, so the next run takes one again.
     await admin.from("phone_line").update({ status: "released" }).eq("id", line!.id);
