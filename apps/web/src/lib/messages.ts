@@ -64,25 +64,26 @@ export const getLine = cache(async (office: Office): Promise<Line | null> => {
 
 export const listConversations = cache(async (office: Office): Promise<ConversationRow[]> => {
   const supabase = await createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("conversation")
     .select(
-      "id, phone, customer_id, last_at, last_preview, unread, opted_out, customer:customer_id(name)",
+      "id, phone, customer_id, last_at, last_preview, unread, opted_out, customer:customer!conversation_customer_id_company_id_fkey(name)",
     )
     .eq("company_id", office.company.id)
     .is("deleted_at", null)
     .order("last_at", { ascending: false })
     .limit(200);
+  if (error) throw new Error(error.message);
   return (data ?? []) as unknown as ConversationRow[];
 });
 
 export async function getThread(office: Office, conversationId: string) {
   const supabase = await createClient();
-  const [{ data: conv }, { data: texts }, { data: calls }] = await Promise.all([
+  const [{ data: conv, error }, { data: texts }, { data: calls }] = await Promise.all([
     supabase
       .from("conversation")
       .select(
-        "id, phone, customer_id, last_at, last_preview, unread, opted_out, customer:customer_id(name)",
+        "id, phone, customer_id, last_at, last_preview, unread, opted_out, customer:customer!conversation_customer_id_company_id_fkey(name)",
       )
       .eq("id", conversationId)
       .eq("company_id", office.company.id)
@@ -104,6 +105,7 @@ export async function getThread(office: Office, conversationId: string) {
       .order("created_at", { ascending: false })
       .limit(100),
   ]);
+  if (error) throw new Error(error.message);
   if (!conv) return null;
 
   // Pictures are private: signed links for an hour.
