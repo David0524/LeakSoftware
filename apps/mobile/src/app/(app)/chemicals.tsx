@@ -27,6 +27,7 @@ import {
   T,
 } from "../../ui/components";
 import { color, radius, space } from "../../ui/theme";
+import { ScreenTip } from "../../ui/Tip";
 
 // The pool chemical calculator (owner, 2026-10-16): the pool's size and today's readings in,
 // what to add out, in order. Readings fill the screen; What to Add is a bar docked at the
@@ -82,6 +83,7 @@ export default function Chemicals() {
   return (
     <View style={{ flex: 1 }}>
       <Screen>
+        <ScreenTip screen="chemicals" />
         <FieldGroup title="Pool">
           <FieldRow
             label="Gallons"

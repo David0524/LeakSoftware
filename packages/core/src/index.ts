@@ -26,3 +26,4 @@ export * from "./plans";
 export * from "./chemistry";
 export * from "./texting";
 export * from "./onboarding";
+export * from "./walkthrough";

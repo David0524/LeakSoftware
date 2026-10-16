@@ -1,4 +1,4 @@
-import { offersLeak } from "@leakbook/core";
+import { offersLeak, offersPool } from "@leakbook/core";
 import { Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
@@ -37,7 +37,9 @@ export default async function SettingsIndex() {
     "/settings/team": "Techs, owners, and invites",
     "/settings/scheduling": "Working day, shop location, and drive times",
     "/settings/phone": "The company number for texts and calls",
-    "/settings/price-book": "Repair items for quotes",
+    "/settings/price-book": offersPool(company.settings)
+      ? "Services, chemicals, and repairs for quotes"
+      : "Detection fees and repairs for quotes",
     "/settings/payments": "How customers pay, and deposits",
     "/settings/billing": "Your shop’s Tidemark subscription",
     "/settings/components": offersLeak(company.settings)

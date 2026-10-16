@@ -24,6 +24,8 @@ import { getLine } from "@/lib/messages";
 import { mapsAppForRequest } from "@/lib/maps";
 import { loadRoutes, routeContext, routeKey, shopToday } from "@/server/route-days";
 import { NavPlus } from "@/components/nav-bar";
+import { ScreenTip } from "@/components/screen-tip";
+import { GettingStarted } from "@/components/getting-started";
 
 export const metadata: Metadata = { title: "Today · Tidemark" };
 
@@ -86,6 +88,12 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
           directions ? <OpenRouteInMaps href={directions.href} app={directions.app} /> : null
         }
       />
+      <Suspense fallback={null}>
+        <GettingStarted />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ScreenTip screen="today" />
+      </Suspense>
       {office.isOwner && techs.length > 1 ? (
         <nav aria-label="Whose day" className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4">
           {techs.map((t) => (

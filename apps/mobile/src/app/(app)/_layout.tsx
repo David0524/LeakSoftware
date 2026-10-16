@@ -31,6 +31,11 @@ export default function AppLayout() {
       <Stack.Screen name="jobs/[id]/review" options={{ title: "Review and Sign" }} />
       <Stack.Screen name="chemicals" options={{ title: "Chemical Calculator" }} />
       <Stack.Screen
+        name="welcome"
+        // The first-launch cards (walkthrough, 2026-10-16): a sheet on iPhone.
+        options={{ title: "Welcome", presentation: ios ? "modal" : "card" }}
+      />
+      <Stack.Screen
         name="messages/index"
         options={{ title: "Messages", headerLargeTitleEnabled: true }}
       />

@@ -13,6 +13,9 @@ import {
 import { Card, Empty, Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { Suspense } from "react";
+import { ScreenTip } from "@/components/screen-tip";
+import { GettingStarted } from "@/components/getting-started";
 
 export const metadata: Metadata = { title: "Dashboard · Tidemark" };
 
@@ -34,6 +37,12 @@ export default async function DashboardPage() {
     return (
       <>
         <PageHeader title="Dashboard" />
+        <Suspense fallback={null}>
+          <GettingStarted />
+        </Suspense>
+        <Suspense fallback={null}>
+          <ScreenTip screen="dashboard" />
+        </Suspense>
         <Empty>The dashboard isn’t available until the database is updated.</Empty>
       </>
     );
@@ -50,6 +59,12 @@ export default async function DashboardPage() {
   return (
     <>
       <PageHeader title="Dashboard" subtitle={`Last ${MONTHS} months · ${range}`} />
+      <Suspense fallback={null}>
+        <GettingStarted />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ScreenTip screen="dashboard" />
+      </Suspense>
 
       <dl className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Stat

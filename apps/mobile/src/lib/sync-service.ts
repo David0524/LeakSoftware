@@ -466,6 +466,9 @@ export class SyncService {
       "sync:initial_done",
       "team_profiles",
       "active_company",
+      // A different person on this phone gets the tips and welcome cards fresh.
+      "walkthrough:tips_seen",
+      "walkthrough:launch_seen",
     ]) {
       this.kv.remove(key);
     }

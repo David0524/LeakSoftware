@@ -15,6 +15,8 @@ import {
 import { getOffice } from "@/lib/auth";
 import { OPEN_STATUSES, listJobs } from "@/lib/data";
 import { NavPlus } from "@/components/nav-bar";
+import { Suspense } from "react";
+import { ScreenTip } from "@/components/screen-tip";
 
 export const metadata: Metadata = { title: "Jobs · Tidemark" };
 
@@ -66,6 +68,9 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
         // Phones use the "+" in the navigation bar instead.
         actionsClassName="hidden sm:flex"
       />
+      <Suspense fallback={null}>
+        <ScreenTip screen="jobs" />
+      </Suspense>
       <nav
         aria-label="Filter jobs by status"
         className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4 whitespace-nowrap sm:mx-0 sm:flex-wrap sm:px-0"

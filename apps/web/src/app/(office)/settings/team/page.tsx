@@ -10,8 +10,13 @@ import {
   SettingsForm,
   SettingsSection,
 } from "@/components/settings-forms";
-import { SettingsListPage, SheetDanger, SheetRow } from "@/components/settings-list";
-import { Empty, Grouped, SectionTitle } from "@/components/ui";
+import {
+  SettingsAddRow,
+  SettingsListPage,
+  SheetDanger,
+  SheetRow,
+} from "@/components/settings-list";
+import { Grouped } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany, getTeam } from "@/lib/data";
 import { siteOrigin } from "@/lib/origin";
@@ -56,6 +61,8 @@ export default async function TeamSettingsPage() {
       subtitle="Techs run jobs on the phone. Owners also manage settings, pricing, and payments."
       add={{
         label: "Invite Someone",
+        // Under the open invites, where the new one appears (owner, 2026-10-16).
+        inList: true,
         form: (
           <SettingsForm action={inviteMember} submit="Create Invite" primary full>
             <SettingsFields
@@ -73,46 +80,43 @@ export default async function TeamSettingsPage() {
         <JobVisibilityForm seesAll={seesAllJobs("tech", company.settings)} />
       </SettingsSection>
 
-      {open.length === 0 ? (
-        <section>
-          <SectionTitle>Open invites</SectionTitle>
-          <Empty>No open invites.</Empty>
-        </section>
-      ) : (
-        <Grouped
-          title="Open invites"
-          footer="Send the link by text or email. It works once, for that email address, for 14 days."
-        >
-          {open.map((i) => (
-            <SheetRow
-              key={i.id}
-              testId="invite"
-              title={i.email}
-              label={<span className="break-all">{i.email}</span>}
-              value={i.role === "owner" ? "Owner" : "Tech"}
-            >
-              <div className="space-y-2">
-                <CopyLink url={`${origin}/invite/${i.token}`} />
-                <p className="text-[0.9375rem] text-text-muted">
-                  Send the link by text or email. It works once, for that email address, for 14
-                  days.
-                </p>
-              </div>
-              <SheetDanger>
-                <SettingsForm
-                  action={revokeInvite}
-                  submit="Revoke Invite"
-                  danger
-                  full
-                  confirm="Revoke this invite? The link will stop working."
-                >
-                  <input type="hidden" name="id" value={i.id} />
-                </SettingsForm>
-              </SheetDanger>
-            </SheetRow>
-          ))}
-        </Grouped>
-      )}
+      <Grouped
+        title="Open invites"
+        footer={
+          open.length
+            ? "Send the link by text or email. It works once, for that email address, for 14 days."
+            : "No open invites."
+        }
+      >
+        {open.map((i) => (
+          <SheetRow
+            key={i.id}
+            testId="invite"
+            title={i.email}
+            label={<span className="break-all">{i.email}</span>}
+            value={i.role === "owner" ? "Owner" : "Tech"}
+          >
+            <div className="space-y-2">
+              <CopyLink url={`${origin}/invite/${i.token}`} />
+              <p className="text-[0.9375rem] text-text-muted">
+                Send the link by text or email. It works once, for that email address, for 14 days.
+              </p>
+            </div>
+            <SheetDanger>
+              <SettingsForm
+                action={revokeInvite}
+                submit="Revoke Invite"
+                danger
+                full
+                confirm="Revoke this invite? The link will stop working."
+              >
+                <input type="hidden" name="id" value={i.id} />
+              </SettingsForm>
+            </SheetDanger>
+          </SheetRow>
+        ))}
+        <SettingsAddRow label="Invite Someone" />
+      </Grouped>
 
       <Grouped title="People">
         {team.map((m) => (

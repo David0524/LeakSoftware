@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { CHECKLIST_SECTION_LABELS, companyServices, type ChecklistSection } from "@leakbook/core";
 import { removeConfigRow, saveComponentType } from "@/app/actions/settings";
 import {
   SField,
@@ -8,9 +10,9 @@ import {
   SettingsForm,
 } from "@/components/settings-forms";
 import { SettingsListPage, SheetDanger, SheetRow } from "@/components/settings-list";
-import { Grouped } from "@/components/ui";
+import { Grouped, SEGMENT_TRACK, segmentClass } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { listConfig, type ComponentType } from "@/lib/data";
+import { getCompany, listConfig, type ComponentType } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Checklist Components · Tidemark" };
 
@@ -20,12 +22,57 @@ const APPLIES = [
   { value: "both", label: "Pool and spa" },
 ];
 
-function TypeFields({ t }: { t?: ComponentType }) {
+type Kind = "pool" | "leak";
+
+const LEAK_SECTIONS: ChecklistSection[] = ["visual", "plumbing", "bond_beam", "other"];
+
+function TypeFields({ t, kind }: { t?: ComponentType; kind: Kind }) {
   const p = t?.id ?? "new";
+  if (kind === "pool")
+    return (
+      <>
+        <input type="hidden" name="job_type" value="maintenance" />
+        <SettingsFields labelWidth="8.5rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
+          <SField label="Name" name="name" id={`name-${p}`} defaultValue={t?.name} />
+          <SSelect
+            label="Applies to"
+            name="applies_to"
+            id={`applies-${p}`}
+            defaultValue={t?.applies_to ?? "both"}
+            options={APPLIES}
+          />
+          <SField
+            label="Order"
+            name="sort_order"
+            id={`order-${p}`}
+            inputMode="numeric"
+            defaultValue={t?.sort_order ?? 600}
+          />
+        </SettingsFields>
+        {t ? (
+          <SettingsFields>
+            <SSwitch
+              label="On new visits"
+              name="active"
+              id={`active-${p}`}
+              defaultChecked={t.active}
+            />
+          </SettingsFields>
+        ) : null}
+      </>
+    );
   return (
     <>
+      <input type="hidden" name="job_type" value="detection" />
       <SettingsFields labelWidth="8.5rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
         <SField label="Name" name="name" id={`name-${p}`} defaultValue={t?.name} />
+        <SSelect
+          label="Section"
+          name="section"
+          id={`section-${p}`}
+          defaultValue={t?.section && t.section !== "service" ? t.section : "plumbing"}
+          options={LEAK_SECTIONS.map((v) => ({ value: v, label: CHECKLIST_SECTION_LABELS[v] }))}
+        />
         <SSelect
           label="Applies to"
           name="applies_to"
@@ -78,42 +125,78 @@ function TypeFields({ t }: { t?: ComponentType }) {
   );
 }
 
-export default async function ComponentsPage() {
+export default async function ComponentsPage({ searchParams }: PageProps<"/settings/components">) {
   const office = await getOffice();
-  const types = await listConfig<ComponentType>(office, "component_type");
-  // Grouped by what they apply to: pool, spa, then both.
-  const sections = APPLIES.map((a) => ({
-    ...a,
-    rows: types.filter(
-      (t) => (APPLIES.some((x) => x.value === t.applies_to) ? t.applies_to : "pool") === a.value,
-    ),
-  })).filter((s) => s.rows.length);
+  const [types, company, { list }] = await Promise.all([
+    listConfig<ComponentType>(office, "component_type"),
+    getCompany(office),
+    searchParams,
+  ]);
+  // Pool visits and leak inspections have their own checklists (owner, 2026-10-16); a shop
+  // sees the ones for what it does, and switches between them when it does both.
+  const services = companyServices(company.settings);
+  const kinds: Kind[] = services === "both" ? ["pool", "leak"] : [services];
+  const kind: Kind = kinds.includes(list as Kind) ? (list as Kind) : kinds[0]!;
+  const mine = types.filter((t) =>
+    kind === "pool" ? t.job_type === "maintenance" : t.job_type !== "maintenance",
+  );
+  const groups =
+    kind === "pool"
+      ? [{ value: "visit", label: "Every visit", rows: mine }]
+      : LEAK_SECTIONS.map((v) => ({
+          value: v,
+          label: CHECKLIST_SECTION_LABELS[v],
+          rows: mine.filter((t) => (t.section ?? "plumbing") === v),
+        })).filter((g) => g.rows.length);
+  const applies = (t: ComponentType) => APPLIES.find((a) => a.value === t.applies_to)?.label;
   return (
     <SettingsListPage
       title="Checklist Components"
-      subtitle="What every inspection checks. Changes apply to new jobs; jobs already started keep their checklist."
+      subtitle={
+        kind === "pool"
+          ? "What techs do on every pool visit. Changes apply to new visits; visits already started keep their checklist."
+          : "What every leak inspection checks. Changes apply to new jobs; jobs already started keep their checklist."
+      }
       add={{
         label: "Add Component",
         form: (
           <SettingsForm action={saveComponentType} submit="Add Component" primary full>
-            <TypeFields />
+            <TypeFields kind={kind} />
           </SettingsForm>
         ),
       }}
     >
-      {sections.map((s) => (
-        <Grouped key={s.value} title={s.label}>
-          {s.rows.map((t) => (
+      {kinds.length > 1 ? (
+        <nav aria-label="Checklist" className={SEGMENT_TRACK}>
+          {kinds.map((k) => (
+            <Link
+              key={k}
+              href={`/settings/components?list=${k}`}
+              aria-current={k === kind ? "page" : undefined}
+              className={segmentClass(k === kind)}
+            >
+              {k === "pool" ? "Pool Visits" : "Leak Inspections"}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
+      {groups.map((g) => (
+        <Grouped key={g.value} title={g.label}>
+          {g.rows.map((t) => (
             <SheetRow
               key={t.id}
               title={t.name}
               label={t.name}
-              detail={t.methods.length ? t.methods.join(", ") : undefined}
+              detail={
+                kind === "pool"
+                  ? applies(t)
+                  : [applies(t), t.methods.join(", ")].filter(Boolean).join(" · ") || undefined
+              }
               value={t.active ? undefined : "Off"}
             >
               <SettingsForm action={saveComponentType} primary full>
                 <input type="hidden" name="id" value={t.id} />
-                <TypeFields t={t} />
+                <TypeFields t={t} kind={kind} />
               </SettingsForm>
               <SheetDanger>
                 <SettingsForm
@@ -121,7 +204,7 @@ export default async function ComponentsPage() {
                   submit="Remove Component"
                   danger
                   full
-                  confirm="Remove this component from new checklists?"
+                  confirm={`Remove this component from new ${kind === "pool" ? "visits" : "checklists"}?`}
                 >
                   <input type="hidden" name="table" value="component_type" />
                   <input type="hidden" name="id" value={t.id} />

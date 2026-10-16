@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatPhone } from "@leakbook/core";
 import { ConversationList, PeopleSwitch, Thread, conversationName } from "@/components/inbox";
+import { ScreenTip } from "@/components/screen-tip";
 import {
   AutoRefresh,
   CallButton,
@@ -75,6 +77,9 @@ export default async function ConversationPage({ params }: PageProps<"/messages/
           <div className="self-start">
             <PeopleSwitch current="messages" unread={unread} />
           </div>
+          <Suspense fallback={null}>
+            <ScreenTip screen="messages" />
+          </Suspense>
           <div className="md:min-h-0 md:flex-1 md:overflow-y-auto">
             <ConversationList
               conversations={conversations}

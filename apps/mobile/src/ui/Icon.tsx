@@ -25,6 +25,15 @@ const ICONS = {
   upload: { sf: "icloud.and.arrow.up", ion: "cloud-upload-outline" },
   play: { sf: "play.fill", ion: "play" },
   pause: { sf: "pause.fill", ion: "pause" },
+  // Tips and the first launch (walkthrough, 2026-10-16).
+  lightbulb: { sf: "lightbulb", ion: "bulb-outline" },
+  close: { sf: "xmark", ion: "close" },
+  calendar: { sf: "calendar", ion: "calendar-outline" },
+  checklist: { sf: "checklist", ion: "list-outline" },
+  chemistry: { sf: "drop", ion: "water-outline" },
+  search: { sf: "magnifyingglass", ion: "search-outline" },
+  report: { sf: "doc.text", ion: "document-text-outline" },
+  offline: { sf: "wifi.slash", ion: "cloud-offline-outline" },
 } as const satisfies Record<string, { sf: SFSymbolName; ion: IoniconName }>;
 
 export type IconName = keyof typeof ICONS;

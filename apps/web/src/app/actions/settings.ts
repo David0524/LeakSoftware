@@ -237,6 +237,12 @@ export async function saveServices(_: FormState, form: FormData): Promise<FormSt
   const settings = { ...((company?.settings ?? {}) as Record<string, unknown>), services: choice };
   const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
   if (error) return failed(error);
+  // A package taken on brings its checklist, tests, and price book (once; nothing is removed).
+  const { error: setup } = await supabase.rpc("add_package_defaults", {
+    target_company: office.company.id,
+    services: choice,
+  });
+  if (setup) return failed(setup);
   // The package sets the Tidemark price.
   after(() => syncSubscriptionPrice(office.company.id).catch(() => null));
   revalidatePath("/", "layout");
@@ -391,17 +397,26 @@ export async function saveComponentType(_: FormState, form: FormData): Promise<F
   const appliesTo = ["pool", "spa", "both"].includes(text(form, "applies_to"))
     ? text(form, "applies_to")
     : "pool";
+  // Pool visit items are tasks (Done, Needs Attention, Skipped) in the Service section; leak
+  // inspection items take a verdict in the section the owner picks (owner, 2026-10-16: an
+  // item a pool shop added used to land on the leak checklist).
+  const visit = text(form, "job_type") === "maintenance";
+  const section = ["visual", "plumbing", "bond_beam", "other"].includes(text(form, "section"))
+    ? text(form, "section")
+    : "plumbing";
+  const methods = text(form, "methods")
+    .split(",")
+    .map((m) => m.trim())
+    .filter(Boolean);
   const values = {
     name,
-    allows_multiple: checked(form, "allows_multiple"),
-    default_count: count,
+    allows_multiple: visit ? false : checked(form, "allows_multiple"),
+    default_count: visit ? 1 : count,
     applies_to: appliesTo,
-    methods: text(form, "methods")
-      .split(",")
-      .map((m) => m.trim())
-      .filter(Boolean),
+    methods: visit ? ["Service"] : methods,
     sort_order: int(form, "sort_order"),
     active: id ? checked(form, "active") : true,
+    ...(visit ? {} : { section }),
   };
   const { error } = await upsert(
     supabase,
@@ -411,7 +426,12 @@ export async function saveComponentType(_: FormState, form: FormData): Promise<F
     values,
     id
       ? {}
-      : { key: configKey(name, await takenKeys(supabase, "component_type", office.company.id)) },
+      : {
+          key: configKey(name, await takenKeys(supabase, "component_type", office.company.id)),
+          job_type: visit ? "maintenance" : "detection",
+          section: visit ? "service" : section,
+          answer: visit ? "done" : "leak",
+        },
   );
   if (error) return failed(error);
   return done("/settings/components", id ? "Saved." : `Added ${name}.`);

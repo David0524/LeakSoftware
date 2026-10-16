@@ -14,6 +14,8 @@ import { Button, PageHeader } from "./ui";
 
 /** Shows what the last sheet did ("Saved.", "Removed.") once it has closed. */
 const Notify = createContext<(message: string) => void>(() => {});
+/** Opens the page's add sheet, for an add row placed in the list (SettingsAddRow). */
+const OpenAdd = createContext<() => void>(() => {});
 
 export function SettingsListPage({
   title,
@@ -23,8 +25,11 @@ export function SettingsListPage({
 }: {
   title: string;
   subtitle?: ReactNode;
-  /** The Add button's name (also the sheet's title) and the form it opens. */
-  add?: { label: string; form: ReactNode };
+  /**
+   * The Add button's name (also the sheet's title) and the form it opens. `inList`: the page
+   * places a SettingsAddRow where it belongs instead of a button in the header.
+   */
+  add?: { label: string; form: ReactNode; inList?: boolean };
   children: ReactNode;
 }) {
   const [notice, setNotice] = useState<string | null>(null);
@@ -40,31 +45,52 @@ export function SettingsListPage({
   }, []);
   return (
     <Notify value={setNotice}>
-      <PageHeader
-        back={{ href: "/settings", label: "Settings" }}
-        title={title}
-        subtitle={subtitle}
-        navAction={add ? <NavPlus onClick={open} label={add.label} /> : undefined}
-        actions={
-          add ? (
-            <Button type="button" kind="secondary" onClick={open}>
-              {add.label}
-            </Button>
-          ) : undefined
-        }
-        // Phones use the "+" in the navigation bar instead.
-        actionsClassName="max-sm:hidden"
-      />
-      <div className="max-w-2xl space-y-6">
-        {notice ? <Banner tone="success">{notice}</Banner> : null}
-        {children}
-      </div>
-      {add ? (
-        <Sheet open={adding} onClose={close} title={add.label}>
-          <SheetDone value={added}>{add.form}</SheetDone>
-        </Sheet>
-      ) : null}
+      <OpenAdd value={open}>
+        <PageHeader
+          back={{ href: "/settings", label: "Settings" }}
+          title={title}
+          subtitle={subtitle}
+          navAction={add ? <NavPlus onClick={open} label={add.label} /> : undefined}
+          actions={
+            add && !add.inList ? (
+              <Button type="button" kind="secondary" onClick={open}>
+                {add.label}
+              </Button>
+            ) : undefined
+          }
+          // Phones use the "+" in the navigation bar instead.
+          actionsClassName="max-sm:hidden"
+        />
+        <div className="max-w-2xl space-y-6">
+          {notice ? <Banner tone="success">{notice}</Banner> : null}
+          {children}
+        </div>
+        {add ? (
+          <Sheet open={adding} onClose={close} title={add.label}>
+            <SheetDone value={added}>{add.form}</SheetDone>
+          </Sheet>
+        ) : null}
+      </OpenAdd>
     </Notify>
+  );
+}
+
+/** The add row at the end of a grouped list ("Invite Someone"), as iOS Settings draws it. */
+export function SettingsAddRow({ label }: { label: string }) {
+  const open = use(OpenAdd);
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={open}
+        className="flex min-h-11 w-full items-center gap-3 px-4 py-2.5 text-left text-link hover:bg-text/[0.03] active:bg-text/[0.06]"
+      >
+        <span aria-hidden="true" className="text-xl leading-none">
+          +
+        </span>
+        {label}
+      </button>
+    </li>
   );
 }
 

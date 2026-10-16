@@ -50,6 +50,8 @@ import {
   type RouteContext,
 } from "@/server/route-days";
 import { NavPlus } from "@/components/nav-bar";
+import { Suspense } from "react";
+import { ScreenTip } from "@/components/screen-tip";
 
 export const metadata: Metadata = { title: "Schedule · Tidemark" };
 
@@ -241,6 +243,9 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           </>
         }
       />
+      <Suspense fallback={null}>
+        <ScreenTip screen="schedule" />
+      </Suspense>
       {/* One row: previous, the date, next, and Day / Week / Month at the far right. */}
       <div className="mb-3 flex items-center gap-2">
         <Link

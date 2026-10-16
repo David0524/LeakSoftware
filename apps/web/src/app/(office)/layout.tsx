@@ -133,9 +133,14 @@ async function OfficeNav() {
         ) : (
           <span className="hidden font-medium sm:inline">{office.company.name}</span>
         )}
-        <span className="hidden text-neutral-300 md:inline">
+        {/* Wider screens reach More (appearance, help, Show Tips Again) from the name. */}
+        <Link
+          href="/more"
+          aria-label={`${office.user.name ?? office.user.email}: account and help`}
+          className="hidden min-h-11 content-center text-neutral-300 underline-offset-4 hover:underline md:block"
+        >
           {office.user.name ?? office.user.email}
-        </span>
+        </Link>
         <ThemeToggle onHeader />
         {/* Phones: Sign Out is on More, away from the appearance button (M11 review M10). */}
         <form action={signOut} className="hidden sm:block">

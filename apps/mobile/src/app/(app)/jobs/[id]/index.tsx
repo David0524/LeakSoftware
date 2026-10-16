@@ -43,6 +43,7 @@ import { MediaSection } from "../../../../features/media/MediaSection";
 import { InvoiceSection } from "../../../../features/invoice/InvoiceSection";
 import { QuoteTab } from "../../../../features/quote/QuoteTab";
 import { ReportTab } from "../../../../features/report/ReportTab";
+import { ScreenTip } from "../../../../ui/Tip";
 
 const ACTION_LABELS: Partial<Record<JobStatus, string>> = {
   in_progress: "Start Job",
@@ -133,6 +134,10 @@ export default function JobDetail() {
   return (
     <Screen>
       <Stack.Screen options={{ title: job.number ? `Job #${job.number}` : "New Job" }} />
+      {/* A pool visit or a leak inspection gets its own tip (walkthrough, 2026-10-16). */}
+      {job.type === "repair" ? null : (
+        <ScreenTip screen="job" pkg={job.type === "maintenance" ? "pool" : "leak"} />
+      )}
 
       {/* Who, where, and what, as an inset grouped list (iOS) or a list card (Android). */}
       <Group>

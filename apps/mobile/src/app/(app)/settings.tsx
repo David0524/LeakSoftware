@@ -20,6 +20,7 @@ import {
 } from "../../ui/components";
 import { confirmDestructive } from "../../ui/confirm";
 import { color, ios, space } from "../../ui/theme";
+import { useWalkthrough } from "../../state/walkthrough";
 
 /**
  * My mobile number (company texting): calls I place from the company number ring it first,
@@ -71,6 +72,7 @@ const footer = { paddingHorizontal: ios ? space["4"] : 0 };
 export default function Settings() {
   const { services, user, company, companies, membership, setActiveCompany, signOut } =
     useSession();
+  const walkthrough = useWalkthrough();
   const status = useSyncStatus();
   const { sync, encrypted } = services;
 
@@ -217,6 +219,15 @@ export default function Settings() {
               onPress={() => router.push("/chemicals")}
             />
           ) : null}
+          {/* Every tip comes back, starting with the welcome cards (walkthrough, 2026-10-16). */}
+          <ListRow
+            title="Show Tips Again"
+            tone="link"
+            onPress={() => {
+              walkthrough.reset();
+              router.push("/welcome");
+            }}
+          />
         </Group>
       </Section>
 

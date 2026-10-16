@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { signOut } from "@/app/actions/auth";
+import { showTipsAgain } from "@/app/actions/walkthrough";
 import { DeleteAccount } from "@/components/delete-account";
 import { MapsChoice } from "@/components/maps-choice";
 import { AppearanceChoice } from "@/components/theme-toggle";
@@ -66,6 +67,17 @@ export default async function MorePage() {
               </a>
             </li>
           ))}
+          <li>
+            {/* Every screen's tip, and Getting Started, come back (owner, 2026-10-16). */}
+            <form action={showTipsAgain}>
+              <button
+                type="submit"
+                className="flex min-h-11 w-full items-center px-4 py-2.5 text-left text-link hover:bg-text/[0.03] active:bg-text/[0.06]"
+              >
+                Show Tips Again
+              </button>
+            </form>
+          </li>
         </Grouped>
         {/* Phones: Sign Out lives here (wider screens have it in the header), on its own
             row, centered and red, as iOS draws it. */}

@@ -83,3 +83,30 @@ test("on a phone, what to add is a bar at the bottom that opens a sheet", async 
   await expect(sheet).toHaveCount(0);
   await phone.close();
 });
+
+test("a pool visit item added in settings lands on pool visits", async ({ page }) => {
+  // It used to land on the leak checklist (owner, 2026-10-16: "be more thorough").
+  await signIn(page, OWNER, "/settings/components?list=pool");
+  const name = `E2E salt cell check ${Date.now().toString(36)}`;
+  await page.getByRole("button", { name: "Add Component", exact: true }).click();
+  const add = page.getByRole("dialog", { name: "Add Component" });
+  await add.getByLabel("Name").fill(name);
+  await add.getByRole("button", { name: "Add Component" }).click();
+  await expect(add).toHaveCount(0);
+  await expect(page.getByRole("button", { name: new RegExp(name) })).toBeVisible();
+  await page.getByRole("link", { name: "Leak Inspections" }).click();
+  await expect(page.getByRole("button", { name: new RegExp(name) })).toHaveCount(0);
+
+  // Clean up: remove it from new visits.
+  await page.getByRole("link", { name: "Pool Visits" }).click();
+  await page.getByRole("button", { name: new RegExp(name) }).click();
+  await page
+    .getByRole("dialog", { name })
+    .getByRole("button", { name: "Remove Component" })
+    .click();
+  await page
+    .getByRole("alertdialog", { name: "Remove this component from new visits?" })
+    .getByRole("button", { name: "Remove Component" })
+    .click();
+  await expect(page.getByRole("button", { name: new RegExp(name) })).toHaveCount(0);
+});

@@ -5,6 +5,8 @@ import { Button, Empty, Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listCustomers } from "@/lib/data";
 import { unreadCount } from "@/lib/messages";
+import { Suspense } from "react";
+import { ScreenTip } from "@/components/screen-tip";
 
 export const metadata: Metadata = { title: "Customers · Tidemark" };
 
@@ -28,6 +30,9 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
         }
       />
       <PeopleSwitch current="customers" unread={unread} />
+      <Suspense fallback={null}>
+        <ScreenTip screen="customers" />
+      </Suspense>
       <form role="search" className="mb-5 flex max-w-xl gap-2">
         <label htmlFor="q" className="sr-only">
           Search customers

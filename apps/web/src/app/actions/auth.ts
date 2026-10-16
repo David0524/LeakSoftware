@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
-import { parseServices, safePath, type Services } from "@leakbook/core";
+import { parseServices, safePath } from "@leakbook/core";
 import { ACTIVE_COMPANY_COOKIE, getOffice, getUser } from "@/lib/auth";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
@@ -69,23 +69,8 @@ export async function sendSignInLink(_: FormState, form: FormData): Promise<Form
 }
 
 /**
- * Pool Care, Leak Detection, or Both, chosen when signing up (owner, 2026-10-16: one app, two
- * packages). Saved on the new company's settings; the owner can change it in Settings.
- */
-async function saveServices(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  companyId: string,
-  services: Services,
-) {
-  const { data } = await supabase.from("company").select("settings").eq("id", companyId).single();
-  const settings = { ...((data?.settings ?? {}) as Record<string, unknown>), services };
-  await supabase.from("company").update({ settings }).eq("id", companyId);
-}
-
-/**
  * New shops add a card for the 14-day trial (owner, 2026-10-16) when this server has Stripe
- * billing. Set after the shop's first write (its services): until the card is in, it's
- * read-only.
+ * billing. Until the card is in, the shop is read-only.
  */
 async function requireCard(companyId: string) {
   const admin = adminClient();
@@ -130,12 +115,14 @@ export async function startTrial(_: FormState, form: FormData): Promise<FormStat
   if (!data.session) {
     return { message: `Check ${values.email} for a link to confirm your account.` };
   }
+  // Pool Care, Leak Detection, or Both (owner, 2026-10-16): the shop starts with that
+  // package's checklist, tests, and price book.
   const { data: companyId, error: companyError } = await supabase.rpc("create_company", {
     company_name: values.company,
     company_timezone: text(form, "timezone") || null,
+    company_services: values.services,
   });
   if (companyError) return { error: companyError.message, values };
-  await saveServices(supabase, String(companyId), values.services);
   await requireCard(String(companyId));
   redirect("/welcome");
 }
@@ -150,9 +137,9 @@ export async function createCompany(_: FormState, form: FormData): Promise<FormS
   const { data: companyId, error } = await supabase.rpc("create_company", {
     company_name: company,
     company_timezone: text(form, "timezone") || null,
+    company_services: parseServices(text(form, "services")) ?? "pool",
   });
   if (error) return { error: error.message, values: { company } };
-  await saveServices(supabase, String(companyId), parseServices(text(form, "services")) ?? "pool");
   await requireCard(String(companyId));
   redirect("/welcome");
 }

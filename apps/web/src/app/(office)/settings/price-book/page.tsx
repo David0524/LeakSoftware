@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { companyServices } from "@leakbook/core";
 import { formatCents } from "@leakbook/core";
 import { removeConfigRow, savePriceItem } from "@/app/actions/settings";
 import {
@@ -11,7 +12,7 @@ import {
 import { SettingsListPage, SheetDanger, SheetRow } from "@/components/settings-list";
 import { Empty, Grouped } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { listConfig, type ComponentType } from "@/lib/data";
+import { listConfig, type ComponentType, getCompany } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Price Book · Tidemark" };
 
@@ -110,10 +111,17 @@ function ItemFields({ item, types }: { item?: PriceItem; types: ComponentType[] 
 
 export default async function PriceBookPage() {
   const office = await getOffice();
-  const [items, types] = await Promise.all([
+  const [items, types, company] = await Promise.all([
     listConfig<PriceItem>(office, "price_book_item"),
     listConfig<ComponentType>(office, "component_type"),
+    getCompany(office),
   ]);
+  // What the items are for follows what the shop does (owner, 2026-10-16).
+  const what = {
+    pool: "Cleanings, chemicals, and repairs techs pick from when quoting extra work.",
+    leak: "Detection fees and repairs techs pick from when building a quote.",
+    both: "Detection fees, cleanings, chemicals, and repairs techs pick from when building a quote.",
+  }[companyServices(company.settings)];
   // Grouped by category, in the order the categories first appear; uncategorized items last.
   const groups = new Map<string, PriceItem[]>();
   for (const item of items) {
@@ -126,7 +134,7 @@ export default async function PriceBookPage() {
   return (
     <SettingsListPage
       title="Price Book"
-      subtitle="Repair items techs pick from when building a quote. Prices are suggestions; a tech can adjust within the discount limit."
+      subtitle={`${what} Prices are suggestions; a tech can adjust within the discount limit.`}
       add={{
         label: "Add Item",
         form: (

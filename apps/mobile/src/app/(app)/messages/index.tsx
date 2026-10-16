@@ -5,6 +5,7 @@ import { setUnread, useConversations, useLine } from "../../../data/texting";
 import { useCompany } from "../../../state/session";
 import { Group, ListRow, Notice, Screen, Section, T } from "../../../ui/components";
 import { color, space } from "../../../ui/theme";
+import { ScreenTip } from "../../../ui/Tip";
 
 /**
  * The shop's shared inbox (company texting, owner 2026-10-16): every text and call with
@@ -22,6 +23,7 @@ export default function Messages() {
   };
   return (
     <Screen>
+      <ScreenTip screen="messages" />
       {line?.status === "active" ? (
         <T variant="muted">Company number: {formatPhone(line.number)}</T>
       ) : line?.status === "pending" ? (

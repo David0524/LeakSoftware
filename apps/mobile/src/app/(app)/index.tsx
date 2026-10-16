@@ -1,5 +1,5 @@
 import { router, Stack } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formatAddress, formatSchedule, groupJobs } from "@leakbook/core";
@@ -9,6 +9,8 @@ import { HeaderButton, StatusChip, T } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { Icon } from "../../ui/Icon";
 import { SyncBar } from "../../ui/SyncBar";
+import { ScreenTip } from "../../ui/Tip";
+import { useWalkthrough } from "../../state/walkthrough";
 import { color, font, ios, radius, space, tint, touch } from "../../ui/theme";
 
 export default function Jobs() {
@@ -18,6 +20,15 @@ export default function Jobs() {
   const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
   const now = new Date();
+
+  // The first time the app opens: the three welcome cards (walkthrough, 2026-10-16).
+  const { launchSeen } = useWalkthrough();
+  const welcomed = useRef(false);
+  useEffect(() => {
+    if (launchSeen || welcomed.current) return;
+    welcomed.current = true;
+    router.push("/welcome");
+  }, [launchSeen]);
 
   const sections = useMemo(() => {
     const g = groupJobs(jobs, new Date(), company.timezone);
@@ -67,7 +78,12 @@ export default function Jobs() {
         ]}
         stickySectionHeadersEnabled={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
-        ListHeaderComponent={ios ? <SyncBar onPress={openSettings} inset /> : null}
+        ListHeaderComponent={
+          <View style={{ gap: space["3"], marginBottom: space["2"] }}>
+            {ios ? <SyncBar onPress={openSettings} inset /> : null}
+            <ScreenTip screen="jobs" />
+          </View>
+        }
         renderSectionHeader={({ section }) => (
           <T variant="label" style={styles.sectionTitle}>
             {section.title}

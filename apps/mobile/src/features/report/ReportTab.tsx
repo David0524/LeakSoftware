@@ -35,6 +35,7 @@ import {
 } from "../../ui/components";
 import { color, ios, space } from "../../ui/theme";
 import { confirmDestructive } from "../../ui/confirm";
+import { ScreenTip } from "../../ui/Tip";
 
 /** Send by Email and Send by Text share one row (Android). */
 const halfButton: ViewStyle = { flex: 1, paddingHorizontal: space["2"] };
@@ -266,6 +267,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
 
   return (
     <View style={{ gap: 16 }}>
+      {job.type === "detection" ? <ScreenTip screen="report" pkg="leak" /> : null}
       <Block title="Signatures" action={signButton}>
         {ios ? (
           // iPhone: a grouped list; swipe left on a row to remove it, or use its Remove button.

@@ -5,31 +5,28 @@ import { AuthTitle, BrandHeader } from "../ui/BrandHeader";
 import { useSession, useSyncStatus } from "../state/session";
 import { color, ios } from "../ui/theme";
 
-/** Shown after sign-in until this phone has a company: first download, create, or join. */
+/**
+ * Shown after sign-in until this phone has a company: first download, or join by invite. New
+ * shops start on the website, where the owner sets up the shop and its trial (owner,
+ * 2026-10-16); the app doesn't link there, since an iPhone app may not send people to an
+ * outside purchase.
+ */
 export default function Setup() {
   const { services, user, signOut } = useSession();
   const status = useSyncStatus();
-  const [companyName, setCompanyName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState<"create" | "join" | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  async function call(kind: "create" | "join") {
+  async function join() {
     setError(null);
-    if (kind === "create" && !companyName.trim()) return setError("Enter your company name.");
-    if (kind === "join" && !inviteCode.trim())
-      return setError("Enter the invite code from your email.");
-    setBusy(kind);
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const { error: rpcError } =
-      kind === "create"
-        ? await services.supabase.rpc("create_company", {
-            company_name: companyName.trim(),
-            company_timezone: timezone,
-          })
-        : await services.supabase.rpc("accept_invite", { invite_token: inviteCode.trim() });
+    if (!inviteCode.trim()) return setError("Enter the invite code from your email.");
+    setBusy(true);
+    const { error: rpcError } = await services.supabase.rpc("accept_invite", {
+      invite_token: inviteCode.trim(),
+    });
     if (rpcError) {
-      setBusy(null);
+      setBusy(false);
       return setError(
         /network|fetch/i.test(rpcError.message)
           ? "No connection. Try again when you're online."
@@ -37,9 +34,8 @@ export default function Setup() {
       );
     }
     await services.sync.syncNow();
-    setBusy(null);
+    setBusy(false);
   }
-
   if (!status.initialSyncDone) {
     const offline = status.phase === "offline";
     return (
@@ -70,7 +66,7 @@ export default function Setup() {
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       {ios ? null : <BrandHeader />}
       <Screen>
-        <AuthTitle title="Set Up Your Company" />
+        <AuthTitle title="Welcome to Tidemark" />
         <T variant="muted" style={ios && { textAlign: "center" }}>
           Signed in as {user?.email}
         </T>
@@ -79,29 +75,6 @@ export default function Setup() {
             {error}
           </Notice>
         ) : null}
-        <Block
-          title="Start a New Company"
-          note="You’ll be the owner. You can invite your techs after."
-        >
-          <FieldGroup labelWidth={132}>
-            <FieldRow
-              label="Company name"
-              value={companyName}
-              onChangeText={setCompanyName}
-              placeholder={ios ? "Required" : undefined}
-              autoCapitalize="words"
-              autoComplete="organization"
-              textContentType="organizationName"
-              returnKeyType="go"
-              onSubmitEditing={() => void call("create")}
-            />
-          </FieldGroup>
-          <Button
-            title="Create Company"
-            onPress={() => void call("create")}
-            loading={busy === "create"}
-          />
-        </Block>
         <Block
           title="Join Your Team"
           note={`Use the invite code your owner sent to ${user?.email ?? ""}.`}
@@ -118,16 +91,15 @@ export default function Setup() {
               autoComplete="off"
               textContentType="none"
               returnKeyType={ios ? "join" : "go"}
-              onSubmitEditing={() => void call("join")}
+              onSubmitEditing={() => void join()}
             />
           </FieldGroup>
-          <Button
-            title="Join"
-            kind="secondary"
-            onPress={() => void call("join")}
-            loading={busy === "join"}
-          />
+          <Button title="Join" kind="secondary" onPress={() => void join()} loading={busy} />
         </Block>
+        <Block
+          title="Starting a New Shop?"
+          note="The owner sets up the shop on the Tidemark website, then signs in here with the same email."
+        />
         <Button title="Sign Out" kind="quiet" onPress={() => void signOut()} />
       </Screen>
     </View>
