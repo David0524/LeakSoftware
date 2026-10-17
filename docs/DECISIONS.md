@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-17 (owner: "npx skills add https://github.com/cloudflare/security-audit-skill --skill security-audit")
+- **Security audit skill** (Cloudflare, MIT) for security questions, focused reviews, and full audits. Like the other skills it is installed by `scripts/session-start.sh` at a pinned, reviewed commit into `~/.claude/skills/security-audit`, not committed. A full audit writes its report outside the repository (`~/security-audit-skill/`), since the repository is public.
+
 ## 2026-10-17 (owner: "How should I handle integrations?" … "Yes, build the importer")
 - **Shops switch to Tidemark with Import Customers** (Settings › Import Customers), not by sending files to be imported by hand. A CSV exported from Skimmer, Pool Brain, Jobber, QuickBooks, Excel, or Google Sheets becomes customers, their pools, and (pool care) visit plans, whose visits go straight onto the schedule. Columns are matched from their names and can be changed; a preview shows what will be made and what's worth a look (a second service day, a tech not on the team, a bad email); everything is made in one transaction or not at all.
 - **Customers already in Tidemark are left out** (same email, phone, or name and address), so the same file can be imported twice safely.
