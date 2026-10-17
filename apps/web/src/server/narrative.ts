@@ -38,7 +38,7 @@ export type NarrativeModel = (system: string, user: string) => Promise<unknown>;
 
 export const PLAIN_MODEL = "leakbook-plain";
 
-export function claudeModel(
+function claudeModel(
   client: Anthropic = new Anthropic(),
   model = process.env.ANTHROPIC_MODEL || "claude-opus-5-5",
 ): NarrativeModel & { id: string } {

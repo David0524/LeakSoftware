@@ -60,7 +60,7 @@ export function mapbox(token: string, fetchImpl: typeof fetch = fetch): RoutingP
   };
 }
 
-export function routingProvider(): RoutingProvider | null {
+function routingProvider(): RoutingProvider | null {
   const token = process.env.MAPBOX_TOKEN;
   return token ? mapbox(token) : null;
 }
@@ -70,7 +70,7 @@ export function routingConfigured(): boolean {
 }
 
 /** Calls to the routing service each shop may make per day (ROUTING_DAILY_LIMIT, default 300). */
-export function dailyLimit(): number {
+function dailyLimit(): number {
   const n = Number(process.env.ROUTING_DAILY_LIMIT);
   return Number.isFinite(n) && n > 0 ? n : 300;
 }

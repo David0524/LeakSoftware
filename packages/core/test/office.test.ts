@@ -3,7 +3,6 @@ import {
   addDays,
   formatDay,
   formatTime,
-  groupSchedule,
   isDateString,
   scheduleBounds,
   addMonths,
@@ -40,29 +39,6 @@ describe("schedule", () => {
       from: "2026-10-12T07:00:00.000Z",
       to: "2026-10-13T07:00:00.000Z",
     });
-  });
-
-  it("groups jobs by tech and local day", () => {
-    const jobs = [
-      { id: "b", assigned_user_id: "t1", scheduled_start: "2026-10-13T16:00:00Z" },
-      { id: "a", assigned_user_id: "t1", scheduled_start: "2026-10-13T15:00:00Z" },
-      // 11:30 PM Phoenix on the 12th, which is already the 13th in UTC.
-      { id: "c", assigned_user_id: null, scheduled_start: "2026-10-13T06:30:00Z" },
-      { id: "x", assigned_user_id: "t1", scheduled_start: null },
-    ];
-    const g = groupSchedule(jobs, TZ);
-    expect(
-      g
-        .get("t1")!
-        .get("2026-10-13")!
-        .map((j) => j.id),
-    ).toEqual(["a", "b"]);
-    expect(
-      g
-        .get(null)!
-        .get("2026-10-12")!
-        .map((j) => j.id),
-    ).toEqual(["c"]);
   });
 
   it("formats times and days", () => {

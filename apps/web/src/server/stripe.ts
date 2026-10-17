@@ -23,7 +23,7 @@ export function stripeClient(): Stripe | null {
 }
 
 /** The platform's publishable key: with it, Checkout is shown on our own pages. */
-export function publishableKey(): string | null {
+function publishableKey(): string | null {
   return process.env.STRIPE_PUBLISHABLE_KEY || null;
 }
 
@@ -149,7 +149,7 @@ export type CheckoutStart =
   | { kind: "page"; url: string }
   | { kind: "embedded"; clientSecret: string; account: string; publishableKey: string };
 
-export const PAYMENT_METHODS = ["card", "link", "us_bank_account"] as const;
+const PAYMENT_METHODS = ["card", "link", "us_bank_account"] as const;
 
 async function startCheckout(
   stripe: Stripe,

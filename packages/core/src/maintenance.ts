@@ -33,16 +33,20 @@ export interface MaintenanceSettings {
 
 export const MAINTENANCE_DEFAULTS: MaintenanceSettings = { visitMinutes: 30, weeksAhead: 4 };
 
-export const VISIT_INTERVALS = [1, 2, 3, 4] as const;
-
 export function maintenanceSettings(settings: unknown): MaintenanceSettings {
   const raw = ((settings as { maintenance?: Record<string, unknown> } | null)?.maintenance ??
     {}) as Record<string, unknown>;
   const minutes = Number(raw.visit_minutes);
   const weeks = Number(raw.weeks_ahead);
   return {
-    visitMinutes: Number.isInteger(minutes) && minutes >= 10 && minutes <= 240 ? minutes : 30,
-    weeksAhead: Number.isInteger(weeks) && weeks >= 1 && weeks <= 12 ? weeks : 4,
+    visitMinutes:
+      Number.isInteger(minutes) && minutes >= 10 && minutes <= 240
+        ? minutes
+        : MAINTENANCE_DEFAULTS.visitMinutes,
+    weeksAhead:
+      Number.isInteger(weeks) && weeks >= 1 && weeks <= 12
+        ? weeks
+        : MAINTENANCE_DEFAULTS.weeksAhead,
   };
 }
 

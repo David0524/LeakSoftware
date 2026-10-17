@@ -22,7 +22,7 @@ export function PackageProvider({ children }: { children: ReactNode }) {
   return <PackageContext value={{ pkg, setPkg }}>{children}</PackageContext>;
 }
 
-export const PACKAGE_OPTIONS: { value: PlanId; label: string }[] = [
+const PACKAGE_OPTIONS: { value: PlanId; label: string }[] = [
   { value: "maintenance", label: "Pool Maintenance" },
   { value: "leak", label: "Leak Detection" },
 ];
@@ -203,7 +203,7 @@ function HeroPhone({ pkg }: { pkg: PlanId }) {
   );
 }
 
-export function StepDots({ n, step }: { n: number; step: number }) {
+function StepDots({ n, step }: { n: number; step: number }) {
   return (
     <div aria-hidden="true" className="mt-5 flex justify-center gap-1.5">
       {Array.from({ length: n }, (_, i) => (
@@ -223,7 +223,7 @@ export function StepDots({ n, step }: { n: number; step: number }) {
 // Leak detection screens
 // ---------------------------------------------------------------------------
 
-export function StopCard({
+function StopCard({
   n,
   time,
   name,

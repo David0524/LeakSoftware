@@ -80,7 +80,7 @@ export function JobSchedule({
  * Assign a tech and a time. Repairs from accepted quotes start here. Suggest Times fits the
  * job into the routes already planned; picking one schedules it there.
  */
-export function ScheduleForm({
+function ScheduleForm({
   jobId,
   techs,
   defaults,

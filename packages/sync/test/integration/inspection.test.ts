@@ -1,6 +1,5 @@
 import {
   calculate,
-  checklistProgress,
   normalizeTestData,
   planComponents,
   type ComponentType,
@@ -218,15 +217,10 @@ describe("M4 sample inspection", () => {
     const comps = (b.store.list("job_component") as unknown as JobComponent[]).filter(
       (c) => c.job_id === job,
     );
-    const results = b.store
-      .list("checklist_item_result")
-      .filter((r) => r.job_id === job) as never[];
-    expect(checklistProgress(comps, results)).toEqual({
-      total: comps.length,
-      inspected: comps.length - 1,
-      excluded: 1,
-      pending: 0,
-    });
+    const results = b.store.list("checklist_item_result").filter((r) => r.job_id === job);
+    expect(results).toHaveLength(comps.length);
+    expect(results.filter((r) => r.status === "inspected")).toHaveLength(comps.length - 1);
+    expect(results.filter((r) => r.status === "excluded")).toHaveLength(1);
     const tests = b.store.list("test_result").filter((t) => t.job_id === job);
     expect(tests).toHaveLength(8);
     expect(tests.filter((t) => t.outcome === "fail")).toHaveLength(3); // Return 3 pressure, bucket, Return 3 dye

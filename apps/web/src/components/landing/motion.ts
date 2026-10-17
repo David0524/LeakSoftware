@@ -10,7 +10,7 @@ function subscribeMotion(onChange: () => void) {
 }
 
 /** True when the person asked for less motion (the demos then show their last step, still). */
-export function useReducedMotion() {
+function useReducedMotion() {
   return useSyncExternalStore(
     subscribeMotion,
     () => window.matchMedia(REDUCE).matches,

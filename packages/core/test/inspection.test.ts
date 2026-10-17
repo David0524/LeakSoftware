@@ -5,14 +5,12 @@ import {
   verdictValues,
   bucketEvaporation,
   calculate,
-  checklistProgress,
   componentApplies,
   nextInstance,
   normalizeTestData,
   planComponents,
   poolDiagram,
   pressureDrop,
-  validateChecklistResult,
   checklistTally,
   verdictLabel,
   validateFinding,
@@ -79,48 +77,6 @@ describe("checklist", () => {
       instance_number: 5,
       label: "Return 5",
     });
-  });
-
-  it("counts progress, treating missing results as pending", () => {
-    const comps = ["a", "b", "c"].map((id): JobComponent => ({
-      id,
-      company_id: "c",
-      job_id: "j",
-      component_type_id: "t",
-      instance_number: 1,
-      label: id,
-      sort_order: 0,
-    }));
-    const results = [
-      {
-        id: "1",
-        company_id: "c",
-        job_id: "j",
-        job_component_id: "a",
-        status: "inspected" as const,
-        method: "Visual",
-      },
-      {
-        id: "2",
-        company_id: "c",
-        job_id: "j",
-        job_component_id: "b",
-        status: "excluded" as const,
-        exclusion_reason: "No diver",
-      },
-    ];
-    expect(checklistProgress(comps, results)).toEqual({
-      total: 3,
-      inspected: 1,
-      excluded: 1,
-      pending: 1,
-    });
-  });
-
-  it("needs a verdict on a checked item, and nothing more for not applicable", () => {
-    expect(validateChecklistResult({ status: "inspected" })).toMatch(/result/);
-    expect(validateChecklistResult({ status: "inspected", outcome: "leaking" })).toBeNull();
-    expect(validateChecklistResult({ status: "excluded" })).toBeNull();
   });
 
   it("counts verdicts for the report tiles and labels them in the shop's words", () => {

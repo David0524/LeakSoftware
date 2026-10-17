@@ -1,7 +1,7 @@
 import { offersLeak } from "@leakbook/core";
 
 /** Settings pages, in the order shown in the settings sidebar. */
-export const SETTINGS_SECTIONS = [
+const SETTINGS_SECTIONS = [
   { href: "/settings/company", label: "Company and Branding" },
   { href: "/settings/team", label: "Team" },
   { href: "/settings/import", label: "Import Customers" },

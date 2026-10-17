@@ -32,13 +32,6 @@ export const JOB_STATUS_TRANSITIONS: Record<JobStatus, readonly JobStatus[]> = {
   done: ["in_progress", "invoiced"],
 };
 
-/** Statuses a new job may be created in (including offline on a phone). */
-export const JOB_INITIAL_STATUSES: readonly JobStatus[] = [
-  "unscheduled",
-  "scheduled",
-  "in_progress",
-];
-
 /** Statuses only the server sets, after sending, acceptance, invoicing, or payment. */
 export const JOB_SERVER_STATUSES: readonly JobStatus[] = [
   "report_sent",
@@ -47,10 +40,6 @@ export const JOB_SERVER_STATUSES: readonly JobStatus[] = [
   "invoiced",
   "paid",
 ];
-
-export function canTransition(from: JobStatus, to: JobStatus): boolean {
-  return from === to || JOB_STATUS_TRANSITIONS[from].includes(to);
-}
 
 /**
  * Next statuses a person (not the server) can pick from the app or office view. Done is

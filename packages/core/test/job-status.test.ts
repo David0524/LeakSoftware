@@ -1,14 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import {
-  JOB_INITIAL_STATUSES,
-  JOB_SERVER_STATUSES,
-  JOB_STATUS_TRANSITIONS,
-  JOB_STATUSES,
-  canTransition,
-  userTransitions,
-} from "../src";
+import { JOB_SERVER_STATUSES, JOB_STATUS_TRANSITIONS, JOB_STATUSES, userTransitions } from "../src";
 
 const dir = join(import.meta.dirname, "../../../supabase/migrations");
 const migration = readFileSync(join(dir, "20261012000300_jobs.sql"), "utf8");
@@ -43,8 +36,7 @@ describe("job status machine", () => {
     expect(fromTs).toEqual(fromSql);
   });
 
-  it("matches the database initial and server-only statuses", () => {
-    expect([...JOB_INITIAL_STATUSES].sort()).toEqual(sqlArray("job_initial_statuses").sort());
+  it("matches the database server-only statuses", () => {
     expect([...JOB_SERVER_STATUSES].sort()).toEqual(sqlArray("job_server_statuses").sort());
   });
 
@@ -53,13 +45,6 @@ describe("job status machine", () => {
       expect(JOB_STATUSES).toContain(from);
       for (const to of tos) expect(JOB_STATUSES).toContain(to);
     }
-  });
-
-  it("allows the main loop and blocks skipping ahead", () => {
-    expect(canTransition("in_progress", "report_sent")).toBe(true);
-    expect(canTransition("quote_accepted", "invoiced")).toBe(true);
-    expect(canTransition("scheduled", "paid")).toBe(false);
-    expect(canTransition("paid", "canceled")).toBe(false);
   });
 
   it("does not offer server-only statuses to people", () => {

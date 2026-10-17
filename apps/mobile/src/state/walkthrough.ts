@@ -5,8 +5,8 @@ import { getServices } from "../lib/services";
 // Which tips this phone has shown, and whether the first-launch cards have been seen
 // (walkthrough, 2026-10-16). Kept on the phone; Settings › Show Tips Again clears both.
 
-export const TIPS_KEY = "walkthrough:tips_seen";
-export const LAUNCH_KEY = "walkthrough:launch_seen";
+const TIPS_KEY = "walkthrough:tips_seen";
+const LAUNCH_KEY = "walkthrough:launch_seen";
 
 const listeners = new Set<() => void>();
 let version = 0;

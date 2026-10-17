@@ -3,8 +3,8 @@ import Stripe from "stripe";
 import dev from "../../../config/supabase-dev.json";
 
 /** The backend the app under test uses (same rule as src/lib/supabase/config.ts). */
-export const SUPABASE_URL = process.env.SUPABASE_URL || dev.url;
-export const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || dev.publishableKey;
+const SUPABASE_URL = process.env.SUPABASE_URL || dev.url;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || dev.publishableKey;
 
 /** Webhook signing secret the started app trusts (playwright.config.ts). */
 export const E2E_WEBHOOK_SECRET = "whsec_leakbook_e2e";

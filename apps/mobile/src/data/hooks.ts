@@ -4,11 +4,6 @@ import { getServices } from "../lib/services";
 import type { SyncStatus } from "../lib/sync-service";
 
 /** Re-render when local data changes (local edits or pulled rows). */
-export function useDataVersion(): number {
-  const { sync } = getServices();
-  return useSyncExternalStore(sync.subscribe, () => sync.version);
-}
-
 export function useSyncStatus(): SyncStatus {
   const { sync } = getServices();
   return useSyncExternalStore(sync.subscribe, () => sync.status);

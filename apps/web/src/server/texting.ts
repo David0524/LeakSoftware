@@ -65,7 +65,7 @@ async function lineByNumber(db: Db, number: string) {
 }
 
 /** The conversation with a phone number, made (and matched to a customer) the first time. */
-export async function conversationFor(db: Db, companyId: string, phone: string) {
+async function conversationFor(db: Db, companyId: string, phone: string) {
   const { data: found } = await db
     .from("conversation")
     .select("id, customer_id, opted_out")

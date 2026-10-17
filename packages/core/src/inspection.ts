@@ -235,35 +235,6 @@ export function nextInstance(type: ComponentType, existing: JobComponent[]): Pla
   };
 }
 
-export interface ChecklistProgress {
-  total: number;
-  inspected: number;
-  excluded: number;
-  pending: number;
-}
-
-export function checklistProgress(
-  components: JobComponent[],
-  results: ChecklistItemResult[],
-): ChecklistProgress {
-  const byComponent = new Map(live(results).map((r) => [r.job_component_id, r]));
-  const p: ChecklistProgress = { total: 0, inspected: 0, excluded: 0, pending: 0 };
-  for (const c of live(components)) {
-    p.total += 1;
-    p[byComponent.get(c.id)?.status ?? "pending"] += 1;
-  }
-  return p;
-}
-
-/** A checked item needs a verdict; not applicable needs nothing more (M8.5). */
-export function validateChecklistResult(r: {
-  status: ChecklistStatus;
-  outcome?: ChecklistOutcome | null;
-}): string | null {
-  if (r.status === "inspected" && !r.outcome) return "Pick a result.";
-  return null;
-}
-
 export interface ChecklistTally {
   /** Not leaking (or "no" on a yes/no item). */
   pass: number;

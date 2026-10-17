@@ -165,13 +165,6 @@ export function lineFromItem(item: PriceBookItem, findingId: string | null): Quo
   };
 }
 
-/** "50% deposit" or "$250.00 deposit" style description of a rule. */
-export function depositRuleText(rule: DepositRule, format: (c: Cents) => string): string {
-  return rule.type === "fixed"
-    ? `${format(rule.value_cents ?? 0)} deposit`
-    : `${(rule.value_bps ?? 0) / 100}% deposit`;
-}
-
 /** The text a tech sends with the quote link. */
 export function quoteShareText(shopName: string, link: string): string {
   return `${shopName}: your repair quote. Review and accept it here: ${link}`;

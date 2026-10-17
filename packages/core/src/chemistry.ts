@@ -7,33 +7,6 @@
 // Pool volume
 // ---------------------------------------------------------------------------
 
-export type PoolShapeForVolume = "rectangle" | "round" | "oval" | "kidney";
-
-/** Gallons per cubic foot of water. */
-const GAL_PER_CUFT = 7.48;
-
-/**
- * Gallons from feet. Rectangle: length × width; round: `length` is the diameter; oval and
- * kidney (freeform) use the usual 0.785 and 0.85 area factors of the bounding box.
- */
-export function poolGallons(
-  shape: PoolShapeForVolume,
-  lengthFt: number,
-  widthFt: number,
-  shallowFt: number,
-  deepFt: number,
-): number {
-  const depth = (shallowFt + deepFt) / 2;
-  const area =
-    shape === "rectangle"
-      ? lengthFt * widthFt
-      : shape === "round"
-        ? Math.PI * (lengthFt / 2) ** 2
-        : lengthFt * widthFt * (shape === "oval" ? 0.785 : 0.85);
-  const g = area * depth * GAL_PER_CUFT;
-  return Number.isFinite(g) && g > 0 ? Math.round(g / 100) * 100 : 0;
-}
-
 // ---------------------------------------------------------------------------
 // Readings and targets
 // ---------------------------------------------------------------------------

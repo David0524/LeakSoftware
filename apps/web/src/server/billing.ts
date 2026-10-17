@@ -42,7 +42,7 @@ export interface SubscriptionRow {
 }
 
 /** Who is billed: the active members (turned-off teammates and pending invites don't count). */
-export async function billedPeople(db: SupabaseClient, companyId: string): Promise<number> {
+async function billedPeople(db: SupabaseClient, companyId: string): Promise<number> {
   const { count, error } = await db
     .from("membership")
     .select("id", { count: "exact", head: true })
@@ -53,7 +53,7 @@ export async function billedPeople(db: SupabaseClient, companyId: string): Promi
 }
 
 /** The shop's monthly price and the plan's name for the invoice line. */
-export async function shopPrice(
+async function shopPrice(
   db: SupabaseClient,
   companyId: string,
 ): Promise<{ services: Services; people: number; cents: number; name: string }> {

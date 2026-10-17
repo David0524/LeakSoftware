@@ -58,15 +58,6 @@ test("owners land on the Dashboard on a computer, and on Today on a phone", asyn
   expect(new URL(page.url()).host).not.toBe("example.com");
 });
 
-test("owner signs in and sees jobs", async ({ page }) => {
-  await signIn(page, OWNER);
-  await expect(page.getByRole("heading", { name: "Jobs" })).toBeVisible();
-  await expect(
-    page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Settings" }),
-  ).toBeVisible();
-  await signOut(page);
-});
-
 test("owner views the M4 sample job", async ({ page }) => {
   await signIn(page, OWNER);
   await page.goto("/jobs?status=all&q=Sam%20Sample");

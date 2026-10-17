@@ -4,7 +4,6 @@ import {
   dryMeasure,
   fluidAmount,
   gallonMeasure,
-  poolGallons,
   saturationIndex,
   targets,
   weightAmount,
@@ -21,16 +20,6 @@ const base: ChemistryInput = {
 };
 const run = (readings: ChemistryInput["readings"], over: Partial<ChemistryInput> = {}) =>
   calculateChemistry({ ...base, ...over, readings });
-
-describe("pool volume", () => {
-  it("uses length × width × average depth × 7.48", () => {
-    // 32 × 16 × 5.5 ft average = 2,816 cu ft = 21,064 gal, rounded to the hundred.
-    expect(poolGallons("rectangle", 32, 16, 3.5, 7.5)).toBe(21_100);
-    expect(poolGallons("round", 24, 0, 4, 4)).toBe(13_500);
-    expect(poolGallons("kidney", 30, 15, 3.5, 6)).toBe(13_600);
-    expect(poolGallons("rectangle", 0, 16, 3, 6)).toBe(0);
-  });
-});
 
 describe("amounts in words", () => {
   it("reads like a tech would measure", () => {

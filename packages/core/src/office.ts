@@ -1,7 +1,6 @@
 // Office view helpers: schedule dates and the job timeline (no I/O).
 
 import { JOB_STATUS_LABELS, type JobStatus } from "./job-status";
-import { localDate } from "./job-list";
 import { zonedTimeToIso } from "./forms";
 import { dateFormat } from "./intl";
 
@@ -68,31 +67,6 @@ export function scheduleBounds(days: string[], timeZone: string): { from: string
     from: zonedTimeToIso(days[0]!, "00:00", timeZone),
     to: zonedTimeToIso(addDays(days[days.length - 1]!, 1), "00:00", timeZone),
   };
-}
-
-export interface Scheduled {
-  assigned_user_id?: string | null;
-  scheduled_start?: string | null;
-}
-
-/** Jobs by tech (null = unassigned), then by local date. */
-export function groupSchedule<T extends Scheduled>(
-  jobs: T[],
-  timeZone: string,
-): Map<string | null, Map<string, T[]>> {
-  const out = new Map<string | null, Map<string, T[]>>();
-  const sorted = [...jobs].sort((a, b) =>
-    (a.scheduled_start ?? "").localeCompare(b.scheduled_start ?? ""),
-  );
-  for (const j of sorted) {
-    if (!j.scheduled_start) continue;
-    const tech = j.assigned_user_id ?? null;
-    const day = localDate(new Date(j.scheduled_start), timeZone);
-    if (!out.has(tech)) out.set(tech, new Map());
-    const byDay = out.get(tech)!;
-    byDay.set(day, [...(byDay.get(day) ?? []), j]);
-  }
-  return out;
 }
 
 export function formatTime(iso: string, timeZone: string): string {

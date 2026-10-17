@@ -47,7 +47,7 @@ export const SheetDone = createContext<((message: string) => void) | undefined>(
 const InGroup = createContext(false);
 
 /** Field-level error for an input inside a SettingsForm. */
-export function useFieldError(name: string): string | undefined {
+function useFieldError(name: string): string | undefined {
   return use(FieldErrors)?.[name];
 }
 

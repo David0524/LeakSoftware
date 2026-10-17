@@ -450,9 +450,6 @@ export function mapsLinks(p: MapPlace): { apple: string; google: string } {
 
 export type MapsApp = "apple" | "google";
 
-/** Values of the per-device choice (the `lb_maps` cookie); anything else means automatic. */
-export const MAPS_CHOICES = ["auto", "apple", "google"] as const;
-
 /**
  * Which maps app directions open in: the device's saved choice, else Apple Maps on iPhone,
  * iPad, and Mac (iPads report themselves as Macs), else Google Maps.

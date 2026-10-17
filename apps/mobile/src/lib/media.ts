@@ -18,7 +18,7 @@ import type { FileSource } from "@leakbook/sync";
  */
 const FOLDER = "media";
 /** Supabase's per-file upload limit on the current plan. */
-export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 
 export class MediaError extends Error {
   constructor(
@@ -36,11 +36,11 @@ function folder(): Directory {
   return dir;
 }
 
-export function relativeMediaPath(mediaId: string, mime: string): string {
+function relativeMediaPath(mediaId: string, mime: string): string {
   return `${FOLDER}/${mediaId}.${extensionForMime(mime)}`;
 }
 
-export function mediaFile(relativePath: string): File {
+function mediaFile(relativePath: string): File {
   return new File(Paths.document, relativePath);
 }
 
@@ -63,16 +63,6 @@ export function storeSignatureSvg(id: string, svg: string): string {
   if (!f.exists) f.create();
   f.write(svg);
   return relativePath;
-}
-
-/** The local copy of a signature drawing, if this phone made it. */
-export function localSignatureUri(id: string): string | null {
-  try {
-    const f = mediaFile(`${FOLDER}/signature-${id}.svg`);
-    return f.exists ? f.uri : null;
-  } catch {
-    return null;
-  }
 }
 
 /** Remove every captured file (sign-out). */
