@@ -173,6 +173,10 @@ const iso = (seconds: number | null | undefined) =>
  * subscription changing. Returns false for anything else.
  */
 export async function applyBillingEvent(event: Stripe.Event, db: SupabaseClient): Promise<boolean> {
+  // Tidemark subscriptions live on the platform account. An event from a shop's connected
+  // account carries metadata that shop wrote, so it never changes anyone's subscription
+  // (security audit, 2026-10-17).
+  if (event.account) return false;
   if (event.type === "checkout.session.completed") {
     const s = event.data.object as Stripe.Checkout.Session;
     if (s.metadata?.kind !== "tidemark_subscription" || !s.metadata.company_id) return false;

@@ -9,6 +9,7 @@ import {
   toE164,
 } from "@leakbook/core";
 import { adminClient } from "./admin";
+import { LIMIT_MESSAGE, READ_ONLY_MESSAGE, shopWritable, takeAllowance } from "./usage";
 import { fetchTwilioFile, sendText, startBridgeCall, twilioConfigured, twiml, xml } from "./twilio";
 
 // Company texting and calls (owner, 2026-10-16), as Housecall Pro does them: one company number
@@ -180,6 +181,15 @@ export async function sendCompanyText(user: Db, userId: string, input: SendInput
     companyId = input.companyId;
   }
   if (!isUsNumber(phone)) throw new TextingError("Tidemark texts US and Canadian numbers only.");
+  if (!(await shopWritable(user, companyId))) throw new TextingError(READ_ONLY_MESSAGE);
+  // Pictures must be ones this person can open: from a conversation they can see, or their own
+  // upload (security audit, 2026-10-17).
+  for (const p of pictures) {
+    if (!p.path.startsWith(`${companyId}/`))
+      throw new TextingError("That picture isn’t this shop’s.");
+    const { error: unreadable } = await user.storage.from("texts").createSignedUrl(p.path, 60);
+    if (unreadable) throw new TextingError("That picture isn’t this shop’s.");
+  }
 
   const db = admin();
   const line = await activeLine(db, companyId);
@@ -188,13 +198,12 @@ export async function sendCompanyText(user: Db, userId: string, input: SendInput
     throw new TextingError("Set up a company number first (Settings › Phone and Texting).");
   if (pictures.length && !line.pictures)
     throw new TextingError("Pictures in texts are turned off.");
-  if (pictures.some((p) => !p.path.startsWith(`${companyId}/`)))
-    throw new TextingError("That picture isn’t this shop’s.");
   const conv = input.conversationId
     ? { id: input.conversationId, ...(await optedOut(db, input.conversationId)) }
     : await conversationFor(db, companyId, phone);
   if (conv.opted_out)
     throw new TextingError("This customer replied STOP. They can text START to get texts again.");
+  if (!(await takeAllowance(companyId, "text", 1, db))) throw new TextingError(LIMIT_MESSAGE);
 
   const { data: row, error } = await db
     .from("text_message")
@@ -276,8 +285,8 @@ export async function receiveText(params: Record<string, string>): Promise<Respo
     const url = params[`MediaUrl${i}`];
     const type = params[`MediaContentType${i}`] ?? "application/octet-stream";
     if (!url) continue;
-    const res = await fetchTwilioFile(url);
-    if (!res.ok) continue;
+    const res = await fetchTwilioFile(url).catch(() => null);
+    if (!res?.ok) continue;
     const ext = type.split("/")[1]?.split(";")[0] ?? "bin";
     const path = `${line.company_id}/${conv.id}/${params.MessageSid ?? crypto.randomUUID()}-${i}.${ext}`;
     const { error } = await db.storage
@@ -481,6 +490,8 @@ export async function startCall(user: Db, userId: string, conversationId: string
     .eq("id", conversationId)
     .maybeSingle();
   if (!conv) throw new TextingError("That conversation isn’t there.");
+  if (!(await shopWritable(user, conv.company_id as string)))
+    throw new TextingError(READ_ONLY_MESSAGE);
   const db = admin();
   const line = await activeLine(db, conv.company_id as string);
   if (line?.status !== "active")
@@ -493,6 +504,8 @@ export async function startCall(user: Db, userId: string, conversationId: string
     throw new TextingError(
       "Add your mobile number first (Settings › Phone and Texting, or Settings in the phone app).",
     );
+  if (!(await takeAllowance(conv.company_id as string, "call", 1, db)))
+    throw new TextingError(LIMIT_MESSAGE);
   const providerSid = await startBridgeCall({
     from: line.number,
     ringPhone: mine,

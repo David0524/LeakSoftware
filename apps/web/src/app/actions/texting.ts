@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/server/admin";
 import { TextingError, activeLine, sendCompanyText, startCall } from "@/server/texting";
 import { TwilioError, buyNumber, searchNumbers, type AvailableNumber } from "@/server/twilio";
+import { READ_ONLY_MESSAGE, shopWritable } from "@/server/usage";
 import type { FormState } from "./auth";
 
 // Company texting and calls from the website (owner, 2026-10-16). Sending goes through the
@@ -45,6 +46,8 @@ export async function findNumbers(_: NumberSearch, form: FormData): Promise<Numb
 
 async function addLine(number: string, source: "new" | "existing", providerSid: string | null) {
   const office = await requireOwner();
+  if (!(await shopWritable(await createClient(), office.company.id)))
+    return { error: READ_ONLY_MESSAGE };
   const db = adminClient();
   if (!db) return { error: "Texting isn’t set up on this server." };
   if (await activeLine(db, office.company.id)) return { error: "This shop already has a number." };
@@ -75,6 +78,9 @@ export async function takeNumber(_: FormState, form: FormData): Promise<FormStat
   const office = await requireOwner();
   const number = toE164(text(form, "number"));
   if (!isUsNumber(number)) return { error: "Pick a number." };
+  // A read-only (unpaid) shop doesn't buy numbers on Tidemark's account (security audit).
+  if (!(await shopWritable(await createClient(), office.company.id)))
+    return { error: READ_ONLY_MESSAGE };
   const db = adminClient();
   if (!db) return { error: "Texting isn’t set up on this server." };
   const id = uuidv7();

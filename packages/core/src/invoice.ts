@@ -102,8 +102,8 @@ export function invoiceShareText(shopName: string, link: string): string {
 export function toCsv(rows: (string | number | null | undefined)[][]): string {
   const cell = (v: string | number | null | undefined) => {
     const s = v === null || v === undefined ? "" : String(v);
-    // A leading =, +, -, or @ would run as a formula in a spreadsheet.
-    const safe = /^[=+\-@]/.test(s) && typeof v === "string" ? `'${s}` : s;
+    // A leading =, +, -, @, tab, or carriage return could run as a formula in a spreadsheet.
+    const safe = /^[=+\-@\t\r]/.test(s) && typeof v === "string" ? `'${s}` : s;
     return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
   };
   return rows.map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";

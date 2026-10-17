@@ -12,6 +12,7 @@ import {
 import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase/config";
 import { adminClient } from "./admin";
 import { EmailNotConfigured, emailConfigured, fromAddress, sendEmail } from "./email";
+import { LIMIT_MESSAGE, ccList, emailRefusal, takeAllowance } from "./usage";
 import { writeNarrative } from "./narrative";
 import { renderPdf, reportPdfPath } from "./pdf";
 
@@ -39,6 +40,10 @@ export async function draftReport(
     snapshot: ReportSnapshot;
     tone: string;
   };
+  // Each draft is a paid AI call: counted against the shop's daily allowance (security audit).
+  const { data: job } = await db.from("job").select("company_id").eq("id", jobId).single();
+  if (!job || !(await takeAllowance(job.company_id as string, "narrative")))
+    throw new Error(LIMIT_MESSAGE);
   const result = await writeNarrative(
     prepared.snapshot,
     narrativeTemplate(template),
@@ -188,6 +193,10 @@ export async function sendReport(
     return { token, link, message, emailed: false };
   }
 
+  // The customer's other addresses get the report too, once each.
+  const cc = ccList(snapshot.customer?.cc_emails, to!);
+  const refusal = await emailRefusal(db, report.company_id as string, 1 + cc.length);
+  if (refusal) throw new Error(refusal);
   let pdf: Buffer | null = null;
   try {
     pdf = await reportPdf(opts.origin, token, {
@@ -200,10 +209,6 @@ export async function sendReport(
   }
   const attach = pdf && pdf.length < 5 * 1024 * 1024;
   const greeting = snapshot.customer?.name ? `Hi ${snapshot.customer.name},` : "Hello,";
-  // The customer's other addresses get the report too, once each.
-  const cc = [
-    ...new Set((snapshot.customer?.cc_emails ?? []).map((e) => e.trim().toLowerCase())),
-  ].filter((e) => e && e !== to!.toLowerCase());
   const sentTo = [to!, ...cc].join(", ");
   try {
     const sent = await sendEmail({

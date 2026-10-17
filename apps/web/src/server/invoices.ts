@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatCents, invoiceShareText } from "@leakbook/core";
 import { adminClient } from "./admin";
 import { EmailNotConfigured, emailConfigured, fromAddress, sendEmail } from "./email";
+import { ccList, emailRefusal } from "./usage";
 
 // Invoices (M9): sending and receipts, shared by the office (cookie session), the phone
 // (bearer token), and Stripe webhooks (service role). `db` acts as whoever is calling; the
@@ -48,11 +49,9 @@ function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
-/** The customer's other addresses, once each, without the main one. */
+/** The customer's other addresses (valid, once each, at most 5), without the main one. */
 function ccFor(d: MailDetails, to: string): string[] {
-  return [...new Set((d.customer?.cc_emails ?? []).map((e) => e.trim().toLowerCase()))].filter(
-    (e) => e && e !== to.toLowerCase(),
-  );
+  return ccList(d.customer?.cc_emails, to);
 }
 
 /** Make the job's invoice draft, or return the open one. */
@@ -96,6 +95,9 @@ export async function sendInvoice(
   if (opts.channel === "link") return result;
 
   const cc = ccFor(d, to!);
+  const { data: inv } = await db.from("invoice").select("company_id").eq("id", invoiceId).single();
+  const refusal = await emailRefusal(db, inv?.company_id as string, 1 + cc.length);
+  if (refusal) throw new Error(refusal);
   const sentTo = [to!, ...cc].join(", ");
   const greeting = d.customer?.name ? `Hi ${d.customer.name},` : "Hello,";
   const what = `Invoice${d.number ? ` #${d.number}` : ""} for ${formatCents(d.total_cents)}`;

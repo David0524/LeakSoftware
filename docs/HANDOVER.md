@@ -117,6 +117,17 @@ scratchpad, which the next chat can't open.
 
 ## Open items
 
+- **Security audit follow-ups (2026-10-17, owner to check):**
+  - Stripe dashboard: confirm the webhook listens to connected-account events (Connect) and
+    that `STRIPE_CONNECT_WEBHOOK_SECRET` is set. Payments now count only from the shop's own
+    connected account, and subscription events only from the platform account.
+  - Vercel: set `APP_BASE_URL` for Production (the site no longer trusts request headers on
+    Vercel, but the production URL should be the custom domain).
+  - The demo code VIP26 is in this public repository: it is now capped at 25 shops. For real
+    partners, add private codes straight in the database (`app.access_code`), not in a
+    migration.
+  - Resend, Anthropic, Deepgram, Twilio and Vercel: set account-level spend limits. Tidemark
+    now also caps each shop per day (`DAILY_LIMIT_*` in `.env.example`).
 - **Owner decisions:**
   - Texting number choice: a new number or the shop's existing one (both are supported).
   - Billing per package and people is built (DECISIONS 2026-10-16); check it once in Stripe

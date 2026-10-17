@@ -141,7 +141,7 @@ select throws_ok($$ select stripe_claim_event('evt_x', 'test') $$, '42501', null
   'members cannot call the Stripe functions');
 reset role;
 set local role anon;
-select throws_ok(format($$ select stripe_record_quote_payment(%L, 'cs_x', null, 1, 'card', 'succeeded') $$,
+select throws_ok(format($$ select stripe_record_quote_payment(%L, 'cs_x', null, 1, 'card', 'succeeded', 'acct_a') $$,
   (select v from st where k = 'q1')), '42501', null, 'nor can visitors');
 reset role;
 
@@ -149,11 +149,11 @@ set local role service_role;
 select is(stripe_claim_event('evt_1', 'checkout.session.completed'), true, 'a new event is claimed');
 select is(stripe_claim_event('evt_1', 'checkout.session.completed'), false, 'a replayed event is not');
 select is(stripe_event_seen('evt_1'), true, 'and is known as handled');
-select is(stripe_record_quote_payment((select v::uuid from st where k = 'q1'), 'cs_ach', null, 65730, 'ach', 'pending'),
+select is(stripe_record_quote_payment((select v::uuid from st where k = 'q1'), 'cs_ach', null, 65730, 'ach', 'pending', 'acct_a'),
   'pending', 'a bank payment starts pending');
-select is(stripe_record_quote_payment((select v::uuid from st where k = 'q1'), 'cs_ach', 'pi_ach', 65730, 'ach', 'succeeded'),
+select is(stripe_record_quote_payment((select v::uuid from st where k = 'q1'), 'cs_ach', 'pi_ach', 65730, 'ach', 'succeeded', 'acct_a'),
   'succeeded', 'and succeeds when the bank confirms');
-select is(stripe_record_quote_payment((select v::uuid from st where k = 'q1'), 'cs_ach', null, 65730, 'ach', 'pending'),
+select is(stripe_record_quote_payment((select v::uuid from st where k = 'q1'), 'cs_ach', null, 65730, 'ach', 'pending', 'acct_a'),
   'succeeded', 'a late pending event does not undo it');
 select is((select (quote_checkout_details((select v::jsonb ->> 'token' from st where k = 'sent1')) ->> 'deposit_paid')::boolean),
   true, 'checkout knows the deposit is paid');

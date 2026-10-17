@@ -6,7 +6,8 @@ export async function POST(request: Request) {
   const db = await clientFromRequest(request);
   if (!db) return jsonError("Sign in again.", 401);
   try {
-    return Response.json(await deleteAccount(db));
+    const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+    return Response.json(await deleteAccount(db, token));
   } catch (e) {
     return jsonError(e instanceof Error ? e.message : String(e), 400);
   }

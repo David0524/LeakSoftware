@@ -183,6 +183,42 @@ describe("Stripe webhooks", () => {
     });
   });
 
+  it("passes the paying connected account to the database with each payment", async () => {
+    const { db, calls } = fakeDb();
+    await applyEvent(session("cs_acct", "paid", "checkout.session.completed", "evt_acct_pay"), db);
+    expect(calls.find((c) => c.fn === "stripe_record_quote_payment")?.args).toMatchObject({
+      paid_account: "acct_shop",
+    });
+  });
+
+  it("never lets a connected account's event change a Tidemark subscription", async () => {
+    const { db, calls } = fakeDb();
+    const updates: unknown[] = [];
+    (db as unknown as { from: unknown }).from = () => ({
+      update: (v: unknown) => {
+        updates.push(v);
+        return { eq: async () => ({ error: null }) };
+      },
+    });
+    const event = signed({
+      id: "evt_forged_sub",
+      object: "event",
+      type: "checkout.session.completed",
+      account: "acct_shop",
+      data: {
+        object: {
+          id: "cs_forged",
+          object: "checkout.session",
+          subscription: "sub_forged",
+          metadata: { kind: "tidemark_subscription", company_id: "c1" },
+        },
+      },
+    });
+    expect(await applyEvent(event, db)).toBe("ignored");
+    expect(updates).toEqual([]);
+    expect(calls.map((c) => c.fn)).toEqual(["stripe_event_seen", "stripe_claim_event"]);
+  });
+
   it("ignores other events but still records them", async () => {
     const { db, calls } = fakeDb();
     const event = signed({

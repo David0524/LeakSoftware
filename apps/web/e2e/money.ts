@@ -52,12 +52,14 @@ export function sessionEvent(
     quote_id: quote.id,
     company_id: quote.company_id,
   },
+  /** The shop's connected account that took the money. */
+  account = "acct_e2e_demo",
 ) {
   return signedEvent({
     id: eventId,
     object: "event",
     type,
-    account: "acct_e2e_demo",
+    account,
     data: {
       object: {
         id: sessionId,

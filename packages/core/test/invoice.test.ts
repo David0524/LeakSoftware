@@ -80,5 +80,6 @@ describe("CSV export", () => {
     ).toBe(
       'Invoice,Customer,Total\r\n2001,"Rivera, ""Riley""",649.00\r\n2002,\'=HYPERLINK(1),\r\n2003,"Line one\nline two",-5\r\n',
     );
+    expect(toCsv([["\t=1+1"]])).toBe("'\t=1+1\r\n");
   });
 });

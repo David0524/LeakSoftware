@@ -41,6 +41,36 @@ describe("transcribeMedia", () => {
     ]);
   });
 
+  it("sends each voice note to the speech service once at a time (security audit)", async () => {
+    let calls = 0;
+    let claimed = false;
+    const { d } = deps(audio, async () => {
+      calls++;
+      return "heard";
+    });
+    d.claim = async () => {
+      if (claimed) return false;
+      claimed = true;
+      return true;
+    };
+    const results = await Promise.all([1, 2, 3, 4, 5].map(() => transcribeMedia(d, "m1")));
+    expect(calls).toBe(1);
+    expect(results.filter((r) => r.status === 409)).toHaveLength(4);
+  });
+
+  it("refuses when the shop is read-only or out of allowance, before any paid call", async () => {
+    let calls = 0;
+    const { d } = deps(audio, async () => {
+      calls++;
+      return "x";
+    });
+    d.mayStart = async () => "This shop is read-only until its Tidemark subscription is paid.";
+    expect((await transcribeMedia(d, "m1")).status).toBe(423);
+    d.mayStart = async () => "Your shop has reached today’s limit for this. It resets tomorrow.";
+    expect((await transcribeMedia(d, "m1")).status).toBe(429);
+    expect(calls).toBe(0);
+  });
+
   it("refuses rows the user cannot see, non-audio, and audio still uploading", async () => {
     const speech = async () => "x";
     expect((await transcribeMedia(deps(null, speech).d, "m1")).status).toBe(404);

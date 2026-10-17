@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-17 (owner: "Yes, run a full security audit"; "fix whatever it finds when it's done")
+- **Full security audit** with the Cloudflare skill (standard profile, sandboxed local checks, no live systems): 8 confirmed findings (2 medium, 6 low) and 6 leads that depend on deployment settings; no cross-tenant data access found. The report stays out of this public repository.
+- **Fixed** (migration `20261012004400_security_audit_fixes.sql` and the web code): Stripe payments count only from the record's own shop's connected account, and subscription events only from the platform account; read-only (unpaid) shops can't buy numbers, text, call, email, or transcribe; account deletion needs the two-step code on the phone API too; demo codes have limits (VIP26 capped at 25) and never revive canceled or overdue shops; shops made by calling `create_company` directly need a card when billing is on; the routing counter can't be reset; limited techs can't reach a hidden job through a second reference (signature quote, picture finding, quote line finding) or turn off its links, can't open hidden conversations' pictures, and their phones drop conversations when a job's customer changes or the job is deleted; links and opt-outs honor expiry; the site origin never comes from request headers on Vercel; invoice PDFs are printed once per version; the leads CSV quotes carriage returns.
+- **Daily allowances per shop** for work Tidemark pays for (email recipients 300, AI drafts 60, transcriptions 200, texts 500, calls 100), counted by the server only; `DAILY_LIMIT_*` overrides. A voice note is transcribed by one request at a time.
+
 ## 2026-10-17 (owner: "npx skills add https://github.com/cloudflare/security-audit-skill --skill security-audit")
 - **Security audit skill** (Cloudflare, MIT) for security questions, focused reviews, and full audits. Like the other skills it is installed by `scripts/session-start.sh` at a pinned, reviewed commit into `~/.claude/skills/security-audit`, not committed. A full audit writes its report outside the repository (`~/security-audit-skill/`), since the repository is public.
 

@@ -366,6 +366,9 @@ export async function applyEvent(
         amount: s.amount_total ?? 0,
         pay_method: method,
         pay_status: status,
+        // The database records the payment only when it was taken on the record's own shop's
+        // connected account (security audit, 2026-10-17).
+        paid_account: event.account ?? null,
       };
       if (s.metadata?.kind === "quote_deposit" && s.metadata.quote_id) {
         await rpc(d, "stripe_record_quote_payment", {

@@ -14,7 +14,8 @@ import {
 import { getOffice } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/server/admin";
-import { deepgram, transcribeMedia } from "@/server/transcribe";
+import { transcribeMedia } from "@/server/transcribe";
+import { transcriptionDeps } from "@/server/transcription";
 
 // Photos, videos, voice notes, and signatures from the browser (M9.5). The browser uploads
 // the file straight to storage with a one-time upload URL made here as the signed-in member
@@ -131,28 +132,7 @@ async function transcribe(mediaId: string) {
   const key = process.env.DEEPGRAM_API_KEY;
   if (!admin || !key) return;
   const db = await createClient();
-  await transcribeMedia(
-    {
-      async loadMedia(id) {
-        const { data } = await db
-          .from("media")
-          .select("id, kind, upload_state, storage_path, transcript, transcript_status")
-          .eq("id", id)
-          .maybeSingle();
-        return data;
-      },
-      async signedUrl(path) {
-        const { data, error } = await db.storage.from("media").createSignedUrl(path, 600);
-        if (error || !data) throw new Error(error?.message ?? "No signed URL");
-        return data.signedUrl;
-      },
-      async saveTranscript(id, values) {
-        await admin.from("media").update(values).eq("id", id);
-      },
-      speechToText: deepgram(key),
-    },
-    mediaId,
-  );
+  await transcribeMedia(transcriptionDeps(db, admin, key), mediaId);
 }
 
 /** Arrows, circles, and labels drawn over a photo, and its caption. The photo is untouched. */

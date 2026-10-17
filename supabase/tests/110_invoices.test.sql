@@ -36,7 +36,7 @@ set local role anon;
 select accept_quote_by_link((select v from st where k = 'qtok'), 'Sam', true);
 reset role;
 set local role service_role;
-select stripe_record_quote_payment((select v::uuid from st where k = 'q1'), 'cs_dep', null, 65730, 'card', 'succeeded');
+select stripe_record_quote_payment((select v::uuid from st where k = 'q1'), 'cs_dep', null, 65730, 'card', 'succeeded', 'acct_a');
 reset role;
 insert into st select 'repair', repair_job_id::text from quote where id = (select v::uuid from st where k = 'q1');
 
@@ -118,18 +118,18 @@ select is((record_invoice_payment((select v::uuid from st where k = 'inv'), 2000
 reset role;
 
 set local role service_role;
-select is((stripe_record_invoice_payment((select v::uuid from st where k = 'inv'), 'cs_inv', null, 45730, 'ach', 'pending') ->> 'status'),
+select is((stripe_record_invoice_payment((select v::uuid from st where k = 'inv'), 'cs_inv', null, 45730, 'ach', 'pending', 'acct_a') ->> 'status'),
   'partially_paid', 'a bank payment in progress leaves it partly paid');
 select is((invoice_checkout_details((select v::jsonb ->> 'token' from st where k = 'sent')) ->> 'payment_pending')::boolean,
   true, 'checkout knows a payment is processing');
 select results_eq(
   format($$ select j ->> 'status', (j ->> 'paid_now')::boolean
-            from stripe_record_invoice_payment(%L, 'cs_inv', 'pi_inv', 45730, 'ach', 'succeeded') j $$,
+            from stripe_record_invoice_payment(%L, 'cs_inv', 'pi_inv', 45730, 'ach', 'succeeded', 'acct_a') j $$,
          (select v from st where k = 'inv')),
   $$ values ('paid', true) $$, 'when it clears the invoice is paid, once');
 select results_eq(
   format($$ select j ->> 'status', (j ->> 'paid_now')::boolean
-            from stripe_record_invoice_payment(%L, 'cs_inv', null, 45730, 'ach', 'pending') j $$,
+            from stripe_record_invoice_payment(%L, 'cs_inv', null, 45730, 'ach', 'pending', 'acct_a') j $$,
          (select v from st where k = 'inv')),
   $$ values ('paid', false) $$, 'a late event changes nothing');
 select is((invoice_mail_details((select v::uuid from st where k = 'inv')) ->> 'balance_cents')::int, 0,
@@ -189,7 +189,7 @@ set local role anon;
 select accept_quote_by_link((select v from st where k = 'qtok2'), 'Sam', true);
 reset role;
 set local role service_role;
-select stripe_record_quote_payment((select v::uuid from st where k = 'q2'), 'cs_dep2', null, 21650, 'ach', 'pending');
+select stripe_record_quote_payment((select v::uuid from st where k = 'q2'), 'cs_dep2', null, 21650, 'ach', 'pending', 'acct_a');
 reset role;
 update job set status = 'in_progress'
 where id = (select repair_job_id from quote where id = (select v::uuid from st where k = 'q2'));

@@ -81,6 +81,9 @@ async function requireCard(companyId: string) {
   const admin = adminClient();
   if (!admin || !billingConfigured()) return;
   await admin.from("subscription").update({ card_required: true }).eq("company_id", companyId);
+  // Shops made any other way (calling create_company directly) need a card too (security
+  // audit, 2026-10-17): the database sets it at sign-up from now on.
+  await admin.rpc("require_card_at_signup", { required: true });
 }
 
 /** Start a trial: create the account and the company in one step. */

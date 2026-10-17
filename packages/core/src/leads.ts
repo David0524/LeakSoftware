@@ -59,7 +59,8 @@ export function leadsCsv(rows: LeadRow[]): string {
   const cell = (v: unknown) => {
     let s = v == null ? "" : String(v);
     if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    // A bare carriage return splits the row in some spreadsheets, so it is quoted too.
+    return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const head = [
     "Name",

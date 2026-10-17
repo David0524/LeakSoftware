@@ -141,6 +141,8 @@ export async function startBridgeCall(input: {
 
 /** A recording or a picture Twilio holds (it needs the account's credentials). */
 export async function fetchTwilioFile(url: string): Promise<Response> {
+  // The account's credentials only ever go to Twilio's own API (security audit hardening).
+  if (new URL(url).hostname !== "api.twilio.com") throw new Error("Not a Twilio media URL");
   return fetch(url, {
     headers: {
       authorization: `Basic ${Buffer.from(`${sid()}:${token()}`).toString("base64")}`,

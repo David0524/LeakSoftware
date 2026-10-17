@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import { deepgram, transcribeMedia } from "@/server/transcribe";
+import { transcribeMedia } from "@/server/transcribe";
+import { transcriptionDeps } from "@/server/transcription";
 
 export const maxDuration = 60;
 
@@ -26,29 +27,6 @@ export async function POST(request: Request, ctx: RouteContext<"/api/media/[id]/
   });
   const admin = createClient(url, serviceKey, options);
 
-  const result = await transcribeMedia(
-    {
-      async loadMedia(mediaId) {
-        const { data } = await asUser
-          .from("media")
-          .select("id, kind, upload_state, storage_path, transcript, transcript_status")
-          .eq("id", mediaId)
-          .is("deleted_at", null)
-          .maybeSingle();
-        return data;
-      },
-      async signedUrl(path) {
-        const { data, error } = await asUser.storage.from("media").createSignedUrl(path, 600);
-        if (error || !data) throw new Error(error?.message ?? "No signed URL");
-        return data.signedUrl;
-      },
-      async saveTranscript(mediaId, values) {
-        const { error } = await admin.from("media").update(values).eq("id", mediaId);
-        if (error) throw new Error(error.message);
-      },
-      speechToText: deepgram(deepgramKey),
-    },
-    id,
-  );
+  const result = await transcribeMedia(transcriptionDeps(asUser, admin, deepgramKey), id);
   return Response.json(result.body, { status: result.status });
 }

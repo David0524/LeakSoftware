@@ -50,4 +50,10 @@ describe("leads", () => {
     expect(csv).toContain('"Said ""call Tuesday"", busy"');
     expect(csv).toContain("Left the sign-up form");
   });
+
+  it("keeps a carriage return inside its cell, so no row can start with a formula", () => {
+    const csv = leadsCsv([{ ...base, name: "Dummy\r=1+1" }]);
+    expect(csv).toContain('"Dummy\r=1+1"');
+    expect(csv.split("\n")[1]).toMatch(/^"Dummy\r=1\+1",/);
+  });
 });

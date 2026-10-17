@@ -213,6 +213,8 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
       quote!,
       "paid",
       5_625,
+      undefined,
+      account,
     ),
   );
 
@@ -246,6 +248,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
         invoice_id: inv!.id as string,
         company_id: companyId,
       },
+      account,
     ),
   );
   await customer.reload();
