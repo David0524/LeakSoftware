@@ -324,8 +324,8 @@ export function gettingStarted(services: Services, p: ShopProgress): StartStep[]
     pool && {
       id: "customers",
       label: "Add your customers and their pools",
-      detail: "Name, address, and the pool’s size.",
-      href: "/customers",
+      detail: "Import a spreadsheet, or add them one by one.",
+      href: "/settings/import",
       done: p.customers > 0,
     },
     pool && {

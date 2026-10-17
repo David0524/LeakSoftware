@@ -4,6 +4,7 @@ import { offersLeak } from "@leakbook/core";
 export const SETTINGS_SECTIONS = [
   { href: "/settings/company", label: "Company and Branding" },
   { href: "/settings/team", label: "Team" },
+  { href: "/settings/import", label: "Import Customers" },
   { href: "/settings/scheduling", label: "Scheduling and Routes" },
   { href: "/settings/phone", label: "Phone and Texting" },
   { href: "/settings/price-book", label: "Price Book" },

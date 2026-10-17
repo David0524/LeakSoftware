@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-17 (owner: "How should I handle integrations?" … "Yes, build the importer")
+- **Shops switch to Tidemark with Import Customers** (Settings › Import Customers), not by sending files to be imported by hand. A CSV exported from Skimmer, Pool Brain, Jobber, QuickBooks, Excel, or Google Sheets becomes customers, their pools, and (pool care) visit plans, whose visits go straight onto the schedule. Columns are matched from their names and can be changed; a preview shows what will be made and what's worth a look (a second service day, a tech not on the team, a bad email); everything is made in one transaction or not at all.
+- **Customers already in Tidemark are left out** (same email, phone, or name and address), so the same file can be imported twice safely.
+- **Choices:** CSV only (Excel files are saved as CSV first; no spreadsheet library); up to 2,000 rows a file; a "Monthly price" column becomes a price per visit over the visits in an average month; two service days a week use the first (Tidemark plans one day); visits start on the next service day; no job history (shops keep their old system read-only for a while).
+- **Staff can import for a shop** during the setup call (Leads › Import Customers, `/admin/import`, staff with two-step sign-in), so a shop's file never travels by email.
+- **No live integrations yet.** Later, if shops ask: QuickBooks Online (invoices and payments) and a calendar feed of each tech's schedule.
+
 ## 2026-10-16 (owner: "If someone puts their name/email in and doesn't pay, I want that information, so we can call them")
 - **Sign-up asks for a mobile phone** (US or Canada, required), saved on the account and the owner's profile.
 - **Leads are kept from the moment the email is valid** on the sign-up form, with whatever name, company, phone, and package are filled in, even if the person leaves (`public.signup_lead`, readable and writable only by the server). The form says "We may call or text to help you get set up"; the privacy policy says so too. Everyone who signed up before is on the list from their accounts.

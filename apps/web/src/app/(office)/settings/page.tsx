@@ -14,7 +14,13 @@ export default async function SettingsIndex() {
   const groups = [
     {
       title: "Your shop",
-      hrefs: ["/settings/company", "/settings/team", "/settings/scheduling", "/settings/phone"],
+      hrefs: [
+        "/settings/company",
+        "/settings/team",
+        "/settings/import",
+        "/settings/scheduling",
+        "/settings/phone",
+      ],
     },
     {
       title: "Money",
@@ -35,6 +41,7 @@ export default async function SettingsIndex() {
   const detail: Record<string, string> = {
     "/settings/company": "Shown on reports, quotes, and invoices",
     "/settings/team": "Techs, owners, and invites",
+    "/settings/import": "From a spreadsheet or your old software",
     "/settings/scheduling": "Working day, shop location, and drive times",
     "/settings/phone": "The company number for texts and calls",
     "/settings/price-book": offersPool(company.settings)

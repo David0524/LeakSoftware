@@ -188,6 +188,14 @@ async function Leads({
                       Mark Called
                     </Button>
                   )}
+                  {l.company_id ? (
+                    <Link
+                      href={`/admin/import?company=${l.company_id}`}
+                      className="min-h-11 content-center px-2 text-link"
+                    >
+                      Import Customers
+                    </Link>
+                  ) : null}
                 </form>
               </li>
             );

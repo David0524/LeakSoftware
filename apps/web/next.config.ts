@@ -31,6 +31,8 @@ const nextConfig: NextConfig = {
     // Keep screens visited in the last minute, so going back to a tab is instant (owner,
     // 2026-10-16: the wait between screens). Saving anything refreshes them at once.
     staleTimes: { dynamic: 60 },
+    // Import Customers sends up to 2,000 rows to the server at once (owner, 2026-10-16).
+    serverActions: { bodySizeLimit: "5mb" },
   },
   turbopack: {
     rules: {

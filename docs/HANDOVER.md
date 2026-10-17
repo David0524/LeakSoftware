@@ -45,6 +45,9 @@ entries in `docs/DECISIONS.md` (2026-10-15 and 2026-10-16 cover everything below
   not been seen on a device.
 - **Leads (2026-10-16):** `/admin/leads`. To see it: set `TIDEMARK_STAFF_EMAILS` on Vercel to the
   owner's email, turn on two-step sign-in (More › Two-Step Sign-In), sign in again.
+- **Import Customers (2026-10-17):** Settings › Import Customers for owners; `/admin/import` from
+  Leads for staff. Parsing and matching in `packages/core/src/import.ts`, the server in
+  `apps/web/src/server/import.ts`, all-or-nothing in `public.import_customers`.
 - **Milestones:** M0 to M11 are built (see the 2026-10-14 handover in git history for
   M11). Since then the work has been owner requests, listed below.
 
