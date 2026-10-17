@@ -37,7 +37,7 @@ test("an owner imports customers, pools, and visit plans from a CSV", async ({ p
 
   const { data: plans } = await admin!
     .from("service_plan")
-    .select("id, interval_weeks, price_cents, customer:customer_id(name)")
+    .select("id, interval_weeks, price_cents")
     .in(
       "customer_id",
       (await admin!.from("customer").select("id").like("name", `Imported % ${RUN}`)).data!.map(
