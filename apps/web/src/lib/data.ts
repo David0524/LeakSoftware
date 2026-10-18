@@ -13,6 +13,7 @@ import type {
   JobStatus,
   Media,
   Property,
+  PlanCleaning,
   ServicePlan,
   SeverityLevel,
   TestResult,
@@ -399,7 +400,7 @@ export async function getCustomer(office: Office, id: string) {
     await supabase
       .from("customer")
       .select(
-        `*, properties:property!property_customer_id_company_id_fkey(*, jobs:job!job_property_id_company_id_fkey(*, bill_to:customer!job_bill_to_customer_id_company_id_fkey(*)), plans:service_plan!service_plan_property_id_company_id_fkey(*))`,
+        `*, properties:property!property_customer_id_company_id_fkey(*, jobs:job!job_property_id_company_id_fkey(*, bill_to:customer!job_bill_to_customer_id_company_id_fkey(*)), plans:service_plan!service_plan_property_id_company_id_fkey(*, cleanings:plan_cleaning!plan_cleaning_service_plan_id_company_id_fkey(*)))`,
       )
       .eq("company_id", office.company.id)
       .eq("id", id)
@@ -407,13 +408,14 @@ export async function getCustomer(office: Office, id: string) {
       .is("properties.deleted_at", null)
       .is("properties.jobs.deleted_at", null)
       .is("properties.plans.deleted_at", null)
+      .is("properties.plans.cleanings.deleted_at", null)
       .order("address_line1", { referencedTable: "properties" })
       .maybeSingle(),
   ) as
     | (Customer & {
         properties: (Property & {
           jobs: (Job & { bill_to: Customer | null })[];
-          plans: ServicePlan[];
+          plans: (ServicePlan & { cleanings: PlanCleaning[] })[];
         })[];
       })
     | null;

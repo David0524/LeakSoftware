@@ -104,3 +104,42 @@ export function upcomingVisitDates(
   }
   return out;
 }
+
+/**
+ * A plan's cleaning done every few months (owner, 2026-10-18): the database puts it on the
+ * first visit on or after next_due and moves next_due on once it's done
+ * (20261012004700_scheduled_cleanings.sql).
+ */
+export interface PlanCleaning {
+  id: string;
+  company_id: string;
+  service_plan_id: string;
+  component_type_id: string;
+  every_months: number;
+  next_due: string;
+  last_done_on?: string | null;
+  /** Billed per cleaning done; null: included in the visit price. */
+  price_cents?: number | null;
+  deleted_at?: string | null;
+}
+
+/** How often a cleaning can repeat, in months. */
+export const CLEANING_MONTHS = [1, 2, 3, 6] as const;
+
+/** "Every 3 months", "Every month". */
+export function cleaningCadence(months: number): string {
+  return months === 1 ? "Every month" : `Every ${months} months`;
+}
+
+/** "Clean filter every 3 months · $40.00 each" */
+export function cleaningSummary(
+  name: string,
+  cleaning: Pick<PlanCleaning, "every_months" | "price_cents">,
+): string {
+  return [
+    `${name} ${cleaningCadence(cleaning.every_months).toLowerCase()}`,
+    cleaning.price_cents != null ? `${formatCents(cleaning.price_cents)} each` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}

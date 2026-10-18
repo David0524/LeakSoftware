@@ -38,6 +38,11 @@ export interface ComponentType extends Base {
   job_type?: "detection" | "maintenance";
   /** Only for this pool type (vinyl checks); null for every pool. */
   applies_to_pool_type?: string | null;
+  /**
+   * Done every few months (filter, salt cell): kept off new visits; a maintenance plan's
+   * cleaning puts it on the visit it's due.
+   */
+  on_schedule?: boolean;
   allows_multiple: boolean;
   default_count: number;
   applies_to: "pool" | "spa" | "both";
@@ -53,6 +58,8 @@ export interface JobComponent extends Base {
   label: string;
   location_note?: string | null;
   sort_order: number;
+  /** Put on this visit by a plan's scheduled cleaning (server-set). */
+  plan_cleaning_id?: string | null;
 }
 
 export type ChecklistStatus = "pending" | "inspected" | "excluded";
@@ -205,7 +212,11 @@ export function planComponents(
 ): PlannedComponent[] {
   return live(types)
     .filter(
-      (t) => t.active && (t.job_type ?? "detection") === jobType && componentApplies(t, property),
+      (t) =>
+        t.active &&
+        !t.on_schedule &&
+        (t.job_type ?? "detection") === jobType &&
+        componentApplies(t, property),
     )
     .sort((a, b) => a.sort_order - b.sort_order)
     .flatMap((t) =>

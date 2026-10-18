@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   MAINTENANCE_DEFAULTS,
   cadenceLabel,
+  cleaningSummary,
   maintenanceSettings,
   planSummary,
   upcomingVisitDates,
@@ -80,5 +81,16 @@ describe("maintenance plans", () => {
     );
     expect(verdictLabel({ status: "excluded", outcome: null }, "done")).toBe("Skipped");
     expect(userTransitions("in_progress", "maintenance")).toContain("done");
+  });
+});
+
+describe("scheduled cleanings", () => {
+  it("says what, how often, and the price", () => {
+    expect(cleaningSummary("Clean filter", { every_months: 3, price_cents: 4000 })).toBe(
+      "Clean filter every 3 months · $40.00 each",
+    );
+    expect(cleaningSummary("Clean salt cell", { every_months: 1, price_cents: null })).toBe(
+      "Clean salt cell every month",
+    );
   });
 });

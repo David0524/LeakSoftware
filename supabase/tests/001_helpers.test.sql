@@ -48,7 +48,7 @@ create or replace function tests.make_company(label text) returns jsonb
 language plpgsql as $$
 declare
   c uuid; o uuid; t uuid; cust uuid; prop uuid; j uuid; jc uuid; tr uuid; f uuid;
-  rep uuid; q uuid; qli uuid; inv uuid; conv uuid;
+  rep uuid; q uuid; qli uuid; inv uuid; conv uuid; sp uuid;
 begin
   o := tests.create_user(label || '-owner@test.local');
   t := tests.create_user(label || '-tech@test.local');
@@ -91,7 +91,10 @@ begin
     values (c, j, 'email', 'c@example.com', 'report');
   -- Paused, so it makes no visits here (200_maintenance tests the visits).
   insert into service_plan (company_id, customer_id, property_id, assigned_user_id, starts_on, paused)
-    values (c, cust, prop, t, current_date, true);
+    values (c, cust, prop, t, current_date, true) returning id into sp;
+  insert into plan_cleaning (company_id, service_plan_id, component_type_id, every_months, next_due)
+    values (c, sp, (select id from component_type where company_id = c and key = 'svc_filter_clean'),
+            3, current_date);
   -- Company texting: a number per shop, made unique by the label.
   insert into phone_line (company_id, number)
     values (c, '+1555' || lpad((abs(hashtext(label)) % 10000000)::text, 7, '0'));

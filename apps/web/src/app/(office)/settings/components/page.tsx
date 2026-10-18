@@ -54,16 +54,23 @@ function TypeFields({ t, kind }: { t?: ComponentType; kind: Kind }) {
             defaultValue={t?.sort_order ?? 600}
           />
         </SettingsFields>
-        {t ? (
-          <SettingsFields>
+        <SettingsFields>
+          <SSwitch
+            label="On a schedule"
+            name="on_schedule"
+            id={`schedule-${p}`}
+            defaultChecked={t?.on_schedule ?? false}
+            hint="Done every few months, like cleaning the filter. Each maintenance plan sets how often."
+          />
+          {t ? (
             <SSwitch
               label="On new visits"
               name="active"
               id={`active-${p}`}
               defaultChecked={t.active}
             />
-          </SettingsFields>
-        ) : null}
+          ) : null}
+        </SettingsFields>
       </>
     );
   return (
@@ -147,7 +154,15 @@ export default async function ComponentsPage({ searchParams }: PageProps<"/setti
   );
   const groups =
     kind === "pool"
-      ? [{ value: "visit", label: "Every visit", rows: mine }]
+      ? [
+          { value: "visit", label: "Every visit", rows: mine.filter((t) => !t.on_schedule) },
+          {
+            value: "schedule",
+            label: "On a schedule",
+            rows: mine.filter((t) => t.on_schedule),
+            footer: "Each maintenance plan sets how often, from the customer's page.",
+          },
+        ].filter((g) => g.rows.length)
       : LEAK_SECTIONS.map((v) => ({
           value: v,
           label: CHECKLIST_SECTION_LABELS[v],
@@ -194,7 +209,7 @@ export default async function ComponentsPage({ searchParams }: PageProps<"/setti
         <SettingsAddButton label="Add Component" />
       </div>
       {groups.map((g) => (
-        <Grouped key={g.value} title={g.label}>
+        <Grouped key={g.value} title={g.label} footer={"footer" in g ? g.footer : undefined}>
           {g.rows.map((t) => (
             <SheetRow
               key={t.id}

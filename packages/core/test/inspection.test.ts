@@ -56,6 +56,16 @@ describe("checklist", () => {
     ]);
   });
 
+  it("leaves items done on a schedule off new visits", () => {
+    const visit = [
+      type("skim", { job_type: "maintenance" }),
+      type("filter_clean", { job_type: "maintenance", on_schedule: true }),
+    ];
+    expect(
+      planComponents(visit, { has_pool: true, has_spa: false }, "maintenance").map((c) => c.label),
+    ).toEqual(["Skim"]);
+  });
+
   it("includes the spa when the property has one", () => {
     expect(planComponents(types, { has_pool: true, has_spa: true }).map((c) => c.label)).toContain(
       "Spa",

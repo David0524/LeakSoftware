@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "On the maintenance package, let's have a way to schedule regular salt cell and filter cleanings")
+- **Checklist items on a schedule:** a pool visit item can be marked "On a schedule" (Settings › Checklist Components). It stays off ordinary visits. Pool shops get two: Clean filter and Clean salt cell. The price book's filter and salt cell cleanings point at them.
+- **Per plan, under Regular Cleanings:** turn one on, then choose how often (monthly, or every 2, 3, or 6 months), when it's next due, and an optional price. It goes on the plan's first visit on or after the due date (a visit up to six days late still counts). Done on that visit, it's next due one interval after the visit's date. Skipped, it stays due and moves to the next visit. Visits already started keep what they have.
+- **Billing:** a priced cleaning that was done is its own line on the month's invoice ("Clean filter, Nov 4") after the visit's line. No price means the visit price covers it. A visit with no price but a priced cleaning is still billed.
+
 ## 2026-10-18 (owner: "Have 'Deposit percentage' default to 0 for new accounts. Same with 'largest tech discount'")
 - **New shops start with no deposit and a 0% tech discount limit** (company settings default; onboarding's deposit choice starts at None). Owners turn either on in Settings › Payments. Existing shops keep their settings; the demo shop keeps 50% and 10% so the demo shows them.
 

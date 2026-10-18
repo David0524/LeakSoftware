@@ -413,6 +413,8 @@ export async function saveComponentType(_: FormState, form: FormData): Promise<F
     methods: visit ? ["Service"] : methods,
     sort_order: int(form, "sort_order"),
     active: id ? checked(form, "active") : true,
+    // Pool visit items done every few months, set per plan (owner, 2026-10-18).
+    on_schedule: visit && checked(form, "on_schedule"),
     ...(visit ? {} : { section }),
   };
   const { error } = await upsert(

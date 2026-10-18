@@ -133,3 +133,67 @@ test("New Job books a maintenance visit, or starts a plan for a new customer", a
     /^Every \w+day · any time · 30 min · \$110\.00 a visit/,
   );
 });
+
+// Owner, 2026-10-18: "schedule regular salt cell and filter cleanings". A plan's filter cleaning
+// goes on the first visit on or after its due date, and only that one.
+test("a plan's filter cleaning goes on the visit it's due", async ({ page }) => {
+  test.setTimeout(180_000);
+  const owner = await signedInClient(OWNER.email, OWNER.password);
+  const { data: who } = await owner.auth.getUser();
+  const { data: membership } = await owner
+    .from("membership")
+    .select("company_id")
+    .eq("user_id", who.user!.id)
+    .limit(1)
+    .single();
+  const name = `Filter Cleaning ${RUN}`;
+  const { data: jobId, error } = await owner.rpc("create_job", {
+    target_company: membership!.company_id,
+    new_customer: { name },
+    existing_customer: null,
+    new_property: { address_line1: "455 N Galvin Pkwy", city: "Phoenix", state: "AZ" },
+    existing_property: null,
+    job: { status: "unscheduled" },
+    components: [],
+  });
+  if (error) throw error;
+  const { data: job } = await owner
+    .from("job")
+    .select("bill_to_customer_id")
+    .eq("id", jobId)
+    .single();
+  const day = tomorrow();
+  const nextWeek = new Date(Date.parse(`${day}T12:00:00Z`) + 7 * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+
+  await signIn(page, OWNER, "/jobs");
+  await page.goto(`/customers/${job!.bill_to_customer_id}`);
+  await page.getByRole("button", { name: "Add Maintenance Plan" }).click();
+  const sheet = page.getByRole("dialog", { name: "Add Maintenance Plan" });
+  await sheet.getByLabel("First visit").fill(day);
+  await sheet.getByLabel("Tech", { exact: true }).selectOption({ label: "Priya Shah" });
+  await sheet.getByRole("switch", { name: "Clean filter" }).check();
+  await sheet.getByRole("radio", { name: "Every 3 Months" }).click();
+  await sheet.getByLabel("Next due").fill(nextWeek);
+  await sheet.getByLabel("Price each time ($)").fill("40");
+  await sheet.getByRole("button", { name: "Add Plan" }).click();
+  const plan = page.getByTestId("plan");
+  await expect(plan).toContainText("Clean filter every 3 months · $40.00 each · next");
+
+  // Tomorrow's visit has the usual checklist; next week's has the filter cleaning too.
+  const { data: visits } = await owner
+    .from("job")
+    .select("id, plan_date, job_component(label, deleted_at)")
+    .eq("bill_to_customer_id", job!.bill_to_customer_id)
+    .eq("type", "maintenance")
+    .is("deleted_at", null)
+    .in("plan_date", [day, nextWeek]);
+  const labels = (d: string) =>
+    (visits ?? [])
+      .find((v) => v.plan_date === d)!
+      .job_component.filter((c) => !c.deleted_at)
+      .map((c) => c.label);
+  expect(labels(day)).not.toContain("Clean filter");
+  expect(labels(nextWeek)).toContain("Clean filter");
+});

@@ -1,20 +1,38 @@
 "use client";
 
 import { useState } from "react";
-import { formatDay, planSummary, upcomingVisitDates, type ServicePlan } from "@leakbook/core";
+import {
+  CLEANING_MONTHS,
+  cleaningSummary,
+  formatDay,
+  planSummary,
+  upcomingVisitDates,
+  type PlanCleaning,
+  type ServicePlan,
+} from "@leakbook/core";
 import { endPlan, savePlan, setPlanPaused } from "@/app/actions/maintenance";
 import { Segmented } from "./segmented";
-import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
+import { FieldError, SField, SSwitch, STextArea, SettingsForm } from "./settings-forms";
 import { SheetRow } from "./settings-list";
 import { Grouped, Row, Select } from "./ui";
 
 // Maintenance on the customer's page, per pool (owner request, 2026-10-13): the plan in one
 // line, its next visits, and owners can add, change, pause, or end it.
 
+/** A checklist item done on a schedule (Settings › Checklist Components). */
+export interface CleaningType {
+  id: string;
+  name: string;
+  /** The price book's price for it, offered for a new cleaning. */
+  defaultPriceCents: number | null;
+}
+
 interface Props {
   customerId: string;
   propertyId: string;
-  plans: ServicePlan[];
+  plans: (ServicePlan & { cleanings: PlanCleaning[] })[];
+  /** Filter and salt cell cleaning, and any other items on a schedule. */
+  cleaningTypes: CleaningType[];
   techs: { id: string; name: string }[];
   today: string;
   /** Settings › Scheduling: a new plan's visit length. */
@@ -26,6 +44,7 @@ interface Props {
 
 export function MaintenancePlans(p: Props) {
   const names = new Map(p.techs.map((t) => [t.id, t.name]));
+  const cleaningNames = new Map(p.cleaningTypes.map((t) => [t.id, t.name]));
   return (
     <Grouped
       title="Maintenance"
@@ -54,6 +73,12 @@ export function MaintenancePlans(p: Props) {
             detail={
               <>
                 {detail}
+                {plan.cleanings.map((c) => (
+                  <span key={c.id} className="block">
+                    {cleaningSummary(cleaningNames.get(c.component_type_id) ?? "Cleaning", c)} ·{" "}
+                    {c.next_due <= p.today ? "due now" : `next ${formatDay(c.next_due)}`}
+                  </span>
+                ))}
                 {plan.notes ? <span className="block">{plan.notes}</span> : null}
               </>
             }
@@ -110,7 +135,9 @@ function PlanForm({
   techs,
   today,
   visitMinutes,
-}: Props & { plan: ServicePlan | null }) {
+  cleaningTypes,
+}: Props & { plan: (ServicePlan & { cleanings: PlanCleaning[] }) | null }) {
+  const firstVisit = plan ? (upcomingVisitDates(plan, today, 1)[0] ?? today) : today;
   const [every, setEvery] = useState(String(plan?.interval_weeks ?? 1) as "1" | "2" | "3" | "4");
   return (
     <SettingsForm
@@ -187,6 +214,82 @@ function PlanForm({
         defaultValue={plan?.notes ?? ""}
         hint="Gate code, dog in the yard, chemicals to bring."
       />
+      {cleaningTypes.length ? (
+        <section aria-labelledby={`cleanings-${plan?.id ?? "new"}`} className="space-y-3 pt-2">
+          <div>
+            <h3 id={`cleanings-${plan?.id ?? "new"}`} className="font-semibold">
+              Regular Cleanings
+            </h3>
+            <p className="text-[0.9375rem] text-text-muted">
+              Each goes on the first visit on or after its due date, then repeats from the day
+              it&apos;s done. Skipped, it moves to the next visit.
+            </p>
+          </div>
+          {cleaningTypes.map((t) => (
+            <CleaningFields
+              key={t.id}
+              type={t}
+              cleaning={plan?.cleanings.find((c) => c.component_type_id === t.id) ?? null}
+              firstVisit={firstVisit}
+            />
+          ))}
+        </section>
+      ) : null}
     </SettingsForm>
+  );
+}
+
+function CleaningFields({
+  type,
+  cleaning,
+  firstVisit,
+}: {
+  type: CleaningType;
+  cleaning: PlanCleaning | null;
+  firstVisit: string;
+}) {
+  const [on, setOn] = useState(cleaning !== null);
+  const [months, setMonths] = useState(String(cleaning?.every_months ?? 3));
+  const price = cleaning ? cleaning.price_cents : type.defaultPriceCents;
+  const field = `clean_${type.id}`;
+  return (
+    <div className="card space-y-3 p-4">
+      <input type="hidden" name="cleaning_type" value={type.id} />
+      <SSwitch
+        label={type.name}
+        name={field}
+        checked={on}
+        onChange={(e) => setOn(e.currentTarget.checked)}
+      />
+      {on ? (
+        <>
+          <Segmented
+            label="How Often"
+            name={`${field}_months`}
+            value={months}
+            onChange={setMonths}
+            options={CLEANING_MONTHS.map((m) => ({
+              value: String(m),
+              label: m === 1 ? "Monthly" : `Every ${m} Months`,
+            }))}
+          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <SField
+              label="Next due"
+              name={`${field}_due`}
+              type="date"
+              defaultValue={cleaning?.next_due ?? firstVisit}
+            />
+            <SField
+              label="Price each time ($)"
+              name={`${field}_price`}
+              inputMode="decimal"
+              defaultValue={price != null ? (price / 100).toFixed(2) : ""}
+              hint="Billed on the month's invoice. Blank: the visit price covers it."
+            />
+          </div>
+        </>
+      ) : null}
+    </div>
   );
 }

@@ -13,7 +13,7 @@ import {
 } from "@leakbook/core";
 import { saveCustomer, savePool } from "@/app/actions/jobs";
 import { DeleteCustomerForm } from "@/components/delete-customer";
-import { MaintenancePlans } from "@/components/maintenance-plans";
+import { MaintenancePlans, type CleaningType } from "@/components/maintenance-plans";
 import {
   SField,
   SSelect,
@@ -26,7 +26,7 @@ import { SheetNotices, SheetRow } from "@/components/settings-list";
 import { ContactButtons } from "@/components/contact-buttons";
 import { Empty, Grouped, PageHeader, Row, StatusBadge } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getCompany, getCustomer, getTeam } from "@/lib/data";
+import { getCompany, getCustomer, getTeam, listConfig, type ComponentType } from "@/lib/data";
 import { getLine } from "@/lib/messages";
 
 export const metadata: Metadata = { title: "Customer · Tidemark" };
@@ -44,13 +44,33 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
   const { id } = await params;
   const office = await getOffice();
   // All three at once: each used to wait for the one before.
-  const [data, team, company, line] = await Promise.all([
+  const [data, team, company, line, componentTypes, priceBook] = await Promise.all([
     getCustomer(office, id),
     getTeam(office),
     getCompany(office),
     getLine(office),
+    listConfig<ComponentType>(office, "component_type"),
+    listConfig<{ component_type_key: string | null; price_cents: number }>(
+      office,
+      "price_book_item",
+    ),
   ]);
   if (!data) notFound();
+  // Checklist items done on a schedule, for a plan's Regular Cleanings (owner, 2026-10-18),
+  // plus any a plan still uses after the item was changed.
+  const usedTypes = new Set(
+    data.plans.flatMap((plan) => plan.cleanings.map((c) => c.component_type_id)),
+  );
+  const cleaningTypes: CleaningType[] = componentTypes
+    .filter(
+      (t) => t.job_type === "maintenance" && ((t.on_schedule && t.active) || usedTypes.has(t.id)),
+    )
+    .map((t) => ({
+      id: t.id,
+      name: t.name,
+      defaultPriceCents:
+        priceBook.find((item) => item.component_type_key === t.key)?.price_cents ?? null,
+    }));
   const { customer, properties, plans, jobs } = data;
   const now = new Date();
   const techs = team
@@ -250,6 +270,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                     customerId={customer.id}
                     propertyId={p.id}
                     plans={plans.filter((plan) => plan.property_id === p.id)}
+                    cleaningTypes={cleaningTypes}
                     techs={techs}
                     today={today}
                     visitMinutes={maintenanceSettings(company.settings).visitMinutes}
