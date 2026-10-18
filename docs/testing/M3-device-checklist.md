@@ -26,7 +26,7 @@ pnpm install
 cd apps/mobile
 npx expo start --lan --clear
 ```
-Scan the new QR code. The app talks to the website at `https://leaksoftware-web.vercel.app` for
+Scan the new QR code. The app talks to the website at `https://sundeckpro.com` for
 sending reports, quotes, and invoices (set `EXPO_PUBLIC_API_URL` to use another).
 
 **Windows notes**

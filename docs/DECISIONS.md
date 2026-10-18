@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "I have the domain now and have Google Workspace" — `sundeckpro.com`)
+- **The site is `https://sundeckpro.com`** (Vercel; the old `leaksoftware-web.vercel.app` redirects there). The phone app talks to it directly (`config/supabase-dev.json` → `webUrl`).
+- **Mail:** Google Workspace on `sundeckpro.com` for people (support is `support@sundeckpro.com`); the app's email goes out through Resend from `send.sundeckpro.com`, a subdomain so the two never share records. Code defaults now use these; `SUPPORT_EMAIL` and `EMAIL_FROM_DOMAIN` still override.
+- **Recommended bundle ID** is `com.sundeckpro.app`. It still isn't changed: the owner decides before the first App Store upload.
+
 ## 2026-10-18 (owner: "Add a reports tab under JOBS - that just shows you reports"; "allow you to sort customers by a variety of filters")
 - **Jobs › Reports:** a Jobs | Reports switch at the top of Jobs. Reports lists each job's current report (resent versions replace the older one), newest first, with All, Sent, and Drafts; a row opens the job's Report and Sign-Off. Techs limited to their own jobs see only those reports.
 - **Customers: Sort and Show.** Sort by name (A–Z or Z–A), newest, oldest, last visit, or city; show all customers, those on a maintenance plan or not (pool shops), or one kind (homeowners, pool companies, builders, insurers, property managers, other). The choice stays in the address, so it survives Back and can be bookmarked.

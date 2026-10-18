@@ -9,8 +9,8 @@ and can't be done from here.
 |---|---|
 | Apple Developer Program, company account | Needs a D-U-N-S number (takes days). $99/year. |
 | Google Play Console | One-time $25. |
-| Bundle ID / package name | Now `com.leakbook.app` (from the old name). It can't change after the first upload. Recommended: `app.sundeckpro.field` once the name and domain are cleared. |
-| Domain, support mailbox | `sundeckpro.app` and `support@sundeckpro.app` are placeholders (`SUPPORT_EMAIL`). |
+| Bundle ID / package name | Now `com.leakbook.app` (from the old name). It can't change after the first upload. Recommended: `com.sundeckpro.app`, now that the domain is bought. |
+| Domain, support mailbox | `sundeckpro.com` (bought 2026-10-18, Google Workspace for mail). Support is `support@sundeckpro.com` (`SUPPORT_EMAIL`); app email sends from `send.sundeckpro.com` (`EMAIL_FROM_DOMAIN`, Resend). |
 | Final privacy policy and terms | `/privacy` and `/terms` carry a plain-language draft marked as a draft. Replace with the final text. |
 | Sentry project | Free plan is enough. Set `SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_DSN` (Vercel) and `EXPO_PUBLIC_SENTRY_DSN` (EAS environment). Without them nothing is sent. |
 | Stripe keys | Platform account with Connect. Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY` (customers pay on our pages), and the webhook secrets in Vercel. Run one test-mode payment by card, Link, and Apple Pay before the pilot. |
@@ -68,7 +68,7 @@ The listing leads with what both share and names each package; each shop sees on
   > • One company number for texts and calls, with a shared inbox the whole team sees
   > • Quotes customers accept and pay online, by card or bank
   >
-  > Requires a Sundeck Pro shop account. Owners start a free 14-day trial at sundeckpro.app and invite
+  > Requires a Sundeck Pro shop account. Owners start a free 14-day trial at sundeckpro.com and invite
   > their techs.
 - **What's New (first release):** First release.
 - **Support URL:** `https://<site>/status` · **Privacy URL:** `https://<site>/privacy` ·

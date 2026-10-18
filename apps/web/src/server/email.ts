@@ -76,7 +76,7 @@ export async function sendEmail(email: Email, fetchImpl: typeof fetch = fetch): 
 
 /** "{Shop} via Sundeck Pro" <reports@domain>, replies go to the shop (6.5). */
 export function fromAddress(shopName: string): string {
-  const domain = process.env.EMAIL_FROM_DOMAIN || "send.sundeckpro.app";
+  const domain = process.env.EMAIL_FROM_DOMAIN || "send.sundeckpro.com";
   const name = shopName.replace(/["<>]/g, "").trim() || "Sundeck Pro";
   return `"${name} via Sundeck Pro" <reports@${domain}>`;
 }

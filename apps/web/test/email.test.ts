@@ -44,7 +44,7 @@ describe("sendEmail", () => {
       reply_to: "office@demo.test",
       subject: "Your report",
     });
-    expect(body.from).toBe('"Demo Leak Co. via Sundeck Pro" <reports@send.sundeckpro.app>');
+    expect(body.from).toBe('"Demo Leak Co. via Sundeck Pro" <reports@send.sundeckpro.com>');
     expect(body.attachments[0]).toEqual({
       filename: "r.pdf",
       content: Buffer.from("%PDF-1.7").toString("base64"),
