@@ -1,12 +1,21 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { OWNER, TECH, signIn } from "./helpers";
 
 // The walkthrough (owner, 2026-10-16): a tip on each screen until it's closed, remembered on
 // the account; More › Show Tips Again brings them back; owners get Getting Started.
 
+/** More › Show Tips Again, waiting for it to be saved before leaving the page. */
+async function showTipsAgain(page: Page) {
+  const saved = page.waitForResponse(
+    (r) => r.request().method() === "POST" && new URL(r.url()).pathname === "/more",
+  );
+  await page.getByRole("button", { name: "Show Tips Again" }).click();
+  await saved;
+}
+
 test("a tip shows once, stays closed, and comes back on request", async ({ page }) => {
   await signIn(page, TECH, "/more");
-  await page.getByRole("button", { name: "Show Tips Again" }).click();
+  await showTipsAgain(page);
   await page.goto("/messages?list=1");
   const tip = page.getByRole("complementary", { name: "Tip: One inbox for the whole shop" });
   await expect(tip).toBeVisible();
@@ -24,14 +33,14 @@ test("a tip shows once, stays closed, and comes back on request", async ({ page 
   );
 
   await page.goto("/more");
-  await page.getByRole("button", { name: "Show Tips Again" }).click();
+  await showTipsAgain(page);
   await page.goto("/messages?list=1");
   await expect(tip).toBeVisible();
 });
 
 test("owners see Getting Started for the shop's packages", async ({ page }) => {
   await signIn(page, OWNER, "/more");
-  await page.getByRole("button", { name: "Show Tips Again" }).click();
+  await showTipsAgain(page);
   await page.goto("/today");
   const start = page.getByTestId("getting-started");
   // The demo shop does both and has its techs, so inviting is already done.

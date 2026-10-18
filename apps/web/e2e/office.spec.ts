@@ -196,13 +196,14 @@ test("owner invites a tech, who joins and cannot reach settings", async ({ page,
   await expect(person).toContainText("Turned off");
 });
 
-test("on a computer, Settings is a gear and More holds Invoices and Chemicals", async ({
+test("on a computer, Settings is a gear and More holds Customers, Invoices, and Chemicals", async ({
   page,
 }) => {
   await signIn(page, OWNER, "/jobs");
   const nav = page.getByRole("navigation", { name: "Main" });
   await expect(nav.getByRole("link", { name: "Jobs" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Invoices" })).toHaveCount(0);
+  await expect(nav.getByRole("link", { name: "Customers" })).toHaveCount(0);
   const more = nav.getByRole("button", { name: "More" });
   await expect(more).toHaveAttribute("aria-expanded", "false");
   await more.click();
@@ -397,16 +398,12 @@ test("on a phone: a tab bar moves between sections and nothing scrolls sideways"
       390,
     );
   }
-  // Customers shares the Messages tab: a switch at the top of both pages.
-  await tabs.getByRole("link", { name: "Messages" }).click();
-  const people = page.getByRole("navigation", { name: "Messages and Customers" });
-  await people.getByRole("link", { name: "Customers" }).click();
+  // Customers is under More (owner, 2026-10-18), which stays selected there.
+  await tabs.getByRole("link", { name: "More" }).click();
+  await page.getByRole("main").getByRole("link", { name: "Customers" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Customers" })).toBeVisible();
-  await expect(tabs.getByRole("link", { name: "Messages" })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
-  await people.getByRole("link", { name: /^Messages/ }).click();
+  await expect(tabs.getByRole("link", { name: "More" })).toHaveAttribute("aria-current", "page");
+  await tabs.getByRole("link", { name: "Messages" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Messages" })).toBeVisible();
   // A tap just beside or below the floating bar lands on the bar's layer, not on the
   // page underneath (the Jobs list's cards run under it).

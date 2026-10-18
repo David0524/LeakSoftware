@@ -12,8 +12,6 @@ import {
   type ChlorineProduct,
   type ReadingKey,
   type Readings,
-  type Sanitizer,
-  surfaceFor,
   targets,
 } from "@leakbook/core";
 import { getServices } from "../../lib/services";
@@ -26,7 +24,6 @@ import {
   PickerRow,
   Row,
   Screen,
-  Segmented,
   T,
 } from "../../ui/components";
 import { color, radius, space } from "../../ui/theme";
@@ -35,7 +32,8 @@ import { ScreenTip } from "../../ui/Tip";
 // The pool chemical calculator (owner, 2026-10-16): the pool's size and today's readings in,
 // what to add out, in order. Readings fill the screen; What to Add is a bar docked at the
 // bottom that opens a sheet ("a pop up card from the bottom"). Nothing is saved. The math is
-// packages/core/src/chemistry.ts. A visit opens it with the pool's gallons and type.
+// packages/core/src/chemistry.ts. A visit opens it with the pool's gallons. Every pool gets the
+// same readings and targets; salt is left blank on a chlorine pool (owner, 2026-10-18).
 
 const num = (v: string) => {
   const n = Number(v.replace(/,/g, ""));
@@ -58,7 +56,6 @@ const READINGS: { key: keyof Readings; label: string; hint?: string }[] = [
   { key: "ch", label: "Calcium", hint: "ppm" },
   { key: "cya", label: "Stabilizer", hint: "ppm" },
   { key: "salt", label: "Salt", hint: "ppm" },
-  { key: "tempF", label: "Water Temp", hint: "°F" },
 ];
 
 /** Where this phone remembers the levels the tech aims for. */
@@ -74,15 +71,12 @@ function savedGoals(): Record<string, string> {
 }
 
 export default function Chemicals() {
-  const params = useLocalSearchParams<{ gallons?: string; pool?: string }>();
+  const params = useLocalSearchParams<{ gallons?: string }>();
   const [gallonsText, setGallonsText] = useState(
     Number(params.gallons) > 0 ? withCommas(String(Math.round(Number(params.gallons)))) : "",
   );
   const [sheet, setSheet] = useState(false);
   const insets = useSafeAreaInsets();
-  // The surface only moves the calcium target; it comes from the pool (owner, 2026-10-16).
-  const surface = surfaceFor(params.pool);
-  const [sanitizer, setSanitizer] = useState<Sanitizer>("chlorine");
   const [values, setValues] = useState<Record<string, string>>({});
   // Levels to aim for instead of the recommended ones (owner, 2026-10-18: "chlorine won't
   // always be 4"). Blank uses the recommended level; the phone remembers the rest.
@@ -99,11 +93,9 @@ export default function Chemicals() {
   const readings: Readings = Object.fromEntries(
     READINGS.map((r) => [r.key, num(values[r.key] ?? "")]),
   );
-  const recommended = targets(surface, sanitizer, readings.cya);
+  const recommended = targets(readings.cya);
   const result = calculateChemistry({
     gallons,
-    surface,
-    sanitizer,
     readings,
     chlorine,
     acid,
@@ -124,17 +116,8 @@ export default function Chemicals() {
             placeholder="20,000"
           />
         </FieldGroup>
-        <Segmented
-          label="Sanitizer"
-          value={sanitizer}
-          onChange={setSanitizer}
-          options={[
-            { value: "chlorine", label: "Chlorine" },
-            { value: "salt", label: "Salt" },
-          ]}
-        />
         <FieldGroup title="Readings" labelWidth={128}>
-          {READINGS.filter((r) => r.key !== "salt" || sanitizer === "salt").map((r) => (
+          {READINGS.map((r) => (
             <FieldRow
               key={r.key}
               label={r.label}
@@ -150,9 +133,7 @@ export default function Chemicals() {
           footer="Blank uses the recommended level. Type your own, like 6 for chlorine, to dose to it."
           labelWidth={128}
         >
-          {READINGS.filter(
-            (r) => r.key !== "tempF" && (r.key !== "salt" || sanitizer === "salt"),
-          ).map((r) => (
+          {READINGS.map((r) => (
             <FieldRow
               key={r.key}
               label={r.label}

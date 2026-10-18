@@ -11,18 +11,6 @@
 // Readings and targets
 // ---------------------------------------------------------------------------
 
-export type Surface = "plaster" | "vinyl" | "fiberglass";
-
-/**
- * The surface only moves the calcium target (plaster 250 to 450 ppm, vinyl and fiberglass 150
- * to 250). The calculator doesn't ask (owner, 2026-10-16): it uses the pool's recorded type
- * when it has one, and plaster otherwise, the most common.
- */
-export function surfaceFor(poolType: string | null | undefined): Surface {
-  return poolType === "vinyl" || poolType === "fiberglass" ? poolType : "plaster";
-}
-export type Sanitizer = "chlorine" | "salt";
-
 export interface Readings {
   /** Free chlorine, ppm. */
   fc?: number | null;
@@ -33,10 +21,8 @@ export interface Readings {
   ch?: number | null;
   /** Cyanuric acid (stabilizer), ppm. */
   cya?: number | null;
-  /** Salt, ppm (salt pools). */
+  /** Salt, ppm (salt pools; left blank otherwise). */
   salt?: number | null;
-  /** Water temperature, °F (for the saturation index). */
-  tempF?: number | null;
 }
 
 export interface Range {
@@ -47,21 +33,20 @@ export interface Range {
 
 export type ReadingKey = "fc" | "ph" | "ta" | "ch" | "cya" | "salt";
 
-/** The ranges a residential pool aims for. Free chlorine scales with stabilizer. */
-export function targets(surface: Surface, sanitizer: Sanitizer, cya?: number | null) {
-  const salt = sanitizer === "salt";
-  const cyaTarget = salt ? 70 : 40;
+/**
+ * The ranges a residential pool aims for. One set for every pool (owner, 2026-10-18: "The type
+ * of pool should not effect the chemical targets"); a tech who wants another level types it
+ * under Aim For. Free chlorine scales with stabilizer.
+ */
+export function targets(cya?: number | null) {
   // Free chlorine should stay near 7.5% of the stabilizer level, never under 2.
-  const fcMin = Math.max(2, Math.round((cya ?? cyaTarget) * 0.075 * 2) / 2);
+  const fcMin = Math.max(2, Math.round((cya ?? 40) * 0.075 * 2) / 2);
   return {
     fc: { low: fcMin, high: fcMin + 3, target: fcMin + 1 },
     ph: { low: 7.4, high: 7.6, target: 7.5 },
     ta: { low: 80, high: 120, target: 100 },
-    ch:
-      surface === "plaster"
-        ? { low: 250, high: 450, target: 350 }
-        : { low: 150, high: 250, target: 200 },
-    cya: salt ? { low: 60, high: 80, target: 70 } : { low: 30, high: 50, target: 40 },
+    ch: { low: 200, high: 400, target: 300 },
+    cya: { low: 30, high: 80, target: 40 },
     salt: { low: 2700, high: 3400, target: 3200 },
   } satisfies Record<ReadingKey, Range>;
 }
@@ -148,8 +133,6 @@ export interface ChemistryResult {
 
 export interface ChemistryInput {
   gallons: number;
-  surface: Surface;
-  sanitizer: Sanitizer;
   readings: Readings;
   chlorine: ChlorineProduct;
   acid: AcidProduct;
@@ -274,43 +257,19 @@ const fmt = (n: number, key: ReadingKey) =>
 const isNum = (v: number | null | undefined): v is number =>
   typeof v === "number" && Number.isFinite(v);
 
-/** Temperature factor for the saturation index (°F). */
-function tempFactor(f: number): number {
-  const table: [number, number][] = [
-    [32, 0],
-    [37, 0.1],
-    [46, 0.2],
-    [53, 0.3],
-    [60, 0.4],
-    [66, 0.5],
-    [76, 0.6],
-    [84, 0.7],
-    [94, 0.8],
-    [105, 0.9],
-  ];
-  if (f <= 32) return 0;
-  for (let i = 1; i < table.length; i++) {
-    const [f1, v1] = table[i]!;
-    const [f0, v0] = table[i - 1]!;
-    if (f <= f1) return v0 + ((v1 - v0) * (f - f0)) / (f1 - f0);
-  }
-  return 0.9;
-}
-
-/** Langelier saturation index: below -0.3 the water is corrosive, above 0.3 it scales. */
-export function saturationIndex(r: Readings, sanitizer: Sanitizer): number | null {
+/**
+ * Langelier saturation index: below -0.3 the water is corrosive, above 0.3 it scales. The
+ * calculator doesn't ask for water temperature (owner, 2026-10-18), so it uses 80 °F, a
+ * typical swimming pool (temperature factor 0.65).
+ */
+export function saturationIndex(r: Readings): number | null {
   if (!isNum(r.ph) || !isNum(r.ta) || !isNum(r.ch) || r.ch <= 0) return null;
   // Carbonate alkalinity: stabilizer accounts for about a third of its ppm in the reading.
   const carb = r.ta - (isNum(r.cya) ? r.cya / 3 : 0);
   if (carb <= 0) return null;
-  const tds = sanitizer === "salt" ? 12.2 : 12.1;
-  const lsi =
-    r.ph +
-    tempFactor(isNum(r.tempF) ? r.tempF : 80) +
-    Math.log10(r.ch) -
-    0.4 +
-    Math.log10(carb) -
-    tds;
+  // Dissolved solids: a salt pool's salt raises them.
+  const tds = isNum(r.salt) && r.salt >= 1000 ? 12.2 : 12.1;
+  const lsi = r.ph + 0.65 + Math.log10(r.ch) - 0.4 + Math.log10(carb) - tds;
   return Math.round(lsi * 10) / 10;
 }
 
@@ -335,8 +294,8 @@ function dose(qty: number, liquid: boolean, bag?: number) {
 }
 
 export function calculateChemistry(input: ChemistryInput): ChemistryResult {
-  const { gallons, surface, sanitizer, readings: r, chlorine, acid, goals = {} } = input;
-  const base = targets(surface, sanitizer, r.cya);
+  const { gallons, readings: r, chlorine, acid, goals = {} } = input;
+  const base = targets(r.cya);
   const t = Object.fromEntries(
     (Object.keys(base) as ReadingKey[]).map((key) => [key, goalRange(base[key], key, goals[key])]),
   ) as Record<ReadingKey, Range>;
@@ -344,14 +303,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
   const statuses: ReadingStatus[] = [];
   const steps: DoseStep[] = [];
 
-  const keys: ReadingKey[] = [
-    "fc",
-    "ph",
-    "ta",
-    "ch",
-    "cya",
-    ...(sanitizer === "salt" ? (["salt"] as const) : []),
-  ];
+  const keys: ReadingKey[] = ["fc", "ph", "ta", "ch", "cya", "salt"];
   for (const key of keys) {
     const v = r[key];
     if (!isNum(v)) continue;
@@ -487,7 +439,7 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
     });
   }
 
-  const lsi = saturationIndex(r, sanitizer);
+  const lsi = saturationIndex(r);
   const lsiLabel =
     lsi === null ? null : lsi < -0.3 ? "Corrosive" : lsi > 0.3 ? "Scale forming" : "Balanced";
   return { statuses, steps, lsi, lsiLabel };

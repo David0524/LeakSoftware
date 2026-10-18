@@ -12,6 +12,8 @@ import {
 import { createJobAction } from "@/app/actions/jobs";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
 import { Suggestions } from "./route-board";
+import type { RepeatChoice } from "@/lib/plan-repeat";
+import { PlanRepeat } from "./plan-repeat";
 import { Segmented } from "./segmented";
 import { ShapePicker } from "./shape-picker";
 import { Checkbox, cx, SectionTitle, Select } from "./ui";
@@ -69,7 +71,7 @@ export function NewJobForm({
   const [kind, setKind] = useState<"detection" | "maintenance">(
     services === "pool" ? "maintenance" : "detection",
   );
-  const [repeat, setRepeat] = useState<"0" | "1" | "2" | "4">("0");
+  const [repeat, setRepeat] = useState<RepeatChoice | "0">("0");
   const maintenance = kind === "maintenance";
   const plan = maintenance && canPlan && repeat !== "0";
   const customer = customers.find((c) => c.id === customerId);
@@ -216,23 +218,21 @@ export function NewJobForm({
           ) : (
             <input type="hidden" name="job_type" value={kind} />
           )}
-          {maintenance && canPlan ? (
-            <Segmented
-              label="Repeats"
-              name="repeat"
-              value={repeat}
-              onChange={setRepeat}
-              options={[
-                { value: "0", label: "Just Once" },
-                { value: "1", label: "Weekly" },
-                { value: "2", label: "Every 2 Weeks" },
-                { value: "4", label: "Every 4 Weeks" },
-              ]}
-            />
-          ) : null}
+          {maintenance && canPlan ? <PlanRepeat initial="0" once onChange={setRepeat} /> : null}
           {plan ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <SField label="First visit" name="date" type="date" hint="Repeats on this weekday." />
+              <SField
+                label="First visit"
+                name="date"
+                type="date"
+                hint={
+                  repeat === "days"
+                    ? "Visits start on or after this date."
+                    : repeat === "monthly"
+                      ? "Repeats on this weekday in the same week each month."
+                      : "Repeats on this weekday."
+                }
+              />
               <SField
                 label="Time (optional)"
                 name="time"
@@ -337,7 +337,7 @@ export function NewJobForm({
               />
             ) : null}
             <SField
-              label={plan ? "Price per visit ($)" : maintenance ? "Price ($)" : "Detection fee ($)"}
+              label={plan ? "Price per month ($)" : maintenance ? "Price ($)" : "Detection fee ($)"}
               name="fee"
               inputMode="decimal"
               value={fee}

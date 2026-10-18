@@ -180,8 +180,8 @@ describe("buildImport", () => {
       city: "Mesa",
       approx_gallons: 18_000,
     });
-    // $173.33 a month, weekly: 173.33 × 12 ÷ 52 = $40 a visit.
-    expect(ana!.plan).toEqual({ weekday: 2, interval_weeks: 1, price_cents: 4000, tech_id: "t1" });
+    // Plans are priced by the month: $173.33 as is.
+    expect(ana!.plan).toEqual({ weekday: 2, interval_weeks: 1, price_cents: 17333, tech_id: "t1" });
     expect(bo!.property).toBeNull();
     expect(bo!.warnings).toHaveLength(2);
     expect(cy!.plan).toMatchObject({ weekday: 1, interval_weeks: 2, tech_id: null });

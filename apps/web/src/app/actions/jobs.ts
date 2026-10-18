@@ -16,6 +16,7 @@ import {
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
+import { parsePlanRepeat } from "@/lib/plan-repeat";
 import { createClient } from "@/lib/supabase/server";
 import { locateProperty } from "@/server/route-days";
 import type { FormState } from "./auth";
@@ -266,8 +267,8 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
 
   // Leak detection, or maintenance: a single visit, or (owners) a plan that repeats.
   const kind = text(form, "job_type") === "maintenance" ? "maintenance" : "detection";
-  const repeat = kind === "maintenance" ? Number(text(form, "repeat") || "0") : 0;
-  if (repeat > 0) {
+  const repeat = kind === "maintenance" ? text(form, "repeat") || "0" : "0";
+  if (repeat !== "0") {
     if (!office.isOwner) return { error: "Only owners can start maintenance plans." };
     const planFields: Record<string, string> = {};
     const first = text(form, "date");
@@ -279,8 +280,9 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
       planFields.minutes = "Enter 10 to 240 minutes.";
     const ends = text(form, "ends_on");
     if (ends && ends < first) planFields.ends_on = "End on or after the first visit.";
-    if (![1, 2, 4].includes(repeat)) planFields.repeat = "Pick how often.";
-    if (Object.keys(planFields).length) return { fields: planFields };
+    const shape = parsePlanRepeat(form);
+    if ("field" in shape) planFields[shape.field] = shape.message;
+    if (Object.keys(planFields).length || "field" in shape) return { fields: planFields };
     const { data: started, error: planError } = await supabase.rpc("create_service_plan", {
       target_company: office.company.id,
       new_customer: newCustomer,
@@ -290,7 +292,7 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
       plan: {
         assigned_user_id: tech,
         starts_on: first,
-        interval_weeks: repeat,
+        ...shape.shape,
         visit_time: time || null,
         duration_minutes: minutes,
         price_cents: fee,

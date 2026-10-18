@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "Remove pool temp from chemical calculator"; "Move 'customers' to 'more'"; plan price per month; plan repeat options; "remove the salt/chlorine selector")
+- **Chemical calculator:** no water temperature (the saturation index assumes 80 °F) and no Chlorine/Salt choice. Salt is one of the readings, left blank on a chlorine pool. One set of targets for every pool, whatever its type or sanitizer: calcium 200 to 400 (aim 300), stabilizer 30 to 80 (aim 40), salt 2,700 to 3,400. Aim For still sets a different level. Same in the phone app.
+- **Customers is under More** on computers (the More menu) and phones (the More tab). The Messages and Customers switch is gone.
+- **Plans repeat four ways:** Several a Week (pick the days, two or more), Weekly, Every 2 Weeks, or Monthly (the first visit's weekday in the same week of each month, like the 2nd Tuesday; a 5th weekday repeats on the 4th). Plans every 3 or 4 weeks became monthly. Importing a plan with more than one service day still uses the first.
+- **Plans are priced by the month:** "Price per month" on the plan. The month's invoice gets one "Pool service, October" line per plan with a visit done that month, plus priced cleanings; plan visits carry no price of their own. Single visits (Just Once) keep their own price. Imported monthly rates are used as is; a price per visit becomes a month (× 52 ÷ 12 ÷ weeks between visits). Prices already on plans were kept as they were and are now monthly; check them.
+
 ## 2026-10-18 (owner: "On the maintenance package, let's have a way to schedule regular salt cell and filter cleanings")
 - **Checklist items on a schedule:** a pool visit item can be marked "On a schedule" (Settings › Checklist Components). It stays off ordinary visits. Pool shops get two: Clean filter and Clean salt cell. The price book's filter and salt cell cleanings point at them.
 - **Per plan, under Regular Cleanings:** turn one on, then choose how often (monthly, or every 2, 3, or 6 months), when it's next due, and an optional price. It goes on the plan's first visit on or after the due date (a visit up to six days late still counts). Done on that visit, it's next due one interval after the visit's date. Skipped, it stays due and moves to the next visit. Visits already started keep what they have.

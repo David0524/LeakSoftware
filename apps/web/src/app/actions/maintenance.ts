@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { CLEANING_MONTHS, isDateString, parseDollars, uuidv7 } from "@leakbook/core";
 import { requireOwner } from "@/lib/auth";
+import { parsePlanRepeat } from "@/lib/plan-repeat";
 import { createClient } from "@/lib/supabase/server";
 import type { FormState } from "./auth";
 
@@ -28,8 +29,8 @@ export async function savePlan(_: FormState, form: FormData): Promise<FormState>
   const fields: Record<string, string> = {};
   const starts = text(form, "starts_on");
   if (!isDateString(starts)) fields.starts_on = "Pick the first visit's date.";
-  const every = Number(text(form, "interval_weeks"));
-  if (![1, 2, 3, 4].includes(every)) fields.interval_weeks = "Pick how often.";
+  const repeat = parsePlanRepeat(form);
+  if ("field" in repeat) fields[repeat.field] = repeat.message;
   const time = text(form, "visit_time");
   if (time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) fields.visit_time = "Pick a time.";
   const minutes = Number(text(form, "duration_minutes"));
@@ -37,7 +38,7 @@ export async function savePlan(_: FormState, form: FormData): Promise<FormState>
     fields.duration_minutes = "Enter 10 to 240 minutes.";
   const priceText = text(form, "price");
   const price = priceText ? parseDollars(priceText) : null;
-  if (priceText && (price === null || price < 0)) fields.price = "Enter a price like 95.";
+  if (priceText && (price === null || price < 0)) fields.price = "Enter a price like 180.";
   const ends = text(form, "ends_on");
   if (ends && (!isDateString(ends) || ends < starts)) fields.ends_on = "End on or after the start.";
   const tech = text(form, "tech");
@@ -70,12 +71,12 @@ export async function savePlan(_: FormState, form: FormData): Promise<FormState>
     }
     cleanings.push({ type, on, every_months: months, next_due: due, price_cents: cents });
   }
-  if (Object.keys(fields).length) return { fields };
+  if (Object.keys(fields).length || "field" in repeat) return { fields };
 
   const row = {
     assigned_user_id: tech || null,
     starts_on: starts,
-    interval_weeks: every,
+    ...repeat.shape,
     visit_time: time || null,
     duration_minutes: minutes,
     price_cents: price,

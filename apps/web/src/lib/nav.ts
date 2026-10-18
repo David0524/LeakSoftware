@@ -10,18 +10,18 @@ export interface OfficeLink {
 }
 
 /**
- * The office sections, in order. Phones show four and put the rest under More. Messages, the
- * shop's shared inbox, holds Customers (owner, 2026-10-16: "shared with the contacts tab";
- * "Messages should be the main side"), with a Messages | Customers switch on both pages and
- * the unread count on the tab. The chemical calculator is for pool care (company services
- * setting).
+ * The office sections, in order. Phones show four and put the rest under More, Customers
+ * first (owner, 2026-10-18: "Move 'customers' to 'more' on desktop and mobile"). Messages, the
+ * shop's shared inbox, has the unread count on its tab. The chemical calculator is for pool
+ * care (company services setting).
  */
 export function officeLinks(isOwner: boolean, settings: unknown, unread = 0): OfficeLink[] {
   return [
     { href: "/today", label: "Today" },
     { href: "/jobs", label: "Jobs" },
     { href: "/schedule", label: "Schedule" },
-    { href: "/messages", label: "Messages", also: ["/customers"], badge: unread },
+    { href: "/messages", label: "Messages", badge: unread },
+    { href: "/customers", label: "Customers" },
     { href: "/invoices", label: "Invoices" },
     ...(isOwner ? [{ href: "/dashboard", label: "Dashboard" }] : []),
     ...(offersPool(settings) ? [{ href: "/chemicals", label: "Chemicals" }] : []),
@@ -30,11 +30,11 @@ export function officeLinks(isOwner: boolean, settings: unknown, unread = 0): Of
 }
 
 /** On a computer these sit in the More menu instead of the bar (owner, 2026-10-18). */
-const DESKTOP_MORE = ["/invoices", "/chemicals"];
+const DESKTOP_MORE = ["/customers", "/invoices", "/chemicals"];
 
 /**
- * The desktop header: the main sections in the bar, Invoices and Chemicals under a More menu,
- * and Settings as a gear (owner, 2026-10-18).
+ * The desktop header: the main sections in the bar, Customers, Invoices, and Chemicals under a
+ * More menu, and Settings as a gear (owner, 2026-10-18).
  */
 export function desktopNav(links: OfficeLink[]): {
   main: OfficeLink[];

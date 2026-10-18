@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import { formatAddress } from "@leakbook/core";
-import { PeopleSwitch } from "@/components/inbox";
 import { Button, Empty, Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listCustomers } from "@/lib/data";
-import { unreadCount } from "@/lib/messages";
 import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
 
@@ -14,10 +12,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
   const office = await getOffice();
   const { q } = await searchParams;
   const search = typeof q === "string" ? q : "";
-  const [customers, unread] = await Promise.all([
-    listCustomers(office, search),
-    unreadCount(office),
-  ]);
+  const customers = await listCustomers(office, search);
 
   return (
     <>
@@ -29,7 +24,6 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
           </span>
         }
       />
-      <PeopleSwitch current="customers" unread={unread} />
       <Suspense fallback={null}>
         <ScreenTip screen="customers" />
       </Suspense>

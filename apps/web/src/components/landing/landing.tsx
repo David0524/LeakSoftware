@@ -221,7 +221,7 @@ const FAQ: Record<PlanId, [string, string][]> = {
     ],
     [
       "How does monthly billing work?",
-      "Each customer’s plan has a price per visit. At the start of each month Tidemark drafts one invoice per customer with a line for every finished visit, ready for the office to send.",
+      "Each customer’s plan has a monthly price. At the start of each month Tidemark drafts one invoice per customer for the month’s service, plus any extras like a filter cleaning, ready for the office to send.",
     ],
     [
       "Who counts as a person on the team?",

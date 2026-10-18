@@ -225,7 +225,7 @@ export default function JobDetail() {
         <Button
           title="Chemical Calculator"
           kind="secondary"
-          // With the pool's gallons and type, which sets the calcium target.
+          // With the pool's gallons.
           onPress={() =>
             router.push({
               pathname: "/chemicals",
@@ -233,7 +233,6 @@ export default function JobDetail() {
                 gallons: String(
                   (property as { approx_gallons?: number | null } | null)?.approx_gallons ?? "",
                 ),
-                pool: property?.pool_type ?? "",
               },
             })
           }

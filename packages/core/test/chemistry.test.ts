@@ -12,8 +12,6 @@ import {
 
 const base: ChemistryInput = {
   gallons: 20_000,
-  surface: "plaster",
-  sanitizer: "chlorine",
   readings: {},
   chlorine: "liquid12",
   acid: "muriatic31",
@@ -101,11 +99,11 @@ describe("doses", () => {
   });
 
   it("calcium and stabilizer go up by product, down by draining", () => {
+    // +150 ppm to 300: 15 × 1.2 lb × 2 = 36 lb.
     expect(run({ ch: 150 }).steps[0]).toMatchObject({
       product: "Calcium chloride 77%",
-      amount: "48 lb",
+      amount: "36 lb",
     });
-    expect(run({ ch: 150 }, { surface: "vinyl" }).steps).toEqual([]);
     expect(run({ cya: 120 }).steps[0]).toMatchObject({
       product: "Drain and refill about 70%",
       amount: null,
@@ -113,9 +111,11 @@ describe("doses", () => {
     expect(run({ cya: 0 }).steps[0]).toMatchObject({ key: "cya", amount: "6.7 lb" });
   });
 
-  it("salt pools aim higher on stabilizer and check salt", () => {
-    expect(targets("plaster", "salt").cya.target).toBe(70);
-    const r = run({ salt: 2400, cya: 70 }, { sanitizer: "salt" });
+  it("one set of targets for every pool: salt is checked when it's read", () => {
+    // A salt pool's usual stabilizer is fine, and a chlorine pool leaves salt blank.
+    expect(run({ cya: 70 }).steps).toEqual([]);
+    expect(run({ fc: 4, cya: 40 }).statuses.map((s) => s.key)).toEqual(["fc", "cya"]);
+    const r = run({ salt: 2400, cya: 70 });
     // +800 ppm in 20,000 gal: 8 × 8.34 lb × 2 = 133 lb.
     expect(r.steps[0]).toMatchObject({
       product: "Pool salt",
@@ -125,19 +125,19 @@ describe("doses", () => {
   });
 
   it("free chlorine target follows stabilizer", () => {
-    expect(targets("plaster", "chlorine", 80).fc.low).toBe(6);
-    expect(targets("plaster", "chlorine", 0).fc.low).toBe(2);
+    expect(targets(80).fc.low).toBe(6);
+    expect(targets(0).fc.low).toBe(2);
   });
 });
 
 describe("saturation index", () => {
   it("balanced water is near zero", () => {
-    const lsi = saturationIndex({ ph: 7.5, ta: 100, ch: 300, cya: 40, tempF: 80 }, "chlorine");
+    const lsi = saturationIndex({ ph: 7.5, ta: 100, ch: 300, cya: 40 });
     expect(lsi).toBeGreaterThan(-0.3);
     expect(lsi).toBeLessThan(0.3);
-    expect(run({ ph: 7.0, ta: 50, ch: 100, tempF: 60 }).lsiLabel).toBe("Corrosive");
-    expect(run({ ph: 8.2, ta: 150, ch: 600, tempF: 90 }).lsiLabel).toBe("Scale forming");
-    expect(saturationIndex({ ph: 7.5 }, "chlorine")).toBeNull();
+    expect(run({ ph: 7.0, ta: 50, ch: 100 }).lsiLabel).toBe("Corrosive");
+    expect(run({ ph: 8.2, ta: 150, ch: 600 }).lsiLabel).toBe("Scale forming");
+    expect(saturationIndex({ ph: 7.5 })).toBeNull();
   });
 });
 
@@ -155,16 +155,6 @@ describe("summary", () => {
     expect(doseSummary(r, true)).toBe("½ gallon muriatic acid · 1 more");
     expect(doseSummary(run({ fc: 4, ph: 7.5 }), true)).toBe("Balanced. Nothing to add.");
     expect(doseSummary(r, false)).toBe("Add the gallons and a reading");
-  });
-});
-
-describe("surface", () => {
-  it("comes from the pool's type, plaster when unknown", async () => {
-    const { surfaceFor } = await import("../src");
-    expect(surfaceFor("vinyl")).toBe("vinyl");
-    expect(surfaceFor("fiberglass")).toBe("fiberglass");
-    expect(surfaceFor("gunite_plaster")).toBe("plaster");
-    expect(surfaceFor(null)).toBe("plaster");
   });
 });
 

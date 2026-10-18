@@ -50,11 +50,11 @@ test("a weekly cleaning plan puts visits on the route, and a visit is marked don
   await page.getByRole("button", { name: "Add Maintenance Plan" }).click();
   await page.getByLabel("First visit").fill(day);
   await page.getByLabel("Tech", { exact: true }).selectOption({ label: "Priya Shah" });
-  await page.getByLabel("Price per visit ($)").fill("95");
+  await page.getByLabel("Price per month ($)").fill("95");
   await expect(page.getByLabel("Visit length (minutes)")).toHaveValue("30");
   await page.getByRole("button", { name: "Add Plan" }).click();
   const plan = page.getByTestId("plan");
-  await expect(plan).toContainText(/^Every \w+day · any time · 30 min · \$95\.00 a visit/);
+  await expect(plan).toContainText(/^Every \w+day · any time · 30 min · \$95\.00 a month/);
   await expect(plan).toContainText("Priya Shah");
 
   // 2. Tomorrow's visit is on Priya's route, 30 minutes, marked Maintenance.
@@ -126,11 +126,11 @@ test("New Job books a maintenance visit, or starts a plan for a new customer", a
   await page.getByRole("radio", { name: "Weekly" }).click();
   await page.getByLabel("First visit").fill(day);
   await page.getByLabel("Tech", { exact: true }).selectOption({ label: "Priya Shah" });
-  await page.getByLabel("Price per visit ($)").fill("110");
+  await page.getByLabel("Price per month ($)").fill("110");
   await page.getByRole("button", { name: "Start Plan" }).click();
   await expect(page.getByRole("heading", { name: weekly })).toBeVisible();
   await expect(page.getByTestId("plan")).toContainText(
-    /^Every \w+day · any time · 30 min · \$110\.00 a visit/,
+    /^Every \w+day · any time · 30 min · \$110\.00 a month/,
   );
 });
 
@@ -196,4 +196,49 @@ test("a plan's filter cleaning goes on the visit it's due", async ({ page }) => 
       .map((c) => c.label);
   expect(labels(day)).not.toContain("Clean filter");
   expect(labels(nextWeek)).toContain("Clean filter");
+});
+
+// Owner, 2026-10-18: "multiple times per week (then a day selector), weekly, every two weeks,
+// monthly", priced by the month.
+test("a plan can repeat on several days a week", async ({ page }) => {
+  test.setTimeout(120_000);
+  const owner = await signedInClient(OWNER.email, OWNER.password);
+  const { data: who } = await owner.auth.getUser();
+  const { data: membership } = await owner
+    .from("membership")
+    .select("company_id")
+    .eq("user_id", who.user!.id)
+    .limit(1)
+    .single();
+  const { data: jobId, error } = await owner.rpc("create_job", {
+    target_company: membership!.company_id,
+    new_customer: { name: `Twice Weekly ${RUN}` },
+    existing_customer: null,
+    new_property: { address_line1: "455 N Galvin Pkwy", city: "Phoenix", state: "AZ" },
+    existing_property: null,
+    job: { status: "unscheduled" },
+    components: [],
+  });
+  if (error) throw error;
+  const { data: job } = await owner
+    .from("job")
+    .select("bill_to_customer_id")
+    .eq("id", jobId)
+    .single();
+
+  await signIn(page, OWNER, "/jobs");
+  await page.goto(`/customers/${job!.bill_to_customer_id}`);
+  await page.getByRole("button", { name: "Add Maintenance Plan" }).click();
+  const sheet = page.getByRole("dialog", { name: "Add Maintenance Plan" });
+  await sheet.getByLabel("First visit").fill(tomorrow());
+  await sheet.getByRole("radio", { name: "Several a Week" }).click();
+  await sheet.getByRole("checkbox", { name: "Monday" }).check();
+  await sheet.getByRole("button", { name: "Add Plan" }).click();
+  await expect(sheet.getByText("Pick two or more days.")).toBeVisible();
+  await sheet.getByRole("checkbox", { name: "Thursday" }).check();
+  await sheet.getByLabel("Price per month ($)").fill("320");
+  await sheet.getByRole("button", { name: "Add Plan" }).click();
+  await expect(page.getByTestId("plan")).toContainText(
+    "Every Monday and Thursday · any time · 30 min · $320.00 a month",
+  );
 });

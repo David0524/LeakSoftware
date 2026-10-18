@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatPhone } from "@leakbook/core";
-import { ConversationList, PeopleSwitch, Thread, conversationName } from "@/components/inbox";
+import { ConversationList, Thread, conversationName } from "@/components/inbox";
 import { ScreenTip } from "@/components/screen-tip";
 import {
   AutoRefresh,
@@ -16,7 +16,7 @@ import {
 import { Notice, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getTeam } from "@/lib/data";
-import { getLine, getThread, listConversations, unreadCount } from "@/lib/messages";
+import { getLine, getThread, listConversations } from "@/lib/messages";
 
 export const metadata: Metadata = { title: "Messages · Tidemark" };
 
@@ -28,12 +28,11 @@ export const metadata: Metadata = { title: "Messages · Tidemark" };
 export default async function ConversationPage({ params }: PageProps<"/messages/[id]">) {
   const { id } = await params;
   const office = await getOffice();
-  const [thread, line, conversations, team, unread] = await Promise.all([
+  const [thread, line, conversations, team] = await Promise.all([
     getThread(office, id),
     getLine(office),
     listConversations(office),
     getTeam(office),
-    unreadCount(office),
   ]);
   if (!thread) notFound();
   const { conversation: c, items } = thread;
@@ -69,14 +68,11 @@ export default async function ConversationPage({ params }: PageProps<"/messages/
           actions={actions}
         />
       </div>
-      {/* Wider screens: the title and the switch head the list, so the conversation runs from
+      {/* Wider screens: the title heads the list, so the conversation runs from
           the top of the page to the bottom of the window (owner, 2026-10-16). */}
       <div className="grid gap-6 md:h-[calc(100dvh-11.5rem)] md:min-h-[28rem] md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
         <div className="min-w-0 max-md:hidden md:flex md:min-h-0 md:flex-col">
           <PageHeader title="Messages" />
-          <div className="self-start">
-            <PeopleSwitch current="messages" unread={unread} />
-          </div>
           <Suspense fallback={null}>
             <ScreenTip screen="messages" />
           </Suspense>

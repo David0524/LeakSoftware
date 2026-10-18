@@ -616,8 +616,6 @@ type DemoReadings = { fc: number; ph: number; ta: number };
 function demoChemistry(readings: DemoReadings, chlorine: ChlorineProduct) {
   return calculateChemistry({
     gallons: 18_000,
-    surface: "plaster",
-    sanitizer: "chlorine",
     readings: { ...readings, cya: 40 },
     chlorine,
     acid: "muriatic31",

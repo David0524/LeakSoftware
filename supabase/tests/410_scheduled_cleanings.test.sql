@@ -142,18 +142,18 @@ reset role;
 select is((select count(*)::int from pg_temp.placed() where day > (select today + 7 from ids)),
   0, 'it leaves the coming visits');
 
--- Billing: the visit's line, then its cleaning's.
+-- Billing: the plan's month, then the cleaning.
 select is(app.bill_maintenance_month((select ca from ids), (select today from ids)) >= 1, true,
   'the month is billed');
 select results_eq($$ select l.description, l.unit_price_cents from invoice_line_item l
   join invoice i on i.id = l.invoice_id
   where i.customer_id = (select cust_a from ids) and i.period_month = date_trunc('month', (select today from ids))::date
-    and l.description like '%' || to_char((select today from ids), 'Mon FMDD')
+    and l.deleted_at is null
   order by l.sort_order $$,
   format($$ values (%L, 9500), (%L, 4000) $$,
-         'Pool service, ' || to_char((select today from ids), 'Mon FMDD'),
+         'Pool service, ' || to_char((select today from ids), 'FMMonth'),
          'Clean filter, ' || to_char((select today from ids), 'Mon FMDD')),
-  'a line for the visit and one for the filter cleaning');
+  'a line for the plan''s month and one for the filter cleaning');
 
 -- A visit priced only by its cleaning is still billed.
 select is((select count(*)::int from app.unbilled_visits((select ca from ids))), 0,

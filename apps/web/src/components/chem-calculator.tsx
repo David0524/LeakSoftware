@@ -11,11 +11,8 @@ import {
   type ChlorineProduct,
   type ReadingKey,
   type Readings,
-  type Sanitizer,
-  surfaceFor,
   targets,
 } from "@leakbook/core";
-import { Segmented } from "./segmented";
 import { Sheet } from "./sheet";
 import { cx, Select } from "./ui";
 
@@ -33,8 +30,9 @@ const READINGS: { key: keyof Readings; label: string; hint: string; step: string
   { key: "ta", label: "Alkalinity", hint: "ppm", step: "10" },
   { key: "ch", label: "Calcium", hint: "ppm", step: "25" },
   { key: "cya", label: "Stabilizer (CYA)", hint: "ppm", step: "10" },
+  // Every pool gets the same readings and targets; salt is left blank on a chlorine pool
+  // (owner, 2026-10-18).
   { key: "salt", label: "Salt", hint: "ppm", step: "100" },
-  { key: "tempF", label: "Water Temp", hint: "°F", step: "1" },
 ];
 
 /**
@@ -174,19 +172,10 @@ function Doses({ result }: { result: ChemistryResult }) {
   );
 }
 
-export function ChemCalculator({
-  initialGallons,
-  poolType,
-}: {
-  initialGallons?: number | null;
-  /** The pool's recorded type, from a visit: it sets the calcium target. */
-  poolType?: string | null;
-}) {
+export function ChemCalculator({ initialGallons }: { initialGallons?: number | null }) {
   const [gallonsText, setGallonsText] = useState(
     initialGallons ? withCommas(String(initialGallons)) : "",
   );
-  const surface = surfaceFor(poolType);
-  const [sanitizer, setSanitizer] = useState<Sanitizer>("chlorine");
   const [values, setValues] = useState<Record<string, string>>({});
   // Levels to aim for instead of the recommended ones (owner, 2026-10-18: "chlorine won't
   // always be 4"). Empty uses the recommended level; this device remembers the rest.
@@ -221,11 +210,9 @@ export function ChemCalculator({
   const goalLevels = Object.fromEntries(
     Object.entries(goals).map(([k, v]) => [k, num(v)]),
   ) as Partial<Record<ReadingKey, number | null>>;
-  const recommended = targets(surface, sanitizer, readings.cya);
+  const recommended = targets(readings.cya);
   const result = calculateChemistry({
     gallons,
-    surface,
-    sanitizer,
     readings,
     chlorine,
     acid,
@@ -254,16 +241,6 @@ export function ChemCalculator({
             unit="gal"
             className="max-w-xs"
           />
-          <Segmented
-            label="Sanitizer"
-            name="sanitizer"
-            value={sanitizer}
-            onChange={setSanitizer}
-            options={[
-              { value: "chlorine", label: "Chlorine" },
-              { value: "salt", label: "Salt" },
-            ]}
-          />
         </section>
 
         <section aria-labelledby="readings-title" className="card space-y-4 p-5">
@@ -284,9 +261,9 @@ export function ChemCalculator({
             <span className="text-right text-[0.8125rem] font-semibold text-text-muted uppercase">
               Aim For
             </span>
-            {READINGS.filter((r) => r.key !== "salt" || sanitizer === "salt").map((r) => {
+            {READINGS.map((r) => {
               const key = r.key as ReadingKey;
-              const target = r.key === "tempF" ? null : recommended[key]?.target;
+              const target = recommended[key]?.target;
               return (
                 <div key={r.key} className="contents">
                   <span className="min-w-0 font-medium">

@@ -43,8 +43,8 @@ select results_eq($$
   select distinct j.type, j.status, j.fee_cents, j.arrival_fixed,
          (extract(epoch from j.scheduled_end - j.scheduled_start) / 60)::int
   from job j, plan p where j.service_plan_id = p.id $$,
-  $$ values ('maintenance'::text, 'scheduled'::text, 9500, false, 30) $$,
-  'each visit: maintenance, scheduled, the price, 30 minutes, no set time');
+  $$ values ('maintenance'::text, 'scheduled'::text, null::integer, false, 30) $$,
+  'each visit: maintenance, scheduled, no price of its own (the plan bills monthly), 30 minutes, no set time');
 select results_eq($$
   select count(*)::int from job_component jc join job j on j.id = jc.job_id, plan p
   where j.service_plan_id = p.id and j.plan_date = (select today from ids) $$,

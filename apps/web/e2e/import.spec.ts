@@ -45,8 +45,8 @@ test("an owner imports customers, pools, and visit plans from a CSV", async ({ p
       ),
     );
   expect(plans).toHaveLength(2);
-  // $173.33 a month, weekly: $40 a visit.
-  expect(plans!.map((p) => p.price_cents).sort()).toEqual([4000, null].sort());
+  // Plans are priced by the month: $173.33.
+  expect(plans!.map((p) => p.price_cents).sort()).toEqual([17333, null].sort());
 
   // The same file again: both are already in Tidemark, so nothing is added.
   await page.getByRole("button", { name: "Import Another File" }).click();

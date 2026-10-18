@@ -388,14 +388,16 @@ export function buildImport(
         if (freqText && every === null)
           warnings.push(`How often (“${freqText}”) wasn’t clear: weekly is used.`);
         const interval = every ?? 1;
-        let price = col(r, "price") ? parseDollars(col(r, "price")) : null;
-        if (col(r, "price") && price === null)
-          warnings.push(`Price “${col(r, "price")}” wasn’t a dollar amount.`);
-        if (price === null && col(r, "monthly_price")) {
-          const monthly = parseDollars(col(r, "monthly_price"));
-          // A monthly price over the visits in an average month.
-          if (monthly !== null) price = Math.round((monthly * interval * 12) / 52);
-          else warnings.push(`Monthly price “${col(r, "monthly_price")}” wasn’t a dollar amount.`);
+        // Plans are priced by the month (owner, 2026-10-18).
+        let price = col(r, "monthly_price") ? parseDollars(col(r, "monthly_price")) : null;
+        if (col(r, "monthly_price") && price === null)
+          warnings.push(`Monthly price “${col(r, "monthly_price")}” wasn’t a dollar amount.`);
+        if (price === null && col(r, "price")) {
+          const perVisit = parseDollars(col(r, "price"));
+          // A price per visit times the visits in an average month (one for monthly plans).
+          if (perVisit !== null)
+            price = interval > 2 ? perVisit : Math.round((perVisit * 52) / 12 / interval);
+          else warnings.push(`Price “${col(r, "price")}” wasn’t a dollar amount.`);
         }
         const techText = col(r, "tech");
         const tech = techByName(techText);

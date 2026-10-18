@@ -5,12 +5,15 @@ import {
   CLEANING_MONTHS,
   cleaningSummary,
   formatDay,
+  planRepeat,
   planSummary,
   upcomingVisitDates,
   type PlanCleaning,
   type ServicePlan,
 } from "@leakbook/core";
 import { endPlan, savePlan, setPlanPaused } from "@/app/actions/maintenance";
+import type { RepeatChoice } from "@/lib/plan-repeat";
+import { PlanRepeat } from "./plan-repeat";
 import { Segmented } from "./segmented";
 import { FieldError, SField, SSwitch, STextArea, SettingsForm } from "./settings-forms";
 import { SheetRow } from "./settings-list";
@@ -138,7 +141,7 @@ function PlanForm({
   cleaningTypes,
 }: Props & { plan: (ServicePlan & { cleanings: PlanCleaning[] }) | null }) {
   const firstVisit = plan ? (upcomingVisitDates(plan, today, 1)[0] ?? today) : today;
-  const [every, setEvery] = useState(String(plan?.interval_weeks ?? 1) as "1" | "2" | "3" | "4");
+  const [repeat, setRepeat] = useState<RepeatChoice | "0">(plan ? planRepeat(plan) : "weekly");
   return (
     <SettingsForm
       action={savePlan}
@@ -150,17 +153,10 @@ function PlanForm({
       <input type="hidden" name="plan" value={plan?.id ?? ""} />
       <input type="hidden" name="customer" value={customerId} />
       <input type="hidden" name="property" value={propertyId} />
-      <Segmented
-        label="Repeats"
-        name="interval_weeks"
-        value={every}
-        onChange={setEvery}
-        options={[
-          { value: "1", label: "Weekly" },
-          { value: "2", label: "Every 2 Weeks" },
-          { value: "3", label: "Every 3 Weeks" },
-          { value: "4", label: "Every 4 Weeks" },
-        ]}
+      <PlanRepeat
+        initial={plan ? planRepeat(plan) : "weekly"}
+        initialDays={plan?.weekdays ?? []}
+        onChange={setRepeat}
       />
       <div className="grid gap-3 sm:grid-cols-2">
         <SField
@@ -168,7 +164,13 @@ function PlanForm({
           name="starts_on"
           type="date"
           defaultValue={plan?.starts_on ?? today}
-          hint="Visits repeat on this weekday."
+          hint={
+            repeat === "days"
+              ? "Visits start on or after this date."
+              : repeat === "monthly"
+                ? "Repeats on this weekday in the same week each month, like the 2nd Tuesday."
+                : "Visits repeat on this weekday."
+          }
         />
         <div>
           <Select
@@ -196,10 +198,11 @@ function PlanForm({
           defaultValue={String(plan?.duration_minutes ?? visitMinutes)}
         />
         <SField
-          label="Price per visit ($)"
+          label="Price per month ($)"
           name="price"
           inputMode="decimal"
           defaultValue={plan?.price_cents != null ? (plan.price_cents / 100).toFixed(2) : ""}
+          hint="Billed once a month on the customer's invoice."
         />
         <SField
           label="Last visit (optional)"

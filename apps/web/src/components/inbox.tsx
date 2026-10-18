@@ -3,7 +3,7 @@ import { formatPhone } from "@leakbook/core";
 import type { ConversationRow, Line, ThreadItem } from "@/lib/messages";
 import { InboxRow } from "./conversation-row";
 import { PhoneIcon, VoicemailIcon } from "./icons";
-import { Empty, Notice, SEGMENT_TRACK, cx, segmentClass } from "./ui";
+import { Empty, Notice, cx } from "./ui";
 
 // The Messages inbox (company texting, owner 2026-10-16): conversations on the left, the
 // thread on the right (one at a time on phones).
@@ -17,45 +17,6 @@ function when(iso: string, timeZone: string, now = new Date()) {
     return at.toLocaleTimeString("en-US", { timeZone, hour: "numeric", minute: "2-digit" });
   }
   return at.toLocaleDateString("en-US", { timeZone, month: "short", day: "numeric" });
-}
-
-/**
- * Messages and Customers share a tab, Messages first (owner, 2026-10-16): this switch sits at
- * the top of both, as a segmented control of links, with the unread count on Messages.
- */
-export function PeopleSwitch({
-  current,
-  unread,
-}: {
-  current: "customers" | "messages";
-  unread: number;
-}) {
-  return (
-    <nav aria-label="Messages and Customers" className={cx(SEGMENT_TRACK, "mb-5 flex-nowrap")}>
-      {(
-        [
-          { key: "messages", href: "/messages", label: "Messages" },
-          { key: "customers", href: "/customers", label: "Customers" },
-        ] as const
-      ).map((o) => (
-        <Link
-          key={o.key}
-          href={o.href}
-          aria-current={o.key === current ? "page" : undefined}
-          className={segmentClass(o.key === current, "min-w-32")}
-        >
-          {o.label}
-          {o.key === "messages" && unread ? (
-            <>
-              {" "}
-              <span className="tabular-nums">({unread})</span>
-              <span className="sr-only"> unread</span>
-            </>
-          ) : null}
-        </Link>
-      ))}
-    </nav>
-  );
 }
 
 export function ConversationList({

@@ -40,7 +40,8 @@ function MonthRow({ m, current }: { m: UnbilledMonth; current: boolean }) {
 
 /**
  * Owners: maintenance visits waiting to be billed, by month. Each month becomes one draft
- * invoice per customer with a line per visit; the daily run does last month on the 1st.
+ * invoice per customer: a line for each plan's month, and one for each priced extra; the daily
+ * run does last month on the 1st.
  */
 export function MonthlyBilling({
   months,
@@ -59,8 +60,9 @@ export function MonthlyBilling({
         ))}
       </ul>
       <p className="mt-2 px-4 text-[0.8125rem] text-text-muted">
-        One draft invoice per customer for the month, a line per visit. Review the drafts, then send
-        them. Last month is drafted automatically on the 1st.
+        One draft invoice per customer for the month: the plan’s monthly price and any priced
+        cleanings. Review the drafts, then send them. Last month is drafted automatically on the
+        1st.
       </p>
     </section>
   );

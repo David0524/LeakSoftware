@@ -14,9 +14,14 @@ export interface ServicePlan {
   /** The first visit (YYYY-MM-DD); later ones every interval_weeks on the same weekday. */
   starts_on: string;
   interval_weeks: number;
+  /** Several times a week: these days (0 Sunday to 6 Saturday), every week. */
+  weekdays?: number[] | null;
+  /** Once a month: the first visit's weekday, in the same week of the month. */
+  monthly?: boolean;
   /** "10:00:00", or null when route planning picks the time. */
   visit_time?: string | null;
   duration_minutes: number;
+  /** The price per month (owner, 2026-10-18), billed on the month's invoice. */
   price_cents?: number | null;
   ends_on?: string | null;
   paused: boolean;
@@ -54,26 +59,68 @@ const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", 
 
 const dayOf = (date: string) => new Date(`${date}T12:00:00Z`).getUTCDay();
 
-/** "Every Tuesday", "Every 2 weeks on Tuesday". */
-export function cadenceLabel(plan: Pick<ServicePlan, "starts_on" | "interval_weeks">): string {
-  const day = DAYS[dayOf(plan.starts_on)]!;
-  return plan.interval_weeks === 1
-    ? `Every ${day}`
-    : `Every ${plan.interval_weeks} weeks on ${day}`;
+/** How often a plan repeats (owner, 2026-10-18). */
+export type PlanRepeat = "days" | "weekly" | "biweekly" | "monthly";
+
+export function planRepeat(
+  plan: Pick<ServicePlan, "interval_weeks" | "weekdays" | "monthly">,
+): PlanRepeat {
+  if (plan.weekdays?.length) return "days";
+  if (plan.monthly || plan.interval_weeks > 2) return "monthly";
+  return plan.interval_weeks === 2 ? "biweekly" : "weekly";
 }
 
-/** "Every Tuesday · 10:00 AM · 30 min · $95.00 a visit" */
+const ORDINALS = ["1st", "2nd", "3rd", "4th"];
+
+/** The week of the month a date falls in, 1 to 5. */
+const weekOfMonth = (date: string) => Math.floor((Number(date.slice(8, 10)) - 1) / 7) + 1;
+
+/** "Monday and Thursday", "Monday, Wednesday, and Friday". */
+function dayList(days: number[]): string {
+  const names = [...days].sort((a, b) => a - b).map((d) => DAYS[d]!);
+  return names.length <= 2
+    ? names.join(" and ")
+    : `${names.slice(0, -1).join(", ")}, and ${names.at(-1)}`;
+}
+
+/**
+ * "Every Tuesday", "Every 2 weeks on Tuesday", "Every Monday and Thursday", "Monthly on the
+ * 2nd Tuesday".
+ */
+export function cadenceLabel(
+  plan: Pick<ServicePlan, "starts_on" | "interval_weeks" | "weekdays" | "monthly">,
+): string {
+  const day = DAYS[dayOf(plan.starts_on)]!;
+  switch (planRepeat(plan)) {
+    case "days":
+      return `Every ${dayList(plan.weekdays!)}`;
+    case "monthly":
+      return `Monthly on the ${ORDINALS[Math.min(4, weekOfMonth(plan.starts_on)) - 1]} ${day}`;
+    case "biweekly":
+      return `Every 2 weeks on ${day}`;
+    default:
+      return `Every ${day}`;
+  }
+}
+
+/** "Every Tuesday · 10:00 AM · 30 min · $180.00 a month" */
 export function planSummary(
   plan: Pick<
     ServicePlan,
-    "starts_on" | "interval_weeks" | "visit_time" | "duration_minutes" | "price_cents"
+    | "starts_on"
+    | "interval_weeks"
+    | "weekdays"
+    | "monthly"
+    | "visit_time"
+    | "duration_minutes"
+    | "price_cents"
   >,
 ): string {
   return [
     cadenceLabel(plan),
     plan.visit_time ? minutesLabel(clockToMinutes(plan.visit_time.slice(0, 5))) : "any time",
     `${plan.duration_minutes} min`,
-    plan.price_cents != null ? `${formatCents(plan.price_cents)} a visit` : null,
+    plan.price_cents != null ? `${formatCents(plan.price_cents)} a month` : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -82,25 +129,41 @@ export function planSummary(
 const addDays = (date: string, n: number) =>
   new Date(Date.parse(`${date}T12:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 
-/** The plan's next visit dates from `from` on (the database makes them the same way). */
+/**
+ * The plan's next visit dates from `from` on, the same as the database makes them
+ * (app.plan_dates in 20261012004800_plan_schedule_and_monthly_price.sql).
+ */
 export function upcomingVisitDates(
-  plan: Pick<ServicePlan, "starts_on" | "interval_weeks" | "ends_on" | "paused">,
+  plan: Pick<
+    ServicePlan,
+    "starts_on" | "interval_weeks" | "weekdays" | "monthly" | "ends_on" | "paused"
+  >,
   from: string,
   count = 4,
 ): string[] {
   if (plan.paused) return [];
-  const step = 7 * plan.interval_weeks;
-  let d = plan.starts_on;
-  if (d < from) {
-    const behind = Math.round(
-      (Date.parse(`${from}T12:00:00Z`) - Date.parse(`${d}T12:00:00Z`)) / 86_400_000,
-    );
-    d = addDays(d, step * Math.ceil(behind / step));
-  }
+  const repeat = planRepeat(plan);
+  const weekday = dayOf(plan.starts_on);
+  const week = Math.min(4, weekOfMonth(plan.starts_on));
+  const step = 7 * (repeat === "biweekly" ? 2 : 1);
   const out: string[] = [];
-  while (out.length < count && (!plan.ends_on || d <= plan.ends_on)) {
-    out.push(d);
-    d = addDays(d, step);
+  let d = plan.starts_on < from ? from : plan.starts_on;
+  // A year and a half of days is enough for any shape.
+  for (let i = 0; i < 550 && out.length < count; i++, d = addDays(d, 1)) {
+    if (plan.ends_on && d > plan.ends_on) break;
+    const dow = dayOf(d);
+    const on =
+      repeat === "days"
+        ? plan.weekdays!.includes(dow)
+        : repeat === "monthly"
+          ? dow === weekday && weekOfMonth(d) === week
+          : Math.round(
+              (Date.parse(`${d}T12:00:00Z`) - Date.parse(`${plan.starts_on}T12:00:00Z`)) /
+                86_400_000,
+            ) %
+              step ===
+            0;
+    if (on) out.push(d);
   }
   return out;
 }

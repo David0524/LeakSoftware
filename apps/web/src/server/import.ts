@@ -37,7 +37,7 @@ export interface ImportSummary {
 }
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const EVERY = ["", "Weekly", "Every 2 weeks", "Every 3 weeks", "Every 4 weeks"];
+const EVERY = ["", "Weekly", "Every 2 weeks", "Monthly", "Monthly"];
 
 export function cleanMapping(raw: unknown, width: number): ImportField[] {
   const list = Array.isArray(raw) ? raw : [];
@@ -151,7 +151,9 @@ export async function checkImportFor(
         ? [
             DAY_NAMES[r.plan.weekday],
             EVERY[r.plan.interval_weeks],
-            r.plan.price_cents !== null ? `$${(r.plan.price_cents / 100).toFixed(2)}` : null,
+            r.plan.price_cents !== null
+              ? `$${(r.plan.price_cents / 100).toFixed(2)} a month`
+              : null,
             r.plan.tech_id ? names.get(r.plan.tech_id) : "Unassigned",
           ]
             .filter(Boolean)

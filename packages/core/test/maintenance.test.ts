@@ -37,7 +37,20 @@ describe("maintenance plans", () => {
         duration_minutes: 30,
         price_cents: 9500,
       }),
-    ).toBe("Every Tuesday · 10:00 AM · 30 min · $95.00 a visit");
+    ).toBe("Every Tuesday · 10:00 AM · 30 min · $95.00 a month");
+    expect(cadenceLabel({ starts_on: "2026-10-13", interval_weeks: 1, weekdays: [4, 1] })).toBe(
+      "Every Monday and Thursday",
+    );
+    expect(cadenceLabel({ starts_on: "2026-10-13", interval_weeks: 1, weekdays: [1, 3, 5] })).toBe(
+      "Every Monday, Wednesday, and Friday",
+    );
+    expect(cadenceLabel({ starts_on: "2026-10-13", interval_weeks: 1, monthly: true })).toBe(
+      "Monthly on the 2nd Tuesday",
+    );
+    // An older every-4-weeks plan reads as monthly; a 5th weekday repeats on the 4th.
+    expect(cadenceLabel({ starts_on: "2026-12-29", interval_weeks: 4 })).toBe(
+      "Monthly on the 4th Tuesday",
+    );
     expect(
       planSummary({
         starts_on: "2026-10-13",
@@ -67,6 +80,20 @@ describe("maintenance plans", () => {
     expect(upcomingVisitDates({ ...plan, starts_on: "2026-11-03" }, "2026-10-13", 1)).toEqual([
       "2026-11-03",
     ]);
+  });
+
+  it("previews several days a week and monthly plans (same cases as 420_plan_schedule)", () => {
+    const base = { interval_weeks: 1, ends_on: null, paused: false };
+    // 2026-11-02 is a Monday.
+    expect(
+      upcomingVisitDates({ ...base, starts_on: "2026-11-02", weekdays: [1, 4] }, "2026-11-01"),
+    ).toEqual(["2026-11-02", "2026-11-05", "2026-11-09", "2026-11-12"]);
+    expect(
+      upcomingVisitDates({ ...base, starts_on: "2026-11-10", monthly: true }, "2026-11-01", 3),
+    ).toEqual(["2026-11-10", "2026-12-08", "2027-01-12"]);
+    expect(
+      upcomingVisitDates({ ...base, starts_on: "2026-12-29", monthly: true }, "2026-12-01", 2),
+    ).toEqual(["2027-01-26", "2027-02-23"]);
   });
 
   it("checks service tasks as Done, Needs Attention, or Skipped", () => {

@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { userAgent } from "next/server";
-import { ConversationList, LineNotice, PeopleSwitch } from "@/components/inbox";
+import { ConversationList, LineNotice } from "@/components/inbox";
 import { AutoRefresh } from "@/components/messages";
 import { ButtonLink, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getLine, listConversations, unreadCount } from "@/lib/messages";
+import { getLine, listConversations } from "@/lib/messages";
 import { formatPhone } from "@leakbook/core";
 import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
@@ -16,11 +16,7 @@ export const metadata: Metadata = { title: "Messages · Tidemark" };
 /** The shop's shared inbox: texts and calls with customers on the company number. */
 export default async function MessagesPage({ searchParams }: PageProps<"/messages">) {
   const office = await getOffice();
-  const [line, conversations, unread] = await Promise.all([
-    getLine(office),
-    listConversations(office),
-    unreadCount(office),
-  ]);
+  const [line, conversations] = await Promise.all([getLine(office), listConversations(office)]);
   const active = line?.status === "active";
   // On a computer or tablet the latest conversation opens beside the list, as on a Mac (owner,
   // 2026-10-16); phones show the list.
@@ -37,7 +33,6 @@ export default async function MessagesPage({ searchParams }: PageProps<"/message
         subtitle={active ? `Your company number: ${formatPhone(line.number)}` : undefined}
         actions={active ? <ButtonLink href="/messages/new">New Message</ButtonLink> : undefined}
       />
-      <PeopleSwitch current="messages" unread={unread} />
       <Suspense fallback={null}>
         <ScreenTip screen="messages" />
       </Suspense>
