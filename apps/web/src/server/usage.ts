@@ -2,15 +2,14 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { adminClient } from "./admin";
 
-// Guards for work Sundeck Pro pays for (texts, calls, email, AI drafts, transcription), from the
+// Guards for work Sundeck Pro pays for (texts, calls, email, transcription), from the
 // security audit (2026-10-17): a read-only (unpaid) shop starts none of it, and every shop has
 // a daily allowance that only the server counts.
 
-export type UsageKind = "email" | "narrative" | "transcribe" | "text" | "call";
+export type UsageKind = "email" | "transcribe" | "text" | "call";
 
 const DEFAULT_LIMITS: Record<UsageKind, number> = {
   email: 300,
-  narrative: 60,
   transcribe: 200,
   text: 500,
   call: 100,

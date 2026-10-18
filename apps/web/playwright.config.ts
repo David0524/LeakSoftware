@@ -45,9 +45,8 @@ export default defineConfig({
         env: {
           NEXT_TELEMETRY_DISABLED: "1",
           EMAIL_OUTBOX_DIR: OUTBOX,
-          // Never send real email or call the AI from tests.
+          // Never send real email from tests.
           RESEND_API_KEY: "",
-          ANTHROPIC_API_KEY: "",
           // Webhooks are signed by the tests themselves; no Stripe account is called.
           STRIPE_WEBHOOK_SECRET: E2E_WEBHOOK_SECRET,
           CRON_SECRET: E2E_CRON_SECRET,

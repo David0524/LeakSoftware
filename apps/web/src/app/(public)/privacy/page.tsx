@@ -57,7 +57,6 @@ export default function PrivacyPage() {
           <li>Vercel: hosting the website.</li>
           <li>Stripe: card and bank payments; card numbers never reach Sundeck Pro.</li>
           <li>Resend: sending report, quote, and invoice emails.</li>
-          <li>Anthropic: writing report drafts from inspection data, when the shop uses it.</li>
           <li>Deepgram: turning voice notes into text.</li>
           <li>Twilio: the shop’s phone number, texts, calls, and voicemail.</li>
           <li>Mapbox: placing pool addresses on the map and planning routes.</li>

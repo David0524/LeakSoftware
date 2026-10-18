@@ -3,7 +3,6 @@ import {
   allowedNumbers,
   leaksNoted,
   narrativeFacts,
-  narrativeUserPrompt,
   plainNarrative,
   reportChecklist,
   snapshotTally,
@@ -276,8 +275,8 @@ describe("validateNarrative", () => {
   });
 });
 
-describe("narrative inputs", () => {
-  it("gives the model only job facts with ids", () => {
+describe("narrative facts", () => {
+  it("are the job's facts with ids, which a draft is checked against", () => {
     const facts = narrativeFacts(SNAPSHOT);
     expect(facts.checklist.find((c) => c.component === "Main drain 1")).toMatchObject({
       id: "r-md1",
@@ -290,9 +289,6 @@ describe("narrative inputs", () => {
       outcome: "fail",
     });
     expect(JSON.stringify(facts)).not.toContain("Sam Sample");
-    const prompt = narrativeUserPrompt(SNAPSHOT, "homeowner", "Plain words.", ["Fix this."]);
-    expect(prompt).toContain('next_steps ("What happens next")');
-    expect(prompt).toContain("- Fix this.");
   });
 
   it("the plain draft passes its own validator for both templates", () => {

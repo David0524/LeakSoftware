@@ -1,5 +1,6 @@
-// Reports (BUILD_PLAN 6.2, 6.3): the frozen job snapshot, the facts given to the AI, the
-// narrative validator, and a plain no-AI draft. No I/O.
+// Reports (BUILD_PLAN 6.2, 6.3): the frozen job snapshot, its facts, the narrative validator,
+// and the plain draft written from the facts. No I/O. AI writing was removed (owner,
+// 2026-10-18); a draft from any writer is still checked the same way.
 
 import {
   CHECKLIST_SECTION_LABELS,
@@ -357,47 +358,6 @@ export function narrativeFacts(s: ReportSnapshot) {
   };
 }
 
-export const NARRATIVE_PROMPT_VERSION = "2026-10-12.1";
-
-export function narrativeSystemPrompt(): string {
-  return [
-    "You write the narrative sections of a pool leak detection report for a leak detection shop.",
-    "Use only the facts in the job data you are given. Never add a finding, component, test, reading, or number that is not in the data.",
-    "Every paragraph lists in source_ids the ids (from the data) of the checklist rows, tests, and findings it is based on.",
-    "Mention every finding marked must_mention.",
-    "Copy numbers exactly as they appear in the data (readings and results). Do not convert units, round, or estimate.",
-    "Do not mention dates, prices, or the customer's name. Do not promise repairs or outcomes.",
-    "Components that were not inspected must be named with the reason given.",
-  ].join("\n");
-}
-
-export function narrativeUserPrompt(
-  snapshot: ReportSnapshot,
-  template: "homeowner" | "partner",
-  tone: string,
-  problems: string[] = [],
-): string {
-  const sections = NARRATIVE_SECTIONS[template]
-    .map((s) => `- ${s.key} ("${s.title}"): ${s.brief}`)
-    .join("\n");
-  return [
-    `Audience and tone: ${tone || (template === "partner" ? "Technical." : "Plain language.")}`,
-    "",
-    "Write these sections, in this order, with these keys and titles:",
-    sections,
-    "",
-    "Job data (JSON):",
-    JSON.stringify(narrativeFacts(snapshot)),
-    ...(problems.length
-      ? [
-          "",
-          "Your previous draft had these problems. Fix all of them:",
-          ...problems.map((p) => `- ${p}`),
-        ]
-      : []),
-  ].join("\n");
-}
-
 // ---------------------------------------------------------------------------
 // Validator
 // ---------------------------------------------------------------------------
@@ -489,7 +449,7 @@ function escapeRegExp(s: string) {
 }
 
 /**
- * Checks an AI draft against the job (BUILD_PLAN 6.2): every source id exists, every number
+ * Checks a draft against the job (BUILD_PLAN 6.2): every source id exists, every number
  * appears in the data, every component named exists, and every must-mention finding is cited.
  */
 export function validateNarrative(draft: unknown, s: ReportSnapshot): NarrativeProblem[] {

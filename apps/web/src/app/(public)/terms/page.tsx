@@ -20,8 +20,8 @@ export default function TermsPage() {
         <h2>Your records</h2>
         <p>
           The shop owns everything it enters and is responsible for it, including the findings and
-          recommendations in its reports. AI-written drafts are a starting point; the tech reviews
-          and approves every report before it is sent.
+          recommendations in its reports. The tech reviews and approves every report before it is
+          sent.
         </p>
       </section>
       <section>

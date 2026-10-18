@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "strip out the AI writing for reports. I don't think it's needed (plus we can always add back later)"; "Remove the disclaimer by texting")
+- **No AI report writing.** Write Draft always fills in the plain draft from the job's checklist, tests, and findings; the tech edits it before sending. The Anthropic SDK, its prompts, the `ANTHROPIC_*` settings, and the daily AI-draft allowance are gone; the privacy page no longer lists Anthropic. Old drafts keep their saved `model` value. To add it back, restore `apps/web/src/server/narrative.ts` and the prompts in `packages/core/src/report.ts` from git history; the draft check (`validateNarrative`) is still in place.
+- **Phone settings** no longer show the "texting isn't connected on this server" demo note.
+
 ## 2026-10-18 (owner: "Add an Admin role between Owner and Tech")
 - **Three roles:** Owner (full access plus shop-level control), Admin (office staff: everything owners could do before, except the owner-only items), Tech (unchanged). Stored as `owner`, `admin`, `tech`.
 - **Owner-only:** Sundeck Pro billing (subscribe, Manage Billing, the portal, demo codes); connecting or changing the shop's Stripe account; deleting the shop (only an owner's account deletion closes a shop); making someone an owner or admin, changing anyone's role, and turning an owner off; and the shop's security settings, which today are "What techs can do" (whether techs see every job, and whether they make new jobs). There is no shop-wide two-step requirement yet; two-step sign-in is per person. Admins see these pages with "Only the shop owner can do this."

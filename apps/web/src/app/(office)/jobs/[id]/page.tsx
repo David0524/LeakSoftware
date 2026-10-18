@@ -686,9 +686,8 @@ async function Reports({ detail }: { detail: JobDetail }) {
     <div className="grid gap-5 xl:grid-cols-2">
       {/* Said once for both reports, not on each card. */}
       <p className="text-[0.9375rem] text-text-muted xl:col-span-2">
-        {process.env.ANTHROPIC_API_KEY
-          ? "Write Draft has AI write the report from this job’s checklist, tests, and findings. It can get details wrong, so read every word before sending."
-          : "AI writing isn’t set up yet; Write Draft makes a plain summary of the job data."}
+        Write Draft fills in the report from this job’s checklist, tests, and findings. Read and
+        edit it before sending.
       </p>
       {(["homeowner", "partner"] as const)
         .filter((key) => templates.find((t) => t.key === key)?.enabled !== false)

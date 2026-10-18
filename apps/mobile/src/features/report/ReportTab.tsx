@@ -54,7 +54,6 @@ function SendButtons({ children }: { children: ReactNode }) {
 type Template = "homeowner" | "partner";
 
 /** The server's model name for a draft written without AI (apps/web/src/server/narrative.ts). */
-const PLAIN_MODEL = "leakbook-plain";
 
 interface TemplateRow {
   key: string;
@@ -340,11 +339,6 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
           disabled={busy !== null}
           onPress={() => router.push(`/jobs/${job.id}/review?template=${template}`)}
         />
-      ) : null}
-      {draft?.final_sections && draft.model && draft.model !== PLAIN_MODEL ? (
-        <T variant="muted" style={inset}>
-          AI draft: read every word before sending.
-        </T>
       ) : null}
       {error?.at === "draft" ? <Notice tone="error">{error.text}</Notice> : null}
       {message ? <Notice>{message}</Notice> : null}
