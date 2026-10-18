@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "I am awaiting Apple Developer Enrollment"; "I am going to have you build this app in Swift")
+- **The field app will be rebuilt in Swift** (native iOS), replacing the Expo app in `apps/mobile`. The build plan's mobile stack (section 2) and milestones still describe Expo; they get a written plan for the move, approved by the owner, before any Swift code. Until then the Expo app stays as it is.
+- **iOS builds from Linux use xtool** (xtool.sh: SwiftPM projects built, signed and installed without a Mac). Cloud sessions can build and sign an `.ipa` but cannot install to a phone (no USB); installing runs on a machine with the iPhone plugged in. xtool needs `Xcode.xip` (Xcode 27, downloaded by the owner) to make its iOS SDK.
+- **Apple Developer Program enrollment is pending.** Once it is active, sign in to xtool with an App Store Connect Team API key (App Manager role) as a session secret, not an Apple ID password.
+
 ## 2026-10-18 (owner: "Partner report should be gone")
 - **One report per job, the homeowner report.** The partner (pool company) report is gone from the job page, the app, Settings › Report Templates, and the report API. Partner reports already sent still open from their links and the Reports list. Its template rows stay (off) in the database, so it could come back.
 
