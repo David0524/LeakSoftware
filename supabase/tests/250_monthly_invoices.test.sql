@@ -58,7 +58,7 @@ grant execute on function pg_temp.inv(uuid) to authenticated;
 -- Who can bill.
 select tests.authenticate_as((select tech_a from ids));
 select throws_ok(format($$ select create_monthly_invoices(%L, '2026-09-01') $$, (select ca from ids)),
-  '42501', 'Only owners can bill maintenance', 'techs cannot bill a month');
+  '42501', 'Only owners and admins can bill maintenance', 'techs cannot bill a month');
 select is(unbilled_maintenance((select ca from ids)), '[]'::jsonb, 'nor see what is waiting');
 reset role;
 select ok(not has_function_privilege('authenticated', 'bill_maintenance_due(timestamptz)', 'execute'),

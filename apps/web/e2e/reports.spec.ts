@@ -3,7 +3,7 @@ import { OWNER, RUN, openChecklist, sendUnsigned, signIn } from "./helpers";
 import { lastEmailTo } from "./outbox";
 
 // M7 "Done when": both templates as a web page and a PDF on the sample job, and the email a
-// customer gets has a link that opens. Without ANTHROPIC_API_KEY the draft is the plain one.
+// customer gets has a link that opens.
 
 test.describe.configure({ mode: "serial" });
 

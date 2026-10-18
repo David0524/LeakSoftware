@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { isUsNumber, toE164, uuidv7 } from "@leakbook/core";
-import { getOffice, requireOwner } from "@/lib/auth";
+import { getOffice, requireManager } from "@/lib/auth";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/server/admin";
@@ -33,7 +33,7 @@ export interface NumberSearch extends FormState {
 }
 
 export async function findNumbers(_: NumberSearch, form: FormData): Promise<NumberSearch> {
-  await requireOwner();
+  await requireManager();
   const areaCode = text(form, "area_code");
   try {
     const numbers = await searchNumbers(areaCode);
@@ -45,7 +45,7 @@ export async function findNumbers(_: NumberSearch, form: FormData): Promise<Numb
 }
 
 async function addLine(number: string, source: "new" | "existing", providerSid: string | null) {
-  const office = await requireOwner();
+  const office = await requireManager();
   if (!(await shopWritable(await createClient(), office.company.id)))
     return { error: READ_ONLY_MESSAGE };
   const db = adminClient();
@@ -75,7 +75,7 @@ async function addLine(number: string, source: "new" | "existing", providerSid: 
  * buying fails, the reservation is let go.
  */
 export async function takeNumber(_: FormState, form: FormData): Promise<FormState> {
-  const office = await requireOwner();
+  const office = await requireManager();
   const number = toE164(text(form, "number"));
   if (!isUsNumber(number)) return { error: "Pick a number." };
   // A read-only (unpaid) shop doesn't buy numbers on Sundeck Pro's account (security audit).
@@ -116,7 +116,7 @@ export async function takeNumber(_: FormState, form: FormData): Promise<FormStat
 
 /** Use the shop's existing number (set up by Sundeck Pro: ported or registered for texting). */
 export async function keepNumber(_: FormState, form: FormData): Promise<FormState> {
-  await requireOwner();
+  await requireManager();
   const number = toE164(text(form, "number"));
   if (!number) return { fields: { number: "Enter a US phone number." } };
   return addLine(number, "existing", null);
@@ -124,7 +124,7 @@ export async function keepNumber(_: FormState, form: FormData): Promise<FormStat
 
 /** Pictures, who rings, and the voicemail greeting. */
 export async function saveLine(_: FormState, form: FormData): Promise<FormState> {
-  const office = await requireOwner();
+  const office = await requireManager();
   const supabase = await createClient();
   const greeting = text(form, "voicemail_greeting");
   if (greeting.length > 400)
@@ -145,7 +145,7 @@ export async function saveLine(_: FormState, form: FormData): Promise<FormState>
 
 /** Stop setting up an existing number (only while it's pending). */
 export async function cancelNumber(): Promise<FormState> {
-  const office = await requireOwner();
+  const office = await requireManager();
   const db = adminClient();
   if (!db) return { error: "Texting isn’t set up on this server." };
   await db

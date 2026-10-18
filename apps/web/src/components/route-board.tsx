@@ -760,6 +760,7 @@ function Tray({
   onSuggestion: (job: string, s: Suggestion) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: TRAY });
+  const [all, setAll] = useState(false);
   return (
     <section
       ref={setNodeRef}
@@ -767,21 +768,44 @@ function Tray({
       data-testid="tray"
       className={cx("card mb-6 p-4", isOver && "ring-2 ring-link")}
     >
-      <h2 id="tray-title" className="font-display text-xl font-bold">
-        Needs a Time{jobs.length ? ` (${jobs.length})` : ""}
-      </h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="tray-title" className="font-display text-xl font-bold">
+          Needs a Time{jobs.length ? ` (${jobs.length})` : ""}
+        </h2>
+        {jobs.length > 3 ? (
+          <button
+            type="button"
+            aria-expanded={all}
+            onClick={() => setAll((a) => !a)}
+            className="-mr-2 min-h-11 px-3 text-[0.9375rem] font-semibold text-link max-md:hidden"
+          >
+            {all ? "Show Less" : `Show All ${jobs.length}`}
+          </button>
+        ) : null}
+      </div>
       {jobs.length === 0 ? (
         <p className="mt-1 text-[0.9375rem] text-text-muted">
           Every job has a time. Drag a job here to take it off the schedule.
         </p>
       ) : (
         <SortableContext id={TRAY} items={jobs.map((j) => j.id)} strategy={rectSortingStrategy}>
-          {/* Phones: one row that scrolls sideways (the next card peeks in); wider: a grid. */}
-          <ul className="-mx-4 mt-3 flex snap-x snap-mandatory scroll-px-4 items-start gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-[repeat(2,minmax(0,1fr))] md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-[repeat(3,minmax(0,1fr))]">
+          {/* One row that scrolls sideways (the next card peeks in), so a long list doesn't
+              push the routes down; wider screens can open it all as a grid (owner,
+              2026-10-18: "super cluttered on desktop"). */}
+          <ul
+            className={cx(
+              "-mx-4 mt-3 flex snap-x snap-mandatory scroll-px-4 items-start gap-3 overflow-x-auto px-4 pb-1",
+              all &&
+                "md:mx-0 md:grid md:grid-cols-[repeat(2,minmax(0,1fr))] md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-[repeat(3,minmax(0,1fr))]",
+            )}
+          >
             {jobs.map((j) => (
               <li
                 key={j.id}
-                className="w-[88%] max-w-80 shrink-0 snap-start md:w-auto md:max-w-none"
+                className={cx(
+                  "w-[88%] max-w-80 shrink-0 snap-start",
+                  all && "md:w-auto md:max-w-none",
+                )}
               >
                 <TrayCard job={j} onMove={onMove} onSuggestion={onSuggestion} />
               </li>
@@ -811,31 +835,65 @@ function TrayCard({
     transition,
     isDragging,
   } = useSortable({ id: j.id });
+  const [actions, setActions] = useState(false);
+  const closeActions = useCallback(() => setActions(false), []);
   return (
     <article
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       data-testid="tray-job"
-      className={cx("well flex gap-1 p-2", isDragging && "opacity-40")}
+      className={cx("well flex items-center gap-1 py-1 pr-1 pl-1", isDragging && "opacity-40")}
     >
       <Grip label={`Drag ${j.customer}`} ref={setActivatorNodeRef} {...attributes} {...listeners} />
-      <div className="min-w-0 flex-1">
-        <Link href={`/jobs/${j.id}`} className="block hover:underline">
+      {/* Two lines, with the actions behind "…", so a long list stays short (owner,
+          2026-10-18: the cards were "a little too bulky"). */}
+      <Link href={`/jobs/${j.id}`} className="min-w-0 flex-1 py-1 hover:underline">
+        <span className="block truncate">
           <span className="font-semibold">{j.customer}</span>
           <span className="text-text-muted">{j.number ? ` · #${j.number}` : ""}</span>
-        </Link>
-        <p className="truncate text-[0.9375rem] text-text-muted">{j.address}</p>
-        {j.note ? <p className="text-[0.9375rem] text-text-muted">{j.note}</p> : null}
+        </span>
+        <span className="block truncate text-[0.9375rem] text-text-muted">
+          {[j.address, j.note].filter(Boolean).join(" · ")}
+        </span>
+      </Link>
+      <button
+        type="button"
+        aria-label={`Actions for ${j.customer}`}
+        title="Suggest Times or Move"
+        aria-haspopup="dialog"
+        onClick={() => setActions(true)}
+        className="grid size-11 shrink-0 place-items-center rounded-full text-link hover:bg-link/10"
+      >
+        <svg viewBox="0 0 24 24" className="size-6" fill="currentColor" aria-hidden="true">
+          <circle cx="6" cy="12" r="1.8" />
+          <circle cx="12" cy="12" r="1.8" />
+          <circle cx="18" cy="12" r="1.8" />
+        </svg>
+      </button>
+      <Sheet open={actions} onClose={closeActions} title={j.customer}>
+        <p className="mb-2 text-[0.9375rem] text-text-muted">
+          {[j.number ? `#${j.number}` : null, j.address, j.note].filter(Boolean).join(" · ")}
+        </p>
         <Suggestions
           target={{ job: j.id }}
-          onPick={(s) => onSuggestion(j.id, s)}
+          onPick={(s) => {
+            setActions(false);
+            onSuggestion(j.id, s);
+          }}
           sheetTitle="Suggested Times"
         >
-          <button type="button" className={buttonClass("quiet", "px-2")} onClick={() => onMove(j)}>
+          <button
+            type="button"
+            className={buttonClass("quiet", "px-2")}
+            onClick={() => {
+              setActions(false);
+              onMove(j);
+            }}
+          >
             Move…
           </button>
         </Suggestions>
-      </div>
+      </Sheet>
     </article>
   );
 }

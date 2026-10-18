@@ -208,7 +208,7 @@ export async function setQuoteDiscount(input: {
     return { ok: false, error: "Enter a discount like 50 or 50.00." };
   const subtotal = (await liveLines(db, input.quoteId)).reduce((sum, l) => sum + lineTotal(l), 0);
   const limit = settings.tech_discount_limit_bps ?? 0;
-  if (!discountAllowed(subtotal, cents, office.isOwner, limit))
+  if (!discountAllowed(subtotal, cents, office.isManager, limit))
     return {
       ok: false,
       error: `Techs can give up to ${limit / 100}% off. Ask an owner for more.`,

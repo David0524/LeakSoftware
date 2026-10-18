@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { inviteMember, revokeInvite, updateMember } from "@/app/actions/settings";
-import { canMakeJobs, seesAllJobs } from "@leakbook/core";
+import { assignableRoles, canMakeJobs, roleLabel, seesAllJobs } from "@leakbook/core";
 import { JobVisibilityForm } from "@/components/job-visibility";
 import {
   CopyLink,
@@ -17,7 +17,9 @@ import {
   SheetRow,
 } from "@/components/settings-list";
 import { Grouped } from "@/components/ui";
-import { getOffice } from "@/lib/auth";
+import { OWNER_ONLY, getOffice } from "@/lib/auth";
+import { RoleChoice } from "@/components/role-choice";
+import { Banner } from "@/components/doc-ui";
 import { getCompany, getTeam } from "@/lib/data";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
@@ -50,37 +52,47 @@ export default async function TeamSettingsPage() {
   ]);
   const open = (invites ?? []) as Invite[];
 
-  const ROLES = [
-    { value: "tech", label: "Tech" },
-    { value: "owner", label: "Owner" },
-  ];
+  // Owners give any role; admins invite techs and turn people off and on (owner, 2026-10-18).
+  const myRole = office.isOwner ? "owner" : "admin";
+  const roles = assignableRoles(myRole);
 
   return (
     <SettingsListPage
       title="Team"
-      subtitle="Techs run jobs on the phone. Owners also manage settings, pricing, and payments."
+      subtitle="Techs run jobs on the phone. Admins run the office. Owners also handle billing, payments setup, and roles."
       add={{
         label: "Invite Someone",
         // Under the open invites, where the new one appears (owner, 2026-10-16).
         inList: true,
         form: (
           <SettingsForm action={inviteMember} submit="Create Invite" primary full>
-            <SettingsFields
-              labelWidth="4.5rem"
-              className="sm:grid sm:grid-cols-[1fr_200px] sm:gap-4"
-            >
+            <SettingsFields labelWidth="4.5rem">
               <SField label="Email" name="email" type="email" autoComplete="off" required />
-              <SSelect label="Role" name="role" defaultValue="tech" options={ROLES} />
             </SettingsFields>
+            <div className="mt-4 px-4 sm:px-0">
+              <RoleChoice roles={roles} initial="tech" id="invite-role" />
+            </div>
           </SettingsForm>
         ),
       }}
     >
       <SettingsSection title="What techs can do">
-        <JobVisibilityForm
-          seesAll={seesAllJobs("tech", company.settings)}
-          makesJobs={canMakeJobs("tech", company.settings)}
-        />
+        {/* A shop security setting: owners only (owner, 2026-10-18). */}
+        {office.isOwner ? (
+          <JobVisibilityForm
+            seesAll={seesAllJobs("tech", company.settings)}
+            makesJobs={canMakeJobs("tech", company.settings)}
+          />
+        ) : (
+          <div className="space-y-2 px-4 sm:px-0">
+            <p>
+              Techs see{" "}
+              {seesAllJobs("tech", company.settings) ? "every job" : "only their own jobs"} and{" "}
+              {canMakeJobs("tech", company.settings) ? "can" : "can’t"} make new jobs.
+            </p>
+            <Banner tone="info">{OWNER_ONLY}</Banner>
+          </div>
+        )}
       </SettingsSection>
 
       <Grouped
@@ -97,7 +109,7 @@ export default async function TeamSettingsPage() {
             testId="invite"
             title={i.email}
             label={<span className="break-all">{i.email}</span>}
-            value={i.role === "owner" ? "Owner" : "Tech"}
+            value={roleLabel(i.role)}
           >
             <div className="space-y-2">
               <CopyLink url={`${origin}/invite/${i.token}`} />
@@ -105,17 +117,19 @@ export default async function TeamSettingsPage() {
                 Send the link by text or email. It works once, for that email address, for 14 days.
               </p>
             </div>
-            <SheetDanger>
-              <SettingsForm
-                action={revokeInvite}
-                submit="Revoke Invite"
-                danger
-                full
-                confirm="Revoke this invite? The link will stop working."
-              >
-                <input type="hidden" name="id" value={i.id} />
-              </SettingsForm>
-            </SheetDanger>
+            {i.role !== "tech" && !office.isOwner ? null : (
+              <SheetDanger>
+                <SettingsForm
+                  action={revokeInvite}
+                  submit="Revoke Invite"
+                  danger
+                  full
+                  confirm="Revoke this invite? The link will stop working."
+                >
+                  <input type="hidden" name="id" value={i.id} />
+                </SettingsForm>
+              </SheetDanger>
+            )}
           </SheetRow>
         ))}
         <SettingsAddRow label="Invite Someone" />
@@ -135,10 +149,7 @@ export default async function TeamSettingsPage() {
               </>
             }
             detail={m.email ? <span className="break-all">{m.email}</span> : undefined}
-            value={
-              (m.role === "owner" ? "Owner" : "Tech") +
-              (m.status === "disabled" ? " · Turned off" : "")
-            }
+            value={roleLabel(m.role) + (m.status === "disabled" ? " · Turned off" : "")}
           >
             <SettingsForm action={updateMember} primary full>
               <input type="hidden" name="id" value={m.membership_id} />
@@ -147,25 +158,33 @@ export default async function TeamSettingsPage() {
                   {m.email}
                 </p>
               ) : null}
-              <SettingsFields labelWidth="5rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
-                <SSelect
-                  label="Role"
-                  name="role"
+              <div className="mb-4 px-4 sm:px-0">
+                <RoleChoice
+                  roles={roles}
+                  initial={m.role === "owner" || m.role === "admin" ? m.role : "tech"}
                   id={`role-${m.membership_id}`}
-                  defaultValue={m.role}
-                  options={ROLES}
                 />
-                <SSelect
-                  label="Access"
-                  name="status"
-                  id={`status-${m.membership_id}`}
-                  defaultValue={m.status}
-                  options={[
-                    { value: "active", label: "Active" },
-                    { value: "disabled", label: "Turned off" },
-                  ]}
-                />
-              </SettingsFields>
+              </div>
+              {m.role === "owner" && !office.isOwner ? (
+                // Turning an owner off is the owner's (owner, 2026-10-18).
+                <div className="px-4 sm:px-0">
+                  <input type="hidden" name="status" value={m.status} />
+                  <Banner tone="info">{OWNER_ONLY}</Banner>
+                </div>
+              ) : (
+                <SettingsFields labelWidth="5rem">
+                  <SSelect
+                    label="Access"
+                    name="status"
+                    id={`status-${m.membership_id}`}
+                    defaultValue={m.status}
+                    options={[
+                      { value: "active", label: "Active" },
+                      { value: "disabled", label: "Turned off" },
+                    ]}
+                  />
+                </SettingsFields>
+              )}
             </SettingsForm>
           </SheetRow>
         ))}

@@ -2,9 +2,10 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import { isManagerRole, type Role } from "@leakbook/core";
 import { createClient } from "./supabase/server";
 
-export type Role = "owner" | "tech";
+export type { Role };
 
 export interface CompanySummary {
   id: string;
@@ -16,7 +17,10 @@ export interface Office {
   user: { id: string; email: string; name: string | null };
   company: CompanySummary & { timezone: string };
   companies: CompanySummary[];
+  /** Owner-only: Sundeck Pro billing, payments setup, roles, security settings. */
   isOwner: boolean;
+  /** Owner or admin: everything else that runs the shop. */
+  isManager: boolean;
 }
 
 export const ACTIVE_COMPANY_COOKIE = "lb_company";
@@ -84,12 +88,23 @@ export const getOffice = cache(async (): Promise<Office> => {
     company,
     companies: companies.map(({ id, name, role }) => ({ id, name, role })),
     isOwner: company.role === "owner",
+    isManager: isManagerRole(company.role),
   };
 });
 
-/** For owner-only actions. Pages show a message instead (see settings/layout.tsx). */
+/** The message admins see on owner-only pages and actions. */
+export const OWNER_ONLY = "Only the shop owner can do this.";
+
+/** For owner-only actions: billing, payments setup, roles, security settings. */
 export async function requireOwner(): Promise<Office> {
   const office = await getOffice();
-  if (!office.isOwner) throw new Error("Only owners can change settings.");
+  if (!office.isOwner) throw new Error(OWNER_ONLY);
+  return office;
+}
+
+/** For actions owners and admins share. Pages show a message instead (settings/layout.tsx). */
+export async function requireManager(): Promise<Office> {
+  const office = await getOffice();
+  if (!office.isManager) throw new Error("Only owners and admins can change settings.");
   return office;
 }

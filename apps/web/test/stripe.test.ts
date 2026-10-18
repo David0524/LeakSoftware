@@ -7,6 +7,7 @@ import {
   applyEvent,
   depositCheckout,
   invoiceCheckout,
+  onboardingLink,
   registerPaymentDomain,
   verifyEvent,
 } from "../src/server/stripe";
@@ -432,5 +433,98 @@ describe("payment domain", () => {
     await expect(
       registerPaymentDomain(stripe, "acct_shop", "https://app.sundeckpro.com"),
     ).resolves.toBeUndefined();
+  });
+});
+
+// Accounts v2 (owner, 2026-10-18): new Stripe platforms refuse v1 account creation.
+describe("shop onboarding", () => {
+  function fakeConnect() {
+    const calls: { what: string; params: unknown; opts?: unknown }[] = [];
+    const stripe = {
+      v2: {
+        core: {
+          accounts: {
+            create: async (params: unknown, opts: unknown) => {
+              calls.push({ what: "account", params, opts });
+              return { id: "acct_v2" };
+            },
+          },
+          accountLinks: {
+            create: async (params: unknown) => {
+              calls.push({ what: "link", params });
+              return { url: "https://connect.stripe.com/setup/v2/x" };
+            },
+          },
+        },
+      },
+      paymentMethodDomains: { create: async () => ({}) },
+      accounts: {
+        create: async () => {
+          throw new Error("v1 account creation is off on new platforms");
+        },
+      },
+    } as unknown as Stripe;
+    return { stripe, calls };
+  }
+
+  it("makes a v2 account with its own Stripe Dashboard, paid directly, then a v2 onboarding link", async () => {
+    const { stripe, calls } = fakeConnect();
+    const { db, calls: rpcs } = fakeDb();
+    const url = await onboardingLink(
+      { id: "c1", name: "Blue Water Leaks", email: "owner@blue.test" },
+      null,
+      "https://sundeckpro.com",
+      stripe,
+      db,
+    );
+    expect(url).toBe("https://connect.stripe.com/setup/v2/x");
+    expect(calls[0]).toMatchObject({
+      what: "account",
+      params: {
+        display_name: "Blue Water Leaks",
+        contact_email: "owner@blue.test",
+        dashboard: "full",
+        configuration: { merchant: { capabilities: { card_payments: { requested: true } } } },
+        defaults: { responsibilities: { fees_collector: "stripe", losses_collector: "stripe" } },
+        metadata: { company_id: "c1" },
+      },
+      opts: { idempotencyKey: "account-v2-c1" },
+    });
+    expect(rpcs.find((c) => c.fn === "stripe_save_account")?.args).toMatchObject({
+      target_company: "c1",
+      account_id: "acct_v2",
+      charges: false,
+    });
+    expect(calls[1]).toMatchObject({
+      what: "link",
+      params: {
+        account: "acct_v2",
+        use_case: {
+          type: "account_onboarding",
+          account_onboarding: {
+            configurations: ["merchant"],
+            return_url: "https://sundeckpro.com/settings/payments?stripe=return",
+          },
+        },
+      },
+    });
+  });
+
+  it("only makes a link for a shop that already has an account", async () => {
+    const { stripe, calls } = fakeConnect();
+    const { db } = fakeDb();
+    await onboardingLink(
+      { id: "c1", name: "Blue Water Leaks" },
+      {
+        stripe_account_id: "acct_old",
+        charges_enabled: false,
+        payouts_enabled: false,
+        details_submitted: false,
+      },
+      "https://sundeckpro.com",
+      stripe,
+      db,
+    );
+    expect(calls.map((c) => c.what)).toEqual(["link"]);
   });
 });

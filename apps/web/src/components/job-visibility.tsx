@@ -39,7 +39,7 @@ export function JobVisibilityForm({
         label="Techs can make new jobs"
         name="techs_make_jobs"
         defaultChecked={makesJobs}
-        hint="Off: only owners add jobs, on the website and in the app."
+        hint="Off: only owners and admins add jobs, on the website and in the app."
       />
     </SettingsForm>
   );

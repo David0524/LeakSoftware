@@ -44,7 +44,7 @@ export default async function NewMessagePage({ searchParams }: PageProps<"/messa
             jobId={typeof job === "string" ? job : undefined}
           />
         ) : (
-          <LineNotice line={line} isOwner={office.isOwner} />
+          <LineNotice line={line} isOwner={office.isManager} />
         )}
       </div>
     </>

@@ -169,7 +169,12 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   // 2. Move… from the tray: first stop of Priya's day.
   const tray = page.getByTestId("tray");
   const tempe = tray.getByTestId("tray-job").filter({ hasText: name("tempe") });
-  await tempe.getByRole("button", { name: "Move…" }).click();
+  // The card's actions are behind "…" (owner, 2026-10-18: shorter cards).
+  await tempe.getByRole("button", { name: `Actions for ${name("tempe")}` }).click();
+  await page
+    .getByRole("dialog", { name: name("tempe") })
+    .getByRole("button", { name: "Move…" })
+    .click();
   const sheet = page.getByRole("dialog", { name: `Move ${name("tempe")}` });
   await sheet.getByLabel("Tech").selectOption({ label: "Priya Shah" });
   await sheet.getByLabel("Day").fill(day);
@@ -209,7 +214,11 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
 
   // 4. Suggest Times fits it into the routes already planned this week; pick the best.
   const card = tray.getByTestId("tray-job").filter({ hasText: name("tempe") });
-  await card.getByRole("button", { name: "Suggest Times" }).click();
+  await card.getByRole("button", { name: `Actions for ${name("tempe")}` }).click();
+  await page
+    .getByRole("dialog", { name: name("tempe") })
+    .getByRole("button", { name: "Suggest Times" })
+    .click();
   // The suggestions open in a sheet.
   const list = page
     .getByRole("dialog", { name: "Suggested Times" })

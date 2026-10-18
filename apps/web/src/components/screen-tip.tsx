@@ -10,7 +10,7 @@ export async function ScreenTip({ screen, pkg }: { screen: string; pkg?: TipPack
   const tip = tipFor({
     platform: "web",
     screen,
-    role: office.isOwner ? "owner" : "tech",
+    role: office.isManager ? "owner" : "tech",
     services: companyServices(company.settings),
     seen: seenTips(user?.user_metadata.tips_seen),
     pkg,

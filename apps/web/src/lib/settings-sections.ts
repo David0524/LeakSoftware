@@ -31,3 +31,44 @@ export function settingsSections(settings: unknown) {
     ? SETTINGS_SECTIONS
     : SETTINGS_SECTIONS.filter((s) => !LEAK_ONLY.includes(s.href));
 }
+
+/**
+ * The settings pages in their groups, as the Settings list and the desktop sidebar show them.
+ * A page not placed in a group still shows, at the end.
+ */
+export function settingsGroups(settings: unknown) {
+  const sections = settingsSections(settings);
+  const groups = [
+    {
+      title: "Your shop",
+      hrefs: [
+        "/settings/company",
+        "/settings/team",
+        "/settings/import",
+        "/settings/scheduling",
+        "/settings/phone",
+      ],
+    },
+    {
+      title: "Money",
+      hrefs: ["/settings/price-book", "/settings/payments", "/settings/billing"],
+    },
+    {
+      title: offersLeak(settings) ? "Checklists and reports" : "Checklists",
+      hrefs: [
+        "/settings/components",
+        "/settings/tests",
+        "/settings/severities",
+        "/settings/exclusions",
+        "/settings/reports",
+      ],
+    },
+  ];
+  const placed = groups.flatMap((g) => g.hrefs);
+  const rest = sections.filter((s) => !placed.includes(s.href)).map((s) => s.href);
+  if (rest.length) groups.at(-1)!.hrefs.push(...rest);
+  return groups.map((g) => ({
+    title: g.title,
+    sections: sections.filter((s) => g.hrefs.includes(s.href)),
+  }));
+}

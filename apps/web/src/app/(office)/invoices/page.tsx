@@ -43,7 +43,7 @@ export default async function InvoicesPage() {
             : "Nothing owed right now."
         }
         actions={
-          office.isOwner ? (
+          office.isManager ? (
             <>
               <ButtonLink kind="secondary" href="/invoices/export?kind=invoices">
                 Export Invoices

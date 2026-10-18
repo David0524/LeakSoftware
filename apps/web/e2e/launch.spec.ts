@@ -11,7 +11,8 @@ test("privacy, terms, and status pages are public", async ({ page, request }) =>
   ] as const) {
     await page.goto(path);
     await expect(page.getByRole("heading", { name: title, level: 1 })).toBeVisible();
-    await expect(page.getByTestId("legal-draft")).toBeVisible();
+    // The final text is in (owner, 2026-10-18): no draft notice.
+    await expect(page.getByText(/^Draft\./)).toHaveCount(0);
   }
   await page.goto("/status");
   await expect(page.getByRole("status")).toHaveText("Everything is working.");

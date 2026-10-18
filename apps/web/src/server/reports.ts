@@ -12,7 +12,7 @@ import {
 import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase/config";
 import { adminClient } from "./admin";
 import { EmailNotConfigured, emailConfigured, fromAddress, sendEmail } from "./email";
-import { LIMIT_MESSAGE, ccList, emailRefusal, takeAllowance } from "./usage";
+import { ccList, emailRefusal } from "./usage";
 import { writeNarrative } from "./narrative";
 import { renderPdf, reportPdfPath } from "./pdf";
 
@@ -40,15 +40,7 @@ export async function draftReport(
     snapshot: ReportSnapshot;
     tone: string;
   };
-  // Each draft is a paid AI call: counted against the shop's daily allowance (security audit).
-  const { data: job } = await db.from("job").select("company_id").eq("id", jobId).single();
-  if (!job || !(await takeAllowance(job.company_id as string, "narrative")))
-    throw new Error(LIMIT_MESSAGE);
-  const result = await writeNarrative(
-    prepared.snapshot,
-    narrativeTemplate(template),
-    prepared.tone,
-  );
+  const result = writeNarrative(prepared.snapshot, narrativeTemplate(template));
   const final = toFinalSections(result.narrative);
   const { error: saveError } = await db.rpc("save_report_draft", {
     target_report: prepared.report_id,

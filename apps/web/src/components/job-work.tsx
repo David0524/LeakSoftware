@@ -412,6 +412,8 @@ function ChecklistItem({ jobId, row }: { jobId: string; row: ChecklistRow }) {
   const [shown, show] = useOptimistic(saved);
   const needsWhere = row.type.answer !== "yes_no" && (shown === "leaking" || shown === "attention");
   const options = verdictOptions(row.type);
+  // Maintenance items are just done or not: a check, no menu (owner, 2026-10-18).
+  const check = row.type.answer === "done";
 
   async function choose(value: string) {
     if (value === REMOVE) {
@@ -425,11 +427,81 @@ function ChecklistItem({ jobId, row }: { jobId: string; row: ChecklistRow }) {
         run(removeComponent, { job: jobId, component: row.id });
       return;
     }
-    const v = value as Verdict;
+    const v = value === "todo" ? null : (value as Verdict);
     run(
       setVerdict,
-      { job: jobId, component: row.id, result: row.result?.id ?? "", verdict: v },
+      { job: jobId, component: row.id, result: row.result?.id ?? "", verdict: value },
       () => show(v),
+    );
+  }
+
+  if (check) {
+    const done = shown === "ok";
+    const other = shown && !done ? options.find((o) => o.value === shown)?.label : null;
+    return (
+      <div className="flex min-h-11 items-center gap-1 px-4 py-1">
+        <label className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3">
+          <input
+            type="checkbox"
+            className="peer sr-only"
+            checked={done}
+            onChange={(e) => void choose(e.target.checked ? "ok" : "todo")}
+          />
+          <span
+            aria-hidden="true"
+            className={cx(
+              "grid size-6 shrink-0 place-items-center rounded-full peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus",
+              done ? "bg-status-pass text-white" : "border-2 border-control-border",
+            )}
+          >
+            {done ? (
+              <svg
+                viewBox="0 0 24 24"
+                className="size-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12.5l4.5 4.5L19 7.5" />
+              </svg>
+            ) : null}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className={cx("block leading-tight font-medium", done && "text-text-muted")}>
+              {row.label}
+            </span>
+            {other || row.result?.notes ? (
+              <span className="block truncate text-[0.8125rem] text-text-muted">
+                {[other, row.result?.notes].filter(Boolean).join(" · ")}
+              </span>
+            ) : null}
+          </span>
+        </label>
+        {row.type.allows_multiple ? (
+          <button
+            type="button"
+            aria-label={`Remove ${row.label}`}
+            onClick={() => void choose(REMOVE)}
+            className="grid size-11 shrink-0 place-items-center rounded-full text-text-muted hover:text-text"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="size-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
+        ) : null}
+        <ErrorText error={error} />
+        {confirmSheet}
+      </div>
     );
   }
 

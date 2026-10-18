@@ -26,7 +26,7 @@ const WAITING: string[] = ["report_sent", "quote_sent", "quote_accepted", "invoi
 /** Owners: how the shop is doing. Jobs by status now; quotes and money over six months. */
 export default async function DashboardPage() {
   const office = await getOffice();
-  if (!office.isOwner) redirect("/jobs");
+  if (!office.isManager) redirect("/jobs");
   const { data, error } = await (
     await createClient()
   ).rpc("owner_dashboard", {

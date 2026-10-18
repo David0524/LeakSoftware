@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { billingSummary } from "@leakbook/core";
+import { billingSummary, formatCents } from "@leakbook/core";
 import { BillingButton } from "@/components/billing-buttons";
 import { Banner } from "@/components/doc-ui";
 import { SettingsSection } from "@/components/settings-forms";
 import { PageHeader } from "@/components/ui";
-import { getOffice } from "@/lib/auth";
+import { OWNER_ONLY, getOffice } from "@/lib/auth";
 import { getAccess } from "@/lib/data";
-import { billingConfigured } from "@/server/billing";
+import { billingConfigured, currentPrice } from "@/server/billing";
 
 export const metadata: Metadata = { title: "Sundeck Pro Billing · Sundeck Pro" };
 
@@ -14,6 +14,12 @@ export const metadata: Metadata = { title: "Sundeck Pro Billing · Sundeck Pro" 
 export default async function BillingPage({ searchParams }: PageProps<"/settings/billing">) {
   const office = await getOffice();
   const [access, { subscribed }] = await Promise.all([getAccess(office), searchParams]);
+  // The price follows the package and the active people; opening this page also brings
+  // Stripe in line (owner, 2026-10-18).
+  const price =
+    access && access.plan !== "demo" && billingConfigured() && office.isOwner
+      ? await currentPrice(office.company.id)
+      : null;
   return (
     <>
       <PageHeader
@@ -29,11 +35,27 @@ export default async function BillingPage({ searchParams }: PageProps<"/settings
                 Thank you. Your subscription is being set up; this page updates in a moment.
               </Banner>
             ) : null}
-            {!access ? (
+            {!office.isOwner ? (
+              // Sundeck Pro billing is the owner's (owner, 2026-10-18).
+              <>
+                {access ? <p className="text-xl font-semibold">{billingSummary(access)}</p> : null}
+                <Banner tone="info">{OWNER_ONLY}</Banner>
+              </>
+            ) : !access ? (
               <p>Billing isn’t available until the database is updated.</p>
             ) : (
               <>
                 <p className="text-xl font-semibold">{billingSummary(access)}</p>
+                {price ? (
+                  <p data-testid="billing-price">
+                    {price.name} · {price.people === 1 ? "1 person" : `${price.people} people`} ·{" "}
+                    <span className="font-semibold">{formatCents(price.cents)} a month</span>
+                    <span className="block text-[0.9375rem] text-text-muted">
+                      Adding or turning off a teammate changes the price on your next bill.
+                    </span>
+                  </p>
+                ) : null}
+                {price?.problem ? <Banner tone="warning">{price.problem}</Banner> : null}
                 {access.locked ? (
                   <Banner tone="error">
                     Your team can still see every job, report, photo, and invoice, but can’t change

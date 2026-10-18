@@ -90,7 +90,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   quiet(getInvoices(office, id));
   quiet(getQuotes(office, id));
   quiet(listConfig(office, "price_book_item"));
-  if (office.isOwner) quiet(getPaymentAccount(office));
+  if (office.isManager) quiet(getPaymentAccount(office));
   const [detail, company, line] = await Promise.all([
     getJob(office, id),
     getCompany(office),
@@ -278,7 +278,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                   </section>
                 ) : null}
 
-                {office.isOwner ? (
+                {office.isManager ? (
                   <section className="mt-6" aria-labelledby="timeline">
                     <h2
                       id="timeline"
@@ -686,9 +686,8 @@ async function Reports({ detail }: { detail: JobDetail }) {
     <div className="grid gap-5 xl:grid-cols-2">
       {/* Said once for both reports, not on each card. */}
       <p className="text-[0.9375rem] text-text-muted xl:col-span-2">
-        {process.env.ANTHROPIC_API_KEY
-          ? "Write Draft has AI write the report from this job’s checklist, tests, and findings. It can get details wrong, so read every word before sending."
-          : "AI writing isn’t set up yet; Write Draft makes a plain summary of the job data."}
+        Write Draft fills in the report from this job’s checklist, tests, and findings. Read and
+        edit it before sending.
       </p>
       {(["homeowner", "partner"] as const)
         .filter((key) => templates.find((t) => t.key === key)?.enabled !== false)
@@ -763,7 +762,7 @@ async function Quotes({ detail }: { detail: JobDetail }) {
   const office = await getOffice();
   const [quotes, account, origin, company, priceBook] = await Promise.all([
     getQuotes(office, detail.job.id),
-    office.isOwner ? getPaymentAccount(office) : Promise.resolve(null),
+    office.isManager ? getPaymentAccount(office) : Promise.resolve(null),
     siteOrigin(),
     getCompany(office),
     listConfig<PriceBookItem>(office, "price_book_item"),
@@ -789,7 +788,7 @@ async function Quotes({ detail }: { detail: JobDetail }) {
   const hasAccepted = quotes.some((q) => q.status === "accepted");
   return (
     <div className="space-y-4">
-      {office.isOwner && !account?.charges_enabled && quotes.some((q) => q.status !== "draft") ? (
+      {office.isManager && !account?.charges_enabled && quotes.some((q) => q.status !== "draft") ? (
         <Notice tone="warning">
           Customers can accept quotes but can’t pay deposits online until payments are set up.{" "}
           <Link
@@ -823,7 +822,7 @@ async function Quotes({ detail }: { detail: JobDetail }) {
                     },
                     tech_discount_limit_bps: settings.tech_discount_limit_bps ?? 0,
                   }}
-                  isOwner={office.isOwner}
+                  isOwner={office.isManager}
                 />
               ) : null}
             </QuotePanel>
@@ -862,7 +861,7 @@ async function Invoices({ detail }: { detail: JobDetail }) {
             taxRateBps={rate}
             customerEmail={job.customer?.email ?? null}
             emailReady={emailConfigured()}
-            isOwner={office.isOwner}
+            isOwner={office.isManager}
           />
         </div>
       ) : job.type === "maintenance" ? (

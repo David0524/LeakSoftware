@@ -1,12 +1,6 @@
 import type { Metadata } from "next";
 import { saveReportTemplate } from "@/app/actions/settings";
-import {
-  SField,
-  STextArea,
-  SSwitch,
-  SettingsFields,
-  SettingsForm,
-} from "@/components/settings-forms";
+import { SField, SSwitch, SettingsFields, SettingsForm } from "@/components/settings-forms";
 import { SettingsListPage, SheetRow } from "@/components/settings-list";
 import { Grouped } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
@@ -36,7 +30,7 @@ export default async function ReportTemplatesPage() {
   return (
     <SettingsListPage
       title="Report Templates"
-      subtitle="The wording and tone of written reports. The facts (tests, findings, photos) always come from the job."
+      subtitle="Which reports techs can send, and what they’re called. Each report is written from the job’s checklist, tests, and findings."
     >
       <Grouped>
         {templates.map((t) =>
@@ -60,14 +54,6 @@ export default async function ReportTemplatesPage() {
                 <input type="hidden" name="id" value={t.id} />
                 <SettingsFields labelWidth="5rem">
                   <SField label="Name" name="name" id={`name-${t.id}`} defaultValue={t.name} />
-                  <STextArea
-                    label="Tone and instructions"
-                    name="tone"
-                    id={`tone-${t.id}`}
-                    rows={5}
-                    defaultValue={t.tone}
-                    hint="How the written summary should sound, e.g. “Friendly, no jargon, short paragraphs.”"
-                  />
                 </SettingsFields>
                 <SettingsFields>
                   <SSwitch

@@ -10,7 +10,7 @@ import {
   SettingsSection,
 } from "@/components/settings-forms";
 import { PageHeader } from "@/components/ui";
-import { getOffice } from "@/lib/auth";
+import { OWNER_ONLY, getOffice } from "@/lib/auth";
 import { getCompany, getPaymentAccount } from "@/lib/data";
 import { siteOrigin } from "@/lib/origin";
 import { PaymentsSetupButton } from "@/components/payments-setup";
@@ -31,7 +31,7 @@ export default async function PaymentsSettingsPage({
 }: PageProps<"/settings/payments">) {
   const office = await getOffice();
   const { stripe } = await searchParams;
-  let account = office.isOwner ? await getPaymentAccount(office) : null;
+  let account = office.isManager ? await getPaymentAccount(office) : null;
   // Back from Stripe onboarding: read the account's state now rather than waiting for the
   // account.updated webhook.
   if (stripe === "return" && account && paymentsConfigured()) {
@@ -44,7 +44,7 @@ export default async function PaymentsSettingsPage({
   const s = company.settings as Settings;
   const deposit = s.deposit ?? {};
   // One filled button per page: while Stripe setup is pending, that is the main action.
-  const setupPending = paymentsConfigured() && !account?.charges_enabled;
+  const setupPending = paymentsConfigured() && !account?.charges_enabled && office.isOwner;
 
   return (
     <>
@@ -89,9 +89,14 @@ export default async function PaymentsSettingsPage({
                     Stripe is reviewing your details. This page updates when they finish.
                   </p>
                 ) : null}
-                <PaymentsSetupButton
-                  label={account ? "Continue Stripe Setup" : "Set Up Payments"}
-                />
+                {/* Connecting or changing the shop's Stripe account: owners only. */}
+                {office.isOwner ? (
+                  <PaymentsSetupButton
+                    label={account ? "Continue Stripe Setup" : "Set Up Payments"}
+                  />
+                ) : (
+                  <Banner tone="info">{OWNER_ONLY}</Banner>
+                )}
               </>
             )}
           </div>

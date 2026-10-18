@@ -1,6 +1,6 @@
 import Constants from "expo-constants";
 import { router } from "expo-router";
-import { formatPhone, offersPool, toE164 } from "@leakbook/core";
+import { formatPhone, offersPool, toE164, roleLabel } from "@leakbook/core";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Linking, View } from "react-native";
 import { call } from "../../data/reports";
@@ -131,7 +131,7 @@ export default function Settings() {
         <Group>
           <ListRow
             title={user?.email ?? ""}
-            subtitle={`${company?.name ?? ""} · ${membership?.role === "owner" ? "Owner" : "Tech"}`}
+            subtitle={`${company?.name ?? ""} · ${roleLabel(membership?.role)}`}
           />
           {API_URL ? (
             // Set up on the website, where the code can be scanned (owner, 2026-10-16).

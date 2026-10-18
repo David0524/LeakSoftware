@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  canMoveJob,
+  canUnschedule,
   ROUTING_DEFAULTS,
   daySummary,
   estimateDriveMinutes,
@@ -260,5 +262,19 @@ describe("a saved day", () => {
       backMin: null,
       overtimeMin: 0,
     });
+  });
+});
+
+describe("moving jobs by hand", () => {
+  it("moves any job but a canceled one", () => {
+    expect(canMoveJob("scheduled")).toBe(true);
+    expect(canMoveJob("invoiced")).toBe(true);
+    expect(canMoveJob("in_progress")).toBe(true);
+    expect(canMoveJob("canceled")).toBe(false);
+  });
+  it("sends only jobs that haven't started back to Needs a Time", () => {
+    expect(canUnschedule("scheduled")).toBe(true);
+    expect(canUnschedule("unscheduled")).toBe(true);
+    expect(canUnschedule("invoiced")).toBe(false);
   });
 });

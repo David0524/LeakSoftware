@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { CLEANING_MONTHS, isDateString, parseDollars, uuidv7 } from "@leakbook/core";
-import { requireOwner } from "@/lib/auth";
+import { requireManager } from "@/lib/auth";
 import { parsePlanRepeat } from "@/lib/plan-repeat";
 import { createClient } from "@/lib/supabase/server";
 import type { FormState } from "./auth";
@@ -22,7 +22,7 @@ function refresh(customer: string) {
 }
 
 export async function savePlan(_: FormState, form: FormData): Promise<FormState> {
-  const office = await requireOwner();
+  const office = await requireManager();
   const plan = text(form, "plan");
   const customer = text(form, "customer");
   const property = text(form, "property");
@@ -141,7 +141,7 @@ export async function savePlan(_: FormState, form: FormData): Promise<FormState>
 
 /** Pause (no visits made; upcoming ones not started are removed) or resume a plan. */
 export async function setPlanPaused(_: FormState, form: FormData): Promise<FormState> {
-  const office = await requireOwner();
+  const office = await requireManager();
   const plan = text(form, "plan");
   const customer = text(form, "customer");
   if (!UUID.test(plan)) return { error: "This plan can't be found. Refresh the page." };
@@ -160,7 +160,7 @@ export async function setPlanPaused(_: FormState, form: FormData): Promise<FormS
 
 /** End a plan: its upcoming visits leave the schedule; finished visits are kept. */
 export async function endPlan(_: FormState, form: FormData): Promise<FormState> {
-  const office = await requireOwner();
+  const office = await requireManager();
   const plan = text(form, "plan");
   const customer = text(form, "customer");
   if (!UUID.test(plan)) return { error: "This plan can't be found. Refresh the page." };

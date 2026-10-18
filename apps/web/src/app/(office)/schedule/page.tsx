@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   LOCK_LABELS,
   addDays,
+  canMoveJob,
   formatAddress,
   formatDay,
   formatTime,
@@ -25,6 +26,7 @@ import {
   type TrayJob,
 } from "@/components/route-board";
 import { DateJump } from "@/components/date-jump";
+import { WeekStrip } from "@/components/week-strip";
 import {
   Grouped,
   Notice,
@@ -67,7 +69,7 @@ function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardSto
     time: j.scheduled_start ? formatTime(j.scheduled_start, ctx.timeZone) : null,
     status: j.status,
     lock: lock && lock !== "started" ? LOCK_LABELS[lock] : null,
-    draggable: j.status === "scheduled" || j.status === "unscheduled",
+    draggable: canMoveJob(j.status),
     legMin: route ? (route.summary.legs[i] ?? null) : null,
     shortMin: route ? (route.summary.short[i] ?? 0) : 0,
     note: onSecond
@@ -146,7 +148,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
     mapsAppForRequest(),
     loadRoutes(office, ctxP, days),
     // Needs a Time is the office's list: techs don't see it (owner, 2026-10-18).
-    office.isOwner ? needsScheduling(office) : null,
+    office.isManager ? needsScheduling(office) : null,
   ]);
   const trayJobs = tray ? tray.map((j) => trayStop(j, ctx)) : null;
 
@@ -202,7 +204,6 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
             timeZone: "UTC",
           }).format(new Date(`${date}T12:00:00Z`))
         : `${formatDay(days[0]!)} – ${formatDay(days[days.length - 1]!)}`;
-  const week = scheduleDays("week", date);
   const unassignedCount = days.reduce((n, d) => n + (unassigned.get(d)?.length ?? 0), 0);
   const jobsShown = columns.reduce((n, c) => n + c.stops.length, 0) + unassignedCount;
   const jobsOnPhone =
@@ -279,31 +280,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
         </nav>
       </div>
 
-      {view === "day" ? (
-        <nav
-          aria-label="Days this week"
-          className="-mx-4 mb-4 flex gap-1 overflow-x-auto px-4 pb-1"
-        >
-          {week.map((d) => {
-            const at = new Date(`${d}T12:00:00Z`);
-            return (
-              <Link
-                key={d}
-                href={href(d)}
-                aria-current={d === date ? "date" : undefined}
-                aria-label={formatDay(d, "long")}
-                className={cx(
-                  "flex min-h-14 min-w-12 flex-1 flex-col items-center justify-center rounded-xl text-[0.8125rem] font-medium",
-                  d === date ? "bg-text text-bg" : d === today ? "text-link" : "hover:bg-surface",
-                )}
-              >
-                {dateFormat("en-US", { weekday: "short", timeZone: "UTC" }).format(at)}
-                <span className="font-display text-xl font-bold">{at.getUTCDate()}</span>
-              </Link>
-            );
-          })}
-        </nav>
-      ) : null}
+      {view === "day" ? <WeekStrip date={date} today={today} tech={tech} /> : null}
 
       {/* Whose schedule: under the days of the week. */}
       {techs.length > 1 ? (
@@ -334,7 +311,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
         <div className="mb-4">
           <Notice tone="warning">
             Routes start and end at the shop, which has no map location yet.{" "}
-            {office.isOwner ? (
+            {office.isManager ? (
               <Link href="/settings/scheduling" className="font-semibold text-link underline">
                 Set it in Settings › Scheduling
               </Link>
@@ -348,7 +325,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
         <p className="mb-4 text-[0.9375rem] text-text-muted">
           Pools marked “No map location” aren’t counted in drive times. Open the job and use Mark
           Location Here at the pool
-          {office.isOwner ? ", or Find Pool Locations in Settings › Scheduling" : ""}.
+          {office.isManager ? ", or Find Pool Locations in Settings › Scheduling" : ""}.
         </p>
       ) : null}
 

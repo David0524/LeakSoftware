@@ -16,5 +16,5 @@ export default async function HomePage() {
   if (office.isOwner && onboardingAvailable() && (await getAccess(office))?.onboarded === false)
     redirect("/welcome");
   const { device } = userAgent({ headers: await headers() });
-  redirect(office.isOwner && device.type !== "mobile" ? "/dashboard" : "/today");
+  redirect(office.isManager && device.type !== "mobile" ? "/dashboard" : "/today");
 }

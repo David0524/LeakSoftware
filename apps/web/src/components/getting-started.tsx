@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { companyServices, gettingStarted } from "@leakbook/core";
 import { hideGettingStarted } from "@/app/actions/walkthrough";
+import { GettingStartedDock } from "@/components/getting-started-dock";
 import { getOffice, getUser } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
@@ -11,7 +12,7 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function GettingStarted() {
   const [office, user] = await Promise.all([getOffice(), getUser()]);
-  if (!office.isOwner || user?.user_metadata.getting_started_hidden === true) return null;
+  if (!office.isManager || user?.user_metadata.getting_started_hidden === true) return null;
   const supabase = await createClient();
   const co = office.company.id;
   const count = (table: string) =>
@@ -42,72 +43,76 @@ export async function GettingStarted() {
   const done = steps.filter((s) => s.done).length;
   if (done === steps.length) return null;
   return (
-    <section
-      aria-labelledby="getting-started"
-      data-testid="getting-started"
-      className="card mb-6 max-w-2xl overflow-hidden"
-    >
-      <div className="flex items-start justify-between gap-3 px-5 pt-4">
-        <div>
-          <h2 id="getting-started" className="font-display text-xl font-bold">
-            Getting Started
-          </h2>
-          <p className="text-[0.9375rem] text-text-muted">
-            {done} of {steps.length} done
-          </p>
-        </div>
-        <form action={hideGettingStarted}>
-          <button type="submit" className="-mr-2 min-h-11 px-3 text-link">
-            Hide
-          </button>
-        </form>
-      </div>
-      <div
-        role="progressbar"
-        aria-label="Getting Started progress"
-        aria-valuemin={0}
-        aria-valuemax={steps.length}
-        aria-valuenow={done}
-        className="mx-5 mt-2 h-1.5 overflow-hidden rounded-full bg-fill"
+    <>
+      {/* Wider screens: a panel in the corner, so the page's own information stays on top. */}
+      <GettingStartedDock steps={steps} />
+      <section
+        aria-labelledby="getting-started"
+        data-testid="getting-started"
+        className="card mb-6 max-w-2xl overflow-hidden sm:hidden"
       >
+        <div className="flex items-start justify-between gap-3 px-5 pt-4">
+          <div>
+            <h2 id="getting-started" className="font-display text-xl font-bold">
+              Getting Started
+            </h2>
+            <p className="text-[0.9375rem] text-text-muted">
+              {done} of {steps.length} done
+            </p>
+          </div>
+          <form action={hideGettingStarted}>
+            <button type="submit" className="-mr-2 min-h-11 px-3 text-link">
+              Hide
+            </button>
+          </form>
+        </div>
         <div
-          className="h-1.5 rounded-full bg-status-pass"
-          style={{ width: `${(done / steps.length) * 100}%` }}
-        />
-      </div>
-      <ul className="mt-3">
-        {steps.map((s) => (
-          <li key={s.id} className="border-t-[0.5px] border-separator first:border-t-0">
-            <Link
-              href={s.href}
-              className="flex min-h-12 items-center gap-3 px-5 py-2.5 hover:bg-text/[0.03] active:bg-text/[0.06]"
-            >
-              <span
-                aria-hidden="true"
-                className={
-                  s.done
-                    ? "inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-status-pass text-[0.8125rem] text-white"
-                    : "size-6 shrink-0 rounded-full border-2 border-control-border"
-                }
+          role="progressbar"
+          aria-label="Getting Started progress"
+          aria-valuemin={0}
+          aria-valuemax={steps.length}
+          aria-valuenow={done}
+          className="mx-5 mt-2 h-1.5 overflow-hidden rounded-full bg-fill"
+        >
+          <div
+            className="h-1.5 rounded-full bg-status-pass"
+            style={{ width: `${(done / steps.length) * 100}%` }}
+          />
+        </div>
+        <ul className="mt-3">
+          {steps.map((s) => (
+            <li key={s.id} className="border-t-[0.5px] border-separator first:border-t-0">
+              <Link
+                href={s.href}
+                className="flex min-h-12 items-center gap-3 px-5 py-2.5 hover:bg-text/[0.03] active:bg-text/[0.06]"
               >
-                {s.done ? "✓" : null}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className={s.done ? "block text-text-muted line-through" : "block"}>
-                  {s.label}
-                  <span className="sr-only">{s.done ? " (done)" : ""}</span>
+                <span
+                  aria-hidden="true"
+                  className={
+                    s.done
+                      ? "inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-status-pass text-[0.8125rem] text-white"
+                      : "size-6 shrink-0 rounded-full border-2 border-control-border"
+                  }
+                >
+                  {s.done ? "✓" : null}
                 </span>
-                {s.done ? null : (
-                  <span className="block text-[0.9375rem] text-text-muted">{s.detail}</span>
-                )}
-              </span>
-              <span aria-hidden="true" className="text-xl leading-none text-text-muted/70">
-                ›
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
+                <span className="min-w-0 flex-1">
+                  <span className={s.done ? "block text-text-muted line-through" : "block"}>
+                    {s.label}
+                    <span className="sr-only">{s.done ? " (done)" : ""}</span>
+                  </span>
+                  {s.done ? null : (
+                    <span className="block text-[0.9375rem] text-text-muted">{s.detail}</span>
+                  )}
+                </span>
+                <span aria-hidden="true" className="text-xl leading-none text-text-muted/70">
+                  ›
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </>
   );
 }

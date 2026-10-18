@@ -30,7 +30,7 @@ async function target(companyId: string | null): Promise<ImportTarget> {
     return { db: admin, companyId };
   }
   const office = await getOffice();
-  if (!office.isOwner) throw new Error("Only owners can import customers.");
+  if (!office.isManager) throw new Error("Only owners can import customers.");
   return { db: await createClient(), companyId: office.company.id };
 }
 

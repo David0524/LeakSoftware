@@ -8,7 +8,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { accessNotice } from "@leakbook/core";
 import { cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getAccess, getCompany } from "@/lib/data";
+import { getAccess, getCompany, mayMakeJobs } from "@/lib/data";
 import { unreadCount } from "@/lib/messages";
 import { desktopNav, officeLinks } from "@/lib/nav";
 import { onboardingAvailable } from "@/server/billing";
@@ -26,18 +26,24 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
       >
         Skip to Content
       </a>
-      {/* Phones use the iOS navigation bar each page draws (PageHeader); the brand bar, with
-          the desktop navigation, is for wider screens. */}
-      <header className="glass-brand sticky top-0 z-30 text-on-header max-sm:hidden">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2">
+      {/* Phones use the iOS navigation bar each page draws (PageHeader). Wider screens get a
+          light bar in two rows, after Stripe's (owner, 2026-10-18): the shop and account on
+          top, then the sections as tabs, which stay in view while the top row scrolls away. */}
+      <header className="glass-bar sticky -top-14 z-30 max-sm:hidden">
+        <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4">
           <Link
             href="/home"
             aria-label="Sundeck Pro, Home"
             className="inline-flex min-h-11 items-center"
           >
-            <Logo height={30} onDark />
+            <Logo height={28} />
           </Link>
           <Suspense fallback={<div className="h-11 flex-1" />}>
+            <AccountBar />
+          </Suspense>
+        </div>
+        <div className="mx-auto max-w-7xl px-4">
+          <Suspense fallback={<div className="h-12" />}>
             <OfficeNav />
           </Suspense>
         </div>
@@ -64,7 +70,7 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
 async function PhoneTabs() {
   const office = await getOffice();
   const [company, unread] = await Promise.all([getCompany(office), unreadCount(office)]);
-  return <TabBar links={officeLinks(office.isOwner, company.settings, unread)} />;
+  return <TabBar links={officeLinks(office.isManager, company.settings, unread)} />;
 }
 
 /** Trial ending, payment failed, or read-only (M10 billing). */
@@ -85,7 +91,7 @@ async function AccessBanner() {
     >
       <p className="mx-auto max-w-7xl">
         {notice.text}
-        {office.isOwner ? (
+        {office.isManager ? (
           <>
             {" "}
             <Link href="/settings/billing" className="font-semibold text-link underline">
@@ -101,56 +107,89 @@ async function AccessBanner() {
 async function OfficeNav() {
   const office = await getOffice();
   const [company, unread] = await Promise.all([getCompany(office), unreadCount(office)]);
-  const links = officeLinks(office.isOwner, company.settings, unread);
+  const links = officeLinks(office.isManager, company.settings, unread);
   // On a computer the Dashboard leads for owners (owner, 2026-10-16); phones keep Today first.
   const dashboard = links.find((l) => l.href === "/dashboard");
   const desktop = dashboard ? [dashboard, ...links.filter((l) => l !== dashboard)] : links;
+  return <DesktopNav {...desktopNav(desktop)} />;
+}
+
+/** The top row's right side: which shop, New Job, appearance, and the account. */
+async function AccountBar() {
+  const office = await getOffice();
+  const newJob = await mayMakeJobs(office);
   return (
     <>
-      <DesktopNav {...desktopNav(desktop)} className="hidden sm:flex" />
-      <div className="ml-auto flex items-center gap-3 text-[0.9375rem]">
-        {office.companies.length > 1 ? (
-          <form action={switchCompany} className="flex items-center gap-2">
-            <label htmlFor="company-switch" className="sr-only">
-              Company
-            </label>
-            <select
-              id="company-switch"
-              name="company"
-              defaultValue={office.company.id}
-              className="min-h-11 rounded-md bg-white/10 px-2 text-on-header"
-            >
-              {office.companies.map((c) => (
-                <option key={c.id} value={c.id} className="text-text">
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <button type="submit" className="min-h-11 px-2 underline">
-              Switch
-            </button>
-          </form>
-        ) : (
-          <span className="hidden font-medium sm:inline">{office.company.name}</span>
-        )}
+      {office.companies.length > 1 ? (
+        <form action={switchCompany} className="flex items-center gap-1">
+          <label htmlFor="company-switch" className="sr-only">
+            Company
+          </label>
+          <select
+            id="company-switch"
+            name="company"
+            defaultValue={office.company.id}
+            className="min-h-9 rounded-full border border-link/50 px-3 text-[0.9375rem] font-medium text-link"
+          >
+            {office.companies.map((c) => (
+              <option key={c.id} value={c.id} className="text-text">
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            className="min-h-11 px-2 text-[0.9375rem] font-medium text-link hover:underline"
+          >
+            Switch
+          </button>
+        </form>
+      ) : (
+        <span className="truncate rounded-full border border-link/50 px-3 py-0.5 text-[0.9375rem] font-medium text-link">
+          {office.company.name}
+        </span>
+      )}
+      <div className="ml-auto flex items-center gap-1 text-[0.9375rem]">
         {/* Wider screens reach More (appearance, help, Show Tips Again) from the name. */}
         <Link
           href="/more"
           aria-label={`${office.user.name ?? office.user.email}: account and help`}
-          className="hidden min-h-11 content-center text-neutral-300 underline-offset-4 hover:underline md:block"
+          className="hidden min-h-11 content-center px-2 font-medium text-text-muted hover:text-text md:block"
         >
           {office.user.name ?? office.user.email}
         </Link>
-        <ThemeToggle onHeader />
+        <ThemeToggle />
         {/* Phones: Sign Out is on More, away from the appearance button (M11 review M10). */}
-        <form action={signOut} className="hidden sm:block">
+        <form action={signOut}>
           <button
             type="submit"
-            className="min-h-11 px-2 font-medium underline-offset-4 hover:underline"
+            className="min-h-11 px-2 font-medium text-text-muted hover:text-text"
           >
             Sign Out
           </button>
         </form>
+        {newJob ? (
+          <Link
+            href="/jobs/new"
+            aria-label="New Job"
+            title="New Job"
+            className="grid size-11 place-items-center rounded-full"
+          >
+            <span className="grid size-8 place-items-center rounded-full bg-primary text-on-primary">
+              <svg
+                viewBox="0 0 24 24"
+                className="size-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </span>
+          </Link>
+        ) : null}
       </div>
     </>
   );

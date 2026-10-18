@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { formatPhone, onMyWayVia, toE164 } from "@leakbook/core";
+import { formatPhone, isManagerRole, onMyWayVia, toE164 } from "@leakbook/core";
 import { cancelNumber, keepNumber, saveLine, saveMyPhone } from "@/app/actions/texting";
 import { OnMyWayForm } from "@/components/on-my-way-form";
 import { NumberPicker } from "@/components/phone-settings";
@@ -16,7 +16,6 @@ import { getOffice } from "@/lib/auth";
 import { getCompany, getTeam } from "@/lib/data";
 import { getLine, myPhone } from "@/lib/messages";
 import { createClient } from "@/lib/supabase/server";
-import { twilioConfigured } from "@/server/twilio";
 
 export const metadata: Metadata = { title: "Phone and Texting · Sundeck Pro" };
 
@@ -42,9 +41,9 @@ export default async function PhoneSettingsPage() {
       active.map((t) => t.user_id),
     );
   const phones = new Map((profiles ?? []).map((p) => [p.id as string, p.phone as string | null]));
-  // Nobody chosen: the owners' phones ring.
+  // Nobody chosen: the owners' and admins' phones ring.
   const rings = (id: string, role: string) =>
-    line?.ring_user_ids.length ? line.ring_user_ids.includes(id) : role === "owner";
+    line?.ring_user_ids.length ? line.ring_user_ids.includes(id) : isManagerRole(role);
 
   return (
     <>
@@ -54,13 +53,6 @@ export default async function PhoneSettingsPage() {
         subtitle="Text and call customers from one company number the whole team shares."
       />
       <div className="max-w-2xl space-y-6">
-        {!twilioConfigured() ? (
-          <p className="rounded-2xl bg-status-info/12 px-4 py-3">
-            Demo: texting isn’t connected on this server, so numbers are made up and texts are saved
-            without being sent.
-          </p>
-        ) : null}
-
         {line ? (
           <SettingsSection title="Company number" boxed>
             <p className="text-[1.375rem] font-semibold">{formatPhone(line.number)}</p>

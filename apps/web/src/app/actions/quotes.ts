@@ -78,7 +78,7 @@ export async function sendQuoteAction(_: SendQuoteState, form: FormData): Promis
   };
 }
 
-/** Owners: start or continue Stripe onboarding. */
+/** Owners only: start or continue Stripe onboarding (connecting the shop's account). */
 export async function setUpPayments(): Promise<FormState> {
   const office = await requireOwner();
   const company = await getCompany(office);

@@ -28,7 +28,8 @@ body {
   outline: 3px solid var(--lb-focus);
   outline-offset: 2px;
 }
-header :focus-visible {
+/* Brand-colored headers (customer pages, reports); the light bars keep the focus color. */
+header:not(.glass-bar) :focus-visible {
   outline-color: var(--lb-on-header);
 }
 

@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import {
   addDays,
+  canMoveJob,
+  canUnschedule,
   durationLabel,
   formatAddress,
   isDateString,
@@ -27,7 +29,7 @@ import {
   type TechDay,
   dateFormat,
 } from "@leakbook/core";
-import { getOffice, requireOwner, type Office } from "@/lib/auth";
+import { getOffice, requireManager, type Office } from "@/lib/auth";
 import { getTeam } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { loadRoutes, routeContext, routeKey, type RouteContext } from "@/server/route-days";
@@ -180,8 +182,14 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
   const db = await createClient();
   const job = await loadJob(db, office, jobId);
   if (!job) return { error: "This job is gone. Refresh the page." };
-  if (job.status !== "scheduled" && job.status !== "unscheduled")
-    return { error: "This job has started, so it stays where it is." };
+  if (!canMoveJob(job.status))
+    return { error: "This job was canceled, so it stays off the schedule." };
+  if (!date && !canUnschedule(job.status))
+    return {
+      error: "This job has started, so it stays on the schedule. Drag it to another day instead.",
+    };
+  // A started or finished job keeps its status when it moves; others become scheduled.
+  const status = canUnschedule(job.status) ? "scheduled" : job.status;
   const ctx = await routeContext(office);
   if (date && date < ctx.today) return { error: "Pick today or a later day." };
   if (!ctx.seesAll && tech !== office.user.id && date)
@@ -232,7 +240,7 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
         id: jobId,
         route_order: null,
         assigned_user_id: null,
-        status: "scheduled",
+        status,
         scheduled_start: start,
         scheduled_end: new Date(Date.parse(start) + duration * 60_000).toISOString(),
       },
@@ -275,7 +283,7 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
     (u) => u.id === jobId,
   )!;
   mine.assigned_user_id = tech;
-  mine.status = "scheduled";
+  mine.status = status;
   if (fixedMin != null) {
     mine.scheduled_start = zonedMinutesToIso(date, fixedMin, ctx.timeZone);
     mine.scheduled_end = new Date(
@@ -480,7 +488,7 @@ export async function setPoolLocation(
 /** Owners: the shop's location, where every route starts and ends, from the phone. */
 export async function setShopLocation(lat: number, lng: number): Promise<RouteResult> {
   if (!validPoint(lat, lng)) return { error: "That location isn’t valid." };
-  const office = await requireOwner();
+  const office = await requireManager();
   const db = await createClient();
   const { data } = await db.from("company").select("*").eq("id", office.company.id).single();
   const { error } = await db
@@ -499,7 +507,7 @@ export async function setShopLocation(lat: number, lng: number): Promise<RouteRe
 
 /** Owners: find the shop's location from its address. */
 export async function locateShop(): Promise<RouteResult> {
-  const office = await requireOwner();
+  const office = await requireManager();
   if (!routingConfigured())
     return { error: "Address lookup isn’t set up. Use My Location while at the shop instead." };
   const db = await createClient();
@@ -521,7 +529,7 @@ export async function locateShop(): Promise<RouteResult> {
 
 /** Owners: look up pools that have no location yet (up to 50 at a time). */
 export async function locatePools(): Promise<RouteResult> {
-  const office = await requireOwner();
+  const office = await requireManager();
   if (!routingConfigured()) return { error: "Address lookup isn’t set up." };
   const db = await createClient();
   const { data } = await db
@@ -565,7 +573,7 @@ export async function locatePools(): Promise<RouteResult> {
 const CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export async function saveScheduling(_: FormState, form: FormData): Promise<FormState> {
-  const office = await requireOwner();
+  const office = await requireManager();
   const text = (k: string) => String(form.get(k) ?? "").trim();
   const fields: Record<string, string> = {};
   const start = text("day_start");

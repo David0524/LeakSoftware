@@ -14,7 +14,7 @@ export const metadata: Metadata = {
  */
 export default function SecurityPage() {
   return (
-    <LegalPage title="Security" updated="October 16, 2026" draft={false}>
+    <LegalPage title="Security" updated="October 16, 2026">
       <p>
         Pool shops keep their customers’ names, addresses, phone numbers, photos, and payment
         records in Sundeck Pro. Here is how we keep them safe.

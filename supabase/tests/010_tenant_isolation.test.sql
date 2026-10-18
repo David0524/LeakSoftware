@@ -1,4 +1,4 @@
--- Tenant isolation on every company-scoped table, for owners and techs.
+-- Tenant isolation on every company-scoped table, for owners, admins, and techs.
 begin;
 set search_path = public, extensions;
 select no_plan();
@@ -27,6 +27,13 @@ select is(
 select tests.authenticate_as((select (a ->> 'owner')::uuid from fx));
 select tests.check_table_access(table_name,
   (select (a ->> 'company')::uuid from fx), (select (b ->> 'company')::uuid from fx), 'owner')
+from app.sync_table order by sort_order;
+reset role;
+
+-- Admin of company A: what owners could do, as managers (owner, 2026-10-18).
+select tests.authenticate_as((select (a ->> 'admin')::uuid from fx));
+select tests.check_table_access(table_name,
+  (select (a ->> 'company')::uuid from fx), (select (b ->> 'company')::uuid from fx), 'admin')
 from app.sync_table order by sort_order;
 reset role;
 

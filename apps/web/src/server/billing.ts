@@ -71,6 +71,34 @@ async function shopPrice(
 const monthly = { interval: "month" } as const;
 
 /**
+ * The Stripe product a package is billed under: one per package name, made the first time it's
+ * needed and kept active. A product made inline at Checkout (`product_data`) is inactive, and
+ * Stripe then refuses to change the subscription's price (found in the sandbox, 2026-10-18).
+ */
+export async function packageProduct(stripe: Stripe, name: string): Promise<string> {
+  const id = `sundeckpro_${name
+    .toLowerCase()
+    .replace(/^sundeck pro /, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "")}`;
+  try {
+    const product = await stripe.products.retrieve(id);
+    if (!product.active || product.name !== name)
+      await stripe.products.update(id, { active: true, name });
+    return id;
+  } catch (error) {
+    if ((error as { code?: string }).code !== "resource_missing") throw error;
+  }
+  try {
+    await stripe.products.create({ id, name });
+  } catch (error) {
+    // Another request made it first.
+    if ((error as { code?: string }).code !== "resource_already_exists") throw error;
+  }
+  return id;
+}
+
+/**
  * Stripe Checkout for the subscription, priced for the shop's package and people. Time left
  * on the free trial carries over. New shops come here from onboarding and go back to it.
  */
@@ -113,7 +141,7 @@ export async function subscribeUrl(
       {
         price_data: {
           currency: "usd",
-          product_data: { name: price.name },
+          product: await packageProduct(stripe, price.name),
           unit_amount: price.cents,
           recurring: monthly,
         },
@@ -242,8 +270,9 @@ export async function syncSubscriptionPrice(
   const live = await stripe.subscriptions.retrieve(sub.stripe_subscription_id as string);
   const item = live.items.data[0];
   if (!item || item.price.unit_amount === price.cents) return null;
-  const product =
-    typeof item.price.product === "string" ? item.price.product : item.price.product.id;
+  // The package's own active product: shops subscribed before it existed were billed under an
+  // inactive one made at Checkout, which Stripe won't take a new price for.
+  const product = await packageProduct(stripe, price.name);
   await stripe.subscriptions.update(live.id, {
     items: [
       {
@@ -254,6 +283,39 @@ export async function syncSubscriptionPrice(
     proration_behavior: "create_prorations",
   });
   return price.cents;
+}
+
+/** A price update Stripe refused: logged (Vercel's logs), never shown to customers. */
+export function logPriceSyncError(error: unknown): null {
+  console.error("[billing] couldn't update the subscription price in Stripe:", error);
+  return null;
+}
+
+/**
+ * For Settings › Sundeck Pro Billing: what the shop pays now (its package and active people),
+ * after bringing Stripe in line (owner, 2026-10-18: "Ensure that adding users effects the
+ * pricing"). With a sandbox key, Stripe's own message comes back when it refuses, to help
+ * setup; with live keys only that it failed.
+ */
+export async function currentPrice(companyId: string): Promise<{
+  name: string;
+  people: number;
+  cents: number;
+  problem: string | null;
+} | null> {
+  const db = adminClient();
+  if (!db) return null;
+  const price = await shopPrice(db, companyId);
+  let problem: string | null = null;
+  try {
+    await syncSubscriptionPrice(companyId, stripeClient(), db);
+  } catch (error) {
+    logPriceSyncError(error);
+    problem = process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_")
+      ? `Stripe said: ${error instanceof Error ? error.message : String(error)}`
+      : "The new price couldn’t be sent to Stripe. It’s tried again every day.";
+  }
+  return { name: price.name, people: price.people, cents: price.cents, problem };
 }
 
 /** `syncSubscriptionPrice` for every subscribed shop (the daily cron). */
@@ -268,8 +330,9 @@ export async function syncAllSubscriptionPrices(db: SupabaseClient): Promise<num
     try {
       if ((await syncSubscriptionPrice(row.company_id as string, undefined, db)) !== null)
         changed++;
-    } catch {
+    } catch (error) {
       // One shop's Stripe error doesn't stop the rest; tomorrow's run tries again.
+      logPriceSyncError(error);
     }
   }
   return changed;

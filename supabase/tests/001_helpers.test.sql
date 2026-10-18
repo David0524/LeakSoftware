@@ -47,13 +47,15 @@ $$;
 create or replace function tests.make_company(label text) returns jsonb
 language plpgsql as $$
 declare
-  c uuid; o uuid; t uuid; cust uuid; prop uuid; j uuid; jc uuid; tr uuid; f uuid;
+  c uuid; o uuid; ad uuid; t uuid; cust uuid; prop uuid; j uuid; jc uuid; tr uuid; f uuid;
   rep uuid; q uuid; qli uuid; inv uuid; conv uuid; sp uuid;
 begin
   o := tests.create_user(label || '-owner@test.local');
   t := tests.create_user(label || '-tech@test.local');
+  ad := tests.create_user(label || '-admin@test.local');
   insert into company (name) values ('Company ' || label) returning id into c;
-  insert into membership (company_id, user_id, role) values (c, o, 'owner'), (c, t, 'tech');
+  insert into membership (company_id, user_id, role)
+    values (c, o, 'owner'), (c, ad, 'admin'), (c, t, 'tech');
   perform app.seed_company_defaults(c);
 
   insert into customer (company_id, name, email) values (c, 'Customer ' || label, 'c@example.com')
@@ -115,7 +117,7 @@ begin
     ('documents', c || '/' || j || '/report.pdf'),
     ('texts', c || '/' || conv || '/picture.jpg');
 
-  return jsonb_build_object('company', c, 'owner', o, 'tech', t, 'customer', cust,
+  return jsonb_build_object('company', c, 'owner', o, 'admin', ad, 'tech', t, 'customer', cust,
     'property', prop, 'job', j, 'report', rep, 'quote', q, 'invoice', inv);
 end
 $$;
@@ -137,8 +139,11 @@ declare
   label text := format('%s (%s)', tbl, my_role);
 begin
   select * into strict t from app.sync_table where table_name = tbl;
-  can_read := t.read_role = 'member' or my_role = 'owner';
-  can_write := t.write_role = 'member' or (t.write_role = 'owner' and my_role = 'owner');
+  -- 'manager' is an owner or an admin.
+  can_read := t.read_role = 'member' or my_role = 'owner'
+    or (t.read_role = 'manager' and my_role = 'admin');
+  can_write := t.write_role = 'member' or (t.write_role = 'owner' and my_role = 'owner')
+    or (t.write_role = 'manager' and my_role in ('owner', 'admin'));
 
   execute format('select count(*) from public.%I where company_id = $1', tbl)
     into n using my_company;

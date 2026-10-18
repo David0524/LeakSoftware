@@ -39,7 +39,7 @@ function must<T>(r: { data: T | null; error: { message: string } | null }): T {
 
 export interface TeamMember {
   user_id: string;
-  role: "owner" | "tech";
+  role: "owner" | "admin" | "tech";
   status: "active" | "disabled";
   membership_id: string;
   name: string;
@@ -61,7 +61,7 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
   ) as unknown as {
     id: string;
     user_id: string;
-    role: "owner" | "tech";
+    role: "owner" | "admin" | "tech";
     status: "active" | "disabled";
     profile: { id: string; full_name: string | null; email: string | null } | null;
   }[];
@@ -346,7 +346,7 @@ export interface AuditRow {
 
 /** Audit entries for these rows, newest first. Owners only (RLS returns nothing to techs). */
 export async function auditFor(office: Office, rowIds: string[]): Promise<AuditRow[]> {
-  if (!office.isOwner || rowIds.length === 0) return [];
+  if (!office.isManager || rowIds.length === 0) return [];
   const supabase = await db();
   return must(
     await supabase
@@ -549,7 +549,7 @@ export const getCompany = cache(async (office: Office) => {
 
 /** Whether this member can make new jobs: owners always; techs unless turned off (2026-10-18). */
 export async function mayMakeJobs(office: Office): Promise<boolean> {
-  if (office.isOwner) return true;
+  if (office.isManager) return true;
   return canMakeJobs("tech", (await getCompany(office)).settings);
 }
 
@@ -901,7 +901,7 @@ export interface UnbilledMonth {
 
 /** Owners: finished maintenance visits not on an invoice yet, by month. */
 export async function unbilledMaintenance(office: Office): Promise<UnbilledMonth[]> {
-  if (!office.isOwner) return [];
+  if (!office.isManager) return [];
   const supabase = await db();
   return must(
     await supabase.rpc("unbilled_maintenance", { target_company: office.company.id }),

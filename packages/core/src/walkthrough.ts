@@ -188,7 +188,8 @@ export function tipFor(o: {
   seen: readonly string[];
   pkg?: TipPackage;
 }): Tip | null {
-  const role: TipRole = o.role === "owner" ? "owner" : "tech";
+  // Admins get the owners' tips: they run the office the same way.
+  const role: TipRole = o.role === "owner" || o.role === "admin" ? "owner" : "tech";
   return (
     TIPS.find(
       (t) =>
