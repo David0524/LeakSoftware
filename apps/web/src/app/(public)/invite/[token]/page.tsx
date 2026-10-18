@@ -38,7 +38,7 @@ async function InviteBody({ params }: Pick<PageProps<"/invite/[token]">, "params
     <>
       <p className="mb-6 max-sm:px-2 max-sm:text-center">
         <strong>{invite.company_name}</strong> invited you to Sundeck Pro as{" "}
-        {invite.role === "owner" ? "an owner" : "a tech"}.
+        {invite.role === "owner" ? "an owner" : invite.role === "admin" ? "an admin" : "a tech"}.
       </p>
       <InviteForm token={token} email={invite.email} signedInAs={user?.email ?? null} />
     </>

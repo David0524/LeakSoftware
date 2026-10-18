@@ -21,7 +21,7 @@ export const metadata: Metadata = { title: "More · Sundeck Pro" };
 export default async function MorePage() {
   const office = await getOffice();
   const company = await getCompany(office);
-  const rest = officeLinks(office.isOwner, company.settings).slice(4);
+  const rest = officeLinks(office.isManager, company.settings).slice(4);
   const { data: profile } = await (
     await createClient()
   )

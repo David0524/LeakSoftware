@@ -271,7 +271,7 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
   const kind = chosen === "maintenance" || chosen === "repair" ? chosen : "detection";
   const repeat = kind === "maintenance" ? text(form, "repeat") || "0" : "0";
   if (repeat !== "0") {
-    if (!office.isOwner) return { error: "Only owners can start maintenance plans." };
+    if (!office.isManager) return { error: "Only owners can start maintenance plans." };
     const planFields: Record<string, string> = {};
     const first = text(form, "date");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(first)) planFields.date = "Pick the first visit's date.";

@@ -30,7 +30,7 @@ export default async function NewJobPage() {
     return (
       <>
         <PageHeader title="New Job" back={{ href: "/jobs", label: "Jobs" }} />
-        <Notice>Your office makes new jobs. Ask an owner to add this one.</Notice>
+        <Notice>Your office makes new jobs. Ask an owner or admin to add this one.</Notice>
       </>
     );
   const [customers, team, company, prices] = await Promise.all([
@@ -61,7 +61,7 @@ export default async function NewJobPage() {
         team={team
           .filter((m) => m.status === "active")
           .map((m) => ({ id: m.user_id, name: m.name }))}
-        canPlan={office.isOwner}
+        canPlan={office.isManager}
         services={companyServices(company.settings)}
         visitMinutes={maintenanceSettings(company.settings).visitMinutes}
         lockedTech={seesAllJobs(office.company.role, company.settings) ? undefined : office.user.id}

@@ -275,7 +275,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                     today={today}
                     visitMinutes={maintenanceSettings(company.settings).visitMinutes}
                     doneCounts={doneCounts}
-                    canEdit={office.isOwner}
+                    canEdit={office.isManager}
                   />
                 ) : null}
                 <Grouped
@@ -316,7 +316,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
           })}
         </div>
       </div>
-      {office.isOwner ? (
+      {office.isManager ? (
         <section className="mt-10 max-w-xl" aria-labelledby="delete-customer">
           <h2 id="delete-customer" className="sr-only">
             Delete Customer

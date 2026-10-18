@@ -91,15 +91,15 @@ export function newJobTypes(services: Services): { value: JobType; label: string
   ];
 }
 
-/** Whether this member sees every job: owners always; techs unless the owner limits them. */
+/** Whether this member sees every job: owners and admins always; techs unless limited. */
 export function seesAllJobs(role: string | null | undefined, settings: unknown): boolean {
-  if (role === "owner") return true;
+  if (isManagerRole(role)) return true;
   return (settings as Partial<CompanySettings> | null)?.techs_see_all_jobs !== false;
 }
 
-/** Whether this member can make new jobs: owners always; techs unless the owner turns it off. */
+/** Whether this member can make new jobs: owners and admins always; techs unless turned off. */
 export function canMakeJobs(role: string | null | undefined, settings: unknown): boolean {
-  if (role === "owner") return true;
+  if (isManagerRole(role)) return true;
   return (settings as Partial<CompanySettings> | null)?.techs_make_jobs !== false;
 }
 
@@ -128,7 +128,28 @@ export interface Company extends Base {
   settings: CompanySettings;
 }
 
-export type Role = "owner" | "tech";
+/**
+ * Owner: full access and shop-level control (Sundeck Pro billing, payments setup, roles,
+ * security settings). Admin: office staff, everything else an owner does. Tech: the field
+ * (owner, 2026-10-18).
+ */
+export type Role = "owner" | "admin" | "tech";
+
+export const ROLE_LABELS: Record<Role, string> = { owner: "Owner", admin: "Admin", tech: "Tech" };
+
+export function roleLabel(role: string | null | undefined): string {
+  return ROLE_LABELS[role as Role] ?? "Tech";
+}
+
+/** Owner or admin: runs the shop (everything but the owner-only items). */
+export function isManagerRole(role: string | null | undefined): boolean {
+  return role === "owner" || role === "admin";
+}
+
+/** The roles this person may give someone: owners give any, admins only Tech. */
+export function assignableRoles(role: string | null | undefined): Role[] {
+  return role === "owner" ? ["owner", "admin", "tech"] : isManagerRole(role) ? ["tech"] : [];
+}
 
 export interface Membership extends Base {
   user_id: string;

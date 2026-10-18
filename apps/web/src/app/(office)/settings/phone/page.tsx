@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { formatPhone, onMyWayVia, toE164 } from "@leakbook/core";
+import { formatPhone, isManagerRole, onMyWayVia, toE164 } from "@leakbook/core";
 import { cancelNumber, keepNumber, saveLine, saveMyPhone } from "@/app/actions/texting";
 import { OnMyWayForm } from "@/components/on-my-way-form";
 import { NumberPicker } from "@/components/phone-settings";
@@ -42,9 +42,9 @@ export default async function PhoneSettingsPage() {
       active.map((t) => t.user_id),
     );
   const phones = new Map((profiles ?? []).map((p) => [p.id as string, p.phone as string | null]));
-  // Nobody chosen: the owners' phones ring.
+  // Nobody chosen: the owners' and admins' phones ring.
   const rings = (id: string, role: string) =>
-    line?.ring_user_ids.length ? line.ring_user_ids.includes(id) : role === "owner";
+    line?.ring_user_ids.length ? line.ring_user_ids.includes(id) : isManagerRole(role);
 
   return (
     <>

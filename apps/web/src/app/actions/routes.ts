@@ -27,7 +27,7 @@ import {
   type TechDay,
   dateFormat,
 } from "@leakbook/core";
-import { getOffice, requireOwner, type Office } from "@/lib/auth";
+import { getOffice, requireManager, type Office } from "@/lib/auth";
 import { getTeam } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { loadRoutes, routeContext, routeKey, type RouteContext } from "@/server/route-days";
@@ -480,7 +480,7 @@ export async function setPoolLocation(
 /** Owners: the shop's location, where every route starts and ends, from the phone. */
 export async function setShopLocation(lat: number, lng: number): Promise<RouteResult> {
   if (!validPoint(lat, lng)) return { error: "That location isn’t valid." };
-  const office = await requireOwner();
+  const office = await requireManager();
   const db = await createClient();
   const { data } = await db.from("company").select("*").eq("id", office.company.id).single();
   const { error } = await db
@@ -499,7 +499,7 @@ export async function setShopLocation(lat: number, lng: number): Promise<RouteRe
 
 /** Owners: find the shop's location from its address. */
 export async function locateShop(): Promise<RouteResult> {
-  const office = await requireOwner();
+  const office = await requireManager();
   if (!routingConfigured())
     return { error: "Address lookup isn’t set up. Use My Location while at the shop instead." };
   const db = await createClient();
@@ -521,7 +521,7 @@ export async function locateShop(): Promise<RouteResult> {
 
 /** Owners: look up pools that have no location yet (up to 50 at a time). */
 export async function locatePools(): Promise<RouteResult> {
-  const office = await requireOwner();
+  const office = await requireManager();
   if (!routingConfigured()) return { error: "Address lookup isn’t set up." };
   const db = await createClient();
   const { data } = await db
@@ -565,7 +565,7 @@ export async function locatePools(): Promise<RouteResult> {
 const CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export async function saveScheduling(_: FormState, form: FormData): Promise<FormState> {
-  const office = await requireOwner();
+  const office = await requireManager();
   const text = (k: string) => String(form.get(k) ?? "").trim();
   const fields: Record<string, string> = {};
   const start = text("day_start");

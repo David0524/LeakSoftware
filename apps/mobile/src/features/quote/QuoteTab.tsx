@@ -12,6 +12,7 @@ import {
   suggestItems,
   type Job,
   type PriceBookItem,
+  isManagerRole,
 } from "@leakbook/core";
 import { useInspectionConfig, useJobInspection } from "../../data/inspection";
 import {
@@ -86,7 +87,8 @@ function DraftQuote({ job, quote }: { job: Job; quote: JobQuote }) {
   const [discount, setDiscountText] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
-  const isOwner = membership?.role === "owner";
+  // Owners and admins may discount past the techs' limit (owner, 2026-10-18).
+  const isOwner = isManagerRole(membership?.role);
   const limitBps = company.settings.tech_discount_limit_bps ?? 0;
 
   const totals = quoteTotals(

@@ -64,7 +64,7 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
 async function PhoneTabs() {
   const office = await getOffice();
   const [company, unread] = await Promise.all([getCompany(office), unreadCount(office)]);
-  return <TabBar links={officeLinks(office.isOwner, company.settings, unread)} />;
+  return <TabBar links={officeLinks(office.isManager, company.settings, unread)} />;
 }
 
 /** Trial ending, payment failed, or read-only (M10 billing). */
@@ -85,7 +85,7 @@ async function AccessBanner() {
     >
       <p className="mx-auto max-w-7xl">
         {notice.text}
-        {office.isOwner ? (
+        {office.isManager ? (
           <>
             {" "}
             <Link href="/settings/billing" className="font-semibold text-link underline">
@@ -101,7 +101,7 @@ async function AccessBanner() {
 async function OfficeNav() {
   const office = await getOffice();
   const [company, unread] = await Promise.all([getCompany(office), unreadCount(office)]);
-  const links = officeLinks(office.isOwner, company.settings, unread);
+  const links = officeLinks(office.isManager, company.settings, unread);
   // On a computer the Dashboard leads for owners (owner, 2026-10-16); phones keep Today first.
   const dashboard = links.find((l) => l.href === "/dashboard");
   const desktop = dashboard ? [dashboard, ...links.filter((l) => l !== dashboard)] : links;

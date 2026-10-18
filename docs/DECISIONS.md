@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "Add an Admin role between Owner and Tech")
+- **Three roles:** Owner (full access plus shop-level control), Admin (office staff: everything owners could do before, except the owner-only items), Tech (unchanged). Stored as `owner`, `admin`, `tech`.
+- **Owner-only:** Sundeck Pro billing (subscribe, Manage Billing, the portal, demo codes); connecting or changing the shop's Stripe account; deleting the shop (only an owner's account deletion closes a shop); making someone an owner or admin, changing anyone's role, and turning an owner off; and the shop's security settings, which today are "What techs can do" (whether techs see every job, and whether they make new jobs). There is no shop-wide two-step requirement yet; two-step sign-in is per person. Admins see these pages with "Only the shop owner can do this."
+- **Admins can:** the schedule, customers, jobs, quotes, invoices, monthly billing, maintenance plans, the price book, checklist components, other settings (company, branding, deposits and tax, services, phone and texting), inviting techs, turning techs and admins off and on, company texting, and the import screen. Admins see every job and can always make jobs. Default call ringing (no one chosen) goes to owners and admins.
+- **How it's enforced:** in the database, `app.is_manager()` and a once-per-query `app.manager_companies()`. Every row rule that was owner-only now accepts managers. The manager functions were switched in place, and the migration fails if an owner check is left unclassified. Triggers refuse role changes, turning an owner off, and security-setting changes by non-owners. A shop always keeps one active owner. On the website, `office.isOwner` (owner-only) and `office.isManager`. The phone app's checks use the same helpers.
+- **Seats:** admins count as a person for the subscription price, like everyone else.
+
 ## 2026-10-18 (owner: "move shop onboarding to Accounts v2 … so we don't depend on that switch")
 - **Shops' Stripe accounts are made with Accounts v2** (`POST /v2/core/accounts`) and onboarded with a v2 account link (`account_onboarding`, merchant configuration). New Stripe platforms refuse v1 account creation unless "Accounts v1 support" is turned on; we no longer need it.
 - **Same deal for shops as before:** each shop has its own full Stripe Dashboard (`dashboard: full`), is the merchant of record for direct charges, and pays Stripe's fees and covers its own losses (`fees_collector` and `losses_collector`: `stripe`). Card and bank (ACH) payments are requested.

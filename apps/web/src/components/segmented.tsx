@@ -1,6 +1,6 @@
 "use client";
 
-import type { KeyboardEvent } from "react";
+import { useId, type KeyboardEvent } from "react";
 import { SEGMENT_TRACK, segmentClass } from "./ui";
 
 /** SEGMENT_TRACK as one full-width row. */
@@ -26,6 +26,8 @@ export function Segmented<T extends string>({
    */
   fit?: boolean;
 }) {
+  // Unique per control: a page can hold several with the same field name (Team's role).
+  const labelId = `${name}-label-${useId()}`;
   // One Tab stop for the group; arrow keys move the choice (design review L4).
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
@@ -39,13 +41,13 @@ export function Segmented<T extends string>({
   }
   return (
     <div className="space-y-1">
-      <p className="font-medium" id={`${name}-label`}>
+      <p className="font-medium" id={labelId}>
         {label}
       </p>
       <input type="hidden" name={name} value={value} />
       <div
         role="radiogroup"
-        aria-labelledby={`${name}-label`}
+        aria-labelledby={labelId}
         className={fit ? FIT_TRACK : SEGMENT_TRACK}
         onKeyDown={onKeyDown}
       >

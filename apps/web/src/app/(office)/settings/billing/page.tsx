@@ -4,7 +4,7 @@ import { BillingButton } from "@/components/billing-buttons";
 import { Banner } from "@/components/doc-ui";
 import { SettingsSection } from "@/components/settings-forms";
 import { PageHeader } from "@/components/ui";
-import { getOffice } from "@/lib/auth";
+import { OWNER_ONLY, getOffice } from "@/lib/auth";
 import { getAccess } from "@/lib/data";
 import { billingConfigured, currentPrice } from "@/server/billing";
 
@@ -35,7 +35,13 @@ export default async function BillingPage({ searchParams }: PageProps<"/settings
                 Thank you. Your subscription is being set up; this page updates in a moment.
               </Banner>
             ) : null}
-            {!access ? (
+            {!office.isOwner ? (
+              // Sundeck Pro billing is the owner's (owner, 2026-10-18).
+              <>
+                {access ? <p className="text-xl font-semibold">{billingSummary(access)}</p> : null}
+                <Banner tone="info">{OWNER_ONLY}</Banner>
+              </>
+            ) : !access ? (
               <p>Billing isn’t available until the database is updated.</p>
             ) : (
               <>

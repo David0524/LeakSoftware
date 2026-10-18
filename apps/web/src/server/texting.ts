@@ -7,6 +7,7 @@ import {
   optKeyword,
   isUsNumber,
   toE164,
+  isManagerRole,
 } from "@leakbook/core";
 import { adminClient } from "./admin";
 import { LIMIT_MESSAGE, READ_ONLY_MESSAGE, shopWritable, takeAllowance } from "./usage";
@@ -374,7 +375,7 @@ async function ringPhones(db: Db, line: PhoneLine): Promise<string[]> {
   }[];
   const chosen = line.ring_user_ids.length
     ? rows.filter((m) => line.ring_user_ids.includes(m.user_id))
-    : rows.filter((m) => m.role === "owner");
+    : rows.filter((m) => isManagerRole(m.role));
   return [...new Set(chosen.map((m) => toE164(m.profile?.phone)).filter((p): p is string => !!p))];
 }
 

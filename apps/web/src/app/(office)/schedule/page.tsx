@@ -146,7 +146,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
     mapsAppForRequest(),
     loadRoutes(office, ctxP, days),
     // Needs a Time is the office's list: techs don't see it (owner, 2026-10-18).
-    office.isOwner ? needsScheduling(office) : null,
+    office.isManager ? needsScheduling(office) : null,
   ]);
   const trayJobs = tray ? tray.map((j) => trayStop(j, ctx)) : null;
 
@@ -334,7 +334,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
         <div className="mb-4">
           <Notice tone="warning">
             Routes start and end at the shop, which has no map location yet.{" "}
-            {office.isOwner ? (
+            {office.isManager ? (
               <Link href="/settings/scheduling" className="font-semibold text-link underline">
                 Set it in Settings › Scheduling
               </Link>
@@ -348,7 +348,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
         <p className="mb-4 text-[0.9375rem] text-text-muted">
           Pools marked “No map location” aren’t counted in drive times. Open the job and use Mark
           Location Here at the pool
-          {office.isOwner ? ", or Find Pool Locations in Settings › Scheduling" : ""}.
+          {office.isManager ? ", or Find Pool Locations in Settings › Scheduling" : ""}.
         </p>
       ) : null}
 

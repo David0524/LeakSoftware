@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 /** Owners: invoices or payments as CSV, for the books or a QuickBooks import (plan section 7). */
 export async function GET(request: Request) {
   const office = await getOffice();
-  if (!office.isOwner) return new Response("Only owners can export.", { status: 403 });
+  if (!office.isManager) return new Response("Only owners can export.", { status: 403 });
   const kind =
     new URL(request.url).searchParams.get("kind") === "payments" ? "payments" : "invoices";
   const day = (iso: string | null) => (iso ? iso.slice(0, 10) : "");

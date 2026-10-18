@@ -20,12 +20,12 @@ export default function SettingsLayout({ children }: LayoutProps<"/settings">) {
 
 async function OwnersOnly({ children }: { children: React.ReactNode }) {
   const office = await getOffice();
-  if (!office.isOwner) {
+  if (!office.isManager) {
     return (
       <div className="max-w-xl">
         <h1 className="mb-4 font-display text-3xl font-extrabold">Settings</h1>
         <Notice tone="warning">
-          Settings are for owners. Ask an owner of {office.company.name} if something needs to
+          Settings are for owners and admins. Ask one at {office.company.name} if something needs to
           change.
         </Notice>
       </div>

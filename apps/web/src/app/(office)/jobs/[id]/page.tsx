@@ -90,7 +90,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   quiet(getInvoices(office, id));
   quiet(getQuotes(office, id));
   quiet(listConfig(office, "price_book_item"));
-  if (office.isOwner) quiet(getPaymentAccount(office));
+  if (office.isManager) quiet(getPaymentAccount(office));
   const [detail, company, line] = await Promise.all([
     getJob(office, id),
     getCompany(office),
@@ -278,7 +278,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                   </section>
                 ) : null}
 
-                {office.isOwner ? (
+                {office.isManager ? (
                   <section className="mt-6" aria-labelledby="timeline">
                     <h2
                       id="timeline"
@@ -763,7 +763,7 @@ async function Quotes({ detail }: { detail: JobDetail }) {
   const office = await getOffice();
   const [quotes, account, origin, company, priceBook] = await Promise.all([
     getQuotes(office, detail.job.id),
-    office.isOwner ? getPaymentAccount(office) : Promise.resolve(null),
+    office.isManager ? getPaymentAccount(office) : Promise.resolve(null),
     siteOrigin(),
     getCompany(office),
     listConfig<PriceBookItem>(office, "price_book_item"),
@@ -789,7 +789,7 @@ async function Quotes({ detail }: { detail: JobDetail }) {
   const hasAccepted = quotes.some((q) => q.status === "accepted");
   return (
     <div className="space-y-4">
-      {office.isOwner && !account?.charges_enabled && quotes.some((q) => q.status !== "draft") ? (
+      {office.isManager && !account?.charges_enabled && quotes.some((q) => q.status !== "draft") ? (
         <Notice tone="warning">
           Customers can accept quotes but can’t pay deposits online until payments are set up.{" "}
           <Link
@@ -823,7 +823,7 @@ async function Quotes({ detail }: { detail: JobDetail }) {
                     },
                     tech_discount_limit_bps: settings.tech_discount_limit_bps ?? 0,
                   }}
-                  isOwner={office.isOwner}
+                  isOwner={office.isManager}
                 />
               ) : null}
             </QuotePanel>
@@ -862,7 +862,7 @@ async function Invoices({ detail }: { detail: JobDetail }) {
             taxRateBps={rate}
             customerEmail={job.customer?.email ?? null}
             emailReady={emailConfigured()}
-            isOwner={office.isOwner}
+            isOwner={office.isManager}
           />
         </div>
       ) : job.type === "maintenance" ? (

@@ -12,7 +12,7 @@ import {
   uuidv7,
   type TestFieldSchema,
 } from "@leakbook/core";
-import { requireOwner } from "@/lib/auth";
+import { OWNER_ONLY, requireManager, requireOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { logPriceSyncError, syncSubscriptionPrice } from "@/server/billing";
 import { locateCompany } from "@/server/route-days";
@@ -29,9 +29,16 @@ const int = (f: FormData, k: string, fallback = 0) => {
   return Number.isFinite(n) ? n : fallback;
 };
 
+/** Owners and admins (settings shared by both). */
 async function owner() {
-  const office = await requireOwner();
+  const office = await requireManager();
   return { office, supabase: await createClient() };
+}
+
+/** The roles a person may be given. Only owners make someone an owner or admin. */
+function chosenRole(form: FormData): "owner" | "admin" | "tech" {
+  const role = text(form, "role");
+  return role === "owner" || role === "admin" ? role : "tech";
 }
 
 function done(path: string, message = "Saved."): FormState {
@@ -205,7 +212,8 @@ export async function savePayments(_: FormState, form: FormData): Promise<FormSt
 export async function inviteMember(_: FormState, form: FormData): Promise<FormState> {
   const { office, supabase } = await owner();
   const email = text(form, "email").toLowerCase();
-  const role = text(form, "role") === "owner" ? "owner" : "tech";
+  const role = chosenRole(form);
+  if (role !== "tech" && !office.isOwner) return { error: OWNER_ONLY };
   if (!/^\S+@\S+\.\S+$/.test(email)) return { fields: { email: "Enter a valid email." } };
   const { error } = await supabase.rpc("create_invite", {
     target_company: office.company.id,
@@ -272,7 +280,9 @@ export async function saveOnMyWay(_: FormState, form: FormData): Promise<FormSta
  * can make new jobs (2026-10-18).
  */
 export async function saveJobVisibility(_: FormState, form: FormData): Promise<FormState> {
-  const { office, supabase } = await owner();
+  // A shop security setting: owners only (owner, 2026-10-18).
+  const office = await requireOwner();
+  const supabase = await createClient();
   const choice = text(form, "techs_see");
   if (choice !== "all" && choice !== "own") return { error: "Pick who techs see." };
   const { data: company } = await supabase
@@ -293,18 +303,22 @@ export async function saveJobVisibility(_: FormState, form: FormData): Promise<F
 
 export async function updateMember(_: FormState, form: FormData): Promise<FormState> {
   const { office, supabase } = await owner();
-  const role = text(form, "role") === "owner" ? "owner" : "tech";
   const status = text(form, "status") === "disabled" ? "disabled" : "active";
+  // Only owners change roles (the database refuses it for anyone else too); admins can turn
+  // techs and admins off and on.
+  const update = office.isOwner ? { role: chosenRole(form), status } : { status };
   const { error } = await supabase
     .from("membership")
-    .update({ role, status })
+    .update(update)
     .eq("company_id", office.company.id)
     .eq("id", text(form, "id"));
   if (error)
     return {
-      error: error.message.includes("at least one owner")
-        ? "The company needs at least one active owner."
-        : error.message,
+      error: error.message.includes("at least one")
+        ? "The shop needs at least one active owner."
+        : error.message.includes("Only the shop owner")
+          ? OWNER_ONLY
+          : error.message,
     };
   // Turning a teammate off or on changes the people billed.
   after(() => syncSubscriptionPrice(office.company.id).catch(logPriceSyncError));

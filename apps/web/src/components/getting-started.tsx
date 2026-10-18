@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function GettingStarted() {
   const [office, user] = await Promise.all([getOffice(), getUser()]);
-  if (!office.isOwner || user?.user_metadata.getting_started_hidden === true) return null;
+  if (!office.isManager || user?.user_metadata.getting_started_hidden === true) return null;
   const supabase = await createClient();
   const co = office.company.id;
   const count = (table: string) =>

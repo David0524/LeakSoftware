@@ -52,7 +52,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   );
   const wanted = typeof params.tech === "string" ? params.tech : office.user.id;
   const techId =
-    office.isOwner && techs.some((t) => t.user_id === wanted) ? wanted : office.user.id;
+    office.isManager && techs.some((t) => t.user_id === wanted) ? wanted : office.user.id;
   const tech = team.find((t) => t.user_id === techId);
   const route = routes.get(routeKey(techId, ctx.today));
   const jobs = route?.jobs ?? [];
@@ -95,7 +95,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
       <Suspense fallback={null}>
         <ScreenTip screen="today" />
       </Suspense>
-      {office.isOwner && techs.length > 1 ? (
+      {office.isManager && techs.length > 1 ? (
         <nav aria-label="Whose day" className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4">
           {techs.map((t) => (
             <Link
@@ -201,7 +201,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                               className="px-3"
                               via={onMyWayVia(company.settings)}
                               lineActive={line?.status === "active"}
-                              isOwner={office.isOwner}
+                              isOwner={office.isManager}
                               jobId={j.id}
                             />
                           ) : null}

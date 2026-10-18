@@ -54,7 +54,9 @@ export default function NewJob() {
   if (!canMakeJobs(membership?.role, company.settings))
     return (
       <Screen>
-        <Notice tone="info">Your office makes new jobs. Ask an owner to add this one.</Notice>
+        <Notice tone="info">
+          Your office makes new jobs. Ask an owner or admin to add this one.
+        </Notice>
       </Screen>
     );
   return <NewJobForm />;

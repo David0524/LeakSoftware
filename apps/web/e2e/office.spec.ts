@@ -175,7 +175,7 @@ test("owner invites a tech, who joins and cannot reach settings", async ({ page,
   await expect(nav.getByRole("link", { name: "Settings" })).toHaveCount(0);
 
   await tech.goto("/settings/price-book");
-  await expect(tech.getByText("Settings are for owners.")).toBeVisible();
+  await expect(tech.getByText(/^Settings are for owners and admins\./)).toBeVisible();
   await expect(tech.getByRole("button", { name: "Add Item" })).toHaveCount(0);
 
   // The invite is used up.
@@ -229,7 +229,7 @@ test("the demo tech cannot reach settings", async ({ page }) => {
   await expect(page.getByTestId("tray")).toHaveCount(0);
   for (const path of ["/settings", "/settings/team", "/settings/company"]) {
     await page.goto(path);
-    await expect(page.getByText("Settings are for owners.")).toBeVisible();
+    await expect(page.getByText(/^Settings are for owners and admins\./)).toBeVisible();
   }
 });
 
@@ -648,4 +648,68 @@ test("customers sort and filter", async ({ page }) => {
   await page.getByLabel("Show").selectOption("pool_company");
   await expect(page).toHaveURL(/show=pool_company/);
   await expect(page.getByLabel("Sort")).toHaveValue("name_desc");
+});
+
+// Owner, Admin, Tech (owner, 2026-10-18): an owner invites an admin, who runs the office
+// (the price book) but not the owner-only items (Sundeck Pro billing, payments setup).
+test("an owner invites an admin, who edits the price book but not billing or payments setup", async ({
+  page,
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  const email = `e2e-admin-${RUN}@demo.leakbook.test`;
+  await signIn(page, OWNER, "/settings/team");
+  await page.getByRole("button", { name: "Invite Someone", exact: true }).click();
+  const invite = page.getByRole("dialog", { name: "Invite Someone" });
+  await invite.getByLabel("Email").fill(email);
+  await invite.getByRole("radio", { name: "Admin" }).click();
+  await invite.getByRole("button", { name: "Create Invite" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: `Invite created for ${email}` }),
+  ).toBeVisible();
+  const card = page.getByTestId("invite").filter({ hasText: email });
+  await expect(card).toContainText("Admin");
+  await card.getByRole("button").click();
+  const link = await page
+    .getByRole("dialog", { name: email })
+    .getByLabel("Invite link")
+    .inputValue();
+
+  const guest = await browser.newContext();
+  const admin = await guest.newPage();
+  await admin.goto(new URL(link).pathname);
+  await expect(admin.getByText(/invited you to Sundeck Pro as an admin/)).toBeVisible();
+  await admin.getByLabel("Your name").fill("E2E Admin");
+  await admin.getByLabel("Choose a password").fill("e2e-password-123");
+  await admin.getByRole("button", { name: "Create Account and Join" }).click();
+  await admin.waitForURL((url) => url.pathname !== new URL(link).pathname);
+
+  // Runs the office: the price book.
+  await admin.goto("/settings/price-book");
+  await expect(admin.getByRole("button", { name: "Add Item" }).first()).toBeVisible();
+  // Not the owner's: billing and payments setup.
+  await admin.goto("/settings/billing");
+  await expect(admin.getByText("Only the shop owner can do this.")).toBeVisible();
+  await expect(admin.getByRole("button", { name: "Manage Billing" })).toHaveCount(0);
+  await admin.goto("/settings/payments");
+  await expect(
+    admin.getByRole("button", { name: /Set Up Payments|Continue Stripe Setup/ }),
+  ).toHaveCount(0);
+  // Admins invite techs only.
+  await admin.goto("/settings/team");
+  await admin.getByRole("button", { name: "Invite Someone", exact: true }).click();
+  await expect(
+    admin.getByRole("dialog", { name: "Invite Someone" }).getByRole("radio", { name: "Admin" }),
+  ).toHaveCount(0);
+  await guest.close();
+
+  // The owner turns the test admin off again (keeps reruns tidy).
+  await page.reload();
+  const person = page.locator("li").filter({ hasText: email });
+  await expect(person).toContainText("Admin");
+  await person.getByRole("button").click();
+  const member = page.getByRole("dialog", { name: "E2E Admin" });
+  await member.getByLabel("Access").selectOption("disabled");
+  await member.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
 });
