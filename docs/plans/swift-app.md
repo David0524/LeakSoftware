@@ -133,6 +133,11 @@ Same rules as BUILD_PLAN section 8: each ends with checks green, a commit, a rep
 and a stop until the owner says go.
 
 ### S0 Toolchain proof
+
+Built 2026-10-18 (`apps/ios`): SQLCipher (skiptools/swift-sqlcipher, from source, so it builds on
+Linux too), supabase-swift and sentry-cocoa build with xtool and with Xcode (CI `ios-linux` and
+`ios-macos`); tests cover the encrypted file and sign-in with a first sync page against the dev
+project. Waiting on the owner's install check; the Sentry test error waits on a Sentry DSN.
 - `apps/ios` package and a one-screen app that opens an encrypted SQLite database, signs in to
   the dev project with supabase-swift, and reports a test error to Sentry.
 - Built with xtool in a cloud session and with Xcode on a macOS CI runner; CI runs `swift test`
