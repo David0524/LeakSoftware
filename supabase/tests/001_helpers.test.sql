@@ -89,8 +89,6 @@ begin
   insert into share_link (company_id, job_id, report_id) values (c, j, rep);
   insert into message (company_id, job_id, channel, recipient, template)
     values (c, j, 'email', 'c@example.com', 'report');
-  insert into warranty (company_id, repair_job_id, quote_line_item_id, description, starts_on, ends_on)
-    values (c, j, qli, 'Return fitting', current_date, current_date + 365);
   -- Paused, so it makes no visits here (200_maintenance tests the visits).
   insert into service_plan (company_id, customer_id, property_id, assigned_user_id, starts_on, paused)
     values (c, cust, prop, t, current_date, true);

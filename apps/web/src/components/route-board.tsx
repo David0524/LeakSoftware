@@ -140,14 +140,15 @@ export function RouteBoard({
 }: {
   mode: "day" | "week";
   columns: BoardColumn[];
-  tray: TrayJob[];
+  /** Needs a Time; null hides it (techs don't see it: owner, 2026-10-18). */
+  tray: TrayJob[] | null;
   techs: { id: string; name: string }[];
   today: string;
   /** Week mode: the days across, as [date, label]. */
   weekDays?: [string, string][];
 }) {
   const initial = useMemo(() => {
-    const lists: Lists = { [TRAY]: tray };
+    const lists: Lists = { [TRAY]: tray ?? [] };
     for (const c of columns) lists[c.key] = c.stops;
     return lists;
   }, [columns, tray]);
@@ -252,11 +253,13 @@ export function RouteBoard({
         ) : null}
       </div>
 
-      <Tray
-        jobs={lists[TRAY] ?? []}
-        onMove={setMoving}
-        onSuggestion={(job, s) => moveTo(job, `${s.techId}|${s.date}`, s.position)}
-      />
+      {tray ? (
+        <Tray
+          jobs={lists[TRAY] ?? []}
+          onMove={setMoving}
+          onSuggestion={(job, s) => moveTo(job, `${s.techId}|${s.date}`, s.position)}
+        />
+      ) : null}
 
       {mode === "day" ? (
         <div className="grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-[repeat(2,minmax(0,1fr))] xl:grid-cols-[repeat(3,minmax(0,1fr))]">

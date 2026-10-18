@@ -5,8 +5,7 @@ import { PHONE, sessionEvent, webhook } from "./money";
 
 // M10 "Done when": a new shop signs up, starts its free trial, connects Stripe, and runs the
 // whole loop from the website without help: a job booked, inspected, reported, quoted,
-// accepted with a deposit, repaired, invoiced, and paid, with the warranty recorded and the
-// money on the dashboard. Then it subscribes to Tidemark, and an unpaid shop turns read-only
+// accepted with a deposit, repaired, invoiced, and paid, with the money on the dashboard. Then it subscribes to Tidemark, and an unpaid shop turns read-only
 // without losing anything. Stripe itself is not called: the tests send the signed events
 // Stripe would send.
 
@@ -255,11 +254,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await expect(customer.getByRole("heading", { name: "Paid in Full" })).toBeVisible();
   await phone.close();
 
-  // 9. The warranty is on record, and the money is on the dashboard.
-  await page.goto("/warranties");
-  await expect(
-    page.getByRole("listitem").filter({ hasText: "Skimmer throat repair" }),
-  ).toContainText("Active");
+  // 9. The money is on the dashboard.
   await page.goto("/dashboard");
   await expect(page.locator("dl > div").filter({ hasText: "Collected" })).toContainText("$225.00");
 

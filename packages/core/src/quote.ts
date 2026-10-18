@@ -45,7 +45,6 @@ export interface QuoteLine {
   description?: string;
   finding_id?: string | null;
   price_book_item_id?: string | null;
-  warranty_months?: number | null;
   sort_order?: number;
   deleted_at?: string | null;
 }
@@ -60,7 +59,6 @@ export interface PriceBookItem {
   unit: string;
   price_cents: number;
   taxable: boolean;
-  warranty_months?: number | null;
   sort_order: number;
   active: boolean;
   deleted_at?: string | null;
@@ -159,7 +157,6 @@ export function lineFromItem(item: PriceBookItem, findingId: string | null): Quo
     quantity: 1,
     unit_price_cents: item.price_cents,
     taxable: item.taxable,
-    warranty_months: item.warranty_months ?? null,
     finding_id: findingId,
     price_book_item_id: item.id,
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type ComponentProps } from "react";
+import { useEffect, useId, useState, type ComponentProps } from "react";
 import {
   ACID_PRODUCTS,
   calculateChemistry,
@@ -9,9 +9,11 @@ import {
   type AcidProduct,
   type ChemistryResult,
   type ChlorineProduct,
+  type ReadingKey,
   type Readings,
   type Sanitizer,
   surfaceFor,
+  targets,
 } from "@leakbook/core";
 import { Segmented } from "./segmented";
 import { Sheet } from "./sheet";
@@ -77,6 +79,25 @@ function NumField({
     </div>
   );
 }
+
+/** A small number box in the readings table, named by its row and column for screen readers. */
+function CellInput({ label, ...input }: ComponentProps<"input"> & { label: string }) {
+  return (
+    <input
+      {...input}
+      type="text"
+      autoComplete="off"
+      aria-label={label}
+      className={cx(
+        "block min-h-11 w-full min-w-0 rounded-[10px] border border-control-border bg-surface px-3 py-2 text-right text-text tabular-nums",
+        "placeholder:text-placeholder focus:outline-3 focus:outline-offset-1 focus:outline-focus",
+      )}
+    />
+  );
+}
+
+/** Where a tech's chosen levels are remembered on this device (per person, not per shop). */
+const GOALS_KEY = "tidemark:chemical-goals";
 
 /** Gallons with thousands commas as they're typed: "20000" shows as "20,000". */
 function withCommas(text: string): string {
@@ -167,6 +188,26 @@ export function ChemCalculator({
   const surface = surfaceFor(poolType);
   const [sanitizer, setSanitizer] = useState<Sanitizer>("chlorine");
   const [values, setValues] = useState<Record<string, string>>({});
+  // Levels to aim for instead of the recommended ones (owner, 2026-10-18: "chlorine won't
+  // always be 4"). Empty uses the recommended level; this device remembers the rest.
+  const [goals, setGoals] = useState<Record<string, string>>({});
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(GOALS_KEY) ?? "{}");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- read once after mount
+      if (saved && typeof saved === "object") setGoals(saved as Record<string, string>);
+    } catch {
+      // Private browsing or blocked storage: start from the recommended levels.
+    }
+  }, []);
+  const saveGoals = (next: Record<string, string>) => {
+    setGoals(next);
+    try {
+      localStorage.setItem(GOALS_KEY, JSON.stringify(next));
+    } catch {
+      // Not remembered; still used for this visit.
+    }
+  };
   const [chlorine, setChlorine] = useState<ChlorineProduct>("liquid12");
   const [acid, setAcid] = useState<AcidProduct>("muriatic31");
   const [sheet, setSheet] = useState(false);
@@ -177,7 +218,20 @@ export function ChemCalculator({
   const readings: Readings = Object.fromEntries(
     READINGS.map((r) => [r.key, num(values[r.key] ?? "")]),
   );
-  const result = calculateChemistry({ gallons, surface, sanitizer, readings, chlorine, acid });
+  const goalLevels = Object.fromEntries(
+    Object.entries(goals).map(([k, v]) => [k, num(v)]),
+  ) as Partial<Record<ReadingKey, number | null>>;
+  const recommended = targets(surface, sanitizer, readings.cya);
+  const result = calculateChemistry({
+    gallons,
+    surface,
+    sanitizer,
+    readings,
+    chlorine,
+    acid,
+    goals: goalLevels,
+  });
+  const anyGoal = Object.values(goalLevels).some((v) => v !== null);
   const ready = result.statuses.length > 0 && gallons > 0;
   const line = doseSummary(result, ready);
 
@@ -216,18 +270,70 @@ export function ChemCalculator({
           <h2 id="readings-title" className="font-display text-xl font-bold">
             Readings
           </h2>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            {READINGS.filter((r) => r.key !== "salt" || sanitizer === "salt").map((r) => (
-              <NumField
-                key={r.key}
-                label={r.label}
-                unit={r.hint || undefined}
-                inputMode="decimal"
-                value={values[r.key] ?? ""}
-                onChange={(e) => setValues({ ...values, [r.key]: e.target.value })}
-              />
-            ))}
+          {/* Each reading next to the level to aim for. Aim For shows the recommended level
+              until the tech types their own. */}
+          <div
+            role="group"
+            aria-label="Readings and levels to aim for"
+            className="grid grid-cols-[minmax(0,1fr)_minmax(0,5rem)_minmax(0,5rem)] items-center gap-x-2 gap-y-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,6.5rem)_minmax(0,6.5rem)] sm:gap-x-3"
+          >
+            <span />
+            <span className="text-right text-[0.8125rem] font-semibold text-text-muted uppercase">
+              Reading
+            </span>
+            <span className="text-right text-[0.8125rem] font-semibold text-text-muted uppercase">
+              Aim For
+            </span>
+            {READINGS.filter((r) => r.key !== "salt" || sanitizer === "salt").map((r) => {
+              const key = r.key as ReadingKey;
+              const target = r.key === "tempF" ? null : recommended[key]?.target;
+              return (
+                <div key={r.key} className="contents">
+                  <span className="min-w-0 font-medium">
+                    {r.label}
+                    {r.hint ? (
+                      <span className="text-[0.9375rem] font-normal text-text-muted">
+                        {" "}
+                        {r.hint}
+                      </span>
+                    ) : null}
+                  </span>
+                  <CellInput
+                    label={`${r.label} reading`}
+                    inputMode="decimal"
+                    value={values[r.key] ?? ""}
+                    onChange={(e) => setValues({ ...values, [r.key]: e.target.value })}
+                  />
+                  {target != null ? (
+                    <CellInput
+                      label={`${r.label}: aim for (recommended ${target})`}
+                      inputMode="decimal"
+                      placeholder={String(target)}
+                      value={goals[r.key] ?? ""}
+                      onChange={(e) => saveGoals({ ...goals, [r.key]: e.target.value })}
+                    />
+                  ) : (
+                    <span />
+                  )}
+                </div>
+              );
+            })}
           </div>
+          <p className="text-[0.9375rem] text-text-muted">
+            Aim For starts at the recommended level. Type your own to dose to it.
+            {anyGoal ? (
+              <>
+                {" "}
+                <button
+                  type="button"
+                  onClick={() => saveGoals({})}
+                  className="min-h-11 font-semibold text-link"
+                >
+                  Use Recommended
+                </button>
+              </>
+            ) : null}
+          </p>
           <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
             <Select
               label="Chlorine"

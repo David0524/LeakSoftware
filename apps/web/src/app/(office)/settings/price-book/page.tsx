@@ -25,7 +25,6 @@ interface PriceItem {
   unit: string;
   price_cents: number;
   taxable: boolean;
-  warranty_months: number | null;
   sort_order: number;
   active: boolean;
 }
@@ -65,13 +64,6 @@ function ItemFields({ item, types }: { item?: PriceItem; types: ComponentType[] 
             { value: "", label: "Any finding" },
             ...types.map((t) => ({ value: t.key, label: t.name })),
           ]}
-        />
-        <SField
-          label="Warranty (months)"
-          name="warranty_months"
-          id={`warranty-${p}`}
-          inputMode="numeric"
-          defaultValue={item?.warranty_months ?? ""}
         />
         <SField
           label="Order"

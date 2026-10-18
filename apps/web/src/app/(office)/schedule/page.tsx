@@ -144,9 +144,10 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
     ctxP,
     mapsAppForRequest(),
     loadRoutes(office, ctxP, days),
-    needsScheduling(office),
+    // Needs a Time is the office's list: techs don't see it (owner, 2026-10-18).
+    office.isOwner ? needsScheduling(office) : null,
   ]);
-  const trayJobs = tray.map((j) => trayStop(j, ctx));
+  const trayJobs = tray ? tray.map((j) => trayStop(j, ctx)) : null;
 
   // Every active tech gets a route, plus anyone with work these days. Jobs with no tech are
   // in Needs a Time.

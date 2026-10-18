@@ -10,10 +10,13 @@ import {
   type AcidProduct,
   type ChemistryResult,
   type ChlorineProduct,
+  type ReadingKey,
   type Readings,
   type Sanitizer,
   surfaceFor,
+  targets,
 } from "@leakbook/core";
+import { getServices } from "../../lib/services";
 import {
   Card,
   FieldGroup,
@@ -58,6 +61,18 @@ const READINGS: { key: keyof Readings; label: string; hint?: string }[] = [
   { key: "tempF", label: "Water Temp", hint: "°F" },
 ];
 
+/** Where this phone remembers the levels the tech aims for. */
+const GOALS_KEY = "chemicals:goals";
+
+function savedGoals(): Record<string, string> {
+  try {
+    const saved = JSON.parse(getServices().kv.get(GOALS_KEY) ?? "{}");
+    return saved && typeof saved === "object" ? (saved as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
 export default function Chemicals() {
   const params = useLocalSearchParams<{ gallons?: string; pool?: string }>();
   const [gallonsText, setGallonsText] = useState(
@@ -69,6 +84,13 @@ export default function Chemicals() {
   const surface = surfaceFor(params.pool);
   const [sanitizer, setSanitizer] = useState<Sanitizer>("chlorine");
   const [values, setValues] = useState<Record<string, string>>({});
+  // Levels to aim for instead of the recommended ones (owner, 2026-10-18: "chlorine won't
+  // always be 4"). Blank uses the recommended level; the phone remembers the rest.
+  const [goals, setGoalsState] = useState<Record<string, string>>(savedGoals);
+  const setGoals = (next: Record<string, string>) => {
+    setGoalsState(next);
+    getServices().kv.set(GOALS_KEY, JSON.stringify(next));
+  };
   const [chlorine, setChlorine] = useState<ChlorineProduct>("liquid12");
   const [acid, setAcid] = useState<AcidProduct>("muriatic31");
 
@@ -77,7 +99,16 @@ export default function Chemicals() {
   const readings: Readings = Object.fromEntries(
     READINGS.map((r) => [r.key, num(values[r.key] ?? "")]),
   );
-  const result = calculateChemistry({ gallons, surface, sanitizer, readings, chlorine, acid });
+  const recommended = targets(surface, sanitizer, readings.cya);
+  const result = calculateChemistry({
+    gallons,
+    surface,
+    sanitizer,
+    readings,
+    chlorine,
+    acid,
+    goals: Object.fromEntries(Object.entries(goals).map(([k, v]) => [k, num(v)])),
+  });
   const ready = gallons > 0 && result.statuses.length > 0;
 
   return (
@@ -111,6 +142,25 @@ export default function Chemicals() {
               keyboardType="decimal-pad"
               value={values[r.key] ?? ""}
               onChangeText={(v) => setValues({ ...values, [r.key]: v })}
+            />
+          ))}
+        </FieldGroup>
+        <FieldGroup
+          title="Aim For"
+          footer="Blank uses the recommended level. Type your own, like 6 for chlorine, to dose to it."
+          labelWidth={128}
+        >
+          {READINGS.filter(
+            (r) => r.key !== "tempF" && (r.key !== "salt" || sanitizer === "salt"),
+          ).map((r) => (
+            <FieldRow
+              key={r.key}
+              label={r.label}
+              hint={r.hint}
+              keyboardType="decimal-pad"
+              placeholder={String(recommended[r.key as ReadingKey].target)}
+              value={goals[r.key] ?? ""}
+              onChangeText={(v) => setGoals({ ...goals, [r.key]: v })}
             />
           ))}
         </FieldGroup>

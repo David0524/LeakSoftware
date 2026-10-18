@@ -153,6 +153,37 @@ export interface ChemistryInput {
   readings: Readings;
   chlorine: ChlorineProduct;
   acid: AcidProduct;
+  /**
+   * Levels the tech wants instead of the recommended targets (owner, 2026-10-18: "chlorine
+   * won't always be 4"). Empty keys use the recommended target.
+   */
+  goals?: Partial<Record<ReadingKey, number | null>>;
+}
+
+/** How close to a chosen level counts as there: closer than this, nothing is added. */
+const GOAL_TOLERANCE: Record<ReadingKey, number> = {
+  fc: 0.5,
+  ph: 0.1,
+  ta: 10,
+  ch: 25,
+  cya: 5,
+  salt: 100,
+};
+
+/**
+ * The range to judge a reading by when the tech picked a level: aim for it exactly and start
+ * adding below it. pH and alkalinity come down with acid, so above the level they come down
+ * too; the rest only come down by draining, so above it they are flagged only past the usual
+ * high.
+ */
+export function goalRange(range: Range, key: ReadingKey, goal: number | null | undefined): Range {
+  if (!isNum(goal) || goal < 0) return range;
+  const tol = GOAL_TOLERANCE[key];
+  return {
+    low: goal - tol,
+    high: key === "ph" || key === "ta" ? goal + tol : Math.max(range.high, goal + tol),
+    target: goal,
+  };
 }
 
 const LABELS: Record<ReadingKey, string> = {
@@ -304,8 +335,11 @@ function dose(qty: number, liquid: boolean, bag?: number) {
 }
 
 export function calculateChemistry(input: ChemistryInput): ChemistryResult {
-  const { gallons, surface, sanitizer, readings: r, chlorine, acid } = input;
-  const t = targets(surface, sanitizer, r.cya);
+  const { gallons, surface, sanitizer, readings: r, chlorine, acid, goals = {} } = input;
+  const base = targets(surface, sanitizer, r.cya);
+  const t = Object.fromEntries(
+    (Object.keys(base) as ReadingKey[]).map((key) => [key, goalRange(base[key], key, goals[key])]),
+  ) as Record<ReadingKey, Range>;
   const k = Math.max(0, gallons) / 10_000;
   const statuses: ReadingStatus[] = [];
   const steps: DoseStep[] = [];

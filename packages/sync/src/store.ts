@@ -377,7 +377,7 @@ export class LocalStore {
   /**
    * Remove jobs that no longer belong on this phone (`keep` says which do), with everything
    * under them: checklist, tests, findings, photos, reports, quotes and their lines, invoices
-   * and their lines, payments, signatures, links, messages, and warranties. A job with unsent
+   * and their lines, payments, signatures, links, and messages. A job with unsent
    * changes anywhere in it stays. The server stopped sending these jobs (it keeps a shorter
    * window), so they will not come back unless they change. Returns the jobs removed.
    */
@@ -392,10 +392,9 @@ export class LocalStore {
            select table_name, id from sync_records
             where (table_name = 'job' and id = ?)
                or job_id = ?
-               or (table_name = 'warranty' and json_extract(data, '$.repair_job_id') = ?)
                or json_extract(data, '$.quote_id') in (select id from q)
                or json_extract(data, '$.invoice_id') in (select id from i)`,
-          [job.id, job.id, job.id, job.id, job.id],
+          [job.id, job.id, job.id, job.id],
         );
         const unsent = rows.some(
           (r) =>

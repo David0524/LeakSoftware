@@ -849,34 +849,6 @@ export const getSignatures = cache(async function getSignatures(
   ) as SignatureRow[];
 });
 
-export interface WarrantyRow {
-  id: string;
-  description: string;
-  starts_on: string;
-  ends_on: string;
-  terms: string | null;
-  job: JobRow | null;
-}
-
-/** The shop's warranties, soonest to end first, with the repair job's customer and pool. */
-export async function getWarranties(office: Office): Promise<WarrantyRow[]> {
-  const supabase = await db();
-  const rows = must(
-    await supabase
-      .from("warranty")
-      .select("id, description, starts_on, ends_on, terms, repair_job_id")
-      .eq("company_id", office.company.id)
-      .is("deleted_at", null)
-      .order("ends_on"),
-  ) as (Omit<WarrantyRow, "job"> & { repair_job_id: string })[];
-  const jobIds = [...new Set(rows.map((r) => r.repair_job_id))];
-  const jobs = jobIds.length
-    ? await attach(office, must(await supabase.from("job").select("*").in("id", jobIds)) as Job[])
-    : [];
-  const byId = new Map(jobs.map((j) => [j.id, j]));
-  return rows.map(({ repair_job_id, ...r }) => ({ ...r, job: byId.get(repair_job_id) ?? null }));
-}
-
 /** Trial, paid, or read-only (M10). Null when the database doesn't have billing yet. */
 export async function getAccess(office: Office): Promise<CompanyAccess | null> {
   const supabase = await db();

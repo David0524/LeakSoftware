@@ -43,7 +43,6 @@ describe("LocalStore", () => {
         row("quote_line_item", { id: "ql", quote_id: "q" }),
         row("invoice", { id: "i", job_id: "old" }),
         row("payment", { id: "pay", invoice_id: "i" }),
-        row("warranty", { id: "w", repair_job_id: "old" }),
         row("customer", { id: "cu" }),
         row("job", { id: "kept", status: "done" }),
         row("job_component", { id: "jc2", job_id: "kept" }),
@@ -63,7 +62,6 @@ describe("LocalStore", () => {
       ["quote_line_item", "ql"],
       ["invoice", "i"],
       ["payment", "pay"],
-      ["warranty", "w"],
     ])
       expect(s.get(t!, id!)).toBeUndefined();
     expect(s.get("customer", "cu")).toBeDefined();

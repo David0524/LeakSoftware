@@ -167,3 +167,34 @@ describe("surface", () => {
     expect(surfaceFor(null)).toBe("plaster");
   });
 });
+
+describe("chosen levels", () => {
+  it("doses chlorine up to the level the tech picks, not the recommended one", () => {
+    const usual = run({ fc: 2, cya: 40 });
+    expect(usual.steps.map((s) => s.key)).toEqual(["fc"]);
+    expect(usual.steps[0]!.why).toBe("Free chlorine 2 → 4");
+    const six = run({ fc: 2, cya: 40 }, { goals: { fc: 6 } });
+    expect(six.steps[0]!.why).toBe("Free chlorine 2 → 6");
+    expect(parseFloat(six.steps[0]!.amount!)).toBeGreaterThan(parseFloat(usual.steps[0]!.amount!));
+  });
+
+  it("adds nothing when a reading is already at the chosen level", () => {
+    expect(run({ fc: 6 }, { goals: { fc: 6 } }).steps).toEqual([]);
+    expect(run({ fc: 5.6 }, { goals: { fc: 6 } }).steps).toEqual([]);
+  });
+
+  it("brings pH down to a lower chosen level even inside the usual range", () => {
+    const r = run({ ph: 7.5, ta: 100 }, { goals: { ph: 7.2 } });
+    expect(r.steps.map((s) => s.key)).toEqual(["ph"]);
+    expect(r.steps[0]!.why).toBe("pH 7.5 → 7.2");
+  });
+
+  it("ignores empty or negative levels", () => {
+    expect(run({ fc: 2, cya: 40 }, { goals: { fc: null } }).steps[0]!.why).toBe(
+      "Free chlorine 2 → 4",
+    );
+    expect(run({ fc: 2, cya: 40 }, { goals: { fc: -1 } }).steps[0]!.why).toBe(
+      "Free chlorine 2 → 4",
+    );
+  });
+});

@@ -20,8 +20,11 @@ test("a shop's services decide what the office shows", async ({ page }) => {
   try {
     await setServices(page, "Pool Care");
     await page.goto("/jobs/new");
+    // On a computer, Chemicals is under the More menu (owner, 2026-10-18).
+    await nav.getByRole("button", { name: "More" }).click();
     await expect(nav.getByRole("link", { name: "Chemicals" })).toBeVisible();
-    await expect(nav.getByRole("link", { name: "Warranties" })).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(nav.getByRole("link", { name: "Chemicals" })).toHaveCount(0);
     // Every new job is a pool service visit: no leak detection choice or detection fee.
     await expect(page.getByRole("radio", { name: "Leak Detection" })).toHaveCount(0);
     await expect(page.getByLabel("Detection fee ($)")).toHaveCount(0);
@@ -30,8 +33,10 @@ test("a shop's services decide what the office shows", async ({ page }) => {
 
     await setServices(page, "Leak Detection");
     await page.goto("/invoices");
-    await expect(nav.getByRole("link", { name: "Warranties" })).toBeVisible();
+    await nav.getByRole("button", { name: "More" }).click();
+    await expect(nav.getByRole("link", { name: "Invoices" })).toBeVisible();
     await expect(nav.getByRole("link", { name: "Chemicals" })).toHaveCount(0);
+    await page.keyboard.press("Escape");
     await expect(page.getByText("Maintenance to Bill")).toHaveCount(0);
     await page.goto("/settings");
     await expect(page.getByRole("link", { name: /Test Types/ }).first()).toBeVisible();
@@ -47,10 +52,10 @@ test("the chemical calculator says what to add", async ({ page }) => {
   await page.getByLabel("Gallons").fill("20000");
   // Thousands commas as it's typed.
   await expect(page.getByLabel("Gallons")).toHaveValue("20,000");
-  await page.getByLabel("Free Chlorine").fill("1");
-  await page.getByLabel("pH").fill("8.0");
-  await page.getByLabel("Alkalinity").fill("100");
-  await page.getByLabel("Stabilizer").fill("40");
+  await page.getByLabel("Free Chlorine reading").fill("1");
+  await page.getByLabel("pH reading").fill("8.0");
+  await page.getByLabel("Alkalinity reading").fill("100");
+  await page.getByLabel("Stabilizer (CYA) reading").fill("40");
   const doses = page.getByTestId("doses");
   // pH first (alkalinity is fine), then chlorine; amounts from packages/core chemistry, in
   // gallons first and fluid ounces under them.
@@ -60,6 +65,13 @@ test("the chemical calculator says what to add", async ({ page }) => {
   await expect(doses.getByRole("listitem").nth(0)).toContainText("Muriatic acid 31.45%");
   await expect(doses.getByRole("listitem").nth(1)).toContainText("About 64 fl oz");
   await expect(doses.getByRole("listitem").nth(1)).toContainText("Liquid chlorine 12.5%");
+
+  // Aiming higher than the recommended level doses more (owner, 2026-10-18).
+  await expect(doses.getByRole("listitem").nth(1)).toContainText("Free chlorine 1 → 4");
+  await page.getByLabel(/^Free Chlorine: aim for/).fill("6");
+  await expect(doses.getByRole("listitem").nth(1)).toContainText("Free chlorine 1 → 6");
+  await page.getByRole("button", { name: "Use Recommended" }).click();
+  await expect(doses.getByRole("listitem").nth(1)).toContainText("Free chlorine 1 → 4");
 });
 
 test("on a phone, what to add is a bar at the bottom that opens a sheet", async ({ browser }) => {
@@ -73,8 +85,8 @@ test("on a phone, what to add is a bar at the bottom that opens a sheet", async 
   const bar = page.getByRole("button", { name: /What to Add/ });
   await expect(bar).toContainText("Add the gallons and a reading");
   await page.getByLabel("Gallons").fill("20000");
-  await page.getByLabel("pH").fill("8.0");
-  await page.getByLabel("Alkalinity").fill("100");
+  await page.getByLabel("pH reading").fill("8.0");
+  await page.getByLabel("Alkalinity reading").fill("100");
   await expect(bar).toContainText("½ gallon muriatic acid");
   await bar.click();
   const sheet = page.getByRole("dialog", { name: "What to Add" });

@@ -58,7 +58,6 @@ interface TokenInvoice {
     description: string;
     quantity: number;
     unit_price_cents: number;
-    warranty_months: number | null;
   }[];
   payments: { amount_cents: number; method: string; status: string; paid_at: string | null }[];
   can_pay: boolean;
@@ -209,7 +208,6 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
                       Number(l.quantity) !== 1
                         ? `${Number(l.quantity)} × ${formatCents(l.unit_price_cents)}`
                         : null,
-                      l.warranty_months ? `${l.warranty_months}-month warranty` : null,
                     ]
                       .filter(Boolean)
                       .join(" · ")}

@@ -55,7 +55,6 @@ interface TokenQuote {
     quantity: number;
     unit_price_cents: number;
     taxable: boolean;
-    warranty_months: number | null;
     finding: string | null;
   }[];
   payments: { amount_cents: number; method: string; status: string; paid_at: string | null }[];
@@ -170,7 +169,6 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
                       ? `${Number(l.quantity)} × ${formatCents(l.unit_price_cents)}`
                       : null,
                     l.finding ? `For: ${l.finding}` : null,
-                    l.warranty_months ? `${l.warranty_months}-month warranty` : null,
                   ]
                     .filter(Boolean)
                     .join(" · ")}

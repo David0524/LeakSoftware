@@ -46,7 +46,6 @@ export interface InvoiceLine {
   /** Negative for deposit credits. */
   unit_price_cents: number;
   taxable: boolean;
-  warranty_months?: number | null;
   sort_order?: number;
   deleted_at?: string | null;
 }

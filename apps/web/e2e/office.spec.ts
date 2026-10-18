@@ -196,11 +196,36 @@ test("owner invites a tech, who joins and cannot reach settings", async ({ page,
   await expect(person).toContainText("Turned off");
 });
 
+test("on a computer, Settings is a gear and More holds Invoices and Chemicals", async ({
+  page,
+}) => {
+  await signIn(page, OWNER, "/jobs");
+  const nav = page.getByRole("navigation", { name: "Main" });
+  await expect(nav.getByRole("link", { name: "Jobs" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Invoices" })).toHaveCount(0);
+  const more = nav.getByRole("button", { name: "More" });
+  await expect(more).toHaveAttribute("aria-expanded", "false");
+  await more.click();
+  await expect(more).toHaveAttribute("aria-expanded", "true");
+  await nav.getByRole("link", { name: "Invoices" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Invoices" })).toBeVisible();
+  // The menu closed on the new page, and More shows where you are.
+  await expect(more).toHaveAttribute("aria-expanded", "false");
+  await expect(more).toHaveClass(/bg-white\/15/);
+  await nav.getByRole("link", { name: "Settings" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page");
+});
+
 test("the demo tech cannot reach settings", async ({ page }) => {
   await signIn(page, TECH);
   await expect(
     page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Settings" }),
   ).toHaveCount(0);
+  // Needs a Time is the office's list; techs don't see it (owner, 2026-10-18).
+  await page.goto("/schedule");
+  await expect(page.getByRole("heading", { level: 1, name: "Schedule" })).toBeVisible();
+  await expect(page.getByTestId("tray")).toHaveCount(0);
   for (const path of ["/settings", "/settings/team", "/settings/company"]) {
     await page.goto(path);
     await expect(page.getByText("Settings are for owners.")).toBeVisible();
@@ -389,13 +414,13 @@ test("on a phone: a tab bar moves between sections and nothing scrolls sideways"
   await page.touchscreen.tap(4, 844 - 40);
   await page.touchscreen.tap(195, 844 - 4);
   await expect(page).toHaveURL(before);
-  // Invoices, Warranties, and Settings are under More.
+  // Invoices, the Dashboard, and Settings are under More.
   await tabs.getByRole("link", { name: "More" }).click();
   await page.getByRole("main").getByRole("link", { name: "Invoices" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Invoices" })).toBeVisible();
   await tabs.getByRole("link", { name: "More" }).click();
-  await page.getByRole("link", { name: "Warranties" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Warranties" })).toBeVisible();
+  await page.getByRole("main").getByRole("link", { name: "Dashboard" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Dashboard" })).toBeVisible();
   await expect(tabs.getByRole("link", { name: "More" })).toHaveAttribute("aria-current", "page");
   await tabs.getByRole("link", { name: "More" }).click();
   // Phones have no header sun/moon button: More › Appearance switches it.

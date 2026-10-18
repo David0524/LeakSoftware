@@ -88,7 +88,6 @@ export function addLine(
       quantity: line.quantity,
       unit_price_cents: line.unit_price_cents,
       taxable: line.taxable,
-      warranty_months: line.warranty_months ?? null,
       finding_id: line.finding_id ?? null,
       price_book_item_id: line.price_book_item_id ?? null,
       sort_order: (quote.lines.at(-1)?.sort_order ?? 0) + 1,

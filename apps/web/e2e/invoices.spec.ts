@@ -23,7 +23,7 @@ test("a repair is invoiced with its deposit credited, paid by check and card, wi
   test.skip(!admin, "Needs SUPABASE_SERVICE_ROLE_KEY (CI runs it against Supabase in Docker).");
 
   // The quote: sent, accepted on a phone, and its $425.00 deposit paid by card.
-  const quote = await draftQuote([["Repair skimmer line", 85_000, 12]]);
+  const quote = await draftQuote([["Repair skimmer line", 85_000]]);
   await admin!
     .from("stripe_account")
     .upsert(
@@ -132,11 +132,6 @@ test("a repair is invoiced with its deposit credited, paid by check and card, wi
   const { data: done } = await tech.from("job").select("status").eq("id", repairJob).single();
   expect(done!.status).toBe("paid");
 
-  // Paid: the repaired line's 12-month warranty is on record (M10).
-  await page.goto("/warranties");
-  const warranty = page.getByRole("listitem").filter({ hasText: `Repair skimmer line (${RUN})` });
-  await expect(warranty).toContainText("Active");
-  await expect(warranty).toContainText("12-month warranty on parts and labor");
   const { data: payments } = await admin!
     .from("payment")
     .select("amount_cents, method, status")

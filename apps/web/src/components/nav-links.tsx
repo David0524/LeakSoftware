@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { OfficeLink } from "@/lib/nav";
 import { cx } from "./ui";
 
@@ -74,15 +74,15 @@ const ICONS: Record<string, Icon> = {
     shape: "M3 20v-1a4 4 0 0 1 4-4h5a4 4 0 0 1 4 4v1zM9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z",
     extra: "M21 20v-1a4 4 0 0 0-3-3.9M16 4.1a3.5 3.5 0 0 1 0 6.8",
   },
+  "/chemicals": {
+    line: (
+      <path d="M9 3h6M10 3v6l-5.5 9.5A1.7 1.7 0 0 0 6 21h12a1.7 1.7 0 0 0 1.5-2.5L14 9V3M7.5 15h9" />
+    ),
+  },
   "/invoices": {
     line: <path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3" />,
     shape: "M6 3h12v18l-3-2-3 2-3-2-3 2z",
     cut: "M9 8h6M9 12h6M9 16h3",
-  },
-  "/warranties": {
-    line: <path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6zM9 12l2 2 4-4" />,
-    shape: "M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z",
-    cut: "M9 12l2 2 4-4",
   },
   "/dashboard": { line: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /> },
   "/more": {
@@ -247,6 +247,149 @@ export function NavLinks({
           </Link>
         );
       })}
+    </nav>
+  );
+}
+
+const barLink = (active: boolean) =>
+  cx(
+    "inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 font-display text-[1.0625rem] font-semibold tracking-wide",
+    active ? "bg-white/15" : "hover:bg-white/10",
+  );
+
+/**
+ * Wider screens: the main sections in the header, the rest under a More menu (a pull-down,
+ * as on iPadOS and macOS), and Settings as a gear (owner, 2026-10-18).
+ */
+export function DesktopNav({
+  main,
+  more,
+  settings,
+  className,
+}: {
+  main: OfficeLink[];
+  more: OfficeLink[];
+  settings: OfficeLink | null;
+  className?: string;
+}) {
+  const path = usePathname();
+  // The page the menu was opened on: it closes by itself on a new page.
+  const [openOn, setOpenOn] = useState<string | null>(null);
+  const open = openOn === path;
+  const setOpen = (next: boolean | ((o: boolean) => boolean)) =>
+    setOpenOn((typeof next === "function" ? next(open) : next) ? path : null);
+  const menu = useRef<HTMLDivElement>(null);
+  const moreActive = more.some((l) => inSection(path, l));
+
+  // It also closes on a click outside it, or Escape.
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: PointerEvent) => {
+      if (!menu.current?.contains(e.target as Node)) setOpenOn(null);
+    };
+    const escape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpenOn(null);
+    };
+    document.addEventListener("pointerdown", away);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", away);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [open]);
+
+  return (
+    <nav aria-label="Main" className={cx("flex flex-wrap items-center gap-1", className)}>
+      {main.map((l) => {
+        const active = inSection(path, l);
+        return (
+          <Link
+            key={l.href}
+            href={l.href}
+            aria-current={active ? "page" : undefined}
+            className={barLink(active)}
+          >
+            {l.label}
+            <Badge count={l.badge} className="bg-on-header font-sans text-header" />
+          </Link>
+        );
+      })}
+      {more.length ? (
+        <div ref={menu} className="relative">
+          <button
+            type="button"
+            aria-haspopup="true"
+            aria-expanded={open}
+            aria-controls="more-menu"
+            onClick={() => setOpen((o) => !o)}
+            className={barLink(moreActive || open)}
+          >
+            More
+            <svg
+              viewBox="0 0 24 24"
+              className={cx("size-4 transition-transform", open && "rotate-180")}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+          {open ? (
+            <ul
+              id="more-menu"
+              aria-label="More"
+              className="absolute top-full left-0 z-40 mt-2 min-w-48 overflow-hidden rounded-xl bg-surface py-1 text-text shadow-lg ring-1 ring-black/10"
+            >
+              {more.map((l) => {
+                const active = inSection(path, l);
+                return (
+                  <li key={l.href}>
+                    <Link
+                      href={l.href}
+                      aria-current={active ? "page" : undefined}
+                      className={cx(
+                        "flex min-h-11 items-center gap-3 px-4 text-[1.0625rem]",
+                        active ? "font-semibold text-link" : "hover:bg-text/[0.05]",
+                      )}
+                    >
+                      <span className="text-text-muted [&_svg]:size-6">
+                        <TabIcon href={l.href} selected={false} />
+                      </span>
+                      {l.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+      {settings ? (
+        <Link
+          href={settings.href}
+          aria-label="Settings"
+          title="Settings"
+          aria-current={inSection(path, settings) ? "page" : undefined}
+          className={cx(barLink(inSection(path, settings)), "size-11 justify-center px-0")}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="size-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            {ICONS["/settings"]?.line}
+          </svg>
+        </Link>
+      ) : null}
     </nav>
   );
 }

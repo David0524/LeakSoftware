@@ -20,8 +20,7 @@ grant select on ids to authenticated;
 create temp table job_tables (t text);
 insert into job_tables values ('job'), ('job_component'), ('checklist_item_result'),
   ('test_result'), ('finding'), ('report'), ('quote'), ('quote_line_item'), ('invoice'),
-  ('invoice_line_item'), ('payment'), ('media'), ('signature'), ('share_link'), ('message'),
-  ('warranty');
+  ('invoice_line_item'), ('payment'), ('media'), ('signature'), ('share_link'), ('message');
 grant select on job_tables to authenticated;
 
 -- How many rows of each job table the current user sees, as one string.
@@ -37,8 +36,8 @@ end $$;
 grant execute on function pg_temp.seen() to authenticated;
 
 create temp table expect as select
-  'checklist_item_result=1 finding=1 invoice=1 invoice_line_item=1 job=1 job_component=1 media=1 message=1 payment=1 quote=1 quote_line_item=1 report=1 share_link=1 signature=1 test_result=1 warranty=1'::text as all_one,
-  'checklist_item_result=0 finding=0 invoice=0 invoice_line_item=0 job=0 job_component=0 media=0 message=0 payment=0 quote=0 quote_line_item=0 report=0 share_link=0 signature=0 test_result=0 warranty=0'::text as all_zero;
+  'checklist_item_result=1 finding=1 invoice=1 invoice_line_item=1 job=1 job_component=1 media=1 message=1 payment=1 quote=1 quote_line_item=1 report=1 share_link=1 signature=1 test_result=1'::text as all_one,
+  'checklist_item_result=0 finding=0 invoice=0 invoice_line_item=0 job=0 job_component=0 media=0 message=0 payment=0 quote=0 quote_line_item=0 report=0 share_link=0 signature=0 test_result=0'::text as all_zero;
 grant select on expect to authenticated;
 
 -- Default: everyone sees every job.

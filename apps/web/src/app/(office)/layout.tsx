@@ -3,14 +3,14 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { signOut, switchCompany } from "@/app/actions/auth";
 import { Logo } from "@/components/logo";
-import { NavLinks, TabBar } from "@/components/nav-links";
+import { DesktopNav, TabBar } from "@/components/nav-links";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { accessNotice } from "@leakbook/core";
 import { cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getAccess, getCompany } from "@/lib/data";
 import { unreadCount } from "@/lib/messages";
-import { officeLinks } from "@/lib/nav";
+import { desktopNav, officeLinks } from "@/lib/nav";
 import { onboardingAvailable } from "@/server/billing";
 
 /**
@@ -107,7 +107,7 @@ async function OfficeNav() {
   const desktop = dashboard ? [dashboard, ...links.filter((l) => l !== dashboard)] : links;
   return (
     <>
-      <NavLinks links={desktop} className="hidden sm:flex" />
+      <DesktopNav {...desktopNav(desktop)} className="hidden sm:flex" />
       <div className="ml-auto flex items-center gap-3 text-[0.9375rem]">
         {office.companies.length > 1 ? (
           <form action={switchCompany} className="flex items-center gap-2">

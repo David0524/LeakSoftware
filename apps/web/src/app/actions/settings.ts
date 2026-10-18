@@ -368,8 +368,6 @@ export async function savePriceItem(_: FormState, form: FormData): Promise<FormS
   const fields: Record<string, string> = {};
   if (!name) fields.name = "Enter a name.";
   if (price === null || price < 0) fields.price = "Enter a price, like 185 or 185.50.";
-  const warranty = text(form, "warranty_months");
-  if (warranty && !/^\d+$/.test(warranty)) fields.warranty_months = "Whole months only.";
   if (Object.keys(fields).length) return { fields };
   const { error } = await upsert(supabase, "price_book_item", office.company.id, text(form, "id"), {
     name,
@@ -379,7 +377,6 @@ export async function savePriceItem(_: FormState, form: FormData): Promise<FormS
     unit: text(form, "unit") || "each",
     price_cents: price,
     taxable: checked(form, "taxable"),
-    warranty_months: warranty ? Number(warranty) : null,
     sort_order: int(form, "sort_order"),
     active: text(form, "id") ? checked(form, "active") : true,
   });

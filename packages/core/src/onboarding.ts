@@ -144,8 +144,9 @@ export const ONBOARDING: Record<OnboardingPackage, OnboardingContent> = {
       },
       {
         id: "records",
-        label: "Warranty questions come back months later",
-        answer: "Each repair’s warranty is tracked, and every sent report is kept unchanged.",
+        label: "Customers call back months later about an old job",
+        answer:
+          "Every sent report is kept unchanged with the customer, so the history is a tap away.",
       },
     ],
     defaultPains: ["speed", "explain", "quotes"],
