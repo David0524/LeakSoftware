@@ -174,7 +174,7 @@ test("a plan's filter cleaning goes on the visit it's due", async ({ page }) => 
   await sheet.getByLabel("First visit").fill(day);
   await sheet.getByLabel("Tech", { exact: true }).selectOption({ label: "Priya Shah" });
   await sheet.getByRole("switch", { name: "Clean filter" }).check();
-  await sheet.getByRole("radio", { name: "Every 3 Months" }).click();
+  await sheet.getByRole("radio", { name: "3 Months" }).click();
   await sheet.getByLabel("Next due").fill(nextWeek);
   await sheet.getByLabel("Price each time ($)").fill("40");
   await sheet.getByRole("button", { name: "Add Plan" }).click();
