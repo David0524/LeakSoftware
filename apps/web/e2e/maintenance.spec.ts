@@ -233,8 +233,7 @@ test("a plan can repeat on several days a week", async ({ page }) => {
   await sheet.getByLabel("First visit").fill(tomorrow());
   await sheet.getByRole("radio", { name: "Several a Week" }).click();
   // Each day is a round toggle: the label around a visually hidden checkbox.
-  const day = (name: string) =>
-    sheet.locator("label", { has: sheet.getByRole("checkbox", { name }) });
+  const day = (name: string) => sheet.getByRole("checkbox", { name }).locator("..");
   await day("Monday").click();
   await expect(sheet.getByRole("checkbox", { name: "Monday" })).toBeChecked();
   await sheet.getByRole("button", { name: "Add Plan" }).click();
