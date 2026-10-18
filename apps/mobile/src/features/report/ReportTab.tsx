@@ -70,7 +70,8 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
   const templateRows = useRows<TemplateRow>("report_template", company.id);
   const templates = useMemo(() => {
     const names = new Map(templateRows.map((t) => [t.key, t]));
-    return (["homeowner", "partner"] as Template[])
+    // The homeowner report only (owner, 2026-10-18: "Partner report should be gone").
+    return (["homeowner"] as Template[])
       .filter((k) => names.get(k)?.enabled !== false)
       .map((k) => ({
         value: k,

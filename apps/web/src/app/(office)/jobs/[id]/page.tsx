@@ -681,28 +681,24 @@ async function Signatures({ detail, tz }: { detail: JobDetail; tz: string }) {
 async function Reports({ detail }: { detail: JobDetail }) {
   const office = await getOffice();
   const { reports, templates } = await getReports(office, detail.job.id);
-  const nameOf = new Map(templates.map((t) => [t.key, t.name]));
+  // One report, the homeowner's (owner, 2026-10-18: "Partner report should be gone").
+  const key = "homeowner";
+  if (templates.find((t) => t.key === key)?.enabled === false) return null;
   return (
-    <div className="grid gap-5 xl:grid-cols-2">
-      {/* Said once for both reports, not on each card. */}
-      <p className="text-[0.9375rem] text-text-muted xl:col-span-2">
+    <div className="grid max-w-3xl gap-5">
+      <p className="text-[0.9375rem] text-text-muted">
         Write Draft fills in the report from this job’s checklist, tests, and findings. Read and
         edit it before sending.
       </p>
-      {(["homeowner", "partner"] as const)
-        .filter((key) => templates.find((t) => t.key === key)?.enabled !== false)
-        .map((key) => (
-          <ReportPanel
-            key={key}
-            jobId={detail.job.id}
-            template={key}
-            name={nameOf.get(key) ?? (key === "partner" ? "Partner report" : "Homeowner report")}
-            draft={reports.find((r) => r.template_key === key && r.status === "draft") ?? null}
-            sent={reports.filter((r) => r.template_key === key && r.status !== "draft")}
-            customerEmail={detail.job.customer?.email ?? null}
-            emailReady={emailConfigured()}
-          />
-        ))}
+      <ReportPanel
+        jobId={detail.job.id}
+        template={key}
+        name={templates.find((t) => t.key === key)?.name ?? "Homeowner report"}
+        draft={reports.find((r) => r.template_key === key && r.status === "draft") ?? null}
+        sent={reports.filter((r) => r.template_key === key && r.status !== "draft")}
+        customerEmail={detail.job.customer?.email ?? null}
+        emailReady={emailConfigured()}
+      />
     </div>
   );
 }

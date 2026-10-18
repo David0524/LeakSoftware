@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "Partner report should be gone")
+- **One report per job, the homeowner report.** The partner (pool company) report is gone from the job page, the app, Settings › Report Templates, and the report API. Partner reports already sent still open from their links and the Reports list. Its template rows stay (off) in the database, so it could come back.
+
 ## 2026-10-18 (owner: launch list: "Update this" for the privacy policy and terms; bundle ID "Ok")
 - **Privacy policy and terms** are final text (no draft notice): trial and billing (card to start, monthly by package and team size, prorated, cancel any time, no partial-month refunds, read-only after an unfixed failed payment, 30 days' notice of price changes), the shop owns and answers for its records and reports, customer payments go to the shop's own Stripe, texting consent and STOP, as-is service with liability capped at 12 months of fees, deletion within 30 days on request, no ad or tracking cookies. A lawyer should still read them; the legal entity name and governing state go in once the business registration is done.
 - **App ID** is `com.sundeckpro.app` on iOS and Android, link scheme `sundeckpro` (before the first store upload, after which it can't change).

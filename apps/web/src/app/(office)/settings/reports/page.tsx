@@ -16,24 +16,26 @@ interface Template {
   tone: string;
 }
 
-const ABOUT: Record<Template["key"], string> = {
+const ABOUT: Record<Exclude<Template["key"], "partner">, string> = {
   homeowner: "For the pool owner: plain words, what was found, what it means, and what to do next.",
-  partner: "For pool companies and builders who send you work: technical, test readings first.",
   insurance: "For insurance claims.",
 };
 
 export default async function ReportTemplatesPage() {
   const office = await getOffice();
   const templates = await listConfig<Template>(office, "report_template");
-  const order = ["homeowner", "partner", "insurance"];
-  templates.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+  const order = ["homeowner", "insurance"];
+  // The partner report is gone (owner, 2026-10-18); its sent reports still open.
+  const shown = templates
+    .filter((t) => t.key !== "partner")
+    .sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
   return (
     <SettingsListPage
       title="Report Templates"
       subtitle="Which reports techs can send, and what they’re called. Each report is written from the job’s checklist, tests, and findings."
     >
       <Grouped>
-        {templates.map((t) =>
+        {shown.map((t) =>
           t.key === "insurance" ? (
             <SheetRow
               key={t.id}
@@ -47,7 +49,7 @@ export default async function ReportTemplatesPage() {
               key={t.id}
               title={t.name}
               label={t.name}
-              detail={ABOUT[t.key]}
+              detail={ABOUT[t.key as "homeowner"]}
               value={t.enabled ? "On" : "Off"}
             >
               <SettingsForm action={saveReportTemplate} primary full>

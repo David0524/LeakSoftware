@@ -9,8 +9,8 @@ export async function POST(request: Request, ctx: RouteContext<"/api/jobs/[id]/r
   const db = await clientFromRequest(request);
   if (!db) return jsonError("Sign in again.", 401);
   const { id } = await ctx.params;
-  const body = (await request.json().catch(() => ({}))) as { template?: string };
-  const template = (body.template === "partner" ? "partner" : "homeowner") as ReportTemplateKey;
+  // Only the homeowner report is written now (the partner report is gone, 2026-10-18).
+  const template: ReportTemplateKey = "homeowner";
   try {
     return Response.json(await draftReport(db, id, template));
   } catch (e) {

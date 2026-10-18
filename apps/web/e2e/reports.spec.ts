@@ -80,36 +80,6 @@ test("homeowner report: draft, edit, email, and the customer's link", async ({ p
   await expectPdf(page, token);
 });
 
-test("partner report: draft, send by text, technical page and PDF", async ({ page }) => {
-  // The partner report starts off (owner, 2026-10-14); the owner turns it on in Settings.
-  await signIn(page, OWNER, "/settings/reports");
-  // Each template is a row that opens its settings in a sheet.
-  await page.getByRole("button", { name: /^Partner report/ }).click();
-  const settings = page.getByRole("dialog", { name: "Partner report" });
-  const enabled = settings.getByLabel("Techs can send this report");
-  if (!(await enabled.isChecked())) {
-    await enabled.check();
-    await settings.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
-  }
-  await openSampleJob(page, "Sam Sample", true);
-  const panel = await writeDraft(page, "partner");
-  await sendUnsigned(panel, "Send by Text");
-  await expect(panel.getByText("Report sent. Copy the message below.")).toBeVisible();
-
-  const sentLink = panel.getByRole("link", { name: /^View version \d+$/ });
-  await expect(sentLink).toBeVisible();
-  const href = await sentLink.getAttribute("href");
-  const token = href!.split("/").pop()!;
-
-  await page.context().clearCookies();
-  await page.goto(`/r/${token}`);
-  await expect(page.getByText("Leak Detection Report (Technical)")).toBeVisible();
-  await expect(page.getByRole("table")).toContainText("Pressure");
-  await expect(page.getByText("Not applicable", { exact: true })).toBeVisible();
-  await expectPdf(page, token);
-});
-
 // M8.5 "Done when": the job entered the partner's way (two techs, 27 items, a leak repaired
 // on site) gives a report with the counts, every item's verdict, the fee, and the disclaimer,
 // as a web page and a PDF.
