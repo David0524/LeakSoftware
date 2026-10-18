@@ -8,7 +8,7 @@ import { ACTIVE_COMPANY_COOKIE, getOffice, getUser } from "@/lib/auth";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/server/admin";
-import { billingConfigured, syncSubscriptionPrice } from "@/server/billing";
+import { billingConfigured, logPriceSyncError, syncSubscriptionPrice } from "@/server/billing";
 import { saveLead } from "@/server/leads";
 
 export interface FormState {
@@ -202,7 +202,7 @@ export async function acceptInvite(_: FormState, form: FormData): Promise<FormSt
   const { data: companyId, error } = await supabase.rpc("accept_invite", { invite_token: token });
   if (error) return { error: error.message };
   // One more person on the team: the Sundeck Pro price may move up a tier.
-  after(() => syncSubscriptionPrice(String(companyId)).catch(() => null));
+  after(() => syncSubscriptionPrice(String(companyId)).catch(logPriceSyncError));
   (await cookies()).set(ACTIVE_COMPANY_COOKIE, String(companyId), {
     path: "/",
     sameSite: "lax",

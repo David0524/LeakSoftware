@@ -14,7 +14,7 @@ import {
 } from "@leakbook/core";
 import { requireOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { syncSubscriptionPrice } from "@/server/billing";
+import { logPriceSyncError, syncSubscriptionPrice } from "@/server/billing";
 import { locateCompany } from "@/server/route-days";
 import type { FormState } from "./auth";
 
@@ -244,7 +244,7 @@ export async function saveServices(_: FormState, form: FormData): Promise<FormSt
   });
   if (setup) return failed(setup);
   // The package sets the Sundeck Pro price.
-  after(() => syncSubscriptionPrice(office.company.id).catch(() => null));
+  after(() => syncSubscriptionPrice(office.company.id).catch(logPriceSyncError));
   revalidatePath("/", "layout");
   return { message: "Saved." };
 }
@@ -307,7 +307,7 @@ export async function updateMember(_: FormState, form: FormData): Promise<FormSt
         : error.message,
     };
   // Turning a teammate off or on changes the people billed.
-  after(() => syncSubscriptionPrice(office.company.id).catch(() => null));
+  after(() => syncSubscriptionPrice(office.company.id).catch(logPriceSyncError));
   return done("/settings/team");
 }
 

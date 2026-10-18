@@ -256,6 +256,39 @@ export async function syncSubscriptionPrice(
   return price.cents;
 }
 
+/** A price update Stripe refused: logged (Vercel's logs), never shown to customers. */
+export function logPriceSyncError(error: unknown): null {
+  console.error("[billing] couldn't update the subscription price in Stripe:", error);
+  return null;
+}
+
+/**
+ * For Settings › Sundeck Pro Billing: what the shop pays now (its package and active people),
+ * after bringing Stripe in line (owner, 2026-10-18: "Ensure that adding users effects the
+ * pricing"). With a sandbox key, Stripe's own message comes back when it refuses, to help
+ * setup; with live keys only that it failed.
+ */
+export async function currentPrice(companyId: string): Promise<{
+  name: string;
+  people: number;
+  cents: number;
+  problem: string | null;
+} | null> {
+  const db = adminClient();
+  if (!db) return null;
+  const price = await shopPrice(db, companyId);
+  let problem: string | null = null;
+  try {
+    await syncSubscriptionPrice(companyId, stripeClient(), db);
+  } catch (error) {
+    logPriceSyncError(error);
+    problem = process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_")
+      ? `Stripe said: ${error instanceof Error ? error.message : String(error)}`
+      : "The new price couldn’t be sent to Stripe. It’s tried again every day.";
+  }
+  return { name: price.name, people: price.people, cents: price.cents, problem };
+}
+
 /** `syncSubscriptionPrice` for every subscribed shop (the daily cron). */
 export async function syncAllSubscriptionPrices(db: SupabaseClient): Promise<number> {
   const { data } = await db
@@ -268,8 +301,9 @@ export async function syncAllSubscriptionPrices(db: SupabaseClient): Promise<num
     try {
       if ((await syncSubscriptionPrice(row.company_id as string, undefined, db)) !== null)
         changed++;
-    } catch {
+    } catch (error) {
       // One shop's Stripe error doesn't stop the rest; tomorrow's run tries again.
+      logPriceSyncError(error);
     }
   }
   return changed;
