@@ -415,11 +415,11 @@ describe("payment domain", () => {
 
   it("registers the site's domain on the shop's account for Apple Pay and Google Pay", async () => {
     const { stripe, calls } = fakeStripe();
-    await registerPaymentDomain(stripe, "acct_shop", "https://app.sundeckpro.app");
+    await registerPaymentDomain(stripe, "acct_shop", "https://app.sundeckpro.com");
     expect(calls).toEqual([
       {
-        params: { domain_name: "app.sundeckpro.app" },
-        opts: { stripeAccount: "acct_shop", idempotencyKey: "domain-acct_shop-app.sundeckpro.app" },
+        params: { domain_name: "app.sundeckpro.com" },
+        opts: { stripeAccount: "acct_shop", idempotencyKey: "domain-acct_shop-app.sundeckpro.com" },
       },
     ]);
   });
@@ -430,7 +430,7 @@ describe("payment domain", () => {
     await registerPaymentDomain(stripe, "acct_shop", "http://127.0.0.1:3000");
     expect(calls).toHaveLength(0);
     await expect(
-      registerPaymentDomain(stripe, "acct_shop", "https://app.sundeckpro.app"),
+      registerPaymentDomain(stripe, "acct_shop", "https://app.sundeckpro.com"),
     ).resolves.toBeUndefined();
   });
 });

@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "The address is SundeckPro.com")
+- **The domain is `sundeckpro.com`.** Email goes out from `send.sundeckpro.com` through Resend (the sending subdomain keeps the main domain's reputation separate), and support is `support@sundeckpro.com`. The recommended bundle ID becomes `com.sundeckpro.field`; the current one stays `com.leakbook.app` until the owner decides. Replaces the `sundeckpro.app` placeholders below.
+
 ## 2026-10-18 (owner: "Add a reports tab under JOBS - that just shows you reports"; "allow you to sort customers by a variety of filters")
 - **Jobs › Reports:** a Jobs | Reports switch at the top of Jobs. Reports lists each job's current report (resent versions replace the older one), newest first, with All, Sent, and Drafts; a row opens the job's Report and Sign-Off. Techs limited to their own jobs see only those reports.
 - **Customers: Sort and Show.** Sort by name (A–Z or Z–A), newest, oldest, last visit, or city; show all customers, those on a maintenance plan or not (pool shops), or one kind (homeowners, pool companies, builders, insurers, property managers, other). The choice stays in the address, so it survives Back and can be bookmarked.

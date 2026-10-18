@@ -435,7 +435,7 @@ Please answer these before or during the milestone listed. The **recommendation*
 | 5 | What gets signed on site: inspection acknowledgment, work authorization, on-site quote acceptance, completion? | Support all four, turn on per company | M7 |
 | 6 | Sundeck Pro pricing: per shop per month, per tech, or per job? Trial length? | Flat per shop with a tech cap (for example, up to 5 techs), 30-day trial; decide the price after the design partner pilot | M10 |
 | 7 | Monthly running cost at launch of about $45–60 plus usage (section 12)? | Yes | M0 |
-| 8 | Domain name and sending domain (for example `sundeckpro.app`, email from `send.sundeckpro.app`) | Buy once the name is cleared | M7 |
+| 8 | Domain name and sending domain (`sundeckpro.com`, email from `send.sundeckpro.com`) | Chosen 2026-10-18; set up Resend on it | M7 |
 | 9 | App Store: publish under your own Apple Developer account (individual or company)? | Company account (needs a D-U-N-S number, which takes days, so start early) | M11 |
 
 Open questions for the cousin, from the handoff, still apply: checklist items and procedures, current report examples and readers, typical repair items and prices, insurance frequency and adjuster needs, job sources and who pays. Each lands as seed or config data.
