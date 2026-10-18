@@ -52,7 +52,7 @@ export function AccountMenu({
 
   const row = "flex min-h-11 w-full items-center px-4 text-left hover:bg-text/[0.05]";
   return (
-    <div ref={box} className="relative">
+    <div ref={box} className="relative -mr-1.5">
       <button
         type="button"
         aria-haspopup="true"

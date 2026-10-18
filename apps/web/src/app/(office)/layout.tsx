@@ -113,8 +113,9 @@ async function OfficeNav() {
   // On a computer the Dashboard leads for owners (owner, 2026-10-16); phones keep Today first.
   const dashboard = links.find((l) => l.href === "/dashboard");
   const desktop = dashboard ? [dashboard, ...links.filter((l) => l !== dashboard)] : links;
+  // The nav and the account button share one row, so the right side spaces evenly.
   return (
-    <>
+    <div className="flex min-w-0 flex-1 items-center gap-1">
       <DesktopNav
         {...desktopNav(desktop)}
         action={
@@ -148,6 +149,6 @@ async function OfficeNav() {
         company={{ id: office.company.id, name: office.company.name }}
         companies={office.companies.map((c) => ({ id: c.id, name: c.name }))}
       />
-    </>
+    </div>
   );
 }

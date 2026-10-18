@@ -314,14 +314,14 @@ export function DesktopNav({
           ) : null}
         </div>
       ) : null}
-      <div className="ml-auto flex items-center gap-1">{action}</div>
+      <div className="ml-auto flex items-center pr-1">{action}</div>
       {settings ? (
         <Link
           href={settings.href}
           aria-label="Settings"
           title="Settings"
           aria-current={inSection(path, settings) ? "page" : undefined}
-          className={cx(barLink(inSection(path, settings)), "w-12 justify-center px-0 lg:px-0")}
+          className={cx(barLink(inSection(path, settings)), "w-11 justify-center px-0 lg:px-0")}
         >
           <svg
             viewBox="0 0 24 24"
