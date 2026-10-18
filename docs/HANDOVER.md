@@ -6,7 +6,7 @@ entries in `docs/DECISIONS.md` (2026-10-15 and 2026-10-16 cover everything below
 ## Where things are
 
 - **Branch:** `claude/cool-keller-efjc00`. Push only there and don't open PRs. Pushing deploys
-  the website (https://leaksoftware-web.vercel.app).
+  the website (https://sundeckpro.com).
 - **Launch is planned for next week** (owner, 2026-10-16). The owner's own to-do list (Apple
   account and D-U-N-S, app ID, production Supabase project on Pro, Vercel Pro, Resend and the
   domain, final privacy and terms, Twilio A2P registration and geo permissions, `APP_BASE_URL`)

@@ -55,7 +55,7 @@ office customer page and by the phone's send button), the second sample job, and
 - **Pushing:** each push cancels the in-progress CI run (concurrency). Don't push while waiting on a result you need.
 - **Deploying:** `pnpm db:deploy` applies every pending migration in the folder. Move unfinished migrations aside if you deploy early.
 - **Repo is public:** never commit customer details or the partner's disclaimer text from his sample report.
-- **Hosting:** the website is live on Vercel at https://leaksoftware-web.vercel.app. Production builds from `claude/cool-keller-efjc00`, so every push there goes live. Report PDFs need files that Next's tracing misses; `apps/web/next.config.ts` adds them for the PDF routes.
+- **Hosting:** the website is live at https://sundeckpro.com (on Vercel; https://leaksoftware-web.vercel.app still works). Production builds from `claude/cool-keller-efjc00`, so every push there goes live. Report PDFs need files that Next's tracing misses; `apps/web/next.config.ts` adds them for the PDF routes.
 - **Owner setup still pending:**
   - `APP_BASE_URL` in Vercel (the site address, for links in emails);
   - `ANTHROPIC_API_KEY`;
