@@ -12,3 +12,9 @@ coverage/
 apps/web/e2e/.outbox/
 apps/web/test-results/
 apps/web/playwright-report/
+
+# Swift (apps/ios)
+apps/ios/.build/
+apps/ios/.swiftpm/
+apps/ios/xtool/
+apps/ios/.bsp/

@@ -1,0 +1,4 @@
+version: 1
+bundleID: com.sundeckpro.app
+infoPath: Info.plist
+iconPath: ../../brand/logo/png/icon-1024.png

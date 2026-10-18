@@ -34,6 +34,28 @@ jobs:
           CI: "1"
           EXPO_NO_TELEMETRY: "1"
 
+  ios-linux:
+    name: iPhone app libraries (Swift on Linux)
+    runs-on: ubuntu-24.04
+    container: swift:6.4.1-noble
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift format lint --strict -r apps/ios/Sources apps/ios/Tests apps/ios/Package.swift
+      - run: swift test --package-path apps/ios
+
+  ios-macos:
+    name: iPhone app (Xcode)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: xcodebuild -version && swift --version
+      - run: swift test --package-path apps/ios
+      - name: Build for iPhone
+        working-directory: apps/ios
+        run: >
+          xcodebuild build -scheme SundeckPro -destination 'generic/platform=iOS'
+          -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO
+
   database:
     name: Database (Supabase + pgTAP)
     runs-on: ubuntu-24.04
