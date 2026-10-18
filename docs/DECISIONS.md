@@ -5,6 +5,10 @@ Newest first. Each entry: date, decision, reason.
 ## 2026-10-18 (owner: "Partner report should be gone")
 - **One report per job, the homeowner report.** The partner (pool company) report is gone from the job page, the app, Settings › Report Templates, and the report API. Partner reports already sent still open from their links and the Reports list. Its template rows stay (off) in the database, so it could come back.
 
+## 2026-10-18 (owner: home page "a tad more interesting", not too busy; "Get paid" on one line on phones)
+- **The home page reads in chapters, not more motion:** section backgrounds alternate (plain, a pale water tint, one navy band for In the Office), each section's heading and demos fade up once as they first scroll in, and the closing band has slow drifting water lines, so the page opens and closes on water. No motion behind the demos, which already animate. With Reduce Motion nothing moves or waits to appear; without script nothing is hidden.
+- **"Get paid." keeps to one line**, on a line of its own on phones.
+
 ## 2026-10-18 (owner: launch list: "Update this" for the privacy policy and terms; bundle ID "Ok")
 - **Privacy policy and terms** are final text (no draft notice): trial and billing (card to start, monthly by package and team size, prorated, cancel any time, no partial-month refunds, read-only after an unfixed failed payment, 30 days' notice of price changes), the shop owns and answers for its records and reports, customer payments go to the shop's own Stripe, texting consent and STOP, as-is service with liability capped at 12 months of fees, deletion within 30 days on request, no ad or tracking cookies. A lawyer should still read them; the legal entity name and governing state go in once the business registration is done.
 - **App ID** is `com.sundeckpro.app` on iOS and Android, link scheme `sundeckpro` (before the first store upload, after which it can't change).

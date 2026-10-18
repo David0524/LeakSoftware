@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
-const REDUCE = "(prefers-reduced-motion: reduce)";
+export const REDUCE = "(prefers-reduced-motion: reduce)";
 function subscribeMotion(onChange: () => void) {
   const m = window.matchMedia(REDUCE);
   m.addEventListener("change", onChange);

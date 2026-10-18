@@ -17,10 +17,13 @@ import {
   ServiceChecklistDemo,
 } from "./demos";
 import { Hero, PackageProvider, signUpHref, usePackage } from "./hero";
+import { Reveal } from "./reveal";
 import { Pricing } from "./pricing";
 
 // The home page's body. Everything follows the package switch (Pool Maintenance first, owner
-// 2026-10-15): each package shows only what applies to it.
+// 2026-10-15): each package shows only what applies to it. Section backgrounds alternate
+// (plain, a pale water tint, one navy band) so the long page reads in chapters, and the page
+// closes on water like it opens (owner, 2026-10-18: "a tad more interesting", not busy).
 
 export function Landing() {
   return (
@@ -92,6 +95,7 @@ function Body() {
       {leak ? (
         <Section
           id="reports"
+          tone="tint"
           eyebrow="The report"
           title="Reports that sell the repair."
           sub="A clear summary, every item checked, the leak pinned on the pool, photos, and the homeowner’s signature. With your logo and colors, sent before you pack up."
@@ -102,6 +106,7 @@ function Body() {
 
       <Section
         id="paid"
+        tone={leak ? "plain" : "tint"}
         eyebrow="Getting paid"
         title={
           leak
@@ -122,6 +127,7 @@ function Body() {
 
       <Section
         id="office"
+        tone="dark"
         eyebrow="In the office"
         title="Every truck. Every route. Every dollar."
         sub="Book work, plan each tech’s day for the least driving, and see what came in, what’s owed, and what’s waiting, from any browser."
@@ -151,7 +157,7 @@ function Body() {
         <Pricing />
       </Section>
 
-      <Section id="faq" eyebrow="Questions" title="Good to know.">
+      <Section id="faq" tone="tint" eyebrow="Questions" title="Good to know.">
         <div className="mx-auto max-w-3xl space-y-3">
           {FAQ[pkg].map(([q, a]) => (
             <details key={q} className="group card px-5 py-1 open:pb-4">
@@ -170,11 +176,14 @@ function Body() {
         </div>
       </Section>
 
-      <section className="bg-header text-on-header">
-        <div className="mx-auto flex max-w-6xl flex-col items-center px-4 py-20 text-center">
+      <section className="relative overflow-hidden bg-header text-on-header">
+        <Water />
+        <div className="relative mx-auto flex max-w-6xl flex-col items-center px-4 py-20 text-center">
           <h2 className="max-w-3xl font-display text-5xl leading-none font-extrabold tracking-tight sm:text-6xl">
             {leak ? "Find it. Report it." : "Clean it. Bill it."}{" "}
-            <span className="text-safety">Get paid.</span>
+            {/* Phones: "Get paid." on a line of its own, never split. */}
+            <br className="sm:hidden" />
+            <span className="whitespace-nowrap text-safety">Get paid.</span>
           </h2>
           <p className="mt-5 max-w-xl text-[1.1875rem] text-neutral-200">
             Try Sundeck Pro free for 14 days with your whole crew. Cancel before then and you pay
@@ -246,24 +255,71 @@ const FAQ: Record<PlanId, [string, string][]> = {
   ],
 };
 
+/** Slow water lines drifting across the closing band, like the hero's pool. Still with Reduce Motion. */
+function Water() {
+  // One wave, drawn twice side by side, so sliding it half its width loops without a seam.
+  const wave = (y: number, amp: number) =>
+    Array.from({ length: 2 }, (_, k) => {
+      const x = k * 1200;
+      return `M${x} ${y} q150 -${amp} 300 0 t300 0 t300 0 t300 0`;
+    }).join(" ");
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+      {[
+        { y: 30, amp: 14, speed: "lp-drift-slow", top: "top-[18%]", tone: "stroke-white/[0.07]" },
+        { y: 30, amp: 20, speed: "lp-drift", top: "top-[52%]", tone: "stroke-water/40" },
+        { y: 30, amp: 10, speed: "lp-drift-slow", top: "top-[78%]", tone: "stroke-white/[0.06]" },
+      ].map((w) => (
+        <svg
+          key={w.top}
+          viewBox="0 0 2400 60"
+          preserveAspectRatio="none"
+          className={`absolute left-0 h-16 w-[200%] max-w-none ${w.top} ${w.speed}`}
+        >
+          <path d={wave(w.y, w.amp)} className={`fill-none ${w.tone}`} strokeWidth="2" />
+        </svg>
+      ))}
+    </div>
+  );
+}
+
+type Tone = "plain" | "tint" | "dark";
+
+const TONE: Record<Tone, { section: string; eyebrow: string; muted: string }> = {
+  plain: { section: "", eyebrow: "text-link", muted: "text-text-muted" },
+  // A pale band of pool water (the diagram's water color, light and dark).
+  tint: { section: "bg-diagram-water/45", eyebrow: "text-link", muted: "text-text-muted" },
+  // Navy, like the closing band; the demos' white cards sit on it.
+  dark: {
+    section: "bg-header text-on-header [&_.card]:text-text [&_.lp-feature-text]:text-neutral-300",
+    eyebrow: "text-neutral-300",
+    muted: "text-neutral-300",
+  },
+};
+
 function Section({
   id,
+  tone = "plain",
   eyebrow,
   title,
   sub,
   children,
 }: {
   id: string;
+  tone?: Tone;
   eyebrow: string;
   title: string;
   sub?: string;
   children: ReactNode;
 }) {
+  const t = TONE[tone];
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-16">
+    <section id={id} aria-labelledby={`${id}-title`} className={`scroll-mt-16 ${t.section}`}>
       <div className="mx-auto max-w-6xl px-4 py-20 sm:py-24">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="font-display text-[0.9375rem] font-bold tracking-widest text-link uppercase">
+        <Reveal className="mx-auto max-w-3xl text-center">
+          <p
+            className={`font-display text-[0.9375rem] font-bold tracking-widest uppercase ${t.eyebrow}`}
+          >
             {eyebrow}
           </p>
           <h2
@@ -272,9 +328,11 @@ function Section({
           >
             {title}
           </h2>
-          {sub ? <p className="mt-4 text-[1.1875rem] text-balance text-text-muted">{sub}</p> : null}
-        </div>
-        <div className="mt-12">{children}</div>
+          {sub ? <p className={`mt-4 text-[1.1875rem] text-balance ${t.muted}`}>{sub}</p> : null}
+        </Reveal>
+        <Reveal className="mt-12" delay={120}>
+          {children}
+        </Reveal>
       </div>
     </section>
   );
@@ -285,7 +343,7 @@ function Feature({ title, text, children }: { title: string; text: string; child
     <div className="flex flex-col gap-4">
       <div>
         <h3 className="font-display text-2xl font-bold">{title}</h3>
-        <p className="mt-1 text-text-muted">{text}</p>
+        <p className="lp-feature-text mt-1 text-text-muted">{text}</p>
       </div>
       {children}
     </div>
