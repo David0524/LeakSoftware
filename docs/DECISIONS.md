@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: launch list: "Update this" for the privacy policy and terms; bundle ID "Ok")
+- **Privacy policy and terms** are final text (no draft notice): trial and billing (card to start, monthly by package and team size, prorated, cancel any time, no partial-month refunds, read-only after an unfixed failed payment, 30 days' notice of price changes), the shop owns and answers for its records and reports, customer payments go to the shop's own Stripe, texting consent and STOP, as-is service with liability capped at 12 months of fees, deletion within 30 days on request, no ad or tracking cookies. A lawyer should still read them; the legal entity name and governing state go in once the business registration is done.
+- **App ID** is `com.sundeckpro.app` on iOS and Android, link scheme `sundeckpro` (before the first store upload, after which it can't change).
+- **Stripe live mode waits** for the business registration; the pilot runs on the sandbox and the free trial.
+
 ## 2026-10-18 (owner: "Any job with a date already set cannot be dragged around"; Needs a Time cards "a little too bulky"; "The checklist for maintenance jobs can just be check buttons")
 - **Moving jobs by hand:** any job but a canceled one can be dragged to another day or tech; a started or finished job keeps its status when it moves, and only a job that hasn't started can go back to Needs a Time. Plan Route still leaves started and finished jobs where they are.
 - **Needs a Time cards** are two lines (customer and number; address and note), with Suggest Times and Move… behind a "…" button.

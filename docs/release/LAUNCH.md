@@ -9,7 +9,7 @@ and can't be done from here.
 |---|---|
 | Apple Developer Program, company account | Needs a D-U-N-S number (takes days). $99/year. |
 | Google Play Console | One-time $25. |
-| Bundle ID / package name | Now `com.leakbook.app` (from the old name). It can't change after the first upload. Recommended: `com.sundeckpro.app`, now that the domain is bought. |
+| Bundle ID / package name | `com.sundeckpro.app` on iOS and Android (owner, 2026-10-18; link scheme `sundeckpro`). It can't change after the first upload. |
 | Domain, support mailbox | `sundeckpro.com` (bought 2026-10-18, Google Workspace for mail). Support is `support@sundeckpro.com` (`SUPPORT_EMAIL`); app email sends from `send.sundeckpro.com` (`EMAIL_FROM_DOMAIN`, Resend). |
 | Final privacy policy and terms | `/privacy` and `/terms` carry a plain-language draft marked as a draft. Replace with the final text. |
 | Sentry project | Free plan is enough. Set `SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_DSN` (Vercel) and `EXPO_PUBLIC_SENTRY_DSN` (EAS environment). Without them nothing is sent. |

@@ -1,21 +1,21 @@
 {
   "expo": {
     "name": "Sundeck Pro",
-    "slug": "leakbook",
-    "scheme": "leakbook",
+    "slug": "sundeckpro",
+    "scheme": "sundeckpro",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "bundleIdentifier": "com.leakbook.app",
+      "bundleIdentifier": "com.sundeckpro.app",
       "supportsTablet": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.leakbook.app",
+      "package": "com.sundeckpro.app",
       "adaptiveIcon": {
         "backgroundColor": "#12263A",
         "foregroundImage": "./assets/android-icon-foreground.png",

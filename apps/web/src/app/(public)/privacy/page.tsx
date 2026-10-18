@@ -4,10 +4,10 @@ import { SUPPORT_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Privacy Policy · Sundeck Pro" };
 
-/** Privacy policy (M11): needed for the App Store and Google Play listings. Draft. */
+/** Privacy policy: the App Store and Google Play listings link here. */
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy Policy" updated="October 16, 2026">
+    <LegalPage title="Privacy Policy" updated="October 18, 2026">
       <section>
         <h2>Who this covers</h2>
         <p>
@@ -40,14 +40,24 @@ export default function PrivacyPage() {
             on site.
           </li>
           <li>Error reports from the app and website, without customer details.</li>
+          <li>
+            Billing details for the shop’s Sundeck Pro subscription. Stripe keeps the card; we see
+            only its brand and last four digits.
+          </li>
         </ul>
-        <p>We don’t sell personal information and don’t use it for advertising.</p>
+        <p>
+          We don’t sell or share personal information, and we don’t use it for advertising. The
+          website uses only the cookies it needs to keep you signed in and remember your settings;
+          there are no advertising or tracking cookies.
+        </p>
       </section>
       <section>
         <h2>Who owns it</h2>
         <p>
-          Each shop owns its records. Sundeck Pro stores and processes them for the shop. Other
-          shops can’t see them.
+          Each shop owns its records. Sundeck Pro stores and processes them for the shop, only to
+          run the service, and other shops can’t see them. For the shop’s customers, the shop
+          decides what it keeps and is the one to ask first. We look at a shop’s records only when
+          the shop asks for help, to keep the service safe and working, or when the law requires it.
         </p>
       </section>
       <section>
@@ -62,6 +72,10 @@ export default function PrivacyPage() {
           <li>Mapbox: placing pool addresses on the map and planning routes.</li>
           <li>Sentry: error reports.</li>
         </ul>
+        <p>
+          Each one gets only what it needs for its part and may use it only to provide that service.
+          They store data in the United States.
+        </p>
       </section>
       <section>
         <h2>How we protect it</h2>
@@ -78,7 +92,10 @@ export default function PrivacyPage() {
         <h2>How long we keep it</h2>
         <p>
           While the shop uses Sundeck Pro. Sent reports and original photos aren’t changed after the
-          fact, so the record stays trustworthy. When a shop leaves, its data is deleted on request.
+          fact, so the record stays trustworthy. When a shop cancels, it keeps read-only access to
+          its records; the owner can ask us to delete the shop’s data, and we do so within 30 days.
+          Backups are overwritten within a further 30 days. We keep what the law requires us to
+          keep, such as billing records.
         </p>
       </section>
       <section>
@@ -96,6 +113,27 @@ export default function PrivacyPage() {
             .
           </li>
         </ul>
+      </section>
+      <section>
+        <h2>Children</h2>
+        <p>Sundeck Pro is for businesses and isn’t meant for anyone under 16.</p>
+      </section>
+      <section>
+        <h2>Changes</h2>
+        <p>
+          If we change this policy, we update the date above and tell shop owners by email before a
+          change that affects how their records are used.
+        </p>
+      </section>
+      <section>
+        <h2>Contact</h2>
+        <p>
+          Questions about privacy:{" "}
+          <a className="text-link underline" href={`mailto:${SUPPORT_EMAIL}`}>
+            {SUPPORT_EMAIL}
+          </a>
+          .
+        </p>
       </section>
     </LegalPage>
   );
