@@ -44,7 +44,11 @@ const BLURB: Record<PlanId, string> = {
 
 export function Pricing() {
   const { pkg } = usePackage();
-  const [users, setUsers] = useState(4);
+  // Each package starts at its lowest price (owner, 2026-10-18): 2 people for Pool
+  // Maintenance, 1 for Leak Detection. Each keeps its own count when switching.
+  const [team, setTeam] = useState<Record<PlanId, number>>({ maintenance: 2, leak: 1 });
+  const users = team[pkg];
+  const setUsers = (next: (u: number) => number) => setTeam((t) => ({ ...t, [pkg]: next(t[pkg]) }));
   const plan = PLANS[pkg];
   const total = monthlyPriceCents(plan, users);
   const tier = planTier(plan, users);

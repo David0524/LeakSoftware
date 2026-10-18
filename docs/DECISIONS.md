@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "number of users should default to 2 for maintenance and 1 for leaks. We want to show the lowest possible price")
+- **Home page pricing starts at the lowest price:** 2 people for Pool Maintenance ($79, Starter) and 1 for Leak Detection ($49, Solo). Each package keeps its own count when the visitor switches.
+
 ## 2026-10-18 (owner: "I have the domain now and have Google Workspace" — `sundeckpro.com`)
 - **The site is `https://sundeckpro.com`** (Vercel; the old `leaksoftware-web.vercel.app` redirects there). The phone app talks to it directly (`config/supabase-dev.json` → `webUrl`).
 - **Mail:** Google Workspace on `sundeckpro.com` for people (support is `support@sundeckpro.com`); the app's email goes out through Resend from `send.sundeckpro.com`, a subdomain so the two never share records. Code defaults now use these; `SUPPORT_EMAIL` and `EMAIL_FROM_DOMAIN` still override.
