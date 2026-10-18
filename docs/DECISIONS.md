@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "Ensure that adding users effects the pricing")
+- **The subscription follows the team, checked against the Stripe sandbox:** a leak detection shop went from 1 person ($49) to 2 people ($99) when a teammate joined, and Stripe's billing page showed $99 for the next bill. Turning someone off lowers it the same way, prorated. Changes happen when someone joins or is turned on or off, when the shop's services change, when an owner opens Sundeck Pro Billing, and in the daily run.
+- **Each package is billed under its own permanent Stripe product** (`sundeckpro_leak_detection`, `sundeckpro_pool_maintenance`, `sundeckpro_pool_maintenance_leak_detection`), made the first time it's needed. Products made inline at Checkout are inactive, and Stripe refused every later price change for them; shops subscribed that way are moved over on their next price check.
+- **Sundeck Pro Billing shows the plan, people, and monthly price.** If Stripe refuses a price change it's logged; in the sandbox the page also shows Stripe's message.
+
 ## 2026-10-18 (owner: "New job options should be leak detection, pool service, repair. Both profiles get repair.")
 - **New Job offers Repair to every shop**, website and app: Leak Detection | Repair for leak shops, Pool Service | Repair for pool shops, all three for shops doing both (`newJobTypes` in `packages/core`). A repair job made here is like one from an accepted quote without the quote: no checklist, a second tech allowed, no booking questions or detection price. Its price (website; optional) goes on the invoice as "Repair" (`20261012005100_new_repair_job.sql`), where parts are added before sending. Accepted quotes still make their own repair jobs.
 
