@@ -31,7 +31,7 @@ function fakeDb() {
 const event = (type: string, object: object) =>
   ({ id: `evt_${type}`, type, data: { object } }) as unknown as Stripe.Event;
 
-describe("Tidemark billing events", () => {
+describe("Sundeck Pro billing events", () => {
   it("maps Stripe's states to trialing, active, past due, or canceled", () => {
     expect(subscriptionStatus("trialing")).toBe("trialing");
     expect(subscriptionStatus("active")).toBe("active");
@@ -134,7 +134,7 @@ function fakeStripe(unitAmount: number) {
   return { stripe, updates };
 }
 
-describe("Tidemark price by package and people", () => {
+describe("Sundeck Pro price by package and people", () => {
   it("moves a growing pool shop to the next tier, prorated", async () => {
     const { stripe, updates } = fakeStripe(7_900);
     expect(await syncSubscriptionPrice("co_1", stripe, priceDb("pool", 3))).toBe(14_900);

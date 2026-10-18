@@ -24,7 +24,7 @@ export function DeleteCustomerForm({ id, name }: { id: string; name: string }) {
         onClick={async () => {
           const ok = await confirm({
             title: `Delete ${name}?`,
-            message: "This can’t be undone from Tidemark.",
+            message: "This can’t be undone from Sundeck Pro.",
             confirmLabel: "Delete Customer",
             destructive: true,
           });

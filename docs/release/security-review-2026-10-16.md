@@ -10,7 +10,7 @@ migration's RLS and storage policies. No Critical or High findings.
 |---|---|---|
 | Medium | Open redirect: a signed-in person opening `/sign-in?next=//evil.com` was sent to evil.com; the action's check let `/\evil.com` through. | One check for both (`safePath` in `packages/core`): same-site paths only, no `//`, backslashes, or control characters. Tested. |
 | Medium | Taking a number bought it before checking the shop had none: a double-click or two owners at once bought numbers nobody uses, billed monthly. | The shop's line is reserved first (one per shop, enforced by the database), then bought; a failed purchase lets the reservation go. |
-| Medium | Texts and calls could go to any country on Tidemark's Twilio bill, from a free trial. | Texts, calls, and each person's mobile number are US and Canada (+1) only (`isUsNumber`). Tested. |
+| Medium | Texts and calls could go to any country on Sundeck Pro's Twilio bill, from a free trial. | Texts, calls, and each person's mobile number are US and Canada (+1) only (`isUsNumber`). Tested. |
 | Medium | Two webhooks at once from a new number (a text and its picture) could both create the conversation; the second failed and that message was lost. | On the duplicate, the existing conversation is used. |
 | Low | Sends and calls were attempted from a pending line (a shop's own number, not set up yet). | Only an active line sends or calls. |
 | Low | The phone API took the pictures list as given (wrong shapes caused errors; any file type). | Checked: up to 10, images only. |
@@ -21,12 +21,12 @@ migration's RLS and storage policies. No Critical or High findings.
 
 - **Twilio geo permissions:** in the Twilio console, allow SMS and voice to the US and Canada
   only. The code now refuses other numbers, and this is the second lock.
-- **Who may take a number:** any owner on a free trial can buy a number on Tidemark's account.
+- **Who may take a number:** any owner on a free trial can buy a number on Sundeck Pro's account.
   Consider allowing it only on a paid subscription.
 - **`APP_BASE_URL` must be set on Vercel.** Without it, links and Twilio callback addresses come
   from the request's host header. Set it to the site's address before launch.
 - **Claiming an existing number** ("Or use your shop's number") saves any number as pending, which
-  blocks another shop from using it until Tidemark staff check it. Verify ownership before
+  blocks another shop from using it until Sundeck Pro staff check it. Verify ownership before
   activating, and release claims that don't check out.
 - **Per-tech visibility:** with "techs see only their own jobs", techs still see every
   conversation, including texts tied to other techs' jobs. Known and listed as not built.

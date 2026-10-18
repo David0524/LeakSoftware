@@ -4,7 +4,7 @@ import { parseServices } from "@leakbook/core";
 import { AuthCard } from "@/components/auth-card";
 import { TrialForm } from "@/components/auth-forms";
 
-export const metadata: Metadata = { title: "Start Free Trial · Tidemark" };
+export const metadata: Metadata = { title: "Start Free Trial · Sundeck Pro" };
 
 export default function SignUpPage({ searchParams }: PageProps<"/sign-up">) {
   return (

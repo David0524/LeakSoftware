@@ -77,7 +77,7 @@ import { MarkLocationHere } from "@/components/pool-location";
 import { JobSchedule } from "@/components/schedule-form";
 import { emailConfigured } from "@/server/email";
 
-export const metadata: Metadata = { title: "Job · Tidemark" };
+export const metadata: Metadata = { title: "Job · Sundeck Pro" };
 
 export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   const { id } = await params;

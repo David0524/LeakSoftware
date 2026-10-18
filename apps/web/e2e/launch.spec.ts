@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { OWNER, RUN, signIn } from "./helpers";
 
 // M11 launch pieces: the pages the app stores link to, the status page an uptime monitor
-// reads, and deleting an account from inside Tidemark (App Store rule 5.1.1(v)).
+// reads, and deleting an account from inside Sundeck Pro (App Store rule 5.1.1(v)).
 
 test("privacy, terms, and status pages are public", async ({ page, request }) => {
   for (const [path, title] of [

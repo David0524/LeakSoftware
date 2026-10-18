@@ -13,7 +13,7 @@ import { getAccess, getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { billingConfigured } from "@/server/billing";
 
-export const metadata: Metadata = { title: "Set Up Your Shop · Tidemark" };
+export const metadata: Metadata = { title: "Set Up Your Shop · Sundeck Pro" };
 
 /** New-shop onboarding (owner, 2026-10-16): owners of a new shop come here after sign-up. */
 export default function WelcomePage({ searchParams }: PageProps<"/welcome">) {

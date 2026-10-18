@@ -26,7 +26,7 @@ import { PHONE_CARD, PHONE_GROUP, PHONE_LABEL, PHONE_ROW, PHONE_VALUE } from "./
 import { cx } from "./ui";
 
 // The customer-facing report, rendered from the frozen snapshot and the tech-approved text
-// (BUILD_PLAN 6.3). Shop branding, not Tidemark's; Tidemark appears only in the footer.
+// (BUILD_PLAN 6.3). Shop branding, not Sundeck Pro's; Sundeck Pro appears only in the footer.
 
 export interface ReportViewProps {
   templateKey: ReportTemplateKey;
@@ -510,7 +510,7 @@ export function ReportView(p: ReportViewProps) {
             {s.company.legal_name ?? s.company.name}
             {s.company.address ? ` · ${s.company.address}` : ""}
           </p>
-          <p className="mt-1 text-text-muted">Powered by Tidemark</p>
+          <p className="mt-1 text-text-muted">Powered by Sundeck Pro</p>
         </footer>
       </>
     ),

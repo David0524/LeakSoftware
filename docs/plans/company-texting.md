@@ -7,7 +7,7 @@ as in Housecall Pro.
 ## Today
 
 On My Way and "text the report link" open the tech's own Messages app (`sms:` links). The
-customer sees the tech's personal number, replies go to that tech only, and Tidemark only logs
+customer sees the tech's personal number, replies go to that tech only, and Sundeck Pro only logs
 that a link was texted (`message.channel = 'sms_device'`).
 
 ## What it would be
@@ -24,7 +24,7 @@ that a link was texted (`message.channel = 'sms_device'`).
 
 ## What it needs
 
-- **A texting provider.** Recommended: Twilio, with one subaccount per shop that Tidemark
+- **A texting provider.** Recommended: Twilio, with one subaccount per shop that Sundeck Pro
   manages. It has the best documentation and handles US registration. Telnyx and Bandwidth
   cost less per text, but have smaller ecosystems.
 - **US carrier registration (A2P 10DLC).** Required for business texting from local numbers.
@@ -52,7 +52,7 @@ that a link was texted (`message.channel = 'sms_device'`).
 ## Decisions for the owner
 
 Answered 2026-10-16: Twilio; the number is still open (new or existing both work, existing
-numbers are finished by Tidemark); Tidemark pays; calls as Housecall Pro does them; pictures
+numbers are finished by Sundeck Pro); Sundeck Pro pays; calls as Housecall Pro does them; pictures
 on, with a switch to turn them off.
 
 1. **Provider:** Twilio (recommended) or another?

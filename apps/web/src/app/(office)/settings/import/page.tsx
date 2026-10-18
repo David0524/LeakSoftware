@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Import Customers · Tidemark" };
+export const metadata: Metadata = { title: "Import Customers · Sundeck Pro" };
 
 /** Owners: bring customers, pools, and visit plans over from a CSV (owner, 2026-10-16). */
 export default async function ImportPage() {

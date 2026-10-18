@@ -22,7 +22,7 @@ describe("after sign-in", () => {
   });
 });
 
-describe("numbers Tidemark texts and calls", () => {
+describe("numbers Sundeck Pro texts and calls", () => {
   it("are US and Canada only", () => {
     expect(isUsNumber("+16025550142")).toBe(true);
     expect(isUsNumber("+14165550123")).toBe(true); // Toronto

@@ -5,7 +5,7 @@ import { PHONE, sessionEvent, webhook } from "./money";
 
 // M10 "Done when": a new shop signs up, starts its free trial, connects Stripe, and runs the
 // whole loop from the website without help: a job booked, inspected, reported, quoted,
-// accepted with a deposit, repaired, invoiced, and paid, with the money on the dashboard. Then it subscribes to Tidemark, and an unpaid shop turns read-only
+// accepted with a deposit, repaired, invoiced, and paid, with the money on the dashboard. Then it subscribes to Sundeck Pro, and an unpaid shop turns read-only
 // without losing anything. Stripe itself is not called: the tests send the signed events
 // Stripe would send.
 
@@ -13,7 +13,7 @@ const OWNER = {
   name: "Pat Newshop",
   company: `Clearwater Leak Pros ${RUN}`,
   email: `owner-${RUN}@newshop.test`,
-  password: "tidemark-new-shop",
+  password: "sundeck-new-shop",
 };
 const CUSTOMER = { name: `Casey Rivers ${RUN}`, email: `casey-${RUN}@example.com` };
 
@@ -80,7 +80,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
     .update({ plan: "standard", status: "trialing", access_code: null })
     .eq("company_id", shop!.id);
   await expect(page.getByTestId("next-steps")).toContainText("Set up customer payments");
-  await page.getByRole("link", { name: "Start Using Tidemark" }).click();
+  await page.getByRole("link", { name: "Start Using Sundeck Pro" }).click();
   // A new owner on a computer lands on the Dashboard; onboarding doesn't come back.
   await page.waitForURL((url) => url.pathname === "/dashboard");
   await page.goto("/settings/billing");
@@ -258,7 +258,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await page.goto("/dashboard");
   await expect(page.locator("dl > div").filter({ hasText: "Collected" })).toContainText("$225.00");
 
-  // 10. Subscribe to Tidemark: Checkout finishes, Stripe reports the subscription active.
+  // 10. Subscribe to Sundeck Pro: Checkout finishes, Stripe reports the subscription active.
   const renews = Math.floor(Date.now() / 1000) + 30 * 86_400;
   await webhook(
     request,
@@ -306,7 +306,9 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await page.getByLabel("Job notes").fill("Trying to change this");
   const onSite = page.locator("form").filter({ has: page.getByLabel("Job notes") });
   await onSite.getByRole("button", { name: "Save" }).click();
-  await expect(onSite.getByText(/read-only until its Tidemark subscription is paid/)).toBeVisible();
+  await expect(
+    onSite.getByText(/read-only until its Sundeck Pro subscription is paid/),
+  ).toBeVisible();
 
   // Paid again: back to work.
   await webhook(request, subscription("active", `evt_sub_back_${RUN}`));

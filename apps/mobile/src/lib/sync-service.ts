@@ -248,7 +248,7 @@ export class SyncService {
     return (this.store.database.get<{ n: number }>(sql, id ? [table, id] : [table])?.n ?? 0) > 0;
   }
 
-  /** The signed-in user's access token, for calls to the Tidemark server. */
+  /** The signed-in user's access token, for calls to the Sundeck Pro server. */
   async accessToken(): Promise<string | null> {
     return (await this.supabase.auth.getSession()).data.session?.access_token ?? null;
   }

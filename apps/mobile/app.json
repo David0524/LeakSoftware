@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Tidemark",
+    "name": "Sundeck Pro",
     "slug": "leakbook",
     "scheme": "leakbook",
     "version": "0.1.0",
@@ -49,21 +49,21 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Tidemark records voice notes and the sound on inspection videos."
+          "microphonePermission": "Sundeck Pro records voice notes and the sound on inspection videos."
         }
       ],
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Tidemark takes photos and videos of leaks and equipment for your inspection report.",
-          "microphonePermission": "Tidemark records voice notes and the sound on inspection videos.",
+          "cameraPermission": "Sundeck Pro takes photos and videos of leaks and equipment for your inspection report.",
+          "microphonePermission": "Sundeck Pro records voice notes and the sound on inspection videos.",
           "photosPermission": false
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Tidemark tags photos with where they were taken so reports show they were taken on site."
+          "locationWhenInUsePermission": "Sundeck Pro tags photos with where they were taken so reports show they were taken on site."
         }
       ],
       "@sentry/react-native",

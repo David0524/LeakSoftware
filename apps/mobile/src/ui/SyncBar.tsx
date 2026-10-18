@@ -65,7 +65,7 @@ export function SyncBar({
     label = "Sign in again to sync";
   } else if (s.phase === "read_only") {
     dot = color.warning;
-    label = `Read-only: the shop’s Tidemark subscription isn’t paid. ${s.pending} change${s.pending === 1 ? "" : "s"} kept on this phone`;
+    label = `Read-only: the shop’s Sundeck Pro subscription isn’t paid. ${s.pending} change${s.pending === 1 ? "" : "s"} kept on this phone`;
   } else if (s.phase === "error") {
     dot = color.fail;
     label = "Sync failed · will retry";

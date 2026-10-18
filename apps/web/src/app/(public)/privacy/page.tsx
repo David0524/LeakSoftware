@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal-page";
 import { SUPPORT_EMAIL } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Privacy Policy · Tidemark" };
+export const metadata: Metadata = { title: "Privacy Policy · Sundeck Pro" };
 
 /** Privacy policy (M11): needed for the App Store and Google Play listings. Draft. */
 export default function PrivacyPage() {
@@ -11,10 +11,10 @@ export default function PrivacyPage() {
       <section>
         <h2>Who this covers</h2>
         <p>
-          Tidemark is software for pool service and pool leak detection shops. Shops use it to run
-          service visits and inspections, send reports, quotes, and invoices, text and call their
-          customers, and schedule their techs. This policy covers the shop’s team (owners and techs)
-          and the shop’s customers whose information the shop keeps in Tidemark.
+          Sundeck Pro is software for pool service and pool leak detection shops. Shops use it to
+          run service visits and inspections, send reports, quotes, and invoices, text and call
+          their customers, and schedule their techs. This policy covers the shop’s team (owners and
+          techs) and the shop’s customers whose information the shop keeps in Sundeck Pro.
         </p>
       </section>
       <section>
@@ -22,8 +22,8 @@ export default function PrivacyPage() {
         <ul>
           <li>Team accounts: name, email, phone, and sign-in details.</li>
           <li>
-            If you start signing up for Tidemark and don’t finish, what you entered (name, company,
-            email, phone) so we can follow up. Ask us to delete it at any time.
+            If you start signing up for Sundeck Pro and don’t finish, what you entered (name,
+            company, email, phone) so we can follow up. Ask us to delete it at any time.
           </li>
           <li>
             Shop records the shop enters: customers’ names, phone numbers, emails, and pool
@@ -46,8 +46,8 @@ export default function PrivacyPage() {
       <section>
         <h2>Who owns it</h2>
         <p>
-          Each shop owns its records. Tidemark stores and processes them for the shop. Other shops
-          can’t see them.
+          Each shop owns its records. Sundeck Pro stores and processes them for the shop. Other
+          shops can’t see them.
         </p>
       </section>
       <section>
@@ -55,7 +55,7 @@ export default function PrivacyPage() {
         <ul>
           <li>Supabase: database, sign-in, and file storage (United States).</li>
           <li>Vercel: hosting the website.</li>
-          <li>Stripe: card and bank payments; card numbers never reach Tidemark.</li>
+          <li>Stripe: card and bank payments; card numbers never reach Sundeck Pro.</li>
           <li>Resend: sending report, quote, and invoice emails.</li>
           <li>Anthropic: writing report drafts from inspection data, when the shop uses it.</li>
           <li>Deepgram: turning voice notes into text.</li>
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
       <section>
         <h2>How long we keep it</h2>
         <p>
-          While the shop uses Tidemark. Sent reports and original photos aren’t changed after the
+          While the shop uses Sundeck Pro. Sent reports and original photos aren’t changed after the
           fact, so the record stays trustworthy. When a shop leaves, its data is deleted on request.
         </p>
       </section>

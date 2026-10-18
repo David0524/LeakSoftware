@@ -17,7 +17,7 @@ import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
 import { GettingStarted } from "@/components/getting-started";
 
-export const metadata: Metadata = { title: "Dashboard · Tidemark" };
+export const metadata: Metadata = { title: "Dashboard · Sundeck Pro" };
 
 const MONTHS = 6;
 // The jobs list groups these as "Waiting on Customer".

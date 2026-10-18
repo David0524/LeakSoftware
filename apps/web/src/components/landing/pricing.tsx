@@ -153,14 +153,14 @@ const people = (n: number) => (n === 1 ? "1 person" : `${n} people`);
 
 /**
  * What the same pool company pays elsewhere (owner, 2026-10-16), for the team size above and a
- * route size chosen here. Tidemark's price never depends on pools; Skimmer's does. Prices are
+ * route size chosen here. Sundeck Pro's price never depends on pools; Skimmer's does. Prices are
  * the competitors' public pricing, dated in the fine print.
  */
 function Compare({ users }: { users: number }) {
   const [pools, setPools] = useState(150);
   const ours = monthlyPriceCents(PLANS.maintenance, users);
   const rows = [
-    { name: "Tidemark", basis: "Flat price, unlimited pools", monthlyCents: ours, us: true },
+    { name: "Sundeck Pro", basis: "Flat price, unlimited pools", monthlyCents: ours, us: true },
     ...competitorPrices(users, pools).map((c) => ({ ...c, us: false })),
   ];
   const top = Math.max(...rows.map((r) => r.monthlyCents));

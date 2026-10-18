@@ -7,7 +7,7 @@ import { Banner } from "./doc-ui";
 import { SettingsForm } from "./settings-forms";
 import { Button, Field } from "./ui";
 
-/** Find a local number by area code, then take one (Tidemark pays for it). */
+/** Find a local number by area code, then take one (Sundeck Pro pays for it). */
 export function NumberPicker() {
   const [state, search, pending] = useActionState(findNumbers, {} as NumberSearch);
   return (

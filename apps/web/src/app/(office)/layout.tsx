@@ -32,7 +32,7 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2">
           <Link
             href="/home"
-            aria-label="Tidemark, Home"
+            aria-label="Sundeck Pro, Home"
             className="inline-flex min-h-11 items-center"
           >
             <Logo height={30} onDark />

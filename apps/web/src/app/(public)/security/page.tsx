@@ -4,12 +4,12 @@ import { LegalPage } from "@/components/legal-page";
 import { SUPPORT_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Security · Tidemark",
-  description: "How Tidemark protects shops’ records and their customers’ information.",
+  title: "Security · Sundeck Pro",
+  description: "How Sundeck Pro protects shops’ records and their customers’ information.",
 };
 
 /**
- * How Tidemark protects data (owner, 2026-10-16: "How do we protect customer data. Both our
+ * How Sundeck Pro protects data (owner, 2026-10-16: "How do we protect customer data. Both our
  * users and their clients"). Only what is built and running; keep it in step with the code.
  */
 export default function SecurityPage() {
@@ -17,7 +17,7 @@ export default function SecurityPage() {
     <LegalPage title="Security" updated="October 16, 2026" draft={false}>
       <p>
         Pool shops keep their customers’ names, addresses, phone numbers, photos, and payment
-        records in Tidemark. Here is how we keep them safe.
+        records in Sundeck Pro. Here is how we keep them safe.
       </p>
       <section>
         <h2>Every shop’s records are its own</h2>
@@ -60,8 +60,8 @@ export default function SecurityPage() {
             link stops working after 180 days, and the shop can turn one off at any time.
           </li>
           <li>
-            Card and bank details go straight to Stripe and never reach Tidemark. Payments are made
-            to the shop’s own Stripe account.
+            Card and bank details go straight to Stripe and never reach Sundeck Pro. Payments are
+            made to the shop’s own Stripe account.
           </li>
           <li>Customers can stop reminder emails with one click.</li>
         </ul>

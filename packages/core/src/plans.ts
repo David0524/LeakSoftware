@@ -1,6 +1,6 @@
 import type { Cents } from "./money";
 
-// Tidemark's two packages and their monthly prices (owner, 2026-10-16: flat tiers by team size,
+// Sundeck Pro's two packages and their monthly prices (owner, 2026-10-16: flat tiers by team size,
 // unlimited pools, pool maintenance above leak detection; see docs/DECISIONS.md). The website's
 // pricing section reads these; billing in Stripe is to be set to match.
 
@@ -111,7 +111,7 @@ export function planForServices(services: "pool" | "leak" | "both"): Plan {
   return services === "leak" ? PLANS.leak : PLANS.maintenance;
 }
 
-/** What a shop pays a month for its services and number of people (Tidemark billing). */
+/** What a shop pays a month for its services and number of people (Sundeck Pro billing). */
 export function servicesPriceCents(services: "pool" | "leak" | "both", users: number): Cents {
   return (
     monthlyPriceCents(planForServices(services), users) +

@@ -64,7 +64,7 @@ describe("transcribeMedia", () => {
       calls++;
       return "x";
     });
-    d.mayStart = async () => "This shop is read-only until its Tidemark subscription is paid.";
+    d.mayStart = async () => "This shop is read-only until its Sundeck Pro subscription is paid.";
     expect((await transcribeMedia(d, "m1")).status).toBe(423);
     d.mayStart = async () => "Your shop has reached today’s limit for this. It resets tomorrow.";
     expect((await transcribeMedia(d, "m1")).status).toBe(429);

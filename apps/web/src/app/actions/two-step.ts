@@ -45,7 +45,7 @@ export async function startTwoStep(): Promise<SetupState> {
     if (f.status !== "verified") await supabase.auth.mfa.unenroll({ factorId: f.id });
   const { data, error } = await supabase.auth.mfa.enroll({
     factorType: "totp",
-    friendlyName: `Tidemark ${new Date().toISOString().slice(0, 10)}`,
+    friendlyName: `Sundeck Pro ${new Date().toISOString().slice(0, 10)}`,
   });
   if (error || !data) return { error: "Couldn’t start setup. Try again." };
   return { factorId: data.id, qr: data.totp.qr_code, secret: data.totp.secret };

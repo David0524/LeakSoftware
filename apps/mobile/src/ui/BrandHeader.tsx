@@ -18,7 +18,7 @@ export function BrandHeader() {
           source={logo}
           style={styles.logo}
           resizeMode="contain"
-          accessibilityLabel="Tidemark"
+          accessibilityLabel="Sundeck Pro"
         />
       </View>
     </SafeAreaView>
@@ -26,7 +26,7 @@ export function BrandHeader() {
 }
 
 /**
- * The top of the sign-in, sign-up, and setup screens. iPhone: the Tidemark mark centered over
+ * The top of the sign-in, sign-up, and setup screens. iPhone: the Sundeck Pro mark centered over
  * a large title, on the page's gray, as Apple's own sign-in screens are. Android: the title
  * alone (the screen shows BrandHeader above it).
  */
@@ -34,7 +34,12 @@ export function AuthTitle({ title }: { title?: string }) {
   if (!ios) return title ? <T variant="title">{title}</T> : null;
   return (
     <View style={styles.hero}>
-      <Image source={mark} style={styles.mark} resizeMode="contain" accessibilityLabel="Tidemark" />
+      <Image
+        source={mark}
+        style={styles.mark}
+        resizeMode="contain"
+        accessibilityLabel="Sundeck Pro"
+      />
       {title ? (
         <View accessibilityRole="header">
           <T variant="largeTitle" style={styles.heroTitle}>

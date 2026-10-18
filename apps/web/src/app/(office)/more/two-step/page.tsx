@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Two-Step Sign-In · Tidemark" };
+export const metadata: Metadata = { title: "Two-Step Sign-In · Sundeck Pro" };
 
 /** More › Two-Step Sign-In (owner, 2026-10-16): for everyone on the team. */
 export default async function TwoStepPage() {

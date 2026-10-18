@@ -7,7 +7,7 @@ import { getOffice } from "@/lib/auth";
 import { getAccess, getCompany } from "@/lib/data";
 import { confirmCheckout } from "@/server/billing";
 
-export const metadata: Metadata = { title: "You’re All Set · Tidemark" };
+export const metadata: Metadata = { title: "You’re All Set · Sundeck Pro" };
 
 /** Back from Checkout (or the end of onboarding without billing): the next few things to do. */
 export default function DonePage({ searchParams }: PageProps<"/welcome/done">) {
@@ -42,7 +42,7 @@ async function DoneBody({
           {
             href: "/settings/team",
             label: "Invite your techs",
-            detail: "They sign in on the Tidemark app.",
+            detail: "They sign in on the Sundeck Pro app.",
           },
           {
             href: "/settings/payments",
@@ -59,7 +59,7 @@ async function DoneBody({
           {
             href: "/settings/team",
             label: "Invite your techs",
-            detail: "They sign in on the Tidemark app.",
+            detail: "They sign in on the Sundeck Pro app.",
           },
           {
             href: "/customers",
@@ -75,7 +75,7 @@ async function DoneBody({
   return (
     <div className="mx-auto w-full max-w-md flex-1 px-4 pt-12 pb-8">
       {/* eslint-disable-next-line @next/next/no-img-element -- static SVG */}
-      <img src="/tidemark-mark.svg" alt="" width={48} height={70} className="mx-auto mb-4" />
+      <img src="/sundeck-mark.svg" alt="" width={48} height={70} className="mx-auto mb-4" />
       <h1 className="text-center font-display text-[2.125rem] leading-tight font-extrabold">
         You’re All Set
       </h1>
@@ -90,7 +90,7 @@ async function DoneBody({
         ))}
       </ul>
       <ButtonLink href="/home" className="mt-8 w-full">
-        Start Using Tidemark
+        Start Using Sundeck Pro
       </ButtonLink>
     </div>
   );

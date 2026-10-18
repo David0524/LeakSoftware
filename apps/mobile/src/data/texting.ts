@@ -6,7 +6,7 @@ import { call } from "./reports";
 
 // Company texting and calls on the phone (owner, 2026-10-16). Conversations, texts, and calls
 // sync down like any other rows, so the inbox reads offline; sending and calling go through
-// the Tidemark server (it talks to Twilio), so they need a signal.
+// the Sundeck Pro server (it talks to Twilio), so they need a signal.
 
 export interface PhoneLineRow {
   id: string;

@@ -30,7 +30,7 @@ test("two-step sign-in protects the shop's data until the code", async ({ page }
   test.setTimeout(180_000);
   const admin = adminClient();
   test.skip(!admin, "Needs SUPABASE_SERVICE_ROLE_KEY (CI runs it against Supabase in Docker).");
-  const who = { email: `two-step-${RUN}@demo.leakbook.test`, password: "tidemark-two-step" };
+  const who = { email: `two-step-${RUN}@demo.leakbook.test`, password: "sundeck-two-step" };
   const { data: created } = await admin!.auth.admin.createUser({
     email: who.email,
     password: who.password,

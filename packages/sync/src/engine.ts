@@ -10,7 +10,7 @@ export interface SyncSummary {
   pending: number;
   error?: string;
   /**
-   * The shop is read-only (its Tidemark subscription isn't paid): changes stay on the device,
+   * The shop is read-only (its Sundeck Pro subscription isn't paid): changes stay on the device,
    * unsent, and go up once it is paid. Downloads continue.
    */
   readOnly?: string;

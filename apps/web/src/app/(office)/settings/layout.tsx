@@ -8,7 +8,7 @@ import { getCompany } from "@/lib/data";
 import { settingsSections } from "@/lib/settings-sections";
 
 // Each section names itself; a tech (who sees only the notice below) still gets a title.
-export const metadata: Metadata = { title: "Settings · Tidemark" };
+export const metadata: Metadata = { title: "Settings · Sundeck Pro" };
 
 export default function SettingsLayout({ children }: LayoutProps<"/settings">) {
   return (

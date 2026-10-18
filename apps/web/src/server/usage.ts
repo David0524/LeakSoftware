@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { adminClient } from "./admin";
 
-// Guards for work Tidemark pays for (texts, calls, email, AI drafts, transcription), from the
+// Guards for work Sundeck Pro pays for (texts, calls, email, AI drafts, transcription), from the
 // security audit (2026-10-17): a read-only (unpaid) shop starts none of it, and every shop has
 // a daily allowance that only the server counts.
 
@@ -70,5 +70,6 @@ export function ccList(emails: readonly string[] | null | undefined, to: string)
     .slice(0, 5);
 }
 
-export const READ_ONLY_MESSAGE = "This shop is read-only until its Tidemark subscription is paid.";
+export const READ_ONLY_MESSAGE =
+  "This shop is read-only until its Sundeck Pro subscription is paid.";
 export const LIMIT_MESSAGE = "Your shop has reached today’s limit for this. It resets tomorrow.";

@@ -56,12 +56,12 @@ const COPY: Record<PlanId, { title: [string, string]; sub: string; demo: string 
   leak: {
     title: ["Find the leak.", "Not the paperwork."],
     sub: "Run the inspection on your phone, pin every leak on the pool, and send the report and the repair quote before you leave the driveway.",
-    demo: "A tech’s day in Tidemark: today’s route, a pressure test marking Return 3 as leaking, the leak pinned on a diagram of the pool, and the report sent to the homeowner.",
+    demo: "A tech’s day in Sundeck Pro: today’s route, a pressure test marking Return 3 as leaking, the leak pinned on a diagram of the pool, and the report sent to the homeowner.",
   },
   maintenance: {
     title: ["Clean the pool.", "Skip the paperwork."],
     sub: "Routes for every crew, a service checklist on every visit, and one invoice per customer each month, drafted for you.",
-    demo: "A cleaning day in Tidemark: the route, the service checklist marked done, the visit finished, and the month’s invoice paid by card.",
+    demo: "A cleaning day in Sundeck Pro: the route, the service checklist marked done, the visit finished, and the month’s invoice paid by card.",
   },
 };
 
@@ -71,7 +71,7 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden">
       <div className="relative mx-auto flex max-w-6xl flex-col items-center px-4 pt-14 pb-20 text-center sm:pt-20">
-        <PackageSwitch label="Show Tidemark for" />
+        <PackageSwitch label="Show Sundeck Pro for" />
         <h1
           key={pkg}
           className="lp-rise mt-8 max-w-4xl font-display text-[2.9rem] leading-[0.98] font-extrabold tracking-tight text-balance sm:text-7xl"

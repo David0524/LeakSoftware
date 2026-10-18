@@ -9,7 +9,7 @@ import { Button, cx } from "./ui";
 
 /**
  * The customer's Pay button (quote deposits and invoices). The server starts a Stripe
- * Checkout Session on the shop's account; with Tidemark's publishable key set it comes back
+ * Checkout Session on the shop's account; with Sundeck Pro's publishable key set it comes back
  * here and Stripe's form opens in place (card, Apple Pay, Google Pay, Link, bank account).
  * Without it the action sends the customer to Stripe's own page. Either way Stripe returns
  * the customer to this page with ?paid=1, and the webhook records the payment.

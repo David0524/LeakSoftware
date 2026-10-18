@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/ui";
 import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
 
-export const metadata: Metadata = { title: "Chemical Calculator · Tidemark" };
+export const metadata: Metadata = { title: "Chemical Calculator · Sundeck Pro" };
 
 /**
  * Pool care: how much of each chemical to add, from the pool's size and today's readings. A

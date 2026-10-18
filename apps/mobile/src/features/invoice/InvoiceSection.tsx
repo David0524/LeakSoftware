@@ -104,7 +104,7 @@ export function InvoiceSection({ job, customer }: { job: Job; customer: Customer
             disabled={busy !== null || !reportsOnline}
             onPress={() => void run("create")}
           />
-          {!reportsOnline ? <Notice>Invoices need the Tidemark server.</Notice> : null}
+          {!reportsOnline ? <Notice>Invoices need the Sundeck Pro server.</Notice> : null}
           {error ? <Notice tone="error">{error}</Notice> : null}
         </Card>
       </Section>

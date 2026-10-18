@@ -8,7 +8,7 @@ import { buttonClass } from "./ui";
 
 /**
  * On My Way: a text to the customer with an arrival time (now plus the drive). By default
- * (Settings › Phone and Texting, owner 2026-10-16) Tidemark sends it from the company number,
+ * (Settings › Phone and Texting, owner 2026-10-16) Sundeck Pro sends it from the company number,
  * into the shared Messages; without a working number it asks before using the tech's phone.
  * Shops can choose the tech's own phone instead: the Messages app when the customer has a
  * phone number, else the share sheet.

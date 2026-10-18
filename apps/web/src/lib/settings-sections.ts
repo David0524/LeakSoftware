@@ -9,7 +9,7 @@ const SETTINGS_SECTIONS = [
   { href: "/settings/phone", label: "Phone and Texting" },
   { href: "/settings/price-book", label: "Price Book" },
   { href: "/settings/payments", label: "Payments and Deposits" },
-  { href: "/settings/billing", label: "Tidemark Billing" },
+  { href: "/settings/billing", label: "Sundeck Pro Billing" },
   { href: "/settings/components", label: "Checklist Components" },
   { href: "/settings/tests", label: "Test Types" },
   { href: "/settings/severities", label: "Severities" },

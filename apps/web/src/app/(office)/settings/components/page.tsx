@@ -19,7 +19,7 @@ import { Grouped, SEGMENT_TRACK, segmentClass } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany, listConfig, type ComponentType } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Checklist Components · Tidemark" };
+export const metadata: Metadata = { title: "Checklist Components · Sundeck Pro" };
 
 const APPLIES = [
   { value: "pool", label: "Pool" },

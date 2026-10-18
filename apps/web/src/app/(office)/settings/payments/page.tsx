@@ -16,7 +16,7 @@ import { siteOrigin } from "@/lib/origin";
 import { PaymentsSetupButton } from "@/components/payments-setup";
 import { paymentsConfigured, refreshAccount } from "@/server/stripe";
 
-export const metadata: Metadata = { title: "Payments and Deposits · Tidemark" };
+export const metadata: Metadata = { title: "Payments and Deposits · Sundeck Pro" };
 
 interface Settings {
   deposit?: { type?: string; value_bps?: number; value_cents?: number; minimum_cents?: number };
@@ -58,7 +58,7 @@ export default async function PaymentsSettingsPage({
           <div className="space-y-3">
             {!paymentsConfigured() ? (
               <Banner tone="warning">
-                Online payments aren’t set up on this Tidemark server yet. Customers can still
+                Online payments aren’t set up on this Sundeck Pro server yet. Customers can still
                 accept quotes.
               </Banner>
             ) : account?.charges_enabled ? (

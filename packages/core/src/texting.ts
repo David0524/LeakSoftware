@@ -6,8 +6,8 @@ import { localMinutes, routingSettings, weekday } from "./route-plan";
 import { clockToMinutes } from "./routing";
 
 /**
- * Whether Tidemark texts and calls this number: US and Canada (+1) only, so a trial account
- * can't run up international or premium-rate charges on Tidemark's Twilio bill (security
+ * Whether Sundeck Pro texts and calls this number: US and Canada (+1) only, so a trial account
+ * can't run up international or premium-rate charges on Sundeck Pro's Twilio bill (security
  * review 2026-10-16). Twilio's geo permissions should allow only the US and Canada too.
  */
 export function isUsNumber(e164: string | null | undefined): e164 is string {

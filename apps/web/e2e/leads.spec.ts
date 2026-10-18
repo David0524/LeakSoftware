@@ -3,7 +3,7 @@ import { adminClient } from "./backend";
 import { RUN } from "./helpers";
 
 // Leads (owner, 2026-10-16): what someone types on the sign-up form is kept once the email
-// is valid, even if they leave without signing up, so Tidemark can call them.
+// is valid, even if they leave without signing up, so Sundeck Pro can call them.
 
 test("a sign-up form left half done is on the leads list", async ({ page }) => {
   const admin = adminClient();

@@ -13,7 +13,7 @@ export async function GET() {
   return new Response(leadsCsv((data ?? []) as LeadRow[]), {
     headers: {
       "content-type": "text/csv; charset=utf-8",
-      "content-disposition": `attachment; filename="tidemark-leads-${new Date().toISOString().slice(0, 10)}.csv"`,
+      "content-disposition": `attachment; filename="sundeck-leads-${new Date().toISOString().slice(0, 10)}.csv"`,
       "cache-control": "no-store",
     },
   });

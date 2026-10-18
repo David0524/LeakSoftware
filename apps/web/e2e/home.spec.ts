@@ -19,13 +19,13 @@ test("the home page shows one package at a time and prices a team", async ({ pag
   await expect(page.getByTestId("plan-maintenance")).toContainText("Team");
 
   // The comparison: 4 people and 150 pools cost $300 at Skimmer, $245 at Pool Brain, $200 at
-  // Pool Office Manager; Tidemark is $149, saving $612 a year.
+  // Pool Office Manager; Sundeck Pro is $149, saving $612 a year.
   const compare = page.getByTestId("compare");
   await expect(compare).toContainText("$300");
   await expect(compare.getByTestId("savings")).toHaveText(/\$612 a year/);
 
   await page
-    .getByRole("radiogroup", { name: "Show Tidemark for" })
+    .getByRole("radiogroup", { name: "Show Sundeck Pro for" })
     .getByRole("radio", { name: "Leak Detection" })
     .click();
   await expect(h1).toContainText("Find the leak");

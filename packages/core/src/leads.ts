@@ -1,5 +1,5 @@
 // Leads (owner, 2026-10-16): everyone who started signing up, and how far they got, so
-// Tidemark can call the ones who didn't pay. Rows come from public.lead_list().
+// Sundeck Pro can call the ones who didn't pay. Rows come from public.lead_list().
 
 export interface LeadRow {
   id: string;

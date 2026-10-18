@@ -11,7 +11,7 @@ export default function NotFound() {
         a new one.
       </p>
       <Link href="/" className={buttonClass("secondary", "mt-6")}>
-        Go to Tidemark
+        Go to Sundeck Pro
       </Link>
     </main>
   );

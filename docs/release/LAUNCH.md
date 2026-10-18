@@ -9,8 +9,8 @@ and can't be done from here.
 |---|---|
 | Apple Developer Program, company account | Needs a D-U-N-S number (takes days). $99/year. |
 | Google Play Console | One-time $25. |
-| Bundle ID / package name | Now `com.leakbook.app` (from the old name). It can't change after the first upload. Recommended: `app.tidemark.field` once the name and domain are cleared. |
-| Domain, support mailbox | `tidemark.app` and `support@tidemark.app` are placeholders (`SUPPORT_EMAIL`). |
+| Bundle ID / package name | Now `com.leakbook.app` (from the old name). It can't change after the first upload. Recommended: `app.sundeckpro.field` once the name and domain are cleared. |
+| Domain, support mailbox | `sundeckpro.app` and `support@sundeckpro.app` are placeholders (`SUPPORT_EMAIL`). |
 | Final privacy policy and terms | `/privacy` and `/terms` carry a plain-language draft marked as a draft. Replace with the final text. |
 | Sentry project | Free plan is enough. Set `SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_DSN` (Vercel) and `EXPO_PUBLIC_SENTRY_DSN` (EAS environment). Without them nothing is sent. |
 | Stripe keys | Platform account with Connect. Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY` (customers pay on our pages), and the webhook secrets in Vercel. Run one test-mode payment by card, Link, and Apple Pay before the pilot. |
@@ -39,14 +39,14 @@ npx eas-cli@latest build --profile production --platform android
 One app with two packages (owner): Pool Care and Leak Detection, and Both for the rarer shop.
 The listing leads with what both share and names each package; each shop sees only its own.
 
-- **Name (30):** Tidemark
+- **Name (30):** Sundeck Pro
 - **Subtitle (30):** Pool service & leak detection (29)
 - **Category:** Business (secondary: Productivity)
 - **Keywords (100):** pool,route,cleaning,chemical,calculator,leak,detection,pressure test,report,quote,invoice,texting (97)
 - **Promotional text (170):** Routes, checklists, reports, and texting for pool service and leak
   detection crews. Works with no signal and syncs when you're back. (132)
 - **Description:**
-  > Tidemark is the field app for pool companies: route cleaning crews and leak detection
+  > Sundeck Pro is the field app for pool companies: route cleaning crews and leak detection
   > techs alike. Your shop picks its package, and the app shows only what you use.
   >
   > POOL CARE
@@ -68,7 +68,7 @@ The listing leads with what both share and names each package; each shop sees on
   > • One company number for texts and calls, with a shared inbox the whole team sees
   > • Quotes customers accept and pay online, by card or bank
   >
-  > Requires a Tidemark shop account. Owners start a free 14-day trial at tidemark.app and invite
+  > Requires a Sundeck Pro shop account. Owners start a free 14-day trial at sundeckpro.app and invite
   > their techs.
 - **What's New (first release):** First release.
 - **Support URL:** `https://<site>/status` · **Privacy URL:** `https://<site>/privacy` ·

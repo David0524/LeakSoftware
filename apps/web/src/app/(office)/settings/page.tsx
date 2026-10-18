@@ -48,7 +48,7 @@ export default async function SettingsIndex() {
       ? "Services, chemicals, and repairs for quotes"
       : "Detection fees and repairs for quotes",
     "/settings/payments": "How customers pay, and deposits",
-    "/settings/billing": "Your shop’s Tidemark subscription",
+    "/settings/billing": "Your shop’s Sundeck Pro subscription",
     "/settings/components": offersLeak(company.settings)
       ? "What every inspection checks"
       : "What every visit checks",

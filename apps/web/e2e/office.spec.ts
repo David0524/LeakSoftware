@@ -40,7 +40,7 @@ test("owners land on the Dashboard on a computer, and on Today on a phone", asyn
   const nav = page.getByRole("navigation", { name: "Main" });
   await expect(nav.getByRole("link").first()).toHaveText("Dashboard");
   await page.goto("/jobs");
-  await page.getByRole("link", { name: "Tidemark, Home" }).click();
+  await page.getByRole("link", { name: "Sundeck Pro, Home" }).click();
   await page.waitForURL((url) => url.pathname === "/dashboard");
 
   const phone = await browser.newContext({ ...devices["iPhone 13"] });
@@ -165,7 +165,7 @@ test("owner invites a tech, who joins and cannot reach settings", async ({ page,
   const guest = await browser.newContext();
   const tech = await guest.newPage();
   await tech.goto(new URL(link).pathname);
-  await expect(tech.getByText(/invited you to Tidemark as a tech/)).toBeVisible();
+  await expect(tech.getByText(/invited you to Sundeck Pro as a tech/)).toBeVisible();
   await tech.getByLabel("Your name").fill("E2E Tech");
   await tech.getByLabel("Choose a password").fill("e2e-password-123");
   await tech.getByRole("button", { name: "Create Account and Join" }).click();
@@ -244,7 +244,7 @@ test("the site starts light; the sun/moon button switches it and remembers", asy
   await expect(html).toHaveAttribute("data-theme", "dark");
   await page.reload();
   await expect(html).toHaveAttribute("data-theme", "dark");
-  await expect(page.getByRole("img", { name: "Tidemark" }).first()).toBeVisible();
+  await expect(page.getByRole("img", { name: "Sundeck Pro" }).first()).toBeVisible();
 
   // The office header has the button too.
   await signIn(page, OWNER);

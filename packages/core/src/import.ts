@@ -429,7 +429,7 @@ export function buildImport(
   return { records, problems };
 }
 
-/** How a customer is recognized as already in Tidemark (or twice in the file). */
+/** How a customer is recognized as already in Sundeck Pro (or twice in the file). */
 export function customerKeys(c: {
   name: string;
   email: string | null;

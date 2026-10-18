@@ -7,7 +7,7 @@ import { weatherKind, type Weather } from "@leakbook/core";
 // the forecast: free, no key, public domain, US only. Asked at most every half hour per zip;
 // anything going wrong just leaves the weather off the page.
 
-const UA = `Tidemark (${process.env.APP_BASE_URL ?? "tidemark"})`;
+const UA = `Sundeck Pro (${process.env.APP_BASE_URL ?? "sundeckpro"})`;
 
 async function nws<T>(url: string): Promise<T> {
   const res = await fetch(url, {

@@ -8,9 +8,9 @@ import { getOffice } from "@/lib/auth";
 import { getAccess } from "@/lib/data";
 import { billingConfigured } from "@/server/billing";
 
-export const metadata: Metadata = { title: "Tidemark Billing · Tidemark" };
+export const metadata: Metadata = { title: "Sundeck Pro Billing · Sundeck Pro" };
 
-/** The shop's own Tidemark subscription (owners). */
+/** The shop's own Sundeck Pro subscription (owners). */
 export default async function BillingPage({ searchParams }: PageProps<"/settings/billing">) {
   const office = await getOffice();
   const [access, { subscribed }] = await Promise.all([getAccess(office), searchParams]);
@@ -18,8 +18,8 @@ export default async function BillingPage({ searchParams }: PageProps<"/settings
     <>
       <PageHeader
         back={{ href: "/settings", label: "Settings" }}
-        title="Tidemark Billing"
-        subtitle="Your shop’s subscription to Tidemark. Separate from the payments your customers make to you."
+        title="Sundeck Pro Billing"
+        subtitle="Your shop’s subscription to Sundeck Pro. Separate from the payments your customers make to you."
       />
       <div className="max-w-2xl">
         <SettingsSection title="Subscription" boxed>
@@ -42,7 +42,7 @@ export default async function BillingPage({ searchParams }: PageProps<"/settings
                 ) : null}
                 {access.plan === "demo" ? null : !billingConfigured() ? (
                   <Banner tone="warning">
-                    Subscriptions aren’t set up on this Tidemark server yet.
+                    Subscriptions aren’t set up on this Sundeck Pro server yet.
                   </Banner>
                 ) : access.subscribed ? (
                   <BillingButton kind="manage" />

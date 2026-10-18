@@ -7,7 +7,7 @@ import { Grouped } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listConfig } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Exclusion Reasons · Tidemark" };
+export const metadata: Metadata = { title: "Exclusion Reasons · Sundeck Pro" };
 
 export default async function ExclusionsPage() {
   const office = await getOffice();

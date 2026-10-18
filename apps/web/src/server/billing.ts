@@ -12,7 +12,7 @@ import {
 import { adminClient } from "./admin";
 import { stripeClient } from "./stripe";
 
-// Tidemark billing (M10): the shop's own subscription to Tidemark, through Stripe Billing on
+// Sundeck Pro billing (M10): the shop's own subscription to Sundeck Pro, through Stripe Billing on
 // the platform account (not the shop's Connect account). Checkout starts it; webhooks keep
 // public.subscription current; the database makes an unpaid shop read-only. The price is the
 // shop's package and number of people (packages/core/src/plans.ts), so there is no price id:
@@ -20,7 +20,7 @@ import { stripeClient } from "./stripe";
 
 export class BillingNotConfigured extends Error {
   constructor() {
-    super("Subscriptions aren’t set up on this Tidemark server yet.");
+    super("Subscriptions aren’t set up on this Sundeck Pro server yet.");
   }
 }
 
@@ -63,8 +63,8 @@ async function shopPrice(
   const people = await billedPeople(db, companyId);
   const name =
     services === "both"
-      ? `Tidemark ${PLANS.maintenance.name} + ${PLANS.leak.name}`
-      : `Tidemark ${planForServices(services).name}`;
+      ? `Sundeck Pro ${PLANS.maintenance.name} + ${PLANS.leak.name}`
+      : `Sundeck Pro ${planForServices(services).name}`;
   return { services, people, cents: servicesPriceCents(services, people), name };
 }
 
@@ -149,7 +149,7 @@ export async function portalUrl(
   return session.url;
 }
 
-/** Stripe's subscription states, in Tidemark's four. */
+/** Stripe's subscription states, in Sundeck Pro's four. */
 export function subscriptionStatus(status: Stripe.Subscription.Status): SubscriptionRow["status"] {
   switch (status) {
     case "trialing":
@@ -173,7 +173,7 @@ const iso = (seconds: number | null | undefined) =>
  * subscription changing. Returns false for anything else.
  */
 export async function applyBillingEvent(event: Stripe.Event, db: SupabaseClient): Promise<boolean> {
-  // Tidemark subscriptions live on the platform account. An event from a shop's connected
+  // Sundeck Pro subscriptions live on the platform account. An event from a shop's connected
   // account carries metadata that shop wrote, so it never changes anyone's subscription
   // (security audit, 2026-10-17).
   if (event.account) return false;

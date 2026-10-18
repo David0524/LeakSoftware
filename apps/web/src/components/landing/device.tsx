@@ -66,7 +66,7 @@ export function Laptop({ children, className }: { children: ReactNode; className
 export function OfficeBar({ active }: { active: string }) {
   return (
     <div className="flex items-center gap-4 bg-header px-4 py-2.5 text-[0.75rem] font-semibold text-on-header">
-      <span className="font-display text-[0.95rem] font-bold">Tidemark</span>
+      <span className="font-display text-[0.95rem] font-bold">Sundeck Pro</span>
       {["Today", "Jobs", "Schedule", "Customers", "Invoices", "Dashboard"].map((t) => (
         <span
           key={t}

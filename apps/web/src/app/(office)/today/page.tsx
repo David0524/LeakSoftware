@@ -27,7 +27,7 @@ import { NavPlus } from "@/components/nav-bar";
 import { ScreenTip } from "@/components/screen-tip";
 import { GettingStarted } from "@/components/getting-started";
 
-export const metadata: Metadata = { title: "Today · Tidemark" };
+export const metadata: Metadata = { title: "Today · Sundeck Pro" };
 
 /**
  * A tech's day in the field: the stops in order with the driving between them, directions

@@ -8,7 +8,7 @@ import { SignInForm } from "@/components/auth-forms";
 import { Banner } from "@/components/doc-ui";
 import { getUser } from "@/lib/auth";
 
-export const metadata: Metadata = { title: "Sign In · Tidemark" };
+export const metadata: Metadata = { title: "Sign In · Sundeck Pro" };
 
 export default function SignInPage({ searchParams }: PageProps<"/sign-in">) {
   return (
@@ -16,7 +16,7 @@ export default function SignInPage({ searchParams }: PageProps<"/sign-in">) {
       title="Sign In"
       intro={
         <>
-          New to Tidemark?{" "}
+          New to Sundeck Pro?{" "}
           <Link href="/sign-up" className="inline-flex min-h-11 items-center text-link underline">
             Start a free trial
           </Link>

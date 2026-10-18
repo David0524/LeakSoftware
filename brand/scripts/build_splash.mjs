@@ -1,4 +1,4 @@
-// Home Screen launch images (apple-touch-startup-image) for the website, so opening Tidemark
+// Home Screen launch images (apple-touch-startup-image) for the website, so opening Sundeck Pro
 // from an iPhone's or iPad's Home Screen shows the page color and the mark instead of a white
 // flash. Light and dark, portrait, one per screen size. Colors come from brand/tokens.json
 // (the page background, role.light.bg and role.dark.bg); the mark from brand/logo.
@@ -18,8 +18,8 @@ const { chromium } = createRequire(join(web, "package.json"))("@playwright/test"
 
 const tokens = JSON.parse(await readFile(join(repo, "brand", "tokens.json"), "utf8"));
 const themes = [
-  { name: "light", bg: tokens.color.role.light.bg, mark: "tidemark-mark.svg" },
-  { name: "dark", bg: tokens.color.role.dark.bg, mark: "tidemark-mark-reverse.svg" },
+  { name: "light", bg: tokens.color.role.light.bg, mark: "sundeck-mark.svg" },
+  { name: "dark", bg: tokens.color.role.dark.bg, mark: "sundeck-mark-reverse.svg" },
 ];
 
 // Portrait screens in CSS points, with their pixel ratio. A launch image only shows when its

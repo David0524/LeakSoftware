@@ -25,7 +25,7 @@ export async function GET(request: Request) {
   const billed = await admin.rpc("bill_maintenance_due", { at: when.toISOString() });
   // Customer links past their 180 days are turned off, so the next send makes a new one.
   const links = await admin.rpc("expire_share_links");
-  // Tidemark prices follow each shop's package and people; this catches anything missed.
+  // Sundeck Pro prices follow each shop's package and people; this catches anything missed.
   const prices = await syncAllSubscriptionPrices(admin);
   return Response.json({
     followups,

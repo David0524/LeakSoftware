@@ -7,7 +7,7 @@ import { SetupForm } from "@/components/auth-forms";
 import { getUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Set Up Your Company · Tidemark" };
+export const metadata: Metadata = { title: "Set Up Your Company · Sundeck Pro" };
 
 export default function SetupPage() {
   return (

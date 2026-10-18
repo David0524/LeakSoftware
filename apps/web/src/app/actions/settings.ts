@@ -243,7 +243,7 @@ export async function saveServices(_: FormState, form: FormData): Promise<FormSt
     services: choice,
   });
   if (setup) return failed(setup);
-  // The package sets the Tidemark price.
+  // The package sets the Sundeck Pro price.
   after(() => syncSubscriptionPrice(office.company.id).catch(() => null));
   revalidatePath("/", "layout");
   return { message: "Saved." };

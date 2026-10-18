@@ -66,7 +66,7 @@ export default function Setup() {
     <View style={{ flex: 1, backgroundColor: color.bg }}>
       {ios ? null : <BrandHeader />}
       <Screen>
-        <AuthTitle title="Welcome to Tidemark" />
+        <AuthTitle title="Welcome to Sundeck Pro" />
         <T variant="muted" style={ios && { textAlign: "center" }}>
           Signed in as {user?.email}
         </T>
@@ -98,7 +98,7 @@ export default function Setup() {
         </Block>
         <Block
           title="Starting a New Shop?"
-          note="The owner sets up the shop on the Tidemark website, then signs in here with the same email."
+          note="The owner sets up the shop on the Sundeck Pro website, then signs in here with the same email."
         />
         <Button title="Sign Out" kind="quiet" onPress={() => void signOut()} />
       </Screen>

@@ -17,7 +17,7 @@ import { getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { routingConfigured } from "@/server/routing";
 
-export const metadata: Metadata = { title: "Scheduling and Routes · Tidemark" };
+export const metadata: Metadata = { title: "Scheduling and Routes · Sundeck Pro" };
 
 export default async function SchedulingSettingsPage() {
   const office = await getOffice();
@@ -85,7 +85,7 @@ export default async function SchedulingSettingsPage() {
           <p>
             {live
               ? "Drive times come from road maps (Mapbox) and are kept for a day."
-              : "Drive times are estimated from the distance between pools. Road drive times turn on when Tidemark’s routing service is connected."}
+              : "Drive times are estimated from the distance between pools. Road drive times turn on when Sundeck Pro’s routing service is connected."}
           </p>
           <p className="mt-2 text-[0.9375rem] text-text-muted">
             {unlocated

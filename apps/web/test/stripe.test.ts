@@ -191,7 +191,7 @@ describe("Stripe webhooks", () => {
     });
   });
 
-  it("never lets a connected account's event change a Tidemark subscription", async () => {
+  it("never lets a connected account's event change a Sundeck Pro subscription", async () => {
     const { db, calls } = fakeDb();
     const updates: unknown[] = [];
     (db as unknown as { from: unknown }).from = () => ({
@@ -415,11 +415,11 @@ describe("payment domain", () => {
 
   it("registers the site's domain on the shop's account for Apple Pay and Google Pay", async () => {
     const { stripe, calls } = fakeStripe();
-    await registerPaymentDomain(stripe, "acct_shop", "https://app.tidemark.app");
+    await registerPaymentDomain(stripe, "acct_shop", "https://app.sundeckpro.app");
     expect(calls).toEqual([
       {
-        params: { domain_name: "app.tidemark.app" },
-        opts: { stripeAccount: "acct_shop", idempotencyKey: "domain-acct_shop-app.tidemark.app" },
+        params: { domain_name: "app.sundeckpro.app" },
+        opts: { stripeAccount: "acct_shop", idempotencyKey: "domain-acct_shop-app.sundeckpro.app" },
       },
     ]);
   });
@@ -430,7 +430,7 @@ describe("payment domain", () => {
     await registerPaymentDomain(stripe, "acct_shop", "http://127.0.0.1:3000");
     expect(calls).toHaveLength(0);
     await expect(
-      registerPaymentDomain(stripe, "acct_shop", "https://app.tidemark.app"),
+      registerPaymentDomain(stripe, "acct_shop", "https://app.sundeckpro.app"),
     ).resolves.toBeUndefined();
   });
 });

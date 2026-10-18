@@ -3,13 +3,13 @@
 These prompts produced the approved concept in `concept/`. Kept for reference if the mark needs new variations.
 
 Tips:
-- Generate the **mark only**. Image generators often misspell lettering, so the "Tidemark" wordmark is typeset separately in Barlow Semi Condensed.
+- Generate the **mark only**. Image generators often misspell lettering, so the "Sundeck Pro" wordmark is typeset separately in Barlow Semi Condensed.
 - If it adds text, gradients, or shading, reply: "Remove all text. Flat solid colors only, no shading, no 3D."
 - When one is close, send the PNG back to Claude to redraw as clean SVG and export every size we need.
 
 ## 1. Main mark
 
-> Design a minimal flat vector logo mark for Tidemark, software for pool leak detection technicians. The mark is a map location pin shaped like an upside-down water drop, filled solid blue #1F6FAE. A single bold white wavy line runs horizontally across the upper half of the pin, like the waterline on pool tile. A small solid orange #EE6A1F circle sits above the wave, where a map pin's hole would be. Geometric, symmetrical, bold simple shapes, thick lines. No gradients, no shadows, no 3D, no texture, no outlines, no text. Front-on 2D view, centered on a plain pure white background with generous padding. It should look like a trade company logo that works embroidered on a work shirt and as a tiny app icon.
+> Design a minimal flat vector logo mark for Sundeck Pro, software for pool leak detection technicians. The mark is a map location pin shaped like an upside-down water drop, filled solid blue #1F6FAE. A single bold white wavy line runs horizontally across the upper half of the pin, like the waterline on pool tile. A small solid orange #EE6A1F circle sits above the wave, where a map pin's hole would be. Geometric, symmetrical, bold simple shapes, thick lines. No gradients, no shadows, no 3D, no texture, no outlines, no text. Front-on 2D view, centered on a plain pure white background with generous padding. It should look like a trade company logo that works embroidered on a work shirt and as a tiny app icon.
 
 ## 2. Variations
 

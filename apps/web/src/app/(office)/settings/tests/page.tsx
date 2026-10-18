@@ -13,7 +13,7 @@ import { Grouped } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listConfig } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Test Types · Tidemark" };
+export const metadata: Metadata = { title: "Test Types · Sundeck Pro" };
 
 /** Labels for built-in calculator thresholds (test_type.field_schema.options). */
 const OPTION_LABELS: Record<string, { label: string; hint: string }> = {

@@ -180,7 +180,7 @@ export async function sendCompanyText(user: Db, userId: string, input: SendInput
     if (!data) throw new TextingError("Sign in again.");
     companyId = input.companyId;
   }
-  if (!isUsNumber(phone)) throw new TextingError("Tidemark texts US and Canadian numbers only.");
+  if (!isUsNumber(phone)) throw new TextingError("Sundeck Pro texts US and Canadian numbers only.");
   if (!(await shopWritable(user, companyId))) throw new TextingError(READ_ONLY_MESSAGE);
   // Pictures must be ones this person can open: from a conversation they can see, or their own
   // upload (security audit, 2026-10-17).
@@ -193,7 +193,7 @@ export async function sendCompanyText(user: Db, userId: string, input: SendInput
 
   const db = admin();
   const line = await activeLine(db, companyId);
-  // A pending line (the shop's own number, not set up yet) isn't Tidemark's to send from.
+  // A pending line (the shop's own number, not set up yet) isn't Sundeck Pro's to send from.
   if (line?.status !== "active")
     throw new TextingError("Set up a company number first (Settings › Phone and Texting).");
   if (pictures.length && !line.pictures)
@@ -497,7 +497,7 @@ export async function startCall(user: Db, userId: string, conversationId: string
   if (line?.status !== "active")
     throw new TextingError("Set up a company number first (Settings › Phone and Texting).");
   if (!isUsNumber(conv.phone as string))
-    throw new TextingError("Tidemark calls US and Canadian numbers only.");
+    throw new TextingError("Sundeck Pro calls US and Canadian numbers only.");
   const { data: me } = await db.from("profile").select("phone").eq("id", userId).single();
   const mine = toE164(me?.phone as string | null);
   if (!isUsNumber(mine))

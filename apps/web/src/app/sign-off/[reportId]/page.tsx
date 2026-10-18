@@ -14,7 +14,7 @@ import { getOffice } from "@/lib/auth";
 import { getCompany, signedMediaUrls } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Review and Sign · Tidemark" };
+export const metadata: Metadata = { title: "Review and Sign · Sundeck Pro" };
 
 interface Preview {
   report_id: string;

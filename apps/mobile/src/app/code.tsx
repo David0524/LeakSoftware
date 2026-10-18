@@ -31,7 +31,7 @@ export default function Code() {
       <Screen>
         <AuthTitle title="Enter Your Code" />
         <T variant="muted" style={ios && { textAlign: "center" }}>
-          Open your authenticator app and enter the 6-digit code for Tidemark.
+          Open your authenticator app and enter the 6-digit code for Sundeck Pro.
         </T>
         {error ? (
           <Notice tone="error" tinted>

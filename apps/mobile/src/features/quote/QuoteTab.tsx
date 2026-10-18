@@ -255,7 +255,7 @@ function DraftQuote({ job, quote }: { job: Job; quote: JobQuote }) {
         />
         {!reportsOnline ? (
           <T variant="muted" style={inset}>
-            This app isn’t connected to the Tidemark server, so it can’t send.
+            This app isn’t connected to the Sundeck Pro server, so it can’t send.
           </T>
         ) : null}
       </Block>

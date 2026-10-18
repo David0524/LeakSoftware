@@ -298,7 +298,7 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
           {c.legal_name ?? c.name}
           {c.address ? ` · ${c.address}` : ""}
         </p>
-        <p className="mt-1 text-text-muted">Powered by Tidemark</p>
+        <p className="mt-1 text-text-muted">Powered by Sundeck Pro</p>
       </footer>
     </article>
   );

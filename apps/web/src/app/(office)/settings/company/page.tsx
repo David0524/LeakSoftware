@@ -24,7 +24,7 @@ import { getCompany } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { companyServices, offersLeak } from "@leakbook/core";
 
-export const metadata: Metadata = { title: "Company Settings · Tidemark" };
+export const metadata: Metadata = { title: "Company Settings · Sundeck Pro" };
 
 const US_ZONES = [
   "America/New_York",

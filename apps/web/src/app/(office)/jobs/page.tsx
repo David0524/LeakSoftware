@@ -18,7 +18,7 @@ import { NavPlus } from "@/components/nav-bar";
 import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
 
-export const metadata: Metadata = { title: "Jobs · Tidemark" };
+export const metadata: Metadata = { title: "Jobs · Sundeck Pro" };
 
 /** Jobs per page; Show More adds this many. */
 const PAGE = 50;

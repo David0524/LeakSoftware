@@ -18,7 +18,7 @@ import { getOffice } from "@/lib/auth";
 import { getTeam } from "@/lib/data";
 import { getLine, getThread, listConversations } from "@/lib/messages";
 
-export const metadata: Metadata = { title: "Messages · Tidemark" };
+export const metadata: Metadata = { title: "Messages · Sundeck Pro" };
 
 /**
  * One conversation. Phones show it on its own, with the person's name in the navigation bar.

@@ -282,7 +282,7 @@ export function InvoicePanel({
                 name="amount"
                 inputMode="decimal"
                 defaultValue={dollars(balance)}
-                hint="A check, cash, or anything paid outside Tidemark."
+                hint="A check, cash, or anything paid outside Sundeck Pro."
               />
             </SettingsForm>
           ) : null}

@@ -53,7 +53,7 @@ import { NavPlus } from "@/components/nav-bar";
 import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
 
-export const metadata: Metadata = { title: "Schedule · Tidemark" };
+export const metadata: Metadata = { title: "Schedule · Sundeck Pro" };
 
 function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardStop {
   const lock = lockReason(j);

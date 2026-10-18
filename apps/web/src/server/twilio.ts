@@ -1,7 +1,7 @@
 import "server-only";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 
-// Twilio over its REST API (no SDK): texts, numbers, calls, and webhook signatures. One Tidemark
+// Twilio over its REST API (no SDK): texts, numbers, calls, and webhook signatures. One Sundeck Pro
 // account pays for every shop (owner, 2026-10-16). Without TWILIO_ACCOUNT_SID nothing leaves
 // the server: texts are saved as sent and numbers are made up (demo mode), as payments are on
 // a server without Stripe keys.
@@ -92,7 +92,7 @@ export async function searchNumbers(areaCode: string): Promise<AvailableNumber[]
   }));
 }
 
-/** Buy a number and point its texts and calls at Tidemark. */
+/** Buy a number and point its texts and calls at Sundeck Pro. */
 export async function buyNumber(number: string, origin: string): Promise<string> {
   if (!twilioConfigured()) return `demo-${randomUUID()}`;
   const r = await api<{ sid: string }>(

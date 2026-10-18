@@ -3,7 +3,7 @@ import { parseServices, toE164 } from "@leakbook/core";
 import type { SignedInUser } from "@/lib/auth";
 import { adminClient } from "./admin";
 
-// Leads (owner, 2026-10-16): Tidemark's own call list of people who started signing up.
+// Leads (owner, 2026-10-16): Sundeck Pro's own call list of people who started signing up.
 // Kept in public.signup_lead, which only the server can read or write.
 
 export interface LeadInput {
@@ -37,12 +37,13 @@ export async function saveLead(input: LeadInput): Promise<void> {
 }
 
 /**
- * Tidemark staff: the emails in TIDEMARK_STAFF_EMAILS (comma-separated, set on Vercel; not in
- * the repository, which is public).
+ * Sundeck Pro staff: the emails in SUNDECK_STAFF_EMAILS (comma-separated, set on Vercel; not in
+ * the repository, which is public). TIDEMARK_STAFF_EMAILS, its name before the rename
+ * (2026-10-18), still works.
  */
 export function isStaff(user: SignedInUser | null): boolean {
   if (!user?.email) return false;
-  const staff = (process.env.TIDEMARK_STAFF_EMAILS ?? "")
+  const staff = (process.env.SUNDECK_STAFF_EMAILS ?? process.env.TIDEMARK_STAFF_EMAILS ?? "")
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);

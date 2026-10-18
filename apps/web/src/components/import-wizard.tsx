@@ -110,8 +110,8 @@ export function ImportWizard({
               {services === "leak" ? " and their pool" : ", their pool, and their visit plan"}.
             </p>
             <p className="text-[0.9375rem] text-text-muted">
-              Customers already in Tidemark (same email, phone, or name and address) are left out,
-              so importing the same file twice doesn’t make doubles.
+              Customers already in Sundeck Pro (same email, phone, or name and address) are left
+              out, so importing the same file twice doesn’t make doubles.
             </p>
             <label className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-primary px-5 text-[1.0625rem] font-semibold text-on-primary focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-focus">
               Choose CSV File
@@ -128,7 +128,7 @@ export function ImportWizard({
             Starting from scratch?{" "}
             <a
               href={`data:text/csv;charset=utf-8,${encodeURIComponent(TEMPLATE)}`}
-              download="tidemark-customers.csv"
+              download="sundeck-customers.csv"
               className="text-link underline"
             >
               Download a template
@@ -205,7 +205,8 @@ export function ImportWizard({
           </dl>
           {summary.existing.length ? (
             <Notice>
-              {summary.existing.length} already in Tidemark (or twice in the file) will be left out:{" "}
+              {summary.existing.length} already in Sundeck Pro (or twice in the file) will be left
+              out:{" "}
               {summary.existing
                 .slice(0, 5)
                 .map((e) => e.name)
@@ -257,7 +258,7 @@ export function ImportWizard({
             {services === "leak"
               ? ""
               : `, with ${done.plans.toLocaleString()} visit plans on the schedule`}
-            .{done.skipped ? ` ${done.skipped} already in Tidemark were left out.` : ""}
+            .{done.skipped ? ` ${done.skipped} already in Sundeck Pro were left out.` : ""}
           </Banner>
           <div className="flex flex-wrap gap-3">
             {companyId ? null : (

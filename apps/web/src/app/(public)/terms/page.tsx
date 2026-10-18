@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal-page";
 import { SUPPORT_EMAIL } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Terms of Service · Tidemark" };
+export const metadata: Metadata = { title: "Terms of Service · Sundeck Pro" };
 
 /** Terms of service (M11). Draft until the owner's final text is in. */
 export default function TermsPage() {
@@ -11,7 +11,7 @@ export default function TermsPage() {
       <section>
         <h2>The service</h2>
         <p>
-          Tidemark gives pool leak detection shops a field app and an office website. A shop
+          Sundeck Pro gives pool leak detection shops a field app and an office website. A shop
           subscribes monthly after a free trial; the owner can cancel at any time and keeps
           read-only access to its records.
         </p>
@@ -27,14 +27,14 @@ export default function TermsPage() {
       <section>
         <h2>Payments</h2>
         <p>
-          Customer payments go straight to the shop’s own Stripe account. Tidemark doesn’t hold shop
-          funds.
+          Customer payments go straight to the shop’s own Stripe account. Sundeck Pro doesn’t hold
+          shop funds.
         </p>
       </section>
       <section>
         <h2>Fair use</h2>
         <p>
-          Don’t use Tidemark to break the law, send unwanted messages, or try to reach another
+          Don’t use Sundeck Pro to break the law, send unwanted messages, or try to reach another
           shop’s data.
         </p>
       </section>

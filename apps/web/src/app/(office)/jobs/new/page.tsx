@@ -11,7 +11,7 @@ import { Notice, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany, getTeam, listConfig, listCustomers, mayMakeJobs } from "@/lib/data";
 
-export const metadata: Metadata = { title: "New Job · Tidemark" };
+export const metadata: Metadata = { title: "New Job · Sundeck Pro" };
 
 interface PriceItem {
   id: string;

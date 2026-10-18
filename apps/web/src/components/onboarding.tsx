@@ -25,7 +25,7 @@ import { Segmented } from "./segmented";
 import { Button, cx } from "./ui";
 
 // New-shop onboarding (owner, 2026-10-16), planned with the app-onboarding-questionnaire and
-// apple-design skills: a goal, what's in the way, how Tidemark helps, a few choices that set
+// apple-design skills: a goal, what's in the way, how Sundeck Pro helps, a few choices that set
 // the shop up, a hands-on sample visit (Pool Maintenance) or inspection report (Leak
 // Detection), then the card for the 14-day trial. Questions can be skipped; the purchase
 // comes after the demo (HIG Onboarding). Copy: packages/core/src/onboarding.ts.
@@ -168,7 +168,7 @@ export function Onboarding({
     case "how":
       body = (
         <>
-          {title("Here’s how Tidemark helps.")}
+          {title("Here’s how Sundeck Pro helps.")}
           <ul className="grouped">
             {painsToAnswer(pkg, answers.pains).map((p) => (
               <li key={p.id} className="flex gap-3 px-4 py-3">
@@ -350,7 +350,7 @@ function Preview({ pkg, company }: { pkg: OnboardingPackage; company: string }) 
           { name: "Return lines", note: "Not leaking: pressure held", done: true },
         ];
   return (
-    <div className="card p-4" aria-label="A preview of Tidemark">
+    <div className="card p-4" aria-label="A preview of Sundeck Pro">
       <p className="text-[0.8125rem] font-semibold tracking-wide text-text-muted uppercase">
         {company} · {pkg === "maintenance" ? "Today’s route" : "Leak inspection"}
       </p>
@@ -931,7 +931,7 @@ function TrialOffer({
         </Button>
         <p className="mt-3 text-center text-[0.9375rem] text-text-muted">
           {billing
-            ? `Add a card on Stripe’s secure page. You won’t be charged until ${trialEnds ? longDate(trialEnds) : "14 days from today"}; cancel before then in Settings › Tidemark Billing and you never will be.`
+            ? `Add a card on Stripe’s secure page. You won’t be charged until ${trialEnds ? longDate(trialEnds) : "14 days from today"}; cancel before then in Settings › Sundeck Pro Billing and you never will be.`
             : "Card payments aren’t connected yet. Use a demo code above to continue."}
         </p>
         {billing && !showCode ? (

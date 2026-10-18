@@ -18,7 +18,7 @@ import { geocodeAddress, routingConfigured } from "./routing";
 
 // Importing a shop's customers (owner, 2026-10-16). The file is read in the browser; the
 // server checks it again here (never trusting what the page sent), finds customers already
-// in Tidemark, and hands the rest to public.import_customers in one transaction.
+// in Sundeck Pro, and hands the rest to public.import_customers in one transaction.
 
 export interface ImportTarget {
   db: SupabaseClient;
@@ -29,7 +29,7 @@ export interface ImportSummary {
   customers: number;
   pools: number;
   plans: number;
-  /** Already in Tidemark (or twice in the file): left out. */
+  /** Already in Sundeck Pro (or twice in the file): left out. */
   existing: { row: number; name: string }[];
   problems: ImportProblem[];
   warnings: ImportProblem[];
@@ -81,7 +81,7 @@ async function context(t: ImportTarget) {
   return { services, team, timezone: (company?.timezone as string) ?? "America/New_York" };
 }
 
-/** Keys of the shop's customers already in Tidemark (email, phone, name and address). */
+/** Keys of the shop's customers already in Sundeck Pro (email, phone, name and address). */
 async function existingKeys(t: ImportTarget): Promise<Set<string>> {
   const { data } = await t.db
     .from("customer")

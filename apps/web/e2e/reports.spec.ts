@@ -75,7 +75,7 @@ test("homeowner report: draft, edit, email, and the customer's link", async ({ p
   await expect(page.getByText("Return 3 line break").first()).toBeVisible();
   await expect(page.getByText("Not applicable", { exact: true })).toBeVisible();
   await expect(page.getByText(/No diver on site/).first()).toBeVisible();
-  await expect(page.getByText("Powered by Tidemark")).toBeVisible();
+  await expect(page.getByText("Powered by Sundeck Pro")).toBeVisible();
   await expect(page.getByRole("link", { name: "Download PDF" })).toBeVisible();
   await expectPdf(page, token);
 });

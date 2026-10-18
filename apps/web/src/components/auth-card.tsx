@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 /**
  * Sign In, Sign Up, setup, and invite. Phones: an iOS form straight on the grouped gray page,
- * under the Tidemark mark (the brand moment), with the fields as one inset grouped block.
+ * under the Sundeck Pro mark (the brand moment), with the fields as one inset grouped block.
  * Wider screens: the same form on a centered card.
  */
 export function AuthCard({
@@ -19,7 +19,7 @@ export function AuthCard({
       <div className="card w-full max-w-md p-6 max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent max-sm:p-0 max-sm:shadow-none sm:p-8">
         {/* eslint-disable-next-line @next/next/no-img-element -- static SVG */}
         <img
-          src="/tidemark-mark.svg"
+          src="/sundeck-mark.svg"
           alt=""
           width={48}
           height={70}

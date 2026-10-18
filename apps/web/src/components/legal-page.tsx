@@ -23,7 +23,7 @@ export function LegalPage({
           className="mt-4 rounded-2xl bg-status-warning/10 px-4 py-3 text-[0.9375rem]"
           data-testid="legal-draft"
         >
-          Draft. This plain-language summary describes how Tidemark works today; the final legal
+          Draft. This plain-language summary describes how Sundeck Pro works today; the final legal
           text will replace it before launch.
         </p>
       ) : null}

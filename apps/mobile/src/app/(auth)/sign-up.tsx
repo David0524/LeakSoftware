@@ -34,7 +34,7 @@ export default function SignUp() {
       <Screen>
         <AuthTitle title="Create an Account" />
         <T variant="muted" style={ios && { textAlign: "center", paddingHorizontal: space["4"] }}>
-          If your company already uses Tidemark, ask the owner to invite this email, then sign up
+          If your company already uses Sundeck Pro, ask the owner to invite this email, then sign up
           here.
         </T>
         {error ? (

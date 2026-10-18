@@ -25,7 +25,7 @@ steps need the real services, once the keys are set in Vercel.
    morning the customer gets "How did we do?" with the link.
 3. **Warranties:** a repair with a 12-month line, paid: it shows under Warranties as Active.
 4. **Dashboard:** the payment shows under Collected for this month.
-5. **Billing:** sign up a new shop, open Settings › Tidemark Billing, Subscribe with Stripe's
+5. **Billing:** sign up a new shop, open Settings › Sundeck Pro Billing, Subscribe with Stripe's
    test card `4242 4242 4242 4242`. The page says "Subscribed. Billing starts when the free
    trial ends". Manage Billing opens Stripe's portal; cancel there, and after Stripe's event
    the shop shows the read-only banner. Subscribe again to unlock.

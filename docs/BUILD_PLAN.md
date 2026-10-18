@@ -1,4 +1,4 @@
-# Tidemark build plan
+# Sundeck Pro build plan
 
 Status: **approved** (owner delegated the section 10 decisions; see `DECISIONS.md`). Source requirements: [`HANDOFF.md`](HANDOFF.md). Brand: [`../brand/BRAND.md`](../brand/BRAND.md).
 
@@ -21,7 +21,7 @@ A tech, with no signal at the pool, runs a full inspection (checklist, tests, ph
 | **Review requests** | **Build now** | After an invoice is paid, send the shop's Google review link. A few hours of work; small shops value it. |
 | **Warranty tracking** | **Build now (light)** | Warranty term on price book items and repair jobs, plus an "active / expiring" list. The data is already there. |
 | **Owner dashboard (basic)** | **Build now (light)** | Jobs by status, quotes sent vs accepted, revenue collected, money outstanding. Simple queries, no charts library sprawl. |
-| **Shop signup and Tidemark billing** | **Add (not in handoff)** | Needed to sell the product: self-serve signup, free trial, subscription via Stripe Billing. **Pricing decision needed** (section 10). |
+| **Shop signup and Sundeck Pro billing** | **Add (not in handoff)** | Needed to sell the product: self-serve signup, free trial, subscription via Stripe Billing. **Pricing decision needed** (section 10). |
 | Insurance adjuster template | Wait | Needs the cousin's input. The template slot exists from day one (section 6.3). |
 | Partner portal | Wait | Depends on where jobs come from. The data model already supports partner customers and separate bill-to (section 5). |
 | QuickBooks sync | Later | Real demand, but Intuit app review and OAuth upkeep. Revisit after first paying shops. CSV export of invoices and payments now. |
@@ -229,7 +229,7 @@ Changes from the handoff's rough model, with reasons:
 - `warranty`: repair job, line item, starts on, ends on, terms.
 
 **System**
-- `audit_log`, `applied_mutation`, `sync_table`, `subscription` (Tidemark billing per company).
+- `audit_log`, `applied_mutation`, `sync_table`, `subscription` (Sundeck Pro billing per company).
 
 ### Job status machine (in `packages/core`, enforced in the DB)
 
@@ -260,7 +260,7 @@ Changes from the handoff's rough model, with reasons:
 
 ### 6.3 Report rendering
 
-- One Next.js page renders a report from its frozen `data snapshot` and `final sections`, using the template's ordered blocks: header (shop branding), summary, findings (with diagram and pins), tests table, checklist coverage (inspected and **not inspected with reasons**), photos (with markup drawn on top), signature, quote (if any), footer ("Powered by Tidemark").
+- One Next.js page renders a report from its frozen `data snapshot` and `final sections`, using the template's ordered blocks: header (shop branding), summary, findings (with diagram and pins), tests table, checklist coverage (inspected and **not inspected with reasons**), photos (with markup drawn on top), signature, quote (if any), footer ("Powered by Sundeck Pro").
 - The PDF is that same page printed by headless Chromium, stored in Storage, and regenerated only when a new version is sent.
 - Sign-off (owner, 2026-10-13): the customer reads the report on the tech's phone ("Review with Customer") and signs at the bottom. Signing finishes and locks that version; "Customer Not Here" finishes it unsigned and the report says so. Finishing never waits for a signature, and every finished version has its PDF.
 - **Shop colors:** pick the text color automatically (white or near-black) for contrast against the shop's brand color. Never assume the shop chose an accessible color.
@@ -278,7 +278,7 @@ Changes from the handoff's rough model, with reasons:
 
 ### 6.5 Sending
 
-- **Email:** from `"{Shop name} via Tidemark" <reports@{sending domain}>`, with reply-to set to the shop's email. Contains a link to `/r/{token}` and the PDF attached (under 5 MB, otherwise link only).
+- **Email:** from `"{Shop name} via Sundeck Pro" <reports@{sending domain}>`, with reply-to set to the shop's email. Contains a link to `/r/{token}` and the PDF attached (under 5 MB, otherwise link only).
 - **Text:** the native share sheet or `sms:` with a prefilled message, for example "Example Leak Co.: your leak detection report and repair estimate: {link}". Logged as `message.channel = 'sms_device'`.
 
 ### 6.6 Pool diagram
@@ -342,7 +342,7 @@ Each milestone ends with: all checks green (lint, typecheck, unit, pgTAP, Playwr
 
 ### M6 Web foundation and office view
 - Next.js app with Supabase SSR auth, Tailwind with brand tokens, light and dark.
-- Public home page (what Tidemark is, sign in, start trial) using the brand.
+- Public home page (what Sundeck Pro is, sign in, start trial) using the brand.
 - Jobs list with status filters, job detail (read-only inspection view, media gallery, timeline from the audit log), customers and properties with visit history, simple schedule (day and week list by tech).
 - Settings: company profile and branding (logo upload, colors with contrast preview), team and invites, price book, component types, test types, exclusion reasons, severities, report templates (text and tone only), deposit and tax rules.
 - **Done when:** Playwright covers sign in, invite tech, edit price book, view the M4 sample job. A tech account cannot reach settings.
@@ -379,12 +379,12 @@ Added 2026-10-13 (owner: "the app and website should essentially be the same"; d
 - **Done when:** at phone width in Playwright, a job is started, its checklist worked, a test and a finding with a pin added, a photo uploaded and marked up, the customer signs, a quote is built and sent, and the report is sent, all from the website.
 
 ### M10 Beyond the MVP
-Built 2026-10-13: reminders and review requests (daily cron), warranties, owner dashboard, Tidemark billing with read-only when unpaid. Checklist: `docs/testing/M10-checklist.md`.
+Built 2026-10-13: reminders and review requests (daily cron), warranties, owner dashboard, Sundeck Pro billing with read-only when unpaid. Checklist: `docs/testing/M10-checklist.md`.
 - Quote and invoice reminder emails (Vercel Cron, schedule in company settings, stops when accepted or paid).
 - Review request after payment (shop's review link, once per job, opt-out per customer).
 - Warranty records from accepted repair lines, active and expiring list.
 - Owner dashboard: jobs by status, quote acceptance rate, collected and outstanding, by month.
-- Shop self-serve signup with trial and Tidemark subscription (Stripe Billing on the platform account), access locked gracefully when unpaid (read-only, never data loss).
+- Shop self-serve signup with trial and Sundeck Pro subscription (Stripe Billing on the platform account), access locked gracefully when unpaid (read-only, never data loss).
 - **Done when:** each feature has tests, and a new shop can sign up, start a trial, onboard Stripe, and run the full loop without help.
 
 ### M10.5 Routes and scheduling
@@ -433,9 +433,9 @@ Please answer these before or during the milestone listed. The **recommendation*
 | 3 | Sales tax: one configurable rate per company with taxable flags per line, no automatic tax service? | Yes, and ask the cousin whether repairs are taxed in his state | M8 |
 | 4 | Default deposit: 50% of quote total? | Confirm with the cousin | M8 |
 | 5 | What gets signed on site: inspection acknowledgment, work authorization, on-site quote acceptance, completion? | Support all four, turn on per company | M7 |
-| 6 | Tidemark pricing: per shop per month, per tech, or per job? Trial length? | Flat per shop with a tech cap (for example, up to 5 techs), 30-day trial; decide the price after the design partner pilot | M10 |
+| 6 | Sundeck Pro pricing: per shop per month, per tech, or per job? Trial length? | Flat per shop with a tech cap (for example, up to 5 techs), 30-day trial; decide the price after the design partner pilot | M10 |
 | 7 | Monthly running cost at launch of about $45–60 plus usage (section 12)? | Yes | M0 |
-| 8 | Domain name and sending domain (for example `tidemark.app`, email from `send.tidemark.app`) | Buy once the name is cleared | M7 |
+| 8 | Domain name and sending domain (for example `sundeckpro.app`, email from `send.sundeckpro.app`) | Buy once the name is cleared | M7 |
 | 9 | App Store: publish under your own Apple Developer account (individual or company)? | Company account (needs a D-U-N-S number, which takes days, so start early) | M11 |
 
 Open questions for the cousin, from the handoff, still apply: checklist items and procedures, current report examples and readers, typical repair items and prices, insurance frequency and adjuster needs, job sources and who pays. Each lands as seed or config data.

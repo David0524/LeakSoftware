@@ -12,7 +12,7 @@ import { officeLinks } from "@/lib/nav";
 import { createClient } from "@/lib/supabase/server";
 import { SUPPORT_EMAIL } from "@/lib/site";
 
-export const metadata: Metadata = { title: "More · Tidemark" };
+export const metadata: Metadata = { title: "More · Sundeck Pro" };
 
 /**
  * Phones: the sections that don't fit in the tab bar, then this device's settings, then help,

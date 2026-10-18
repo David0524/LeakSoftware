@@ -48,11 +48,11 @@ test("an owner imports customers, pools, and visit plans from a CSV", async ({ p
   // Plans are priced by the month: $173.33.
   expect(plans!.map((p) => p.price_cents).sort()).toEqual([17333, null].sort());
 
-  // The same file again: both are already in Tidemark, so nothing is added.
+  // The same file again: both are already in Sundeck Pro, so nothing is added.
   await page.getByRole("button", { name: "Import Another File" }).click();
   await page.getByLabel("Choose CSV File").setInputFiles(file);
   await page.getByRole("button", { name: "Check File" }).click();
-  await expect(page.getByText("2 already in Tidemark", { exact: false })).toBeVisible();
+  await expect(page.getByText("2 already in Sundeck Pro", { exact: false })).toBeVisible();
   await expect(page.getByRole("button", { name: "Import 0 Customers" })).toBeDisabled();
 
   // Clean up: the plans end, so their visits leave the demo schedule.

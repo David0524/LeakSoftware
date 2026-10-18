@@ -40,7 +40,7 @@ function Body() {
         id="field"
         eyebrow="In the field"
         title="Everything the tech needs. Nothing they don’t."
-        sub="Tidemark is built around the truck and the backyard: big buttons, short screens, and a phone that keeps working with no signal."
+        sub="Sundeck Pro is built around the truck and the backyard: big buttons, short screens, and a phone that keeps working with no signal."
       >
         <div className="grid gap-5 lg:grid-cols-2">
           <Feature
@@ -53,7 +53,7 @@ function Body() {
             <>
               <Feature
                 title="Tests that do the math."
-                text="Pressure, dye, bucket, and listening tests. Tidemark knows when a line held, dropped, or lost more than evaporation."
+                text="Pressure, dye, bucket, and listening tests. Sundeck Pro knows when a line held, dropped, or lost more than evaporation."
               >
                 <PressureDemo />
               </Feature>
@@ -177,7 +177,7 @@ function Body() {
             <span className="text-safety">Get paid.</span>
           </h2>
           <p className="mt-5 max-w-xl text-[1.1875rem] text-neutral-200">
-            Try Tidemark free for 14 days with your whole crew. Cancel before then and you pay
+            Try Sundeck Pro free for 14 days with your whole crew. Cancel before then and you pay
             nothing.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
@@ -221,7 +221,7 @@ const FAQ: Record<PlanId, [string, string][]> = {
     ],
     [
       "How does monthly billing work?",
-      "Each customer’s plan has a monthly price. At the start of each month Tidemark drafts one invoice per customer for the month’s service, plus any extras like a filter cleaning, ready for the office to send.",
+      "Each customer’s plan has a monthly price. At the start of each month Sundeck Pro drafts one invoice per customer for the month’s service, plus any extras like a filter cleaning, ready for the office to send.",
     ],
     [
       "Who counts as a person on the team?",

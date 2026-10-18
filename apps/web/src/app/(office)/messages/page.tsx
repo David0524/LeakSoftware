@@ -11,7 +11,7 @@ import { formatPhone } from "@leakbook/core";
 import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
 
-export const metadata: Metadata = { title: "Messages · Tidemark" };
+export const metadata: Metadata = { title: "Messages · Sundeck Pro" };
 
 /** The shop's shared inbox: texts and calls with customers on the company number. */
 export default async function MessagesPage({ searchParams }: PageProps<"/messages">) {

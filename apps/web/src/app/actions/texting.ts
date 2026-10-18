@@ -56,7 +56,7 @@ async function addLine(number: string, source: "new" | "existing", providerSid: 
     company_id: office.company.id,
     number,
     source,
-    // A shop's own number takes a few days to move or register; Tidemark finishes it.
+    // A shop's own number takes a few days to move or register; Sundeck Pro finishes it.
     status: source === "new" ? "active" : "pending",
     provider_sid: providerSid,
   });
@@ -70,7 +70,7 @@ async function addLine(number: string, source: "new" | "existing", providerSid: 
 }
 
 /**
- * Buy a new local number (Tidemark pays for it). The shop's one line is reserved first, so a
+ * Buy a new local number (Sundeck Pro pays for it). The shop's one line is reserved first, so a
  * double-click or two owners at once can't buy two numbers (security review 2026-10-16); if
  * buying fails, the reservation is let go.
  */
@@ -78,7 +78,7 @@ export async function takeNumber(_: FormState, form: FormData): Promise<FormStat
   const office = await requireOwner();
   const number = toE164(text(form, "number"));
   if (!isUsNumber(number)) return { error: "Pick a number." };
-  // A read-only (unpaid) shop doesn't buy numbers on Tidemark's account (security audit).
+  // A read-only (unpaid) shop doesn't buy numbers on Sundeck Pro's account (security audit).
   if (!(await shopWritable(await createClient(), office.company.id)))
     return { error: READ_ONLY_MESSAGE };
   const db = adminClient();
@@ -114,7 +114,7 @@ export async function takeNumber(_: FormState, form: FormData): Promise<FormStat
   return { message: "Your number is ready." };
 }
 
-/** Use the shop's existing number (set up by Tidemark: ported or registered for texting). */
+/** Use the shop's existing number (set up by Sundeck Pro: ported or registered for texting). */
 export async function keepNumber(_: FormState, form: FormData): Promise<FormState> {
   await requireOwner();
   const number = toE164(text(form, "number"));

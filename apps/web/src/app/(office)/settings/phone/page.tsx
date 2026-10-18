@@ -18,7 +18,7 @@ import { getLine, myPhone } from "@/lib/messages";
 import { createClient } from "@/lib/supabase/server";
 import { twilioConfigured } from "@/server/twilio";
 
-export const metadata: Metadata = { title: "Phone and Texting · Tidemark" };
+export const metadata: Metadata = { title: "Phone and Texting · Sundeck Pro" };
 
 /**
  * The company number (owner, 2026-10-16): customers text and call one number the whole team
@@ -84,7 +84,7 @@ export default async function PhoneSettingsPage() {
           <>
             <SettingsSection title="Get a new number" boxed>
               <p className="mb-4 text-text-muted">
-                A local number that texts, sends photos, and takes calls. Included with Tidemark.
+                A local number that texts, sends photos, and takes calls. Included with Sundeck Pro.
               </p>
               <NumberPicker />
             </SettingsSection>
@@ -98,7 +98,7 @@ export default async function PhoneSettingsPage() {
                     autoComplete="off"
                     placeholder="(480) 555-0100"
                     required
-                    hint="Tidemark registers it for texting. It takes a few days."
+                    hint="Sundeck Pro registers it for texting. It takes a few days."
                   />
                 </SettingsFields>
               </SettingsForm>

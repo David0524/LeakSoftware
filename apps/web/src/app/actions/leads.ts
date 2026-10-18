@@ -7,7 +7,7 @@ import { isStaff, saveLead } from "@/server/leads";
 
 /**
  * The sign-up form, as it's filled in: once the email is valid, what's been typed is kept so
- * Tidemark can follow up with people who don't finish (the form says so).
+ * Sundeck Pro can follow up with people who don't finish (the form says so).
  */
 export async function captureLead(fields: {
   email: string;

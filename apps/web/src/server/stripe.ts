@@ -13,7 +13,7 @@ import { applyBillingEvent, finishOnboarding } from "./billing";
 
 export class PaymentsNotConfigured extends Error {
   constructor() {
-    super("Online payments aren’t set up on this Tidemark server yet.");
+    super("Online payments aren’t set up on this Sundeck Pro server yet.");
   }
 }
 
@@ -339,7 +339,7 @@ export async function applyEvent(
   if (await rpc<boolean>(d, "stripe_event_seen", { event_id: event.id })) return "duplicate";
 
   let outcome: WebhookOutcome = "ignored";
-  // The shop's own Tidemark subscription (M10), on the platform account.
+  // The shop's own Sundeck Pro subscription (M10), on the platform account.
   if (await applyBillingEvent(event, d)) {
     // A new shop's card is in: its onboarding choices apply (also done on the return page).
     const company = (event.data.object as { metadata?: { company_id?: string } }).metadata

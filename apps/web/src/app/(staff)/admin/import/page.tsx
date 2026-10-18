@@ -10,13 +10,13 @@ import { adminClient } from "@/server/admin";
 import { isStaff } from "@/server/leads";
 
 export const metadata: Metadata = {
-  title: "Import for a Shop · Tidemark Staff",
+  title: "Import for a Shop · Sundeck Pro Staff",
   robots: { index: false },
 };
 
 /**
  * Staff: import a shop's customers during the setup call (owner, 2026-10-16), so the shop's
- * file comes straight into Tidemark instead of by email.
+ * file comes straight into Sundeck Pro instead of by email.
  */
 export default function StaffImportPage({ searchParams }: PageProps<"/admin/import">) {
   return (

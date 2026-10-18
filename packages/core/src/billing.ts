@@ -1,5 +1,5 @@
 import { dateFormat } from "./intl";
-// Tidemark billing (M10): the shop's subscription state, as public.company_access returns
+// Sundeck Pro billing (M10): the shop's subscription state, as public.company_access returns
 // it, put into words for the banner and the Billing page.
 
 export interface CompanyAccess {
@@ -38,14 +38,14 @@ export function accessNotice(a: CompanyAccess, now: Date = new Date()): AccessNo
   if (a.locked) {
     return {
       tone: "error",
-      text: "Read-only: this shop’s Tidemark subscription isn’t paid. Everything is still here; an owner can subscribe in Settings › Billing.",
+      text: "Read-only: this shop’s Sundeck Pro subscription isn’t paid. Everything is still here; an owner can subscribe in Settings › Billing.",
     };
   }
   if (a.status === "past_due" && a.current_period_end) {
     const graceEnds = new Date(Date.parse(a.current_period_end) + PAST_DUE_GRACE_DAYS * 86_400_000);
     return {
       tone: "warning",
-      text: `The last Tidemark payment didn’t go through. Update the card in Settings › Billing within ${plural(daysUntil(graceEnds.toISOString(), now), "day")} to keep working.`,
+      text: `The last Sundeck Pro payment didn’t go through. Update the card in Settings › Billing within ${plural(daysUntil(graceEnds.toISOString(), now), "day")} to keep working.`,
     };
   }
   if (a.status === "trialing" && !a.subscribed && a.trial_ends_at) {

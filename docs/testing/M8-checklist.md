@@ -20,7 +20,7 @@
    listening to **events on Connected accounts**: `checkout.session.completed`,
    `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`,
    `account.updated`. Put its signing secret in `STRIPE_WEBHOOK_SECRET`.
-4. In Tidemark: **Settings → Payments and Deposits → Set Up Payments** and finish Stripe's
+4. In Sundeck Pro: **Settings → Payments and Deposits → Set Up Payments** and finish Stripe's
    test onboarding.
 5. Accept a quote on your phone, press **Pay Deposit**. Card: `4242 4242 4242 4242`, any future
    date and CVC. Bank: choose **Test Institution** and a successful test account; it shows

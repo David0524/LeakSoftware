@@ -12,7 +12,7 @@ corepack pnpm dev
 Open http://localhost:3000. It uses the hosted dev project, so you'll see the same jobs as the
 phone. Sign in as `owner@demo.leakbook.test` / `leakbook-demo`.
 
-1. **Home page.** Signed out, `/` explains Tidemark with Start Free Trial and Sign In.
+1. **Home page.** Signed out, `/` explains Sundeck Pro with Start Free Trial and Sign In.
 2. **Jobs.** The list shows open jobs. Try the filters (Scheduled, In Progress, All).
 3. **Sample job.** Choose **All**, open the job for **Sam Sample**. Check the checklist (Main
    drain excluded: No diver on site), the tests (Return 3 dropped 8 PSI; bucket test fails), the

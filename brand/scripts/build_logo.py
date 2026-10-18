@@ -1,4 +1,4 @@
-"""Generate Tidemark logo SVGs from exact geometry.
+"""Generate Sundeck Pro logo SVGs from exact geometry.
 
 The drop-pin mark was measured from the approved concept (logo/concept/tidemark-*.webp,
 2026-10-13) and rebuilt as clean geometry: a circle head, straight sides tangent to it
@@ -259,7 +259,7 @@ def mark_group(pin_fill, dot_fill=None, tx=0.0, ty=0.0, scale=1.0, small=False, 
     )
 
 
-def svg(w, h, body, bg=None, title="Tidemark"):
+def svg(w, h, body, bg=None, title="Sundeck Pro"):
     rect = f'<rect width="{f(w)}" height="{f(h)}" fill="{bg}"/>' if bg else ""
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {f(w)} {f(h)}" '
@@ -314,7 +314,7 @@ def lockup(tide_fill, mark_fill, pin_fill, dot_fill, bg=None, pad=0.0, line_fill
     mark_h = MARK_H
     cap_h = mark_h * 0.46
     gap = mark_h * 0.2
-    words, words_w = wordmark_paths([("Tide", tide_fill), ("mark", mark_fill)], cap_h)
+    words, words_w = wordmark_paths([("Sundeck", tide_fill), (" Pro", mark_fill)], cap_h)
     w = MARK_W + gap + words_w + 2 * pad
     h = mark_h + 2 * pad
     mark = mark_group(pin_fill, dot_fill, tx=R + pad, ty=R + pad, line_fill=line_fill)
@@ -329,25 +329,25 @@ def main():
     files = {
         # Mark only. On light: water blue with the dot and lines cut out. On navy: white pin,
         # orange dot, water-blue lines.
-        "tidemark-mark.svg": mark_svg(WATER, None),
-        "tidemark-mark-reverse.svg": mark_svg(WHITE, SAFETY, line_fill=WATER),
-        "tidemark-mark-black.svg": mark_svg(BLACK, None),
-        "tidemark-mark-white.svg": mark_svg(WHITE, None),
+        "sundeck-mark.svg": mark_svg(WATER, None),
+        "sundeck-mark-reverse.svg": mark_svg(WHITE, SAFETY, line_fill=WATER),
+        "sundeck-mark-black.svg": mark_svg(BLACK, None),
+        "sundeck-mark-white.svg": mark_svg(WHITE, None),
         # Horizontal lockups
-        "tidemark-logo.svg": lockup(NAVY, WATER, WATER, None),
-        "tidemark-logo-reverse.svg": lockup(WHITE, WHITE, WHITE, SAFETY, line_fill=WATER),
-        "tidemark-logo-black.svg": lockup(BLACK, BLACK, BLACK, None),
+        "sundeck-logo.svg": lockup(NAVY, WATER, WATER, None),
+        "sundeck-logo-reverse.svg": lockup(WHITE, WHITE, WHITE, SAFETY, line_fill=WATER),
+        "sundeck-logo-black.svg": lockup(BLACK, BLACK, BLACK, None),
         # App icons
-        "tidemark-app-icon.svg": square_icon(1024, NAVY, WHITE, SAFETY, 0.62, line_fill=WATER),
+        "sundeck-app-icon.svg": square_icon(1024, NAVY, WHITE, SAFETY, 0.62, line_fill=WATER),
         # Android adaptive foreground: art inside the 66% safe zone, transparent (the
         # launcher fills navy behind it).
-        "tidemark-adaptive-foreground.svg": square_icon(
+        "sundeck-adaptive-foreground.svg": square_icon(
             1024, None, WHITE, SAFETY, 0.46, line_fill=WATER
         ),
         # Android 13+ themed (monochrome) icon: one color, dot and lines cut out, transparent.
-        "tidemark-adaptive-monochrome.svg": square_icon(1024, None, WHITE, None, 0.46),
+        "sundeck-adaptive-monochrome.svg": square_icon(1024, None, WHITE, None, 0.46),
         # Favicon: larger mark, small-size cut (thicker, wider-spaced lines, bigger dot).
-        "tidemark-favicon.svg": square_icon(
+        "sundeck-favicon.svg": square_icon(
             64, NAVY, WHITE, SAFETY, 0.84, small=True, line_fill=WATER
         ),
     }

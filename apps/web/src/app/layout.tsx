@@ -6,13 +6,13 @@ import startupImage from "./splash.json";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Tidemark",
+  title: "Sundeck Pro",
   description:
     "Routes, checklists, quotes, and invoicing for pool service and leak detection shops.",
   // Added to an iPhone's Home Screen, the site opens full screen like an app. Its launch images
   // (page color and the mark, light and dark, per screen size) keep it from flashing white;
   // regenerate them with `node brand/scripts/build_splash.mjs`.
-  appleWebApp: { capable: true, title: "Tidemark", statusBarStyle: "default", startupImage },
+  appleWebApp: { capable: true, title: "Sundeck Pro", statusBarStyle: "default", startupImage },
 };
 
 // Content runs under the notch and home indicator (pages pad with the safe-area insets), and

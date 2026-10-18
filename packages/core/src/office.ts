@@ -234,8 +234,8 @@ export function safePath(next: unknown, fallback = "/home"): string {
   );
   if (next.startsWith("//") || unsafe) return fallback;
   try {
-    const url = new URL(next, "https://tidemark.invalid");
-    return url.origin === "https://tidemark.invalid" ? next : fallback;
+    const url = new URL(next, "https://sundeckpro.invalid");
+    return url.origin === "https://sundeckpro.invalid" ? next : fallback;
   } catch {
     return fallback;
   }

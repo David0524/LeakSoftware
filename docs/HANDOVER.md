@@ -1,6 +1,6 @@
 # Handover (2026-10-16, updated)
 
-For the next chat picking up Tidemark. Read `CLAUDE.md` first, then this, then the newest
+For the next chat picking up Sundeck Pro. Read `CLAUDE.md` first, then this, then the newest
 entries in `docs/DECISIONS.md` (2026-10-15 and 2026-10-16 cover everything below).
 
 ## Where things are
@@ -43,7 +43,7 @@ entries in `docs/DECISIONS.md` (2026-10-15 and 2026-10-16 cover everything below
   factors in the Supabase dashboard (Authentication › Users › the user › MFA factors) and run
   `select set_two_step('<user id>', false);` in the SQL editor. Two-step's app screens have
   not been seen on a device.
-- **Leads (2026-10-16):** `/admin/leads`. To see it: set `TIDEMARK_STAFF_EMAILS` on Vercel to the
+- **Leads (2026-10-16):** `/admin/leads`. To see it: set `SUNDECK_STAFF_EMAILS` on Vercel to the
   owner's email, turn on two-step sign-in (More › Two-Step Sign-In), sign in again.
 - **Import Customers (2026-10-17):** Settings › Import Customers for owners; `/admin/import` from
   Leads for staff. Parsing and matching in `packages/core/src/import.ts`, the server in
@@ -59,7 +59,7 @@ entries in `docs/DECISIONS.md` (2026-10-15 and 2026-10-16 cover everything below
 | `ea1631b` | Desktop Messages like a Mac (newest conversation beside the list); mark unread from the list (hover button, right-click); sign-up asks Pool Care, Leak Detection, or Both. |
 | `942d9b7` | Owners on a computer land on the Dashboard (`/home` decides); phones and techs on Today. |
 | `b9288a5` | Calculator: What to Add as a bottom bar and sheet, everyday measures (jugs, cups, pounds, bags), doses checked against references; gallon commas; light iOS placeholders (new `placeholder` token). |
-| `eecefb9` | Mark as unread (shared by the team), On My Way setting (Tidemark Messages by default), visible settings fields, calculator results first; CLAUDE.md: every page feels like iOS. |
+| `eecefb9` | Mark as unread (shared by the team), On My Way setting (Sundeck Pro Messages by default), visible settings fields, calculator results first; CLAUDE.md: every page feels like iOS. |
 | `1b4f7e2` | Screens visited in the last minute are kept: revisits are instant. |
 | `5124899`, `552b905`, `b0afe0e` | Messages and Customers share one tab, Messages first; the job page shows its messages; sample texts with Sam Sample (`seed_demo_messages.sql`). |
 | `6ae0932` | Chemical calculator: pool size in gallons only (shape and measurements removed). The website uses outlined number boxes, which are now visible on phones. |
@@ -97,9 +97,9 @@ scratchpad, which the next chat can't open.
     on the tab).
   - The job's Details shows the latest texts with the customer (Messages group).
   - Swipe a conversation right for Unread/Read (shared by the team); Mark as Unread inside it.
-  - On My Way: Tidemark Messages by default, or the tech's phone (Phone and Texting setting).
+  - On My Way: Sundeck Pro Messages by default, or the tech's phone (Phone and Texting setting).
   - Settings › Phone and Texting: take a number, or enter the shop's existing one (stays
-    pending until Tidemark finishes it by hand); photos switch; who rings; greeting.
+    pending until Sundeck Pro finishes it by hand); photos switch; who rings; greeting.
   - The customer page's Text button and On My Way on Today send from the company number when
     one is active.
 - **Phone:**
@@ -126,7 +126,7 @@ scratchpad, which the next chat can't open.
   - The demo code VIP26 is in this public repository: it is now capped at 25 shops. For real
     partners, add private codes straight in the database (`app.access_code`), not in a
     migration.
-  - Resend, Anthropic, Deepgram, Twilio and Vercel: set account-level spend limits. Tidemark
+  - Resend, Anthropic, Deepgram, Twilio and Vercel: set account-level spend limits. Sundeck Pro
     now also caps each shop per day (`DAILY_LIMIT_*` in `.env.example`).
 - **Owner decisions:**
   - Texting number choice: a new number or the shop's existing one (both are supported).

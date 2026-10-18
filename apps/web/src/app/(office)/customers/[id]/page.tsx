@@ -29,7 +29,7 @@ import { getOffice } from "@/lib/auth";
 import { getCompany, getCustomer, getTeam, listConfig, type ComponentType } from "@/lib/data";
 import { getLine } from "@/lib/messages";
 
-export const metadata: Metadata = { title: "Customer · Tidemark" };
+export const metadata: Metadata = { title: "Customer · Sundeck Pro" };
 
 const KIND: Record<string, string> = {
   homeowner: "Homeowner",
@@ -323,8 +323,8 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
           </h2>
           <DeleteCustomerForm id={customer.id} name={customer.name} />
           <p className="mt-2 px-4 text-[0.8125rem] text-text-muted">
-            Removes {customer.name} and their pools from Tidemark. Only possible when every job is
-            paid or canceled; finished jobs, reports, and invoices are kept.
+            Removes {customer.name} and their pools from Sundeck Pro. Only possible when every job
+            is paid or canceled; finished jobs, reports, and invoices are kept.
           </p>
         </section>
       ) : null}

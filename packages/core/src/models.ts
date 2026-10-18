@@ -28,18 +28,18 @@ export interface CompanySettings {
   techs_make_jobs?: boolean;
   /** What the shop does, which decides what the app shows (owner, 2026-10-16). */
   services?: Services;
-  /** Where On My Way texts go out from (owner, 2026-10-16). Default: Tidemark Messages. */
+  /** Where On My Way texts go out from (owner, 2026-10-16). Default: Sundeck Pro Messages. */
   on_my_way?: OnMyWayVia;
 }
 
 /**
- * On My Way texts: from the company number into Tidemark's shared Messages (the default), or
+ * On My Way texts: from the company number into Sundeck Pro's shared Messages (the default), or
  * from the tech's own phone (its Messages app opens with the text ready).
  */
 export type OnMyWayVia = "messages" | "phone";
 
 export const ON_MY_WAY_LABELS: Record<OnMyWayVia, string> = {
-  messages: "Tidemark Messages",
+  messages: "Sundeck Pro Messages",
   phone: "Tech’s Phone",
 };
 

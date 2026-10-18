@@ -31,7 +31,7 @@ normally keeps it in memory): read it before changing the flow. Code:
 | 1 | Welcome | "Every pool on your route, handled." + a Today's route preview | "Reports that sell the repair." + an inspection preview |
 | 2 | Goal (single) | 6 goals, e.g. Getting paid every month | 6 goals, e.g. Win more repair jobs |
 | 3 | Pains (multi) | 6, e.g. Customers say we skipped their pool | 6, e.g. Reports take my evenings |
-| 4 | How Tidemark helps | each picked pain with its answer (the usual three if none) | same |
+| 4 | How Sundeck Pro helps | each picked pain with its answer (the usual three if none) | same |
 | 5 | Setup | people (price shown), report color, chlorine carried | people, report color, deposit 25/50/none |
 | 6 | Setting up | saves the answers; only as long as the save takes (min 0.9 s) | same |
 | 7 | Demo | sample visit: change 3 readings, What to Add updates | sample inspection: mark 4 spots |

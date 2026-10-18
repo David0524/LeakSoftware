@@ -6,7 +6,7 @@ import { Banner } from "@/components/doc-ui";
 import { getUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Join Your Team · Tidemark" };
+export const metadata: Metadata = { title: "Join Your Team · Sundeck Pro" };
 
 export default function InvitePage({ params }: PageProps<"/invite/[token]">) {
   return (
@@ -37,7 +37,7 @@ async function InviteBody({ params }: Pick<PageProps<"/invite/[token]">, "params
   return (
     <>
       <p className="mb-6 max-sm:px-2 max-sm:text-center">
-        <strong>{invite.company_name}</strong> invited you to Tidemark as{" "}
+        <strong>{invite.company_name}</strong> invited you to Sundeck Pro as{" "}
         {invite.role === "owner" ? "an owner" : "a tech"}.
       </p>
       <InviteForm token={token} email={invite.email} signedInAs={user?.email ?? null} />

@@ -37,7 +37,7 @@ describe("the comparison on the website", () => {
     // A one-person shop with 20 pools pays Skimmer's minimum.
     expect(competitorPrices(1, 20)[0]!.monthlyCents).toBe(9_800);
   });
-  it("shows Tidemark as the lowest for typical pool companies", () => {
+  it("shows Sundeck Pro as the lowest for typical pool companies", () => {
     // Team sizes 1 to 13, each tech running about 70 pools.
     for (let n = 1; n <= 13; n++) {
       const pools = Math.max(1, n - 1) * 70;
@@ -65,7 +65,7 @@ describe("services", () => {
 });
 
 describe("on my way", () => {
-  it("goes out from Tidemark Messages unless the shop chose the tech's phone", async () => {
+  it("goes out from Sundeck Pro Messages unless the shop chose the tech's phone", async () => {
     const { onMyWayVia } = await import("../src");
     expect(onMyWayVia(null)).toBe("messages");
     expect(onMyWayVia({ on_my_way: "nonsense" })).toBe("messages");

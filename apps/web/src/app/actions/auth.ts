@@ -201,7 +201,7 @@ export async function acceptInvite(_: FormState, form: FormData): Promise<FormSt
 
   const { data: companyId, error } = await supabase.rpc("accept_invite", { invite_token: token });
   if (error) return { error: error.message };
-  // One more person on the team: the Tidemark price may move up a tier.
+  // One more person on the team: the Sundeck Pro price may move up a tier.
   after(() => syncSubscriptionPrice(String(companyId)).catch(() => null));
   (await cookies()).set(ACTIVE_COMPANY_COOKIE, String(companyId), {
     path: "/",

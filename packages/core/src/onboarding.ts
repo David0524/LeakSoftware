@@ -2,10 +2,10 @@ import type { ChlorineProduct } from "./chemistry";
 import type { Services } from "./models";
 
 // New-shop onboarding (owner, 2026-10-16), designed with the app-onboarding-questionnaire
-// skill: a goal, what gets in the way, how Tidemark answers each, a few choices that set the
+// skill: a goal, what gets in the way, how Sundeck Pro answers each, a few choices that set the
 // shop up, a hands-on demo, then the card for the 14-day trial. Pool Maintenance and Leak
 // Detection each get their own questions and demo; Both follows Pool Maintenance. No
-// testimonials or invented statistics: Tidemark has none yet (docs/DECISIONS.md).
+// testimonials or invented statistics: Sundeck Pro has none yet (docs/DECISIONS.md).
 
 export type OnboardingPackage = "maintenance" | "leak";
 
@@ -21,7 +21,7 @@ export interface OnboardingOption {
 export interface OnboardingPain {
   id: string;
   label: string;
-  /** How Tidemark answers it, for the "Here's how" screen. */
+  /** How Sundeck Pro answers it, for the "Here's how" screen. */
   answer: string;
 }
 
@@ -46,7 +46,7 @@ export const ONBOARDING: Record<OnboardingPackage, OnboardingContent> = {
       title: "Every pool on your route, handled.",
       body: "Two minutes to set up your shop. Then you’ll run a sample visit, start to finish.",
     },
-    goalQuestion: "What should Tidemark fix first?",
+    goalQuestion: "What should Sundeck Pro fix first?",
     goals: [
       { id: "billing", emoji: "🧾", label: "Getting paid every month" },
       { id: "proof", emoji: "✅", label: "Proof every pool got done" },
@@ -72,7 +72,7 @@ export const ONBOARDING: Record<OnboardingPackage, OnboardingContent> = {
       {
         id: "chemistry",
         label: "New techs guess at chemical amounts",
-        answer: "Enter the readings and Tidemark says what to add, in half gallons and scoops.",
+        answer: "Enter the readings and Sundeck Pro says what to add, in half gallons and scoops.",
       },
       {
         id: "paper",
@@ -93,7 +93,7 @@ export const ONBOARDING: Record<OnboardingPackage, OnboardingContent> = {
     defaultPains: ["proof", "billing", "chemistry"],
     demoTitle: "Try a visit",
     demoIntro: "The Rivera pool, 18,000 gallons. Set today’s readings and see what to add.",
-    promise: "Your route, sorted with Tidemark.",
+    promise: "Your route, sorted with Sundeck Pro.",
     included: [
       "Unlimited pools: adding to your route never costs more",
       "Checklist, photos, and a summary on every visit",
@@ -106,7 +106,7 @@ export const ONBOARDING: Record<OnboardingPackage, OnboardingContent> = {
       title: "Reports that sell the repair.",
       body: "Two minutes to set up your shop. Then you’ll write a sample report for a homeowner.",
     },
-    goalQuestion: "What should Tidemark fix first?",
+    goalQuestion: "What should Sundeck Pro fix first?",
     goals: [
       { id: "repairs", emoji: "🔧", label: "Win more repair jobs" },
       { id: "speed", emoji: "⏱️", label: "Finish reports on site" },

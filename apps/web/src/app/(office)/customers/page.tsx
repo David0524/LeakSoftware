@@ -6,7 +6,7 @@ import { listCustomers } from "@/lib/data";
 import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
 
-export const metadata: Metadata = { title: "Customers · Tidemark" };
+export const metadata: Metadata = { title: "Customers · Sundeck Pro" };
 
 export default async function CustomersPage({ searchParams }: PageProps<"/customers">) {
   const office = await getOffice();

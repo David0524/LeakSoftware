@@ -8,7 +8,7 @@ import { getOffice } from "@/lib/auth";
 import { getCustomer } from "@/lib/data";
 import { getLine, listConversations } from "@/lib/messages";
 
-export const metadata: Metadata = { title: "New Message · Tidemark" };
+export const metadata: Metadata = { title: "New Message · Sundeck Pro" };
 
 /** Text someone from the company number: a customer (?customer=) or any mobile number. */
 export default async function NewMessagePage({ searchParams }: PageProps<"/messages/new">) {

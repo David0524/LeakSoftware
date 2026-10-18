@@ -22,7 +22,7 @@ import { getCompany, getTeam } from "@/lib/data";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Team · Tidemark" };
+export const metadata: Metadata = { title: "Team · Sundeck Pro" };
 
 interface Invite {
   id: string;

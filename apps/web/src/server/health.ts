@@ -48,7 +48,7 @@ export async function checkHealth(): Promise<Health> {
       detail: emailConfigured() ? "Set up" : "Not set up (reports go out by text)",
     },
     {
-      // Card payments: customers paying shops, and shops paying for Tidemark.
+      // Card payments: customers paying shops, and shops paying for Sundeck Pro.
       name: "Card payments",
       ok: paymentsConfigured(),
       detail: paymentsConfigured() ? "Set up" : "Not set up (Stripe keys missing)",

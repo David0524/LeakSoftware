@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { portalUrl, subscribeUrl } from "@/server/billing";
 import type { FormState } from "./auth";
 
-/** Owners: subscribe to Tidemark through Stripe Checkout. */
+/** Owners: subscribe to Sundeck Pro through Stripe Checkout. */
 export async function subscribe(): Promise<FormState> {
   const office = await requireOwner();
   const company = await getCompany(office);

@@ -134,7 +134,7 @@ export function SignInForm({ next }: { next: string }) {
 export function TrialForm({ services = "pool" }: { services?: Services }) {
   const [state, action, pending] = useActionState(startTrial, {});
   // Leads (owner, 2026-10-16): once the email is valid, what's typed so far is kept, so
-  // Tidemark can help people who don't finish. Sent again only when something changed.
+  // Sundeck Pro can help people who don't finish. Sent again only when something changed.
   const sent = useRef("");
   function keep(e: FocusEvent<HTMLFormElement>) {
     const f = new FormData(e.currentTarget);
@@ -201,7 +201,7 @@ export function TrialForm({ services = "pool" }: { services?: Services }) {
         We may call or text to help you get set up.
       </p>
       <p className="text-center text-text-muted">
-        Already using Tidemark?{" "}
+        Already using Sundeck Pro?{" "}
         <Link href="/sign-in" className="inline-flex min-h-11 items-center text-link underline">
           Sign in
         </Link>

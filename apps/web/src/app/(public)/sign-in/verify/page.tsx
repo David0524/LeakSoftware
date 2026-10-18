@@ -7,14 +7,14 @@ import { AuthCard, FormSkeleton } from "@/components/auth-card";
 import { VerifyCodeForm } from "@/components/two-step";
 import { getUser } from "@/lib/auth";
 
-export const metadata: Metadata = { title: "Enter Your Code · Tidemark" };
+export const metadata: Metadata = { title: "Enter Your Code · Sundeck Pro" };
 
 /** Two-step sign-in (owner, 2026-10-16): the authenticator code after the password. */
 export default function VerifyPage({ searchParams }: PageProps<"/sign-in/verify">) {
   return (
     <AuthCard
       title="Enter Your Code"
-      intro="Open your authenticator app and enter the 6-digit code for Tidemark."
+      intro="Open your authenticator app and enter the 6-digit code for Sundeck Pro."
     >
       <Suspense fallback={<FormSkeleton />}>
         <VerifyBody searchParams={searchParams} />

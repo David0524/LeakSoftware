@@ -73,7 +73,7 @@ export const TIPS: Tip[] = [
     pkg: "pool",
     title: "Monthly billing, drafted for you",
     message:
-      "At the start of each month, Tidemark drafts one invoice per customer from last month’s finished visits. Review them, then send.",
+      "At the start of each month, Sundeck Pro drafts one invoice per customer from last month’s finished visits. Review them, then send.",
   },
   {
     id: "web-invoices-leak",
@@ -310,7 +310,7 @@ export function gettingStarted(services: Services, p: ShopProgress): StartStep[]
     {
       id: "invite",
       label: "Invite your techs",
-      detail: "They sign in on the Tidemark app.",
+      detail: "They sign in on the Sundeck Pro app.",
       href: "/settings/team",
       done: p.people > 1 || p.openInvites > 0,
     },

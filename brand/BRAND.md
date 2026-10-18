@@ -1,12 +1,13 @@
-# Tidemark brand guide
+# Sundeck Pro brand guide
 
 Status: name, palette, type, and logo final.
 
 ## Name
 
-**Tidemark**: one word, capital T only. Not "TideMark", "Tide Mark", or "Tide-Mark". All caps
-(TIDEMARK) only in small uppercase labels. A tidemark is the line water leaves where its level
-drops: what a leak shop finds. Renamed from LeakBook on 2026-10-13 (owner).
+**Sundeck Pro**: two words, capital S and P. Not "SunDeck Pro", "Sun Deck Pro", or "Sundeck
+PRO". All caps (SUNDECK PRO) only in small uppercase labels. "Sundeck" alone is fine in
+running text once the full name has appeared. Renamed from Tidemark on 2026-10-18 (owner),
+and from LeakBook before that (2026-10-13). The drop-pin mark with its water line stays.
 
 ## Positioning
 
@@ -18,7 +19,7 @@ drops: what a leak shop finds. Renamed from LeakBook on 2026-10-13 (owner).
 
 ## White-label rule
 
-Reports, quotes, invoices, and the customer payment page carry the **shop's** logo and colors. Tidemark appears there only as a small "Powered by Tidemark" line in the footer. Tidemark's own palette applies to the tech app, the office web app, sign-in, and marketing.
+Reports, quotes, invoices, and the customer payment page carry the **shop's** logo and colors. Sundeck Pro appears there only as a small "Powered by Sundeck Pro" line in the footer. Sundeck Pro's own palette applies to the tech app, the office web app, sign-in, and marketing.
 
 ## Color ("Work Truck")
 
@@ -79,7 +80,7 @@ python3 brand/scripts/build_logo.py   # SVGs (needs: pip install fonttools)
 node brand/scripts/export_png.mjs      # PNGs for the app, favicon, email
 ```
 
-Copy the results into the apps: `apps/web/public/tidemark-{logo,logo-reverse,mark}.svg`,
+Copy the results into the apps: `apps/web/public/sundeck-{logo,logo-reverse,mark}.svg`,
 `apps/web/src/app/icon.svg` (favicon) and `apple-icon.png`, and `apps/mobile/assets/`
 (`icon.png` ← `icon-1024.png`, `android-icon-foreground.png` ← `adaptive-foreground-1024.png`,
 `android-icon-monochrome.png` ← `adaptive-monochrome-1024.png`, `favicon.png` ←
@@ -89,16 +90,16 @@ Copy the results into the apps: `apps/web/public/tidemark-{logo,logo-reverse,mar
 
 | File | Use |
 |---|---|
-| `tidemark-logo.svg` | Horizontal logo on light backgrounds. Default. |
-| `tidemark-logo-reverse.svg` | Horizontal logo on navy or dark photos |
-| `tidemark-logo-black.svg` | One color: fax, stamps, engraving, single-color print |
-| `tidemark-mark.svg` | Mark only on light backgrounds: water blue, dot and lines cut out |
-| `tidemark-mark-reverse.svg` | Mark only on navy: white pin, orange dot, water-blue lines |
-| `tidemark-mark-black.svg` / `-white.svg` | One color: embroidery, vinyl decals. Dot and wave lines are cut out. |
-| `tidemark-app-icon.svg` | iOS / store icon (navy square, no rounded corners) |
-| `tidemark-adaptive-foreground.svg` | Android adaptive icon foreground. Background color: Navy. |
-| `tidemark-adaptive-monochrome.svg` | Android themed (monochrome) icon |
-| `tidemark-favicon.svg` | Browser tab. Uses the small-size cut. |
+| `sundeck-logo.svg` | Horizontal logo on light backgrounds. Default. |
+| `sundeck-logo-reverse.svg` | Horizontal logo on navy or dark photos |
+| `sundeck-logo-black.svg` | One color: fax, stamps, engraving, single-color print |
+| `sundeck-mark.svg` | Mark only on light backgrounds: water blue, dot and lines cut out |
+| `sundeck-mark-reverse.svg` | Mark only on navy: white pin, orange dot, water-blue lines |
+| `sundeck-mark-black.svg` / `-white.svg` | One color: embroidery, vinyl decals. Dot and wave lines are cut out. |
+| `sundeck-app-icon.svg` | iOS / store icon (navy square, no rounded corners) |
+| `sundeck-adaptive-foreground.svg` | Android adaptive icon foreground. Background color: Navy. |
+| `sundeck-adaptive-monochrome.svg` | Android themed (monochrome) icon |
+| `sundeck-favicon.svg` | Browser tab. Uses the small-size cut. |
 | `png/` | Ready-made PNG exports of the above, including splash and email sizes |
 
 ### Rules
@@ -107,7 +108,7 @@ Copy the results into the apps: `apps/web/public/tidemark-{logo,logo-reverse,mar
 - **Minimum size:** horizontal logo 120 px wide (1 in printed); mark 16 px tall. Below 48 px use the favicon's small-size cut (thicker, wider-spaced wave lines, bigger dot).
 - **Wordmark:** Barlow Semi Condensed ExtraBold, outlined. "Tide" navy, "mark" water blue on light; all white on dark; all black for one color.
 - **Do not:** recolor the pin outside the brand colors, add shadows or gradients, outline the mark, stretch it, set the wordmark in another font, or put the full-color mark on a busy photo.
-- **Powered by:** customer documents use `tidemark-mark.svg` at 16–20 px next to "Powered by Tidemark" in Public Sans, in the footer only.
+- **Powered by:** customer documents use `sundeck-mark.svg` at 16–20 px next to "Powered by Sundeck Pro" in Public Sans, in the footer only.
 
 ## Field usability
 

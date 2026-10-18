@@ -12,7 +12,7 @@ import { Grouped } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listConfig } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Report Templates · Tidemark" };
+export const metadata: Metadata = { title: "Report Templates · Sundeck Pro" };
 
 interface Template {
   id: string;

@@ -24,7 +24,7 @@ export default function GlobalError({
   return (
     <html lang="en">
       <body>
-        <title>Something went wrong · Tidemark</title>
+        <title>Something went wrong · Sundeck Pro</title>
         <style>{`
           body { margin: 0; font: 17px/1.5 system-ui, sans-serif; background: ${light.bg}; color: ${light.text}; }
           @media (prefers-color-scheme: dark) { body { background: ${dark.bg}; color: ${dark.text}; } }
@@ -34,7 +34,7 @@ export default function GlobalError({
         `}</style>
         <main role="alert">
           <h1>Something went wrong</h1>
-          <p>Tidemark didn’t load. Try again in a moment.</p>
+          <p>Sundeck Pro didn’t load. Try again in a moment.</p>
           <p>
             <button type="button" onClick={() => retry()}>
               Try Again

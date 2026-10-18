@@ -321,8 +321,8 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
 
       {!reportsOnline ? (
         <Notice tone="warning">
-          This app isn’t connected to the Tidemark server, so reports can’t be written here. Use the
-          office website.
+          This app isn’t connected to the Sundeck Pro server, so reports can’t be written here. Use
+          the office website.
         </Notice>
       ) : (
         <Button

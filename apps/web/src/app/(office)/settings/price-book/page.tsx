@@ -14,7 +14,7 @@ import { Empty, Grouped } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listConfig, type ComponentType, getCompany } from "@/lib/data";
 
-export const metadata: Metadata = { title: "Price Book · Tidemark" };
+export const metadata: Metadata = { title: "Price Book · Sundeck Pro" };
 
 interface PriceItem {
   id: string;

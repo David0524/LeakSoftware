@@ -7,8 +7,8 @@ import { tokens } from "@leakbook/tokens";
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Tidemark",
-    short_name: "Tidemark",
+    name: "Sundeck Pro",
+    short_name: "Sundeck Pro",
     description:
       "Routes, checklists, quotes, and invoicing for pool service and leak detection shops.",
     start_url: "/today",

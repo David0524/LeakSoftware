@@ -9,7 +9,7 @@ import { MonthlyBilling } from "@/components/monthly-billing";
 import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
 
-export const metadata: Metadata = { title: "Invoices · Tidemark" };
+export const metadata: Metadata = { title: "Invoices · Sundeck Pro" };
 
 export default async function InvoicesPage() {
   const office = await getOffice();

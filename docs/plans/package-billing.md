@@ -39,7 +39,7 @@ shows are in `packages/core/src/plans.ts` (owner, 2026-10-16; see DECISIONS):
 - **Keeping the count right:** when a member is added, turned off, or removed, and when the
   package changes, the server updates the subscription's quantity (`stripe.subscriptions.update`,
   proration on). A daily check (the existing daily cron) corrects any drift.
-- **The website** shows the shop's current tier and price on Settings › Tidemark Billing, worked
+- **The website** shows the shop's current tier and price on Settings › Sundeck Pro Billing, worked
   out with `monthlyPriceCents` so it always matches the home page.
 - **Existing shops:** none pay yet (all trials), so no migration of live subscriptions.
 

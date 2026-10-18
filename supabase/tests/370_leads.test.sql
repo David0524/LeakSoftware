@@ -1,4 +1,4 @@
--- Leads (owner, 2026-10-16): Tidemark's sales list. Nobody signed in can read or write it;
+-- Leads (owner, 2026-10-16): Sundeck Pro's sales list. Nobody signed in can read or write it;
 -- the server's lead list shows how far each person got.
 begin;
 set search_path = public, extensions;

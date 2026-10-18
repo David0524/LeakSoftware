@@ -26,7 +26,7 @@ import { getUser } from "@/lib/auth";
 import { adminClient } from "@/server/admin";
 import { isStaff } from "@/server/leads";
 
-export const metadata: Metadata = { title: "Leads · Tidemark Staff", robots: { index: false } };
+export const metadata: Metadata = { title: "Leads · Sundeck Pro Staff", robots: { index: false } };
 
 const VIEWS = { call: "To Call", unpaid: "Not Paid", all: "All" } as const;
 type View = keyof typeof VIEWS;
