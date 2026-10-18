@@ -267,7 +267,10 @@ export async function saveOnMyWay(_: FormState, form: FormData): Promise<FormSta
   return { message: "Saved." };
 }
 
-/** Owners: techs see every job, or only their own (owner request, 2026-10-13). */
+/**
+ * Owners: techs see every job, or only their own (owner request, 2026-10-13), and whether they
+ * can make new jobs (2026-10-18).
+ */
 export async function saveJobVisibility(_: FormState, form: FormData): Promise<FormState> {
   const { office, supabase } = await owner();
   const choice = text(form, "techs_see");
@@ -280,6 +283,7 @@ export async function saveJobVisibility(_: FormState, form: FormData): Promise<F
   const settings = {
     ...((company?.settings ?? {}) as Record<string, unknown>),
     techs_see_all_jobs: choice === "all",
+    techs_make_jobs: checked(form, "techs_make_jobs"),
   };
   const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
   if (error) return failed(error);

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { inviteMember, revokeInvite, updateMember } from "@/app/actions/settings";
-import { seesAllJobs } from "@leakbook/core";
+import { canMakeJobs, seesAllJobs } from "@leakbook/core";
 import { JobVisibilityForm } from "@/components/job-visibility";
 import {
   CopyLink,
@@ -76,8 +76,11 @@ export default async function TeamSettingsPage() {
         ),
       }}
     >
-      <SettingsSection title="What techs see">
-        <JobVisibilityForm seesAll={seesAllJobs("tech", company.settings)} />
+      <SettingsSection title="What techs can do">
+        <JobVisibilityForm
+          seesAll={seesAllJobs("tech", company.settings)}
+          makesJobs={canMakeJobs("tech", company.settings)}
+        />
       </SettingsSection>
 
       <Grouped

@@ -18,6 +18,7 @@ import {
   type PoolType,
   type Property,
   seesAllJobs,
+  canMakeJobs,
   companyServices,
 } from "@leakbook/core";
 import { useRows } from "../../../data/hooks";
@@ -45,6 +46,19 @@ import { ios, space } from "../../../ui/theme";
 type When = "now" | "scheduled" | "later";
 
 export default function NewJob() {
+  const company = useCompany();
+  const { membership } = useSession();
+  // Owners can stop techs making jobs (owner setting, 2026-10-18).
+  if (!canMakeJobs(membership?.role, company.settings))
+    return (
+      <Screen>
+        <Notice tone="info">Your office makes new jobs. Ask an owner to add this one.</Notice>
+      </Screen>
+    );
+  return <NewJobForm />;
+}
+
+function NewJobForm() {
   const company = useCompany();
   const { services, user, membership } = useSession();
   const seesAll = seesAllJobs(membership?.role, company.settings);

@@ -8,6 +8,7 @@ import {
   lockReason,
   optimizeRoute,
   routeUpdates,
+  canMakeJobs,
   seesAllJobs,
   routingSettings,
   stopFor,
@@ -42,6 +43,14 @@ describe("who sees which jobs", () => {
     expect(seesAllJobs("tech", {})).toBe(true);
     expect(seesAllJobs("tech", null)).toBe(true);
     expect(seesAllJobs("tech", { techs_see_all_jobs: false })).toBe(false);
+  });
+});
+
+describe("who makes jobs", () => {
+  it("owners always; techs unless the owner turned it off", () => {
+    expect(canMakeJobs("owner", { techs_make_jobs: false })).toBe(true);
+    expect(canMakeJobs("tech", {})).toBe(true);
+    expect(canMakeJobs("tech", { techs_make_jobs: false })).toBe(false);
   });
 });
 

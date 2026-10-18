@@ -39,7 +39,7 @@ import {
 } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { mapsAppForRequest } from "@/lib/maps";
-import type { JobRow } from "@/lib/data";
+import { mayMakeJobs, type JobRow } from "@/lib/data";
 import {
   loadRoutes,
   routeContext,
@@ -132,6 +132,7 @@ function column(
 
 export default async function SchedulePage({ searchParams }: PageProps<"/schedule">) {
   const office = await getOffice();
+  const canAdd = await mayMakeJobs(office);
   const params = await searchParams;
   const view: ScheduleView =
     params.view === "week" ? "week" : params.view === "month" ? "month" : "day";
@@ -225,7 +226,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
     <>
       <PageHeader
         title="Schedule"
-        navAction={<NavPlus href="/jobs/new" label="New Job" />}
+        navAction={canAdd ? <NavPlus href="/jobs/new" label="New Job" /> : undefined}
         subtitle={
           <>
             {title}

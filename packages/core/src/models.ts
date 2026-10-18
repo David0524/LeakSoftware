@@ -24,6 +24,8 @@ export interface CompanySettings {
   intake_questions?: IntakeQuestion[];
   /** Techs see every job (default), or only their own (owner setting, 2026-10-13). */
   techs_see_all_jobs?: boolean;
+  /** Techs can make new jobs (default), or only owners can (owner setting, 2026-10-18). */
+  techs_make_jobs?: boolean;
   /** What the shop does, which decides what the app shows (owner, 2026-10-16). */
   services?: Services;
   /** Where On My Way texts go out from (owner, 2026-10-16). Default: Tidemark Messages. */
@@ -79,6 +81,12 @@ export const offersPool = (settings: unknown) => companyServices(settings) !== "
 export function seesAllJobs(role: string | null | undefined, settings: unknown): boolean {
   if (role === "owner") return true;
   return (settings as Partial<CompanySettings> | null)?.techs_see_all_jobs !== false;
+}
+
+/** Whether this member can make new jobs: owners always; techs unless the owner turns it off. */
+export function canMakeJobs(role: string | null | undefined, settings: unknown): boolean {
+  if (role === "owner") return true;
+  return (settings as Partial<CompanySettings> | null)?.techs_make_jobs !== false;
 }
 
 export interface IntakeQuestion {

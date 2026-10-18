@@ -13,7 +13,7 @@ import {
   pillClass,
 } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { OPEN_STATUSES, listJobs } from "@/lib/data";
+import { OPEN_STATUSES, listJobs, mayMakeJobs } from "@/lib/data";
 import { NavPlus } from "@/components/nav-bar";
 import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
@@ -41,6 +41,7 @@ const FILTERS: { key: string; label: string; statuses: JobStatus[] | null }[] = 
 
 export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
   const office = await getOffice();
+  const canAdd = await mayMakeJobs(office);
   const { status, q, show } = await searchParams;
   const filter = FILTERS.find((f) => f.key === status) ?? FILTERS[0]!;
   const search = typeof q === "string" ? q.trim() : "";
@@ -62,9 +63,9 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
     <>
       <PageHeader
         title="Jobs"
-        navAction={<NavPlus href="/jobs/new" label="New Job" />}
+        navAction={canAdd ? <NavPlus href="/jobs/new" label="New Job" /> : undefined}
         subtitle={<span className="hidden sm:inline">{office.company.name}</span>}
-        actions={<ButtonLink href="/jobs/new">New Job</ButtonLink>}
+        actions={canAdd ? <ButtonLink href="/jobs/new">New Job</ButtonLink> : undefined}
         // Phones use the "+" in the navigation bar instead.
         actionsClassName="hidden sm:flex"
       />

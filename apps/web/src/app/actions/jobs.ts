@@ -15,7 +15,7 @@ import {
   type NewJobInput,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
-import { getCompany } from "@/lib/data";
+import { getCompany, mayMakeJobs } from "@/lib/data";
 import { parsePlanRepeat } from "@/lib/plan-repeat";
 import { createClient } from "@/lib/supabase/server";
 import { locateProperty } from "@/server/route-days";
@@ -177,6 +177,7 @@ export async function deleteCustomer(_: FormState, form: FormData): Promise<Form
 /** Office: a new detection job, with a new or existing customer and pool, and its checklist. */
 export async function createJobAction(_: FormState, form: FormData): Promise<FormState> {
   const office = await getOffice();
+  if (!(await mayMakeJobs(office))) return { error: "Only owners can make new jobs." };
   const supabase = await createClient();
   const existing = text(form, "customer_mode") === "existing";
   const customerId = existing ? text(form, "customer") || undefined : undefined;

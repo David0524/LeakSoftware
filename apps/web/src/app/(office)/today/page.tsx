@@ -19,7 +19,7 @@ import { WeatherBadge } from "@/components/weather-badge";
 import { AddressLink, OpenRouteInMaps } from "@/components/open-in-maps";
 import { Empty, PageHeader, StatusBadge, cx, iconButtonClass, pillClass } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getCompany } from "@/lib/data";
+import { getCompany, mayMakeJobs } from "@/lib/data";
 import { getLine } from "@/lib/messages";
 import { mapsAppForRequest } from "@/lib/maps";
 import { loadRoutes, routeContext, routeKey, shopToday } from "@/server/route-days";
@@ -36,6 +36,7 @@ export const metadata: Metadata = { title: "Today · Tidemark" };
  */
 export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   const office = await getOffice();
+  const canAdd = await mayMakeJobs(office);
   const params = await searchParams;
   // The route context (company settings) and the day's jobs load together.
   const ctxP = routeContext(office);
@@ -75,7 +76,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
     <>
       <PageHeader
         title={mine ? "Today" : `Today · ${tech?.name ?? "Teammate"}`}
-        navAction={<NavPlus href="/jobs/new" label="New Job" />}
+        navAction={canAdd ? <NavPlus href="/jobs/new" label="New Job" /> : undefined}
         subtitle={
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
             {formatDay(ctx.today, "long")}

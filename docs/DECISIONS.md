@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "Create an owner setting toggle that allows techs to make new jobs")
+- **Techs can make new jobs** is a switch in Settings › Team (What techs can do), on by default so nothing changes for current shops. Off: techs don't see New Job on the website or in the app, and the database refuses a job a tech adds. Owners always can; plan visits and accepted repairs are made by the server either way.
+
 ## 2026-10-18 (owner: "Remove pool temp from chemical calculator"; "Move 'customers' to 'more'"; plan price per month; plan repeat options; "remove the salt/chlorine selector")
 - **Chemical calculator:** no water temperature (the saturation index assumes 80 °F) and no Chlorine/Salt choice. Salt is one of the readings, left blank on a chlorine pool. One set of targets for every pool, whatever its type or sanitizer: calcium 200 to 400 (aim 300), stabilizer 30 to 80 (aim 40), salt 2,700 to 3,400. Aim For still sets a different level. Same in the phone app.
 - **Customers is under More** on computers (the More menu) and phones (the More tab). The Messages and Customers switch is gone.

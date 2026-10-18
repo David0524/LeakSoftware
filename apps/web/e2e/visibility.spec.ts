@@ -74,3 +74,31 @@ test("owners choose whether techs see every job or only their own", async ({ bro
   await techPage.goto(`/jobs?status=all&q=${encodeURIComponent(customer)}`);
   await expect(techPage.getByRole("row").filter({ hasText: customer })).toHaveCount(1);
 });
+
+// Owner, 2026-10-18: a setting for whether techs can make new jobs (on by default).
+test("owners choose whether techs can make new jobs", async ({ browser }) => {
+  test.setTimeout(120_000);
+  const ownerPage = await (await browser.newContext()).newPage();
+  await signIn(ownerPage, OWNER, "/settings/team");
+  const card = ownerPage.locator("form").filter({ has: ownerPage.getByText("Techs see") });
+  const makes = card.getByRole("switch", { name: "Techs can make new jobs" });
+  await expect(makes).toBeChecked();
+  try {
+    await makes.uncheck();
+    await card.getByRole("button", { name: "Save" }).click();
+    await expect(card.getByText("Saved.")).toBeVisible();
+
+    const techPage = await (await browser.newContext()).newPage();
+    await signIn(techPage, TECH, "/jobs");
+    await expect(techPage.getByRole("heading", { level: 1, name: "Jobs" })).toBeVisible();
+    await expect(techPage.getByRole("link", { name: "New Job" })).toHaveCount(0);
+    await techPage.goto("/jobs/new");
+    await expect(techPage.getByText("Your office makes new jobs.")).toBeVisible();
+    await techPage.context().close();
+  } finally {
+    await ownerPage.goto("/settings/team");
+    await makes.check();
+    await card.getByRole("button", { name: "Save" }).click();
+    await expect(card.getByText("Saved.")).toBeVisible();
+  }
+});

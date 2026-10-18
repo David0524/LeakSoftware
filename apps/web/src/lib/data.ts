@@ -19,6 +19,7 @@ import type {
   TestResult,
   TestType,
 } from "@leakbook/core";
+import { canMakeJobs } from "@leakbook/core";
 import type { Office } from "./auth";
 import { createClient } from "./supabase/server";
 
@@ -469,6 +470,12 @@ export const getCompany = cache(async (office: Office) => {
     timezone: string;
   };
 });
+
+/** Whether this member can make new jobs: owners always; techs unless turned off (2026-10-18). */
+export async function mayMakeJobs(office: Office): Promise<boolean> {
+  if (office.isOwner) return true;
+  return canMakeJobs("tech", (await getCompany(office)).settings);
+}
 
 /** Cached per request, so a page can start loading it before the part that shows it. */
 const listConfigCached = cache(async (office: Office, table: string): Promise<unknown[]> => {

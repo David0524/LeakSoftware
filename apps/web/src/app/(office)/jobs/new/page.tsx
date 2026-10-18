@@ -7,9 +7,9 @@ import {
   type CompanySettings,
 } from "@leakbook/core";
 import { NewJobForm } from "@/components/new-job-form";
-import { PageHeader } from "@/components/ui";
+import { Notice, PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getCompany, getTeam, listConfig, listCustomers } from "@/lib/data";
+import { getCompany, getTeam, listConfig, listCustomers, mayMakeJobs } from "@/lib/data";
 
 export const metadata: Metadata = { title: "New Job · Tidemark" };
 
@@ -25,6 +25,14 @@ interface PriceItem {
 /** A new detection job from the office: the same fields as the phone's New Job screen. */
 export default async function NewJobPage() {
   const office = await getOffice();
+  // Owners can stop techs making jobs (owner setting, 2026-10-18).
+  if (!(await mayMakeJobs(office)))
+    return (
+      <>
+        <PageHeader title="New Job" back={{ href: "/jobs", label: "Jobs" }} />
+        <Notice>Your office makes new jobs. Ask an owner to add this one.</Notice>
+      </>
+    );
   const [customers, team, company, prices] = await Promise.all([
     listCustomers(office, ""),
     getTeam(office),

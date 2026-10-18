@@ -2,7 +2,7 @@ import { router, Stack } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { formatAddress, formatSchedule, groupJobs } from "@leakbook/core";
+import { canMakeJobs, formatAddress, formatSchedule, groupJobs } from "@leakbook/core";
 import { useJobViews, type JobView } from "../../data/jobs";
 import { useCompany, useSession } from "../../state/session";
 import { HeaderButton, StatusChip, T } from "../../ui/components";
@@ -15,7 +15,9 @@ import { color, font, ios, radius, space, tint, touch } from "../../ui/theme";
 
 export default function Jobs() {
   const company = useCompany();
-  const { services } = useSession();
+  const { services, membership } = useSession();
+  // Owners can stop techs making jobs (owner setting, 2026-10-18).
+  const canAdd = canMakeJobs(membership?.role, company.settings);
   const jobs = useJobViews(company.id);
   const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
@@ -60,7 +62,7 @@ export default function Jobs() {
           headerRight: () => (
             <View style={styles.headerActions}>
               <HeaderButton title="Settings" icon="settings" onPress={openSettings} />
-              {ios ? <HeaderButton title="New Job" icon="add" onPress={newJob} /> : null}
+              {ios && canAdd ? <HeaderButton title="New Job" icon="add" onPress={newJob} /> : null}
             </View>
           ),
         }}
@@ -102,12 +104,14 @@ export default function Jobs() {
           <View style={styles.empty}>
             <T variant="heading">No jobs yet</T>
             <T variant="muted">
-              Create your first job. It works without signal and syncs when you’re back online.
+              {canAdd
+                ? "Create your first job. It works without signal and syncs when you’re back online."
+                : "Jobs the office gives you show up here."}
             </T>
           </View>
         }
       />
-      {ios ? null : (
+      {ios || !canAdd ? null : (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="New Job"
