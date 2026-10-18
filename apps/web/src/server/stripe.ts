@@ -57,8 +57,14 @@ export interface PaymentAccount {
 }
 
 /**
- * Creates the shop's Standard account the first time, then returns a Stripe-hosted
- * onboarding link. `existing` is the shop's saved account, if any.
+ * Creates the shop's account the first time, then returns a Stripe-hosted onboarding link.
+ * `existing` is the shop's saved account, if any.
+ *
+ * Accounts v2 (owner, 2026-10-18: new Stripe accounts refuse v1 account creation): the shop
+ * gets its own full Stripe Dashboard, is the merchant of record for direct charges, and pays
+ * Stripe's fees and covers its own losses, as a v1 Standard account did. Everything else
+ * stays on v1: Stripe answers v1 calls for a v2 account in v1 form, and still sends v1
+ * `account.updated` events for it to the Connected accounts webhook.
  */
 export async function onboardingLink(
   company: { id: string; name: string; email?: string | null },
@@ -70,30 +76,50 @@ export async function onboardingLink(
   const d = deps(stripe, db);
   let accountId = existing?.stripe_account_id;
   if (!accountId) {
-    const account = await d.stripe.accounts.create(
+    const account = await d.stripe.v2.core.accounts.create(
       {
-        type: "standard",
-        email: company.email ?? undefined,
-        business_profile: { name: company.name },
+        display_name: company.name,
+        contact_email: company.email ?? undefined,
+        dashboard: "full",
+        identity: { country: "us" },
+        configuration: {
+          merchant: {
+            capabilities: {
+              card_payments: { requested: true },
+              // Bank (ACH) payments on quotes and invoices.
+              ach_debit_payments: { requested: true },
+            },
+          },
+        },
+        defaults: {
+          currency: "usd",
+          locales: ["en-US"],
+          responsibilities: { fees_collector: "stripe", losses_collector: "stripe" },
+        },
         metadata: { company_id: company.id },
       },
-      { idempotencyKey: `account-${company.id}` },
+      { idempotencyKey: `account-v2-${company.id}` },
     );
     accountId = account.id;
     await rpc(d.db, "stripe_save_account", {
       target_company: company.id,
       account_id: accountId,
-      charges: account.charges_enabled ?? false,
-      payouts: account.payouts_enabled ?? false,
-      submitted: account.details_submitted ?? false,
+      charges: false,
+      payouts: false,
+      submitted: false,
     });
   }
   await registerPaymentDomain(d.stripe, accountId, origin);
-  const link = await d.stripe.accountLinks.create({
+  const link = await d.stripe.v2.core.accountLinks.create({
     account: accountId,
-    type: "account_onboarding",
-    refresh_url: `${origin}/settings/payments?stripe=refresh`,
-    return_url: `${origin}/settings/payments?stripe=return`,
+    use_case: {
+      type: "account_onboarding",
+      account_onboarding: {
+        configurations: ["merchant"],
+        refresh_url: `${origin}/settings/payments?stripe=refresh`,
+        return_url: `${origin}/settings/payments?stripe=return`,
+      },
+    },
   });
   return link.url;
 }

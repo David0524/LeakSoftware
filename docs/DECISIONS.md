@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "move shop onboarding to Accounts v2 … so we don't depend on that switch")
+- **Shops' Stripe accounts are made with Accounts v2** (`POST /v2/core/accounts`) and onboarded with a v2 account link (`account_onboarding`, merchant configuration). New Stripe platforms refuse v1 account creation unless "Accounts v1 support" is turned on; we no longer need it.
+- **Same deal for shops as before:** each shop has its own full Stripe Dashboard (`dashboard: full`), is the merchant of record for direct charges, and pays Stripe's fees and covers its own losses (`fees_collector` and `losses_collector`: `stripe`). Card and bank (ACH) payments are requested.
+- **Nothing else changes:** Stripe answers v1 calls for a v2 account in v1 form, so reading the account after onboarding stays on v1, and it still sends v1 `account.updated` events for v2 accounts to the Connected accounts webhook. Customer payments are still checked against the shop's own account.
+
 ## 2026-10-18 (owner: "Ensure that adding users effects the pricing")
 - **The subscription follows the team, checked against the Stripe sandbox:** a leak detection shop went from 1 person ($49) to 2 people ($99) when a teammate joined, and Stripe's billing page showed $99 for the next bill. Turning someone off lowers it the same way, prorated. Changes happen when someone joins or is turned on or off, when the shop's services change, when an owner opens Sundeck Pro Billing, and in the daily run.
 - **Each package is billed under its own permanent Stripe product** (`sundeckpro_leak_detection`, `sundeckpro_pool_maintenance`, `sundeckpro_pool_maintenance_leak_detection`), made the first time it's needed. Products made inline at Checkout are inactive, and Stripe refused every later price change for them; shops subscribed that way are moved over on their next price check.
