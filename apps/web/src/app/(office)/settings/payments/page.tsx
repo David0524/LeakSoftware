@@ -115,7 +115,7 @@ export default async function PaymentsSettingsPage({
                 label="Deposit percentage"
                 name="deposit_percent"
                 inputMode="decimal"
-                defaultValue={bpsToPercent(deposit.value_bps ?? 5000)}
+                defaultValue={bpsToPercent(deposit.value_bps ?? 0)}
                 hint="Used when the deposit is a percentage."
               />
               <SField
@@ -144,7 +144,7 @@ export default async function PaymentsSettingsPage({
                 label="Largest discount a tech can give (%)"
                 name="tech_discount_limit"
                 inputMode="decimal"
-                defaultValue={bpsToPercent(s.tech_discount_limit_bps ?? 1000)}
+                defaultValue={bpsToPercent(s.tech_discount_limit_bps ?? 0)}
                 stacked
               />
             </SettingsFields>

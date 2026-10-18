@@ -5,6 +5,10 @@ set search_path = public, extensions;
 select no_plan();
 
 create temp table fx as select tests.make_company('a') as a, tests.make_company('b') as b;
+-- These rules need a deposit and a tech discount limit (new shops start with neither).
+update company set settings = settings || '{"deposit": {"type": "percent", "value_bps": 5000, "minimum_cents": 0},
+                                            "tech_discount_limit_bps": 1000}'::jsonb
+where id in (((select a from fx) ->> 'company')::uuid, ((select b from fx) ->> 'company')::uuid);
 grant select on fx to authenticated, anon, service_role;
 create temp view ids as select
   (a ->> 'company')::uuid as ca, (a ->> 'tech')::uuid as tech_a, (a ->> 'owner')::uuid as owner_a,

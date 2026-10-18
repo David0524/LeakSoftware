@@ -77,7 +77,7 @@ export function Onboarding({
         pains: [],
         people: 1,
         color: BRAND_SWATCHES[0].hex,
-        ...(pkg === "leak" ? { depositBps: 5_000 } : { chlorine: "liquid12" as ChlorineProduct }),
+        ...(pkg === "leak" ? { depositBps: 0 } : { chlorine: "liquid12" as ChlorineProduct }),
       },
   );
   const [readings, setReadings] = useState({ fc: 0.5, ph: 8.0, ta: 70 });
@@ -525,7 +525,7 @@ function SetupChoices({
           <Segmented
             label="Deposit on repairs"
             name="deposit"
-            value={String(answers.depositBps ?? 5_000)}
+            value={String(answers.depositBps ?? 0)}
             options={DEPOSIT_CHOICES.map((d) => ({ value: String(d.bps), label: d.label }))}
             onChange={(v) => set({ depositBps: Number(v) })}
           />

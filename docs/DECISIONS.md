@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "Have 'Deposit percentage' default to 0 for new accounts. Same with 'largest tech discount'")
+- **New shops start with no deposit and a 0% tech discount limit** (company settings default; onboarding's deposit choice starts at None). Owners turn either on in Settings › Payments. Existing shops keep their settings; the demo shop keeps 50% and 10% so the demo shows them.
+
 ## 2026-10-18 (owner, passing on notes: "Remove warranties entirely", "Make settings a gear icon", "a 'more' dropdown on desktop", custom chemical levels, "Techs should not see 'needs a time'")
 - **Warranties are gone:** no page, no nav entry, no price book field, no "N-month warranty" on quotes and invoices, and paid repairs no longer make warranty records (table dropped). `warranty_months` stays on price book, quote, and invoice lines, unused, because installed phones still send it.
 - **Desktop header:** Dashboard, Today, Jobs, Schedule, Messages, then a More pull-down menu (Invoices, Chemicals), then Settings as a gear. Phones keep the tab bar with More.
