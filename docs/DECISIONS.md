@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: home page "a tad more interesting", not too busy; "Get paid" on one line on phones)
+- **The home page reads in chapters, not more motion:** section backgrounds alternate (plain, a pale water tint, one navy band for In the Office), each section's heading and demos fade up once as they first scroll in, and the closing band has slow drifting water lines, so the page opens and closes on water. No motion behind the demos, which already animate. With Reduce Motion nothing moves or waits to appear; without script nothing is hidden.
+- **"Get paid." keeps to one line**, on a line of its own on phones.
+
 ## 2026-10-18 (owner: "New job options should be leak detection, pool service, repair. Both profiles get repair.")
 - **New Job offers Repair to every shop**, website and app: Leak Detection | Repair for leak shops, Pool Service | Repair for pool shops, all three for shops doing both (`newJobTypes` in `packages/core`). A repair job made here is like one from an accepted quote without the quote: no checklist, a second tech allowed, no booking questions or detection price. Its price (website; optional) goes on the invoice as "Repair" (`20261012005100_new_repair_job.sql`), where parts are added before sending. Accepted quotes still make their own repair jobs.
 
