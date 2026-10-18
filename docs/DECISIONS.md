@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "Should we change the favicon to have a transparent background?")
+- **Yes, for the browser tab:** the favicon is the pin alone on a transparent background, water blue, switching to the lighter dark-mode blue (`color.role.dark.link`) when the browser is dark. The home-screen and app icons keep the navy square, since iOS and Android fill transparency with black or white.
+
 ## 2026-10-18 (owner: "Can we clean up the header? Can it all fit in one row?"; the "+" was "in a weird spot and it disappears as you scroll")
 - **Desktop header is one row that stays in view:** logo (the mark alone on narrower screens), the sections as tabs, a blue New Job button (just "+" on narrower screens), the Settings gear, and a round account button with initials. The account menu holds the name, email, shop (and switching shops), Appearance, Account and Help, and Sign Out.
 
