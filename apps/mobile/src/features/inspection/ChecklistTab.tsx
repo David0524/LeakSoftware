@@ -20,6 +20,7 @@ import {
 } from "../../data/inspection";
 import { useSession } from "../../state/session";
 import { Button, Card, Field, Group, Row, Segmented, T } from "../../ui/components";
+import { Icon } from "../../ui/Icon";
 import { SwipeToDelete } from "../../ui/SwipeRow";
 import { color, ios, space } from "../../ui/theme";
 import { confirmRemoveComponent } from "./remove";
@@ -160,10 +161,14 @@ function ChecklistItem({
   const [where, setWhere] = useState<string | null>(null);
   const needsWhere = type.answer !== "yes_no" && (verdict === "leaking" || verdict === "attention");
 
-  function choose(v: Verdict) {
+  // Maintenance items are just done or not: a check, no choices (owner, 2026-10-18).
+  const check = type.answer === "done";
+  const done = verdict === "ok";
+
+  function choose(v: Verdict | null) {
     saveChecklistResult(services.sync, job.company_id, job.id, component.id, result, {
       ...verdictValues(v, user?.id ?? null),
-      ...(v === "ok" || v === "na" ? { location_text: null } : {}),
+      ...(v === null || v === "ok" || v === "na" ? { location_text: null } : {}),
     });
   }
 
@@ -175,6 +180,20 @@ function ChecklistItem({
     <SwipeToDelete label="Remove" onDelete={remove}>
       <View style={styles.item}>
         <Row style={{ justifyContent: "space-between", gap: space["4"] }}>
+          {check ? (
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: done }}
+              accessibilityLabel={component.label}
+              hitSlop={10}
+              onPress={() => choose(done ? null : "ok")}
+              style={[styles.check, done ? styles.checkOn : null]}
+            >
+              {done ? (
+                <Icon name="checkmark" size={16} color={color.onPrimary} weight="bold" />
+              ) : null}
+            </Pressable>
+          ) : null}
           <View
             style={{ flex: 1 }}
             accessible
@@ -209,7 +228,9 @@ function ChecklistItem({
             </T>
           </Pressable>
         </Row>
-        <Segmented options={verdictOptions(type)} value={verdict} onChange={choose} />
+        {check ? null : (
+          <Segmented options={verdictOptions(type)} value={verdict} onChange={choose} />
+        )}
         {needsWhere ? (
           <Field
             label="Where"
@@ -234,6 +255,16 @@ function ChecklistItem({
 const LINK_SLOP = { top: 12, bottom: 12, left: 8, right: 8 };
 
 const styles = StyleSheet.create({
+  check: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: color.controlBorder,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkOn: { backgroundColor: color.pass, borderColor: color.pass },
   item: {
     gap: space["2"],
     paddingHorizontal: space["4"],

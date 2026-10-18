@@ -148,8 +148,10 @@ export async function setUpChecklist(_: FormState, form: FormData): Promise<Form
 export async function setVerdict(_: FormState, form: FormData): Promise<FormState> {
   const { office, db } = await ctx();
   const jobId = text(form, "job");
-  const verdict = text(form, "verdict") as Verdict;
-  if (!VERDICTS.includes(verdict)) return { error: "Pick a result." };
+  // "todo" puts an item back to do (a maintenance check turned off).
+  const raw = text(form, "verdict");
+  const verdict = raw === "todo" ? null : (raw as Verdict);
+  if (verdict !== null && !VERDICTS.includes(verdict)) return { error: "Pick a result." };
   const values = verdictValues(verdict, office.user.id);
   const resultId = text(form, "result");
   const { error } = resultId

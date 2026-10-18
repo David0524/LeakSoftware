@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "Any job with a date already set cannot be dragged around"; Needs a Time cards "a little too bulky"; "The checklist for maintenance jobs can just be check buttons")
+- **Moving jobs by hand:** any job but a canceled one can be dragged to another day or tech; a started or finished job keeps its status when it moves, and only a job that hasn't started can go back to Needs a Time. Plan Route still leaves started and finished jobs where they are.
+- **Needs a Time cards** are two lines (customer and number; address and note), with Suggest Times and Move… behind a "…" button.
+- **Maintenance checklist** items are a round check on the website and in the app (done or to do). Leak detection items keep their choices.
+
 ## 2026-10-18 (owner: swipe the Schedule's week strip; "so many jobs that need to be scheduled it gets super cluttered on desktop"; the onboarding checklist "pushes lots of our information out of the way"; "remove report templates settings now that AI reports are removed?"; the Messages conversation "feels a little wide/fat")
 - **Schedule › Day:** the strip of days follows the finger sideways; letting go past a quarter of the way (or a flick) moves to the week before or after, on the same weekday.
 - **Needs a Time** is one row of cards that scrolls sideways at every size, each card one line per detail, with Show All on wider screens to open them as a grid.

@@ -68,7 +68,11 @@ test("a weekly cleaning plan puts visits on the route, and a visit is marked don
   await expect(page.getByRole("link", { name: "Maintenance plan" })).toBeVisible();
   await page.getByRole("button", { name: "Start Job" }).click();
   await expect(page.getByText(/^0 done · 0 need attention · 0 skipped · 7 to do$/)).toBeVisible();
-  await page.getByRole("button", { name: /^Mark 7 Remaining Done$/ }).click();
+  // Each item is a check (owner, 2026-10-18: no menu); the box is hidden, so tap its row.
+  await page.getByRole("checkbox").first().locator("..").click();
+  await expect(page.getByText(/^1 done · 0 need attention · 0 skipped · 6 to do$/)).toBeVisible();
+  await expect(page.getByRole("checkbox").first()).toBeChecked();
+  await page.getByRole("button", { name: /^Mark 6 Remaining Done$/ }).click();
   await expect(page.getByText(/^7 done · 0 need attention · 0 skipped · 0 to do$/)).toBeVisible();
   await page.getByRole("button", { name: "Mark Done" }).click();
   await expect(page.getByText("Done", { exact: true }).first()).toBeVisible();

@@ -134,6 +134,20 @@ export const LOCK_LABELS: Record<LockReason, string> = {
  * job has happened; a fixed time was promised; a two-tech job is in two routes, so moving it
  * in one would strand the other tech (move it by hand to change both).
  */
+/**
+ * Whether someone may drag this job to another day or tech by hand: any job but a canceled
+ * one (owner, 2026-10-18: "Any job with a date already set cannot be dragged around"). Plan
+ * Route still leaves started and finished jobs where they are (lockReason).
+ */
+export function canMoveJob(status: string): boolean {
+  return status !== "canceled";
+}
+
+/** Whether a job can go back to Needs a Time: only one that hasn't started. */
+export function canUnschedule(status: string): boolean {
+  return status === "scheduled" || status === "unscheduled";
+}
+
 export function lockReason(job: PlanJob): LockReason | null {
   if (job.status !== "scheduled" && job.status !== "unscheduled") return "started";
   if (job.arrival_fixed) return "fixed";

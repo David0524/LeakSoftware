@@ -835,32 +835,65 @@ function TrayCard({
     transition,
     isDragging,
   } = useSortable({ id: j.id });
+  const [actions, setActions] = useState(false);
+  const closeActions = useCallback(() => setActions(false), []);
   return (
     <article
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       data-testid="tray-job"
-      className={cx("well flex gap-1 p-2", isDragging && "opacity-40")}
+      className={cx("well flex items-center gap-1 py-1 pr-1 pl-1", isDragging && "opacity-40")}
     >
       <Grip label={`Drag ${j.customer}`} ref={setActivatorNodeRef} {...attributes} {...listeners} />
-      <div className="min-w-0 flex-1">
-        {/* One line each, so the cards in a row stay the same height. */}
-        <Link href={`/jobs/${j.id}`} className="block truncate hover:underline">
+      {/* Two lines, with the actions behind "…", so a long list stays short (owner,
+          2026-10-18: the cards were "a little too bulky"). */}
+      <Link href={`/jobs/${j.id}`} className="min-w-0 flex-1 py-1 hover:underline">
+        <span className="block truncate">
           <span className="font-semibold">{j.customer}</span>
           <span className="text-text-muted">{j.number ? ` · #${j.number}` : ""}</span>
-        </Link>
-        <p className="truncate text-[0.9375rem] text-text-muted">{j.address}</p>
-        {j.note ? <p className="truncate text-[0.9375rem] text-text-muted">{j.note}</p> : null}
+        </span>
+        <span className="block truncate text-[0.9375rem] text-text-muted">
+          {[j.address, j.note].filter(Boolean).join(" · ")}
+        </span>
+      </Link>
+      <button
+        type="button"
+        aria-label={`Actions for ${j.customer}`}
+        title="Suggest Times or Move"
+        aria-haspopup="dialog"
+        onClick={() => setActions(true)}
+        className="grid size-11 shrink-0 place-items-center rounded-full text-link hover:bg-link/10"
+      >
+        <svg viewBox="0 0 24 24" className="size-6" fill="currentColor" aria-hidden="true">
+          <circle cx="6" cy="12" r="1.8" />
+          <circle cx="12" cy="12" r="1.8" />
+          <circle cx="18" cy="12" r="1.8" />
+        </svg>
+      </button>
+      <Sheet open={actions} onClose={closeActions} title={j.customer}>
+        <p className="mb-2 text-[0.9375rem] text-text-muted">
+          {[j.number ? `#${j.number}` : null, j.address, j.note].filter(Boolean).join(" · ")}
+        </p>
         <Suggestions
           target={{ job: j.id }}
-          onPick={(s) => onSuggestion(j.id, s)}
+          onPick={(s) => {
+            setActions(false);
+            onSuggestion(j.id, s);
+          }}
           sheetTitle="Suggested Times"
         >
-          <button type="button" className={buttonClass("quiet", "px-2")} onClick={() => onMove(j)}>
+          <button
+            type="button"
+            className={buttonClass("quiet", "px-2")}
+            onClick={() => {
+              setActions(false);
+              onMove(j);
+            }}
+          >
             Move…
           </button>
         </Suggestions>
-      </div>
+      </Sheet>
     </article>
   );
 }

@@ -147,7 +147,8 @@ async function PersonPanel({
   return (
     <div className="space-y-5">
       <section className="card p-5">
-        <h2 className="font-display text-xl font-bold">{name}</h2>
+        {/* The conversation already has the name as its heading. */}
+        <p className="font-display text-xl font-bold">{name}</p>
         <p className="text-[0.9375rem] text-text-muted">{formatPhone(phone)}</p>
         {found?.customer.email ? (
           <p className="truncate text-[0.9375rem] text-text-muted">{found.customer.email}</p>

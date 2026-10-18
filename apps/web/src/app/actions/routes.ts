@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import {
   addDays,
+  canMoveJob,
+  canUnschedule,
   durationLabel,
   formatAddress,
   isDateString,
@@ -180,8 +182,14 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
   const db = await createClient();
   const job = await loadJob(db, office, jobId);
   if (!job) return { error: "This job is gone. Refresh the page." };
-  if (job.status !== "scheduled" && job.status !== "unscheduled")
-    return { error: "This job has started, so it stays where it is." };
+  if (!canMoveJob(job.status))
+    return { error: "This job was canceled, so it stays off the schedule." };
+  if (!date && !canUnschedule(job.status))
+    return {
+      error: "This job has started, so it stays on the schedule. Drag it to another day instead.",
+    };
+  // A started or finished job keeps its status when it moves; others become scheduled.
+  const status = canUnschedule(job.status) ? "scheduled" : job.status;
   const ctx = await routeContext(office);
   if (date && date < ctx.today) return { error: "Pick today or a later day." };
   if (!ctx.seesAll && tech !== office.user.id && date)
@@ -232,7 +240,7 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
         id: jobId,
         route_order: null,
         assigned_user_id: null,
-        status: "scheduled",
+        status,
         scheduled_start: start,
         scheduled_end: new Date(Date.parse(start) + duration * 60_000).toISOString(),
       },
@@ -275,7 +283,7 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
     (u) => u.id === jobId,
   )!;
   mine.assigned_user_id = tech;
-  mine.status = "scheduled";
+  mine.status = status;
   if (fixedMin != null) {
     mine.scheduled_start = zonedMinutesToIso(date, fixedMin, ctx.timeZone);
     mine.scheduled_end = new Date(

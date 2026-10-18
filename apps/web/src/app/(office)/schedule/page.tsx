@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   LOCK_LABELS,
   addDays,
+  canMoveJob,
   formatAddress,
   formatDay,
   formatTime,
@@ -68,7 +69,7 @@ function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardSto
     time: j.scheduled_start ? formatTime(j.scheduled_start, ctx.timeZone) : null,
     status: j.status,
     lock: lock && lock !== "started" ? LOCK_LABELS[lock] : null,
-    draggable: j.status === "scheduled" || j.status === "unscheduled",
+    draggable: canMoveJob(j.status),
     legMin: route ? (route.summary.legs[i] ?? null) : null,
     shortMin: route ? (route.summary.short[i] ?? 0) : 0,
     note: onSecond
