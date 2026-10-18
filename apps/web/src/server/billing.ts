@@ -71,6 +71,34 @@ async function shopPrice(
 const monthly = { interval: "month" } as const;
 
 /**
+ * The Stripe product a package is billed under: one per package name, made the first time it's
+ * needed and kept active. A product made inline at Checkout (`product_data`) is inactive, and
+ * Stripe then refuses to change the subscription's price (found in the sandbox, 2026-10-18).
+ */
+export async function packageProduct(stripe: Stripe, name: string): Promise<string> {
+  const id = `sundeckpro_${name
+    .toLowerCase()
+    .replace(/^sundeck pro /, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "")}`;
+  try {
+    const product = await stripe.products.retrieve(id);
+    if (!product.active || product.name !== name)
+      await stripe.products.update(id, { active: true, name });
+    return id;
+  } catch (error) {
+    if ((error as { code?: string }).code !== "resource_missing") throw error;
+  }
+  try {
+    await stripe.products.create({ id, name });
+  } catch (error) {
+    // Another request made it first.
+    if ((error as { code?: string }).code !== "resource_already_exists") throw error;
+  }
+  return id;
+}
+
+/**
  * Stripe Checkout for the subscription, priced for the shop's package and people. Time left
  * on the free trial carries over. New shops come here from onboarding and go back to it.
  */
@@ -113,7 +141,7 @@ export async function subscribeUrl(
       {
         price_data: {
           currency: "usd",
-          product_data: { name: price.name },
+          product: await packageProduct(stripe, price.name),
           unit_amount: price.cents,
           recurring: monthly,
         },
@@ -242,8 +270,9 @@ export async function syncSubscriptionPrice(
   const live = await stripe.subscriptions.retrieve(sub.stripe_subscription_id as string);
   const item = live.items.data[0];
   if (!item || item.price.unit_amount === price.cents) return null;
-  const product =
-    typeof item.price.product === "string" ? item.price.product : item.price.product.id;
+  // The package's own active product: shops subscribed before it existed were billed under an
+  // inactive one made at Checkout, which Stripe won't take a new price for.
+  const product = await packageProduct(stripe, price.name);
   await stripe.subscriptions.update(live.id, {
     items: [
       {

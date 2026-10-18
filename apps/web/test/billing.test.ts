@@ -120,9 +120,30 @@ function priceDb(services: string, people: number) {
   } as unknown as SupabaseClient;
 }
 
-function fakeStripe(unitAmount: number) {
+function fakeStripe(
+  unitAmount: number,
+  products: Record<string, { active: boolean; name: string }> = {},
+) {
   const updates: unknown[] = [];
+  const productCalls: string[] = [];
   const stripe = {
+    products: {
+      retrieve: async (id: string) => {
+        if (!products[id])
+          throw Object.assign(new Error("No such product"), { code: "resource_missing" });
+        return { id, ...products[id] };
+      },
+      create: async ({ id, name }: { id: string; name: string }) => {
+        productCalls.push(`create ${id}`);
+        products[id] = { active: true, name };
+        return { id };
+      },
+      update: async (id: string, params: { active: boolean; name: string }) => {
+        productCalls.push(`update ${id}`);
+        products[id] = params;
+        return { id };
+      },
+    },
     subscriptions: {
       retrieve: async () => ({
         id: "sub_1",
@@ -131,17 +152,29 @@ function fakeStripe(unitAmount: number) {
       update: async (_id: string, params: unknown) => updates.push(params),
     },
   } as unknown as Stripe;
-  return { stripe, updates };
+  return { stripe, updates, productCalls };
 }
 
 describe("Sundeck Pro price by package and people", () => {
-  it("moves a growing pool shop to the next tier, prorated", async () => {
-    const { stripe, updates } = fakeStripe(7_900);
+  it("moves a growing pool shop to the next tier, prorated, under the package's own product", async () => {
+    const { stripe, updates, productCalls } = fakeStripe(7_900);
     expect(await syncSubscriptionPrice("co_1", stripe, priceDb("pool", 3))).toBe(14_900);
+    // Not the inactive product Checkout made (Stripe refuses new prices on it).
+    expect(productCalls).toEqual(["create sundeckpro_pool_maintenance"]);
     expect(updates[0]).toMatchObject({
-      items: [{ id: "si_1", price_data: { product: "prod_1", unit_amount: 14_900 } }],
+      items: [
+        { id: "si_1", price_data: { product: "sundeckpro_pool_maintenance", unit_amount: 14_900 } },
+      ],
       proration_behavior: "create_prorations",
     });
+  });
+
+  it("turns the package's product back on if it was turned off", async () => {
+    const { stripe, productCalls } = fakeStripe(4_900, {
+      sundeckpro_leak_detection: { active: false, name: "Sundeck Pro Leak Detection" },
+    });
+    expect(await syncSubscriptionPrice("co_1", stripe, priceDb("leak", 2))).toBe(9_900);
+    expect(productCalls).toEqual(["update sundeckpro_leak_detection"]);
   });
 
   it("charges Both as Pool Maintenance plus $49, and leaves a right price alone", async () => {
