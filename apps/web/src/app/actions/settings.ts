@@ -566,7 +566,7 @@ export async function saveReportTemplate(_: FormState, form: FormData): Promise<
   if (!name) return { fields: { name: "Enter a name." } };
   const { error } = await supabase
     .from("report_template")
-    .update({ name, tone: text(form, "tone"), enabled: checked(form, "enabled") })
+    .update({ name, enabled: checked(form, "enabled") })
     .eq("company_id", office.company.id)
     .eq("id", text(form, "id"));
   if (error) return failed(error);

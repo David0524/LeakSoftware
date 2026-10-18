@@ -159,7 +159,7 @@ export function Thread({
                 )}
               >
                 {item.pictures.length ? (
-                  <div className="mb-1 flex max-w-[80%] flex-wrap gap-1">
+                  <div className="mb-1 flex max-w-[min(80%,36rem)] flex-wrap gap-1">
                     {item.pictures.map((p) => (
                       <a key={p.url} href={p.url} target="_blank" rel="noreferrer">
                         {/* eslint-disable-next-line @next/next/no-img-element -- signed, short-lived links */}
@@ -175,7 +175,8 @@ export function Thread({
                 {item.body ? (
                   <p
                     className={cx(
-                      "max-w-[80%] rounded-[1.25rem] px-4 py-2 break-words whitespace-pre-wrap",
+                      // Wide screens: about 60 characters a line, so a long text stays easy to read.
+                      "max-w-[min(80%,36rem)] rounded-[1.25rem] px-4 py-2 break-words whitespace-pre-wrap",
                       item.direction === "out" ? "bg-primary text-on-primary" : "bg-fill text-text",
                     )}
                   >

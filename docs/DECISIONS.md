@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: swipe the Schedule's week strip; "so many jobs that need to be scheduled it gets super cluttered on desktop"; the onboarding checklist "pushes lots of our information out of the way"; "remove report templates settings now that AI reports are removed?"; the Messages conversation "feels a little wide/fat")
+- **Schedule › Day:** the strip of days follows the finger sideways; letting go past a quarter of the way (or a flick) moves to the week before or after, on the same weekday.
+- **Needs a Time** is one row of cards that scrolls sideways at every size, each card one line per detail, with Show All on wider screens to open them as a grid.
+- **Getting Started** on wider screens is a small panel in the bottom-right corner, after Stripe's setup guide: closed it shows the progress, open it lists the steps; Hide still turns it off. Phones keep the card.
+- **Report Templates** stays for the report names and "Techs can send this report"; the tone box is gone (it only fed the AI). The `tone` column stays, unused, in case AI comes back.
+- **Messages** on large screens: a third column shows the person (phone, email, pools, latest jobs, Customer Details), and texts are at most about 60 characters a line.
+
 ## 2026-10-18 (owner: "Make our desktop experience look more like Stripe… I love how the top nav bar looks and the side nav bar in settings")
 - **Desktop header** is a light bar in two rows: the logo, the shop as an outlined pill, then the name, appearance, Sign Out, and a round blue New Job "+" (when the person may make jobs); below, the sections as tabs, the current one in the link color with an underline, and the Settings gear at the end. The tab row stays in view while scrolling. Phones keep the iOS navigation and tab bars.
 - **Settings sidebar** groups the pages as the Settings list does (Your shop, Money, Checklists and reports), each with an outline icon; the open page is in the link color. It stays in view while the page scrolls. No global search yet (Stripe's search box); add it if wanted.

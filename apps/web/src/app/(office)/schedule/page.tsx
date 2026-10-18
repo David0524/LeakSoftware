@@ -25,6 +25,7 @@ import {
   type TrayJob,
 } from "@/components/route-board";
 import { DateJump } from "@/components/date-jump";
+import { WeekStrip } from "@/components/week-strip";
 import {
   Grouped,
   Notice,
@@ -202,7 +203,6 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
             timeZone: "UTC",
           }).format(new Date(`${date}T12:00:00Z`))
         : `${formatDay(days[0]!)} – ${formatDay(days[days.length - 1]!)}`;
-  const week = scheduleDays("week", date);
   const unassignedCount = days.reduce((n, d) => n + (unassigned.get(d)?.length ?? 0), 0);
   const jobsShown = columns.reduce((n, c) => n + c.stops.length, 0) + unassignedCount;
   const jobsOnPhone =
@@ -279,31 +279,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
         </nav>
       </div>
 
-      {view === "day" ? (
-        <nav
-          aria-label="Days this week"
-          className="-mx-4 mb-4 flex gap-1 overflow-x-auto px-4 pb-1"
-        >
-          {week.map((d) => {
-            const at = new Date(`${d}T12:00:00Z`);
-            return (
-              <Link
-                key={d}
-                href={href(d)}
-                aria-current={d === date ? "date" : undefined}
-                aria-label={formatDay(d, "long")}
-                className={cx(
-                  "flex min-h-14 min-w-12 flex-1 flex-col items-center justify-center rounded-xl text-[0.8125rem] font-medium",
-                  d === date ? "bg-text text-bg" : d === today ? "text-link" : "hover:bg-surface",
-                )}
-              >
-                {dateFormat("en-US", { weekday: "short", timeZone: "UTC" }).format(at)}
-                <span className="font-display text-xl font-bold">{at.getUTCDate()}</span>
-              </Link>
-            );
-          })}
-        </nav>
-      ) : null}
+      {view === "day" ? <WeekStrip date={date} today={today} tech={tech} /> : null}
 
       {/* Whose schedule: under the days of the week. */}
       {techs.length > 1 ? (

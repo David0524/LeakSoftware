@@ -29,7 +29,7 @@ export default async function SettingsIndex() {
     "/settings/tests": "Tests techs record on the phone",
     "/settings/severities": "How serious a finding is",
     "/settings/exclusions": "Why a component wasn’t inspected",
-    "/settings/reports": "Wording and tone of written reports",
+    "/settings/reports": "Which reports techs can send",
   };
   return (
     <>
