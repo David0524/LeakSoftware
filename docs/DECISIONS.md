@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "Approve all as recommended, start S0"; "I want the expo app to get fixes too")
+- **Swift plan approved** (`docs/plans/swift-app.md`), every decision as recommended: the pilot runs on the Expo app once enrollment is active and the Swift app replaces it as an App Store update after S9; the Expo app is the Android app meanwhile; iOS 18 and later; SQLCipher stays; the rules the app uses are ported to Swift and checked against fixtures from `packages/core`; iPhone builds and simulator tests on GitHub's macOS runners, xtool in cloud sessions; new field features go to the website and the Swift app.
+- **The Expo app keeps getting fixes** (bugs, wording, anything the pilot turns up) on iPhone and Android until the switch; only new features skip it.
+
 ## 2026-10-18 (owner: "I am awaiting Apple Developer Enrollment"; "I am going to have you build this app in Swift")
 - **The field app will be rebuilt in Swift** (native iOS), replacing the Expo app in `apps/mobile`. The build plan's mobile stack (section 2) and milestones still describe Expo; they get a written plan for the move, approved by the owner, before any Swift code. Until then the Expo app stays as it is.
 - **Android is a separate app** (owner), planned on its own; the Swift app is iPhone only.

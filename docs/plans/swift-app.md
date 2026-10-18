@@ -1,6 +1,6 @@
 # The field app in Swift (plan, 2026-10-18)
 
-For the owner to approve before any Swift code is written (DECISIONS, 2026-10-18: "I am going to
+**Approved 2026-10-18** with every recommendation; the Expo app keeps getting fixes (DECISIONS). Originally for the owner to approve before any Swift code was written (DECISIONS, 2026-10-18: "I am going to
 have you build this app in Swift"; Android is a separate app). Until it is approved, the Expo app
 in `apps/mobile` stays as it is.
 
@@ -50,8 +50,8 @@ Only the iPhone app is rebuilt. Everything it talks to stays the same:
    `.ipa` files for Sideloadly. xtool alone in CI would need a copy of Xcode in CI, which
    Apple's license doesn't allow us to store.
 7. **New field features during the rewrite.** Recommended: features the owner asks for go into
-   the website first (as today) and into the Swift app's milestone list; the Expo app only gets
-   fixes. Otherwise the rewrite chases a moving target.
+   the website first (as today) and into the Swift app's milestone list; the Expo app gets fixes
+   (owner: "I want the expo app to get fixes too") but not new features. Otherwise the rewrite chases a moving target.
 
 ## Layout
 
@@ -208,5 +208,5 @@ and a stop until the owner says go.
 | A package (SQLCipher, Sentry) won't build with xtool | Found in S0, before any screen; fall back to macOS CI builds or Data Protection |
 | Swift and TypeScript rules drift apart | Generated fixtures fail CI; the two-engine sync test |
 | Cloud sessions have no iPhone simulator | UI tests and screenshots run on macOS CI; device checks by the owner through Sideloadly, then TestFlight |
-| Two app codebases while both exist | The Expo app gets fixes only (decision 7); new work goes to Swift |
+| Two app codebases while both exist | The Expo app gets fixes but no new features (decision 7); new work goes to Swift |
 | Losing unsent work when a phone updates | The database move above, tested in S9 |
