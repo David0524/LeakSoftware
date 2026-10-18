@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "Make our desktop experience look more like Stripe… I love how the top nav bar looks and the side nav bar in settings")
+- **Desktop header** is a light bar in two rows: the logo, the shop as an outlined pill, then the name, appearance, Sign Out, and a round blue New Job "+" (when the person may make jobs); below, the sections as tabs, the current one in the link color with an underline, and the Settings gear at the end. The tab row stays in view while scrolling. Phones keep the iOS navigation and tab bars.
+- **Settings sidebar** groups the pages as the Settings list does (Your shop, Money, Checklists and reports), each with an outline icon; the open page is in the link color. It stays in view while the page scrolls. No global search yet (Stripe's search box); add it if wanted.
+
 ## 2026-10-18 (owner: "strip out the AI writing for reports. I don't think it's needed (plus we can always add back later)"; "Remove the disclaimer by texting")
 - **No AI report writing.** Write Draft always fills in the plain draft from the job's checklist, tests, and findings; the tech edits it before sending. The Anthropic SDK, its prompts, the `ANTHROPIC_*` settings, and the daily AI-draft allowance are gone; the privacy page no longer lists Anthropic. Old drafts keep their saved `model` value. To add it back, restore `apps/web/src/server/narrative.ts` and the prompts in `packages/core/src/report.ts` from git history; the draft check (`validateNarrative`) is still in place.
 - **Phone settings** no longer show the "texting isn't connected on this server" demo note.

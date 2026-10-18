@@ -212,7 +212,7 @@ test("on a computer, Settings is a gear and More holds Customers, Invoices, and 
   await expect(page.getByRole("heading", { level: 1, name: "Invoices" })).toBeVisible();
   // The menu closed on the new page, and More shows where you are.
   await expect(more).toHaveAttribute("aria-expanded", "false");
-  await expect(more).toHaveClass(/bg-white\/15/);
+  await expect(more).toHaveClass(/text-link/);
   await nav.getByRole("link", { name: "Settings" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page");
@@ -344,7 +344,7 @@ test("the office edits a customer's contact details and pool address", async ({ 
 
 test("the office adds a job for a new customer, with its checklist ready", async ({ page }) => {
   await signIn(page, OWNER);
-  await page.getByRole("link", { name: "New Job" }).click();
+  await page.getByRole("main").getByRole("link", { name: "New Job" }).click();
   await expect(page.getByRole("heading", { name: "New Job" })).toBeVisible();
 
   const name = `Web Customer ${RUN}`;

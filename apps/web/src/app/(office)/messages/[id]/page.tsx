@@ -70,7 +70,7 @@ export default async function ConversationPage({ params }: PageProps<"/messages/
       </div>
       {/* Wider screens: the title heads the list, so the conversation runs from
           the top of the page to the bottom of the window (owner, 2026-10-16). */}
-      <div className="grid gap-6 md:h-[calc(100dvh-11.5rem)] md:min-h-[28rem] md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+      <div className="grid gap-6 md:h-[calc(100dvh-14.25rem)] md:min-h-[28rem] md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
         <div className="min-w-0 max-md:hidden md:flex md:min-h-0 md:flex-col">
           <PageHeader title="Messages" />
           <Suspense fallback={null}>

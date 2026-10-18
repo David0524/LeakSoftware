@@ -191,75 +191,18 @@ export function TabBar({ links: all }: { links: OfficeLink[] }) {
   );
 }
 
-export function NavLinks({
-  links,
-  vertical = false,
-  label = "Main",
-  className,
-}: {
-  links: OfficeLink[];
-  vertical?: boolean;
-  label?: string;
-  className?: string;
-}) {
-  const path = usePathname();
-  if (vertical) {
-    return (
-      <nav
-        aria-label={label}
-        className="-mx-4 flex flex-row gap-1 overflow-x-auto px-4 whitespace-nowrap md:mx-0 md:flex-col md:overflow-visible md:px-0 md:whitespace-normal"
-      >
-        {links.map((l) => {
-          const active = path === l.href || path.startsWith(`${l.href}/`);
-          return (
-            <Link
-              key={l.href}
-              href={l.href}
-              aria-current={active ? "page" : undefined}
-              className={cx(
-                "min-h-11 content-center rounded-md px-3 font-medium",
-                active ? "bg-text font-semibold text-bg" : "hover:bg-surface",
-              )}
-            >
-              {l.label}
-            </Link>
-          );
-        })}
-      </nav>
-    );
-  }
-  return (
-    <nav aria-label={label} className={cx("flex flex-wrap gap-1", className)}>
-      {links.map((l) => {
-        const active = inSection(path, l);
-        return (
-          <Link
-            key={l.href}
-            href={l.href}
-            aria-current={active ? "page" : undefined}
-            className={cx(
-              "inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 font-display text-[1.0625rem] font-semibold tracking-wide",
-              active ? "bg-white/15" : "hover:bg-white/10",
-            )}
-          >
-            {l.label}
-            <Badge count={l.badge} className="bg-on-header font-sans text-header" />
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
-
+/** A tab in the desktop bar: muted text, the current one in the link color, underlined. */
 const barLink = (active: boolean) =>
   cx(
-    "inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 font-display text-[1.0625rem] font-semibold tracking-wide",
-    active ? "bg-white/15" : "hover:bg-white/10",
+    "relative inline-flex h-12 items-center gap-1.5 px-3 text-[0.9375rem] font-semibold",
+    "after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full",
+    active ? "text-link after:bg-link" : "text-text-muted hover:text-text",
   );
 
 /**
- * Wider screens: the main sections in the header, the rest under a More menu (a pull-down,
- * as on iPadOS and macOS), and Settings as a gear (owner, 2026-10-18).
+ * Wider screens: the main sections as tabs along the header (owner, 2026-10-18: "like
+ * Stripe"), the rest under a More menu (a pull-down, as on iPadOS and macOS), and Settings as
+ * a gear at the end of the row.
  */
 export function DesktopNav({
   main,
@@ -299,7 +242,7 @@ export function DesktopNav({
   }, [open]);
 
   return (
-    <nav aria-label="Main" className={cx("flex flex-wrap items-center gap-1", className)}>
+    <nav aria-label="Main" className={cx("-ml-3 flex items-center", className)}>
       {main.map((l) => {
         const active = inSection(path, l);
         return (
@@ -310,7 +253,7 @@ export function DesktopNav({
             className={barLink(active)}
           >
             {l.label}
-            <Badge count={l.badge} className="bg-on-header font-sans text-header" />
+            <Badge count={l.badge} className="bg-primary text-on-primary" />
           </Link>
         );
       })}
@@ -342,7 +285,7 @@ export function DesktopNav({
             <ul
               id="more-menu"
               aria-label="More"
-              className="absolute top-full left-0 z-40 mt-2 min-w-48 overflow-hidden rounded-xl bg-surface py-1 text-text shadow-lg ring-1 ring-black/10"
+              className="absolute top-full left-0 z-40 mt-1 min-w-48 overflow-hidden rounded-xl bg-surface py-1 text-text shadow-lg ring-1 ring-black/10"
             >
               {more.map((l) => {
                 const active = inSection(path, l);
@@ -374,7 +317,7 @@ export function DesktopNav({
           aria-label="Settings"
           title="Settings"
           aria-current={inSection(path, settings) ? "page" : undefined}
-          className={cx(barLink(inSection(path, settings)), "size-11 justify-center px-0")}
+          className={cx(barLink(inSection(path, settings)), "ml-auto w-12 justify-center px-0")}
         >
           <svg
             viewBox="0 0 24 24"
