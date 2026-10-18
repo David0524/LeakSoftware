@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "New job options should be leak detection, pool service, repair. Both profiles get repair.")
+- **New Job offers Repair to every shop**, website and app: Leak Detection | Repair for leak shops, Pool Service | Repair for pool shops, all three for shops doing both (`newJobTypes` in `packages/core`). A repair job made here is like one from an accepted quote without the quote: no checklist, a second tech allowed, no booking questions or detection price. Its price (website; optional) goes on the invoice as "Repair" (`20261012005100_new_repair_job.sql`), where parts are added before sending. Accepted quotes still make their own repair jobs.
+
 ## 2026-10-18 (owner: "number of users should default to 2 for maintenance and 1 for leaks. We want to show the lowest possible price")
 - **Home page pricing starts at the lowest price:** 2 people for Pool Maintenance ($79, Starter) and 1 for Leak Detection ($49, Solo). Each package keeps its own count when the visitor switches.
 

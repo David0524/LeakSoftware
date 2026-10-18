@@ -20,6 +20,8 @@ import {
   seesAllJobs,
   canMakeJobs,
   companyServices,
+  newJobTypes,
+  type JobType,
 } from "@leakbook/core";
 import { useRows } from "../../../data/hooks";
 import { useCompany, useSession } from "../../../state/session";
@@ -70,10 +72,9 @@ function NewJobForm() {
   const team = services.sync.team().filter((p) => p.id !== user?.id);
   // What the shop does decides the kind of job (company services setting, 2026-10-16).
   const offered = companyServices(company.settings);
-  const [jobType, setJobType] = useState<"detection" | "maintenance">(
-    offered === "pool" ? "maintenance" : "detection",
-  );
+  const [jobType, setJobType] = useState<JobType>(offered === "pool" ? "maintenance" : "detection");
   const maintenance = jobType === "maintenance";
+  const leak = jobType === "detection";
 
   const [customerId, setCustomerId] = useState<string | undefined>();
   const [search, setSearch] = useState("");
@@ -165,7 +166,7 @@ function NewJobForm() {
     if (when === "scheduled" && !input.scheduleDate) e.scheduleDate = "Pick a date.";
     setErrors(e);
     const feeCents = feeText.trim() ? parseDollars(feeText) : null;
-    const badFee = !maintenance && Boolean(feeText.trim()) && (feeCents === null || feeCents < 0);
+    const badFee = leak && Boolean(feeText.trim()) && (feeCents === null || feeCents < 0);
     setFeeError(badFee ? "Enter a price like 649." : undefined);
     if (Object.keys(e).length > 0 || badFee) return;
 
@@ -207,10 +208,11 @@ function NewJobForm() {
         ...records.job,
         property_id: prop,
         bill_to_customer_id: cust,
-        // Pool service visits have no detection fee, second tech, or booking questions.
-        fee_cents: maintenance ? null : feeCents,
+        // Only leak detection has a detection fee and booking questions; a repair is priced
+        // on its invoice. Pool service visits have no second tech.
+        fee_cents: leak ? feeCents : null,
         second_tech_id: maintenance || secondTech === "none" ? null : secondTech,
-        intake: maintenance ? {} : answers,
+        intake: leak ? answers : {},
       });
       // The checklist is ready the moment the job opens, even offline.
       const existingProperty = properties.find((p) => p.id === prop);
@@ -244,17 +246,7 @@ function NewJobForm() {
           }}
         />
       ) : null}
-      {offered === "both" ? (
-        <Segmented
-          label="Job"
-          value={jobType}
-          onChange={setJobType}
-          options={[
-            { value: "detection", label: "Leak Detection" },
-            { value: "maintenance", label: "Pool Service" },
-          ]}
-        />
-      ) : null}
+      <Segmented label="Job" value={jobType} onChange={setJobType} options={newJobTypes(offered)} />
       <Section title="Customer">
         {selectedCustomer ? (
           <Card>
@@ -334,7 +326,7 @@ function NewJobForm() {
         )}
       </Section>
 
-      {questions.length > 0 && !maintenance ? (
+      {questions.length > 0 && leak ? (
         <Section title="Booking">
           {questions.map((q) =>
             q.type === "multi" ? (
@@ -441,14 +433,14 @@ function NewJobForm() {
               onChange={setPoolType}
             />
             <Toggle label="Has a spa" value={hasSpa} onChange={setHasSpa} />
-            {maintenance ? null : (
+            {leak ? (
               <ShapePicker
                 value={shape}
                 onChange={setShape}
                 label="Pool shape (optional)"
                 hint="Leave it blank if you don’t know yet; set it later on Findings."
               />
-            )}
+            ) : null}
             <Field
               label="Access notes"
               value={accessNotes}

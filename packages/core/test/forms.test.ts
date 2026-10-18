@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   formatAddress,
   newJobRecords,
+  newJobTypes,
   validateNewJob,
   zonedTimeToIso,
   type NewJobInput,
+  type Services,
 } from "../src";
 
 const blank: NewJobInput = {
@@ -134,5 +136,14 @@ describe("newJobRecords", () => {
       status: "scheduled",
       scheduled_start: "2026-10-14T16:00:00.000Z",
     });
+  });
+});
+
+describe("newJobTypes", () => {
+  const values = (s: Services) => newJobTypes(s).map((t) => t.value);
+  it("offers the package's own jobs, then Repair to every shop", () => {
+    expect(values("leak")).toEqual(["detection", "repair"]);
+    expect(values("pool")).toEqual(["maintenance", "repair"]);
+    expect(values("both")).toEqual(["detection", "maintenance", "repair"]);
   });
 });
