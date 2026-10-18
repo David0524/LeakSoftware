@@ -9,6 +9,8 @@ Newest first. Each entry: date, decision, reason.
 - **The site is `https://sundeckpro.com`** (Vercel; the old `leaksoftware-web.vercel.app` redirects there). The phone app talks to it directly (`config/supabase-dev.json` → `webUrl`).
 - **Mail:** Google Workspace on `sundeckpro.com` for people (support is `support@sundeckpro.com`); the app's email goes out through Resend from `send.sundeckpro.com`, a subdomain so the two never share records. Code defaults now use these; `SUPPORT_EMAIL` and `EMAIL_FROM_DOMAIN` still override.
 - **Recommended bundle ID** is `com.sundeckpro.app`. It still isn't changed: the owner decides before the first App Store upload.
+- **Email is live (owner, 2026-10-18).** Resend sends from `send.sundeckpro.com` (DKIM and return path in Vercel DNS), DMARC on `sundeckpro.com` is `p=none` with reports to `support@sundeckpro.com`, and a report email from the website arrived. Tighten DMARC to `p=quarantine` once a few weeks of reports show only Resend sending as the domain.
+- **Links use `https://sundeckpro.com`** (owner: links in emails still showed the Vercel address). The website builds every link from `APP_BASE_URL`, set to `https://sundeckpro.com` on Vercel; the old `leaksoftware-web.vercel.app` address redirects there, and Supabase sign-in links already used `sundeckpro.com`.
 
 ## 2026-10-18 (owner: "Add a reports tab under JOBS - that just shows you reports"; "allow you to sort customers by a variety of filters")
 - **Jobs › Reports:** a Jobs | Reports switch at the top of Jobs. Reports lists each job's current report (resent versions replace the older one), newest first, with All, Sent, and Drafts; a row opens the job's Report and Sign-Off. Techs limited to their own jobs see only those reports.
