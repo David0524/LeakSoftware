@@ -123,7 +123,7 @@ test("New Job books a maintenance visit, or starts a plan for a new customer", a
   await page.getByLabel("City").fill("Phoenix");
   await page.getByLabel("State").fill("AZ");
   await page.getByRole("radio", { name: "Pool Service" }).click();
-  await page.getByRole("radio", { name: "Weekly" }).click();
+  await page.getByLabel("Repeats").selectOption("weekly");
   await page.getByLabel("First visit").fill(day);
   await page.getByLabel("Tech", { exact: true }).selectOption({ label: "Priya Shah" });
   await page.getByLabel("Price per month ($)").fill("110");
@@ -231,7 +231,7 @@ test("a plan can repeat on several days a week", async ({ page }) => {
   await page.getByRole("button", { name: "Add Maintenance Plan" }).click();
   const sheet = page.getByRole("dialog", { name: "Add Maintenance Plan" });
   await sheet.getByLabel("First visit").fill(tomorrow());
-  await sheet.getByRole("radio", { name: "Several a Week" }).click();
+  await sheet.getByRole("radio", { name: "Several Days" }).click();
   // Each day is a round toggle: the label around a visually hidden checkbox.
   const day = (name: string) => sheet.getByRole("checkbox", { name }).locator("..");
   await day("Monday").click();

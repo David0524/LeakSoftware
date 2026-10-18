@@ -5,7 +5,7 @@
 export type RepeatChoice = "days" | "weekly" | "biweekly" | "monthly";
 
 export const REPEAT_OPTIONS: { value: RepeatChoice; label: string }[] = [
-  { value: "days", label: "Several a Week" },
+  { value: "days", label: "Several Days" },
   { value: "weekly", label: "Weekly" },
   { value: "biweekly", label: "Every 2 Weeks" },
   { value: "monthly", label: "Monthly" },

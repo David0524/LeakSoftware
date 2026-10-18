@@ -271,9 +271,10 @@ function CleaningFields({
             name={`${field}_months`}
             value={months}
             onChange={setMonths}
+            fit
             options={CLEANING_MONTHS.map((m) => ({
               value: String(m),
-              label: m === 1 ? "Monthly" : `Every ${m} Months`,
+              label: m === 1 ? "Monthly" : `${m} Months`,
             }))}
           />
           <div className="grid gap-3 sm:grid-cols-2">
