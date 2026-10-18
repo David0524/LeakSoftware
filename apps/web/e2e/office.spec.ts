@@ -246,9 +246,10 @@ test("the site starts light; the sun/moon button switches it and remembers", asy
   await expect(html).toHaveAttribute("data-theme", "dark");
   await expect(page.getByRole("img", { name: "Sundeck Pro" }).first()).toBeVisible();
 
-  // The office header has the button too.
+  // The office has the button too, in the account menu.
   await signIn(page, OWNER);
   await expect(html).toHaveAttribute("data-theme", "dark");
+  await page.getByRole("button", { name: /: account$/ }).click();
   await page.getByRole("button", { name: "Light mode" }).click();
   await expect(html).toHaveAttribute("data-theme", "light");
   await signOut(page);

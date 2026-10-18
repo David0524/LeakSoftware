@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "Can we clean up the header? Can it all fit in one row?"; the "+" was "in a weird spot and it disappears as you scroll")
+- **Desktop header is one row that stays in view:** logo (the mark alone on narrower screens), the sections as tabs, a blue New Job button (just "+" on narrower screens), the Settings gear, and a round account button with initials. The account menu holds the name, email, shop (and switching shops), Appearance, Account and Help, and Sign Out.
+
 ## 2026-10-18 (owner: "Partner report should be gone")
 - **One report per job, the homeowner report.** The partner (pool company) report is gone from the job page, the app, Settings › Report Templates, and the report API. Partner reports already sent still open from their links and the Reports list. Its template rows stay (off) in the database, so it could come back.
 
