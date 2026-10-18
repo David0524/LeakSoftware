@@ -616,3 +616,34 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   await expect(onSite.getByText("Saved.")).toBeVisible();
   await phone.close();
 });
+
+// Owner, 2026-10-18: "a reports tab under JOBS - that just shows you reports".
+test("Jobs has a Reports tab listing the reports", async ({ page }) => {
+  await signIn(page, OWNER, "/jobs");
+  const tabs = page.getByRole("navigation", { name: "Jobs and Reports" });
+  await tabs.getByRole("link", { name: "Reports" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Reports" })).toBeVisible();
+  await expect(tabs.getByRole("link", { name: "Reports" })).toHaveAttribute("aria-current", "page");
+  await page
+    .getByRole("navigation", { name: "Filter reports" })
+    .getByRole("link", { name: "Drafts" })
+    .click();
+  await expect(page).toHaveURL(/status=draft/);
+  await tabs.getByRole("link", { name: "Jobs" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Jobs" })).toBeVisible();
+});
+
+// Owner, 2026-10-18: "allow you to sort customers by a variety of filters".
+test("customers sort and filter", async ({ page }) => {
+  await signIn(page, OWNER, "/customers");
+  const names = page.getByRole("main").getByRole("listitem").locator(".font-semibold");
+  await expect(names.first()).toBeVisible();
+  await page.getByLabel("Sort").selectOption("name_desc");
+  await expect(page).toHaveURL(/sort=name_desc/);
+  const all = await names.allInnerTexts();
+  expect(all.length).toBeGreaterThan(1);
+  expect(all[0]!.localeCompare(all.at(-1)!)).toBeGreaterThanOrEqual(0);
+  await page.getByLabel("Show").selectOption("pool_company");
+  await expect(page).toHaveURL(/show=pool_company/);
+  await expect(page.getByLabel("Sort")).toHaveValue("name_desc");
+});

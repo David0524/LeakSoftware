@@ -1,18 +1,55 @@
 import type { Metadata } from "next";
-import { formatAddress } from "@leakbook/core";
-import { Button, Empty, Grouped, PageHeader, Row } from "@/components/ui";
+import { formatAddress, offersPool } from "@leakbook/core";
+import { CustomerFilters } from "@/components/customer-filters";
+import { Empty, Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { listCustomers } from "@/lib/data";
+import { CUSTOMER_SORTS, getCompany, listCustomers, type CustomerSort } from "@/lib/data";
 import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
 
 export const metadata: Metadata = { title: "Customers · Sundeck Pro" };
 
+/** Customer kinds, as on the customer's page; plural for the Show menu. */
+const KINDS: Record<string, string> = {
+  homeowner: "Homeowners",
+  pool_company: "Pool Companies",
+  builder: "Builders",
+  insurer: "Insurers",
+  property_manager: "Property Managers",
+  other: "Other",
+};
+
 export default async function CustomersPage({ searchParams }: PageProps<"/customers">) {
   const office = await getOffice();
-  const { q } = await searchParams;
+  const { q, sort: sortParam, show: showParam } = await searchParams;
   const search = typeof q === "string" ? q : "";
-  const customers = await listCustomers(office, search);
+  const company = await getCompany(office);
+  const shows = [
+    { value: "all", label: "All Customers" },
+    ...(offersPool(company.settings)
+      ? [
+          { value: "plan", label: "On a Plan" },
+          { value: "no_plan", label: "No Plan" },
+        ]
+      : []),
+    ...Object.entries(KINDS).map(([value, label]) => ({ value, label })),
+  ];
+  const sort: CustomerSort =
+    typeof sortParam === "string" && sortParam in CUSTOMER_SORTS
+      ? (sortParam as CustomerSort)
+      : "name";
+  const show =
+    typeof showParam === "string" && shows.some((o) => o.value === showParam) ? showParam : "all";
+  const customers = await listCustomers(office, search, { sort, show });
+  // "Oct 17", with the year only when it isn't this year.
+  const thisYear = new Date().getFullYear();
+  const day = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-US", {
+      timeZone: office.company.timezone,
+      month: "short",
+      day: "numeric",
+      ...(new Date(iso).getFullYear() !== thisYear ? { year: "numeric" } : {}),
+    });
 
   return (
     <>
@@ -27,27 +64,20 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
       <Suspense fallback={null}>
         <ScreenTip screen="customers" />
       </Suspense>
-      <form role="search" className="mb-5 flex max-w-xl gap-2">
-        <label htmlFor="q" className="sr-only">
-          Search customers
-        </label>
-        <input
-          id="q"
-          name="q"
-          type="search"
-          defaultValue={search}
-          placeholder="Name, phone, or email"
-          className="min-h-11 min-w-0 flex-1 rounded-[10px] border border-control-border bg-surface px-3 focus:outline-3 focus:outline-focus"
-        />
-        <Button type="submit" kind="secondary">
-          Search
-        </Button>
-      </form>
+      <CustomerFilters
+        search={search}
+        sort={sort}
+        show={show}
+        sorts={Object.entries(CUSTOMER_SORTS).map(([value, label]) => ({ value, label }))}
+        shows={shows}
+      />
       {customers.length === 0 ? (
         <Empty>
           {search
             ? `No customers match “${search}”.`
-            : "No customers yet. They’re added when a job is created on the phone."}
+            : show !== "all"
+              ? "No customers here."
+              : "No customers yet. They’re added when a job is created on the phone."}
         </Empty>
       ) : (
         <Grouped className="max-w-3xl">
@@ -55,6 +85,17 @@ export default async function CustomersPage({ searchParams }: PageProps<"/custom
             <Row
               key={c.id}
               href={`/customers/${c.id}`}
+              value={
+                sort === "last_visit"
+                  ? c.lastVisit
+                    ? day(c.lastVisit)
+                    : "No visits"
+                  : sort === "newest" || sort === "oldest"
+                    ? c.created_at
+                      ? `Added ${day(c.created_at)}`
+                      : undefined
+                    : undefined
+              }
               label={
                 <>
                   <span className="font-semibold">{c.name}</span>

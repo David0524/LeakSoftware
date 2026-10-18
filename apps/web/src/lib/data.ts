@@ -363,34 +363,110 @@ export async function auditFor(office: Office, rowIds: string[]): Promise<AuditR
 // Customers
 // ---------------------------------------------------------------------------
 
-export async function listCustomers(office: Office, search: string) {
+export const CUSTOMER_SORTS = {
+  name: "Name A–Z",
+  name_desc: "Name Z–A",
+  newest: "Newest",
+  oldest: "Oldest",
+  last_visit: "Last Visit",
+  city: "City",
+} as const;
+export type CustomerSort = keyof typeof CUSTOMER_SORTS;
+
+/** all, plan, no_plan, or a customer kind (homeowner, pool_company, ...). */
+export type CustomerShow = string;
+
+/**
+ * Customers for the list, searched, filtered, and sorted (owner, 2026-10-18: "sort customers by
+ * a variety of filters"). Each comes with its pools, whether it has a maintenance plan, and its
+ * last visit.
+ */
+export async function listCustomers(
+  office: Office,
+  search: string,
+  opts: { sort?: CustomerSort; show?: CustomerShow } = {},
+) {
+  const sort = opts.sort ?? "name";
+  const show = opts.show ?? "all";
   const supabase = await db();
   let q = supabase
     .from("customer")
     .select("*")
     .eq("company_id", office.company.id)
     .is("deleted_at", null)
-    .order("name")
-    .limit(300);
+    .order(sort === "newest" || sort === "oldest" ? "created_at" : "name", {
+      ascending: sort !== "newest" && sort !== "name_desc",
+    })
+    .limit(500);
   const term = search.replace(/[%,()]/g, " ").trim();
   if (term) q = q.or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%`);
+  if (!["all", "plan", "no_plan"].includes(show)) q = q.eq("kind", show);
   const customers = must(await q) as Customer[];
-  const properties = customers.length
-    ? (must(
-        await supabase
-          .from("property")
-          .select("*")
-          .in(
-            "customer_id",
-            customers.map((c) => c.id),
-          )
+  const ids = customers.map((c) => c.id);
+  const [properties, plans, visits] = ids.length
+    ? await Promise.all([
+        supabase.from("property").select("*").in("customer_id", ids).is("deleted_at", null),
+        supabase
+          .from("service_plan")
+          .select("customer_id")
+          .in("customer_id", ids)
           .is("deleted_at", null),
-      ) as Property[])
-    : [];
-  return customers.map((c) => ({
-    ...c,
-    properties: properties.filter((p) => p.customer_id === c.id),
-  }));
+        supabase
+          .from("job")
+          .select("bill_to_customer_id, scheduled_start, completed_at")
+          .in("bill_to_customer_id", ids)
+          .is("deleted_at", null)
+          .neq("status", "canceled")
+          .lte("scheduled_start", new Date().toISOString())
+          .order("scheduled_start", { ascending: false })
+          .limit(5000),
+      ]).then(
+        ([p, sp, j]) =>
+          [
+            must(p) as Property[],
+            must(sp) as { customer_id: string }[],
+            must(j) as {
+              bill_to_customer_id: string;
+              scheduled_start: string | null;
+              completed_at: string | null;
+            }[],
+          ] as const,
+      )
+    : ([[], [], []] as const);
+  const withPlan = new Set(plans.map((p) => p.customer_id));
+  const lastVisit = new Map<string, string>();
+  for (const v of visits) {
+    const at = v.completed_at ?? v.scheduled_start;
+    const had = lastVisit.get(v.bill_to_customer_id);
+    if (at && (!had || at > had)) lastVisit.set(v.bill_to_customer_id, at);
+  }
+  let rows = customers.map((c) => {
+    const pools = properties.filter((p) => p.customer_id === c.id);
+    return {
+      ...c,
+      properties: pools,
+      hasPlan: withPlan.has(c.id),
+      lastVisit: lastVisit.get(c.id) ?? null,
+      created_at: (c as Customer & { created_at?: string }).created_at ?? null,
+      city: pools.find((p) => p.city)?.city ?? null,
+    };
+  });
+  if (show === "plan") rows = rows.filter((c) => c.hasPlan);
+  if (show === "no_plan") rows = rows.filter((c) => !c.hasPlan);
+  const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name);
+  if (sort === "last_visit")
+    rows.sort((a, b) => (b.lastVisit ?? "").localeCompare(a.lastVisit ?? "") || byName(a, b));
+  if (sort === "city")
+    rows.sort((a, b) =>
+      a.city && b.city
+        ? a.city.localeCompare(b.city) || byName(a, b)
+        : a.city
+          ? -1
+          : b.city
+            ? 1
+            : byName(a, b),
+    );
+  return rows.slice(0, 300);
 }
 
 export async function getCustomer(office: Office, id: string) {
@@ -865,4 +941,44 @@ export async function getAccess(office: Office): Promise<CompanyAccess | null> {
     target_company: office.company.id,
   });
   return error ? null : (data as CompanyAccess);
+}
+
+// ---------------------------------------------------------------------------
+// Jobs › Reports (owner, 2026-10-18: "a reports tab under JOBS - that just shows you reports")
+// ---------------------------------------------------------------------------
+
+export interface ReportListRow {
+  id: string;
+  job_id: string;
+  template_key: "homeowner" | "partner" | "insurance";
+  version: number;
+  status: "draft" | "sent" | "superseded";
+  sent_at: string | null;
+  updated_at: string;
+  job: {
+    number: number | null;
+    bill_to: { name: string } | null;
+    property: { address_line1: string | null } | null;
+  } | null;
+}
+
+/** The shop's reports, newest first: current versions only (a resent report replaces its last). */
+export async function listReports(
+  office: Office,
+  status: "all" | "sent" | "draft",
+  limit = 200,
+): Promise<ReportListRow[]> {
+  const supabase = await db();
+  let q = supabase
+    .from("report")
+    .select(
+      "id, job_id, template_key, version, status, sent_at, updated_at, job:job!report_job_id_company_id_fkey(number, bill_to:customer!job_bill_to_customer_id_company_id_fkey(name), property:property!job_property_id_company_id_fkey(address_line1))",
+    )
+    .eq("company_id", office.company.id)
+    .is("deleted_at", null)
+    .neq("status", "superseded")
+    .order("updated_at", { ascending: false })
+    .limit(limit);
+  if (status !== "all") q = q.eq("status", status);
+  return must(await q) as unknown as ReportListRow[];
 }

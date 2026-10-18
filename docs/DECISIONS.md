@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "Add a reports tab under JOBS - that just shows you reports"; "allow you to sort customers by a variety of filters")
+- **Jobs › Reports:** a Jobs | Reports switch at the top of Jobs. Reports lists each job's current report (resent versions replace the older one), newest first, with All, Sent, and Drafts; a row opens the job's Report and Sign-Off. Techs limited to their own jobs see only those reports.
+- **Customers: Sort and Show.** Sort by name (A–Z or Z–A), newest, oldest, last visit, or city; show all customers, those on a maintenance plan or not (pool shops), or one kind (homeowners, pool companies, builders, insurers, property managers, other). The choice stays in the address, so it survives Back and can be bookmarked.
+
 ## 2026-10-18 (owner: "new brand name is Sundeck Pro - update everything accordingly")
 - **The product is Sundeck Pro** (two words), on the website, in emails, in the app (its display name), in the docs, and in the logo's wordmark ("Sundeck" navy, "Pro" water blue). The drop-pin mark, colors, and type stay. Older entries below say Tidemark.
 - **Placeholders follow the name:** `sundeckpro.app`, email from `send.sundeckpro.app`, `support@sundeckpro.app`, recommended bundle ID `app.sundeckpro.field`. None are bought or set; the owner checks the domain and trademark first. The bundle ID stays `com.leakbook.app` until the owner decides.

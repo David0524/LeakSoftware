@@ -14,6 +14,7 @@ import {
 } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { OPEN_STATUSES, listJobs, mayMakeJobs } from "@/lib/data";
+import { JobsTabs } from "@/components/jobs-tabs";
 import { NavPlus } from "@/components/nav-bar";
 import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
@@ -69,6 +70,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
         // Phones use the "+" in the navigation bar instead.
         actionsClassName="hidden sm:flex"
       />
+      <JobsTabs current="jobs" />
       <Suspense fallback={null}>
         <ScreenTip screen="jobs" />
       </Suspense>
