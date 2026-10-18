@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-18 (owner: "New job options should be leak detection, pool service, repair. Both profiles get repair.")
+- **New Job offers Repair to every shop**, website and app: Leak Detection | Repair for leak shops, Pool Service | Repair for pool shops, all three for shops doing both (`newJobTypes` in `packages/core`). A repair job made here is like one from an accepted quote without the quote: no checklist, a second tech allowed, no booking questions or detection price. Its price (website; optional) goes on the invoice as "Repair" (`20261012005100_new_repair_job.sql`), where parts are added before sending. Accepted quotes still make their own repair jobs.
+
 ## 2026-10-18 (owner: "number of users should default to 2 for maintenance and 1 for leaks. We want to show the lowest possible price")
 - **Home page pricing starts at the lowest price:** 2 people for Pool Maintenance ($79, Starter) and 1 for Leak Detection ($49, Solo). Each package keeps its own count when the visitor switches.
 
@@ -9,6 +12,8 @@ Newest first. Each entry: date, decision, reason.
 - **The site is `https://sundeckpro.com`** (Vercel; the old `leaksoftware-web.vercel.app` redirects there). The phone app talks to it directly (`config/supabase-dev.json` → `webUrl`).
 - **Mail:** Google Workspace on `sundeckpro.com` for people (support is `support@sundeckpro.com`); the app's email goes out through Resend from `send.sundeckpro.com`, a subdomain so the two never share records. Code defaults now use these; `SUPPORT_EMAIL` and `EMAIL_FROM_DOMAIN` still override.
 - **Recommended bundle ID** is `com.sundeckpro.app`. It still isn't changed: the owner decides before the first App Store upload.
+- **Email is live (owner, 2026-10-18).** Resend sends from `send.sundeckpro.com` (DKIM and return path in Vercel DNS), DMARC on `sundeckpro.com` is `p=none` with reports to `support@sundeckpro.com`, and a report email from the website arrived. Tighten DMARC to `p=quarantine` once a few weeks of reports show only Resend sending as the domain.
+- **Links use `https://sundeckpro.com`** (owner: links in emails still showed the Vercel address). The website builds every link from `APP_BASE_URL`, set to `https://sundeckpro.com` on Vercel; the old `leaksoftware-web.vercel.app` address redirects there, and Supabase sign-in links already used `sundeckpro.com`.
 
 ## 2026-10-18 (owner: "Add a reports tab under JOBS - that just shows you reports"; "allow you to sort customers by a variety of filters")
 - **Jobs › Reports:** a Jobs | Reports switch at the top of Jobs. Reports lists each job's current report (resent versions replace the older one), newest first, with All, Sent, and Drafts; a row opens the job's Report and Sign-Off. Techs limited to their own jobs see only those reports.

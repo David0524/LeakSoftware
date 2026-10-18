@@ -4,7 +4,9 @@ import { useRef, useState } from "react";
 import {
   POOL_TYPE_LABELS,
   minutesToClock,
+  newJobTypes,
   type IntakeQuestion,
+  type JobType,
   type PoolType,
   type DiagramShape,
   type Services,
@@ -48,7 +50,7 @@ export function NewJobForm({
   visitMinutes = 30,
   services = "both",
 }: {
-  /** What the shop does: the job choice only shows for shops doing both. */
+  /** What the shop does: its own jobs, plus Repair for everyone. */
   services?: Services;
   customers: CustomerOption[];
   team: { id: string; name: string }[];
@@ -67,12 +69,11 @@ export function NewJobForm({
   const [shape, setShape] = useState<DiagramShape | null>(null);
   const [when, setWhen] = useState<"unscheduled" | "scheduled">("scheduled");
   const [fee, setFee] = useState("");
-  // Leak detection, or maintenance: one visit, or a plan that repeats.
-  const [kind, setKind] = useState<"detection" | "maintenance">(
-    services === "pool" ? "maintenance" : "detection",
-  );
+  // Leak detection, a repair, or maintenance: one visit, or a plan that repeats.
+  const [kind, setKind] = useState<JobType>(services === "pool" ? "maintenance" : "detection");
   const [repeat, setRepeat] = useState<RepeatChoice | "0">("0");
   const maintenance = kind === "maintenance";
+  const detection = kind === "detection";
   const plan = maintenance && canPlan && repeat !== "0";
   const customer = customers.find((c) => c.id === customerId);
   const newPool = mode === "new" || pool === "new";
@@ -204,20 +205,13 @@ export function NewJobForm({
 
       <Section title="Visit">
         <div ref={visit} className="space-y-4">
-          {services === "both" ? (
-            <Segmented
-              label="Job"
-              name="job_type"
-              value={kind}
-              onChange={setKind}
-              options={[
-                { value: "detection", label: "Leak Detection" },
-                { value: "maintenance", label: "Pool Service" },
-              ]}
-            />
-          ) : (
-            <input type="hidden" name="job_type" value={kind} />
-          )}
+          <Segmented
+            label="Job"
+            name="job_type"
+            value={kind}
+            onChange={setKind}
+            options={newJobTypes(services)}
+          />
           {maintenance && canPlan ? <PlanRepeat initial="0" once onChange={setRepeat} /> : null}
           {plan ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -318,7 +312,7 @@ export function NewJobForm({
                 <FieldError name="second_tech" />
               </div>
             )}
-            {fees.length && !maintenance ? (
+            {fees.length && detection ? (
               <Select
                 label="Detection price"
                 name="fee_item"
@@ -337,7 +331,7 @@ export function NewJobForm({
               />
             ) : null}
             <SField
-              label={plan ? "Price per month ($)" : maintenance ? "Price ($)" : "Detection fee ($)"}
+              label={plan ? "Price per month ($)" : detection ? "Detection fee ($)" : "Price ($)"}
               name="fee"
               inputMode="decimal"
               value={fee}
@@ -345,14 +339,16 @@ export function NewJobForm({
               hint={
                 maintenance
                   ? "Billed monthly with the customer's other visits."
-                  : "Shown on the report and billed on the invoice."
+                  : detection
+                    ? "Shown on the report and billed on the invoice."
+                    : "Billed on the invoice. Add parts there before sending."
               }
             />
           </div>
         </div>
       </Section>
 
-      {questions.length && !maintenance ? (
+      {questions.length && detection ? (
         <Section title="When they called">
           {questions.map((q) =>
             q.type === "multi" ? (

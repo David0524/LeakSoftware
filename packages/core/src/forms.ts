@@ -1,4 +1,4 @@
-import type { Property } from "./models";
+import type { JobType, Property } from "./models";
 import { dateFormat } from "./intl";
 
 export interface NewJobInput {
@@ -88,8 +88,8 @@ export interface NewJobDetails {
   accessNotes: string;
   timing: JobTiming;
   assignedUserId: string | null;
-  /** Leak detection (default) or a pool service visit. */
-  jobType?: "detection" | "maintenance";
+  /** Leak detection (default), a pool service visit, or a repair. */
+  jobType?: JobType;
 }
 
 type Values = Record<string, string | number | boolean | null>;

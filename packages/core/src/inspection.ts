@@ -2,7 +2,7 @@
  * Inspection logic shared by the field app, the office view, and reports.
  * Config rows (component_type, test_type, severity_level) come from the database.
  */
-import type { Property } from "./models";
+import type { JobType, Property } from "./models";
 
 // ---------------------------------------------------------------------------
 // Row shapes
@@ -208,7 +208,8 @@ export interface PlannedComponent {
 export function planComponents(
   types: ComponentType[],
   property: Pick<Property, "has_pool" | "has_spa"> & { pool_type?: string | null },
-  jobType: "detection" | "maintenance" = "detection",
+  // A repair job has no checklist: no item's job_type is "repair".
+  jobType: JobType = "detection",
 ): PlannedComponent[] {
   return live(types)
     .filter(

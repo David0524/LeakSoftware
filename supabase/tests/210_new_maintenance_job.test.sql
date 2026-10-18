@@ -21,8 +21,8 @@ select lives_ok(format($$ insert into made_jobs
   select create_job(%1$L, null, %2$L, null, %3$L, '{"type": "repair", "status": "unscheduled"}', '[]'), 'repair' $$,
   (select ca from ids), (select cust_a from ids), (select prop_a from ids)), 'techs book new jobs');
 select results_eq($$ select m.asked, j.type from made_jobs m join job j on j.id = m.id order by 1 $$,
-  $$ values ('maintenance'::text, 'maintenance'::text), ('repair', 'detection') $$,
-  'a single maintenance visit; other types book leak detection, as before');
+  $$ values ('maintenance'::text, 'maintenance'::text), ('repair', 'repair') $$,
+  'a single maintenance visit, or a repair (owner, 2026-10-18)');
 select throws_ok(format($$ select create_service_plan(%L, '{"name": "New Pool Owner"}', null,
   '{"address_line1": "1 Plan St"}', null, '{"starts_on": "2026-01-05"}') $$, (select ca from ids)),
   '42501', null, 'techs cannot start plans');

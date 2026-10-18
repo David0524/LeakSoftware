@@ -77,6 +77,20 @@ export const offersLeak = (settings: unknown) => companyServices(settings) !== "
 /** Whether the shop does pool care (cleaning plans, the service checklist, monthly billing). */
 export const offersPool = (settings: unknown) => companyServices(settings) !== "leak";
 
+export type JobType = "detection" | "repair" | "maintenance";
+
+/**
+ * The jobs New Job offers: the package's own (Leak Detection, Pool Service, or both), then
+ * Repair, which every shop gets (owner, 2026-10-18).
+ */
+export function newJobTypes(services: Services): { value: JobType; label: string }[] {
+  return [
+    ...(services !== "pool" ? [{ value: "detection" as const, label: "Leak Detection" }] : []),
+    ...(services !== "leak" ? [{ value: "maintenance" as const, label: "Pool Service" }] : []),
+    { value: "repair", label: "Repair" },
+  ];
+}
+
 /** Whether this member sees every job: owners always; techs unless the owner limits them. */
 export function seesAllJobs(role: string | null | undefined, settings: unknown): boolean {
   if (role === "owner") return true;
@@ -162,7 +176,7 @@ export interface Property extends Base {
 
 export interface Job extends Base {
   number?: number | null;
-  type: "detection" | "repair" | "maintenance";
+  type: JobType;
   property_id: string;
   bill_to_customer_id?: string | null;
   status: JobStatus;

@@ -47,8 +47,8 @@ export default async function NewJobPage() {
         back={{ href: "/jobs", label: "Jobs" }}
         subtitle={
           companyServices(company.settings) === "pool"
-            ? "A pool service visit, or a plan that repeats. Repair jobs come from accepted quotes."
-            : "Repair jobs come from accepted quotes."
+            ? "A pool service visit, a plan that repeats, or a repair. Accepted quotes make their own repair jobs."
+            : "Accepted quotes make their own repair jobs."
         }
       />
       <NewJobForm

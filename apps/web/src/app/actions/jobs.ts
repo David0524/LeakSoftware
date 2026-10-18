@@ -266,8 +266,9 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
       await supabase.from("property").update({ diagram_shape: shape }).eq("id", property);
   }
 
-  // Leak detection, or maintenance: a single visit, or (owners) a plan that repeats.
-  const kind = text(form, "job_type") === "maintenance" ? "maintenance" : "detection";
+  // Leak detection, a repair, or maintenance: a single visit, or (owners) a plan that repeats.
+  const chosen = text(form, "job_type");
+  const kind = chosen === "maintenance" || chosen === "repair" ? chosen : "detection";
   const repeat = kind === "maintenance" ? text(form, "repeat") || "0" : "0";
   if (repeat !== "0") {
     if (!office.isOwner) return { error: "Only owners can start maintenance plans." };
