@@ -94,6 +94,16 @@ export function SettingsAddRow({ label }: { label: string }) {
   );
 }
 
+/** A filled Add button placed with the list itself, where it is easy to find (owner, 2026-10-18). */
+export function SettingsAddButton({ label }: { label: string }) {
+  const open = use(OpenAdd);
+  return (
+    <Button type="button" onClick={open}>
+      {label}
+    </Button>
+  );
+}
+
 /**
  * For pages that use SheetRow outside a SettingsListPage (a customer's page): shows what the
  * last sheet did once it has closed, above the page's content.

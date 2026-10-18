@@ -9,7 +9,12 @@ import {
   SettingsFields,
   SettingsForm,
 } from "@/components/settings-forms";
-import { SettingsListPage, SheetDanger, SheetRow } from "@/components/settings-list";
+import {
+  SettingsAddButton,
+  SettingsListPage,
+  SheetDanger,
+  SheetRow,
+} from "@/components/settings-list";
 import { Grouped, SEGMENT_TRACK, segmentClass } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany, listConfig, type ComponentType } from "@/lib/data";
@@ -159,6 +164,9 @@ export default async function ComponentsPage({ searchParams }: PageProps<"/setti
       }
       add={{
         label: "Add Component",
+        // The button sits with the list, beside the checklist switch (owner, 2026-10-18:
+        // "It's in a hard to find spot").
+        inList: true,
         form: (
           <SettingsForm action={saveComponentType} submit="Add Component" primary full>
             <TypeFields kind={kind} />
@@ -166,20 +174,25 @@ export default async function ComponentsPage({ searchParams }: PageProps<"/setti
         ),
       }}
     >
-      {kinds.length > 1 ? (
-        <nav aria-label="Checklist" className={SEGMENT_TRACK}>
-          {kinds.map((k) => (
-            <Link
-              key={k}
-              href={`/settings/components?list=${k}`}
-              aria-current={k === kind ? "page" : undefined}
-              className={segmentClass(k === kind)}
-            >
-              {k === "pool" ? "Pool Visits" : "Leak Inspections"}
-            </Link>
-          ))}
-        </nav>
-      ) : null}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {kinds.length > 1 ? (
+          <nav aria-label="Checklist" className={SEGMENT_TRACK}>
+            {kinds.map((k) => (
+              <Link
+                key={k}
+                href={`/settings/components?list=${k}`}
+                aria-current={k === kind ? "page" : undefined}
+                className={segmentClass(k === kind)}
+              >
+                {k === "pool" ? "Pool Visits" : "Leak Inspections"}
+              </Link>
+            ))}
+          </nav>
+        ) : (
+          <span />
+        )}
+        <SettingsAddButton label="Add Component" />
+      </div>
       {groups.map((g) => (
         <Grouped key={g.value} title={g.label}>
           {g.rows.map((t) => (
