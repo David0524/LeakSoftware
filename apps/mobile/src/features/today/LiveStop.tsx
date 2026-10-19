@@ -1,131 +1,261 @@
-import { useEffect, useMemo, useRef } from "react";
-import { Platform } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AppState, Platform } from "react-native";
 import {
   checklistTally,
   formatTime,
   liveStopContent,
+  liveStopRuns,
   localDate,
+  localMinutes,
   minutesLabel,
   stopDone,
-  type Customer,
-  type Job,
   type LiveStopInput,
-  type Property,
+  type LiveStopPhase,
 } from "@leakbook/core";
-import { useRow } from "../../data/hooks";
+import { useSyncStatus } from "../../data/hooks";
 import { useJobInspection } from "../../data/inspection";
-import { inRouteOrderViews, useJobViews } from "../../data/jobs";
-import { LIVE_STOP_ID, endLiveStop, useLiveState, type LiveStopState } from "../../lib/liveStop";
+import { inRouteOrderViews, useJobViews, type JobView } from "../../data/jobs";
+import {
+  LIVE_STOP_ID,
+  dismissLiveStopFor,
+  hideLiveStop,
+  liveDismissedOn,
+  liveOnMyWay,
+  useLiveStopVersion,
+} from "../../lib/liveStop";
 import { NOTIFICATION_COLOR, Notifications, STOP_CATEGORY, STOP_CHANNEL } from "../../lib/push";
 import { useCompany, useSession } from "../../state/session";
 
 // The Android Live Activity (owner, 2026-10-19: "Make the live notification look beautiful
-// please. Include our logo." and "Do not include a timer or stop watch"): one ongoing
-// notification on the "current-stop" channel for the stop the tech is on, from core
-// liveStopContent, as the iPhone's Live Activity. On My Way starts it; Start Job, the checklist
-// and Mark Complete update it; it goes a minute after the stop is done, and at sign out. The
-// app shows it itself, so it works with no signal. The current stop is lib/liveStop.ts.
+// please. Include our logo.", "Do not include a timer or stop watch", and "Live Activity should
+// begin at the beginning of the workday"): one ongoing notification on the "current-stop"
+// channel, from core liveStopContent, as the iPhone's Live Activity. It starts by itself when
+// core liveStopRuns says the tech's day has begun, on the first stop not done ("ahead" with its
+// time, or at the pool once started); On My Way puts that stop on the way; after Mark Complete
+// it shows the stop done for a minute, then moves to the next; it ends after the last stop.
+// Swiped away, it stays away until the next work day. Checked at launch, coming back to the
+// app, after a sync, and each minute while open. The app shows it itself (no signal needed).
 
-/** How long the done card stays before it goes. */
+/** How long a done stop shows before the next one (or the end of the day). */
 const DONE_MS = 60_000;
+const MINUTE = 60_000;
 
-/** Mounted once while signed in: keeps the ongoing notification in step with the stop. */
+/** Mounted once while signed in. */
 export function LiveStopNotification() {
-  const live = useLiveState();
-  if (!live || Platform.OS === "web") return null;
-  return <LiveStop key={live.jobId} live={live} />;
+  if (Platform.OS === "web") return null;
+  return <LiveStopDay />;
 }
 
-function LiveStop({ live }: { live: LiveStopState }) {
+interface Shown {
+  job: JobView;
+  phase: LiveStopPhase;
+  stop: number;
+  stops: number;
+  next: JobView | undefined;
+  arriveMin: number | null;
+}
+
+function LiveStopDay() {
   const company = useCompany();
   const { user } = useSession();
   const tz = company.timezone;
-  const job = useRow<Job>("job", live.jobId);
-  const property = useRow<Property>("property", job?.property_id);
-  const customer = useRow<Customer>("customer", job?.bill_to_customer_id ?? property?.customer_id);
-  const insp = useJobInspection(company.id, live.jobId);
   const jobs = useJobViews(company.id);
-  const today = localDate(new Date(), tz);
+  const sync = useSyncStatus();
+  useLiveStopVersion();
 
-  const input = useMemo((): LiveStopInput | null => {
-    if (!job || job.deleted_at || job.status === "canceled") return null;
-    // The day's route this stop is on: the tech's own stops that day, in route order.
-    const me = user?.id;
-    const day = job.scheduled_start ? localDate(new Date(job.scheduled_start), tz) : today;
-    const stops = inRouteOrderViews(
-      jobs.filter(
-        (j) =>
-          !j.deleted_at &&
-          j.status !== "canceled" &&
-          j.scheduled_start &&
-          localDate(new Date(j.scheduled_start), tz) === day &&
-          (j.assigned_user_id === me || j.second_tech_id === me),
-      ),
-    );
-    const at = stops.findIndex((s) => s.id === job.id);
-    const following = stops.slice(at + 1).find((s) => !stopDone(s, today));
-    const tally = checklistTally(insp.components, insp.results);
-    const total =
-      tally.pass + tally.attention + tally.leaking + tally.notApplicable + tally.pending;
-    return {
-      phase: stopDone(job, today) ? "done" : job.status === "in_progress" ? "on_site" : "driving",
-      customer: customer?.name ?? "Customer",
-      address: property?.address_line1 ?? null,
-      stop: at >= 0 ? at + 1 : 1,
-      stops: at >= 0 ? stops.length : 1,
-      eta: live.arriveMin != null ? minutesLabel(live.arriveMin) : null,
-      checklistDone: total - tally.pending,
-      checklistTotal: total,
-      next: following
-        ? {
-            customer: following.customer?.name ?? "Customer",
-            time: following.scheduled_start ? formatTime(following.scheduled_start, tz) : null,
-          }
-        : null,
-    };
-  }, [job, customer, property, insp, jobs, user, tz, today, live.arriveMin]);
-
-  const shown = useRef("");
+  // "Now", moved on each minute while the app is open and when it comes back to the front.
+  const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    if (!input) {
-      void endLiveStop();
-      return;
-    }
-    const c = liveStopContent(input);
-    // Title: the headline. Text: the figure with its label, then the detail and next lines
-    // for the expanded view. Never a timer (owner, 2026-10-19).
-    const body = [[c.figureLabel, c.figure].filter(Boolean).join(" "), c.detail, c.next]
-      .filter(Boolean)
-      .join("\n");
-    const key = `${c.headline}|${body}`;
-    if (key === shown.current) return;
-    shown.current = key;
-    const done = input.phase === "done";
+    let tick: ReturnType<typeof setInterval> | null = setInterval(() => setNow(new Date()), MINUTE);
+    const sub = AppState.addEventListener("change", (s) => {
+      if (s === "active") {
+        setNow(new Date());
+        tick ??= setInterval(() => setNow(new Date()), MINUTE);
+      } else if (tick) {
+        clearInterval(tick);
+        tick = null;
+      }
+    });
+    return () => {
+      if (tick) clearInterval(tick);
+      sub.remove();
+    };
+  }, []);
+
+  const today = localDate(now, tz);
+  const nowMin = localMinutes(now.toISOString(), tz);
+  const me = user?.id;
+  const stops = useMemo(
+    () =>
+      inRouteOrderViews(
+        jobs.filter(
+          (j) =>
+            !j.deleted_at &&
+            j.status !== "canceled" &&
+            j.scheduled_start &&
+            localDate(new Date(j.scheduled_start), tz) === today &&
+            (j.assigned_user_id === me || j.second_tech_id === me),
+        ),
+      ),
+    [jobs, tz, today, me],
+  );
+  const left = stops.filter((s) => !stopDone(s, today));
+  const onMyWay = liveOnMyWay();
+
+  // The stop on the way (On My Way), else one already started, else the first not done.
+  const target =
+    (onMyWay && left.find((s) => s.id === onMyWay.jobId)) ??
+    left.find((s) => s.status === "in_progress") ??
+    left[0];
+  // Mark Complete: the stop shows done for a minute, then the next one (or the day ends).
+  const [justDone, setJustDone] = useState<string | null>(null);
+  const last = useRef<string | null>(null);
+  useEffect(() => {
+    const was = last.current ? stops.find((s) => s.id === last.current) : undefined;
+    if (was && stopDone(was, today)) setJustDone(was.id);
+    last.current = target?.id ?? null;
+  }, [target?.id, stops, today]);
+  useEffect(() => {
+    if (!justDone) return;
+    // Not a timer on screen: when the minute is up, the next stop takes its place.
+    const t = setTimeout(() => setJustDone(null), DONE_MS);
+    return () => clearTimeout(t);
+  }, [justDone]);
+
+  const runs = liveStopRuns({
+    settings: company.settings,
+    date: today,
+    nowMin,
+    stopsLeft: left.length,
+  });
+  const dismissedToday = liveDismissedOn() === today;
+  const doneJob = justDone ? stops.find((s) => s.id === justDone) : undefined;
+
+  let shown: Shown | null = null;
+  if (!dismissedToday && doneJob) {
+    const at = stops.indexOf(doneJob);
+    shown = {
+      job: doneJob,
+      phase: "done",
+      stop: at + 1,
+      stops: stops.length,
+      next: left[0],
+      arriveMin: null,
+    };
+  } else if (!dismissedToday && target && (runs || onMyWay?.jobId === target.id)) {
+    const at = stops.indexOf(target);
+    const driving = onMyWay?.jobId === target.id && target.status !== "in_progress";
+    shown = {
+      job: target,
+      phase: target.status === "in_progress" ? "on_site" : driving ? "driving" : "ahead",
+      stop: at + 1,
+      stops: stops.length,
+      next: left.find((s) => s !== target && stops.indexOf(s) > at),
+      arriveMin: driving ? (onMyWay?.arriveMin ?? null) : null,
+    };
+  }
+
+  // Swiped away: once it was up, it's gone from the tray without us taking it down. A done
+  // card swiped away only ends that card; the stop card swiped away stays away for the day.
+  const up = useRef<LiveStopPhase | null>(null);
+  useEffect(() => {
+    if (!up.current) return;
+    void Notifications.getPresentedNotificationsAsync()
+      .then((list) => {
+        if (!up.current || list.some((n) => n.request.identifier === LIVE_STOP_ID)) return;
+        const phase = up.current;
+        up.current = null;
+        if (phase === "done") setJustDone(null);
+        else dismissLiveStopFor(today);
+      })
+      .catch(() => undefined);
+  }, [now, sync.phase, sync.lastSyncedAt, today]);
+
+  const showing = shown !== null;
+  useEffect(() => {
+    if (showing) return;
+    up.current = null;
+    void hideLiveStop();
+  }, [showing]);
+
+  if (!shown) return null;
+  return (
+    <StopCard
+      key={shown.job.id}
+      shown={shown}
+      timeZone={tz}
+      onUp={(phase) => {
+        up.current = phase;
+      }}
+    />
+  );
+}
+
+/** One stop's notification: its checklist count comes from its own rows. */
+function StopCard({
+  shown,
+  timeZone,
+  onUp,
+}: {
+  shown: Shown;
+  timeZone: string;
+  onUp: (phase: LiveStopPhase) => void;
+}) {
+  const { job } = shown;
+  const insp = useJobInspection(job.company_id, job.id);
+  const tally = checklistTally(insp.components, insp.results);
+  const total = tally.pass + tally.attention + tally.leaking + tally.notApplicable + tally.pending;
+  const input: LiveStopInput = {
+    phase: shown.phase,
+    customer: job.customer?.name ?? "Customer",
+    address: job.property?.address_line1 ?? null,
+    stop: shown.stop,
+    stops: shown.stops,
+    eta: shown.arriveMin != null ? minutesLabel(shown.arriveMin) : null,
+    scheduled: job.scheduled_start ? formatTime(job.scheduled_start, timeZone) : null,
+    checklistDone: total - tally.pending,
+    checklistTotal: total,
+    next: shown.next
+      ? {
+          customer: shown.next.customer?.name ?? "Customer",
+          time: shown.next.scheduled_start
+            ? formatTime(shown.next.scheduled_start, timeZone)
+            : null,
+        }
+      : null,
+  };
+  const c = liveStopContent(input);
+  // Title: the headline. Text: the figure with its label, then the detail and next lines for
+  // the expanded view. Never a timer or a stopwatch (owner, 2026-10-19).
+  const body = [[c.figureLabel, c.figure].filter(Boolean).join(" "), c.detail, c.next]
+    .filter(Boolean)
+    .join("\n");
+  const phone = job.customer?.phone ?? null;
+  const key = JSON.stringify([c.headline, body, phone]);
+
+  const shownKey = useRef("");
+  useEffect(() => {
+    if (key === shownKey.current) return;
+    shownKey.current = key;
+    const [title, text] = JSON.parse(key) as [string, string, string | null];
     void Notifications.scheduleNotificationAsync({
       identifier: LIVE_STOP_ID,
       content: {
-        title: c.headline,
-        body,
+        title,
+        body: text,
         color: NOTIFICATION_COLOR,
-        // Ongoing while working; the done card can be swiped away.
-        sticky: !done,
+        // Ongoing for the day; the done card can be swiped away.
+        sticky: shown.phase !== "done",
         autoDismiss: false,
         sound: false,
         priority: Notifications.AndroidNotificationPriority.LOW,
         categoryIdentifier: STOP_CATEGORY,
-        data: { kind: "live", job: live.jobId, phone: customer?.phone ?? null },
+        data: { kind: "live", job: job.id, phone },
       },
       trigger: { channelId: STOP_CHANNEL },
-    }).catch(() => undefined);
-  }, [input, live.jobId, customer?.phone]);
-
-  // A minute after the stop is done, the notification goes (On My Way to the next stop
-  // replaces it sooner).
-  const done = input?.phase === "done";
-  useEffect(() => {
-    if (!done) return;
-    const t = setTimeout(() => void endLiveStop(), DONE_MS);
-    return () => clearTimeout(t);
-  }, [done]);
+    })
+      .then(() => onUp(shown.phase))
+      .catch(() => undefined);
+  }, [key, shown.phase, job.id, phone, onUp]);
   return null;
 }
