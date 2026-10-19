@@ -30,6 +30,15 @@ public struct WebAPI: Sendable {
         return try await send(request)
     }
 
+    /// Sends `body` as JSON with another method (PUT, DELETE), and returns the JSON reply.
+    public func send(_ method: String, _ path: String, _ body: JSONValue = [:]) async throws -> JSONValue {
+        var request = URLRequest(url: baseURL.appendingPathComponent(path))
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+        request.httpBody = try JSONEncoder().encode(body)
+        return try await send(request)
+    }
+
     /// GETs `path` with `query` parameters and the person's sign-in, and returns the JSON reply.
     public func get(_ path: String, query: [String: String] = [:]) async throws -> JSONValue {
         var url = baseURL.appendingPathComponent(path)

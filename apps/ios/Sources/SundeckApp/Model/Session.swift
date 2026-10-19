@@ -115,7 +115,12 @@ public final class Session {
 
     /// Removes this person's work from the phone and ends the session here. Screens warn about
     /// unsent changes first.
+    /// Runs first when signing out, while the person is still signed in: this phone's push token
+    /// comes off the server and the Live Activity ends.
+    @ObservationIgnored public var willSignOut: (@MainActor () async -> Void)?
+
     public func signOut() async {
+        await willSignOut?()
         sync.clearLocalData()
         sync.kv.remove(KVKey.user)
         user = nil

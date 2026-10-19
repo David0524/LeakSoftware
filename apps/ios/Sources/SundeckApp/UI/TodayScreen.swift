@@ -474,6 +474,7 @@
                 return
             }
             if job.customerPhone != nil && viaCompany {
+                startLiveStop()
                 done = "Sending…"
                 let body = text
                 Task {
@@ -490,7 +491,14 @@
             fromPhone()
         }
 
+        /// The Lock Screen's Live Activity for this stop, arriving at the time the text gives.
+        private func startLiveStop() {
+            app.liveStop.start(
+                jobId: job.id, eta: liveStopETA(now: Date(), timeZone: day.ctx.timeZone, driveMinutes: leg))
+        }
+
         private func fromPhone() {
+            startLiveStop()
             let body = text
             if let phone = job.customerPhone {
                 let digits = phone.filter { $0.isNumber || $0 == "+" }

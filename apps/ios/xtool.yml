@@ -1,4 +1,16 @@
 version: 1
 bundleID: com.sundeckpro.app
+product: SundeckPro
 infoPath: Info.plist
+# SundeckPro.entitlements (aps-environment, for push) is applied when the app is signed for a
+# device (Sideloadly or Xcode with the paid account). It isn't listed here as entitlementsPath:
+# xtool would then sign the bundle itself, and its signer fails on Sentry's static framework
+# ("Can't find free space of LoadCommands"), which scripts/build-ios.sh removes afterwards.
 iconPath: ../../brand/logo/png/icon-1024.png
+extensions:
+  # The Live Activity for the stop a tech is on (docs/plans/live-activities-and-notifications.md).
+  # Its bundle ID is the app's plus ".SundeckLiveActivity". The mark is copied from brand/logo.
+  - product: SundeckLiveActivity
+    infoPath: LiveActivity-Info.plist
+    resources:
+      - ../../brand/logo/png/mark-reverse-512.png

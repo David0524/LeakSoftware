@@ -3,6 +3,7 @@ import { basics } from "./cases/basics";
 import { inspection } from "./cases/inspection";
 import { maintenance } from "./cases/maintenance";
 import { media } from "./cases/media";
+import { notifications } from "./cases/notifications";
 import { pricing } from "./cases/pricing";
 import { routing } from "./cases/routing";
 import { schedule } from "./cases/schedule";
@@ -13,6 +14,7 @@ export const modules: Record<string, ModuleCases> = {
   inspection,
   maintenance,
   media,
+  notifications,
   pricing,
   routing,
   schedule,

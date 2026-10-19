@@ -1,0 +1,1854 @@
+{
+  "NOTIFICATION_KINDS": [
+    {
+      "args": [],
+      "result": [
+        {
+          "key": "text",
+          "label": "Customer texts",
+          "hint": "A customer texts the shop's number."
+        },
+        {
+          "key": "job",
+          "label": "New and moved jobs",
+          "hint": "A job is given to you, or its time changes."
+        },
+        {
+          "key": "quote",
+          "label": "Accepted quotes",
+          "hint": "A customer accepts a quote."
+        },
+        {
+          "key": "payment",
+          "label": "Payments",
+          "hint": "A customer pays a deposit or an invoice."
+        },
+        {
+          "key": "report",
+          "label": "Signed reports",
+          "hint": "A customer signs a report."
+        }
+      ]
+    }
+  ],
+  "SHOP_KINDS": [
+    {
+      "args": [],
+      "result": [
+        "payment"
+      ]
+    }
+  ],
+  "notificationOn": [
+    {
+      "args": [
+        null,
+        "text"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        "job"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        "quote"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        "payment"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        "report"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {},
+        "text"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {},
+        "job"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {},
+        "quote"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {},
+        "payment"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {},
+        "report"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": false
+        },
+        "text"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "text": false
+        },
+        "job"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": false
+        },
+        "quote"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": false
+        },
+        "payment"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": false
+        },
+        "report"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": true,
+          "job": false
+        },
+        "text"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": true,
+          "job": false
+        },
+        "job"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "text": true,
+          "job": false
+        },
+        "quote"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": true,
+          "job": false
+        },
+        "payment"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "text": true,
+          "job": false
+        },
+        "report"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "payment": "false"
+        },
+        "text"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "payment": "false"
+        },
+        "job"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "payment": "false"
+        },
+        "quote"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "payment": "false"
+        },
+        "payment"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "payment": "false"
+        },
+        "report"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "quote": 0
+        },
+        "text"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "quote": 0
+        },
+        "job"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "quote": 0
+        },
+        "quote"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "quote": 0
+        },
+        "payment"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "quote": 0
+        },
+        "report"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "x",
+        "text"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "x",
+        "job"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "x",
+        "quote"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "x",
+        "payment"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "x",
+        "report"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        [
+          false
+        ],
+        "text"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        [
+          false
+        ],
+        "job"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        [
+          false
+        ],
+        "quote"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        [
+          false
+        ],
+        "payment"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        [
+          false
+        ],
+        "report"
+      ],
+      "result": true
+    }
+  ],
+  "textNotification": [
+    {
+      "args": [
+        "Dana Smith",
+        "  Gate is\nopen "
+      ],
+      "result": {
+        "title": "Dana Smith",
+        "body": "Gate is open"
+      }
+    },
+    {
+      "args": [
+        "+16025550100",
+        ""
+      ],
+      "result": {
+        "title": "+16025550100",
+        "body": "Sent a picture"
+      }
+    },
+    {
+      "args": [
+        "+16025550100",
+        "   \n\t "
+      ],
+      "result": {
+        "title": "+16025550100",
+        "body": "Sent a picture"
+      }
+    },
+    {
+      "args": [
+        "A",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "result": {
+        "title": "A",
+        "body": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…"
+      }
+    },
+    {
+      "args": [
+        "A",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "result": {
+        "title": "A",
+        "body": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      }
+    },
+    {
+      "args": [
+        "A",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "result": {
+        "title": "A",
+        "body": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…"
+      }
+    },
+    {
+      "args": [
+        "A",
+        "a  b\t\tc\r\nd"
+      ],
+      "result": {
+        "title": "A",
+        "body": "a b c d"
+      }
+    }
+  ],
+  "jobNotification": [
+    {
+      "args": [
+        false,
+        "Smith",
+        "123 Palm Ln",
+        "Tue 9:30 AM"
+      ],
+      "result": {
+        "title": "New stop Tue 9:30 AM",
+        "body": "Smith, 123 Palm Ln"
+      }
+    },
+    {
+      "args": [
+        true,
+        "Smith",
+        null,
+        null
+      ],
+      "result": {
+        "title": "Stop moved to another day",
+        "body": "Smith"
+      }
+    },
+    {
+      "args": [
+        true,
+        "Smith",
+        "123 Palm Ln",
+        "Wed 8:00 AM"
+      ],
+      "result": {
+        "title": "Stop moved to Wed 8:00 AM",
+        "body": "Smith, 123 Palm Ln"
+      }
+    },
+    {
+      "args": [
+        false,
+        "Smith",
+        "",
+        ""
+      ],
+      "result": {
+        "title": "New stop",
+        "body": "Smith"
+      }
+    },
+    {
+      "args": [
+        false,
+        "",
+        "123 Palm Ln",
+        null
+      ],
+      "result": {
+        "title": "New stop",
+        "body": "123 Palm Ln"
+      }
+    }
+  ],
+  "quoteNotification": [
+    {
+      "args": [
+        "Smith",
+        125000
+      ],
+      "result": {
+        "title": "Quote accepted",
+        "body": "Smith accepted the $1,250.00 quote."
+      }
+    },
+    {
+      "args": [
+        "Smith",
+        0
+      ],
+      "result": {
+        "title": "Quote accepted",
+        "body": "Smith accepted the $0.00 quote."
+      }
+    },
+    {
+      "args": [
+        "Lee",
+        99
+      ],
+      "result": {
+        "title": "Quote accepted",
+        "body": "Lee accepted the $0.99 quote."
+      }
+    },
+    {
+      "args": [
+        "Lee",
+        123456789
+      ],
+      "result": {
+        "title": "Quote accepted",
+        "body": "Lee accepted the $1,234,567.89 quote."
+      }
+    }
+  ],
+  "paymentNotification": [
+    {
+      "args": [
+        "Smith",
+        65730,
+        "invoice 1042"
+      ],
+      "result": {
+        "title": "Payment received",
+        "body": "Smith paid $657.30 (invoice 1042)."
+      }
+    },
+    {
+      "args": [
+        "Lee",
+        5,
+        "deposit"
+      ],
+      "result": {
+        "title": "Payment received",
+        "body": "Lee paid $0.05 (deposit)."
+      }
+    },
+    {
+      "args": [
+        "Lee",
+        100000,
+        "invoice 7"
+      ],
+      "result": {
+        "title": "Payment received",
+        "body": "Lee paid $1,000.00 (invoice 7)."
+      }
+    }
+  ],
+  "reportNotification": [
+    {
+      "args": [
+        "Smith"
+      ],
+      "result": {
+        "title": "Report signed",
+        "body": "Smith signed the report."
+      }
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": {
+        "title": "Report signed",
+        "body": " signed the report."
+      }
+    }
+  ],
+  "liveStopContent": [
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "9:42 AM",
+        "figureLabel": "Arriving",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.2857142857142857,
+        "compact": "9:42",
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": null,
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "On the way",
+        "figureLabel": "",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.2857142857142857,
+        "compact": "…",
+        "spoken": "On the way to Smith. Stop 3 of 7."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "On the way",
+        "figureLabel": "",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.2857142857142857,
+        "compact": "…",
+        "spoken": "On the way to Smith. Stop 3 of 7."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "12:05 pm",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "12:05 pm",
+        "figureLabel": "Arriving",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.2857142857142857,
+        "compact": "12:05",
+        "spoken": "On the way to Smith, arriving at 12:05 pm. Stop 3 of 7."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "14:05",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "14:05",
+        "figureLabel": "Arriving",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.2857142857142857,
+        "compact": "14:05",
+        "spoken": "On the way to Smith, arriving at 14:05. Stop 3 of 7."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": null,
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "9:42 AM",
+        "figureLabel": "Arriving",
+        "detail": "Stop 3 of 7",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.2857142857142857,
+        "compact": "9:42",
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": "",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "9:42 AM",
+        "figureLabel": "Arriving",
+        "detail": "Stop 3 of 7",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.2857142857142857,
+        "compact": "9:42",
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": null
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "9:42 AM",
+        "figureLabel": "Arriving",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": null,
+        "progress": 0.2857142857142857,
+        "compact": "9:42",
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Lee",
+            "time": null
+          }
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "9:42 AM",
+        "figureLabel": "Arriving",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Lee",
+        "progress": 0.2857142857142857,
+        "compact": "9:42",
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Lee",
+            "time": ""
+          }
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "9:42 AM",
+        "figureLabel": "Arriving",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Lee",
+        "progress": 0.2857142857142857,
+        "compact": "9:42",
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 0,
+          "checklistTotal": 0,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "9:42 AM",
+        "figureLabel": "Arriving",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.2857142857142857,
+        "compact": "9:42",
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 1,
+          "stops": 1,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "9:42 AM",
+        "figureLabel": "Arriving",
+        "detail": "Stop 1 of 1 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0,
+        "compact": "9:42",
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 1 of 1."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 7,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": null
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "9:42 AM",
+        "figureLabel": "Arriving",
+        "detail": "Stop 7 of 7 · 123 Palm Ln",
+        "next": null,
+        "progress": 0.8571428571428571,
+        "compact": "9:42",
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 7 of 7."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 9,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "9:42 AM",
+        "figureLabel": "Arriving",
+        "detail": "Stop 9 of 7 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 1,
+        "compact": "9:42",
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 9 of 7."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 0,
+          "stops": 0,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "9:42 AM",
+        "figureLabel": "Arriving",
+        "detail": "Stop 0 of 0 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0,
+        "compact": "9:42",
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 0 of 0."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "4 of 9",
+        "figureLabel": "Checklist",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.35714285714285715,
+        "compact": "4/9",
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": null,
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "4 of 9",
+        "figureLabel": "Checklist",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.35714285714285715,
+        "compact": "4/9",
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "4 of 9",
+        "figureLabel": "Checklist",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.35714285714285715,
+        "compact": "4/9",
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "12:05 pm",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "4 of 9",
+        "figureLabel": "Checklist",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.35714285714285715,
+        "compact": "4/9",
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "14:05",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "4 of 9",
+        "figureLabel": "Checklist",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.35714285714285715,
+        "compact": "4/9",
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": null,
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "4 of 9",
+        "figureLabel": "Checklist",
+        "detail": "Stop 3 of 7",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.35714285714285715,
+        "compact": "4/9",
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": "",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "4 of 9",
+        "figureLabel": "Checklist",
+        "detail": "Stop 3 of 7",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.35714285714285715,
+        "compact": "4/9",
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": null
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "4 of 9",
+        "figureLabel": "Checklist",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": null,
+        "progress": 0.35714285714285715,
+        "compact": "4/9",
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Lee",
+            "time": null
+          }
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "4 of 9",
+        "figureLabel": "Checklist",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Lee",
+        "progress": 0.35714285714285715,
+        "compact": "4/9",
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Lee."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Lee",
+            "time": ""
+          }
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "4 of 9",
+        "figureLabel": "Checklist",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Lee",
+        "progress": 0.35714285714285715,
+        "compact": "4/9",
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Lee."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 0,
+          "checklistTotal": 0,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "On site",
+        "figureLabel": "",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.35714285714285715,
+        "compact": "•",
+        "spoken": "At Smith. Stop 3 of 7. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 1,
+          "stops": 1,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "4 of 9",
+        "figureLabel": "Checklist",
+        "detail": "Stop 1 of 1 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.5,
+        "compact": "4/9",
+        "spoken": "At Smith. Checklist 4 of 9. Stop 1 of 1. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 7,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": null
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "4 of 9",
+        "figureLabel": "Checklist",
+        "detail": "Stop 7 of 7 · 123 Palm Ln",
+        "next": null,
+        "progress": 0.9285714285714286,
+        "compact": "4/9",
+        "spoken": "At Smith. Checklist 4 of 9. Stop 7 of 7."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 9,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "4 of 9",
+        "figureLabel": "Checklist",
+        "detail": "Stop 9 of 7 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 1,
+        "compact": "4/9",
+        "spoken": "At Smith. Checklist 4 of 9. Stop 9 of 7. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 0,
+          "stops": 0,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "4 of 9",
+        "figureLabel": "Checklist",
+        "detail": "Stop 0 of 0 · 123 Palm Ln",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0,
+        "compact": "4/9",
+        "spoken": "At Smith. Checklist 4 of 9. Stop 0 of 0. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Next stop",
+        "detail": "Stop 3 of 7",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.42857142857142855,
+        "compact": "✓",
+        "spoken": "Smith done. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": null,
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Next stop",
+        "detail": "Stop 3 of 7",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.42857142857142855,
+        "compact": "✓",
+        "spoken": "Smith done. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Next stop",
+        "detail": "Stop 3 of 7",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.42857142857142855,
+        "compact": "✓",
+        "spoken": "Smith done. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "12:05 pm",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Next stop",
+        "detail": "Stop 3 of 7",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.42857142857142855,
+        "compact": "✓",
+        "spoken": "Smith done. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "14:05",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Next stop",
+        "detail": "Stop 3 of 7",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.42857142857142855,
+        "compact": "✓",
+        "spoken": "Smith done. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": null,
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Next stop",
+        "detail": "Stop 3 of 7",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.42857142857142855,
+        "compact": "✓",
+        "spoken": "Smith done. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": "",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Next stop",
+        "detail": "Stop 3 of 7",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.42857142857142855,
+        "compact": "✓",
+        "spoken": "Smith done. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": null
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Last stop",
+        "detail": "Stop 3 of 7",
+        "next": "That was the last stop today.",
+        "progress": 0.42857142857142855,
+        "compact": "✓",
+        "spoken": "Smith done. That was the last stop today."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Lee",
+            "time": null
+          }
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Next stop",
+        "detail": "Stop 3 of 7",
+        "next": "Next: Lee",
+        "progress": 0.42857142857142855,
+        "compact": "✓",
+        "spoken": "Smith done. Next: Lee."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Lee",
+            "time": ""
+          }
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Next stop",
+        "detail": "Stop 3 of 7",
+        "next": "Next: Lee",
+        "progress": 0.42857142857142855,
+        "compact": "✓",
+        "spoken": "Smith done. Next: Lee."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 0,
+          "checklistTotal": 0,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Next stop",
+        "detail": "Stop 3 of 7",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0.42857142857142855,
+        "compact": "✓",
+        "spoken": "Smith done. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 1,
+          "stops": 1,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Next stop",
+        "detail": "Stop 1 of 1",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 1,
+        "compact": "✓",
+        "spoken": "Smith done. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 7,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": null
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Last stop",
+        "detail": "Stop 7 of 7",
+        "next": "That was the last stop today.",
+        "progress": 1,
+        "compact": "✓",
+        "spoken": "Smith done. That was the last stop today."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 9,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Next stop",
+        "detail": "Stop 9 of 7",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 1,
+        "compact": "✓",
+        "spoken": "Smith done. Next: Jones at 10:30 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 0,
+          "stops": 0,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          }
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Next stop",
+        "detail": "Stop 0 of 0",
+        "next": "Next: Jones at 10:30 AM",
+        "progress": 0,
+        "compact": "✓",
+        "spoken": "Smith done. Next: Jones at 10:30 AM."
+      }
+    }
+  ]
+}

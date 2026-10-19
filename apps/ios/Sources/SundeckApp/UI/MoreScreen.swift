@@ -15,6 +15,7 @@
         case settingsPage(SettingsPage)
         case sync
         case myPhone
+        case notifications
     }
 
     /// The screens the More tab pushes.
@@ -32,6 +33,7 @@
             case .settingsPage(let page): SettingsListScreen(page: page)
             case .sync: SettingsView(showWelcome: {}, showReauth: showReauth)
             case .myPhone: MyPhoneScreen()
+            case .notifications: NotificationsScreen()
             }
         }
     }
@@ -58,6 +60,8 @@
         @Environment(AppEnvironment.self) private var app
         @Environment(\.openURL) private var openURL
         @State private var profile: MyProfile?
+        /// Notifications' value: On, Some or Off (the phone's copy until the server answers).
+        @State private var notifications: String?
         @State private var browser: BrowserPage?
         @State private var directions = DirectionsChoice.automatic
         @State private var confirmSignOut = false
@@ -129,7 +133,10 @@
             } message: {
                 Text(signOutWarning(sync.status) ?? "")
             }
-            .onAppear { directions = sync.kv.directionsChoice }
+            .onAppear {
+                directions = sync.kv.directionsChoice
+                notifications = NotificationPrefsForm.summary(NotificationPrefsForm.cached(sync.kv))
+            }
             .onChange(of: directions) { _, choice in sync.kv.directionsChoice = choice }
             .task { await loadProfile() }
         }
@@ -151,6 +158,13 @@
 
         @ViewBuilder private var account: some View {
             Section {
+                NavigationLink(value: MoreRoute.notifications) {
+                    ListRow(
+                        NotificationPrefsForm.title, detail: NotificationPrefsForm.rowDetail,
+                        value: notifications)
+                }
+                .surfaceRow()
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 16))
                 // Turning two-step on needs the website's server (it confirms with an admin key).
                 Button {
                     browser = .site("more/two-step")
@@ -231,6 +245,9 @@
                     .eq("id", value: id).execute().value
             else { return }
             profile = rows.first
+            let prefs = NotificationPrefsForm(kv: sync.kv)
+            await prefs.load(app.api)
+            if prefs.loaded { notifications = prefs.summary }
         }
     }
 

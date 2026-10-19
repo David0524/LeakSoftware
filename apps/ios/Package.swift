@@ -11,8 +11,10 @@ let package = Package(
         .macOS(.v15),
     ],
     products: [
-        // xtool builds the one library product as the app.
-        .library(name: "SundeckPro", targets: ["SundeckApp"])
+        // xtool builds SundeckPro as the app (xtool.yml `product`) and SundeckLiveActivity as its
+        // widget extension (xtool.yml `extensions`).
+        .library(name: "SundeckPro", targets: ["SundeckApp"]),
+        .library(name: "SundeckLiveActivity", targets: ["SundeckLiveActivity"]),
     ],
     dependencies: [
         .package(url: "https://github.com/skiptools/swift-sqlcipher", exact: "1.13.0"),
@@ -33,6 +35,17 @@ let package = Package(
             dependencies: [.product(name: "SQLCipher", package: "swift-sqlcipher")]
         ),
         .target(name: "SundeckSync", dependencies: ["SundeckCore", "SundeckStorage"]),
+        // The Live Activity's attributes and views, shared by the app and its widget extension.
+        .target(name: "SundeckLiveStop", dependencies: ["SundeckCore", "SundeckTokens"]),
+        // The widget extension: the Live Activity on the Lock Screen and in the Dynamic Island.
+        // xtool links extensions with `-e _NSExtensionMain` (the old principal-class entry), which
+        // leaves the widget's `@main` unreferenced and dead-strips it. WidgetKit extensions start
+        // at their `main` (WidgetBundle's), as Xcode builds them.
+        .target(
+            name: "SundeckLiveActivity",
+            dependencies: ["SundeckLiveStop", "SundeckCore", "SundeckTokens"],
+            linkerSettings: [.unsafeFlags(["-Xlinker", "-e", "-Xlinker", "_main"], .when(platforms: [.iOS]))]
+        ),
         // Tests only: a sync transport straight to Postgres, and the two-device test harness.
         .target(
             name: "SundeckSyncPostgres",
@@ -51,6 +64,7 @@ let package = Package(
                 "SundeckStorage",
                 "SundeckSync",
                 "SundeckTokens",
+                "SundeckLiveStop",
                 .product(name: "Supabase", package: "supabase-swift"),
                 .product(name: "Crypto", package: "swift-crypto"),
                 .product(name: "Sentry", package: "sentry-cocoa", condition: .when(platforms: [.iOS])),
@@ -59,7 +73,9 @@ let package = Package(
         // iPhone simulator only (macOS CI): renders each screen to a PNG.
         .testTarget(
             name: "SundeckAppScreenshots",
-            dependencies: ["SundeckApp", "SundeckCore", "SundeckStorage", "SundeckSync"],
+            dependencies: [
+                "SundeckApp", "SundeckCore", "SundeckStorage", "SundeckSync", "SundeckLiveStop", "SundeckTokens",
+            ],
             // A new shop's default checklist, tests and severities, exported from create_company.
             resources: [.copy("Resources/config.json")]
         ),
@@ -78,7 +94,7 @@ let package = Package(
         .testTarget(
             name: "SundeckAppTests",
             dependencies: [
-                "SundeckApp", "SundeckStorage", "SundeckSync", "SundeckTokens",
+                "SundeckApp", "SundeckStorage", "SundeckSync", "SundeckTokens", "SundeckLiveStop",
                 .product(name: "Supabase", package: "supabase-swift"),
                 .product(name: "Crypto", package: "swift-crypto"),
             ]

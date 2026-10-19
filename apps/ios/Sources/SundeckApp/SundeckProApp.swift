@@ -10,6 +10,7 @@
     @main
     struct SundeckProApp: App {
         @State private var app = AppEnvironment.make()
+        @UIApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
         init() {
             BrandFonts.register()
@@ -51,6 +52,12 @@
         let appearance: AppearanceSetting
         /// Signed links to uploaded files, shared by every screen so links are reused.
         let signer: MediaURLSigner
+        /// This phone's push token on the server.
+        let push: PushRegistration
+        /// The Live Activity for the stop the tech is on.
+        let liveStop: LiveStopController
+        /// Where a tapped notification or the Live Activity's Open Job goes (MainView opens it).
+        var link: AppLink?
         @ObservationIgnored private let monitor = NWPathMonitor()
 
         init(client: SupabaseClient, session: Session, walkthrough: Walkthrough) {
@@ -58,6 +65,8 @@
             self.session = session
             self.walkthrough = walkthrough
             appearance = AppearanceSetting(session.sync.kv)
+            push = PushRegistration(kv: session.sync.kv)
+            liveStop = LiveStopController(session: session)
             signer = MediaURLSigner { path, seconds in
                 try await client.storage.from("media").createSignedURL(path: path, expiresIn: seconds)
             }
@@ -66,6 +75,11 @@
         /// The website's API as the signed-in person (reports, quotes, transcripts).
         var api: WebAPI {
             WebAPI(baseURL: AppConfig.webURL) { [client] in try? await client.auth.session.accessToken }
+        }
+
+        /// iOS gave the phone a push token: file it for whoever is signed in.
+        func received(_ token: Data) {
+            Task { await push.received(token, api: api, userId: session.user?.id) }
         }
 
         static func make() -> Result<AppEnvironment, Error> {
@@ -89,14 +103,20 @@
                 let sync = SyncService(
                     store: store, kv: kv, transport: SupabaseTransport(SupabaseRPC(client)), auth: auth,
                     uploader: uploader, media: media)
-                let environment = AppEnvironment(
-                    client: client, session: Session(sync: sync, auth: auth), walkthrough: Walkthrough(kv))
+                let session = Session(sync: sync, auth: auth)
+                let environment = AppEnvironment(client: client, session: session, walkthrough: Walkthrough(kv))
                 sync.afterSync = { [weak environment] in await environment?.afterSync() }
                 sync.voiceNoteUploaded = { [weak sync] id in
                     // Ask the server to transcribe it. Best effort: offline, the office can retry.
                     let api = WebAPI(baseURL: AppConfig.webURL) { try? await client.auth.session.accessToken }
                     if (try? await api.post("api/media/\(id)/transcribe")) != nil { sync?.syncSoon(0) }
                 }
+                session.willSignOut = { [weak environment] in
+                    guard let environment else { return }
+                    environment.liveStop.end()
+                    await environment.push.unregister(api: environment.api)
+                }
+                AppDelegate.environment = environment
                 environment.watchNetwork()
                 return environment
             }
@@ -159,8 +179,20 @@
                 sync.appBecameActive()
                 Task { await session.checkSession() }
             }
-            .onChange(of: sync.revision) { session.reloadCompanies() }
+            .onChange(of: sync.revision) {
+                session.reloadCompanies()
+                app.liveStop.refresh()
+            }
             .onChange(of: session.user) { app.walkthrough.reload() }
+            .task(id: session.user?.id) {
+                // Signed in: send a token the phone couldn't file offline, and ask iOS for a fresh one.
+                guard let id = session.user?.id else { return }
+                await app.push.registerIfNeeded(api: app.api, userId: id)
+                await NotificationPermission.registerIfAllowed()
+            }
+            .onOpenURL { url in
+                if let link = AppLink(url: url) { app.link = link }
+            }
         }
     }
 #endif

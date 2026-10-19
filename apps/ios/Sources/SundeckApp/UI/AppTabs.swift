@@ -39,6 +39,8 @@
         @State private var showWelcome = false
         @State private var showReauth = false
         @State private var editor: EditorSheet?
+        /// The short explanation before iOS asks to allow notifications (once, after sign-in).
+        @State private var askNotifications = false
         /// Unread conversations, the Messages tab's badge.
         @State private var unread = 0
         /// Job rows and stop cards zoom into the job page.
@@ -105,6 +107,41 @@
             .sheet(isPresented: $showReauth) { ReauthView() }
             .onAppear {
                 if !app.walkthrough.launchSeen { showWelcome = true }
+            }
+            .onChange(of: app.link, initial: true) { _, link in
+                guard let link else { return }
+                app.link = nil
+                open(link)
+            }
+            .task(id: showWelcome) {
+                guard !showWelcome else { return }
+                try? await Task.sleep(for: .seconds(1))
+                if await NotificationPermission.shouldAsk(app.push) { askNotifications = true }
+            }
+            .alert(NotificationAskText.title, isPresented: $askNotifications) {
+                Button(NotificationAskText.later, role: .cancel) { app.push.asked = true }
+                Button(NotificationAskText.allow) {
+                    app.push.asked = true
+                    Task { await NotificationPermission.request() }
+                }
+                .keyboardShortcut(.defaultAction)
+            } message: {
+                Text(NotificationAskText.message)
+            }
+        }
+
+        /// A tapped notification or Open Job: the job page on the current tab, or the conversation
+        /// in Messages.
+        private func open(_ link: AppLink) {
+            editor = nil
+            switch link {
+            case .job(let id):
+                paths[tab, default: NavigationPath()].append(Route.job(id))
+            case .conversation(let id):
+                var path = NavigationPath()
+                path.append(MessagesRoute.conversation(id))
+                paths[.messages] = path
+                tab = .messages
             }
         }
 

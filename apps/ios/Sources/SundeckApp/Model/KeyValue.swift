@@ -48,9 +48,14 @@ public enum KVKey {
     public static let tipsSeen = "walkthrough:tips_seen"
     public static let launchSeen = "walkthrough:launch_seen"
     public static let gettingStartedHidden = "walkthrough:getting_started_hidden"
+    /// The signed-in person's notification choices (More › Notifications), and the stop the
+    /// Live Activity is for.
+    public static let notificationPrefs = "push:prefs"
+    public static let liveStopTarget = "live_stop:target"
 
     /// Cleared when someone signs out (the device id and clock stay in the store).
     public static let signOutClears = [
         activeCompany, lastSyncedAt, initialSyncDone, teamProfiles, tipsSeen, launchSeen, gettingStartedHidden,
+        notificationPrefs, liveStopTarget,
     ]
 }
