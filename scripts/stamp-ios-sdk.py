@@ -50,11 +50,17 @@ def main() -> None:
         for info, _ in items
         if info.filename.startswith("Payload/") and info.filename.count("/") >= 2
     )
-    main_binary = f"Payload/{app}/{app.removesuffix('.app')}"
+    # The app's binary, and each extension's (the Live Activity's widget extension).
+    binaries = {f"Payload/{app}/{app.removesuffix('.app')}"}
+    for info, _ in items:
+        parts = info.filename.split("/")
+        if len(parts) == 5 and parts[2] == "PlugIns" and parts[3] == parts[4] + ".appex":
+            binaries.add(info.filename)
     with zipfile.ZipFile(ipa, "w", zipfile.ZIP_DEFLATED) as z:
         for info, data in items:
-            z.writestr(info, stamp(data, encode(version)) if info.filename == main_binary else data)
-    print(f"Stamped {main_binary} as built with the iOS {version} SDK")
+            z.writestr(info, stamp(data, encode(version)) if info.filename in binaries else data)
+    for b in sorted(binaries):
+        print(f"Stamped {b} as built with the iOS {version} SDK")
 
 
 if __name__ == "__main__":
