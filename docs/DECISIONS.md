@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-19 (owner: "Continue to build Android, but I don't think we're going to launch with the Android app. At least not as of today. I just don't have time")
+- **The Android (Expo) app keeps getting every change** (the four-platform rule stands), but it isn't part of the launch for now: the launch is the website and the Swift iPhone app. Android-only setup the owner would have to do (an EAS project, the Firebase key for Android push, Google Play) waits until Android is back on the plan.
+
 ## 2026-10-19 (owner: landmarks, lines, the arrow, Liquid Glass, Today, the + button)
 - **Landmarks are small filled pictures** (green tree, gray rock, blue water over rocks, concrete steps, a pump on its pad, a house with a red roof) with a thin dark outline, in new `color.landmark` tokens, drawn larger (20 of the diagram's 160 units). Tap one to select it: an **X** at its top right deletes it (no Remove button below), its corner handle or a pinch resizes it (10 to 44 units, `landmarks[].s`), and a tap on the selected one **mirrors** it (`landmarks[].flip`).
 - **Drawn lines snap straight** within 8 degrees of level or plumb.
