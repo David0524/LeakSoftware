@@ -215,6 +215,7 @@
                                 WeekRow(item: item, timeZone: board.ctx.timeZone)
                             }
                             .buttonStyle(.row)
+                            .zoomSource(item.job.id)
                         }
                     }
                 }
@@ -386,7 +387,7 @@
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(Color.link)
                     .frame(width: minTarget, height: minTarget)
-                    .background(Circle().fill(Color.tinted))
+                    .glassSurface(Circle(), tint: Color.tinted, interactive: true, fallback: .tinted)
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
@@ -524,6 +525,7 @@
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.plain)
+                .zoomSource(job.id)
                 Menu {
                     Button("Suggest Times", action: onSuggest)
                     Button("Move…", action: onMove)
@@ -640,6 +642,7 @@
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .zoomSource(job.id)
                     if canMoveJob(job.status) {
                         Button("Move…", action: onMove).buttonStyle(.quiet(size: .small))
                     }

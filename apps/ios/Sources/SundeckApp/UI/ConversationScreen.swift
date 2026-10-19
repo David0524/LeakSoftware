@@ -132,7 +132,7 @@
                         "\(c.name) replied STOP, so texts to them are off. They can text START to turn them back on."
                 )
                 .padding(8)
-                .background(.bar)
+                .chromeBar(hairline: nil)
             } else if let line, line.status == "active" {
                 TextComposer(draft: draft, pictures: line.pictures) {
                     await draft.send(app: app, sync: sync, companyId: session.company?.id) { server, body, pictures in
@@ -142,7 +142,7 @@
             } else {
                 Notice(kind: .info, text: "Texting is off until the company number is working.")
                     .padding(8)
-                    .background(.bar)
+                    .chromeBar(hairline: nil)
             }
         }
 
@@ -406,7 +406,14 @@
             }
             .padding(docked ? 8 : 0)
             .background {
-                if docked { Rectangle().fill(.bar).ignoresSafeArea(edges: .bottom) }
+                // Docked under a thread: Liquid Glass on iOS 26, the bar material before.
+                if docked {
+                    if #available(iOS 26, *) {
+                        Rectangle().fill(.clear).glassEffect(.regular, in: .rect).ignoresSafeArea(edges: .bottom)
+                    } else {
+                        Rectangle().fill(.bar).ignoresSafeArea(edges: .bottom)
+                    }
+                }
             }
             .sheet(isPresented: $choosing) {
                 TextPhotoPicker { draft.photos = $0 }.ignoresSafeArea()

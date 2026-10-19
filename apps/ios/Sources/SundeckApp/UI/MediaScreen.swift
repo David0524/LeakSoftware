@@ -120,7 +120,7 @@
                 .foregroundStyle(Color.link)
             }
             .padding(.horizontal, 8)
-            .background(.bar)
+            .chromeBar(hairline: nil)
         }
 
         private var title: String {

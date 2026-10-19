@@ -154,15 +154,7 @@
             }
             .buttonStyle(.plain)
             .disabled(!ready)
-            .background {
-                if reduceTransparency {
-                    shape.fill(Color.surface)
-                } else {
-                    shape.fill(.regularMaterial)
-                }
-            }
-            .overlay(shape.strokeBorder(Color.text.opacity(0.1), lineWidth: 1))
-            .shadow(color: Color.navy.opacity(0.14), radius: 14, x: 0, y: 8)
+            .modifier(FloatingGlass(shape: shape, reduceTransparency: reduceTransparency))
             .accessibilityLabel("What to Add: \(summary)")
             .accessibilityHint(ready ? "Shows each step" : "")
         }
@@ -218,6 +210,26 @@
                 if let line = saturationText(result) {
                     Text(line).textRole(.secondary).monospacedDigit().foregroundStyle(Color.text)
                 }
+            }
+        }
+    }
+
+    /// The What to Add bar's surface: interactive Liquid Glass on iOS 26 (it handles Reduce
+    /// Transparency itself); the material with a border and shadow before.
+    private struct FloatingGlass<S: InsettableShape>: ViewModifier {
+        var shape: S
+        var reduceTransparency: Bool
+
+        func body(content: Content) -> some View {
+            if #available(iOS 26, *) {
+                content.glassSurface(shape, interactive: true)
+            } else {
+                content
+                    .background {
+                        if reduceTransparency { shape.fill(Color.surface) } else { shape.fill(.regularMaterial) }
+                    }
+                    .overlay(shape.strokeBorder(Color.text.opacity(0.1), lineWidth: 1))
+                    .shadow(color: Color.navy.opacity(0.14), radius: 14, x: 0, y: 8)
             }
         }
     }

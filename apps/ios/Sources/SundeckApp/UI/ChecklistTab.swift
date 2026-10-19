@@ -30,6 +30,7 @@
                     Text(model.isEmpty ? "No checklist yet." : model.tallyText)
                         .textRole(.body)
                         .foregroundStyle(Color.textMuted)
+                        .rollingNumber(model.tallyText)
                         .padding(.bottom, 12)
                     if let tip = app.walkthrough.tip(screen: "job", company: company, pkg: tipPackage) {
                         TipRow(tip: tip) { app.walkthrough.dismiss(tip.id) }.padding(.bottom, 20)
@@ -365,6 +366,9 @@
                     .padding(.trailing, 32)
                     .frame(minHeight: minTarget)
                     .background(Capsule().fill(pillColor))
+                    // A new verdict pops into its color.
+                    .contentTransition(.interpolate)
+                    .animation(Motion.bouncy, value: item.verdict)
                     .overlay(alignment: .trailing) {
                         Image(systemName: "chevron.down")
                             .font(.system(size: 12, weight: .bold))
@@ -375,6 +379,7 @@
             }
             .accessibilityLabel(item.component.label)
             .accessibilityValue(item.verdictLabel)
+            .sensoryFeedback(.selection, trigger: item.verdict)
         }
 
         private var pillColor: Color {

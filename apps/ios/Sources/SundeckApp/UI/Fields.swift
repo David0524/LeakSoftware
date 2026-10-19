@@ -237,13 +237,17 @@
             ZStack {
                 if done {
                     Circle().fill(Color.pass)
+                        .transition(.scale(scale: 0.4).combined(with: .opacity))
                     Image(systemName: "checkmark")
                         .font(.system(size: 12, weight: .heavy))
                         .foregroundStyle(Color.onStatus)
+                        .transition(.scale(scale: 0.4).combined(with: .opacity))
                 } else {
                     Circle().strokeBorder(Color.controlBorder, lineWidth: 2)
                 }
             }
+            // Ticking a step pops the check in.
+            .animation(Motion.bouncy, value: done)
             .frame(width: 24, height: 24)
             .accessibilityHidden(true)
         }

@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-19 (owner: "Ensure you include Liquid Glass, smooth animations, all of that uniquely swift stuff")
+- **The Swift app uses Liquid Glass on iOS 26** for the controls layer: pill buttons (tinted with their usual colors, so primary stays blue), round icon buttons, segmented controls (a glass thumb that slides), the job page's section switcher (floating over the page instead of a bar), the What to Add bar, the message composer, a photo's toolbar, and half-height sheets. Content (cards, lists, the checklist) stays solid, as Apple's guidelines ask. iOS 18 to 25 keep the website's look.
+- **The tab bar shrinks while scrolling down on iOS 26** (`tabBarMinimizeBehavior(.onScrollDown)`). Replaces the spec's "Don't turn on" (8.1).
+- **Motion:** job rows, Today's stop cards, Schedule stops and a customer's jobs zoom into the job page (and back); segments and buttons move with springs; counts roll to their new value; a ticked check pops in; verdict pills animate to their color with a haptic; tips and the sync bar fold away; switching job sections cross-fades; stop cards ease in as they scroll on. Every animation is off with Reduce Motion.
+- The Expo app keeps its drawn glass (it can't use the system's); the website is unchanged.
+
 ## 2026-10-19 (overnight build, owner: "I trust your judgment"; for the owner to review)
 - **Route, schedule and timeline rules run on the phone**, ported to SundeckCore with fixtures from TypeScript, instead of new website endpoints for them. Drive times still come from the shop's cached times on the server (`cached_drive_times`) when online.
 - **The job Timeline reads the audit log straight from Supabase** (managers only; RLS gives techs nothing), like the website, since the audit log isn't synced. Offline it says "The timeline shows when you're online."

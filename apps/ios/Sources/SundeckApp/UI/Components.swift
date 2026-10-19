@@ -83,9 +83,23 @@
         ) -> some View {
             presentationDetents(detents)
                 .presentationDragIndicator(.visible)
-                .presentationBackground(Color.bg)
-                .presentationCornerRadius(20)
+                .modifier(SheetSurface(partial: detents != [.large]))
                 .interactiveDismissDisabled(dirty)
+        }
+    }
+
+    /// A sheet's background: on iOS 26 a half-height sheet (Move, Suggested Times) is Liquid
+    /// Glass with the system's rounded corners, and a full one (forms) keeps the grouped gray;
+    /// before iOS 26 always the gray with 20 corners.
+    private struct SheetSurface: ViewModifier {
+        var partial: Bool
+
+        func body(content: Content) -> some View {
+            if #available(iOS 26, *) {
+                if partial { content } else { content.presentationBackground(Color.bg) }
+            } else {
+                content.presentationBackground(Color.bg).presentationCornerRadius(20)
+            }
         }
     }
 
@@ -353,7 +367,9 @@
                 }
                 .padding(.vertical, 2)
                 Spacer(minLength: 0)
-                Button(action: close) {
+                Button {
+                    withAnimation(Motion.smooth) { close() }
+                } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.textMuted)
@@ -364,6 +380,7 @@
                 .accessibilityLabel("Close Tip")
             }
             .card(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 4))
+            .transition(.opacity.combined(with: .scale(scale: 0.95)))
             .accessibilityElement(children: .contain)
         }
     }
@@ -418,11 +435,17 @@
         @Environment(\.openRoute) private var openRoute
 
         var body: some View {
-            if let message = syncBarMessage(sync.status) {
-                SyncBar(message: message) {
-                    if let open { open() } else { openRoute(.sync) }
+            VStack(spacing: 0) {
+                if let message = syncBarMessage(sync.status) {
+                    SyncBar(message: message) {
+                        if let open { open() } else { openRoute(.sync) }
+                    }
+                    .rollingNumber(message)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
+            // Slides away once everything is sent.
+            .animation(Motion.smooth, value: syncBarMessage(sync.status) == nil)
         }
     }
 

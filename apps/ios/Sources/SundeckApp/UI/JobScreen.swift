@@ -58,7 +58,10 @@
                             .padding(.horizontal, CGFloat(Spacing.pageMargin))
                             .id("top")
                         Section {
+                            // A new section fades in where the last one was.
                             sectionContent(current, job)
+                                .id(current)
+                                .transition(.opacity)
                                 .padding(.horizontal, CGFloat(Spacing.pageMargin))
                                 .padding(.top, 16)
                                 .padding(.bottom, 32)
@@ -118,8 +121,7 @@
             )
             .padding(.horizontal, CGFloat(Spacing.pageMargin))
             .padding(.vertical, 8)
-            .background(.bar)
-            .overlay(alignment: .bottom) { Hairline() }
+            .modifier(SwitcherBar())
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Job sections")
         }
@@ -144,7 +146,7 @@
         }
 
         private func choose(_ next: JobPageSection) {
-            section = next
+            withAnimation(Motion.smooth) { section = next }
             JobSectionMemory.remember(next, for: jobId)
         }
 
@@ -171,6 +173,18 @@
             let inspection = JobInspection(sync.store, jobId: jobId)
             toDo = checklistTally(inspection.components, inspection.results).pending
             if section == nil { section = JobSectionMemory.section(for: jobId, type: found.type) }
+        }
+    }
+
+    /// Behind the pinned switcher: nothing on iOS 26, where the switcher itself is glass and the
+    /// page scrolls under it; the bar material and a hairline before.
+    private struct SwitcherBar: ViewModifier {
+        func body(content: Content) -> some View {
+            if #available(iOS 26, *) {
+                content
+            } else {
+                content.background(.bar).overlay(alignment: .bottom) { Hairline() }
+            }
         }
     }
 #endif

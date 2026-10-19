@@ -236,7 +236,12 @@
             .overlay { if isNext { shape.strokeBorder(Color.link, lineWidth: 2) } }
             .opacity(job.done ? 0.7 : 1)
             .contentShape(shape)
+            .zoomSource(job.id)
             .onTapGesture { openRoute(.job(job.id)) }
+            // Cards ease in as they scroll onto the screen.
+            .scrollTransition(.animated(.smooth)) { card, phase in
+                card.opacity(phase.isIdentity ? 1 : 0.6).scaleEffect(phase.isIdentity ? 1 : 0.96)
+            }
         }
     }
 

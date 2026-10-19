@@ -1593,8 +1593,8 @@ everything else. The Expo app has no milestones; its column says what exists.
 ### 8.1 Swift (iOS 18 and later)
 
 - **Tabs:** `TabView(selection:)` with `Tab(_:image:value:)`. On iOS 26 and later this is the
-  floating Liquid Glass tab bar, the thing the website imitates; don't add a custom bar. Don't turn
-  on `.tabBarMinimizeBehavior(.onScrollDown)` (the website's bar never shrinks). Each tab owns a
+  floating Liquid Glass tab bar, the thing the website imitates; don't add a custom bar. On iOS 26
+  turn on `.tabBarMinimizeBehavior(.onScrollDown)` (owner, 2026-10-19: Liquid Glass and motion). Each tab owns a
   `NavigationStack(path:)` (already so in `MainView`).
 - **Large titles in Barlow:** `UINavigationBarAppearance` set once at launch, for both standard and
   scroll-edge appearances: `largeTitleTextAttributes` Barlow ExtraBold 34 (scaled with

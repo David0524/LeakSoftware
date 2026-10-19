@@ -141,6 +141,7 @@
                         JobListRowView(row: row)
                     }
                     .buttonStyle(.row)
+                    .zoomSource(row.id)
                 }
             }
         }

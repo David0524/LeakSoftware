@@ -28,7 +28,9 @@
                 ForEach(options, id: \.self) { option in
                     let chosen = option == selection
                     Button {
-                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { selection = option }
+                        withAnimation(reduceMotion ? nil : .snappy(duration: 0.3, extraBounce: 0.08)) {
+                            selection = option
+                        }
                     } label: {
                         Text(label(option))
                             .font(.role(.segment).weight(chosen ? .semibold : .medium))
@@ -47,8 +49,9 @@
                 }
             }
             .padding(2)
-            .background(
-                RoundedRectangle(cornerRadius: CGFloat(Radius.segmentTrack), style: .continuous).fill(Color.fill)
+            .glassSurface(
+                RoundedRectangle(cornerRadius: CGFloat(Radius.segmentTrack), style: .continuous),
+                tint: Color.fill.opacity(0.6), fallback: .fill
             )
             .fixedSize(horizontal: !fillsWidth, vertical: false)
             .sensoryFeedback(.selection, trigger: selection)
@@ -62,12 +65,18 @@
     }
 
     /// The chosen segment's raised capsule: `thumb` with two soft shadows.
+    /// On iOS 26 the thumb is a drop of Liquid Glass sliding over the track, as in the system's
+    /// segmented control.
     struct SegmentThumb: View {
         var body: some View {
-            Capsule()
-                .fill(Color.thumb)
-                .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 3)
-                .shadow(color: .black.opacity(0.04), radius: 0.5, x: 0, y: 3)
+            if #available(iOS 26, *) {
+                Color.clear.glassSurface(Capsule(), tint: Color.thumb.opacity(0.7), interactive: true)
+            } else {
+                Capsule()
+                    .fill(Color.thumb)
+                    .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 3)
+                    .shadow(color: .black.opacity(0.04), radius: 0.5, x: 0, y: 3)
+            }
         }
     }
 
@@ -102,7 +111,9 @@
                     let chosen = option == selection
                     let count = badge(option)
                     Button {
-                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { selection = option }
+                        withAnimation(reduceMotion ? nil : .snappy(duration: 0.3, extraBounce: 0.08)) {
+                            selection = option
+                        }
                     } label: {
                         Text(label(option))
                             .font(.role(.footnote).weight(chosen ? .semibold : .medium))
@@ -127,8 +138,9 @@
                 }
             }
             .padding(2)
-            .background(
-                RoundedRectangle(cornerRadius: CGFloat(Radius.segmentTrack), style: .continuous).fill(Color.fill)
+            .glassSurface(
+                RoundedRectangle(cornerRadius: CGFloat(Radius.segmentTrack), style: .continuous),
+                tint: Color.fill.opacity(0.6), fallback: .fill
             )
             .sensoryFeedback(.selection, trigger: selection)
         }
@@ -144,6 +156,7 @@
             Text(text)
                 .font(.system(size: tone == .warning ? 11 : 12, weight: .semibold))
                 .monospacedDigit()
+                .rollingNumber(text)
                 .foregroundStyle(tone == nil ? Color.onPrimary : Color.onStatus)
                 .padding(.horizontal, 6)
                 .frame(minWidth: 20, minHeight: 20)

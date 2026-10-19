@@ -41,6 +41,8 @@
         @State private var editor: EditorSheet?
         /// Unread conversations, the Messages tab's badge.
         @State private var unread = 0
+        /// Job rows and stop cards zoom into the job page.
+        @Namespace private var zoom
         @Environment(SyncService.self) private var sync
 
         var body: some View {
@@ -73,6 +75,8 @@
                 }
             }
             .tint(Color.link)
+            .modifier(MinimizingTabBar())
+            .environment(\.zoomNamespace, zoom)
             .task(id: "\(sync.revision)|\(session.company?.id ?? "")") {
                 guard let company = session.company else { return }
                 unread = conversations(sync.store, companyId: company.id).filter(\.unread).count
@@ -123,8 +127,9 @@
                 root()
                     .navigationDestination(for: Route.self) { route in
                         switch route {
-                        case .job(let id): JobScreen(jobId: id)
-                        case .jobSection(let id, let section): JobScreen(jobId: id, section: section)
+                        case .job(let id): JobScreen(jobId: id).zoomDestination(id)
+                        case .jobSection(let id, let section):
+                            JobScreen(jobId: id, section: section).zoomDestination(id)
                         case .sync:
                             SettingsView(showWelcome: { showWelcome = true }, showReauth: { showReauth = true })
                         case .messages(let route): MessagesDestination(route: route)
@@ -141,7 +146,19 @@
                         MoreDestination(route: $0, showReauth: { showReauth = true })
                     }
             }
+            .environment(\.zoomScope, tab.rawValue)
         }
     }
 
+    /// On iOS 26 the Liquid Glass tab bar shrinks to the current tab while scrolling down a long
+    /// page and comes back on scrolling up.
+    private struct MinimizingTabBar: ViewModifier {
+        func body(content: Content) -> some View {
+            if #available(iOS 26, *) {
+                content.tabBarMinimizeBehavior(.onScrollDown)
+            } else {
+                content
+            }
+        }
+    }
 #endif

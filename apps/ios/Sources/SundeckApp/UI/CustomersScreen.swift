@@ -278,6 +278,7 @@
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.row)
+                    .zoomSource(job.id)
                     .accessibilityElement(children: .combine)
                 }
             }

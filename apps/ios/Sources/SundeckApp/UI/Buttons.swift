@@ -36,6 +36,9 @@
         var foreground: Color
         var background: Color
         var isEnabled: Bool
+        /// The glass tint on iOS 26 (the resting fill); nil for text-only buttons, which stay clear.
+        var glass: Color? = nil
+        var pressed = false
 
         func body(content: Content) -> some View {
             content
@@ -47,9 +50,25 @@
                 .padding(.horizontal, size == .small ? 12 : 20)
                 .padding(.vertical, 6)
                 .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: size == .field ? fieldTarget : minTarget)
-                .background(Capsule().fill(background))
+                .modifier(PillBackground(background: background, glass: glass))
                 .contentShape(Capsule())
+                .pressScale(pressed)
                 .opacity(isEnabled ? 1 : 0.5)
+        }
+    }
+
+    /// The pill's fill: interactive Liquid Glass tinted with the button's color on iOS 26 (it
+    /// lights up and flexes under a finger), the flat fill before.
+    private struct PillBackground: ViewModifier {
+        var background: Color
+        var glass: Color?
+
+        func body(content: Content) -> some View {
+            if #available(iOS 26, *), let glass {
+                content.glassSurface(Capsule(), tint: glass, interactive: true)
+            } else {
+                content.background(Capsule().fill(background))
+            }
         }
     }
 
@@ -64,7 +83,8 @@
                 .modifier(
                     PillShape(
                         size: size, fullWidth: fullWidth, foreground: .onPrimary,
-                        background: .brandPrimary, isEnabled: isEnabled)
+                        background: .brandPrimary, isEnabled: isEnabled, glass: .brandPrimary,
+                        pressed: configuration.isPressed)
                 )
                 .overlay(Capsule().fill(Color.black.opacity(configuration.isPressed ? 0.05 : 0)))
         }
@@ -83,7 +103,8 @@
                 .modifier(
                     PillShape(
                         size: size, fullWidth: fullWidth, foreground: tint,
-                        background: tint.opacity(configuration.isPressed ? 0.24 : 0.12), isEnabled: isEnabled))
+                        background: tint.opacity(configuration.isPressed ? 0.24 : 0.12), isEnabled: isEnabled,
+                        glass: tint.opacity(0.14), pressed: configuration.isPressed))
         }
     }
 
@@ -97,7 +118,8 @@
                 .modifier(
                     PillShape(
                         size: size, fullWidth: false, foreground: .link,
-                        background: configuration.isPressed ? .iconTint : .clear, isEnabled: isEnabled))
+                        background: configuration.isPressed ? .iconTint : .clear, isEnabled: isEnabled,
+                        pressed: configuration.isPressed))
         }
     }
 
@@ -160,7 +182,7 @@
                     .font(.system(size: 20, weight: .regular))
                     .foregroundStyle(Color.link)
                     .frame(width: minTarget, height: minTarget)
-                    .background(Circle().fill(Color.iconTint))
+                    .glassSurface(Circle(), tint: Color.iconTint, interactive: true, fallback: .iconTint)
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
@@ -190,7 +212,12 @@
         func makeBody(configuration: Configuration) -> some View {
             configuration.label
                 .foregroundStyle(Color.link)
-                .background(Circle().fill(configuration.isPressed ? Color.iconTint : .clear))
+                .background {
+                    // On iOS 26 the toolbar puts the button on its own glass, which reacts to touch.
+                    if #unavailable(iOS 26) {
+                        Circle().fill(configuration.isPressed ? Color.iconTint : .clear)
+                    }
+                }
                 .contentShape(Circle())
         }
     }
