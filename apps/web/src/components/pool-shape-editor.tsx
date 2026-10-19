@@ -282,6 +282,30 @@ export function PoolShapeEditor({
     ? `Spa, ${spaNow.shape === "square" ? "square" : "round"}, size ${Math.round(spaNow.r)}`
     : null;
 
+  // Two rows of five (owner, 2026-10-19): the creative tiles in the middle of the second row,
+  // between Grecian and Figure 8.
+  const shapeTile = (s: (typeof DIAGRAM_SHAPES)[number]) => {
+    const on = shape === s.key;
+    return (
+      <button
+        key={s.key}
+        type="button"
+        aria-pressed={on}
+        onClick={() => setShape(on ? null : s.key)}
+        className={cx(TILE, tileState(on))}
+      >
+        <TileArt>
+          <path
+            d={poolDiagram(s.key, false).pool}
+            className="fill-diagram-water stroke-water"
+            strokeWidth={5}
+          />
+        </TileArt>
+        {s.label}
+      </button>
+    );
+  };
+
   return (
     <div className="space-y-5">
       <div className="space-y-1">
@@ -294,49 +318,7 @@ export function PoolShapeEditor({
           className="grid grid-cols-5 gap-1.5"
           data-testid="shape-tiles"
         >
-          {DIAGRAM_SHAPES.map((s) => {
-            const on = shape === s.key;
-            return (
-              <button
-                key={s.key}
-                type="button"
-                aria-pressed={on}
-                onClick={() => setShape(on ? null : s.key)}
-                className={cx(TILE, tileState(on))}
-              >
-                <TileArt>
-                  <path
-                    d={poolDiagram(s.key, false).pool}
-                    className="fill-diagram-water stroke-water"
-                    strokeWidth={5}
-                  />
-                </TileArt>
-                {s.label}
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            aria-expanded={panel === "landmarks"}
-            onClick={() => {
-              setPanel(panel === "landmarks" ? null : "landmarks");
-              setPlacing(null);
-            }}
-            className={cx(TILE, tileState(panel === "landmarks"))}
-          >
-            <TileArt>
-              <path
-                d={LANDMARKS[0]!.path}
-                transform="translate(37 7) scale(3.6)"
-                fill="none"
-                className="stroke-current"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </TileArt>
-            Landmarks
-          </button>
+          {DIAGRAM_SHAPES.slice(0, -1).map(shapeTile)}
           <button
             type="button"
             aria-pressed={panel === "draw"}
@@ -366,6 +348,29 @@ export function PoolShapeEditor({
             </TileArt>
             Clear
           </button>
+          <button
+            type="button"
+            aria-expanded={panel === "landmarks"}
+            onClick={() => {
+              setPanel(panel === "landmarks" ? null : "landmarks");
+              setPlacing(null);
+            }}
+            className={cx(TILE, tileState(panel === "landmarks"))}
+          >
+            <TileArt>
+              <path
+                d={LANDMARKS[0]!.path}
+                transform="translate(37 7) scale(3.6)"
+                fill="none"
+                className="stroke-current"
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </TileArt>
+            Landmarks
+          </button>
+          {DIAGRAM_SHAPES.slice(-1).map(shapeTile)}
         </div>
       </div>
 
@@ -522,39 +527,6 @@ export function PoolShapeEditor({
           >
             Remove {LANDMARKS.find((l) => l.key === landmarks[selected]!.kind)!.label}
           </Button>
-        ) : null}
-        {spaNow ? (
-          <div className="flex flex-wrap gap-x-4">
-            {/* Buttons for the tap and the pinch, for keyboards and switch control. */}
-            <button
-              type="button"
-              className="min-h-11 text-link"
-              onClick={() =>
-                setSpa({ ...spaNow, shape: spaNow.shape === "square" ? "round" : "square" })
-              }
-            >
-              {spaNow.shape === "square" ? "Make the Spa Round" : "Make the Spa Square"}
-            </button>
-            <button
-              type="button"
-              className="min-h-11 text-link"
-              onClick={() => setSpaR(spaNow.r - 2)}
-            >
-              Smaller
-            </button>
-            <button
-              type="button"
-              className="min-h-11 text-link"
-              onClick={() => setSpaR(spaNow.r + 2)}
-            >
-              Larger
-            </button>
-            {spa ? (
-              <button type="button" className="min-h-11 text-link" onClick={() => setSpa(null)}>
-                Put the Spa Back in the Corner
-              </button>
-            ) : null}
-          </div>
         ) : null}
       </div>
 
