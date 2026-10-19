@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-19 (owner: "Evaluate the CI and tests you run. If some are no longer necessary, please cut them.")
+- **The iPhone (Xcode) job no longer re-runs the Swift tests.** They are the same package tests the Linux job runs (UI code is iOS-only and is compiled by the iPhone build and the simulator screenshots), and they took about 10 of the job's 25 minutes on every push.
+- **The checks job no longer builds the website.** The e2e job builds it (against Supabase) before Playwright, so the second build caught nothing new.
+- **The Today diagnostic screenshots are gone** (66 to 74, from chasing a blank Today in the tab view; the Getting Started card they tested is turned off).
+- **Kept:** format, lint, typecheck and unit tests (2 minutes), the Expo bundle check (catches broken imports and assets that typecheck misses), Swift on Linux (the only full run of the Swift tests), the iPhone build and screenshots (the only check that SwiftUI screens render), pgTAP with the Swift sync engine against the database, and Playwright.
+
 ## 2026-10-19 (owner: "Let all future updates be pushed to all of the following: desktop site, mobile site, Swift app, android app")
 - **Every update ships on all four platforms:** the desktop website, the mobile website, the Swift iPhone app, and the Android (Expo) app, with the same wording and behavior, unless the owner says a change is for one platform. Recorded in CLAUDE.md (How to work).
 - **Cleanings sync to phones** (owner: "Sync"): `plan_cleaning` is synced to phones (`device_sync = true`), so the apps show the countdowns, cadence, and due-soon pills the website shows.

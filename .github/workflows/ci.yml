@@ -24,9 +24,7 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
-      - run: pnpm --filter @leakbook/web build
-        env:
-          NEXT_TELEMETRY_DISABLED: "1"
+      # The web build runs in the e2e job, against Supabase.
       - name: Bundle the mobile app (catches broken imports and assets)
         run: npx expo export --platform ios --output-dir /tmp/expo-check
         working-directory: apps/mobile
@@ -49,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: xcodebuild -version && swift --version
-      - run: swift test --package-path apps/ios
+      # The Swift tests run in ios-linux; this job builds the app and renders its screens.
       - name: Build for iPhone
         working-directory: apps/ios
         run: >
