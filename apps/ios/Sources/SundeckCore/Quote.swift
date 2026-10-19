@@ -87,6 +87,31 @@ public struct Quote: Codable, Equatable, Sendable {
         case repairJobId = "repair_job_id"
         case deletedAt = "deleted_at"
     }
+
+    /// A quote started on the phone has only its job and discount until the server adds the rest:
+    /// missing fields read as the server's defaults (a draft, zero totals).
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        func cents(_ key: CodingKeys) throws -> Cents { try c.decodeIfPresent(Cents.self, forKey: key) ?? 0 }
+        id = try c.decode(String.self, forKey: .id)
+        companyId = try c.decode(String.self, forKey: .companyId)
+        jobId = try c.decode(String.self, forKey: .jobId)
+        number = try c.decodeIfPresent(Int.self, forKey: .number)
+        status = (try? c.decodeIfPresent(QuoteStatus.self, forKey: .status)) ?? .draft
+        subtotalCents = try cents(.subtotalCents)
+        discountCents = try cents(.discountCents)
+        taxCents = try cents(.taxCents)
+        totalCents = try cents(.totalCents)
+        depositRule = try? c.decodeIfPresent(DepositRule.self, forKey: .depositRule)
+        depositCents = try cents(.depositCents)
+        validUntil = try c.decodeIfPresent(String.self, forKey: .validUntil)
+        notes = try c.decodeIfPresent(String.self, forKey: .notes)
+        sentAt = try c.decodeIfPresent(String.self, forKey: .sentAt)
+        acceptedAt = try c.decodeIfPresent(String.self, forKey: .acceptedAt)
+        acceptedByName = try c.decodeIfPresent(String.self, forKey: .acceptedByName)
+        repairJobId = try c.decodeIfPresent(String.self, forKey: .repairJobId)
+        deletedAt = try c.decodeIfPresent(String.self, forKey: .deletedAt)
+    }
 }
 
 /// A line with a quantity and a unit price (quote and invoice lines).
