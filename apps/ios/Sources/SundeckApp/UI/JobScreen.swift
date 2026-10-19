@@ -118,7 +118,8 @@
                 case .checklist: ChecklistTab(job: job)
                 case .tests: TestsTab(job: job)
                 case .findings: FindingsTab(job: job)
-                case .report, .quote:
+                case .report: ReportTab(job: job)
+                case .quote:
                     Section {
                         Text(tab.comingIn)
                             .font(.subheadline).foregroundStyle(Color.muted)

@@ -157,6 +157,29 @@
             sync, companyId: "c1", jobId: job, existing: nil, title: "Skimmer seam leak", componentId: seam.id,
             severityKey: "major", location: "Skimmer throat", pin: (0.18, 0.12), status: .open, notes: "")
         try seedPhoto(sync, job: job, componentId: seam.id)
+        // A draft report, as the server writes it.
+        try sync.store.applyPage(
+            PullPage(
+                rows: [
+                    PulledRow(
+                        table: "report", xid: "3",
+                        row: [
+                            "id": "r1", "company_id": "c1", "job_id": .string(job), "template_key": "homeowner",
+                            "version": 1, "status": "draft",
+                            "final_sections": [
+                                [
+                                    "key": "summary", "title": "What We Found",
+                                    "text":
+                                        "We found one leak, at the skimmer seam. The other items we checked are not leaking.",
+                                ],
+                                [
+                                    "key": "next_steps", "title": "Next Steps",
+                                    "text": "Reseal the skimmer seam. We can quote the repair.",
+                                ],
+                            ],
+                            "ai_draft": ["problems": []],
+                        ])
+                ], done: true, cursor: [:], serverHLC: "1760000000002-0000-srv"))
         return (job, seam.id, test, finding)
     }
 
@@ -305,6 +328,11 @@
             try await snapshot(
                 "14-finding-editor-large-text", largeText: true,
                 FindingEditor(jobId: ids.job, findingId: ids.finding, componentId: nil).app(env))
+            try await snapshot(
+                "16-report", height: 2400, NavigationStack { JobScreen(jobId: ids.job, tab: .report) }.app(env))
+            try await snapshot("17-review", height: 2400, NavigationStack { ReviewScreen(jobId: ids.job) }.app(env))
+            try await snapshot(
+                "18-signature", NavigationStack { SignatureScreen(jobId: ids.job, quoteId: nil) }.app(env))
             let photo = try #require(jobMedia(env.session.sync.store, MediaTarget(jobId: ids.job)).first?.id)
             try await snapshot(
                 "15-media", NavigationStack { MediaScreen(jobId: ids.job, mediaId: photo) }.app(env))

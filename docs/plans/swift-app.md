@@ -232,6 +232,16 @@ medium quality, and the markup editor as a full-screen cover.
 - **Done when:** the sample job's report is signed and sent from the Swift app and opens on
   the website the same as one sent from the Expo app.
 
+Built 2026-10-19: the Report tab (draft, the checker's notes, section edits, signatures, finish,
+send by email or by text through the share sheet, versions with their link and PDF), the
+signature pad, the Signature screen and Review and Sign. Signatures save offline (the drawing
+as SVG, uploaded like photos) and reports are finished and sent on the server, after a sync, as
+in Expo. The done-when test is `LiveReportTests` (`SUNDECK_LIVE=1`): an inspection entered
+through the app, the draft written on the server, a signature drawn and uploaded, the report
+finished and sent by text; the customer page on sundeckpro.com shows what the M8.5 Playwright
+test checks for an Expo-sent report. It passed. Differences from Expo: the share sheet for
+texts, inset grouped layouts, and VoiceOver users can draw a signature (direct touch).
+
 ### S7 Quotes and invoices
 - Quote builder from findings and the price book (offline), discounts within the limit, send;
   invoices, deposits credited, share.
