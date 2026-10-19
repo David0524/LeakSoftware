@@ -5,9 +5,9 @@ import {
   CLEARED_DIAGRAM,
   DIAGRAM_SHAPES,
   LANDMARKS,
-  LANDMARK_SIZE,
   LANDMARKS_MAX,
   DRAWING_MAX,
+  clampLandmarkSize,
   clampSpaR,
   drawnPath,
   drawnShapeFrom,
@@ -21,7 +21,7 @@ import {
   type SpaShape,
 } from "@leakbook/core";
 import { savePoolDiagram } from "@/app/actions/diagram";
-import { DiagramShapes } from "./pool-diagram";
+import { DiagramShapes, LandmarkArt } from "./pool-diagram";
 import { Segmented } from "./segmented";
 import { useConfirm } from "./sheet";
 import { Button, Checkbox, cx } from "./ui";
@@ -98,7 +98,7 @@ export function PoolShapeEditor({
   const svg = useRef<SVGSVGElement>(null);
   // What the current press is doing, and the touches down (for a pinch).
   const press = useRef<{
-    what: "spa" | "resize" | "landmark" | "draw" | "pinch" | null;
+    what: "spa" | "resize" | "landmark" | "landmark-resize" | "draw" | "pinch" | null;
     index?: number;
     start: { x: number; y: number };
     moved: boolean;
@@ -138,24 +138,41 @@ export function PoolShapeEditor({
     !!spaNow &&
     Math.hypot((p.x - spaNow.x) * W - spaNow.r * 0.71, (p.y - spaNow.y) * H - spaNow.r * 0.71) <= 6;
   const landmarkAt = (p: { x: number; y: number }) =>
-    d.landmarks.findIndex(
+    d.landmarks.findLastIndex(
       (l) =>
-        Math.abs(p.x * W - l.cx) <= LANDMARK_SIZE / 2 + 2 &&
-        Math.abs(p.y * H - l.cy) <= LANDMARK_SIZE / 2 + 2,
+        Math.abs(p.x * W - l.cx) <= l.size / 2 + 2 && Math.abs(p.y * H - l.cy) <= l.size / 2 + 2,
     );
   const setSpaR = (r: number) => spaNow && setSpa({ ...spaNow, r: clampSpaR(r) });
+  // The selected landmark: an X at its top right deletes it (owner, 2026-10-19), and the
+  // handle at its bottom right resizes it, as the spa's does.
+  const picked = selected !== null ? d.landmarks[selected] : undefined;
+  const near = (p: { x: number; y: number }, x: number, y: number) =>
+    Math.hypot(p.x * W - x, p.y * H - y) <= 6;
+  const onDelete = (p: { x: number; y: number }) =>
+    !!picked && near(p, picked.cx + picked.size / 2, picked.cy - picked.size / 2);
+  const onLandmarkHandle = (p: { x: number; y: number }) =>
+    !!picked && near(p, picked.cx + picked.size / 2, picked.cy + picked.size / 2);
+  const setLandmarkSize = (index: number, size: number) =>
+    setLandmarks((all) =>
+      all.map((l, i) => (i === index ? { ...l, s: clampLandmarkSize(size) } : l)),
+    );
+  const removeLandmark = (index: number) => {
+    setLandmarks((all) => all.filter((_, i) => i !== index));
+    setSelected(null);
+  };
 
   function down(e: PointerEvent<SVGSVGElement>) {
     const p = at(e);
     touches.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     e.currentTarget.setPointerCapture(e.pointerId);
-    if (touches.current.size === 2 && spaNow && panel !== "draw") {
+    if (touches.current.size === 2 && (picked || spaNow) && panel !== "draw") {
+      // A pinch resizes the selected landmark, otherwise the spa.
       const [a, b] = [...touches.current.values()];
       press.current = {
         what: "pinch",
         start: p,
         moved: true,
-        startR: spaNow.r,
+        startR: picked ? picked.size : spaNow!.r,
         startGap: Math.hypot(a!.x - b!.x, a!.y - b!.y),
       };
       return;
@@ -171,7 +188,13 @@ export function PoolShapeEditor({
       press.current = { what: null, start: p, moved: false };
       return;
     }
-    if (onHandle(p)) press.current = { what: "resize", start: p, moved: false, startR: spaNow!.r };
+    if (selected !== null && onDelete(p)) {
+      removeLandmark(selected);
+      press.current = { what: null, start: p, moved: false };
+    } else if (selected !== null && onLandmarkHandle(p))
+      press.current = { what: "landmark-resize", index: selected, start: p, moved: false };
+    else if (onHandle(p))
+      press.current = { what: "resize", start: p, moved: false, startR: spaNow!.r };
     else if (onSpa(p)) press.current = { what: "spa", start: p, moved: false };
     else {
       const i = landmarkAt(p);
@@ -192,11 +215,18 @@ export function PoolShapeEditor({
       now.moved = true;
     if (now.what === "pinch" && touches.current.size === 2) {
       const [a, b] = [...touches.current.values()];
-      setSpaR(now.startR! * (Math.hypot(a!.x - b!.x, a!.y - b!.y) / now.startGap!));
+      const scaled = now.startR! * (Math.hypot(a!.x - b!.x, a!.y - b!.y) / now.startGap!);
+      if (picked && selected !== null) setLandmarkSize(selected, scaled);
+      else setSpaR(scaled);
     } else if (now.what === "draw") setStroke((s) => (s ? [...s, p] : [p]));
     else if (now.what === "spa" && now.moved && spaNow) setSpa({ ...spaNow, x: p.x, y: p.y });
     else if (now.what === "resize" && spaNow)
       setSpaR(Math.hypot((p.x - spaNow.x) * W, (p.y - spaNow.y) * H));
+    else if (now.what === "landmark-resize" && picked && now.index !== undefined)
+      setLandmarkSize(
+        now.index,
+        2 * Math.max(Math.abs(p.x * W - picked.cx), Math.abs(p.y * H - picked.cy)),
+      );
     else if (now.what === "landmark" && now.moved && now.index !== undefined)
       setLandmarks(landmarks.map((l, i) => (i === now.index ? { ...l, x: p.x, y: p.y } : l)));
   }
@@ -211,24 +241,41 @@ export function PoolShapeEditor({
     } else if (now.what === "spa" && !now.moved && spaNow)
       // Tapping the spa switches it round and square (owner, 2026-10-19).
       setSpa({ ...spaNow, shape: spaNow.shape === "square" ? "round" : "square" });
-    else if (now.what === "landmark" && !now.moved) setSelected(now.index ?? null);
+    else if (now.what === "landmark" && !now.moved && now.index !== undefined) {
+      // A tap selects a landmark; a tap on the selected one mirrors it (owner, 2026-10-19).
+      if (now.index === selected)
+        setLandmarks(landmarks.map((l, i) => (i === now.index ? { ...l, flip: !l.flip } : l)));
+      else setSelected(now.index);
+    }
     if (touches.current.size === 0)
       press.current = { what: null, start: { x: 0, y: 0 }, moved: false };
   }
 
   function wheel(e: WheelEvent<SVGSVGElement>) {
     // A trackpad pinch arrives as a wheel with ctrlKey.
-    if (!e.ctrlKey || !spaNow) return;
+    if (!e.ctrlKey || !(picked || spaNow)) return;
     e.preventDefault();
-    setSpaR(spaNow.r * (1 - e.deltaY / 100));
+    if (picked && selected !== null) setLandmarkSize(selected, picked.size * (1 - e.deltaY / 100));
+    else setSpaR(spaNow!.r * (1 - e.deltaY / 100));
   }
 
   function key(e: KeyboardEvent<SVGSVGElement>) {
-    if (selected !== null && (e.key === "Delete" || e.key === "Backspace")) {
-      e.preventDefault();
-      setLandmarks(landmarks.filter((_, i) => i !== selected));
-      setSelected(null);
-      return;
+    if (selected !== null && picked) {
+      const act: Record<string, () => void> = {
+        Delete: () => removeLandmark(selected),
+        Backspace: () => removeLandmark(selected),
+        "+": () => setLandmarkSize(selected, picked.size + 2),
+        "=": () => setLandmarkSize(selected, picked.size + 2),
+        "-": () => setLandmarkSize(selected, picked.size - 2),
+        Enter: () =>
+          setLandmarks(landmarks.map((l, i) => (i === selected ? { ...l, flip: !l.flip } : l))),
+        Escape: () => setSelected(null),
+      };
+      if (act[e.key]) {
+        e.preventDefault();
+        act[e.key]!();
+        return;
+      }
     }
     if (!spaNow) return;
     const step = 0.02;
@@ -358,15 +405,7 @@ export function PoolShapeEditor({
             className={cx(TILE, tileState(panel === "landmarks"))}
           >
             <TileArt>
-              <path
-                d={LANDMARKS[0]!.path}
-                transform="translate(37 7) scale(3.6)"
-                fill="none"
-                className="stroke-current"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+              <LandmarkArt parts={LANDMARKS[0]!.parts} transform="translate(56 2) scale(2)" />
             </TileArt>
             Landmarks
           </button>
@@ -389,15 +428,8 @@ export function PoolShapeEditor({
                   tileState(placing === l.key),
                 )}
               >
-                <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
-                  <path
-                    d={l.path}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={1.8}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+                <svg viewBox="0 0 24 24" className="size-6" aria-hidden="true">
+                  <LandmarkArt parts={l.parts} />
                 </svg>
                 {l.label}
               </button>
@@ -406,7 +438,7 @@ export function PoolShapeEditor({
           <p className="text-[0.9375rem] text-text-muted" aria-live="polite">
             {placing
               ? `Tap the drawing to put the ${LANDMARKS.find((l) => l.key === placing)!.label.toLowerCase()} there.`
-              : "Pick one, then tap the drawing. Drag one to move it; tap it to remove it."}
+              : "Pick one, then tap the drawing. Tap a landmark to select it: tap again to flip it, pinch or drag its corner to resize, or tap its X to delete it."}
           </p>
         </div>
       ) : null}
@@ -488,17 +520,41 @@ export function PoolShapeEditor({
               strokeLinecap="round"
             />
           ) : null}
-          {selected !== null && d.landmarks[selected] ? (
-            <rect
-              x={d.landmarks[selected]!.cx - LANDMARK_SIZE / 2 - 2}
-              y={d.landmarks[selected]!.cy - LANDMARK_SIZE / 2 - 2}
-              width={LANDMARK_SIZE + 4}
-              height={LANDMARK_SIZE + 4}
-              rx={4}
-              fill="none"
-              className="stroke-link"
-              strokeWidth={1.5}
-            />
+          {picked ? (
+            <g>
+              <rect
+                x={picked.cx - picked.size / 2 - 1.5}
+                y={picked.cy - picked.size / 2 - 1.5}
+                width={picked.size + 3}
+                height={picked.size + 3}
+                rx={3}
+                fill="none"
+                className="stroke-link"
+                strokeWidth={1.2}
+                strokeDasharray="3 2"
+              />
+              {/* Delete: an X in the top-right corner. */}
+              <circle
+                cx={picked.cx + picked.size / 2}
+                cy={picked.cy - picked.size / 2}
+                r={4.5}
+                className="fill-status-fail"
+              />
+              <path
+                d={`M${picked.cx + picked.size / 2 - 1.8} ${picked.cy - picked.size / 2 - 1.8} l3.6 3.6 m0 -3.6 l-3.6 3.6`}
+                className="stroke-white"
+                strokeWidth={1.3}
+                strokeLinecap="round"
+              />
+              {/* Resize: the same handle as the spa's. */}
+              <circle
+                cx={picked.cx + picked.size / 2}
+                cy={picked.cy + picked.size / 2}
+                r={3.2}
+                className="fill-surface stroke-link"
+                strokeWidth={1.5}
+              />
+            </g>
           ) : null}
           {d.spa && panel !== "draw" ? (
             // The spa's resize handle, at its lower right.
@@ -516,18 +572,6 @@ export function PoolShapeEditor({
             ? "Tap the spa to make it round or square. Drag it to move it; pinch or drag its corner to resize."
             : "Turn on Has a spa to put a spa on the drawing."}
         </p>
-        {selected !== null && landmarks[selected] ? (
-          <Button
-            type="button"
-            kind="danger"
-            onClick={() => {
-              setLandmarks(landmarks.filter((_, i) => i !== selected));
-              setSelected(null);
-            }}
-          >
-            Remove {LANDMARKS.find((l) => l.key === landmarks[selected]!.kind)!.label}
-          </Button>
-        ) : null}
       </div>
 
       {error ? (

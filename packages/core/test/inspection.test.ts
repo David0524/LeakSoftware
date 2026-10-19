@@ -422,12 +422,20 @@ describe("pool diagram: draw, landmarks, the spa's size, clear", async () => {
       "M80 40 C102.1 40 120 44.5 120 50 C120 55.5 102.1 60 80 60 C57.9 60 40 55.5 40 50 C40 44.5 57.9 40 80 40 Z",
     );
     expect(d.landmarks).toEqual([
-      { kind: "house", cx: 7, cy: 93, path: core.LANDMARKS.find((l) => l.key === "house")!.path },
+      {
+        kind: "house",
+        cx: 10,
+        cy: 90,
+        size: 20,
+        flip: false,
+        parts: core.LANDMARKS.find((l) => l.key === "house")!.parts,
+      },
     ]);
   });
 
   it("landmark paths use only the commands every platform reads", () => {
-    for (const l of core.LANDMARKS) expect(l.path, l.key).toMatch(/^[MLHVQCZ0-9. -]+$/);
+    for (const l of core.LANDMARKS)
+      for (const p of l.parts) expect(p.d, l.key).toMatch(/^[MLHVQCZ0-9. -]+$/);
     expect(core.LANDMARKS.map((l) => l.label)).toEqual([
       "Tree",
       "Rock",
@@ -492,5 +500,73 @@ describe("isDiagramShape", () => {
     for (const k of ["rectangle", "figure_eight", "freeform", "custom"])
       expect(isDiagramShape(k)).toBe(true);
     for (const k of ["hexagon", "", null, 3]) expect(isDiagramShape(k)).toBe(false);
+  });
+});
+
+describe("drawn lines snap straight", () => {
+  it("locks a nearly level or plumb line, leaves a slanted one", async () => {
+    const { drawnShapeFrom } = await import("../src");
+    // 160 x 100: 0.5 across is 80 units; 0.05 down is 5 units, about 3.6 degrees.
+    expect(
+      drawnShapeFrom("line", [
+        { x: 0.1, y: 0.5 },
+        { x: 0.6, y: 0.55 },
+      ]),
+    ).toEqual({
+      type: "line",
+      x1: 0.1,
+      y1: 0.5,
+      x2: 0.6,
+      y2: 0.5,
+    });
+    expect(
+      drawnShapeFrom("line", [
+        { x: 0.5, y: 0.1 },
+        { x: 0.51, y: 0.9 },
+      ]),
+    ).toEqual({
+      type: "line",
+      x1: 0.5,
+      y1: 0.1,
+      x2: 0.5,
+      y2: 0.9,
+    });
+    // 0.2 down is 20 units over 80: about 14 degrees, kept as drawn.
+    expect(
+      drawnShapeFrom("line", [
+        { x: 0.1, y: 0.5 },
+        { x: 0.6, y: 0.7 },
+      ]),
+    ).toEqual({
+      type: "line",
+      x1: 0.1,
+      y1: 0.5,
+      x2: 0.6,
+      y2: 0.7,
+    });
+  });
+});
+
+describe("landmarks resize and flip", () => {
+  it("keeps a size within bounds and a flip, and draws them", async () => {
+    const core = await import("../src");
+    const layout = core.parseDiagramLayout({
+      landmarks: [
+        { kind: "tree", x: 0.5, y: 0.5, s: 30, flip: true },
+        { kind: "rock", x: 0.5, y: 0.5, s: 99, flip: "yes" },
+      ],
+    });
+    expect(layout.landmarks).toEqual([
+      { kind: "tree", x: 0.5, y: 0.5, s: 30, flip: true },
+      { kind: "rock", x: 0.5, y: 0.5 },
+    ]);
+    const d = core.poolDiagram("rectangle", false, layout);
+    expect(d.landmarks.map((l) => [l.size, l.flip])).toEqual([
+      [30, true],
+      [20, false],
+    ]);
+    expect(core.clampLandmarkSize(3)).toBe(10);
+    expect(core.clampLandmarkSize(60)).toBe(44);
+    expect(core.clampLandmarkSize(22.26)).toBe(22.3);
   });
 });

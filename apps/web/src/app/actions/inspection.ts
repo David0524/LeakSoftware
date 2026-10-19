@@ -22,6 +22,8 @@ import {
   type TestType,
   type Verdict,
   parseGallons,
+  localDate,
+  markCompleteValues,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { requireCompletable } from "@/server/reports";
@@ -78,6 +80,40 @@ export async function changeJobStatus(_: FormState, form: FormData): Promise<For
   revalidatePath("/schedule");
   revalidatePath("/today");
   return done(jobId, "Updated.");
+}
+
+/**
+ * Mark Complete on Today (owner, 2026-10-19): a maintenance visit is completed (Complete Job,
+ * with the shop's checklist and photo rules); a leak or repair job keeps its status and its
+ * stop is marked done for the shop's day (job.stop_done_on). complete=false undoes the latter.
+ */
+export async function markStop(_: FormState, form: FormData): Promise<FormState> {
+  const { office, db } = await ctx();
+  const jobId = text(form, "job");
+  const complete = text(form, "complete") !== "false";
+  const { data: job } = await db
+    .from("job")
+    .select("type, status")
+    .eq("id", jobId)
+    .eq("company_id", office.company.id)
+    .single();
+  if (!job) return { error: "Job not found." };
+  if (job.type === "maintenance") {
+    if (!complete) return { error: "Reopen the visit from its page." };
+    const f = new FormData();
+    f.set("job", jobId);
+    f.set("to", "done");
+    return changeJobStatus({}, f);
+  }
+  const day = localDate(new Date(), office.company.timezone);
+  const { error } = await db
+    .from("job")
+    .update(complete ? markCompleteValues(job, day) : { stop_done_on: null })
+    .eq("id", jobId);
+  if (error) return { error: error.message };
+  revalidatePath("/today");
+  revalidatePath("/schedule");
+  return done(jobId, complete ? "Marked complete." : "Marked not complete.");
 }
 
 /**

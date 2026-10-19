@@ -33,6 +33,21 @@ export const tokens = {
       "white": "#FFFFFF",
       "outline": "#000000"
     },
+    "landmark": {
+      "leaf": "#4C9A52",
+      "leafDark": "#2F6E3A",
+      "trunk": "#8B5E34",
+      "stone": "#A3ABB3",
+      "stoneDark": "#6E7880",
+      "water": "#8CC8F0",
+      "foam": "#FFFFFF",
+      "concrete": "#D4D0C8",
+      "metal": "#7D8A96",
+      "wall": "#EADFCB",
+      "roof": "#B4533C",
+      "door": "#7A4A2A",
+      "outline": "#2B3640"
+    },
     "role": {
       "light": {
         "bg": "#F2F2F7",

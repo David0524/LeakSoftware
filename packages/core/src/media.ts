@@ -264,6 +264,34 @@ export function arrowHead(
 }
 
 /**
+ * How a markup arrow is drawn (owner, 2026-10-19: "the mockup arrow looks strange"): a wider
+ * head, and a shaft that stops inside the head, so the head's point stays sharp instead of the
+ * round end of a thick line poking through it. `unit` is the drawing's width / 400.
+ */
+export function arrowShape(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  unit: number,
+): { shaftEnd: [number, number]; head: [number, number][] } {
+  const size = Math.max(14, 30 * unit);
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  const spread = Math.PI / 6;
+  const length = Math.hypot(x2 - x1, y2 - y1);
+  // The shaft ends 60% of the way into the head (never behind where it starts).
+  const back = Math.min(size * 0.6, length);
+  return {
+    shaftEnd: [x2 - back * Math.cos(angle), y2 - back * Math.sin(angle)],
+    head: [
+      [x2, y2],
+      [x2 - size * Math.cos(angle - spread), y2 - size * Math.sin(angle - spread)],
+      [x2 - size * Math.cos(angle + spread), y2 - size * Math.sin(angle + spread)],
+    ],
+  };
+}
+
+/**
  * A default shape for a tap (no drag): a circle around the tap, or an arrow pointing at it
  * from up and to the left (from the other side when the tap is near that edge).
  * `aspect` is the photo's width / height, so the circle is round on screen.

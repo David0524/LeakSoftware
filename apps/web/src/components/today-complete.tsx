@@ -2,36 +2,48 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { changeJobStatus } from "@/app/actions/inspection";
+import { markStop } from "@/app/actions/inspection";
 import { buttonClass, cx } from "./ui";
 
 /**
- * Complete Job on a Today stop (owner, 2026-10-19: "there should be a way to mark that you're
- * onto the next job. Not everyone is going to want to go through the full process"). One tap
- * ends the visit; when the shop wants the checklist or a photo first, it says so and links to
- * the job.
+ * Mark Complete on a Today stop (owner, 2026-10-19: every stop on the day's route). A
+ * maintenance visit is completed; a leak or repair job's stop is done for the day and its
+ * report and invoice still follow. When the shop wants the checklist or a photo first, it says
+ * so and links to the job. A stop marked by mistake is marked not complete again.
  */
-export function TodayComplete({ jobId, customer }: { jobId: string; customer: string }) {
+export function TodayComplete({
+  jobId,
+  customer,
+  done,
+  undoable,
+}: {
+  jobId: string;
+  customer: string;
+  done: boolean;
+  /** Done only for the day (a leak or repair stop), so it can be undone here. */
+  undoable: boolean;
+}) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  if (done && !undoable) return null;
+  const run = (complete: boolean) =>
+    start(async () => {
+      const form = new FormData();
+      form.set("job", jobId);
+      form.set("complete", String(complete));
+      const result = await markStop({}, form);
+      setError(result.error ?? null);
+    });
   return (
-    <div className="relative z-10 mt-2 space-y-1">
+    <div className="space-y-1">
       <button
         type="button"
         disabled={pending}
-        aria-label={`Complete Job for ${customer}`}
-        onClick={() =>
-          start(async () => {
-            const form = new FormData();
-            form.set("job", jobId);
-            form.set("to", "done");
-            const result = await changeJobStatus({}, form);
-            setError(result.error ?? null);
-          })
-        }
-        className={cx(buttonClass("secondary", "min-h-11 w-full sm:w-auto sm:px-6"))}
+        aria-label={`${done ? "Mark Not Complete" : "Mark Complete"} for ${customer}`}
+        onClick={() => run(!done)}
+        className={cx(buttonClass(done ? "secondary" : "primary", "min-h-11 px-5"))}
       >
-        {pending ? "Completing…" : "Complete Job"}
+        {pending ? "Saving…" : done ? "Mark Not Complete" : "Mark Complete"}
       </button>
       {error ? (
         <p role="alert" className="text-[0.9375rem] text-status-fail">

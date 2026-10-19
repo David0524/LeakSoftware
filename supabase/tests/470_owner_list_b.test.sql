@@ -69,5 +69,14 @@ select ok(exists (select 1 from app.job_status_transition
                   where from_status = 'scheduled' and to_status = 'done'),
   'a scheduled visit can be completed');
 
+-- Today's Mark Complete on a leak job: the stop is done for the day, the job keeps its status
+select tests.authenticate_as((select tech_a from ids));
+select is(tests.rows_affected(format($$ update job set stop_done_on = current_date
+  where id = (select (a ->> 'job')::uuid from fx) $$)), 1::bigint,
+  'a tech marks a stop done for the day');
+reset role;
+select ok((select 'stop_done_on' = any (update_columns) from app.sync_table where table_name = 'job'),
+  'phones write it through sync');
+
 select * from finish();
 rollback;

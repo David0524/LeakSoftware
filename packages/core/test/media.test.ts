@@ -123,3 +123,18 @@ describe("markup", () => {
     expect(left![1]).toBeCloseTo(-right![1]);
   });
 });
+
+describe("arrowShape", () => {
+  it("stops the shaft inside a wider head", async () => {
+    const { arrowShape } = await import("../src");
+    const a = arrowShape(0, 0, 100, 0, 1);
+    expect(a.head[0]).toEqual([100, 0]);
+    expect(a.shaftEnd[0]).toBeCloseTo(82);
+    expect(a.shaftEnd[1]).toBeCloseTo(0);
+    expect(a.head[1]![0]).toBeCloseTo(100 - 30 * Math.cos(Math.PI / 6));
+    // Small drawings keep a 14-unit head; a short arrow's shaft never runs backwards.
+    const b = arrowShape(0, 0, 5, 0, 0.1);
+    expect(b.head[1]![0]).toBeCloseTo(5 - 14 * Math.cos(Math.PI / 6));
+    expect(b.shaftEnd).toEqual([0, 0]);
+  });
+});

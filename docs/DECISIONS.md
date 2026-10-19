@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-19 (owner: landmarks, lines, the arrow, Liquid Glass, Today, the + button)
+- **Landmarks are small filled pictures** (green tree, gray rock, blue water over rocks, concrete steps, a pump on its pad, a house with a red roof) with a thin dark outline, in new `color.landmark` tokens, drawn larger (20 of the diagram's 160 units). Tap one to select it: an **X** at its top right deletes it (no Remove button below), its corner handle or a pinch resizes it (10 to 44 units, `landmarks[].s`), and a tap on the selected one **mirrors** it (`landmarks[].flip`).
+- **Drawn lines snap straight** within 8 degrees of level or plumb.
+- **Markup arrows** have a wider head and a shaft that stops inside it, so the point stays sharp (core `arrowShape`).
+- **Liquid Glass on the iPhone:** the app's tab bar, bars, and controls are the system's, which are Liquid Glass on iOS 26, but the `.ipa` built on Linux was stamped "built with the iOS 18 SDK", so iOS ran it in compatibility mode with the old flat look. `scripts/build-ios.sh` now stamps the SDK it was compiled with (`scripts/stamp-ios-sdk.py`) and builds in release mode. Our own segmented controls get the iOS 26 hold-and-drag: hold the chosen segment and slide it (all four platforms).
+- **Today:** every stop on the day's route has **Mark Complete**. A maintenance visit is completed (Complete Job, with the shop's rules); a leak or repair job keeps its pipeline and its stop is done for the day (`job.stop_done_on`, migration `20261012006000`), with Mark Not Complete to undo. Stops are collapsed to one row except the one you're on; a tap opens one, with Open Job inside.
+- **The iPhone app's + (New Job) opened a blank screen:** its form was made in an `onAppear` on an empty view, which never appears. Fixed.
+
 ## 2026-10-19 (owner: Pool Shape order, Complete Job, no Wrap-Up on visits, Today)
 - **Pool Shape tiles:** row 1 Rectangle, Oval, Kidney, L-shape, Roman; row 2 Grecian, **Draw, Clear, Landmarks**, Figure 8. The spa has no text buttons: the Has a spa switch, then tap (round or square), drag, and pinch or the corner handle on the drawing. Keyboard and screen readers keep their (invisible) actions.
 - **Complete Job** replaces Mark Done, at the end of a visit's Checklist and in its header, and a visit can be completed straight from Scheduled (`scheduled → done`, migration `20261012005900`). **Settings › Team › Completing a job** (owners and admins): **Finish the checklist first** (`settings.require_checklist_to_finish`, new) and **Take a pool photo first** (`require_finish_photo`, moved out of the owner-only form). Both apply to whoever completes the job, checked by the apps and the website; the database doesn't enforce them, so an offline completion isn't refused when it syncs before its photo.

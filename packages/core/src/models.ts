@@ -66,6 +66,30 @@ export function completeJobBlocker(
 }
 
 /**
+ * Whether a stop on a day's route is done (owner, 2026-10-19: Mark Complete on every stop). A
+ * job past the field part of its pipeline (Done, report sent, invoiced, ...) is done; a leak or
+ * repair job is also done for the day once Mark Complete set stop_done_on to that day.
+ */
+export function stopDone(
+  job: { status: string; stop_done_on?: string | null },
+  day: string,
+): boolean {
+  if (job.status !== "scheduled" && job.status !== "in_progress") return true;
+  return job.stop_done_on === day;
+}
+
+/**
+ * What Mark Complete on Today writes: a maintenance visit is completed (status done); a leak
+ * or repair job keeps its pipeline and its stop is marked done for the day.
+ */
+export function markCompleteValues(
+  job: { type: string },
+  day: string,
+): { status: "done" } | { stop_done_on: string } {
+  return job.type === "maintenance" ? { status: "done" } : { stop_done_on: day };
+}
+
+/**
  * Whether the job page has a Wrap-Up section (report, signatures, quotes, invoice). Maintenance
  * visits don't (owner, 2026-10-19: "For maintenance, get rid of the wrap up tab entirely"):
  * they end with Complete Job, are billed monthly, and quote repairs from Details.
@@ -269,6 +293,8 @@ export interface Job extends Base {
   second_tech_id?: string | null;
   intake?: Record<string, string | string[]> | null;
   location_marked?: boolean | null;
+  /** Today's Mark Complete on a leak or repair job: the shop-local day its stop was done. */
+  stop_done_on?: string | null;
   /** Markup on the job's pool diagram (owner, 2026-10-19); read with parseMarkup. */
   diagram_markup?: unknown;
   /** Place in the tech's route that day, 1 = first stop (routing). */

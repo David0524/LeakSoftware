@@ -125,3 +125,24 @@ describe("Complete Job", () => {
     expect(jobHasWrapUp("repair")).toBe(true);
   });
 });
+
+describe("Mark Complete on Today", () => {
+  it("completes a visit, and marks a leak or repair stop done for its day", async () => {
+    const { markCompleteValues, stopDone } = await import("../src");
+    expect(markCompleteValues({ type: "maintenance" }, "2026-10-19")).toEqual({ status: "done" });
+    expect(markCompleteValues({ type: "detection" }, "2026-10-19")).toEqual({
+      stop_done_on: "2026-10-19",
+    });
+    expect(markCompleteValues({ type: "repair" }, "2026-10-19")).toEqual({
+      stop_done_on: "2026-10-19",
+    });
+    expect(stopDone({ status: "scheduled" }, "2026-10-19")).toBe(false);
+    expect(stopDone({ status: "in_progress", stop_done_on: "2026-10-19" }, "2026-10-19")).toBe(
+      true,
+    );
+    // Moved to another day: not done there.
+    expect(stopDone({ status: "scheduled", stop_done_on: "2026-10-18" }, "2026-10-19")).toBe(false);
+    expect(stopDone({ status: "done" }, "2026-10-19")).toBe(true);
+    expect(stopDone({ status: "report_sent" }, "2026-10-19")).toBe(true);
+  });
+});

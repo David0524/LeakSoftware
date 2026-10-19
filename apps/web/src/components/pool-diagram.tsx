@@ -1,8 +1,8 @@
 import {
-  LANDMARK_SIZE,
   parseDiagramLayout,
   poolDiagram,
   type DiagramShape,
+  type LandmarkPart,
   type MarkupShape,
   type PoolDiagram as Drawing,
 } from "@leakbook/core";
@@ -15,6 +15,40 @@ export interface Pin {
   color: string;
   label: string;
 }
+
+/** Where a landmark's 24 x 24 drawing goes: its size box on its center, mirrored when flipped. */
+export function landmarkTransform(l: { cx: number; cy: number; size: number; flip: boolean }) {
+  const k = l.size / 24;
+  return l.flip
+    ? `translate(${l.cx + l.size / 2} ${l.cy - l.size / 2}) scale(${-k} ${k})`
+    : `translate(${l.cx - l.size / 2} ${l.cy - l.size / 2}) scale(${k})`;
+}
+
+/**
+ * A landmark's drawing (owner, 2026-10-19: "hard to interpret"): filled parts in their colors
+ * with a thin dark outline; water streaks as white lines. In a 24 x 24 box.
+ */
+export function LandmarkArt({ parts, transform }: { parts: LandmarkPart[]; transform?: string }) {
+  return (
+    <g transform={transform} strokeLinecap="round" strokeLinejoin="round">
+      {parts.map((p, i) =>
+        p.tone === "foam" ? (
+          <path key={i} d={p.d} fill="none" stroke={`var(--lb-landmark-foam)`} strokeWidth={1.4} />
+        ) : (
+          <path
+            key={i}
+            d={p.d}
+            fill={`var(--lb-landmark-${kebab(p.tone)})`}
+            stroke="var(--lb-landmark-outline)"
+            strokeWidth={1}
+          />
+        ),
+      )}
+    </g>
+  );
+}
+
+const kebab = (s: string) => s.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 
 /** The pool and its spa, inside a diagram's <svg> (shared by every diagram on the site). */
 export function DiagramShapes({ d }: { d: Drawing }) {
@@ -36,16 +70,7 @@ export function DiagramShapes({ d }: { d: Drawing }) {
         />
       ))}
       {d.landmarks.map((l, i) => (
-        <path
-          key={`landmark-${i}`}
-          d={l.path}
-          transform={`translate(${l.cx - LANDMARK_SIZE / 2} ${l.cy - LANDMARK_SIZE / 2}) scale(${LANDMARK_SIZE / 24})`}
-          fill="none"
-          className="stroke-text-muted"
-          strokeWidth={1.8}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        <LandmarkArt key={`landmark-${i}`} parts={l.parts} transform={landmarkTransform(l)} />
       ))}
       {d.spa ? (
         <>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useId, type KeyboardEvent } from "react";
-import { SEGMENT_TRACK, segmentClass } from "./ui";
+import { useId, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { SEGMENT_TRACK, cx, segmentClass } from "./ui";
 
 /** SEGMENT_TRACK as one full-width row. */
 const FIT_TRACK = "flex w-full gap-0.5 rounded-[1.5rem] bg-fill p-0.5";
@@ -39,6 +39,34 @@ export function Segmented<T extends string>({
     const buttons = e.currentTarget.querySelectorAll<HTMLButtonElement>("[role=radio]");
     buttons[options.indexOf(next)]?.focus();
   }
+  // Hold the chosen segment and drag it along the track, as iOS 26's segmented controls do
+  // (owner, 2026-10-19: "hold the slider/selector like a bubble and drag it around"): the
+  // choice follows the finger and the segment lifts while held.
+  const [held, setHeld] = useState(false);
+  const dragging = useRef(false);
+  function segmentAt(e: PointerEvent<HTMLDivElement>): T | null {
+    const buttons = [...e.currentTarget.querySelectorAll<HTMLButtonElement>("[role=radio]")];
+    const i = buttons.findIndex((b) => {
+      const r = b.getBoundingClientRect();
+      return e.clientX >= r.left && e.clientX <= r.right;
+    });
+    return i >= 0 ? options[i]!.value : null;
+  }
+  function onPointerDown(e: PointerEvent<HTMLDivElement>) {
+    if (segmentAt(e) !== value) return;
+    dragging.current = true;
+    setHeld(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+  function onPointerMove(e: PointerEvent<HTMLDivElement>) {
+    if (!dragging.current) return;
+    const next = segmentAt(e);
+    if (next !== null && next !== value) onChange(next);
+  }
+  function onPointerEnd() {
+    dragging.current = false;
+    setHeld(false);
+  }
   return (
     <div className="space-y-1">
       <p className="font-medium" id={labelId}>
@@ -48,8 +76,12 @@ export function Segmented<T extends string>({
       <div
         role="radiogroup"
         aria-labelledby={labelId}
-        className={fit ? FIT_TRACK : SEGMENT_TRACK}
+        className={cx(fit ? FIT_TRACK : SEGMENT_TRACK, "touch-pan-y select-none")}
         onKeyDown={onKeyDown}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerEnd}
+        onPointerCancel={onPointerEnd}
       >
         {options.map((o, i) => (
           <button
@@ -64,9 +96,13 @@ export function Segmented<T extends string>({
             onClick={() => onChange(o.value)}
             className={segmentClass(
               value === o.value,
-              fit
-                ? "min-w-0 flex-auto px-1.5 text-[0.8125rem] sm:px-4 sm:text-[0.9375rem]"
-                : undefined,
+              cx(
+                fit
+                  ? "min-w-0 flex-auto px-1.5 text-[0.8125rem] sm:px-4 sm:text-[0.9375rem]"
+                  : undefined,
+                "transition-transform duration-200 motion-reduce:transition-none",
+                held && value === o.value && "scale-[1.06] shadow-lg",
+              ),
             )}
           >
             {o.label}

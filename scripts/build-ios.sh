@@ -6,11 +6,19 @@
 # archive can't be code-signed, so Sideloadly fails with "macho sign/edit failed (-11)".
 # Such frameworks are removed from the .ipa after the build; the app never loads them.
 set -euo pipefail
-cd "$(dirname "$0")/../apps/ios"
+root="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$root/apps/ios"
 
-# xtool needs a terminal.
-script -qec "xtool dev build --ipa" /dev/null
+# xtool needs a terminal. Release: optimized, as the App Store build will be (a debug build
+# is noticeably slower on the phone, animations included).
+script -qec "xtool dev build --ipa -c release" /dev/null
 ipa=xtool/SundeckPro.ipa
+
+# The linker on Linux stamps the app as built with the iOS 18 SDK (its minimum version), so
+# iOS 26 and later run it in compatibility mode: no Liquid Glass tab bar, bars, or controls.
+# Stamp the main binary with the SDK it was compiled against (the SDK's SDKSettings.json).
+sdk_settings="$HOME/.swiftpm/swift-sdks/darwin.artifactbundle/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk/SDKSettings.json"
+python3 "$root/scripts/stamp-ios-sdk.py" "$ipa" "$sdk_settings"
 
 static=$(python3 - "$ipa" <<'EOF'
 import struct, sys, zipfile

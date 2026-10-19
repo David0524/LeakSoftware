@@ -61,6 +61,10 @@ export function render() {
       .map(([k, v]) => `  --lb-neutral-${k}: ${v};`)
       .join("\n"),
     vars(light),
+    // Pool diagram landmarks: --lb-landmark-leaf, ... (the same in dark).
+    Object.entries(clean.color.landmark)
+      .map(([k, v]) => `  --lb-landmark-${kebab(k)}: ${v};`)
+      .join("\n"),
     `  --lb-font-display: "${clean.font.display.family}", "Arial Narrow", "Roboto Condensed", sans-serif;`,
     `  --lb-font-body: "${clean.font.body.family}", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;`,
     "}",
@@ -89,6 +93,9 @@ export function render() {
     ...Object.keys(light).map((k) => `  --color-${kebab(k)}: var(--lb-${kebab(k)});`),
     ...Object.keys(brand).map((k) => `  --color-${kebab(k)}: var(--lb-${kebab(k)});`),
     ...Object.keys(status).map((k) => `  --color-status-${kebab(k)}: var(--lb-${kebab(k)});`),
+    ...Object.keys(clean.color.landmark).map(
+      (k) => `  --color-landmark-${kebab(k)}: var(--lb-landmark-${kebab(k)});`,
+    ),
     // Brand neutrals replace Tailwind's default gray scale.
     "  --color-neutral-*: initial;",
     ...Object.keys(clean.color.neutral).map(
@@ -166,6 +173,13 @@ function renderSwift(clean) {
     "    public enum Neutral {",
     ...Object.entries(clean.color.neutral).map(
       ([k, v]) => `        public static let n${k} = ${color(v)}`,
+    ),
+    "    }",
+    "",
+    "    /// Pool diagram landmarks, the same in light and dark.",
+    "    public enum Landmark {",
+    ...Object.entries(clean.color.landmark).map(
+      ([k, v]) => `        public static let ${k} = ${color(v)}`,
     ),
     "    }",
     "",

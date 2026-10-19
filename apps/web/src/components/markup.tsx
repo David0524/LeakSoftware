@@ -1,4 +1,4 @@
-import { arrowHead, penPath, type MarkupShape } from "@leakbook/core";
+import { arrowShape, penPath, type MarkupShape } from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 
 const C = tokens.color.markup;
@@ -31,14 +31,34 @@ export function MarkupOverlay({
         const c = C[s.color];
         if (s.type === "arrow") {
           const [x1, y1, x2, y2] = [s.x1 * width, s.y1 * height, s.x2 * width, s.y2 * height];
-          const head = arrowHead(x1, y1, x2, y2, Math.max(10, 22 * unit))
-            .map(([x, y]) => `${x},${y}`)
-            .join(" ");
+          const { shaftEnd, head } = arrowShape(x1, y1, x2, y2, unit);
+          const points = head.map(([x, y]) => `${x},${y}`).join(" ");
+          // Outline first (shaft and head), then the color; the head on top keeps its point.
           return (
-            <g key={i} strokeLinecap="round">
-              <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={C.outline} strokeWidth={outline} />
-              <polygon points={head} fill={c} stroke={C.outline} strokeWidth={1.5} />
-              <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={c} strokeWidth={stroke} />
+            <g key={i} strokeLinecap="round" strokeLinejoin="round">
+              <line
+                x1={x1}
+                y1={y1}
+                x2={shaftEnd[0]}
+                y2={shaftEnd[1]}
+                stroke={C.outline}
+                strokeWidth={outline}
+              />
+              <polygon
+                points={points}
+                fill={C.outline}
+                stroke={C.outline}
+                strokeWidth={outline - stroke}
+              />
+              <line
+                x1={x1}
+                y1={y1}
+                x2={shaftEnd[0]}
+                y2={shaftEnd[1]}
+                stroke={c}
+                strokeWidth={stroke}
+              />
+              <polygon points={points} fill={c} />
             </g>
           );
         }

@@ -552,47 +552,133 @@ export interface Landmark {
   kind: LandmarkKind;
   x: number;
   y: number;
+  /** Its size in diagram units (pinched or dragged, like the spa); LANDMARK_SIZE when unset. */
+  s?: number;
+  /** Mirrored left to right (a tap on the selected landmark). */
+  flip?: boolean;
 }
 
 /**
- * The Landmarks tile's icons (owner, 2026-10-19: "icons for landmarks... kept clean"): one
- * outlined drawing each, in a 24 x 24 box, using only absolute M, L, H, V, Q, C, and Z so
- * every platform draws them from the same path.
+ * A landmark drawing's colors (brand/tokens.json color.landmark): filled, with a thin dark
+ * outline, so each reads at a glance on the diagram (owner, 2026-10-19: "All of the landmarks
+ * are hard to interpret").
  */
-export const LANDMARKS: { key: LandmarkKind; label: string; path: string }[] = [
+export type LandmarkTone =
+  | "leaf"
+  | "leafDark"
+  | "trunk"
+  | "stone"
+  | "stoneDark"
+  | "water"
+  | "foam"
+  | "concrete"
+  | "metal"
+  | "wall"
+  | "roof"
+  | "door";
+
+/** One filled piece of a landmark drawing, in its 24 x 24 box. */
+export interface LandmarkPart {
+  d: string;
+  /** The fill; "foam" parts are white lines (water streaks), stroked rather than filled. */
+  tone: LandmarkTone;
+}
+
+/**
+ * The landmarks, drawn as small filled pictures in a 24 x 24 box, from absolute M, L, H, V, Q,
+ * C, and Z only, so every platform draws them from the same paths. Each part is filled with
+ * its tone and outlined in color.landmark.outline (stroke 1 in the box).
+ */
+export const LANDMARKS: { key: LandmarkKind; label: string; parts: LandmarkPart[] }[] = [
   {
     key: "tree",
     label: "Tree",
-    path: "M12 3 C15.3 3 18 5.7 18 9 C18 12.3 15.3 15 12 15 C8.7 15 6 12.3 6 9 C6 5.7 8.7 3 12 3 Z M12 15 V21 M9 21 H15",
+    parts: [
+      { d: "M10.6 15.5 H13.4 V22.5 H10.6 Z", tone: "trunk" },
+      {
+        d: "M12 1.5 C15.6 1.5 18.2 4 18.4 7.2 C20.6 8.2 21.8 10.4 21.4 12.8 C21 15.4 18.8 17.2 16.2 17 C15 17.8 13.6 18.2 12 18.2 C10.4 18.2 9 17.8 7.8 17 C5.2 17.2 3 15.4 2.6 12.8 C2.2 10.4 3.4 8.2 5.6 7.2 C5.8 4 8.4 1.5 12 1.5 Z",
+        tone: "leaf",
+      },
+      {
+        d: "M8.4 7.4 C9.4 6 11 5.4 12.6 5.6 C11.2 6.4 10.2 7.6 9.8 9.2 C9.2 8.8 8.7 8.2 8.4 7.4 Z",
+        tone: "leafDark",
+      },
+    ],
   },
   {
     key: "rock",
     label: "Rock",
-    path: "M3 18 L6 11 L10 7 L15 8 L20 13 L21 18 Z M10 7 L12 12 L20 13",
+    parts: [
+      {
+        d: "M2 19.5 C2 15.5 4 11.6 7.6 9.6 C9.6 7.4 13.6 6.8 16.4 8.4 C19.8 10.2 22 14.2 22 19.5 Z",
+        tone: "stone",
+      },
+      {
+        d: "M12.6 9.4 C15 9.6 17.2 11.4 18 14 C16.4 12.6 14.6 12 12.6 12.2 Z",
+        tone: "stoneDark",
+      },
+    ],
   },
   {
     key: "waterfall",
     label: "Waterfall",
-    path: "M3 6 H21 M7 6 V17 M12 6 V19 M17 6 V17 M4 21 Q12 17 20 21",
+    parts: [
+      { d: "M4.5 7 H19.5 V18 Q15.75 20.2 12 18 Q8.25 15.8 4.5 18 Z", tone: "water" },
+      { d: "M8.5 9 V15.5 M12 9 V16.5 M15.5 9 V15.5", tone: "foam" },
+      {
+        d: "M1.5 8 C1.5 5 3.4 3 6.5 3 H17.5 C20.6 3 22.5 5 22.5 8 Z",
+        tone: "stone",
+      },
+      { d: "M2.5 22.5 Q12 18.5 21.5 22.5 Z", tone: "water" },
+    ],
   },
-  { key: "steps", label: "Steps", path: "M5 4 H19 V20 H5 Z M5 9.3 H19 M5 14.7 H19" },
+  {
+    key: "steps",
+    label: "Steps",
+    parts: [
+      { d: "M2.5 15.5 H21.5 V21.5 H2.5 Z", tone: "concrete" },
+      { d: "M5.5 9.5 H18.5 V15.5 H5.5 Z", tone: "concrete" },
+      { d: "M8.5 3.5 H15.5 V9.5 H8.5 Z", tone: "concrete" },
+    ],
+  },
   {
     key: "equipment",
     label: "Equipment",
-    path: "M3 15 H21 V20 H3 Z M6 15 V8 H13 V15 M13 10 H18 V15 M8.5 11.5 H10.5",
+    parts: [
+      { d: "M1.5 18 H22.5 V22 H1.5 Z", tone: "concrete" },
+      { d: "M3.5 9 H13.5 V18 H3.5 Z", tone: "metal" },
+      {
+        d: "M13.5 10.5 H19 C20.4 10.5 21.5 11.6 21.5 13 V15.5 C21.5 16.9 20.4 18 19 18 H13.5 Z",
+        tone: "stoneDark",
+      },
+      { d: "M6.5 9 V4 H12 V6 H8.5 V9 Z", tone: "metal" },
+    ],
   },
   {
     key: "house",
     label: "House",
-    path: "M3 11 L12 4 L21 11 M5.5 9 V20 H18.5 V9 M10 20 V14 H14 V20",
+    parts: [
+      { d: "M4.5 10.5 H19.5 V22 H4.5 Z", tone: "wall" },
+      { d: "M1.5 11.5 L12 2.5 L22.5 11.5 Z", tone: "roof" },
+      { d: "M10 22 V15.5 H14 V22 Z", tone: "door" },
+    ],
   },
 ];
 
+/** A drawn line this close to level or plumb (degrees) is drawn straight. */
+export const LINE_SNAP_DEGREES = 8;
 /** At most this many drawn shapes and landmarks on one pool. */
 export const DRAWING_MAX = 40;
 export const LANDMARKS_MAX = 30;
-/** A landmark's drawn size, in diagram units (of 160 x 100). */
-export const LANDMARK_SIZE = 14;
+/** A landmark's drawn size, in diagram units (of 160 x 100), and how far it can be resized. */
+export const LANDMARK_SIZE = 20;
+export const LANDMARK_MIN = 10;
+export const LANDMARK_MAX = 44;
+
+/** A landmark size kept within what can be pinched, to a tenth. */
+export function clampLandmarkSize(size: number): number {
+  return Math.round(Math.min(LANDMARK_MAX, Math.max(LANDMARK_MIN, size)) * 10) / 10;
+}
 /** How small and large a spa can be pinched, as a radius in diagram units. */
 export const SPA_R_MIN = 7;
 export const SPA_R_MAX = 28;
@@ -607,10 +693,18 @@ export interface PoolDiagram {
   /** Each drawn shape as an SVG path, stroked like the pool's outline. */
   drawing: string[];
   /**
-   * Landmarks: each icon's path (LANDMARKS) drawn in a LANDMARK_SIZE box centered on cx, cy,
-   * i.e. translate(cx - 7, cy - 7) scale(14 / 24).
+   * Landmarks: each drawing's parts (LANDMARKS) in a `size` box centered on cx, cy, i.e.
+   * translate(cx - size / 2, cy - size / 2) scale(size / 24); flipped, mirrored about cx:
+   * translate(cx + size / 2, cy - size / 2) scale(-size / 24, size / 24).
    */
-  landmarks: { kind: LandmarkKind; cx: number; cy: number; path: string }[];
+  landmarks: {
+    kind: LandmarkKind;
+    cx: number;
+    cy: number;
+    size: number;
+    flip: boolean;
+    parts: LandmarkPart[];
+  }[];
 }
 
 /**
@@ -751,7 +845,15 @@ export function parseDiagramLayout(value: unknown): DiagramLayout {
           isUnitNumber((l as Landmark).x) &&
           isUnitNumber((l as Landmark).y),
       )
-      .map((l) => ({ kind: l.kind, x: l.x, y: l.y }))
+      .map((l) => ({
+        kind: l.kind,
+        x: l.x,
+        y: l.y,
+        ...(typeof l.s === "number" && l.s >= LANDMARK_MIN && l.s <= LANDMARK_MAX
+          ? { s: l.s }
+          : {}),
+        ...(l.flip === true ? { flip: true } : {}),
+      }))
       .slice(0, LANDMARKS_MAX);
     if (landmarks.length) layout.landmarks = landmarks;
   }
@@ -819,8 +921,20 @@ export function drawnShapeFrom(
     return { type: "pen", points: thin.slice(0, 400) };
   }
   if (Math.hypot(last.x - first.x, last.y - first.y) < 0.02) return null;
-  if (tool === "line")
-    return { type: "line", x1: c(first.x), y1: c(first.y), x2: c(last.x), y2: c(last.y) };
+  if (tool === "line") {
+    // Within 8 degrees of level or plumb (in the diagram's own units), the line snaps straight
+    // (owner, 2026-10-19: "lock to grid when held straight vertical or horizontal").
+    const dx = Math.abs(last.x - first.x) * DIAGRAM_WIDTH;
+    const dy = Math.abs(last.y - first.y) * DIAGRAM_HEIGHT;
+    const tan = Math.tan((LINE_SNAP_DEGREES * Math.PI) / 180);
+    const end =
+      dy <= dx * tan
+        ? { x: last.x, y: first.y }
+        : dx <= dy * tan
+          ? { x: first.x, y: last.y }
+          : last;
+    return { type: "line", x1: c(first.x), y1: c(first.y), x2: c(end.x), y2: c(end.y) };
+  }
   return {
     type: "circle",
     cx: c((first.x + last.x) / 2),
@@ -853,7 +967,6 @@ export function poolDiagram(
   const mirror = layout?.mirror === true;
   const placed = layout?.spa;
   const r = placed?.r ?? SPA_SIZES.find((z) => z.key === (placed?.size ?? "medium"))!.r;
-  const half = LANDMARK_SIZE / 2;
   return {
     width: DIAGRAM_WIDTH,
     height: DIAGRAM_HEIGHT,
@@ -867,11 +980,17 @@ export function poolDiagram(
         }
       : null,
     drawing: (layout?.drawing ?? []).map(drawnPath),
-    landmarks: (layout?.landmarks ?? []).map((l) => ({
-      kind: l.kind,
-      cx: Math.min(DIAGRAM_WIDTH - half, Math.max(half, l.x * DIAGRAM_WIDTH)),
-      cy: Math.min(DIAGRAM_HEIGHT - half, Math.max(half, l.y * DIAGRAM_HEIGHT)),
-      path: LANDMARKS.find((k) => k.key === l.kind)!.path,
-    })),
+    landmarks: (layout?.landmarks ?? []).map((l) => {
+      const size = l.s ?? LANDMARK_SIZE;
+      const half = size / 2;
+      return {
+        kind: l.kind,
+        cx: Math.min(DIAGRAM_WIDTH - half, Math.max(half, l.x * DIAGRAM_WIDTH)),
+        cy: Math.min(DIAGRAM_HEIGHT - half, Math.max(half, l.y * DIAGRAM_HEIGHT)),
+        size,
+        flip: l.flip === true,
+        parts: LANDMARKS.find((k) => k.key === l.kind)!.parts,
+      };
+    }),
   };
 }
