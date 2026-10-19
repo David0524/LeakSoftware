@@ -239,3 +239,34 @@ Status key: **Website done** means built, checked, and committed on `claude/cool
   price, Contact Us).
 - Not checked live: payments with the card fee (no Stripe keys on the dev site; covered by
   unit tests), and emails for feature requests (no Resend key yet).
+
+## Apps (Swift iPhone app and Expo app), 2026-10-19
+
+Built in both apps on `claude/sleepy-ritchie-fdlvx3`, one commit per item, matching the
+website's wording. Swift ports each core rule it uses into SundeckCore with fixtures from the
+TypeScript.
+
+- **1, 3:** nothing to change: neither app has trial wording or the shop setup onboarding.
+- **2, 9:** More › Help: Contact Us (address under the label) replaces Help and Support;
+  Request a Feature opens `mailto:office@sundeckpro.com?subject=Feature%20request` (no app
+  endpoint yet).
+- **4:** Gallons on Pool Details; "20,000 gallons" on the pool and job Pool rows; Chemical fills
+  gallons from the pool.
+- **5, 6:** Chemical first on a visit's Checklist; Submit writes `chemical_reading` through sync
+  (offline); the pool's chemical log with Remove; Customer › Pool shows the latest entry. A new
+  entry shows "who" once `recorded_by` syncs back (phones can't write it).
+- **7:** with `require_finish_photo`, any move to Done, Finish Report, sending a draft and the
+  Review with Customer sign-off wait for a photo (photos waiting to upload count), with
+  FINISH_PHOTO_MESSAGE and Take Photo. The review screen stops before the customer signs.
+- **8:** Tests we ran on the review screen (the apps' only drawing of the homeowner report),
+  built from the phone's data rather than `data_snapshot`, so it works offline.
+- **10:** Pen first in Mark Up; Swift's markup reader skips unknown shapes.
+- **11, 12:** Pool Diagram on a leak job's Findings with Edit Pool Shape (shapes, mirror, spa
+  place, size and shape; VoiceOver/TalkBack actions move the spa) and Mark Up on the diagram
+  (`job.diagram_markup`, 800 x 500 markup space).
+- **13:** Regular cleanings and the Today pill from the visit's own checklist
+  (`job_component.plan_cleaning_id`), so phones show "due today" only. Showing "due in 5 days",
+  weeks to go and the cadence needs `plan_cleaning` synced to phones (owner's call).
+- **14, 16:** nothing to change: customers pay on the website, and the apps don't sell plans.
+- **15:** When They Call on New Job › Repair; "What they need" on the job. The apps' Price Book
+  settings don't have the Show in When They Call switch (set it on the website).
