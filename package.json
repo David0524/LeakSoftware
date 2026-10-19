@@ -17,7 +17,7 @@
     "test:hosted": "NODE_USE_ENV_PROXY=1 pnpm --filter @leakbook/sync test:hosted",
     "test:ios": "swift test --package-path apps/ios",
     "lint:ios": "swift format lint --strict -r apps/ios/Sources apps/ios/Tests apps/ios/Package.swift",
-    "build:ios": "cd apps/ios && script -qec 'xtool dev build --ipa' /dev/null"
+    "build:ios": "bash scripts/build-ios.sh"
   },
   "devDependencies": {
     "@eslint/js": "^9",

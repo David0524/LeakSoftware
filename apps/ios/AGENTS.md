@@ -24,7 +24,8 @@ is still the shipping app and keeps getting fixes.
 - `bash scripts/setup-ios.sh`: installs Swift 6.4.1 and xtool 1.22.2 in a cloud session.
 - `pnpm test:ios` and `pnpm lint:ios` (`swift format`; `swift format -i -r apps/ios/Sources
   apps/ios/Tests` fixes it). Run both before committing Swift.
-- `pnpm build:ios`: builds `apps/ios/xtool/SundeckPro.ipa` for Sideloadly. Needs the iPhone SDK:
+- `pnpm build:ios` (`scripts/build-ios.sh`): builds `apps/ios/xtool/SundeckPro.ipa` for Sideloadly,
+  then removes static frameworks xtool copies in (Sentry's), which Sideloadly can't sign. Needs the iPhone SDK:
   `xtool sdk install <Xcode.xip>` (about 45 minutes, 6.9 GB). `Xcode_27.1.xip` is in the owner's
   Google Drive (Sundeck folder); the Drive connector can't download 2 GB, so the owner shares it
   by link for a few minutes and turns the link off again (Apple's license).
