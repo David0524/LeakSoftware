@@ -9,6 +9,7 @@ import {
   parseFieldLines,
   parseReminderDays,
   percentToBps,
+  CARD_FEE_MAX_BPS,
   uuidv7,
   type TestFieldSchema,
 } from "@leakbook/core";
@@ -199,6 +200,31 @@ export async function savePayments(_: FormState, form: FormData): Promise<FormSt
         : { type: "fixed", value_cents: depositFixed, minimum_cents: minimum },
     tax_rate_bps: tax,
     tech_discount_limit_bps: discount,
+  };
+  const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
+  if (error) return failed(error);
+  return done("/settings/payments");
+}
+
+/**
+ * Pass the card fee on to customers (owner, 2026-10-19), up to the 3% card networks allow.
+ * Off: 0. Customers then choose card (fee added) or bank (no fee) before paying.
+ */
+export async function saveCardFee(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const on = checked(form, "card_fee_on");
+  const bps = percentToBps(text(form, "card_fee") || "0");
+  if (on && (bps === null || bps <= 0 || bps > CARD_FEE_MAX_BPS))
+    return { fields: { card_fee: "Enter a percentage up to 3, like 2.9." } };
+  const { data: company, error: readError } = await supabase
+    .from("company")
+    .select("settings")
+    .eq("id", office.company.id)
+    .single();
+  if (readError) return failed(readError);
+  const settings = {
+    ...(company.settings as Record<string, unknown>),
+    card_fee_bps: on ? bps : 0,
   };
   const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
   if (error) return failed(error);

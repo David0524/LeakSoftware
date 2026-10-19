@@ -15,11 +15,21 @@ import {
 const SECRET = "whsec_unit_test";
 
 /** A fake database that records RPC calls and mimics the event and payment functions. */
-function fakeDb(details: Record<string, unknown> | null = null) {
+function fakeDb(
+  details: Record<string, unknown> | null = null,
+  settings: Record<string, unknown> = {},
+) {
   const calls: { fn: string; args: Record<string, unknown> }[] = [];
   const seen = new Set<string>();
   const payments = new Map<string, string>();
+  // The shop's settings (the card fee), read with from("company").select().eq().single().
+  const chain = {
+    select: () => chain,
+    eq: () => chain,
+    single: async () => ({ data: { settings }, error: null }),
+  };
   const db = {
+    from: () => chain,
     async rpc(fn: string, args: Record<string, unknown>) {
       calls.push({ fn, args });
       switch (fn) {
@@ -90,6 +100,39 @@ const session = (
       },
     },
   });
+
+describe("Stripe webhooks: the card fee", () => {
+  it("records what the deposit or invoice was, without the fee", async () => {
+    const { db, calls } = fakeDb();
+    await applyEvent(
+      session("cs_fee", "paid", "checkout.session.completed", "evt_fee", {
+        kind: "quote_deposit",
+        quote_id: "q1",
+        company_id: "c1",
+        card_fee_cents: "1914",
+      }),
+      db,
+    );
+    expect(calls.find((c) => c.fn === "stripe_record_quote_payment")?.args.amount).toBe(
+      65_730 - 1_914,
+    );
+  });
+
+  it("never takes off more than the 3% cap", async () => {
+    const { db, calls } = fakeDb();
+    await applyEvent(
+      session("cs_big", "paid", "checkout.session.completed", "evt_big", {
+        kind: "quote_deposit",
+        quote_id: "q1",
+        company_id: "c1",
+        card_fee_cents: "60000",
+      }),
+      db,
+    );
+    // 65,730 paid at most 3% over the deposit: 1,915 of it is fee.
+    expect(calls.find((c) => c.fn === "stripe_record_quote_payment")?.args.amount).toBe(63_815);
+  });
+});
 
 describe("Stripe webhooks", () => {
   it("rejects a missing or wrong signature", () => {
@@ -281,6 +324,47 @@ describe("deposit checkout", () => {
     expect(params.success_url).toBe("https://app.test/q/tok?paid=1");
     expect(params.cancel_url).toBe("https://app.test/q/tok");
     expect(params.ui_mode).toBeUndefined();
+  });
+
+  it("with the shop's card fee, card adds the fee as its own line and bank has none", async () => {
+    const fee = { card_fee_bps: 300 };
+    const card = fakeStripe();
+    await depositCheckout(
+      "tok",
+      "https://app.test",
+      card.stripe,
+      fakeDb(details, fee).db,
+      null,
+      "card",
+    );
+    const paid = card.created[0]!.params;
+    expect(paid.payment_method_types).toEqual(["card", "link"]);
+    expect(paid.line_items?.map((l) => l.price_data?.unit_amount)).toEqual([65_730, 1_972]);
+    expect(paid.line_items?.[1]?.price_data?.product_data?.name).toBe("Card fee (3%)");
+    expect(paid.metadata).toMatchObject({ card_fee_cents: "1972" });
+
+    const bank = fakeStripe();
+    await depositCheckout(
+      "tok",
+      "https://app.test",
+      bank.stripe,
+      fakeDb(details, fee).db,
+      null,
+      "bank",
+    );
+    expect(bank.created[0]!.params.payment_method_types).toEqual(["us_bank_account"]);
+    expect(bank.created[0]!.params.line_items).toHaveLength(1);
+    expect(bank.created[0]!.params.metadata).not.toHaveProperty("card_fee_cents");
+
+    await expect(
+      depositCheckout(
+        "tok",
+        "https://app.test",
+        fakeStripe().stripe,
+        fakeDb(details, fee).db,
+        null,
+      ),
+    ).rejects.toThrow(CheckoutRefused);
   });
 
   it("with a publishable key, shows Checkout on our page and returns to it", async () => {

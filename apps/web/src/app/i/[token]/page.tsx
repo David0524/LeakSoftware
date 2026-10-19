@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { formatCents, lineTotal, textOnBrand, dateFormat } from "@leakbook/core";
+import { cardFeeChoice, formatCents, lineTotal, textOnBrand, dateFormat } from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import { PayInvoiceForm } from "@/components/invoice-actions";
 import { cx } from "@/components/ui";
 import { publicClient } from "@/server/reports";
-import { paymentsConfigured } from "@/server/stripe";
+import { cardFeeFor, paymentsConfigured } from "@/server/stripe";
 import { ContactLine } from "@/components/contact-line";
 import {
   Banner,
@@ -93,6 +93,8 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
   });
   const i = data as TokenInvoice | null;
   if (!i) notFound();
+  // The shop passes the card fee on: card or bank, chosen before paying (owner, 2026-10-19).
+  const feeBps = paymentsConfigured() && i.can_pay ? await cardFeeFor("invoice", i.invoice_id) : 0;
 
   const c = i.company;
   const tz = c.timezone;
@@ -283,6 +285,7 @@ async function InvoicePage({ params, searchParams }: PageProps<"/i/[token]">) {
               token={token}
               amount={formatCents(i.balance_cents)}
               demo={!paymentsConfigured()}
+              cardFee={feeBps ? cardFeeChoice(i.balance_cents, feeBps) : null}
             />
           ) : (
             <p>

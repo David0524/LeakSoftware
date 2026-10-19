@@ -179,3 +179,23 @@ Status key: **Website done** means built, checked, and committed on `claude/cool
   is office-only today (`device_sync = false`); either turn on device sync for
   `plan_cleaning` or read the cleaning item already on the visit (`job_component.
   plan_cleaning_id`). Ask before changing sync scope.
+
+## 14. Pass the card fee on to customers
+
+- **Website done.** Settings › Payments and Deposits › **Card fee** (owners): **Pass the card
+  fee to customers** and **Card fee (%)** (default 3, at most 3; the hint says some states
+  don't allow card fees). Stored as `company.settings.card_fee_bps` (0 = off).
+  - On the customer's quote (deposit) and invoice pages, with the fee on and online payments
+    ready, the one Pay button becomes two: **Pay $657.30 by Bank** (filled, no fee) and **Pay
+    $677.02 by Card**, with the line "Paying by card adds a 3% card fee ($19.72). Bank account
+    payments have no fee...".
+  - Card starts a Stripe Checkout with card and Link only and the fee as its own line ("Card
+    fee (3%)"); bank starts one with bank account only. The session's metadata carries
+    `card_fee_cents`. The webhook records the payment without the fee (capped at 3%), so the
+    invoice or deposit is paid exactly; the fee stays in the shop's Stripe balance.
+  - Core: `cardFeeBps(settings)`, `cardFeeCents(amount, bps)`, `cardFeeChoice(amount, bps,
+    what)` (labels and note), `CARD_FEE_MAX_BPS`. Server: `feeTerms`/`cardFeeFor` in
+    `apps/web/src/server/stripe.ts`.
+- **Apps:** customers pay on the website, so nothing changes in the apps unless an app shows
+  totals before sending a pay link (then mention the fee the same way). If the apps get a
+  settings screen for payments, add the same switch and percentage.
