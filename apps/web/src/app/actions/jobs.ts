@@ -1,5 +1,7 @@
 "use server";
 
+import { adminClient } from "@/server/admin";
+import { notifyJobChanged } from "@/server/notify-events";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
@@ -45,8 +47,17 @@ export async function scheduleJob(_: FormState, form: FormData): Promise<FormSta
   const start = zonedTimeToIso(date, time, office.company.timezone);
   const end = new Date(new Date(start).getTime() + hours * 3_600_000).toISOString();
   const supabase = await createClient();
-  const { data: job } = await supabase.from("job").select("status").eq("id", id).maybeSingle();
-  const status = (job as { status: JobStatus } | null)?.status;
+  const { data: job } = await supabase
+    .from("job")
+    .select("status, scheduled_start, assigned_user_id")
+    .eq("id", id)
+    .maybeSingle();
+  const before = job as {
+    status: JobStatus;
+    scheduled_start: string | null;
+    assigned_user_id: string | null;
+  } | null;
+  const status = before?.status;
   const { error } = await supabase
     .from("job")
     .update({
@@ -62,6 +73,18 @@ export async function scheduleJob(_: FormState, form: FormData): Promise<FormSta
   revalidatePath(`/jobs/${id}`);
   revalidatePath("/schedule");
   revalidatePath("/today");
+  // The tech hears about it: a new stop, or a stop moved (owner, 2026-10-19).
+  const admin = adminClient();
+  if (
+    admin &&
+    (before?.scheduled_start !== start || before?.assigned_user_id !== (text(form, "tech") || null))
+  )
+    await notifyJobChanged(admin, {
+      jobId: id,
+      moved: !!before?.scheduled_start && before.assigned_user_id === (text(form, "tech") || null),
+      by: office.user.id,
+      timeZone: office.company.timezone,
+    });
   return { message: "Scheduled." };
 }
 
@@ -398,6 +421,16 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
   if (made) {
     await locateProperty(office, (made as { property_id: string }).property_id);
     await saveShape((made as { property_id: string }).property_id);
+  }
+  if (scheduled && tech) {
+    const admin = adminClient();
+    if (admin)
+      await notifyJobChanged(admin, {
+        jobId: data as string,
+        moved: false,
+        by: office.user.id,
+        timeZone: office.company.timezone,
+      });
   }
   revalidatePath("/jobs");
   revalidatePath("/schedule");

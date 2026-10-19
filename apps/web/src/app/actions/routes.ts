@@ -1,5 +1,7 @@
 "use server";
 
+import { adminClient } from "@/server/admin";
+import { notifyJobChanged } from "@/server/notify-events";
 import { revalidatePath } from "next/cache";
 import {
   addDays,
@@ -296,6 +298,17 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
   if (from?.tech && (from.tech !== tech || from.date !== date))
     await renumber(db, office, ctx, from.tech, from.date, jobId);
   refresh();
+  // The tech hears about a new or moved stop (owner, 2026-10-19).
+  if (tech && (from?.tech !== tech || from?.date !== date)) {
+    const admin = adminClient();
+    if (admin)
+      await notifyJobChanged(admin, {
+        jobId,
+        moved: from?.tech === tech && !!from?.date,
+        by: office.user.id,
+        timeZone: ctx.timeZone,
+      });
+  }
 
   const t = route.stops[index]!;
   const notes = [

@@ -10,6 +10,7 @@ import {
   isManagerRole,
 } from "@leakbook/core";
 import { adminClient } from "./admin";
+import { notifyText } from "./notify-events";
 import { LIMIT_MESSAGE, READ_ONLY_MESSAGE, shopWritable, takeAllowance } from "./usage";
 import { fetchTwilioFile, sendText, startBridgeCall, twilioConfigured, twiml, xml } from "./twilio";
 
@@ -307,6 +308,15 @@ export async function receiveText(params: Record<string, string>): Promise<Respo
     provider_sid: params.MessageSid ?? null,
   });
   if (error && error.code !== "23505") throw new TextingError(error.message);
+  // A new text (not Twilio's retry of one already filed) reaches the team's phones.
+  if (!error && !conv.opted_out)
+    await notifyText(db, {
+      companyId: line.company_id,
+      conversationId: conv.id,
+      customerId: conv.customer_id,
+      from,
+      body: params.Body ?? "",
+    });
 
   const keyword = optKeyword(params.Body);
   if (keyword === "stop" || keyword === "start") {

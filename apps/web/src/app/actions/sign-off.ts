@@ -1,5 +1,7 @@
 "use server";
 
+import { adminClient } from "@/server/admin";
+import { notifyReportSigned } from "@/server/notify-events";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { UNSIGNED_CUSTOMER_AWAY } from "@leakbook/core";
@@ -30,6 +32,9 @@ export async function finishSignOff(input: {
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
+  // Signed (not finished without the customer): the team hears about it.
+  const admin = adminClient();
+  if (admin && !input.customerAway) await notifyReportSigned(admin, input.jobId);
   revalidatePath(`/jobs/${input.jobId}`);
   return { ok: true };
 }

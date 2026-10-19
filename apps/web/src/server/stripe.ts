@@ -1,4 +1,5 @@
 import "server-only";
+import { notifyPaid } from "./notify-events";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { CARD_FEE_MAX_BPS, bpsToPercent, cardFeeBps, cardFeeCents } from "@leakbook/core";
@@ -486,6 +487,8 @@ export async function applyEvent(
           ...payment,
         });
         outcome = "applied";
+        if (status === "succeeded")
+          await notifyPaid(d, { table: "quote", id: s.metadata.quote_id, amountCents: payment.amount });
       } else if (s.metadata?.kind === "invoice_payment" && s.metadata.invoice_id) {
         const r = await rpc<{ paid_now: boolean }>(d, "stripe_record_invoice_payment", {
           target_invoice: s.metadata.invoice_id,
@@ -493,6 +496,12 @@ export async function applyEvent(
         });
         if (r.paid_now && onInvoicePaid) await onInvoicePaid(s.metadata.invoice_id);
         outcome = "applied";
+        if (status === "succeeded")
+          await notifyPaid(d, {
+            table: "invoice",
+            id: s.metadata.invoice_id,
+            amountCents: payment.amount,
+          });
       }
       break;
     }

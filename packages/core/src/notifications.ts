@@ -1,0 +1,162 @@
+/**
+ * Notifications and the Live Activity (owner, 2026-10-19; docs/plans/
+ * live-activities-and-notifications.md). The words live here so the website (which sends the
+ * pushes) and both apps (which show them and the Live Activity) say the same thing.
+ */
+
+export type NotificationKind = "text" | "job" | "quote" | "payment" | "report";
+
+/** Each kind a person can turn off in More › Notifications or Settings › Notifications. */
+export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint: string }[] = [
+  { key: "text", label: "Customer texts", hint: "A customer texts the shop's number." },
+  { key: "job", label: "New and moved jobs", hint: "A job is given to you, or its time changes." },
+  { key: "quote", label: "Accepted quotes", hint: "A customer accepts a quote." },
+  { key: "payment", label: "Payments", hint: "A customer pays a deposit or an invoice." },
+  { key: "report", label: "Signed reports", hint: "A customer signs a report." },
+];
+
+/** Whether a person gets a kind: on unless their profile.notification_prefs turns it off. */
+export function notificationOn(prefs: unknown, kind: NotificationKind): boolean {
+  const p = prefs && typeof prefs === "object" ? (prefs as Record<string, unknown>) : {};
+  return p[kind] !== false;
+}
+
+/** The kinds owners and admins get for the whole shop; techs get them for their own jobs. */
+export const SHOP_KINDS: readonly NotificationKind[] = ["payment"];
+
+export interface NotificationText {
+  title: string;
+  body: string;
+}
+
+const money = (cents: number) =>
+  `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+/** A text from a customer: their name (or number) and what they wrote, cut to fit. */
+export function textNotification(from: string, body: string): NotificationText {
+  const text = body.trim().replace(/\s+/g, " ");
+  return {
+    title: from,
+    body: text.length > 180 ? `${text.slice(0, 177)}…` : text || "Sent a picture",
+  };
+}
+
+/** A job given to you or moved: "New stop Tue 9:30 AM" / "Stop moved to Tue 9:30 AM". */
+export function jobNotification(input: {
+  moved: boolean;
+  customer: string;
+  address: string | null;
+  when: string | null;
+}): NotificationText {
+  const at = input.when ? ` ${input.when}` : "";
+  return {
+    title: input.moved ? `Stop moved to${at || " another day"}` : `New stop${at}`,
+    body: [input.customer, input.address].filter(Boolean).join(", "),
+  };
+}
+
+export function quoteNotification(customer: string, totalCents: number): NotificationText {
+  return { title: "Quote accepted", body: `${customer} accepted the ${money(totalCents)} quote.` };
+}
+
+export function paymentNotification(
+  customer: string,
+  amountCents: number,
+  what: string,
+): NotificationText {
+  return { title: "Payment received", body: `${customer} paid ${money(amountCents)} (${what}).` };
+}
+
+export function reportNotification(customer: string): NotificationText {
+  return { title: "Report signed", body: `${customer} signed the report.` };
+}
+
+// ---------------------------------------------------------------------------
+// The Live Activity: the stop a tech is on
+// ---------------------------------------------------------------------------
+
+/**
+ * What the Live Activity (iPhone) and the ongoing notification (Android) show. No timer or
+ * stopwatch (owner, 2026-10-19): on the way, the arrival time of day; at the pool, the
+ * checklist; done, the next stop.
+ */
+export type LiveStopPhase = "driving" | "on_site" | "done";
+
+export interface LiveStopInput {
+  phase: LiveStopPhase;
+  customer: string;
+  address: string | null;
+  stop: number;
+  stops: number;
+  /** Arrival, as a time of day ("9:42 AM"), when driving. */
+  eta: string | null;
+  checklistDone: number;
+  checklistTotal: number;
+  next: { customer: string; time: string | null } | null;
+}
+
+export interface LiveStopContent {
+  /** "On the way to Smith", "At Smith", "Smith done". */
+  headline: string;
+  /** The one large figure: "9:42 AM", "4 of 9", or the check. */
+  figure: string;
+  /** Under the figure: "Arriving", "Checklist", "Next stop". */
+  figureLabel: string;
+  /** "Stop 3 of 7 · 123 Palm Ln" */
+  detail: string;
+  /** "Next: Jones at 10:30 AM", or null when this is the last stop. */
+  next: string | null;
+  /** 0..1 along the day's stops (done ones and this one), for the progress bar. */
+  progress: number;
+  /** The compact Dynamic Island's few characters: "9:42", "4/9", "✓". */
+  compact: string;
+  /** One sentence for VoiceOver and TalkBack. */
+  spoken: string;
+}
+
+export function liveStopContent(s: LiveStopInput): LiveStopContent {
+  const of = `Stop ${s.stop} of ${s.stops}`;
+  const detail = [of, s.address].filter(Boolean).join(" · ");
+  const next = s.next ? `Next: ${s.next.customer}${s.next.time ? ` at ${s.next.time}` : ""}` : null;
+  const doneStops = s.phase === "done" ? s.stop : s.stop - 1;
+  const progress =
+    s.stops > 0
+      ? Math.min(1, Math.max(0, (doneStops + (s.phase === "on_site" ? 0.5 : 0)) / s.stops))
+      : 0;
+  if (s.phase === "driving") {
+    const eta = s.eta ?? "";
+    return {
+      headline: `On the way to ${s.customer}`,
+      figure: eta || "On the way",
+      figureLabel: eta ? "Arriving" : "",
+      detail,
+      next,
+      progress,
+      compact: eta.replace(/\s?[AP]M$/i, "") || "…",
+      spoken: `On the way to ${s.customer}${eta ? `, arriving at ${eta}` : ""}. ${of}.`,
+    };
+  }
+  if (s.phase === "on_site") {
+    const list = s.checklistTotal > 0 ? `${s.checklistDone} of ${s.checklistTotal}` : "";
+    return {
+      headline: `At ${s.customer}`,
+      figure: list || "On site",
+      figureLabel: list ? "Checklist" : "",
+      detail,
+      next,
+      progress,
+      compact: s.checklistTotal > 0 ? `${s.checklistDone}/${s.checklistTotal}` : "•",
+      spoken: `At ${s.customer}.${list ? ` Checklist ${list}.` : ""} ${of}.${next ? ` ${next}.` : ""}`,
+    };
+  }
+  return {
+    headline: `${s.customer} done`,
+    figure: "✓",
+    figureLabel: next ? "Next stop" : "Last stop",
+    detail: of,
+    next: next ?? "That was the last stop today.",
+    progress,
+    compact: "✓",
+    spoken: `${s.customer} done. ${next ? `${next}.` : "That was the last stop today."}`,
+  };
+}

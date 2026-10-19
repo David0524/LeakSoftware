@@ -1,5 +1,7 @@
 "use server";
 
+import { adminClient } from "@/server/admin";
+import { notifyQuoteAccepted } from "@/server/notify-events";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -28,7 +30,7 @@ export async function acceptQuote(_: FormState, form: FormData): Promise<FormSta
   const token = text(form, "token");
   const h = await headers();
   const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || null;
-  const { error } = await publicClient().rpc("accept_quote_by_link", {
+  const { data, error } = await publicClient().rpc("accept_quote_by_link", {
     link_token: token,
     signer_name: text(form, "name"),
     agreed: form.get("agree") === "on",
@@ -36,6 +38,16 @@ export async function acceptQuote(_: FormState, form: FormData): Promise<FormSta
     user_agent: h.get("user-agent"),
   });
   if (error) return { error: error.message };
+  // The team hears about it (owner, 2026-10-19: notifications), once.
+  const admin = adminClient();
+  if (admin && (data as { already?: boolean } | null)?.already === false) {
+    const { data: link } = await admin
+      .from("share_link")
+      .select("quote_id")
+      .eq("token", token)
+      .maybeSingle();
+    if (link?.quote_id) await notifyQuoteAccepted(admin, link.quote_id as string);
+  }
   revalidatePath(`/q/${token}`);
   return { message: "Accepted. Thank you!" };
 }

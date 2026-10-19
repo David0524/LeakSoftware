@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import { NOTIFICATION_KINDS, notificationOn } from "@leakbook/core";
 import { signOut } from "@/app/actions/auth";
 import { showTipsAgain } from "@/app/actions/walkthrough";
 import { DeleteAccount } from "@/components/delete-account";
@@ -27,7 +28,7 @@ export default async function MorePage() {
     await createClient()
   )
     .from("profile")
-    .select("two_step")
+    .select("two_step, notification_prefs")
     .eq("id", office.user.id)
     .maybeSingle();
   const twoStep = Boolean(profile?.two_step);
@@ -43,6 +44,18 @@ export default async function MorePage() {
           ))}
         </Grouped>
         <Grouped title="Your account">
+          <Row
+            href="/more/notifications"
+            label="Notifications"
+            value={
+              NOTIFICATION_KINDS.every((k) => notificationOn(profile?.notification_prefs, k.key))
+                ? "On"
+                : NOTIFICATION_KINDS.some((k) => notificationOn(profile?.notification_prefs, k.key))
+                  ? "Some"
+                  : "Off"
+            }
+            detail="Texts, new jobs, quotes, payments, and reports"
+          />
           <Row
             href="/more/two-step"
             label="Two-Step Sign-In"
