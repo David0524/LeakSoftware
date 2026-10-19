@@ -838,6 +838,9 @@
             try await snapshot(
                 "49-settings-price-book", height: 1400,
                 NavigationStack { SettingsListScreen(page: .priceBook) }.app(env))
+            // Settings › Team with Completing a job (owners and admins, 2026-10-19).
+            try await snapshot(
+                "49-settings-team", height: 1600, NavigationStack { SettingsListScreen(page: .team) }.app(env))
         }
 
         @Test func welcome() async throws {
@@ -1048,14 +1051,14 @@
             try await snapshot(
                 "47-checklist-chemical", height: 1600,
                 NavigationStack { JobScreen(jobId: visit.id, section: .checklist) }.app(env))
-            // "Require a pool photo to finish a job" (owner, 2026-10-19): Mark Done stopped on a
-            // visit with no photo, with Take Photo.
+            // "Take a pool photo first" (owner, 2026-10-19): Complete Job, at the end of the
+            // visit's Checklist, stopped with no photo, with Take Photo.
             try store.write("job", id: visit.id, companyId: "c1", ["status": "in_progress"])
             try await snapshot(
-                "47-visit-photo-needed", height: 1400,
+                "47-visit-photo-needed", height: 2600,
                 NavigationStack { JobScreen(jobId: visit.id, section: .checklist, photoNeeded: true) }.app(env))
             try await snapshot(
-                "47-visit-photo-needed-dark", dark: true, height: 1400,
+                "47-visit-photo-needed-dark", dark: true, height: 2600,
                 NavigationStack { JobScreen(jobId: visit.id, section: .checklist, photoNeeded: true) }.app(env))
             let sam = try #require(try store.list("customer").first { $0["name"] == "Sam Sample" }?.id)
             try await snapshot(

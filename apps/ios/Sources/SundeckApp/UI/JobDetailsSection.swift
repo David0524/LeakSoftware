@@ -4,7 +4,8 @@
     import SwiftUI
 
     /// The job page's Details section (spec 5.4), in the website's order and words: Customer,
-    /// Messages, Customer links, Pool, Assigned to, From the Customer, On site, then Cancel Job.
+    /// Messages, Customer links, Pool, Assigned to, From the Customer, On site, a visit's Quotes, then
+    /// Cancel Job.
     /// Port of the "details" part of apps/web/src/app/(office)/jobs/[id]/page.tsx.
     struct JobDetailsSection: View {
         var job: JobView
@@ -57,6 +58,8 @@
                 onSite(details)
                 if JobScheduleGroup.shows(job) { JobScheduleGroup(job: job) }
                 if isManagerRole(company?.role) { JobTimeline(jobId: job.id) }
+                // A visit has no Wrap-Up: its quotes are here, before Cancel Job (owner, 2026-10-19).
+                if !jobHasWrapUp(job.type.rawValue) { QuoteSection(job: job).padding(.top, 8) }
                 if jobCanCancel(job.status, type: job.type) {
                     Button("Cancel Job", role: .destructive) { confirmCancel = true }
                         .buttonStyle(.danger)

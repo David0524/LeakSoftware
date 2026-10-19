@@ -12,7 +12,8 @@ import Testing
             "formatPhone", "companyServices", "offersPool", "newJobTypes", "seesAllJobs", "canMakeJobs", "roleLabel",
             "isManagerRole", "splitEmails", "POOL_TYPE_LABELS", "jobOnPhones", "requiresFinishPhoto",
             "FINISH_PHOTO_MESSAGE", "REPAIR_ITEM_KEY", "REPAIR_ITEM_LABEL", "jobActionLabel", "jobFeeLabel",
-            "parseGallons",
+            "parseGallons", "requiresFinishedChecklist", "FINISH_CHECKLIST_MESSAGE", "completeJobBlocker",
+            "jobHasWrapUp",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -54,6 +55,16 @@ import Testing
         checkRule(module, "offersPool") { c in offersPool(try c.arg(0)) }
         checkRule(module, "requiresFinishPhoto") { c in requiresFinishPhoto(try c.arg(0, as: JSONValue?.self)) }
         checkRule(module, "FINISH_PHOTO_MESSAGE") { _ in finishPhotoMessage }
+        checkRule(module, "requiresFinishedChecklist") { c in
+            requiresFinishedChecklist(try c.arg(0, as: JSONValue?.self))
+        }
+        checkRule(module, "FINISH_CHECKLIST_MESSAGE") { _ in finishChecklistMessage }
+        checkRule(module, "completeJobBlocker") { c in
+            let job = try c.arg(1, as: [String: Int].self)
+            return completeJobBlocker(
+                try c.arg(0, as: JSONValue?.self), checklistToDo: job["checklistToDo"] ?? 0, photos: job["photos"] ?? 0)
+        }
+        checkRule(module, "jobHasWrapUp") { c in jobHasWrapUp(try c.arg(0, as: String?.self)) }
         checkRule(module, "REPAIR_ITEM_KEY") { _ in repairItemKey }
         checkRule(module, "REPAIR_ITEM_LABEL") { _ in repairItemLabel }
         checkRule(module, "newJobTypes") { c in newJobTypes(try c.arg(0)) }

@@ -20,8 +20,30 @@ public func requiresFinishPhoto(_ settings: JSONValue?) -> Bool {
     settings?["require_finish_photo"] == .bool(true)
 }
 
-/// What blocks Mark Done and finishing or sending a report until the job has a photo.
+/// What blocks Complete Job and finishing or sending a report until the job has a photo.
 public let finishPhotoMessage = "Take a photo of the pool before finishing this job."
+
+/// Whether completing a job needs every checklist item answered first (owners and admins,
+/// 2026-10-19; default off).
+public func requiresFinishedChecklist(_ settings: JSONValue?) -> Bool {
+    settings?["require_checklist_to_finish"] == .bool(true)
+}
+
+/// What blocks Complete Job until every checklist item is answered.
+public let finishChecklistMessage = "Finish the checklist before completing this job."
+
+/// What stops Complete Job (owner, 2026-10-19): the checklist first, then the photo. Nil when
+/// the job can be completed.
+public func completeJobBlocker(_ settings: JSONValue?, checklistToDo: Int, photos: Int) -> String? {
+    if requiresFinishedChecklist(settings) && checklistToDo > 0 { return finishChecklistMessage }
+    if requiresFinishPhoto(settings) && photos == 0 { return finishPhotoMessage }
+    return nil
+}
+
+/// Whether the job page has a Wrap-Up section (report, signatures, quotes, invoice).
+/// Maintenance visits don't (owner, 2026-10-19): they end with Complete Job, are billed monthly,
+/// and quote repairs from Details.
+public func jobHasWrapUp(_ type: String?) -> Bool { type != "maintenance" }
 
 /// `job.intake`'s key for the price book item a repair was booked for (From the Customer).
 public let repairItemKey = "repair_item"

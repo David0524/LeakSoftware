@@ -22,9 +22,12 @@ public enum JobPageSection: String, CaseIterable, Hashable, Sendable {
         }
     }
 
-    /// Five parts; a maintenance visit has no tests or findings, so no Findings.
+    /// Five parts; a maintenance visit has no tests or findings, so no Findings, and ends with
+    /// Complete Job, billed monthly, so no Wrap-Up (core `jobHasWrapUp`, owner 2026-10-19).
     public static func sections(for type: JobType) -> [JobPageSection] {
-        type == .maintenance ? allCases.filter { $0 != .findings } : allCases
+        allCases.filter {
+            !(type == .maintenance && $0 == .findings) && ($0 != .wrapUp || jobHasWrapUp(type.rawValue))
+        }
     }
 }
 
@@ -69,6 +72,11 @@ public func jobHeaderTime(_ job: JobView, now: Date, timeZone: String) -> String
 /// The header's status buttons: every next step but Cancel, which sits at the end of Details.
 public func jobHeaderActions(_ status: JobStatus, type: JobType) -> [JobStatus] {
     userTransitions(from: status, type: type.rawValue).filter { $0 != .canceled }
+}
+
+/// Complete Job at the end of a visit's Checklist: maintenance, scheduled or in progress.
+public func checklistShowsCompleteJob(_ job: JobView) -> Bool {
+    job.type == .maintenance && (job.status == .scheduled || job.status == .inProgress)
 }
 
 /// Whether Details ends with Cancel Job.

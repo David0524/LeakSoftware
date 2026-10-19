@@ -255,6 +255,8 @@
                         .accessibilityElement(children: .ignore)
                         .accessibilityLabel(CleaningText.accessSpoken(notes))
                     }
+                    // Onto the next stop without opening the visit (owner, 2026-10-19).
+                    if day.mine && job.type == .maintenance { TodayCompleteButton(job: job) }
                 }
             }
             .card(padding: 12)
@@ -271,6 +273,50 @@
     }
 
     /// An address in `link`, opening directions in the chosen maps app.
+    /// Complete Job on one of your own maintenance stops (owner, 2026-10-19: "there should be a
+    /// way to mark that you're onto the next job"): a secondary pill under the card's lines. When
+    /// the shop wants the checklist or a photo first, it says so, with Open Job. Website
+    /// components/today-complete.tsx.
+    struct TodayCompleteButton: View {
+        var job: ScheduleJob
+        @Environment(Session.self) private var session
+        @Environment(SyncService.self) private var sync
+        @Environment(\.openRoute) private var openRoute
+        @State private var blocked: String?
+        @State private var done = 0
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 4) {
+                Button(CompleteJobText.title) { complete() }
+                    .buttonStyle(.secondary)
+                    .accessibilityLabel(CompleteJobText.spoken(job.customerName))
+                if let blocked {
+                    InlineLinkText(text: blocked, link: CompleteJobText.openJob) { openRoute(.job(job.id)) }
+                        .textRole(.secondary)
+                        .foregroundStyle(Color.fail)
+                }
+            }
+            .padding(.top, 4)
+            .sensoryFeedback(.success, trigger: done)
+        }
+
+        private func complete() {
+            guard let company = session.company, let row = try? sync.store.get("job", job.id) else { return }
+            if let block = statusChangeBlock(.done, sync.store, settings: company.settings, jobId: job.id) {
+                blocked = block
+                AccessibilityNotification.Announcement(block).post()
+                return
+            }
+            do {
+                try sync.write("job", id: job.id, companyId: company.id, jobStatusValues(.done, job: row))
+                blocked = nil
+                done += 1
+            } catch {
+                blocked = String(describing: error)
+            }
+        }
+    }
+
     struct AddressButton: View {
         var place: MapPlace
         @Environment(\.openURL) private var openURL

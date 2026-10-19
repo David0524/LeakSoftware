@@ -4,7 +4,7 @@
     import SwiftUI
 
     /// "Take a photo of the pool before finishing this job." with Take Photo (the usual capture
-    /// flow, saved to the job), shown where Mark Done or a report's finish or send was stopped by
+    /// flow, saved to the job), shown where Complete Job or a report's finish or send was stopped by
     /// the shop's photo rule. Once a photo is saved the notice says so, and the tech tries again.
     struct FinishPhotoNotice: View {
         var jobId: String
@@ -34,6 +34,20 @@
                 }
             }
             .captureFlow(capture)
+        }
+    }
+
+    /// Why Complete Job was stopped: the checklist message, or the photo one with Take Photo.
+    struct CompleteJobNotice: View {
+        var jobId: String
+        var message: String
+
+        var body: some View {
+            if message == finishPhotoMessage {
+                FinishPhotoNotice(jobId: jobId)
+            } else {
+                Notice(kind: .error, text: message)
+            }
         }
     }
 #endif

@@ -344,3 +344,53 @@ public enum ConfigWrites {
         if !table.isEmpty { try sync.softDelete(table, id) }
     }
 }
+
+/// Settings › Team › Completing a job (owner, 2026-10-19: "Owners/admins can decide whether the
+/// tech needs to fill out the checklist/submit picture first"): what Complete Job waits for.
+/// Website components/job-visibility.tsx `CompleteJobForm`.
+public enum CompleteJobSetting: String, CaseIterable, Sendable {
+    case checklist = "require_checklist_to_finish"
+    case photo = "require_finish_photo"
+
+    public static let title = "Completing a job"
+
+    public var label: String {
+        switch self {
+        case .checklist: "Finish the checklist first"
+        case .photo: "Take a pool photo first"
+        }
+    }
+
+    public var hint: String {
+        switch self {
+        case .checklist: "On: Complete Job waits until every checklist item is answered."
+        case .photo: "On: Complete Job, and sending a report, wait until the job has a photo."
+        }
+    }
+
+    public func isOn(_ settings: JSONValue?) -> Bool {
+        switch self {
+        case .checklist: requiresFinishedChecklist(settings)
+        case .photo: requiresFinishPhoto(settings)
+        }
+    }
+
+    /// The company's settings with this one changed, everything else kept.
+    public func settings(_ settings: JSONValue?, on: Bool) -> JSONValue {
+        var object: [String: JSONValue] = [:]
+        if case .object(let current) = settings { object = current }
+        object[rawValue] = .bool(on)
+        return .object(object)
+    }
+}
+
+@MainActor
+extension ConfigWrites {
+    /// Turns one of Completing a job's rules on or off: the company's settings through the
+    /// sync layer (owners and admins; the server checks again).
+    public static func setCompleteJob(
+        _ sync: SyncService, companyId: String, settings: JSONValue?, _ setting: CompleteJobSetting, on: Bool
+    ) throws {
+        try sync.write("company", id: companyId, companyId: companyId, ["settings": setting.settings(settings, on: on)])
+    }
+}

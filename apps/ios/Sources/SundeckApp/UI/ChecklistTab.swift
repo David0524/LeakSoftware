@@ -16,8 +16,15 @@
         /// Edit, as in an iOS list: every item gets Remove (owner, 2026-10-19).
         @State private var editing: Bool
 
-        init(job: JobView, editing: Bool = false) {
+        /// Complete Job at the end of a visit's list (the job page's status change, with its
+        /// checks), and why it was last stopped.
+        var complete: (() -> Void)?
+        var blocked: String?
+
+        init(job: JobView, editing: Bool = false, complete: (() -> Void)? = nil, blocked: String? = nil) {
             self.job = job
+            self.complete = complete
+            self.blocked = blocked
             _editing = State(initialValue: editing)
         }
 
@@ -84,6 +91,15 @@
                             }
                         }
                         if !model.addOptions.isEmpty { addItem(model, inspection).padding(.top, 16) }
+                    }
+                    // Complete Job ends a visit, right under its list (owner, 2026-10-19).
+                    if let complete, checklistShowsCompleteJob(job) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Button(CompleteJobText.title, action: complete)
+                                .buttonStyle(.primary(fullWidth: true, size: .field))
+                            if let blocked { CompleteJobNotice(jobId: job.id, message: blocked) }
+                        }
+                        .padding(.top, 24)
                     }
                 }
                 .alert(

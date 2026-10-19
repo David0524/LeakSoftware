@@ -201,7 +201,8 @@
       "result": [
         "unscheduled",
         "in_progress",
-        "canceled"
+        "canceled",
+        "done"
       ]
     },
     {
@@ -428,7 +429,7 @@
         "unscheduled",
         "done"
       ],
-      "result": "Mark Done"
+      "result": "Complete Job"
     },
     {
       "args": [
@@ -498,7 +499,7 @@
         "scheduled",
         "done"
       ],
-      "result": "Mark Done"
+      "result": "Complete Job"
     },
     {
       "args": [
@@ -568,7 +569,7 @@
         "in_progress",
         "done"
       ],
-      "result": "Mark Done"
+      "result": "Complete Job"
     },
     {
       "args": [
@@ -638,7 +639,7 @@
         "report_sent",
         "done"
       ],
-      "result": "Mark Done"
+      "result": "Complete Job"
     },
     {
       "args": [
@@ -708,7 +709,7 @@
         "quote_sent",
         "done"
       ],
-      "result": "Mark Done"
+      "result": "Complete Job"
     },
     {
       "args": [
@@ -778,7 +779,7 @@
         "quote_accepted",
         "done"
       ],
-      "result": "Mark Done"
+      "result": "Complete Job"
     },
     {
       "args": [
@@ -848,7 +849,7 @@
         "invoiced",
         "done"
       ],
-      "result": "Mark Done"
+      "result": "Complete Job"
     },
     {
       "args": [
@@ -918,7 +919,7 @@
         "paid",
         "done"
       ],
-      "result": "Mark Done"
+      "result": "Complete Job"
     },
     {
       "args": [
@@ -988,7 +989,7 @@
         "canceled",
         "done"
       ],
-      "result": "Mark Done"
+      "result": "Complete Job"
     },
     {
       "args": [
@@ -1058,7 +1059,7 @@
         "done",
         "done"
       ],
-      "result": "Mark Done"
+      "result": "Complete Job"
     }
   ],
   "parseGallons": [
@@ -1455,6 +1456,334 @@
     {
       "args": [],
       "result": "Take a photo of the pool before finishing this job."
+    }
+  ],
+  "requiresFinishedChecklist": [
+    {
+      "args": [
+        null
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "require_checklist_to_finish"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "require_checklist_to_finish": true
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "require_checklist_to_finish": false
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "require_checklist_to_finish": "true"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "require_checklist_to_finish": 1
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "require_finish_photo": true
+        }
+      ],
+      "result": false
+    }
+  ],
+  "FINISH_CHECKLIST_MESSAGE": [
+    {
+      "args": [],
+      "result": "Finish the checklist before completing this job."
+    }
+  ],
+  "completeJobBlocker": [
+    {
+      "args": [
+        null,
+        {
+          "checklistToDo": 0,
+          "photos": 0
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        {
+          "checklistToDo": 2,
+          "photos": 0
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        {
+          "checklistToDo": 0,
+          "photos": 1
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        {
+          "checklistToDo": 3,
+          "photos": 2
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {},
+        {
+          "checklistToDo": 0,
+          "photos": 0
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {},
+        {
+          "checklistToDo": 2,
+          "photos": 0
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {},
+        {
+          "checklistToDo": 0,
+          "photos": 1
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {},
+        {
+          "checklistToDo": 3,
+          "photos": 2
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_checklist_to_finish": true
+        },
+        {
+          "checklistToDo": 0,
+          "photos": 0
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_checklist_to_finish": true
+        },
+        {
+          "checklistToDo": 2,
+          "photos": 0
+        }
+      ],
+      "result": "Finish the checklist before completing this job."
+    },
+    {
+      "args": [
+        {
+          "require_checklist_to_finish": true
+        },
+        {
+          "checklistToDo": 0,
+          "photos": 1
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_checklist_to_finish": true
+        },
+        {
+          "checklistToDo": 3,
+          "photos": 2
+        }
+      ],
+      "result": "Finish the checklist before completing this job."
+    },
+    {
+      "args": [
+        {
+          "require_finish_photo": true
+        },
+        {
+          "checklistToDo": 0,
+          "photos": 0
+        }
+      ],
+      "result": "Take a photo of the pool before finishing this job."
+    },
+    {
+      "args": [
+        {
+          "require_finish_photo": true
+        },
+        {
+          "checklistToDo": 2,
+          "photos": 0
+        }
+      ],
+      "result": "Take a photo of the pool before finishing this job."
+    },
+    {
+      "args": [
+        {
+          "require_finish_photo": true
+        },
+        {
+          "checklistToDo": 0,
+          "photos": 1
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_finish_photo": true
+        },
+        {
+          "checklistToDo": 3,
+          "photos": 2
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_checklist_to_finish": true,
+          "require_finish_photo": true
+        },
+        {
+          "checklistToDo": 0,
+          "photos": 0
+        }
+      ],
+      "result": "Take a photo of the pool before finishing this job."
+    },
+    {
+      "args": [
+        {
+          "require_checklist_to_finish": true,
+          "require_finish_photo": true
+        },
+        {
+          "checklistToDo": 2,
+          "photos": 0
+        }
+      ],
+      "result": "Finish the checklist before completing this job."
+    },
+    {
+      "args": [
+        {
+          "require_checklist_to_finish": true,
+          "require_finish_photo": true
+        },
+        {
+          "checklistToDo": 0,
+          "photos": 1
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "require_checklist_to_finish": true,
+          "require_finish_photo": true
+        },
+        {
+          "checklistToDo": 3,
+          "photos": 2
+        }
+      ],
+      "result": "Finish the checklist before completing this job."
+    }
+  ],
+  "jobHasWrapUp": [
+    {
+      "args": [
+        "maintenance"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "detection"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "repair"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": true
     }
   ],
   "REPAIR_ITEM_KEY": [

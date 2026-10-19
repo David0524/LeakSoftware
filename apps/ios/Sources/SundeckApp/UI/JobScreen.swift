@@ -17,14 +17,14 @@
         @State private var toDo = 0
         @State private var saveError: String?
         @State private var changes = 0
-        /// Mark Done was stopped by the shop's photo rule: the notice with Take Photo shows.
-        @State private var photoNeeded = false
+        /// Why Complete Job was stopped (the checklist, or the pool photo), shown under the header.
+        @State private var blocked: String?
         /// Opens the checklist in Edit (screenshots).
         private let checklistEditing: Bool
 
         /// `section` opens a given part (links from Reports and Invoices open Wrap-Up; screenshots);
         /// otherwise the part last shown on this job while the app runs, else Details.
-        /// `photoNeeded` opens it as Mark Done leaves it when the shop's photo rule stops it
+        /// `photoNeeded` opens it as Complete Job leaves it when the shop's photo rule stops it
         /// (screenshots). `checklistEditing` opens the checklist in Edit (screenshots).
         init(
             jobId: String, section: JobPageSection? = nil, photoNeeded: Bool = false, checklistEditing: Bool = false
@@ -32,7 +32,7 @@
             self.jobId = jobId
             self.checklistEditing = checklistEditing
             _section = State(initialValue: section)
-            _photoNeeded = State(initialValue: photoNeeded)
+            _blocked = State(initialValue: photoNeeded ? finishPhotoMessage : nil)
         }
 
         var body: some View {
@@ -118,7 +118,12 @@
                         }
                     }
                 }
-                if photoNeeded && job.status != .done { FinishPhotoNotice(jobId: job.id) }
+                // Shown once: at the end of a visit's Checklist when that's open, else here.
+                if let blocked, job.status != .done,
+                    !(currentSection(job) == .checklist && checklistShowsCompleteJob(job))
+                {
+                    CompleteJobNotice(jobId: job.id, message: blocked)
+                }
                 SyncBarRow()
             }
             .padding(.top, 4)
@@ -142,7 +147,8 @@
         @ViewBuilder private func sectionContent(_ current: JobPageSection, _ job: JobView) -> some View {
             switch current {
             case .details: JobDetailsSection(job: job)
-            case .checklist: ChecklistTab(job: job, editing: checklistEditing)
+            case .checklist:
+                ChecklistTab(job: job, editing: checklistEditing, complete: { changeStatus(.done) }, blocked: blocked)
             case .findings:
                 VStack(alignment: .leading, spacing: 32) {
                     // The pool's drawing first, as on the website (owner, 2026-10-19).
@@ -169,14 +175,14 @@
 
         private func changeStatus(_ to: JobStatus) {
             guard let company = session.company, let job else { return }
-            // No job is Done until it has a pool photo, when the shop asks for one.
-            if statusChangePhotoBlock(to, sync.store, settings: company.settings, jobId: jobId) != nil {
-                withAnimation { photoNeeded = true }
+            // Complete Job waits for the checklist or a pool photo, when the shop asks.
+            if let block = statusChangeBlock(to, sync.store, settings: company.settings, jobId: jobId) {
+                withAnimation { blocked = block }
                 return
             }
             do {
                 try sync.write("job", id: jobId, companyId: company.id, jobStatusValues(to, job: job.job))
-                photoNeeded = false
+                blocked = nil
                 changes += 1
             } catch {
                 saveError = String(describing: error)

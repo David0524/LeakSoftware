@@ -14,6 +14,10 @@ import {
   offersPool,
   parseGallons,
   requiresFinishPhoto,
+  requiresFinishedChecklist,
+  FINISH_CHECKLIST_MESSAGE,
+  completeJobBlocker,
+  jobHasWrapUp,
   REPAIR_ITEM_KEY,
   REPAIR_ITEM_LABEL,
   FINISH_PHOTO_MESSAGE,
@@ -150,6 +154,45 @@ export const basics: ModuleCases = {
     ],
   ),
   FINISH_PHOTO_MESSAGE: rule(() => FINISH_PHOTO_MESSAGE, [[]]),
+  // Complete Job (owner, 2026-10-19): only a real true turns the checklist rule on.
+  requiresFinishedChecklist: rule(
+    (s: unknown) => requiresFinishedChecklist(s),
+    [
+      [null],
+      [{}],
+      ["require_checklist_to_finish"],
+      [{ require_checklist_to_finish: true }],
+      [{ require_checklist_to_finish: false }],
+      [{ require_checklist_to_finish: "true" }],
+      [{ require_checklist_to_finish: 1 }],
+      [{ require_finish_photo: true }],
+    ],
+  ),
+  FINISH_CHECKLIST_MESSAGE: rule(() => FINISH_CHECKLIST_MESSAGE, [[]]),
+  completeJobBlocker: rule(
+    (s: unknown, job: { checklistToDo: number; photos: number }) => completeJobBlocker(s, job),
+    [
+      null,
+      {},
+      { require_checklist_to_finish: true },
+      { require_finish_photo: true },
+      {
+        require_checklist_to_finish: true,
+        require_finish_photo: true,
+      },
+    ].flatMap((s) =>
+      [
+        { checklistToDo: 0, photos: 0 },
+        { checklistToDo: 2, photos: 0 },
+        { checklistToDo: 0, photos: 1 },
+        { checklistToDo: 3, photos: 2 },
+      ].map((job) => [s, job] as [unknown, { checklistToDo: number; photos: number }]),
+    ),
+  ),
+  jobHasWrapUp: rule(
+    (t: string | null) => jobHasWrapUp(t),
+    [["maintenance"], ["detection"], ["repair"], [null], [""]],
+  ),
   REPAIR_ITEM_KEY: rule(() => REPAIR_ITEM_KEY, [[]]),
   REPAIR_ITEM_LABEL: rule(() => REPAIR_ITEM_LABEL, [[]]),
   offersPool: rule(

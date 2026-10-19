@@ -108,6 +108,7 @@
                         Text("Invite people, change roles, and turn people off on the website.")
                             .textRole(.footnote).foregroundStyle(Color.textMuted)
                     }
+                    if manager, let company { completingAJob(company) }
                     Section {
                         ActionRow("Open Team on the Website") { browser = .site(page.webPath) }
                             .surfaceRow().listRowInsets(EdgeInsets())
@@ -163,6 +164,32 @@
             .browserSheet($browser)
             .task(id: "\(sync.revision)|\(company?.id ?? "")|\(poolChecklist)") { reload() }
             .onAppear { if !loaded { poolChecklist = services == .pool } }
+        }
+
+        /// Completing a job (owners and admins, 2026-10-19): what Complete Job waits for.
+        private func completingAJob(_ company: CompanyContext) -> some View {
+            Section {
+                ForEach(CompleteJobSetting.allCases, id: \.self) { setting in
+                    SwitchRow(
+                        setting.label, detail: setting.hint,
+                        isOn: Binding(
+                            get: { setting.isOn(company.settings) },
+                            set: { on in
+                                do {
+                                    try ConfigWrites.setCompleteJob(
+                                        sync, companyId: company.id, settings: company.settings, setting, on: on)
+                                    session.reloadCompanies()
+                                } catch {
+                                    notice = String(describing: error)
+                                }
+                            })
+                    )
+                    .surfaceRow()
+                    .listRowInsets(EdgeInsets())
+                }
+            } header: {
+                SectionLabel(CompleteJobSetting.title)
+            }
         }
 
         private func reload() {

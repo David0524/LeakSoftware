@@ -70,13 +70,42 @@ import Testing
         let on: JSONValue = ["require_finish_photo": true]
         let s = try shell(on)
         for job in ["j1", "j3"] {
-            #expect(statusChangePhotoBlock(.done, s.sync.store, settings: on, jobId: job) == finishPhotoMessage)
+            #expect(statusChangeBlock(.done, s.sync.store, settings: on, jobId: job) == finishPhotoMessage)
             for other in JobStatus.allCases where other != .done {
-                #expect(statusChangePhotoBlock(other, s.sync.store, settings: on, jobId: job) == nil)
+                #expect(statusChangeBlock(other, s.sync.store, settings: on, jobId: job) == nil)
             }
         }
-        #expect(statusChangePhotoBlock(.done, s.sync.store, settings: on, jobId: "j2") == nil)
-        #expect(statusChangePhotoBlock(.done, s.sync.store, settings: [:], jobId: "j3") == nil)
+        #expect(statusChangeBlock(.done, s.sync.store, settings: on, jobId: "j2") == nil)
+        #expect(statusChangeBlock(.done, s.sync.store, settings: [:], jobId: "j3") == nil)
+    }
+
+    /// Complete Job (owner, 2026-10-19): with "Finish the checklist first", every checklist item
+    /// answered, then the photo; Settings › Team › Completing a job writes both rules.
+    @Test func completeJobWaitsForTheChecklistThenThePhoto() throws {
+        let both: JSONValue = ["require_checklist_to_finish": true, "require_finish_photo": true]
+        let s = try shell(both)
+        let store = s.sync.store
+        try s.sync.write(
+            "checklist_item_result", id: "r1", companyId: "c1",
+            ["job_id": "j2", "job_component_id": "jc1", "status": "pending"])
+        try s.sync.write(
+            "checklist_item_result", id: "r2", companyId: "c1",
+            ["job_id": "j2", "job_component_id": "jc2", "status": "pass"])
+        #expect(jobChecklistToDo(store, jobId: "j2") == 1)
+        #expect(statusChangeBlock(.done, store, settings: both, jobId: "j2") == finishChecklistMessage)
+        try s.sync.write("checklist_item_result", id: "r1", companyId: "c1", ["status": "pass"])
+        #expect(statusChangeBlock(.done, store, settings: both, jobId: "j2") == nil)  // j2 has a photo
+        #expect(statusChangeBlock(.done, store, settings: both, jobId: "j1") == finishPhotoMessage)
+        #expect(statusChangeBlock(.done, store, settings: ["require_checklist_to_finish": true], jobId: "j1") == nil)
+        #expect(CompleteJobText.spoken("Maria Lopez") == "Complete Job for Maria Lopez")
+
+        // Settings: the two switches, with the website's words, keeping the other settings.
+        #expect(CompleteJobSetting.allCases.map(\.label) == ["Finish the checklist first", "Take a pool photo first"])
+        #expect(CompleteJobSetting.checklist.isOn(both) && !CompleteJobSetting.photo.isOn([:]))
+        try ConfigWrites.setCompleteJob(
+            s.sync, companyId: "c1", settings: ["services": "pool"], .checklist, on: true)
+        let company = try #require(try store.get("company", "c1"))
+        #expect(company["settings"] == ["services": "pool", "require_checklist_to_finish": true])
     }
 
     @Test func theRuleIsOffUnlessTheShopTurnsItOn() throws {

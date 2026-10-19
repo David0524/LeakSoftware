@@ -14,7 +14,8 @@ public enum JobStatus: String, Codable, CaseIterable, Sendable {
     public var transitions: [JobStatus] {
         switch self {
         case .unscheduled: [.scheduled, .inProgress, .canceled]
-        case .scheduled: [.unscheduled, .inProgress, .canceled]
+        // Complete Job straight from Scheduled (owner, 2026-10-19), for a visit done in one go.
+        case .scheduled: [.unscheduled, .inProgress, .canceled, .done]
         case .inProgress: [.scheduled, .reportSent, .invoiced, .canceled, .done]
         case .reportSent: [.inProgress, .quoteSent, .invoiced, .canceled]
         case .quoteSent: [.reportSent, .quoteAccepted, .invoiced, .canceled]
@@ -56,7 +57,7 @@ public func jobActionLabel(from: JobStatus, to: JobStatus) -> String {
     case .inProgress: from == .done ? "Reopen Visit" : "Start Job"
     case .scheduled: "Move Back to Scheduled"
     case .canceled: "Cancel Job"
-    case .done: "Mark Done"
+    case .done: "Complete Job"
     default: to.label
     }
 }

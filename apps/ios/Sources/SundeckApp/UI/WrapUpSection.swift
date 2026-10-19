@@ -11,7 +11,7 @@
         var body: some View {
             VStack(alignment: .leading, spacing: 32) {
                 ReportTab(job: job)
-                if job.type == .detection || job.type == .maintenance { QuoteSection(job: job) }
+                if job.type == .detection { QuoteSection(job: job) }
                 InvoiceSection(job: job)
             }
             .frame(maxWidth: .infinity, alignment: .leading)

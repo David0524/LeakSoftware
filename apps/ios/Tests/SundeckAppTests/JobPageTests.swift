@@ -24,7 +24,7 @@ import Testing
             ])
         #expect(JobPageSection.sections(for: .repair).count == 5)
         #expect(
-            JobPageSection.sections(for: .maintenance).map(\.title) == ["Details", "Checklist", "Photos", "Wrap-Up"])
+            JobPageSection.sections(for: .maintenance).map(\.title) == ["Details", "Checklist", "Photos"])
     }
 
     @Test func theSectionShownIsRememberedPerJob() {
