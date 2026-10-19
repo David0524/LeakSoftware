@@ -27,7 +27,9 @@
                 if let company = session.company, let day {
                     header(day)
                     SyncBarRow()
-                    if day.ctx.isManager { GettingStartedCard(company: company) }
+                    // Getting Started is off on the phone for now: inside the tab view it stops Today
+                    // drawing in the simulator screenshots, cause not found yet (docs/plans/swift-app.md).
+                    if day.ctx.isManager && GettingStartedCard.enabled { GettingStartedCard(company: company) }
                     if let tip = tipFor(
                         platform: .web, screen: "today", role: company.role, services: company.services,
                         seen: app.walkthrough.seen)

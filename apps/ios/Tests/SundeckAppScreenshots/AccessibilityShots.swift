@@ -21,10 +21,51 @@
             let company = try #require(env.session.company)
             try await snapshot(
                 "67-getting-started", ScrollView { GettingStartedCard(company: company).padding(16) }.app(env))
-            // The tab view at phone height, then with Getting Started hidden.
-            try await snapshot("68-today-tabs-phone", MainView().app(env))
-            env.walkthrough.setGettingStartedHidden(true)
-            try await snapshot("69-today-tabs-no-card", height: 1500, MainView().app(env))
+            // Getting Started inside a tab view, whole and in parts, to find what stops Today
+            // drawing there.
+            func tabbed(_ content: some View) -> some View {
+                TabView {
+                    Tab("Today", systemImage: "mappin") {
+                        NavigationStack { ScreenScroll { content }.navigationTitle("Today") }
+                    }
+                    Tab("Jobs", systemImage: "doc") { Text("Jobs") }
+                }
+            }
+            try await snapshot("70-tabs-card", tabbed(GettingStartedCard(company: company)).app(env))
+            try await snapshot(
+                "71-tabs-header",
+                tabbed(
+                    VStack {
+                        CardTitle("Getting Started")
+                        Text("3 of 8 done")
+                    }.card()
+                ).app(env))
+            try await snapshot(
+                "72-tabs-rows",
+                tabbed(
+                    VStack(spacing: 0) {
+                        ForEach(0..<3) { i in
+                            Button {
+                            } label: {
+                                HStack {
+                                    RoundCheck(done: i == 0)
+                                    Text("Step \(i)").strikethrough(i == 0)
+                                    Chevron()
+                                }
+                            }
+                            .buttonStyle(.row)
+                        }
+                    }.card()
+                ).app(env))
+            try await snapshot(
+                "73-tabs-bar",
+                tabbed(
+                    Capsule().fill(Color.fill).frame(height: 6)
+                        .overlay(alignment: .leading) {
+                            Capsule().fill(Color.pass).scaleEffect(x: 0.4, anchor: .leading)
+                        }
+                        .accessibilityElement()
+                ).app(env))
         }
 
         @Test func largeText() async throws {

@@ -9,6 +9,9 @@
     /// every step is done or they tap Hide. Hiding is kept on the person's account (as on the
     /// website) and on the phone, so it stays hidden offline.
     struct GettingStartedCard: View {
+        /// Off until it draws inside the tab view (see TodayScreen).
+        static let enabled = false
+
         var company: CompanyContext
         @Environment(SyncService.self) private var sync
         @Environment(AppEnvironment.self) private var app
