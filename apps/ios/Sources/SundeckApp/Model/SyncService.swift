@@ -232,6 +232,34 @@ public final class SyncService {
         changed()
     }
 
+    /// Saves a signature: the row (already holding its storage path) and its upload ticket.
+    public func addSignature(_ id: String, companyId: String, _ values: Row, localPath: String, storagePath: String)
+        throws
+    {
+        var row = values
+        row["device_id"] = .string(store.deviceId)
+        try guarded {
+            try store.database.transaction {
+                try store.write("signature", id: id, companyId: companyId, row)
+                try uploads?.enqueue(
+                    UploadJob(
+                        mediaId: id, recordTable: .signature, companyId: companyId, localPath: localPath,
+                        storagePath: storagePath, mimeType: "image/svg+xml"))
+            }
+        }
+        changed()
+    }
+
+    /// True while local edits to this row (or, without an id, this table) are unsent.
+    public func hasPendingWrites(_ table: String, _ id: String? = nil) -> Bool {
+        let sql =
+            "select count(*) as n from sync_outbox where table_name = ? and status = 'pending'"
+            + (id != nil ? " and row_id = ?" : "")
+        let rows = try? store.database.query(sql, id.map { [.text(table), .text($0)] } ?? [.text(table)])
+        if case .integer(let n)? = rows?.first?["n"] { return n > 0 }
+        return false
+    }
+
     /// Drops a change the server refused; the server's value comes back on the next sync.
     public func discardProblem(_ seq: Int) throws {
         try store.discardProblem(seq)

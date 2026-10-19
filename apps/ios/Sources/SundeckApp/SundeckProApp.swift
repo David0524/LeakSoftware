@@ -55,6 +55,11 @@
             }
         }
 
+        /// The website's API as the signed-in person (reports, quotes, transcripts).
+        var api: WebAPI {
+            WebAPI(baseURL: AppConfig.webURL) { [client] in try? await client.auth.session.accessToken }
+        }
+
         static func make() -> Result<AppEnvironment, Error> {
             Result {
                 let db = try openDatabase()
