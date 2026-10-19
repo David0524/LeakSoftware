@@ -27,12 +27,10 @@
             let steps = gettingStarted(
                 company.services,
                 shopProgress(sync.store, company: company, invites: server.invites, payments: server.payments))
-            VStack(spacing: 0) {
-                if !app.walkthrough.gettingStartedHidden, steps.contains(where: { !$0.done }) {
-                    card(steps)
-                }
+            // Nothing at all when hidden or done, so Today keeps its spacing.
+            if !app.walkthrough.gettingStartedHidden, steps.contains(where: { !$0.done }) {
+                card(steps).task(id: company.id) { await loadServer() }
             }
-            .task(id: company.id) { await loadServer() }
         }
 
         private func card(_ steps: [StartStep]) -> some View {
@@ -96,8 +94,9 @@
                 }
                 .padding(.top, 12)
             }
+            .padding(.bottom, 8)
+            // No clipShape: inside the tab view on iOS 26 the clipped card stopped Today drawing.
             .card(padding: 0)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         }
 
         /// Where a step leads in the app.
