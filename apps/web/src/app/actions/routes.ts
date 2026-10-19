@@ -608,7 +608,12 @@ export async function saveScheduling(_: FormState, form: FormData): Promise<Form
       job_minutes: Math.round(hours * 60),
       work_days: [...new Set(days)].sort(),
     },
-    maintenance: { visit_minutes: visitMinutes, weeks_ahead: weeksAhead },
+    // Other maintenance settings (the usual cleaning frequencies) stay as they are.
+    maintenance: {
+      ...((data?.settings as { maintenance?: Record<string, unknown> } | null)?.maintenance ?? {}),
+      visit_minutes: visitMinutes,
+      weeks_ahead: weeksAhead,
+    },
   };
   const { error } = await db.from("company").update({ settings }).eq("id", office.company.id);
   if (error) return { error: error.message };

@@ -149,3 +149,33 @@ Status key: **Website done** means built, checked, and committed on `claude/cool
 - **Apps:** add Mark Up on the job's diagram, saving `job.diagram_markup` through sync; draw it
   over the diagram wherever the diagram appears, scaled as the website does (markup space
   800 x 500 over the 160 x 100 diagram, so lines weigh the same as on photos).
+
+## 13. Filter and salt cell cleanings: due soon, weeks to go, and how often
+
+- **Website done.**
+  - **Today:** a visit whose plan has a cleaning due within a week of that visit (or overdue)
+    shows a pill on its card with an icon: "Clean filter: due in 3 days", "Clean salt cell:
+    due today", "...: overdue".
+  - **Checklist:** a maintenance visit's Checklist tab shows **Regular cleanings** (under the
+    Chemical button): each of the plan's cleanings with its icon, "On this visit's checklist"
+    and "Today" when the item is on this visit, otherwise "Every 3 months · next Nov 30" and
+    the countdown ("Due in 5 days" in orange within a week, else "In 6 weeks").
+  - **Customer › Maintenance:** each plan's cleaning line has the icon and the countdown
+    ("Clean filter every 3 months · $40.00 each · In 6 weeks (Nov 30)").
+  - **Settings › Scheduling › Regular cleanings** (pool shops, owners and admins): the usual
+    frequency for each cleaning (Monthly, 2 Months, 3 Months, 6 Months, Yearly), which new
+    plans start with, and **Also change existing plans** (each keeps its next due date and
+    repeats at the new frequency after it). Stored in
+    `company.settings.maintenance.cleaning_months` (`{"svc_filter_clean": 3,
+    "svc_salt_clean": 6}`). The per-plan frequency on the customer's plan stays.
+  - Icons: a pleated cartridge for filters, a tube with a spark for salt cells, a repeat
+    arrow for anything else (`apps/web/src/components/icons.tsx`).
+- **Core:** `cleaningCountdown(nextDue, onDate)` → `{ days, weeks, soon, label }` (soon is 7
+  days or less), `cleaningKind({ key, name })` → `filter | salt_cell | other`,
+  `cleaningDefaultMonths(settings, key)`, `cleaningMonthsLabel`, `CLEANING_DUE_SOON_DAYS`;
+  `CLEANING_MONTHS` is now 1, 2, 3, 6, 12.
+- **Apps:** show the same pill on the app's Today/route list and the Regular cleanings box on
+  the visit checklist (data: `plan_cleaning` + `component_type`, already synced to phones? It
+  is office-only today (`device_sync = false`); either turn on device sync for
+  `plan_cleaning` or read the cleaning item already on the visit (`job_component.
+  plan_cleaning_id`). Ask before changing sync scope.

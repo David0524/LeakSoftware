@@ -52,3 +52,44 @@ export const VoicemailIcon = ({ className }: { className?: string }) => (
     <path d="M6.5 15.5h11" />
   </Icon>
 );
+
+/** A cartridge filter: a tall canister with pleats (owner, 2026-10-19: filter cleanings). */
+export const FilterIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <rect x="6" y="3" width="12" height="18" rx="3" />
+    <path d="M10 7v10M14 7v10" />
+  </Icon>
+);
+
+/** A salt cell: a tube with plates inside and a spark (salt cell cleanings). */
+export const SaltCellIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <rect x="2.5" y="8" width="19" height="8" rx="4" />
+    <path d="m13 9.5-2.5 3h3L11 15" />
+  </Icon>
+);
+
+/** Two arrows in a circle: a cleaning on a schedule that isn't the filter or salt cell. */
+export const RepeatIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M20 11a8 8 0 0 0-14.5-4.5M4 13a8 8 0 0 0 14.5 4.5" />
+    <path d="M5 3v4h4M19 21v-4h-4" />
+  </Icon>
+);
+
+/** The icon for a scheduled cleaning: filter, salt cell, or any other. */
+export function CleaningIcon({
+  kind,
+  className,
+}: {
+  kind: "filter" | "salt_cell" | "other";
+  className?: string;
+}) {
+  return kind === "filter" ? (
+    <FilterIcon className={className} />
+  ) : kind === "salt_cell" ? (
+    <SaltCellIcon className={className} />
+  ) : (
+    <RepeatIcon className={className} />
+  );
+}

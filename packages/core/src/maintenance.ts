@@ -187,11 +187,16 @@ export interface PlanCleaning {
 }
 
 /** How often a cleaning can repeat, in months. */
-export const CLEANING_MONTHS = [1, 2, 3, 6] as const;
+export const CLEANING_MONTHS = [1, 2, 3, 6, 12] as const;
 
 /** "Every 3 months", "Every month". */
 export function cleaningCadence(months: number): string {
-  return months === 1 ? "Every month" : `Every ${months} months`;
+  return months === 1 ? "Every month" : months === 12 ? "Every year" : `Every ${months} months`;
+}
+
+/** A frequency choice's label: "Monthly", "3 Months", "Yearly". */
+export function cleaningMonthsLabel(months: number): string {
+  return months === 1 ? "Monthly" : months === 12 ? "Yearly" : `${months} Months`;
 }
 
 /** "Clean filter every 3 months · $40.00 each" */
@@ -205,4 +210,53 @@ export function cleaningSummary(
   ]
     .filter(Boolean)
     .join(" · ");
+}
+
+/** A cleaning is called out on Today and the checklist from a week before it's due. */
+export const CLEANING_DUE_SOON_DAYS = 7;
+
+/** What a scheduled cleaning is, for its icon: the filter, the salt cell, or something else. */
+export type CleaningKind = "filter" | "salt_cell" | "other";
+
+export function cleaningKind(type: { key?: string | null; name?: string | null }): CleaningKind {
+  const text = `${type.key ?? ""} ${type.name ?? ""}`.toLowerCase();
+  if (text.includes("salt")) return "salt_cell";
+  if (text.includes("filter")) return "filter";
+  return "other";
+}
+
+/**
+ * How far off a cleaning is from a day (owner, 2026-10-19: "how many more weeks until filter
+ * cleaning"): days and weeks until next_due, whether it's due within a week, and a label:
+ * "Due today", "Overdue", "Due in 5 days", "In 3 weeks".
+ */
+export function cleaningCountdown(
+  nextDue: string,
+  on: string,
+): { days: number; weeks: number; soon: boolean; label: string } {
+  const days = Math.round(
+    (Date.parse(`${nextDue}T12:00:00Z`) - Date.parse(`${on}T12:00:00Z`)) / 86_400_000,
+  );
+  const weeks = Math.max(0, Math.round(days / 7));
+  const label =
+    days < 0
+      ? "Overdue"
+      : days === 0
+        ? "Due today"
+        : days < CLEANING_DUE_SOON_DAYS
+          ? `Due in ${days} ${days === 1 ? "day" : "days"}`
+          : `In ${weeks} ${weeks === 1 ? "week" : "weeks"}`;
+  return { days, weeks, soon: days <= CLEANING_DUE_SOON_DAYS, label };
+}
+
+/**
+ * The shop's usual cleaning frequency per checklist item key (Settings › Scheduling, owner
+ * 2026-10-19), used for new plans: settings.maintenance.cleaning_months, e.g.
+ * {"svc_filter_clean": 3, "svc_salt_clean": 6}. 3 months when not set.
+ */
+export function cleaningDefaultMonths(settings: unknown, key: string | null | undefined): number {
+  const raw = (settings as { maintenance?: { cleaning_months?: Record<string, unknown> } } | null)
+    ?.maintenance?.cleaning_months;
+  const months = Number(key ? raw?.[key] : undefined);
+  return (CLEANING_MONTHS as readonly number[]).includes(months) ? months : 3;
 }

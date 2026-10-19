@@ -8,6 +8,11 @@ import {
   POOL_TYPE_LABELS,
   SIGNATURE_PURPOSE_LABELS,
   checklistTally,
+  cleaningCadence,
+  cleaningCountdown,
+  cleaningKind,
+  formatDay,
+  localDate,
   enabledSignaturePurposes,
   componentApplies,
   formatCents,
@@ -28,7 +33,7 @@ import { CustomerLinks } from "@/components/customer-links";
 import { DiagramPanel } from "@/components/diagram-work";
 import { GalleryImage } from "@/components/gallery-image";
 import { Thread } from "@/components/inbox";
-import { MailIcon, MessageIcon, PhoneIcon } from "@/components/icons";
+import { CleaningIcon, MailIcon, MessageIcon, PhoneIcon } from "@/components/icons";
 import { JobSections } from "@/components/job-sections";
 import { MediaActions, MediaCapture, SignatureForm } from "@/components/media-work";
 import {
@@ -58,6 +63,7 @@ import {
   getInvoices,
   getJob,
   getPaymentAccount,
+  getPlanCleanings,
   getQuotes,
   getReports,
   getSignatures,
@@ -316,6 +322,11 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                     Chemical
                   </ButtonLink>
                 ) : null}
+                {job.type === "maintenance" && job.service_plan_id ? (
+                  <Suspense fallback={null}>
+                    <Cleanings detail={detail} tz={tz} />
+                  </Suspense>
+                ) : null}
                 <h2 id="checklist" className="font-display text-2xl font-bold">
                   Checklist
                 </h2>
@@ -538,6 +549,42 @@ function Findings({ detail }: { detail: JobDetail }) {
           : null
       }
     />
+  );
+}
+
+/**
+ * The plan's filter and salt cell cleanings (owner, 2026-10-19): how long until each is due
+ * from this visit, called out from a week before, with whether it's on this visit's list.
+ */
+async function Cleanings({ detail, tz }: { detail: JobDetail; tz: string }) {
+  const office = await getOffice();
+  const cleanings = await getPlanCleanings(office, [detail.job.service_plan_id!]).catch(() => []);
+  if (cleanings.length === 0) return null;
+  const visitDay = detail.job.plan_date ?? localDate(new Date(), tz);
+  const onVisit = new Set(detail.components.map((c) => c.plan_cleaning_id).filter(Boolean));
+  return (
+    <Grouped title="Regular cleanings" className="mb-6 max-w-2xl">
+      {cleanings.map((c) => {
+        const due = cleaningCountdown(c.next_due, visitDay);
+        return (
+          <Row
+            key={c.id}
+            icon={<CleaningIcon kind={cleaningKind(c.type ?? {})} />}
+            label={c.type?.name ?? "Cleaning"}
+            detail={
+              onVisit.has(c.id)
+                ? "On this visit’s checklist"
+                : `${cleaningCadence(c.every_months)} · next ${formatDay(c.next_due)}`
+            }
+            value={
+              <span className={due.soon ? "font-semibold text-status-warning" : undefined}>
+                {onVisit.has(c.id) ? "Today" : due.label}
+              </span>
+            }
+          />
+        );
+      })}
+    </Grouped>
   );
 }
 

@@ -11,15 +11,17 @@ import {
   propertyLocation,
   dayDirections,
   onMyWayVia,
+  cleaningCountdown,
+  cleaningKind,
 } from "@leakbook/core";
 import { Suspense } from "react";
-import { PhoneIcon } from "@/components/icons";
+import { CleaningIcon, PhoneIcon } from "@/components/icons";
 import { OnMyWay } from "@/components/on-my-way";
 import { WeatherBadge } from "@/components/weather-badge";
 import { AddressLink, OpenRouteInMaps } from "@/components/open-in-maps";
 import { Empty, PageHeader, StatusBadge, cx, iconButtonClass, pillClass } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getCompany, mayMakeJobs } from "@/lib/data";
+import { getCompany, getPlanCleanings, mayMakeJobs } from "@/lib/data";
 import { getLine } from "@/lib/messages";
 import { mapsAppForRequest } from "@/lib/maps";
 import { loadRoutes, routeContext, routeKey, shopToday } from "@/server/route-days";
@@ -71,6 +73,20 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   const legs = route?.summary.legs.reduce((a, b) => a + b, 0) ?? 0;
   const backLeg = route ? route.summary.driveMin - legs : 0;
   const mine = techId === office.user.id;
+  // Filter and salt cell cleanings due within a week of each visit (owner, 2026-10-19).
+  const cleanings = await getPlanCleanings(office, [
+    ...new Set(jobs.map((j) => j.service_plan_id).filter((id): id is string => !!id)),
+  ]).catch(() => []);
+  const dueAt = (j: (typeof jobs)[number]) =>
+    cleanings
+      .filter((c) => c.service_plan_id === j.service_plan_id)
+      .map((c) => ({
+        id: c.id,
+        name: c.type?.name ?? "Cleaning",
+        kind: cleaningKind(c.type ?? {}),
+        due: cleaningCountdown(c.next_due, j.plan_date ?? ctx.today),
+      }))
+      .filter((c) => c.due.soon);
 
   return (
     <>
@@ -220,6 +236,19 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                         <p className="relative z-10 w-fit max-w-full text-[0.9375rem]">
                           <AddressLink address={address} location={propertyLocation(j.property)} />
                         </p>
+                        {dueAt(j).length ? (
+                          <ul className="mt-1 flex flex-wrap gap-1.5" aria-label="Cleanings due">
+                            {dueAt(j).map((c) => (
+                              <li
+                                key={c.id}
+                                className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-status-warning/10 px-3 text-[0.9375rem] font-semibold"
+                              >
+                                <CleaningIcon kind={c.kind} className="size-4 shrink-0" />
+                                {c.name}: {c.due.label.toLowerCase()}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
                         {j.property?.access_notes ? (
                           <p className="mt-1 line-clamp-2 rounded-lg bg-status-warning/10 px-2 py-1 text-[0.9375rem]">
                             {j.property.access_notes}

@@ -121,3 +121,38 @@ describe("scheduled cleanings", () => {
     );
   });
 });
+
+describe("cleanings due (owner, 2026-10-19)", () => {
+  it("counts down in days within a week, then weeks", async () => {
+    const { cleaningCountdown } = await import("../src/maintenance");
+    expect(cleaningCountdown("2026-10-19", "2026-10-19")).toMatchObject({
+      days: 0,
+      soon: true,
+      label: "Due today",
+    });
+    expect(cleaningCountdown("2026-10-24", "2026-10-19").label).toBe("Due in 5 days");
+    expect(cleaningCountdown("2026-10-20", "2026-10-19").label).toBe("Due in 1 day");
+    expect(cleaningCountdown("2026-10-26", "2026-10-19")).toMatchObject({ soon: true });
+    expect(cleaningCountdown("2026-11-30", "2026-10-19")).toMatchObject({
+      weeks: 6,
+      soon: false,
+      label: "In 6 weeks",
+    });
+    expect(cleaningCountdown("2026-10-10", "2026-10-19").label).toBe("Overdue");
+  });
+
+  it("tells filters from salt cells, and reads the shop's usual frequency", async () => {
+    const { cleaningKind, cleaningDefaultMonths, cleaningMonthsLabel } =
+      await import("../src/maintenance");
+    expect(cleaningKind({ key: "svc_filter_clean", name: "Clean filter" })).toBe("filter");
+    expect(cleaningKind({ key: "svc_salt_clean", name: "Clean salt cell" })).toBe("salt_cell");
+    expect(cleaningKind({ key: "x", name: "Acid wash" })).toBe("other");
+    const settings = {
+      maintenance: { cleaning_months: { svc_salt_clean: 6, svc_filter_clean: 5 } },
+    };
+    expect(cleaningDefaultMonths(settings, "svc_salt_clean")).toBe(6);
+    expect(cleaningDefaultMonths(settings, "svc_filter_clean")).toBe(3);
+    expect(cleaningDefaultMonths(null, "svc_filter_clean")).toBe(3);
+    expect(cleaningMonthsLabel(12)).toBe("Yearly");
+  });
+});

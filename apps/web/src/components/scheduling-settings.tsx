@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { CLEANING_MONTHS, cleaningMonthsLabel } from "@leakbook/core";
+import { saveCleaningDefaults } from "@/app/actions/maintenance";
 import { saveScheduling, type RouteResult } from "@/app/actions/routes";
 import { Segmented } from "./segmented";
-import { FieldError, SField, SettingsFields, SettingsForm } from "./settings-forms";
+import { FieldError, SField, SSwitch, SettingsFields, SettingsForm } from "./settings-forms";
 import { Button, GROUP_ROW, cx } from "./ui";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -153,5 +155,46 @@ export function ActionButton({
         )}
       </span>
     </span>
+  );
+}
+
+/**
+ * Settings › Scheduling › Regular cleanings (owner, 2026-10-19): how often the shop usually
+ * cleans filters and salt cells. New plans start with it; existing plans change only when
+ * asked.
+ */
+export function CleaningDefaultsForm({
+  types,
+}: {
+  types: { key: string; name: string; months: number }[];
+}) {
+  const [months, setMonths] = useState<Record<string, string>>(
+    Object.fromEntries(types.map((t) => [t.key, String(t.months)])),
+  );
+  return (
+    <SettingsForm action={saveCleaningDefaults} full>
+      {types.map((t) => (
+        <div key={t.key} className="space-y-1">
+          <input type="hidden" name="cleaning_key" value={t.key} />
+          <Segmented
+            label={t.name}
+            name={`months_${t.key}`}
+            value={months[t.key] ?? "3"}
+            onChange={(v) => setMonths({ ...months, [t.key]: v })}
+            fit
+            options={CLEANING_MONTHS.map((m) => ({
+              value: String(m),
+              label: cleaningMonthsLabel(m),
+            }))}
+          />
+          <FieldError name={`months_${t.key}`} />
+        </div>
+      ))}
+      <SSwitch
+        label="Also change existing plans"
+        name="apply_existing"
+        hint="Off: only new plans use these. On: every plan's cleaning changes to match; each keeps its next due date."
+      />
+    </SettingsForm>
   );
 }

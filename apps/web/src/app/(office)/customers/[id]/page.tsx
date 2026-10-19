@@ -9,6 +9,8 @@ import {
   formatSchedule,
   localDate,
   maintenanceSettings,
+  cleaningDefaultMonths,
+  cleaningKind,
   readingSummary,
   type ChemicalReading,
   type PoolType,
@@ -79,6 +81,8 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
       name: t.name,
       defaultPriceCents:
         priceBook.find((item) => item.component_type_key === t.key)?.price_cents ?? null,
+      defaultMonths: cleaningDefaultMonths(company.settings, t.key),
+      kind: cleaningKind(t),
     }));
   const { customer, properties, plans, jobs } = data;
   // Each pool's latest chemical log entry (owner, 2026-10-19).

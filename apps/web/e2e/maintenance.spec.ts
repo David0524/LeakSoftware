@@ -183,7 +183,10 @@ test("a plan's filter cleaning goes on the visit it's due", async ({ page }) => 
   await sheet.getByLabel("Price each time ($)").fill("40");
   await sheet.getByRole("button", { name: "Add Plan" }).click();
   const plan = page.getByTestId("plan");
-  await expect(plan).toContainText("Clean filter every 3 months · $40.00 each · next");
+  // With how long until it's due (owner, 2026-10-19).
+  await expect(plan).toContainText(
+    /Clean filter every 3 months · \$40\.00 each · (In 1 week|Due in 7 days)/,
+  );
 
   // Tomorrow's visit has the usual checklist; next week's has the filter cleaning too.
   const { data: visits } = await owner

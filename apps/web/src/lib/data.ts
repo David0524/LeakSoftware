@@ -1013,3 +1013,17 @@ export async function getChemicalPool(office: Office, propertyId: string) {
   ) as (Property & { customer: { id: string; name: string } | null }) | null;
   return row;
 }
+
+/** Scheduled cleanings on these plans, with their checklist item (owner, 2026-10-19). */
+export async function getPlanCleanings(office: Office, planIds: string[]) {
+  if (planIds.length === 0) return [];
+  const supabase = await db();
+  return must(
+    await supabase
+      .from("plan_cleaning")
+      .select("*, type:component_type!plan_cleaning_component_type_id_company_id_fkey(key, name)")
+      .eq("company_id", office.company.id)
+      .in("service_plan_id", planIds)
+      .is("deleted_at", null),
+  ) as (PlanCleaning & { type: { key: string; name: string } | null })[];
+}
