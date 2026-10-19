@@ -4,6 +4,7 @@
     import Supabase
     import SundeckStorage
     import SundeckSync
+    import SundeckTokens
     import SwiftUI
 
     @main
@@ -11,6 +12,7 @@
         @State private var app = AppEnvironment.make()
 
         init() {
+            BrandFonts.register()
             if let dsn = AppConfig.sentryDSN {
                 SentrySDK.start { options in
                     options.dsn = dsn

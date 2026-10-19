@@ -25,59 +25,8 @@
         var id: Self { self }
     }
 
-    /// The signed-in app: the jobs list, and everything pushed or presented from it.
-    struct MainView: View {
-        @Environment(Session.self) private var session
-        @Environment(AppEnvironment.self) private var app
-        @State private var path: [Route] = []
-        @State private var showNewJob = false
-        @State private var showWelcome = false
-        @State private var showReauth = false
-        @State private var editor: EditorSheet?
-
-        var body: some View {
-            NavigationStack(path: $path) {
-                JobsView(newJob: { showNewJob = true })
-                    .navigationDestination(for: Route.self) { route in
-                        switch route {
-                        case .job(let id): JobScreen(jobId: id)
-                        case .settings:
-                            SettingsView(showWelcome: { showWelcome = true }, showReauth: { showReauth = true })
-                        case .component(let jobId, let componentId):
-                            ComponentScreen(jobId: jobId, componentId: componentId)
-                        case .signature(let jobId, let quoteId): SignatureScreen(jobId: jobId, quoteId: quoteId)
-                        case .review(let jobId): ReviewScreen(jobId: jobId)
-                        }
-                    }
-            }
-            .environment(\.openRoute) { path.append($0) }
-            .environment(\.openEditor) { editor = $0 }
-            .sheet(item: $editor) { sheet in
-                switch sheet {
-                case .test(let jobId, let testId, let typeId, let componentId):
-                    TestEditor(jobId: jobId, testId: testId, typeId: typeId, componentId: componentId)
-                case .finding(let jobId, let findingId, let componentId):
-                    FindingEditor(jobId: jobId, findingId: findingId, componentId: componentId)
-                }
-            }
-            .sheet(isPresented: $showNewJob) {
-                if let company = session.company, let user = session.user {
-                    NewJobView(form: NewJobForm(sync: session.sync, company: company, userId: user.id)) { id in
-                        showNewJob = false
-                        path.append(.job(id))
-                    }
-                }
-            }
-            .sheet(isPresented: $showWelcome) { WelcomeView() }
-            .sheet(isPresented: $showReauth) { ReauthView() }
-            .onAppear {
-                if !app.walkthrough.launchSeen { showWelcome = true }
-            }
-        }
-    }
-
     extension EnvironmentValues {
-        /// Pushes a screen on the main stack.
+        /// Pushes a screen on the current tab's stack.
         @Entry var openRoute: (Route) -> Void = { _ in }
         /// Opens a test or finding editor as a sheet.
         @Entry var openEditor: (EditorSheet) -> Void = { _ in }

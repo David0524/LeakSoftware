@@ -26,7 +26,8 @@ let package = Package(
     ],
     targets: [
         .target(name: "SundeckCore"),
-        .target(name: "SundeckTokens"),
+        // Fonts/ is copied from brand/fonts by `pnpm tokens`.
+        .target(name: "SundeckTokens", resources: [.copy("Fonts")]),
         .target(
             name: "SundeckStorage",
             dependencies: [.product(name: "SQLCipher", package: "swift-sqlcipher")]
@@ -77,7 +78,8 @@ let package = Package(
         .testTarget(
             name: "SundeckAppTests",
             dependencies: [
-                "SundeckApp", "SundeckStorage", "SundeckSync", .product(name: "Supabase", package: "supabase-swift"),
+                "SundeckApp", "SundeckStorage", "SundeckSync", "SundeckTokens",
+                .product(name: "Supabase", package: "supabase-swift"),
                 .product(name: "Crypto", package: "swift-crypto"),
             ]
         ),

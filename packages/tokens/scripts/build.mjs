@@ -3,7 +3,7 @@
 //   tokens.css        CSS variables + Tailwind v4 theme for the web app
 //   apps/ios/Sources/SundeckTokens/Tokens.swift   the iPhone app (Swift)
 // Run: pnpm tokens   (CI fails if outputs are stale; see test/generated.test.ts)
-import { readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,6 +19,17 @@ export const swiftPath = join(
   "SundeckTokens",
   "Tokens.swift",
 );
+
+/** Brand fonts the iPhone app bundles (titles in Barlow; body text is the system font). */
+export const iosFonts = [
+  "BarlowSemiCondensed-SemiBold.ttf",
+  "BarlowSemiCondensed-Bold.ttf",
+  "BarlowSemiCondensed-ExtraBold.ttf",
+  "OFL-BarlowSemiCondensed.txt",
+].map((name) => ({
+  from: join(pkg, "..", "..", "brand", "fonts", name),
+  to: join(dirname(swiftPath), "Fonts", name),
+}));
 
 export function render() {
   const t = JSON.parse(readFileSync(source, "utf8"));
@@ -195,5 +206,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   writeFileSync(join(pkg, "src", "generated.ts"), ts);
   writeFileSync(join(pkg, "tokens.css"), css);
   writeFileSync(swiftPath, swift);
-  console.log("wrote src/generated.ts, tokens.css and the iPhone app's Tokens.swift");
+  mkdirSync(join(dirname(swiftPath), "Fonts"), { recursive: true });
+  for (const f of iosFonts) copyFileSync(f.from, f.to);
+  console.log("wrote src/generated.ts, tokens.css, and the iPhone app's Tokens.swift and fonts");
 }

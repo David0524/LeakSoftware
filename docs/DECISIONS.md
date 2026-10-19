@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-19 (owner, after installing the Swift build: "The mobile web app is beautiful. Please base the Swift build around that ... Do the same for the expo app, because we're going to have to push to Google Play too.")
+- **Both native apps follow the mobile website.** The Swift app and the Expo app (now also headed to Google Play) take the website's phone design and navigation: the floating tab bar (Today, Jobs, Schedule, Messages, More), large Barlow titles, soft cards, pill buttons and chips, and the job page split into Details, Checklist, Findings, Photos and Wrap-Up. The spec is `docs/design/2026-10-19-native-apps-follow-web.md`.
+- **Supersedes "No tab bar"** in the 2026-10-12 field app review and the phone app's Messages under Settings › Tools (2026-10-16): Messages, Schedule and Today become tabs in both apps.
+- **Order:** the redesign first (both apps), then S7, S8 and S9 of the Swift plan. S8's screens (Today, Schedule, Messages, More, Chemical Calculator) fill the new tabs.
+- **The iPhone build leaves Sentry's static framework out of the .ipa** (`scripts/build-ios.sh`): Sideloadly couldn't sign it, and its code is already linked into the app.
+
 ## 2026-10-18 (owner: "Approve all as recommended, start S0"; "I want the expo app to get fixes too")
 - **Swift plan approved** (`docs/plans/swift-app.md`), every decision as recommended: the pilot runs on the Expo app once enrollment is active and the Swift app replaces it as an App Store update after S9; the Expo app is the Android app meanwhile; iOS 18 and later; SQLCipher stays; the rules the app uses are ported to Swift and checked against fixtures from `packages/core`; iPhone builds and simulator tests on GitHub's macOS runners, xtool in cloud sessions; new field features go to the website and the Swift app.
 - **The Expo app keeps getting fixes** (bugs, wording, anything the pilot turns up) on iPhone and Android until the switch; only new features skip it.
