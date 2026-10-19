@@ -50,6 +50,9 @@
                             .listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
                     }
                     .listStyle(.insetGrouped)
+                } else {
+                    // Not loaded yet. Must be a real view: SwiftUI doesn't run .task on an empty one.
+                    Color.clear
                 }
             }
             .navigationTitle(form?.component.label ?? "Item")

@@ -158,13 +158,17 @@
     }
 
     @MainActor
-    func snapshot(_ name: String, dark: Bool = false, largeText: Bool = false, _ view: some View) async throws {
+    func snapshot(
+        _ name: String, dark: Bool = false, largeText: Bool = false, height: CGFloat? = nil, _ view: some View
+    ) async throws {
         // Package tests run in a bare xctest host with no app scene. With a scene, draw the window on
         // screen; without one, lay the window out off screen and render its layers.
         let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
         let window =
             scene.map { UIWindow(windowScene: $0) } ?? UIWindow(frame: CGRect(x: 0, y: 0, width: 393, height: 852))
         if let scene { window.frame = scene.coordinateSpace.bounds }
+        // A long screen in one picture (the job page with its tab).
+        if let height { window.frame.size.height = height }
         window.overrideUserInterfaceStyle = dark ? .dark : .light
         let content = view.environment(\.dynamicTypeSize, largeText ? .accessibility2 : .large)
         window.rootViewController = UIHostingController(rootView: content)
@@ -191,18 +195,22 @@
         #expect(!isBlank(image), "\(name) rendered blank")
     }
 
-    /// Whether every sampled pixel has the same color.
+    /// Whether every sampled pixel has the same color. Walks rows by bytesPerRow: rows are padded,
+    /// and reading the padding as pixels made blank pictures look drawn.
     @MainActor
     func isBlank(_ image: UIImage) -> Bool {
         guard let cg = image.cgImage, let data = cg.dataProvider?.data, let bytes = CFDataGetBytePtr(data) else {
             return true
         }
-        let step = max(1, CFDataGetLength(data) / 4096) & ~3
-        var first: (UInt8, UInt8, UInt8)?
-        for offset in stride(from: 0, to: CFDataGetLength(data) - 3, by: max(step, 4)) {
-            let pixel = (bytes[offset], bytes[offset + 1], bytes[offset + 2])
-            if let first, first != pixel { return false }
-            first = first ?? pixel
+        let pixelBytes = max(1, cg.bitsPerPixel / 8)
+        var first: [UInt8]?
+        for y in stride(from: 0, to: cg.height, by: max(1, cg.height / 64)) {
+            for x in stride(from: 0, to: cg.width, by: max(1, cg.width / 64)) {
+                let offset = y * cg.bytesPerRow + x * pixelBytes
+                let pixel = (0..<min(pixelBytes, 3)).map { bytes[offset + $0] }
+                if let first, first != pixel { return false }
+                first = first ?? pixel
+            }
         }
         return true
     }
@@ -242,10 +250,13 @@
         @Test func inspection() async throws {
             let env = try sampleEnvironment()
             let ids = try seedInspection(env)
-            try await snapshot("09-checklist", NavigationStack { JobScreen(jobId: ids.job) }.app(env))
-            try await snapshot("09-checklist-dark", dark: true, NavigationStack { JobScreen(jobId: ids.job) }.app(env))
-            try await snapshot("10-tests", NavigationStack { JobScreen(jobId: ids.job, tab: .tests) }.app(env))
-            try await snapshot("11-findings", NavigationStack { JobScreen(jobId: ids.job, tab: .findings) }.app(env))
+            try await snapshot("09-checklist", height: 3000, NavigationStack { JobScreen(jobId: ids.job) }.app(env))
+            try await snapshot(
+                "09-checklist-dark", dark: true, height: 3000, NavigationStack { JobScreen(jobId: ids.job) }.app(env))
+            try await snapshot(
+                "10-tests", height: 1800, NavigationStack { JobScreen(jobId: ids.job, tab: .tests) }.app(env))
+            try await snapshot(
+                "11-findings", height: 1800, NavigationStack { JobScreen(jobId: ids.job, tab: .findings) }.app(env))
             try await snapshot(
                 "12-component", NavigationStack { ComponentScreen(jobId: ids.job, componentId: ids.seam) }.app(env))
             try await snapshot(
