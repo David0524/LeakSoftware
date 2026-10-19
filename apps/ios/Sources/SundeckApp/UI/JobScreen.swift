@@ -133,6 +133,7 @@
                 }
             }
             .listStyle(.insetGrouped)
+            .mediaViewer(jobId: jobId)
             .onChange(of: focus) { old, _ in
                 if old == .fee { saveFee() }
                 if old == .notes { saveNotes() }

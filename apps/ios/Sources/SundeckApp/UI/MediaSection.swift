@@ -10,6 +10,8 @@
     extension EnvironmentValues {
         /// Signed links to uploaded captures. The app passes Supabase storage's createSignedURL.
         @Entry var mediaURLSigner: MediaURLSigner? = nil
+        /// Opens a capture's screen; set by `.mediaViewer(jobId:)` on the screen that shows a section.
+        @Entry var openMedia: (String) -> Void = { _ in }
     }
 
     /// Photos, videos and voice notes for a job or one part of it, with capture buttons.
@@ -23,6 +25,7 @@
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
         @Environment(\.openURL) private var openURL
+        @Environment(\.openMedia) private var openMedia
         @State private var media: [Media] = []
         @State private var busy: MediaKind?
         @State private var recording = false
@@ -61,12 +64,14 @@
                 if !media.isEmpty {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
                         ForEach(media, id: \.id) { item in
-                            NavigationLink {
-                                MediaScreen(jobId: target.jobId, mediaId: item.id)
+                            // Buttons, not NavigationLinks: several links in one List row become one
+                            // row-wide link. The host's `.mediaViewer()` pushes the screen.
+                            Button {
+                                openMedia(item.id)
                             } label: {
                                 MediaThumb(media: item)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.borderless)
                             .accessibilityLabel(CaptureRules.accessibilityLabel(item))
                             // The capture's screen has a Delete button; screen readers can also delete from here.
                             .accessibilityAction(named: "Delete") { deleting = item }
@@ -384,6 +389,23 @@
             case .unavailable:
                 break
             }
+        }
+    }
+
+    extension View {
+        /// Lets the `MediaSection`s on this screen open a capture's screen. Put it on the List, not
+        /// inside it: SwiftUI ignores navigation destinations declared inside a List.
+        func mediaViewer(jobId: String) -> some View { modifier(MediaViewer(jobId: jobId)) }
+    }
+
+    private struct MediaViewer: ViewModifier {
+        var jobId: String
+        @State private var opened: String?
+
+        func body(content: Content) -> some View {
+            content
+                .environment(\.openMedia) { opened = $0 }
+                .navigationDestination(item: $opened) { MediaScreen(jobId: jobId, mediaId: $0) }
         }
     }
 #endif

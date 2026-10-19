@@ -30,7 +30,7 @@
             NavigationStack {
                 Group {
                     if form != nil {
-                        editor
+                        editor.mediaViewer(jobId: jobId)
                     } else if loaded {
                         Form {
                             Section { Notice(kind: .warning, text: "This test isn’t on this phone.") }

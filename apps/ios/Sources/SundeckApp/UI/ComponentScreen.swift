@@ -177,6 +177,7 @@
                 .listRowInsets(EdgeInsets())
             }
             .listStyle(.insetGrouped)
+            .mediaViewer(jobId: jobId)
         }
 
         // MARK: - Writes
