@@ -3,56 +3,47 @@ import { HeaderButton } from "../../ui/components";
 import { stackScreenOptions } from "../../ui/navigation";
 import { ios } from "../../ui/theme";
 
+export const unstable_settings = { anchor: "(tabs)" };
+
 /**
- * iPhone follows iOS navigation (owner, 2026-10-14, as on the website): a translucent frosted
- * bar with large titles on the top-level screens that shrink as you scroll, the back button
- * named after the previous screen, and New Job, Test, and Finding as sheets. Android keeps its
- * navy app bar, arrow back, and full-screen pushes.
+ * The signed-in app: the five tabs (spec 4), and over them what covers the tab bar: Add/Edit
+ * Test and Finding (sheets on iPhone), the photo viewer, the signature and Review and Sign
+ * screens, the first-launch cards, and Sign In Again.
  */
 export default function AppLayout() {
+  const sheet = { presentation: ios ? ("modal" as const) : ("card" as const) };
   return (
-    <Stack screenOptions={stackScreenOptions}>
-      <Stack.Screen name="index" options={{ title: "Jobs", headerLargeTitleEnabled: true }} />
-      <Stack.Screen
-        name="jobs/new"
-        // A sheet on iPhone (swipe down or Cancel to close); a full screen on Android.
-        options={{ title: "New Job", presentation: ios ? "modal" : "card" }}
-      />
-      <Stack.Screen name="jobs/[id]/index" options={{ title: "Job" }} />
-      <Stack.Screen name="jobs/[id]/component/[componentId]" options={{ title: "Component" }} />
+    <Stack screenOptions={stackScreenOptions()}>
+      <Stack.Screen name="(tabs)" options={{ headerShown: false, title: "Back" }} />
       <Stack.Screen
         name="jobs/[id]/(edit)"
         // Test and Finding: a sheet with its own stack on iPhone (see (edit)/_layout.tsx), so a
         // photo opened from it stays in the sheet; a full-screen push on Android.
-        options={{ headerShown: false, presentation: ios ? "modal" : "card" }}
+        options={{ headerShown: false, ...sheet }}
       />
-      <Stack.Screen name="jobs/[id]/media/[mediaId]" options={{ title: "Photo" }} />
-      <Stack.Screen name="jobs/[id]/signature" options={{ title: "Signature" }} />
-      <Stack.Screen name="jobs/[id]/review" options={{ title: "Review and Sign" }} />
-      <Stack.Screen name="chemicals" options={{ title: "Chemical Calculator" }} />
+      <Stack.Screen
+        name="jobs/[id]/media/[mediaId]"
+        options={{ title: "Photo", headerLargeTitleEnabled: false }}
+      />
+      <Stack.Screen
+        name="jobs/[id]/signature"
+        options={{ title: "Signature", headerLargeTitleEnabled: false }}
+      />
+      <Stack.Screen
+        name="jobs/[id]/review"
+        options={{ title: "Review and Sign", headerLargeTitleEnabled: false }}
+      />
       <Stack.Screen
         name="welcome"
         // The first-launch cards (walkthrough, 2026-10-16): a sheet on iPhone.
-        options={{ title: "Welcome", presentation: ios ? "modal" : "card" }}
-      />
-      <Stack.Screen
-        name="messages/index"
-        options={{ title: "Messages", headerLargeTitleEnabled: true }}
-      />
-      <Stack.Screen name="messages/[id]" options={{ title: "Conversation" }} />
-      <Stack.Screen
-        name="messages/new"
-        options={{ title: "New Message", presentation: ios ? "modal" : "card" }}
-      />
-      <Stack.Screen
-        name="settings"
-        options={{ title: "Settings", headerLargeTitleEnabled: true }}
+        options={{ title: "Welcome", headerLargeTitleEnabled: false, ...sheet }}
       />
       <Stack.Screen
         name="reauth"
         options={{
           title: "Sign In Again",
           presentation: "modal",
+          headerLargeTitleEnabled: false,
           // An iOS sheet has no back button; Cancel closes it (Android has its own back).
           headerLeft: ios
             ? () => <HeaderButton title="Cancel" onPress={() => router.back()} />

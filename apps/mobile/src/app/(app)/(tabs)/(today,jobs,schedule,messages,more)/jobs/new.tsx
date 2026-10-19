@@ -1,5 +1,6 @@
-import { router, Stack } from "expo-router";
-import { useMemo, useState } from "react";
+import { router, useNavigation } from "expo-router";
+import { usePreventRemove } from "expo-router/react-navigation";
+import { useMemo, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import {
   POOL_TYPE_LABELS,
@@ -23,15 +24,14 @@ import {
   newJobTypes,
   type JobType,
 } from "@leakbook/core";
-import { useRows } from "../../../data/hooks";
-import { useCompany, useSession } from "../../../state/session";
+import { useRows } from "../../../../../data/hooks";
+import { useCompany, useSession } from "../../../../../state/session";
 import {
   Button,
   Card,
   Choice,
   Field,
   Group,
-  HeaderButton,
   ListRow,
   Notice,
   Screen,
@@ -39,11 +39,11 @@ import {
   T,
   Toggle,
   Segmented,
-} from "../../../ui/components";
-import { confirmDestructive } from "../../../ui/confirm";
-import { haptics } from "../../../ui/haptics";
-import { ShapePicker } from "../../../ui/ShapePicker";
-import { ios, space } from "../../../ui/theme";
+} from "../../../../../ui/components";
+import { confirmDestructive } from "../../../../../ui/confirm";
+import { haptics } from "../../../../../ui/haptics";
+import { ShapePicker } from "../../../../../ui/ShapePicker";
+import { space } from "../../../../../ui/theme";
 
 type When = "now" | "scheduled" | "later";
 
@@ -53,7 +53,7 @@ export default function NewJob() {
   // Owners can stop techs making jobs (owner setting, 2026-10-18).
   if (!canMakeJobs(membership?.role, company.settings))
     return (
-      <Screen>
+      <Screen title="New Job">
         <Notice tone="info">
           Your office makes new jobs. Ask an owner or admin to add this one.
         </Notice>
@@ -63,6 +63,7 @@ export default function NewJob() {
 }
 
 function NewJobForm() {
+  const navigation = useNavigation();
   const company = useCompany();
   const { services, user, membership } = useSession();
   const seesAll = seesAllJobs(membership?.role, company.settings);
@@ -146,15 +147,17 @@ function NewJobForm() {
     Object.values(form).some((v) => v.trim()),
   );
 
-  function cancel() {
-    if (!dirty) return router.back();
+  // New Job is a pushed screen (spec decision 3): leaving it with entries asks first.
+  const created = useRef(false);
+  usePreventRemove(dirty, ({ data }) => {
+    if (created.current) return navigation.dispatch(data.action);
     confirmDestructive({
-      title: "Discard this job?",
-      confirm: "Discard",
+      title: "Discard this new job?",
+      confirm: "Discard Job",
       cancel: "Keep Editing",
-      onConfirm: () => router.back(),
+      onConfirm: () => navigation.dispatch(data.action),
     });
-  }
+  });
 
   function save() {
     const input: NewJobInput = {
@@ -235,19 +238,12 @@ function NewJobForm() {
       return job;
     });
     haptics.success();
+    created.current = true;
     router.replace(`/jobs/${jobId}`);
   }
 
   return (
-    <Screen>
-      {ios ? (
-        <Stack.Screen
-          options={{
-            headerLeft: () => <HeaderButton title="Cancel" onPress={cancel} />,
-            gestureEnabled: !dirty,
-          }}
-        />
-      ) : null}
+    <Screen title="New Job" subtitle="Accepted quotes make their own repair jobs.">
       <Segmented label="Job" value={jobType} onChange={setJobType} options={newJobTypes(offered)} />
       <Section title="Customer">
         {selectedCustomer ? (

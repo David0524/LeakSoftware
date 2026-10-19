@@ -65,7 +65,7 @@ export default function SignIn() {
             onSubmitEditing={submit}
           />
         </FieldGroup>
-        <Button title="Sign In" onPress={submit} loading={busy} />
+        <Button title="Sign In" wide onPress={submit} loading={busy} />
         <Button title="Create an Account" kind="quiet" onPress={() => router.push("/sign-up")} />
         {__DEV__ ? (
           <Notice>

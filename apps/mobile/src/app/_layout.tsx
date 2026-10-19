@@ -1,14 +1,14 @@
 import { useFonts } from "expo-font";
-import { Stack, type ErrorBoundaryProps } from "expo-router";
+import { router, Stack, type ErrorBoundaryProps } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { initMonitoring, reportError } from "../lib/monitoring";
 import { SessionProvider, useSession } from "../state/session";
 import { Button, T } from "../ui/components";
-import { color, ios, space } from "../ui/theme";
+import { appearance, color, space } from "../ui/theme";
 
 initMonitoring();
 void SplashScreen.preventAutoHideAsync();
@@ -34,7 +34,7 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
     >
       <T variant="title">Something went wrong</T>
       <T>This screen didn’t load. Your work is saved on this phone and will still sync.</T>
-      <Button title="Try Again" onPress={() => void retry()} />
+      <Button title="Try Again" wide onPress={() => void retry()} />
     </View>
   );
 }
@@ -51,6 +51,16 @@ const BRAND_FONTS = {
 
 export default function RootLayout() {
   const [loaded, error] = useFonts(BRAND_FONTS);
+  // Light by default; Dark when chosen in More › On This Device (spec 2.2). A change redraws
+  // every screen in the new colors and returns to More, where the choice was made.
+  const scheme = useSyncExternalStore(appearance.subscribe, () => appearance.scheme);
+  const first = useRef(scheme);
+  useEffect(() => {
+    if (scheme === first.current) return;
+    first.current = scheme;
+    const t = setTimeout(() => router.navigate("/more"), 0);
+    return () => clearTimeout(t);
+  }, [scheme]);
 
   useEffect(() => {
     if (loaded || error) void SplashScreen.hideAsync();
@@ -61,9 +71,8 @@ export default function RootLayout() {
     // Swipe actions on list rows need the gesture handler's root.
     <GestureHandlerRootView style={StyleSheet.absoluteFill}>
       <SessionProvider>
-        {/* Dark on iPhone's light navigation bar, light on Android's navy one. */}
-        <StatusBar style={ios ? "dark" : "light"} />
-        <RootStack />
+        <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+        <RootStack key={scheme} />
       </SessionProvider>
     </GestureHandlerRootView>
   );

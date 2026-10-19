@@ -206,6 +206,9 @@
     @MainActor
     enum Chrome {
         static func install() {
+            // The title face first: the bar's fonts are made from it (and screenshots don't run
+            // the app's init). Registering twice does nothing.
+            BrandFonts.register()
             let text = UIColor(Tokens.Role.text)
             let link = UIColor(Tokens.Role.link)
             let large: [NSAttributedString.Key: Any] = [

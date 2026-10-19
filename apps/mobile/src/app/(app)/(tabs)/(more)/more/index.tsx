@@ -1,80 +1,50 @@
 import Constants from "expo-constants";
 import { router } from "expo-router";
-import { formatPhone, offersPool, toE164, roleLabel } from "@leakbook/core";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Linking, View } from "react-native";
-import { call } from "../../data/reports";
-import { API_URL } from "../../lib/config";
-import { useSession, useSyncStatus } from "../../state/session";
+import { isManagerRole, offersPool } from "@leakbook/core";
+import { useState, useSyncExternalStore } from "react";
+import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, View } from "react-native";
+import { call } from "../../../../../data/reports";
+import { API_URL } from "../../../../../lib/config";
+import { useSession, useSyncStatus } from "../../../../../state/session";
+import { useWalkthrough } from "../../../../../state/walkthrough";
+import { useDirectionsChoice, type DirectionsChoice } from "../../../../../state/directions";
 import {
   Button,
   Card,
-  Choice,
+  Chevron,
   Field,
   Group,
   ListRow,
-  Notice,
   Screen,
   Section,
+  Segmented,
   T,
-} from "../../ui/components";
-import { confirmDestructive } from "../../ui/confirm";
-import { color, ios, space } from "../../ui/theme";
-import { useWalkthrough } from "../../state/walkthrough";
+} from "../../../../../ui/components";
+import { confirmDestructive, chooseAction } from "../../../../../ui/confirm";
+import { syncSummary } from "../../../../../ui/SyncBar";
+import { appearance, color, space, type Scheme } from "../../../../../ui/theme";
+
+const DIRECTIONS: { value: DirectionsChoice; label: string }[] = [
+  { value: "automatic", label: "Automatic" },
+  { value: "apple", label: "Apple Maps" },
+  { value: "google", label: "Google Maps" },
+];
 
 /**
- * My mobile number (company texting): calls I place from the company number ring it first,
- * and incoming calls can ring it. Saved to my profile on the server.
+ * More (spec 5.8): the sections that don't have a tab, then this person's account, this
+ * phone's settings, Sync, Help, Sign Out and Delete My Account.
  */
-function MyPhone() {
-  const { services } = useSession();
-  const [phone, setPhone] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  useEffect(() => {
-    services.sync
-      .myPhone()
-      .then((p) => setPhone((now) => now ?? (p ? formatPhone(toE164(p) ?? p) : "")))
-      .catch(() => {});
-  }, [services]);
-  async function save() {
-    const e164 = toE164(phone);
-    if (!e164) return Alert.alert("Check the number", "Enter a US mobile number.");
-    setSaving(true);
-    try {
-      await services.sync.saveMyPhone(e164);
-      setPhone(formatPhone(e164));
-      Alert.alert("Saved", "Calls you place from Messages ring this number first.");
-    } catch (e) {
-      Alert.alert("Couldn’t save", e instanceof Error ? e.message : String(e));
-    } finally {
-      setSaving(false);
-    }
-  }
-  return (
-    <Section title="My mobile number">
-      <Field
-        label="Mobile"
-        value={phone ?? ""}
-        onChangeText={setPhone}
-        keyboardType="phone-pad"
-        textContentType="telephoneNumber"
-        autoComplete="tel"
-        hint="Calls you place from Messages ring here first, then connect from the company number."
-      />
-      <Button title="Save Number" kind="secondary" onPress={() => void save()} loading={saving} />
-    </Section>
-  );
-}
-
-/** A note under a grouped list, lined up with the rows' text on iPhone. */
-const footer = { paddingHorizontal: ios ? space["4"] : 0 };
-
-export default function Settings() {
+export default function More() {
   const { services, user, company, companies, membership, setActiveCompany, signOut } =
     useSession();
   const walkthrough = useWalkthrough();
   const status = useSyncStatus();
-  const { sync, encrypted } = services;
+  const sync = syncSummary(status);
+  const manager = isManagerRole(membership?.role);
+  const scheme = useSyncExternalStore(appearance.subscribe, () => appearance.scheme);
+  const [directions, setDirections] = useDirectionsChoice();
+  const team = services.sync.team();
+  const me = team.find((t) => t.id === user?.id);
 
   function confirmSignOut() {
     const changes = status.pending + status.problems.length;
@@ -97,134 +67,140 @@ export default function Settings() {
     });
   }
 
-  const [deleting, setDeleting] = useState(false);
-
-  /** Delete My Account (App Store rule 5.1.1(v)). The server decides: now, or a request. */
-  function confirmDelete() {
-    confirmDestructive({
-      title: "Delete your account?",
-      message:
-        "This removes your sign-in and the work on this phone. Jobs, reports, and invoices stay with the shop. If you’re the shop’s only owner, the shop’s data is deleted too, within 30 days.",
-      confirm: "Delete Account",
-      onConfirm: () => {
-        setDeleting(true);
-        void call<{ status: "deleted" | "requested"; message?: string }>("/api/account/delete", {})
-          .then(async (r) => {
-            if (r.status === "deleted") return signOut();
-            Alert.alert("Request sent", r.message ?? "We’ll email you when it’s done.");
-          })
-          .catch((e: unknown) =>
-            Alert.alert("Couldn’t delete", e instanceof Error ? e.message : String(e)),
-          )
-          .finally(() => setDeleting(false));
-      },
-    });
-  }
-
   const open = (path: string) => API_URL && void Linking.openURL(`${API_URL}${path}`);
-
-  const last = status.lastSyncedAt ? new Date(status.lastSyncedAt).toLocaleString() : "Never";
+  const version = Constants.expoConfig?.version ?? "dev";
+  const build = Constants.nativeBuildVersion;
 
   return (
-    <Screen>
-      <Section title="Account" grouped>
+    <Screen title="More" subtitle={me?.full_name ?? user?.email ?? undefined}>
+      <Group>
+        <ListRow title="Customers" onPress={() => router.push("/customers")} />
+        <ListRow title="Invoices" onPress={() => router.push("/invoices")} />
+        {company && offersPool(company.settings) ? (
+          <ListRow title="Chemical Calculator" onPress={() => router.push("/chemicals")} />
+        ) : null}
+        {manager ? <ListRow title="Settings" onPress={() => router.push("/settings")} /> : null}
+      </Group>
+
+      <Section title="Your account">
         <Group>
-          <ListRow
-            title={user?.email ?? ""}
-            subtitle={`${company?.name ?? ""} · ${roleLabel(membership?.role)}`}
-          />
           {API_URL ? (
             // Set up on the website, where the code can be scanned (owner, 2026-10-16).
             <ListRow
               title="Two-Step Sign-In"
+              subtitle="A code from your phone after your password"
               accessibilityRole="link"
               onPress={() => open("/more/two-step")}
             />
           ) : null}
-          {/* This phone's details. */}
-          <ListRow
-            title="Local data"
-            detail={encrypted ? "Encrypted" : "Not encrypted (Expo Go preview)"}
-          />
-          <ListRow title="Device ID" subtitle={sync.store.deviceId} />
-          <ListRow title="App version" detail={Constants.expoConfig?.version ?? "dev"} />
-        </Group>
-        {companies.length > 1 ? (
-          <Choice
-            label="Company"
-            options={companies.map((c) => ({ value: c.id, label: c.name }))}
-            value={company?.id ?? null}
-            onChange={setActiveCompany}
-          />
-        ) : null}
-      </Section>
-
-      <Section title="Sync" grouped>
-        <Group>
-          <ListRow title="Last synced" detail={last} />
-          <ListRow title="Waiting to sync" detail={String(status.pending)} />
-          <ListRow title="Waiting to upload" detail={String(status.uploads.waiting)} />
-        </Group>
-        {status.phase === "offline" ? (
-          <T variant="muted" style={footer}>
-            This phone is offline. Changes are saved here and sync later.
-          </T>
-        ) : null}
-        {status.error ? (
-          <T variant="muted" style={footer}>
-            Last error: {status.error}
-          </T>
-        ) : null}
-        {status.uploads.lastError ? (
-          <T variant="muted" style={footer}>
-            Last upload error: {status.uploads.lastError}
-          </T>
-        ) : null}
-        {status.phase === "signed_out" ? (
-          <Notice tone="warning">
-            Your sign-in expired. Sign in again to keep syncing; nothing on this phone is lost.
-          </Notice>
-        ) : null}
-        {status.phase === "signed_out" ? (
-          <Button title="Sign In Again" onPress={() => router.push("/reauth")} />
-        ) : (
-          <Button
-            title="Sync Now"
-            kind="secondary"
-            onPress={() => {
-              sync.retryUploads();
-            }}
-            loading={status.phase === "syncing"}
-          />
-        )}
-      </Section>
-
-      {status.problems.length > 0 ? (
-        <Section title="Changes that could not be saved">
-          {status.problems.map((p) => (
-            <Card key={p.seq}>
-              <T variant="strong">
-                {p.table.replace(/_/g, " ")}: {p.fields.join(", ")}
-              </T>
-              <T variant="muted">{p.error}</T>
-              <Button
-                title="Discard This Change"
-                kind="danger"
-                onPress={() => sync.discardProblem(p.seq)}
-              />
-            </Card>
-          ))}
-        </Section>
-      ) : null}
-
-      <Section title="Tools" grouped>
-        <Group>
-          <ListRow title="Messages" chevron onPress={() => router.push("/messages")} />
-          {company && offersPool(company.settings) ? (
+          <ListRow title="My Mobile Number" onPress={() => router.push("/more/phone")} />
+          {companies.length > 1 ? (
             <ListRow
-              title="Chemical Calculator"
-              chevron
-              onPress={() => router.push("/chemicals")}
+              title="Company"
+              detail={company?.name ?? ""}
+              onPress={() =>
+                chooseAction({
+                  title: "Company",
+                  actions: companies.map((c) => ({
+                    label: c.id === company?.id ? `${c.name} ✓` : c.name,
+                    onPress: () => setActiveCompany(c.id),
+                  })),
+                })
+              }
+            />
+          ) : (
+            <ListRow title="Company" detail={company?.name ?? ""} />
+          )}
+        </Group>
+      </Section>
+
+      <Section title="On this device">
+        <Group>
+          <View style={styles.controlRow}>
+            <T style={{ flex: 1 }}>Appearance</T>
+            <Segmented
+              fill={false}
+              minSegmentWidth={80}
+              accessibilityLabel="Appearance"
+              options={[
+                { value: "light", label: "Light" },
+                { value: "dark", label: "Dark" },
+              ]}
+              value={scheme}
+              onChange={(v: Scheme) => appearance.set(v)}
+            />
+          </View>
+          <View style={styles.controlRow}>
+            <T variant="bodyEmphasis" style={{ flex: 1 }}>
+              Directions open in
+            </T>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Directions open in, ${DIRECTIONS.find((d) => d.value === directions)?.label}`}
+              onPress={() =>
+                chooseAction({
+                  title: "Directions open in",
+                  actions: DIRECTIONS.map((d) => ({
+                    label: d.value === directions ? `${d.label} ✓` : d.label,
+                    onPress: () => setDirections(d.value),
+                  })),
+                })
+              }
+              style={[styles.select, { borderColor: color.controlBorder }]}
+            >
+              <T style={{ color: color.link }}>
+                {DIRECTIONS.find((d) => d.value === directions)?.label}
+              </T>
+              <Chevron />
+            </Pressable>
+          </View>
+        </Group>
+      </Section>
+
+      <Section title="Sync">
+        <Group>
+          <ListRow
+            onPress={() => router.push("/more/sync")}
+            leading={
+              status.problems.length > 0 ? (
+                <View style={[styles.dot, { backgroundColor: color.fail }]} />
+              ) : undefined
+            }
+          >
+            <T>Sync</T>
+            <T variant="secondary" muted>
+              {sync.label}
+            </T>
+          </ListRow>
+        </Group>
+      </Section>
+
+      <Section title="Help">
+        <Group>
+          <ListRow
+            title="Help and Support"
+            accessibilityRole="link"
+            onPress={() => void Linking.openURL("mailto:support@sundeckpro.com")}
+          />
+          {API_URL ? (
+            <ListRow
+              title="Privacy Policy"
+              accessibilityRole="link"
+              onPress={() => open("/privacy")}
+            />
+          ) : null}
+          {API_URL ? (
+            <ListRow
+              title="Terms of Service"
+              accessibilityRole="link"
+              onPress={() => open("/terms")}
+            />
+          ) : null}
+          {API_URL ? (
+            <ListRow
+              title="System Status"
+              accessibilityRole="link"
+              onPress={() => open("/status")}
             />
           ) : null}
           {/* Every tip comes back, starting with the welcome cards (walkthrough, 2026-10-16). */}
@@ -236,63 +212,97 @@ export default function Settings() {
               router.push("/welcome");
             }}
           />
+          <ListRow title="Version" detail={build ? `${version} (${build})` : version} />
         </Group>
       </Section>
 
-      <MyPhone />
+      <Group>
+        <ListRow title="Sign Out" tone="destructive" onPress={confirmSignOut} />
+      </Group>
 
-      {API_URL ? (
-        <Section title="Help" grouped>
-          <Group>
-            <ListRow
-              title="Status and Support"
-              accessibilityRole="link"
-              onPress={() => open("/status")}
-            />
-            <ListRow
-              title="Privacy Policy"
-              accessibilityRole="link"
-              onPress={() => open("/privacy")}
-            />
-            <ListRow
-              title="Terms of Service"
-              accessibilityRole="link"
-              onPress={() => open("/terms")}
-            />
-          </Group>
-        </Section>
-      ) : null}
-
-      {ios ? (
-        // iPhone: red action rows, as at the end of iOS Settings screens.
-        <>
-          <Group>
-            <ListRow title="Sign Out" tone="destructive" onPress={confirmSignOut} />
-          </Group>
-          {API_URL ? (
-            <Group>
-              <ListRow
-                title="Delete My Account"
-                tone="destructive"
-                onPress={deleting ? undefined : confirmDelete}
-                trailing={deleting ? <ActivityIndicator color={color.fail} /> : undefined}
-              />
-            </Group>
-          ) : null}
-        </>
-      ) : (
-        <View style={{ gap: space["2"] }}>
-          <Button title="Sign Out" kind="danger" onPress={confirmSignOut} />
-          {API_URL ? (
-            <Button
-              title="Delete My Account"
-              kind="quiet"
-              loading={deleting}
-              onPress={confirmDelete}
-            />
-          ) : null}
-        </View>
-      )}
+      {API_URL ? <DeleteAccount onDeleted={signOut} /> : null}
     </Screen>
   );
 }
+
+/**
+ * Delete My Account (App Store rule 5.1.1(v); Google Play's account deletion rule): a card
+ * that opens to explain, asks for DELETE, then asks the server. It deletes now, or records a
+ * request when the shop's data has to go too.
+ */
+function DeleteAccount({ onDeleted }: { onDeleted: () => Promise<void> }) {
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  function remove() {
+    setDeleting(true);
+    void call<{ status: "deleted" | "requested"; message?: string }>("/api/account/delete", {})
+      .then(async (r) => {
+        if (r.status === "deleted") return onDeleted();
+        Alert.alert("Request sent", r.message ?? "We’ll email you when it’s done.");
+      })
+      .catch((e: unknown) =>
+        Alert.alert("Couldn’t delete", e instanceof Error ? e.message : String(e)),
+      )
+      .finally(() => setDeleting(false));
+  }
+  return (
+    <Card padding={0} style={{ paddingHorizontal: space["4"], paddingVertical: 6 }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        onPress={() => setOpen((o) => !o)}
+        style={styles.disclosure}
+      >
+        <T variant="bodyMedium" style={{ color: color.fail, flex: 1 }}>
+          Delete My Account
+        </T>
+        {deleting ? <ActivityIndicator color={color.fail} /> : null}
+      </Pressable>
+      {open ? (
+        <View style={{ gap: space["3"], paddingBottom: space["3"] }}>
+          <T variant="secondary" muted>
+            Removes your sign-in. The jobs, reports, and invoices you worked on stay with the shop.
+            If you’re the shop’s only owner, we’ll delete the shop’s data too, within 30 days.
+          </T>
+          <Field
+            label="Type DELETE to confirm"
+            value={typed}
+            onChangeText={setTyped}
+            autoCapitalize="characters"
+            autoCorrect={false}
+          />
+          <Button
+            title="Delete My Account"
+            kind="danger"
+            disabled={typed.trim() !== "DELETE"}
+            loading={deleting}
+            onPress={remove}
+          />
+        </View>
+      ) : null}
+    </Card>
+  );
+}
+
+const styles = StyleSheet.create({
+  controlRow: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space["3"],
+    paddingHorizontal: space["4"],
+    paddingVertical: 10,
+  },
+  select: {
+    minHeight: 44,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: space["3"],
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space["2"],
+  },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  disclosure: { minHeight: 48, flexDirection: "row", alignItems: "center" },
+});

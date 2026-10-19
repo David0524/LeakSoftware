@@ -1,5 +1,12 @@
 import { useMemo } from "react";
-import type { Customer, Job, Property } from "@leakbook/core";
+import {
+  inRouteOrder,
+  lockReason,
+  type Customer,
+  type Job,
+  type LockReason,
+  type Property,
+} from "@leakbook/core";
 import { useRows } from "./hooks";
 
 export interface JobView extends Job {
@@ -24,4 +31,17 @@ export function useJobViews(companyId: string): JobView[] {
       };
     });
   }, [jobs, properties, customers]);
+}
+
+/** A day's jobs in route order (the shared routing rules: time, then saved order). */
+export function inRouteOrderViews(jobs: JobView[]): JobView[] {
+  const byId = new Map(jobs.map((j) => [j.id, j]));
+  return inRouteOrder(jobs.map((j) => ({ ...j, property: j.property ?? null }))).map((j) =>
+    byId.get(j.id)!,
+  );
+}
+
+/** Why a stop can't be moved ("Fixed time", "Two techs"), if it can't. */
+export function jobLock(job: JobView): LockReason | null {
+  return lockReason({ ...job, property: job.property ?? null });
 }

@@ -1,13 +1,13 @@
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import {
   saveChecklistResult,
   useInspectionConfig,
   useJobInspection,
-} from "../../../../../data/inspection";
-import { useCompany, useSession } from "../../../../../state/session";
-import { MediaSection } from "../../../../../features/media/MediaSection";
+} from "../../../../../../../data/inspection";
+import { useCompany, useSession } from "../../../../../../../state/session";
+import { MediaSection } from "../../../../../../../features/media/MediaSection";
 import {
   Button,
   Field,
@@ -17,21 +17,21 @@ import {
   Screen,
   Section,
   Segmented,
-} from "../../../../../ui/components";
-import { OutcomeChip } from "../../../../../features/inspection/OutcomeChip";
+} from "../../../../../../../ui/components";
+import { OutcomeChip } from "../../../../../../../features/inspection/OutcomeChip";
 import {
   confirmDeleteFinding,
   confirmDeleteTest,
   confirmRemoveComponent,
-} from "../../../../../features/inspection/remove";
-import { haptics } from "../../../../../ui/haptics";
+} from "../../../../../../../features/inspection/remove";
+import { haptics } from "../../../../../../../ui/haptics";
 import {
   currentVerdict,
   verdictOptions,
   verdictValues,
   type Verdict,
-} from "../../../../../features/inspection/verdict";
-import { space } from "../../../../../ui/theme";
+} from "../../../../../../../features/inspection/verdict";
+import { space } from "../../../../../../../ui/theme";
 
 /** One checklist item: its verdict and where, notes, photos, tests, and findings. */
 export default function ComponentScreen() {
@@ -75,8 +75,7 @@ export default function ComponentScreen() {
   }
 
   return (
-    <Screen>
-      <Stack.Screen options={{ title: comp.label }} />
+    <Screen title={comp.label}>
       <Segmented
         label="Result"
         options={verdictOptions(type)}

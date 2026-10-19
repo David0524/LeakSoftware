@@ -90,7 +90,7 @@ export default function Welcome() {
         ))}
       </View>
       <View style={{ paddingHorizontal: space["4"] }}>
-        <Button title={last ? "Get Started" : "Continue"} onPress={next} />
+        <Button title={last ? "Get Started" : "Continue"} wide onPress={next} />
       </View>
     </View>
   );

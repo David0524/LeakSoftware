@@ -1,6 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSyncStatus } from "../data/hooks";
-import { color, face, space } from "./theme";
+import type { SyncStatus } from "../lib/sync-service";
+import { Chevron } from "./components";
+import { color, MAX_TEXT_SCALE, minTap, shape, space, tint, type } from "./theme";
 
 function ago(ms: number): string {
   const s = Math.round((Date.now() - ms) / 1000);
@@ -17,17 +19,43 @@ function files(n: number, allPhotos: boolean): string {
 /**
  * One-line sync state under the header, shown only when something needs attention: offline,
  * changes or files waiting, problems, or signed out. When everything is saved it takes no
- * space (Settings still shows the full sync state). Tapping it opens Settings for details.
+ * space (More › Sync still shows the full sync state). Tapping it opens More › Sync.
  */
 export function SyncBar({
   onPress,
-  inset = false,
 }: {
   onPress: () => void;
-  /** iPhone: a rounded row at the top of the inset grouped list instead of a full-width bar. */
+  /** @deprecated The bar is a capsule on every platform now. */
   inset?: boolean;
 }) {
-  const s = useSyncStatus();
+  const { label, dot, healthy } = syncSummary(useSyncStatus());
+  if (healthy) return null;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Sync status: ${label}`}
+      accessibilityHint="Opens Sync"
+      onPress={onPress}
+      style={({ pressed }) => [styles.bar, { backgroundColor: tint(dot, pressed ? 0.18 : 0.1) }]}
+    >
+      <View style={[styles.dot, { backgroundColor: dot }]} />
+      <Text
+        style={[type.secondary, { color: color.text, flex: 1 }]}
+        numberOfLines={2}
+        maxFontSizeMultiplier={MAX_TEXT_SCALE}
+      >
+        {label}
+      </Text>
+      <Chevron />
+    </Pressable>
+  );
+}
+
+/**
+ * The sync state in words with its tone color (the bar's dot). `healthy` when everything is
+ * saved, so the bar hides; More › Sync still shows the words.
+ */
+export function syncSummary(s: SyncStatus): { label: string; dot: string; healthy: boolean } {
   const waiting = s.pending > 0 || s.uploads.waiting > 0;
   const healthy =
     s.problems.length === 0 &&
@@ -35,7 +63,6 @@ export function SyncBar({
     s.lastSyncedAt != null &&
     !waiting &&
     (s.phase === "idle" || s.phase === "syncing");
-  if (healthy) return null;
   let dot: string = color.pass;
   let label = s.lastSyncedAt
     ? `All changes saved to the office · ${ago(s.lastSyncedAt)}`
@@ -77,19 +104,7 @@ export function SyncBar({
     label = `${files(s.uploads.waiting, s.uploads.allPhotos)} waiting to upload`;
   }
 
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Sync status: ${label}`}
-      onPress={onPress}
-      style={[styles.bar, inset && styles.inset]}
-    >
-      <View style={[styles.dot, { backgroundColor: dot }]} />
-      <Text style={styles.text} numberOfLines={2}>
-        {label}
-      </Text>
-    </Pressable>
-  );
+  return { label, dot, healthy };
 }
 
 const styles = StyleSheet.create({
@@ -97,14 +112,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: space["2"],
-    paddingHorizontal: space["4"],
-    paddingVertical: space["2"],
-    backgroundColor: color.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-    minHeight: 44,
+    paddingLeft: space["4"],
+    paddingRight: space["3"],
+    paddingVertical: space["1"],
+    borderRadius: shape.pill,
+    minHeight: minTap,
   },
-  inset: { borderBottomWidth: 0, borderRadius: 12 },
   dot: { width: 10, height: 10, borderRadius: 5 },
-  text: { ...face.medium, fontSize: 15, lineHeight: 20, color: color.text, flex: 1 },
 });

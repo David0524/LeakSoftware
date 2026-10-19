@@ -1,10 +1,10 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Alert, TextInput } from "react-native";
-import { useRow } from "../../../data/hooks";
-import { sendCompanyText } from "../../../data/texting";
-import { Button, Screen, T } from "../../../ui/components";
-import { color } from "../../../ui/theme";
+import { useRow } from "../../../../../data/hooks";
+import { sendCompanyText } from "../../../../../data/texting";
+import { Button, Screen, T } from "../../../../../ui/components";
+import { color } from "../../../../../ui/theme";
 
 /** The first text to a customer from the company number; then it's a conversation. */
 export default function NewMessage() {
@@ -29,7 +29,7 @@ export default function NewMessage() {
   }
 
   return (
-    <Screen>
+    <Screen title="New Message">
       <T variant="muted">
         To {customer?.name ?? "the customer"}
         {customer?.phone ? `, ${customer.phone}` : ""}. From the company number.

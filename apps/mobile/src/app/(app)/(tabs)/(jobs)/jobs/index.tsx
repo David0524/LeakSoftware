@@ -1,46 +1,127 @@
-import { router, Stack } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { canMakeJobs, formatAddress, formatSchedule, groupJobs } from "@leakbook/core";
-import { useJobViews, type JobView } from "../../data/jobs";
-import { useCompany, useSession } from "../../state/session";
-import { HeaderButton, StatusChip, T } from "../../ui/components";
-import { haptics } from "../../ui/haptics";
-import { Icon } from "../../ui/Icon";
-import { SyncBar } from "../../ui/SyncBar";
-import { ScreenTip } from "../../ui/Tip";
-import { useWalkthrough } from "../../state/walkthrough";
-import { color, font, ios, radius, space, tint, touch } from "../../ui/theme";
+import { router } from "expo-router";
+import { useMemo, useState } from "react";
+import { Animated, Pressable, RefreshControl, StyleSheet, View } from "react-native";
+import {
+  JOB_TYPE_LABELS,
+  canMakeJobs,
+  formatAddress,
+  formatSchedule,
+  type JobStatus,
+} from "@leakbook/core";
+import { useRows } from "../../../../../data/hooks";
+import { useJobViews, type JobView } from "../../../../../data/jobs";
+import type { ReportRecord } from "../../../../../data/reports";
+import { useCompany, useSession } from "../../../../../state/session";
+import {
+  Chevron,
+  Empty,
+  FilterPills,
+  HeaderButton,
+  SearchField,
+  Segmented,
+  StatusChip,
+  T,
+  useScreenChrome,
+} from "../../../../../ui/components";
+import { haptics } from "../../../../../ui/haptics";
+import { SyncBar } from "../../../../../ui/SyncBar";
+import { ScreenTip } from "../../../../../ui/Tip";
+import { color, shape, space } from "../../../../../ui/theme";
 
+const OPEN: JobStatus[] = [
+  "unscheduled",
+  "scheduled",
+  "in_progress",
+  "report_sent",
+  "quote_sent",
+  "quote_accepted",
+  "invoiced",
+];
+
+/** The website's status filters, in its order (spec 5.2). */
+const FILTERS: { value: string; label: string; statuses: JobStatus[] | null }[] = [
+  { value: "open", label: "Open", statuses: OPEN },
+  { value: "unscheduled", label: "Unscheduled", statuses: ["unscheduled"] },
+  { value: "scheduled", label: "Scheduled", statuses: ["scheduled"] },
+  { value: "in_progress", label: "In Progress", statuses: ["in_progress"] },
+  {
+    value: "follow_up",
+    label: "Waiting on Customer",
+    statuses: ["report_sent", "quote_sent", "quote_accepted", "invoiced"],
+  },
+  { value: "paid", label: "Paid", statuses: ["paid"] },
+  { value: "done", label: "Done", statuses: ["done"] },
+  { value: "canceled", label: "Canceled", statuses: ["canceled"] },
+  { value: "all", label: "All", statuses: null },
+];
+
+const REPORT_FILTERS = [
+  { value: "all", label: "All" },
+  { value: "sent", label: "Sent" },
+  { value: "draft", label: "Drafts" },
+];
+
+type View_ = "jobs" | "reports";
+
+/**
+ * Jobs (spec 5.2) and Reports (5.3) in one tab: a segmented control switches the list and the
+ * large title. The jobs list filters as you type from the phone's database.
+ */
 export default function Jobs() {
   const company = useCompany();
   const { services, membership } = useSession();
-  // Owners can stop techs making jobs (owner setting, 2026-10-18).
   const canAdd = canMakeJobs(membership?.role, company.settings);
   const jobs = useJobViews(company.id);
+  const reports = useRows<ReportRecord>("report", company.id);
+  const [view, setView] = useState<View_>("jobs");
+  const [filter, setFilter] = useState("open");
+  const [reportFilter, setReportFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  const insets = useSafeAreaInsets();
   const now = new Date();
 
-  // The first time the app opens: the three welcome cards (walkthrough, 2026-10-16).
-  const { launchSeen } = useWalkthrough();
-  const welcomed = useRef(false);
-  useEffect(() => {
-    if (launchSeen || welcomed.current) return;
-    welcomed.current = true;
-    router.push("/welcome");
-  }, [launchSeen]);
+  const shown = useMemo(() => {
+    const statuses = FILTERS.find((f) => f.value === filter)?.statuses;
+    const q = search.trim().toLowerCase().replace(/^#/, "");
+    return jobs
+      .filter((j) => !j.deleted_at)
+      .filter((j) => !statuses || statuses.includes(j.status))
+      .filter(
+        (j) =>
+          !q ||
+          String(j.number ?? "").includes(q) ||
+          (j.customer?.name ?? "").toLowerCase().includes(q),
+      )
+      .sort(
+        (a, b) =>
+          (Date.parse(a.scheduled_start ?? "") || Infinity) -
+            (Date.parse(b.scheduled_start ?? "") || Infinity) || (b.number ?? 0) - (a.number ?? 0),
+      );
+  }, [jobs, filter, search]);
 
-  const sections = useMemo(() => {
-    const g = groupJobs(jobs, new Date(), company.timezone);
-    return [
-      { title: "Today", data: g.today },
-      { title: "Upcoming", data: g.upcoming },
-      { title: "Not scheduled", data: g.unscheduled },
-      { title: "Recent", data: g.recent },
-    ].filter((s) => s.data.length > 0);
-  }, [jobs, company.timezone]);
+  const reportRows = useMemo(() => {
+    const byId = new Map(jobs.map((j) => [j.id, j]));
+    return reports
+      .filter((r) => r.status !== "superseded")
+      .filter((r) => reportFilter === "all" || r.status === reportFilter)
+      .map((r) => ({ report: r, job: byId.get(r.job_id) }))
+      .sort((a, b) => (b.report.sent_at ?? "~").localeCompare(a.report.sent_at ?? "~"));
+  }, [reports, jobs, reportFilter]);
+
+  const team = services.sync.team();
+  const techName = (id: string | null | undefined) => {
+    if (!id) return null;
+    const p = team.find((t) => t.id === id);
+    return p?.full_name ?? p?.email ?? "Teammate";
+  };
+
+  const { header, ref, scrollProps, contentContainerStyle } = useScreenChrome({
+    title: view === "jobs" ? "Jobs" : "Reports",
+    headerRight:
+      canAdd && view === "jobs"
+        ? () => <HeaderButton title="New Job" icon="add" onPress={() => router.push("/jobs/new")} />
+        : () => null,
+  });
 
   async function refresh() {
     haptics.light();
@@ -49,197 +130,227 @@ export default function Jobs() {
     setRefreshing(false);
   }
 
-  const openSettings = () => router.push("/settings");
-  const newJob = () => router.push("/jobs/new");
-
-  return (
-    <View style={{ flex: 1 }}>
-      <Stack.Screen
-        options={{
-          title: company.name,
-          // The screen's main action sits at the bar's right on iPhone (a +); Android keeps the
-          // floating New Job button below, its own convention.
-          headerRight: () => (
-            <View style={styles.headerActions}>
-              <HeaderButton title="Settings" icon="settings" onPress={openSettings} />
-              {ios && canAdd ? <HeaderButton title="New Job" icon="add" onPress={newJob} /> : null}
-            </View>
-          ),
-        }}
-      />
-      {/* On iPhone the list comes first, so the large title shrinks as it scrolls. */}
-      {ios ? null : <SyncBar onPress={openSettings} />}
-      <SectionList
-        sections={sections}
-        keyExtractor={(j) => j.id}
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={[
-          styles.list,
-          // Room for the last row to scroll clear of Android's floating New Job button.
-          !ios && { paddingBottom: insets.bottom + FAB_HEIGHT + space["4"] * 2 },
+  const top = (
+    <View style={styles.top}>
+      {header}
+      <Segmented
+        fill={false}
+        minSegmentWidth={112}
+        accessibilityLabel="Jobs or reports"
+        options={[
+          { value: "jobs", label: "Jobs" },
+          { value: "reports", label: "Reports" },
         ]}
-        stickySectionHeadersEnabled={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
-        ListHeaderComponent={
-          <View style={{ gap: space["3"], marginBottom: space["2"] }}>
-            {ios ? <SyncBar onPress={openSettings} inset /> : null}
-            <ScreenTip screen="jobs" />
-          </View>
-        }
-        renderSectionHeader={({ section }) => (
-          <T variant="label" style={styles.sectionTitle}>
-            {section.title}
-          </T>
-        )}
-        renderItem={({ item, index, section }) => (
-          <JobRow
-            job={item}
-            now={now}
-            timeZone={company.timezone}
-            first={index === 0}
-            last={index === section.data.length - 1}
-          />
-        )}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <T variant="heading">No jobs yet</T>
-            <T variant="muted">
-              {canAdd
-                ? "Create your first job. It works without signal and syncs when you’re back online."
-                : "Jobs the office gives you show up here."}
-            </T>
-          </View>
-        }
+        value={view}
+        onChange={setView}
       />
-      {ios || !canAdd ? null : (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="New Job"
-          onPress={newJob}
-          style={({ pressed }) => [
-            styles.fab,
-            { bottom: insets.bottom + space["4"] },
-            pressed && { opacity: 0.85 },
-          ]}
-        >
-          <Icon name="add" size={24} color={color.onPrimary} />
-          <Text style={styles.fabText} maxFontSizeMultiplier={1.6}>
-            New Job
-          </Text>
-        </Pressable>
+      <SyncBar onPress={() => router.push("/more/sync")} />
+      {view === "jobs" ? (
+        <>
+          <ScreenTip screen="jobs" />
+          <FilterPills label="Status" options={FILTERS} value={filter} onChange={setFilter} />
+          <SearchField
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Customer name or job number"
+          />
+        </>
+      ) : (
+        <FilterPills
+          label="Reports"
+          options={REPORT_FILTERS}
+          value={reportFilter}
+          onChange={setReportFilter}
+        />
       )}
     </View>
   );
+
+  const empty =
+    view === "jobs" ? (
+      <Empty>
+        {search.trim()
+          ? `No jobs match “${search.trim()}”.`
+          : "No jobs here. Add one with New Job, or on the phone."}
+      </Empty>
+    ) : (
+      <Empty>
+        {reportFilter === "sent"
+          ? "No reports sent yet."
+          : reportFilter === "draft"
+            ? "No drafts."
+            : "No reports yet. A job’s report is drafted from its Wrap-Up."}
+      </Empty>
+    );
+
+  const data: { key: string; node: (first: boolean, last: boolean) => React.ReactNode }[] =
+    view === "jobs"
+      ? shown.map((j) => ({
+          key: j.id,
+          node: (first, last) => (
+            <JobRow
+              job={j}
+              tech={techName(j.assigned_user_id)}
+              when={
+                j.status === "in_progress" && j.started_at
+                  ? "Started"
+                  : formatSchedule(j.scheduled_start, now, company.timezone)
+              }
+              first={first}
+              last={last}
+            />
+          ),
+        }))
+      : reportRows.map(({ report, job }) => ({
+          key: report.id,
+          node: (first, last) => <ReportRow report={report} job={job} first={first} last={last} />,
+        }));
+
+  return (
+    <Animated.FlatList
+      ref={ref as never}
+      {...scrollProps}
+      style={{ backgroundColor: color.bg }}
+      contentContainerStyle={contentContainerStyle}
+      data={data}
+      keyExtractor={(d) => d.key}
+      ListHeaderComponent={top}
+      ListEmptyComponent={empty}
+      renderItem={({ item, index }) => <>{item.node(index === 0, index === data.length - 1)}</>}
+      initialNumToRender={20}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+    />
+  );
 }
 
-/** One row of an inset grouped list: the section's rows share one rounded block. */
-function JobRow({
-  job,
-  now,
-  timeZone,
+/** One row of the inset grouped list; the rows share one rounded block. */
+function GroupedRow({
   first,
   last,
+  onPress,
+  label,
+  children,
 }: {
-  job: JobView;
-  now: Date;
-  timeZone: string;
   first: boolean;
   last: boolean;
+  onPress: () => void;
+  label?: string;
+  children: React.ReactNode;
 }) {
   return (
-    <View style={[styles.rowBox, first && styles.rowFirst, last && styles.rowLast]}>
-      {first ? null : <View style={styles.separator} />}
+    <View
+      style={[
+        styles.rowBox,
+        { backgroundColor: color.surface },
+        first && styles.rowFirst,
+        last && styles.rowLast,
+      ]}
+    >
+      {first ? null : <View style={[styles.separator, { backgroundColor: color.separator }]} />}
       <Pressable
         accessibilityRole="button"
-        onPress={() => router.push(`/jobs/${job.id}`)}
-        android_ripple={{ color: color.fill }}
-        style={({ pressed }) => [
-          styles.row,
-          ios && pressed && { backgroundColor: color.neutral200 },
-        ]}
+        accessibilityLabel={label}
+        onPress={onPress}
+        android_ripple={{ color: color.ripple }}
+        style={({ pressed }) => [styles.row, pressed && { backgroundColor: color.rowPressed }]}
       >
-        <View style={{ flex: 1, gap: 4 }}>
-          <View style={styles.rowLine}>
-            <T variant="strong" style={{ flex: 1 }} numberOfLines={1}>
-              {job.customer?.name ?? "Customer"}
-            </T>
-            <T variant="muted" numberOfLines={1}>
-              {job.status === "in_progress"
-                ? "In progress"
-                : formatSchedule(job.scheduled_start, now, timeZone)}
-            </T>
-          </View>
-          <View style={styles.rowLine}>
-            <T variant="small" style={{ flex: 1 }} numberOfLines={1}>
-              {job.number ? `#${job.number} · ` : "New · "}
-              {job.property ? formatAddress(job.property) : "Address"}
-            </T>
-            <StatusChip status={job.status} />
-          </View>
-        </View>
-        {ios ? (
-          <Icon name="chevron" size={14} weight="semibold" color={tint(color.textMuted, 0.6)} />
-        ) : null}
+        {children}
+        <Chevron />
       </Pressable>
     </View>
   );
 }
 
-/** Height of the floating New Job pill (the field app's minimum tap target plus a little). */
-const FAB_HEIGHT = touch + 4;
+function JobRow({
+  job,
+  tech,
+  when,
+  first,
+  last,
+}: {
+  job: JobView;
+  tech: string | null;
+  when: string;
+  first: boolean;
+  last: boolean;
+}) {
+  return (
+    <GroupedRow first={first} last={last} onPress={() => router.push(`/jobs/${job.id}`)}>
+      <View style={styles.rowBody}>
+        <T variant="bodyEmphasis" numberOfLines={1}>
+          {job.customer?.name ?? "Customer"}
+        </T>
+        <T variant="secondary" muted>
+          {job.number ? `#${job.number}` : "New job"} · {JOB_TYPE_LABELS[job.type]}
+        </T>
+        {job.property ? (
+          <T variant="secondary" muted numberOfLines={1}>
+            {formatAddress(job.property)}
+          </T>
+        ) : null}
+        <T variant="secondary">
+          {when} · {tech ?? "Unassigned"}
+        </T>
+      </View>
+      <StatusChip status={job.status} style={{ alignSelf: "center" }} />
+    </GroupedRow>
+  );
+}
 
-const GROUP_RADIUS = 12;
+function ReportRow({
+  report,
+  job,
+  first,
+  last,
+}: {
+  report: ReportRecord;
+  job?: JobView;
+  first: boolean;
+  last: boolean;
+}) {
+  const sent = report.sent_at
+    ? `Sent ${new Date(report.sent_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+    : "Draft";
+  const template =
+    report.template_key === "homeowner"
+      ? "Homeowner report"
+      : report.template_key === "partner"
+        ? "Partner report"
+        : "Insurance report";
+  return (
+    <GroupedRow
+      first={first}
+      last={last}
+      onPress={() => router.push(`/jobs/${report.job_id}?section=wrapup`)}
+    >
+      <View style={styles.rowBody}>
+        <T numberOfLines={1}>
+          <T variant="bodyEmphasis">{job?.customer?.name ?? "Customer"}</T>
+          <T muted>{job?.number ? ` · Job #${job.number}` : ""}</T>
+        </T>
+        <T variant="secondary" muted numberOfLines={2}>
+          {template} · version {report.version}
+          {job?.property ? ` · ${job.property.address_line1}` : ""}
+        </T>
+      </View>
+      <T muted>{sent}</T>
+    </GroupedRow>
+  );
+}
 
 const styles = StyleSheet.create({
-  list: { padding: space["4"] },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: ios ? space["2"] : 0 },
-  // iPhone: section headers line up with the rows' text, as in iOS inset grouped lists.
-  sectionTitle: {
-    marginTop: space["4"],
-    marginBottom: space["2"],
-    paddingHorizontal: ios ? space["4"] : 0,
-  },
-  rowBox: { backgroundColor: color.surface, overflow: "hidden" },
-  rowFirst: { borderTopLeftRadius: GROUP_RADIUS, borderTopRightRadius: GROUP_RADIUS },
-  rowLast: { borderBottomLeftRadius: GROUP_RADIUS, borderBottomRightRadius: GROUP_RADIUS },
-  separator: {
-    height: StyleSheet.hairlineWidth,
-    marginLeft: space["4"],
-    backgroundColor: color.separator,
-  },
+  top: { gap: space["5"], marginBottom: space["5"] },
+  rowBox: { overflow: "hidden" },
+  rowFirst: { borderTopLeftRadius: shape.grouped, borderTopRightRadius: shape.grouped },
+  rowLast: { borderBottomLeftRadius: shape.grouped, borderBottomRightRadius: shape.grouped },
+  separator: { height: StyleSheet.hairlineWidth, marginLeft: space["4"] },
   row: {
-    minHeight: touch + 16,
+    minHeight: 44,
     flexDirection: "row",
     alignItems: "center",
-    gap: space["2"],
-    paddingVertical: space["3"],
-    paddingLeft: space["4"],
-    paddingRight: ios ? space["3"] : space["4"],
+    gap: space["3"],
+    paddingVertical: 10,
+    paddingHorizontal: space["4"],
   },
-  rowLine: { flexDirection: "row", alignItems: "center", gap: space["2"] },
-  empty: { paddingVertical: space["7"], gap: space["2"] },
-  // Floating pill anchored bottom-right above the home indicator.
-  fab: {
-    position: "absolute",
-    right: space["4"],
-    minHeight: FAB_HEIGHT,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space["1"],
-    paddingLeft: space["4"],
-    paddingRight: space["5"],
-    borderRadius: radius.pill,
-    backgroundColor: color.primary,
-    shadowColor: color.navy,
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-  },
-  fabText: {
-    fontFamily: font.displayExtraBold,
-    fontSize: 18,
-    letterSpacing: 0.4,
-    color: color.onPrimary,
-  },
+  rowBody: { flex: 1, gap: 2 },
 });

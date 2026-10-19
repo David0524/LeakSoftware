@@ -1,365 +1,665 @@
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
+import { useRoute } from "expo-router/react-navigation";
 import { useEffect, useRef, useState } from "react";
-import { Linking, Platform, Pressable, StyleSheet, TextInput, View } from "react-native";
+import {
+  Animated,
+  KeyboardAvoidingView,
+  Linking,
+  Platform,
+  StyleSheet,
+  TextInput,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   JOB_STATUS_LABELS,
+  JOB_TYPE_LABELS,
   POOL_TYPE_LABELS,
+  checklistTally,
   formatAddress,
+  formatCents,
   formatSchedule,
-  nativeMapsUrl,
-  propertyLocation,
   parseDollars,
+  propertyLocation,
   toE164,
   userTransitions,
+  type CompanySettings,
   type Customer,
   type Job,
   type JobStatus,
   type Property,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
-import { useRow } from "../../../../data/hooks";
-import { useConversations, useLine } from "../../../../data/texting";
-import { useCompany, useSession } from "../../../../state/session";
+import { useRow } from "../../../../../../data/hooks";
+import { useJobInspection } from "../../../../../../data/inspection";
+import { useConversations, useLine } from "../../../../../../data/texting";
+import { openDirections, useDirectionsChoice } from "../../../../../../state/directions";
+import { useCompany, useSession } from "../../../../../../state/session";
 import {
   Button,
-  Field,
   Group,
   ListRow,
   Notice,
-  Row,
+  RoundButton,
   Screen,
+  Section,
+  Segmented,
   StatusChip,
   T,
-  Segmented,
   Toggle,
-} from "../../../../ui/components";
-import { confirmDestructive } from "../../../../ui/confirm";
-import { Icon } from "../../../../ui/Icon";
-import { color, face, radius, space, touch } from "../../../../ui/theme";
-import { ChecklistTab } from "../../../../features/inspection/ChecklistTab";
-import { FindingsTab } from "../../../../features/inspection/FindingsTab";
-import { TestsTab } from "../../../../features/inspection/TestsTab";
-import { MediaSection } from "../../../../features/media/MediaSection";
-import { InvoiceSection } from "../../../../features/invoice/InvoiceSection";
-import { QuoteTab } from "../../../../features/quote/QuoteTab";
-import { ReportTab } from "../../../../features/report/ReportTab";
-import { ScreenTip } from "../../../../ui/Tip";
+  useScreenChrome,
+} from "../../../../../../ui/components";
+import { BAR_HEIGHT, barState } from "../../../../../../ui/Bar";
+import { confirmDestructive } from "../../../../../../ui/confirm";
+import { Glass } from "../../../../../../ui/Glass";
+import { SyncBar } from "../../../../../../ui/SyncBar";
+import { ScreenTip } from "../../../../../../ui/Tip";
+import {
+  color,
+  drawnChrome,
+  face,
+  gutter,
+  minTap,
+  shape,
+  space,
+  tabular,
+} from "../../../../../../ui/theme";
+import { ChecklistTab } from "../../../../../../features/inspection/ChecklistTab";
+import { FindingsTab } from "../../../../../../features/inspection/FindingsTab";
+import { TestsTab } from "../../../../../../features/inspection/TestsTab";
+import { MediaSection } from "../../../../../../features/media/MediaSection";
+import { InvoiceSection } from "../../../../../../features/invoice/InvoiceSection";
+import { QuoteTab } from "../../../../../../features/quote/QuoteTab";
+import { ReportTab } from "../../../../../../features/report/ReportTab";
 
+/** The status actions under the job's header (spec 5.4). Cancel sits at the end of Details. */
 const ACTION_LABELS: Partial<Record<JobStatus, string>> = {
   in_progress: "Start Job",
-  scheduled: "Back to Scheduled",
+  scheduled: "Move Back to Scheduled",
   unscheduled: "Reopen Job",
-  canceled: "Cancel Job",
   done: "Mark Done",
 };
 
-type Tab = "checklist" | "tests" | "findings" | "report" | "quote";
+type JobSection = "details" | "checklist" | "findings" | "photos" | "wrapup";
 
+/** The section shown, per job, while the app runs (the website keeps it in the URL). */
+const lastSection = new Map<string, JobSection>();
+
+/**
+ * The job page (spec 5.4): the header with the status and its next steps, then the section
+ * switcher (Details, Checklist, Findings, Photos, Wrap-Up), pinned under the bar once
+ * scrolled. The sections hold the existing parts for now; each gets the website's look in the
+ * screen-by-screen restyle.
+ */
 export default function JobDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, section: asked } = useLocalSearchParams<{ id: string; section?: string }>();
   const company = useCompany();
   const { services } = useSession();
   const job = useRow<Job>("job", id);
   const property = useRow<Property>("property", job?.property_id);
   const customer = useRow<Customer>("customer", job?.bill_to_customer_id ?? property?.customer_id);
-  // Company texting: text the customer from the company number (the shared inbox).
-  const line = useLine(company.id);
-  const conversations = useConversations(company.id);
-  const [tab, setTab] = useState<Tab>("checklist");
-  const [notes, setNotes] = useState<string | null>(null);
-  const [fee, setFee] = useState<string | null>(null);
-  // Notes save shortly after typing stops and when leaving the screen. Relying on blur
-  // alone lost edits on iPhone, where leaving the field often does not blur it.
-  const pendingNotes = useRef<string | null>(null);
-  const notesTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const flushNotes = useRef(() => {});
-  useEffect(() => {
-    flushNotes.current = () => {
-      if (notesTimer.current) clearTimeout(notesTimer.current);
-      notesTimer.current = null;
-      const value = pendingNotes.current;
-      pendingNotes.current = null;
-      if (job && value !== null && value !== (job.summary_notes ?? "")) {
-        services.sync.write("job", job.id, company.id, { summary_notes: value });
-      }
-    };
+  const insp = useJobInspection(company.id, id);
+  const insets = useSafeAreaInsets();
+  const [section, setSectionState] = useState<JobSection>(
+    () => (asked === "wrapup" ? "wrapup" : lastSection.get(id)) ?? "details",
+  );
+  const [switcherY, setSwitcherY] = useState<number | null>(null);
+  const {
+    header: titleBlock,
+    ref: scroll,
+    scrollProps,
+    contentContainerStyle,
+  } = useScreenChrome({
+    title: job ? (job.number ? `Job #${job.number}` : "New Job") : "Job",
   });
-  useEffect(() => () => flushNotes.current(), []);
+  const barY = barState(useRoute().key).y;
+
+  function setSection(next: JobSection) {
+    lastSection.set(id, next);
+    setSectionState(next);
+    // Changing section starts at the top of the page.
+    (
+      scroll.current as unknown as { scrollTo?: (o: { y: number; animated: boolean }) => void }
+    )?.scrollTo?.({ y: 0, animated: false });
+  }
 
   if (!job) {
     return (
-      <Screen>
+      <Screen title="Job">
         <Notice tone="warning">This job isn’t on this phone.</Notice>
       </Screen>
     );
   }
 
-  const team = services.sync.team();
-  const assignee = team.find((p) => p.id === job.assigned_user_id);
-  const second = team.find((p) => p.id === job.second_tech_id);
-  const techs =
-    (assignee?.full_name ?? assignee?.email ?? (job.assigned_user_id ? "Teammate" : "Nobody yet")) +
-    (second ? ` and ${second.full_name ?? second.email ?? "teammate"}` : "");
-  const transitions = userTransitions(job.status, job.type);
-  const others = transitions.filter((to) => to !== "in_progress");
+  const maintenance = job.type === "maintenance";
+  const tally = checklistTally(insp.components, insp.results);
+  const sections: { value: JobSection; label: string; badge?: number }[] = [
+    { value: "details", label: "Details" },
+    { value: "checklist", label: "Checklist", badge: tally.pending || undefined },
+    ...(maintenance ? [] : [{ value: "findings" as const, label: "Findings" }]),
+    { value: "photos", label: "Photos" },
+    { value: "wrapup", label: "Wrap-Up" },
+  ];
+  const shown = sections.some((s) => s.value === section) ? section : "details";
+
   const update = (values: Record<string, JsonValue>) =>
     services.sync.write("job", job.id, company.id, values);
-
   function changeStatus(to: JobStatus) {
-    const apply = () => {
-      const values: Record<string, JsonValue> = { status: to };
-      if (to === "in_progress" && !job!.started_at) values.started_at = new Date().toISOString();
-      update(values);
-    };
-    if (to === "canceled") {
-      confirmDestructive({
-        title: "Cancel this job?",
-        message: "You can reopen it later.",
-        confirm: "Cancel Job",
-        cancel: "Keep Job",
-        onConfirm: apply,
-      });
-    } else {
-      apply();
-    }
+    const values: Record<string, JsonValue> = { status: to };
+    if (to === "in_progress" && !job!.started_at) values.started_at = new Date().toISOString();
+    update(values);
   }
+  const transitions = userTransitions(job.status, job.type).filter((to) => to !== "canceled");
 
-  const address = property ? formatAddress(property) : "";
-  // Directions in the phone's maps app (Apple Maps on iPhone, the default app on Android).
-  const openMaps = () =>
-    void Linking.openURL(
-      nativeMapsUrl({ address, location: propertyLocation(property) }, Platform.OS),
-    );
+  const switcher = (
+    <Segmented
+      variant="switcher"
+      accessibilityLabel="Job sections"
+      options={sections}
+      value={shown}
+      onChange={setSection}
+    />
+  );
+
+  // Drawn bar (Android, browser): a copy of the switcher pinned under the bar once the page
+  // has scrolled it there. iPhone pins the switcher itself (a sticky header).
+  const barBottom = insets.top + BAR_HEIGHT;
+  const pinned =
+    drawnChrome && switcherY != null
+      ? barY.interpolate({
+          inputRange: [switcherY - barBottom - 1, switcherY - barBottom],
+          outputRange: [0, 1],
+          extrapolate: "clamp",
+        })
+      : null;
 
   return (
-    <Screen>
-      <Stack.Screen options={{ title: job.number ? `Job #${job.number}` : "New Job" }} />
-      {/* A pool visit or a leak inspection gets its own tip (walkthrough, 2026-10-16). */}
-      {job.type === "repair" ? null : (
-        <ScreenTip screen="job" pkg={job.type === "maintenance" ? "pool" : "leak"} />
-      )}
-
-      {/* Who, where, and what, as an inset grouped list (iOS) or a list card (Android). */}
-      <Group>
-        <ListRow>
-          <Row style={{ gap: space["2"] }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: color.bg }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <Animated.ScrollView
+        ref={scroll}
+        {...scrollProps}
+        contentContainerStyle={contentContainerStyle}
+        stickyHeaderIndices={drawnChrome ? undefined : [1]}
+      >
+        <View style={styles.header}>
+          {titleBlock}
+          <View style={styles.subtitle}>
             <StatusChip status={job.status} />
-            <T variant="muted" numberOfLines={1} style={{ flexShrink: 1 }}>
-              {job.status === "in_progress"
-                ? "Started"
-                : formatSchedule(job.scheduled_start, new Date(), company.timezone)}
-            </T>
-          </Row>
-        </ListRow>
-        <ListRow
-          trailing={
-            customer?.phone ? (
-              <Row style={{ gap: space["2"] }}>
-                {line?.status === "active" ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Text ${customer.name} from the company number`}
-                    hitSlop={4}
-                    onPress={() => {
-                      const phone = toE164(customer.phone);
-                      const existing = conversations.find((c) => c.phone === phone);
-                      router.push(
-                        existing
-                          ? `/messages/${existing.id}`
-                          : `/messages/new?customer=${customer.id}&job=${job.id}`,
-                      );
-                    }}
-                    style={({ pressed }) => [styles.callButton, pressed && { opacity: 0.8 }]}
-                  >
-                    <Icon name="message" size={20} color={color.navy} />
-                  </Pressable>
-                ) : null}
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Call ${customer.phone}`}
-                  hitSlop={4}
-                  onPress={() => void Linking.openURL(`tel:${customer.phone}`)}
-                  style={({ pressed }) => [styles.callButton, pressed && { opacity: 0.8 }]}
-                >
-                  <Icon name="call" size={20} color={color.navy} />
-                </Pressable>
-              </Row>
-            ) : undefined
-          }
+            <T muted>{JOB_TYPE_LABELS[job.type]}</T>
+          </View>
+          <T muted>
+            {job.status === "in_progress" && job.started_at
+              ? `Started ${formatSchedule(job.started_at, new Date(), company.timezone)}`
+              : formatSchedule(job.scheduled_start, new Date(), company.timezone)}
+          </T>
+          {transitions.length > 0 ? (
+            <View style={styles.actions}>
+              {transitions.map((to) => (
+                <Button
+                  key={to}
+                  title={ACTION_LABELS[to] ?? JOB_STATUS_LABELS[to]}
+                  kind={to === "in_progress" ? "primary" : "secondary"}
+                  onPress={() => changeStatus(to)}
+                />
+              ))}
+            </View>
+          ) : null}
+        </View>
+        <View
+          style={[styles.switcher, !drawnChrome && { backgroundColor: color.bg }]}
+          onLayout={(e) => setSwitcherY(e.nativeEvent.layout.y)}
         >
-          <T variant="heading">{customer?.name ?? "Customer"}</T>
-          {customer?.email ? <T variant="muted">{customer.email}</T> : null}
-        </ListRow>
-        {property ? (
-          <ListRow
-            accessibilityRole="link"
-            accessibilityHint="Directions in Maps"
-            onPress={openMaps}
-            chevron={false}
-            trailing={<Icon name="directions" size={20} color={color.link} />}
-          >
-            <T variant="body" style={{ color: color.link }}>
-              {address}
-            </T>
-          </ListRow>
-        ) : (
-          <ListRow subtitle="Address not on this phone yet." />
-        )}
-        {property ? (
-          <ListRow
-            title="Pool"
-            detail={[
-              property.pool_type ? POOL_TYPE_LABELS[property.pool_type] : null,
-              property.has_spa ? "Pool and spa" : "Pool",
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          />
-        ) : null}
-        <ListRow title="Tech" detail={techs} />
-      </Group>
-      {property?.access_notes ? <Notice tone="warning">{property.access_notes}</Notice> : null}
+          {switcher}
+        </View>
+        <View style={styles.content}>
+          <SyncBar onPress={() => router.push("/more/sync")} />
+          {shown === "details" ? (
+            <Details
+              job={job}
+              property={property}
+              customer={customer}
+              update={update}
+              onCancel={
+                userTransitions(job.status, job.type).includes("canceled")
+                  ? () =>
+                      confirmDestructive({
+                        title: "Cancel this job?",
+                        confirm: "Cancel Job",
+                        cancel: "Keep Job",
+                        onConfirm: () => changeStatus("canceled"),
+                      })
+                  : undefined
+              }
+            />
+          ) : null}
+          {shown === "checklist" ? (
+            <View style={styles.part}>
+              <View style={styles.heading}>
+                <T variant="sectionHeading">Checklist</T>
+                {insp.components.length > 0 ? (
+                  <T muted>
+                    {maintenance
+                      ? `${tally.pass} done · ${tally.attention} need attention · ${tally.notApplicable} skipped · ${tally.pending} to do`
+                      : `${tally.pass} not leaking · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} not applicable · ${tally.pending} to do`}
+                  </T>
+                ) : null}
+              </View>
+              {job.type === "repair" ? null : (
+                <ScreenTip screen="job" pkg={maintenance ? "pool" : "leak"} />
+              )}
+              <ChecklistTab job={job} property={property} />
+              {maintenance ? (
+                <Button
+                  title="Chemical Calculator"
+                  kind="secondary"
+                  onPress={() =>
+                    router.push({
+                      pathname: "/chemicals",
+                      params: {
+                        gallons: String(
+                          (property as { approx_gallons?: number | null } | null)?.approx_gallons ??
+                            "",
+                        ),
+                      },
+                    })
+                  }
+                />
+              ) : null}
+            </View>
+          ) : null}
+          {shown === "findings" ? (
+            <>
+              <View style={styles.part}>
+                <T variant="sectionHeading">Tests</T>
+                <TestsTab job={job} />
+              </View>
+              <View style={styles.part}>
+                <T variant="sectionHeading">Findings</T>
+                <FindingsTab job={job} property={property} />
+              </View>
+            </>
+          ) : null}
+          {shown === "photos" ? (
+            <View style={styles.part}>
+              <T variant="sectionHeading">Photos and Recordings</T>
+              <MediaSection target={{ jobId: job.id }} title="" />
+            </View>
+          ) : null}
+          {shown === "wrapup" ? (
+            <>
+              <View style={styles.part}>
+                <T variant="sectionHeading">Report and Sign-Off</T>
+                <ReportTab job={job} customer={customer} />
+              </View>
+              {job.type === "detection" || maintenance ? (
+                <View style={styles.part}>
+                  <T variant="sectionHeading">Quotes</T>
+                  <QuoteTab job={job} />
+                </View>
+              ) : null}
+              <View style={styles.part}>
+                <InvoiceSection job={job} customer={customer} />
+              </View>
+            </>
+          ) : null}
+        </View>
+      </Animated.ScrollView>
+      {pinned ? (
+        <Animated.View
+          pointerEvents="box-none"
+          style={[styles.pinned, { top: barBottom, opacity: pinned }]}
+        >
+          <Glass variant="bar" style={styles.pinnedBar}>
+            {switcher}
+          </Glass>
+        </Animated.View>
+      ) : null}
+    </KeyboardAvoidingView>
+  );
+}
 
-      {/* Leak detection only: the fee and whether the leak was marked. */}
-      {job.type === "maintenance" ? (
-        <Button
-          title="Chemical Calculator"
-          kind="secondary"
-          // With the pool's gallons.
-          onPress={() =>
-            router.push({
-              pathname: "/chemicals",
-              params: {
-                gallons: String(
-                  (property as { approx_gallons?: number | null } | null)?.approx_gallons ?? "",
-                ),
-              },
-            })
-          }
-        />
-      ) : (
+/** Details (spec 5.4): customer, messages, pool, who's assigned, intake, the on-site form. */
+function Details({
+  job,
+  property,
+  customer,
+  update,
+  onCancel,
+}: {
+  job: Job;
+  property: Property | undefined;
+  customer: Customer | undefined;
+  update: (values: Record<string, JsonValue>) => void;
+  onCancel?: () => void;
+}) {
+  const company = useCompany();
+  const { services } = useSession();
+  const line = useLine(company.id);
+  const conversations = useConversations(company.id);
+  const [choice] = useDirectionsChoice();
+  const [notes, setNotes] = useState<string | null>(null);
+  const [fee, setFee] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  // Notes save shortly after typing stops and when leaving the screen: leaving the field
+  // often doesn't blur it on iPhone.
+  const notesTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pending = useRef<string | null>(null);
+  const flush = useRef(() => {});
+  useEffect(() => {
+    flush.current = () => {
+      if (notesTimer.current) clearTimeout(notesTimer.current);
+      notesTimer.current = null;
+      const value = pending.current;
+      pending.current = null;
+      if (value !== null && value !== (job.summary_notes ?? "")) update({ summary_notes: value });
+    };
+  });
+  useEffect(() => () => flush.current(), []);
+
+  const team = services.sync.team();
+  const nameOf = (uid: string | null | undefined) => {
+    if (!uid) return null;
+    const p = team.find((t) => t.id === uid);
+    return p?.full_name ?? p?.email ?? "Teammate";
+  };
+  const texting = line?.status === "active";
+  const phone = customer?.phone ? toE164(customer.phone) : null;
+  const conversation = phone ? conversations.find((c) => c.phone === phone) : undefined;
+  const address = property ? formatAddress(property) : "";
+  const questions = (company.settings as Partial<CompanySettings>).intake_questions ?? [];
+  const answers = questions
+    .map((q) => ({ q, a: job.intake?.[q.key] }))
+    .filter(({ a }) => (Array.isArray(a) ? a.length > 0 : Boolean(a)));
+  const textCustomer = () =>
+    router.push(
+      conversation
+        ? `/messages/${conversation.id}`
+        : `/messages/new?customer=${customer?.id}&job=${job.id}`,
+    );
+
+  function saveFee() {
+    if (fee === null) return;
+    const cents = fee.trim() ? parseDollars(fee) : null;
+    if (cents === null && fee.trim()) return setFee(null);
+    update({ fee_cents: cents });
+    setFee(null);
+  }
+
+  return (
+    <>
+      <Section title="Customer">
         <Group>
           <ListRow>
-            <Row>
-              <T variant="body" style={{ flex: 1 }}>
-                Detection fee ($)
-              </T>
-              <TextInput
-                accessibilityLabel="Detection fee ($)"
-                value={fee ?? (job.fee_cents != null ? (job.fee_cents / 100).toFixed(2) : "")}
-                onChangeText={setFee}
-                onBlur={() => {
-                  if (fee === null) return;
-                  const cents = fee.trim() ? parseDollars(fee) : null;
-                  if (cents === null && fee.trim()) return setFee(null);
-                  update({ fee_cents: cents });
-                  setFee(null);
-                }}
-                keyboardType="decimal-pad"
-                placeholder="0.00"
-                placeholderTextColor={color.placeholder}
-                style={styles.feeInput}
-              />
-            </Row>
+            <T variant="bodyEmphasis">{customer?.name ?? "No customer"}</T>
           </ListRow>
-          <Toggle
-            inList
-            label="Leak location marked"
-            value={job.location_marked ?? false}
-            onChange={(v) => update({ location_marked: v })}
-          />
+          {customer?.phone || customer?.email ? (
+            <ListRow
+              trailing={
+                <View style={styles.contact}>
+                  {customer.phone ? (
+                    <RoundButton
+                      icon="phone"
+                      label={`Call ${customer.name}, ${customer.phone}`}
+                      onPress={() => void Linking.openURL(`tel:${customer.phone}`)}
+                    />
+                  ) : null}
+                  {customer.phone ? (
+                    <RoundButton
+                      icon="message"
+                      label={`Text ${customer.name}`}
+                      onPress={() =>
+                        texting ? textCustomer() : void Linking.openURL(`sms:${customer.phone}`)
+                      }
+                    />
+                  ) : null}
+                  {customer.email ? (
+                    <RoundButton
+                      icon="mail"
+                      label={`Email ${customer.name}, ${customer.email}`}
+                      onPress={() => void Linking.openURL(`mailto:${customer.email}`)}
+                    />
+                  ) : null}
+                </View>
+              }
+            >
+              {customer.phone ? <T>{customer.phone}</T> : null}
+              {customer.email ? (
+                <T variant="secondary" numberOfLines={1}>
+                  {customer.email}
+                </T>
+              ) : null}
+            </ListRow>
+          ) : null}
         </Group>
-      )}
+      </Section>
 
-      {/* The primary action full width; the others side by side as half-width pills. */}
-      <View style={{ gap: space["2"] }}>
-        {transitions
-          .filter((to) => to === "in_progress")
-          .map((to) => (
-            <Button
-              key={to}
-              title={ACTION_LABELS[to] ?? JOB_STATUS_LABELS[to]}
-              onPress={() => changeStatus(to)}
-            />
-          ))}
-        {others.length > 0 ? (
-          <View style={styles.actionRow}>
-            {others.map((to) => (
-              <Button
-                key={to}
-                title={ACTION_LABELS[to] ?? JOB_STATUS_LABELS[to]}
-                kind={to === "canceled" ? "danger" : "secondary"}
-                onPress={() => changeStatus(to)}
-                style={styles.halfButton}
+      {customer && (conversation || texting) ? (
+        <Section title="Messages">
+          <Group>
+            {conversation ? (
+              <ListRow onPress={textCustomer}>
+                <T>{conversation.name}</T>
+                <T variant="secondary" muted numberOfLines={1}>
+                  {conversation.last_preview ?? ""}
+                </T>
+              </ListRow>
+            ) : null}
+            {texting ? (
+              <ListRow
+                title={`Text ${customer.name}`}
+                tone="link"
+                onPress={() => router.push(`/messages/new?customer=${customer.id}&job=${job.id}`)}
               />
+            ) : null}
+          </Group>
+        </Section>
+      ) : null}
+
+      <Section title="Pool">
+        <Group>
+          {property ? (
+            <ListRow
+              accessibilityRole="link"
+              accessibilityHint="Directions"
+              chevron={false}
+              onPress={() =>
+                openDirections({ address, location: propertyLocation(property) }, choice)
+              }
+            >
+              <T style={{ color: color.link }}>{address}</T>
+              <T variant="secondary" muted>
+                {[
+                  property.pool_type ? POOL_TYPE_LABELS[property.pool_type] : null,
+                  property.has_spa ? "Pool and spa" : "Pool",
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </T>
+            </ListRow>
+          ) : (
+            <ListRow subtitle="Address not on this phone yet." />
+          )}
+          {property?.access_notes ? (
+            <ListRow>
+              <T variant="secondary" muted>
+                Access
+              </T>
+              <T>{property.access_notes}</T>
+            </ListRow>
+          ) : null}
+        </Group>
+      </Section>
+
+      <Section title="Assigned to">
+        <Group>
+          <ListRow title="Tech" detail={nameOf(job.assigned_user_id) ?? "Nobody yet"} />
+          {job.second_tech_id ? (
+            <ListRow title="With" detail={nameOf(job.second_tech_id) ?? "Teammate"} />
+          ) : null}
+          {job.fee_cents != null ? (
+            <ListRow
+              title="Detection fee"
+              detail={
+                <T muted style={tabular}>
+                  {formatCents(job.fee_cents)}
+                </T>
+              }
+            />
+          ) : null}
+        </Group>
+      </Section>
+
+      {answers.length > 0 ? (
+        <Section title="When they booked">
+          <Group>
+            {answers.map(({ q, a }) => (
+              <ListRow key={q.key}>
+                <T variant="secondary" muted>
+                  {q.label}
+                </T>
+                <T>{Array.isArray(a) ? a.join(", ") : a}</T>
+              </ListRow>
             ))}
+          </Group>
+        </Section>
+      ) : null}
+
+      <Section
+        title="On site"
+        footer={
+          job.type === "maintenance" ? undefined : "The detection fee is shown on the report."
+        }
+      >
+        <Group>
+          {job.type === "maintenance" ? null : (
+            <ListRow>
+              <View style={styles.feeRow}>
+                <T style={{ flex: 1 }}>Detection fee</T>
+                <T muted>$</T>
+                <TextInput
+                  accessibilityLabel="Detection fee in dollars"
+                  value={fee ?? (job.fee_cents != null ? (job.fee_cents / 100).toFixed(2) : "")}
+                  onChangeText={setFee}
+                  onBlur={saveFee}
+                  keyboardType="decimal-pad"
+                  placeholder="0.00"
+                  placeholderTextColor={color.placeholder}
+                  style={[
+                    styles.feeInput,
+                    tabular,
+                    {
+                      color: color.text,
+                      borderColor: color.controlBorder,
+                      backgroundColor: color.surface,
+                    },
+                  ]}
+                />
+              </View>
+            </ListRow>
+          )}
+          {job.type === "maintenance" ? null : (
+            <Toggle
+              inList
+              label="Leak location marked"
+              value={job.location_marked ?? false}
+              onChange={(v) => update({ location_marked: v })}
+            />
+          )}
+          <View style={styles.notes}>
+            <T variant="secondary" muted>
+              Job notes
+            </T>
+            <TextInput
+              accessibilityLabel="Job notes"
+              value={notes ?? job.summary_notes ?? ""}
+              onChangeText={(v) => {
+                setNotes(v);
+                setSaved(false);
+                pending.current = v;
+                if (notesTimer.current) clearTimeout(notesTimer.current);
+                notesTimer.current = setTimeout(() => flush.current(), 1500);
+              }}
+              onBlur={() => {
+                flush.current();
+                setNotes(null);
+              }}
+              multiline
+              placeholder="Anything the office should know"
+              placeholderTextColor={color.placeholder}
+              style={[
+                styles.textArea,
+                {
+                  color: color.text,
+                  borderColor: color.controlBorder,
+                  backgroundColor: color.surface,
+                },
+              ]}
+            />
           </View>
-        ) : null}
+        </Group>
+      </Section>
+      <View style={styles.saveRow}>
+        <Button
+          title="Save"
+          kind="secondary"
+          onPress={() => {
+            saveFee();
+            flush.current();
+            setSaved(true);
+          }}
+        />
+        {saved ? <T style={[face.semiBold, { color: color.pass }]}>Saved.</T> : null}
       </View>
 
-      <Segmented
-        options={[
-          { value: "checklist", label: "Checklist" },
-          // Tests and findings are leak detection; a pool service visit has none.
-          ...(job.type === "maintenance"
-            ? []
-            : [
-                { value: "tests" as const, label: "Tests" },
-                { value: "findings" as const, label: "Findings" },
-              ]),
-          { value: "report", label: "Report" },
-          ...(job.type === "detection" || job.type === "maintenance"
-            ? [{ value: "quote" as const, label: "Quote" }]
-            : []),
-        ]}
-        value={tab}
-        onChange={setTab}
-      />
-      {tab === "checklist" ? <ChecklistTab job={job} property={property} /> : null}
-      {tab === "tests" ? <TestsTab job={job} /> : null}
-      {tab === "findings" ? <FindingsTab job={job} property={property} /> : null}
-      {tab === "report" ? <ReportTab job={job} customer={customer} /> : null}
-      {tab === "quote" ? <QuoteTab job={job} /> : null}
-
-      <InvoiceSection job={job} customer={customer} />
-
-      <MediaSection target={{ jobId: job.id }} title="All Photos and Notes" />
-
-      <Field
-        label="Job notes"
-        value={notes ?? job.summary_notes ?? ""}
-        onChangeText={setNotes}
-        onBlur={() => {
-          if (notes !== null && notes !== (job.summary_notes ?? ""))
-            update({ summary_notes: notes });
-          setNotes(null);
-        }}
-        multiline
-        placeholder="Anything the office should know"
-      />
-    </Screen>
+      {onCancel ? (
+        <View style={{ marginTop: space["2"] }}>
+          <Button title="Cancel Job" kind="danger" onPress={onCancel} />
+        </View>
+      ) : null}
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  // Round contact button: 40 pt to look, 48 pt to tap with the hit slop.
-  callButton: {
-    width: touch - 8,
-    height: touch - 8,
-    borderRadius: radius.pill,
-    backgroundColor: color.neutral100,
-    alignItems: "center",
-    justifyContent: "center",
+  header: { gap: space["1"] },
+  subtitle: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space["3"] },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: space["3"], marginTop: space["3"] },
+  switcher: {
+    marginTop: space["4"],
+    paddingVertical: space["2"],
+    marginHorizontal: -gutter,
+    paddingHorizontal: gutter,
   },
-  // The fee sits at the row's right, like a value in iOS Settings; tap to type.
+  content: { gap: space["5"], marginTop: space["2"] },
+  part: { gap: space["3"] },
+  heading: { gap: space["1"] },
+  pinned: { position: "absolute", left: 0, right: 0 },
+  pinnedBar: { paddingHorizontal: gutter, paddingVertical: space["2"] },
+  contact: { flexDirection: "row", gap: space["2"] },
+  feeRow: { flexDirection: "row", alignItems: "center", gap: space["2"] },
   feeInput: {
-    ...face.regular,
-    minWidth: 96,
-    minHeight: touch - 4,
-    fontSize: 17,
+    width: 112,
+    minHeight: minTap,
+    borderWidth: 1,
+    borderRadius: shape.field,
+    paddingHorizontal: space["3"],
     textAlign: "right",
-    color: color.text,
+    ...face.regular,
+    fontSize: 17,
   },
-  actionRow: { flexDirection: "row", flexWrap: "wrap", gap: space["2"] },
-  halfButton: { flexGrow: 1, flexBasis: "45%", paddingHorizontal: space["2"] },
+  notes: { paddingHorizontal: space["4"], paddingVertical: 10, gap: space["1"] },
+  textArea: {
+    minHeight: 96,
+    borderWidth: 1,
+    borderRadius: shape.field,
+    paddingHorizontal: space["3"],
+    paddingVertical: space["2"],
+    textAlignVertical: "top",
+    ...face.regular,
+    fontSize: 17,
+  },
+  saveRow: { flexDirection: "row", alignItems: "center", gap: space["3"], marginTop: -space["2"] },
 });

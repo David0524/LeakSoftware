@@ -10,7 +10,7 @@ import { SheetProvider } from "../../../../../ui/sheet";
 export default function EditSheetLayout() {
   return (
     <SheetProvider>
-      <Stack screenOptions={stackScreenOptions}>
+      <Stack screenOptions={{ ...stackScreenOptions(), headerLargeTitleEnabled: false }}>
         <Stack.Screen name="test/[testId]" options={{ title: "Test" }} />
         <Stack.Screen name="finding/[findingId]" options={{ title: "Finding" }} />
         <Stack.Screen name="capture/[mediaId]" options={{ title: "Photo" }} />

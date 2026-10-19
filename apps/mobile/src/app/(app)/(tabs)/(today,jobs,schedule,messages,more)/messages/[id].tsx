@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { formatPhone } from "@leakbook/core";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Image, Pressable, StyleSheet, TextInput, View } from "react-native";
@@ -10,13 +10,13 @@ import {
   useLine,
   useThread,
   type ThreadItem,
-} from "../../../data/texting";
-import { chooseFromLibrary } from "../../../lib/media";
-import { getServices } from "../../../lib/services";
-import { useCompany } from "../../../state/session";
-import { Button, HeaderButton, Notice, Screen, T } from "../../../ui/components";
-import { Icon } from "../../../ui/Icon";
-import { color, radius, space, tint } from "../../../ui/theme";
+} from "../../../../../data/texting";
+import { chooseFromLibrary } from "../../../../../lib/media";
+import { getServices } from "../../../../../lib/services";
+import { useCompany } from "../../../../../state/session";
+import { Button, HeaderButton, Notice, Screen, T } from "../../../../../ui/components";
+import { Icon } from "../../../../../ui/Icon";
+import { color, radius, space, tint } from "../../../../../ui/theme";
 
 // One conversation (company texting, owner 2026-10-16): texts and calls in order, and a reply
 // from the company number. Calls ring my phone first, then connect from the company number.
@@ -126,17 +126,16 @@ export default function Conversation() {
   }
 
   return (
-    <Screen>
-      <Stack.Screen
-        options={{
-          title: conversation.name,
-          headerRight: active
-            ? () => (
-                <HeaderButton title={`Call ${conversation.name}`} icon="call" onPress={placeCall} />
-              )
-            : undefined,
-        }}
-      />
+    <Screen
+      title={conversation.name}
+      headerRight={
+        active
+          ? () => (
+              <HeaderButton title={`Call ${conversation.name}`} icon="call" onPress={placeCall} />
+            )
+          : undefined
+      }
+    >
       {conversation.customer_id ? <T variant="muted">{formatPhone(conversation.phone)}</T> : null}
       {items.map((item) => {
         const time = new Date(item.created_at).toLocaleString([], {

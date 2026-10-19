@@ -4,13 +4,13 @@ import { useSession } from "../state/session";
 import { useWalkthrough } from "../state/walkthrough";
 import { T } from "./components";
 import { haptics } from "./haptics";
-import { Icon } from "./Icon";
-import { color, radius, space, touch } from "./theme";
+import { cardShadow, color, minTap, shape, space } from "./theme";
+import { WebIcon } from "./WebIcon";
 
 /**
- * This screen's tip, once (walkthrough, 2026-10-16), drawn like an iOS TipKit tip: an icon,
- * a short title and message, and a close button. `pkg` narrows it to a pool visit or a leak
- * inspection on a shop that does both.
+ * This screen's tip, once (walkthrough, 2026-10-16), drawn as the website's tip card (spec
+ * 3.11): a lightbulb, the title over the message, and a round close button in the corner.
+ * `pkg` narrows it to a pool visit or a leak inspection on a shop that does both.
  */
 export function ScreenTip({ screen, pkg }: { screen: string; pkg?: TipPackage }) {
   const { company, membership } = useSession();
@@ -26,25 +26,26 @@ export function ScreenTip({ screen, pkg }: { screen: string; pkg?: TipPackage })
   });
   if (!tip) return null;
   return (
-    <View style={styles.tip}>
-      <Icon name="lightbulb" size={24} color={color.link} />
+    <View style={[styles.tip, { backgroundColor: color.surface }, cardShadow()]}>
+      <View style={styles.icon}>
+        <WebIcon name="lightbulb" size={24} color={color.link} strokeWidth={2} />
+      </View>
       <View style={{ flex: 1, gap: 2 }}>
-        <T variant="strong">{tip.title}</T>
-        <T variant="small" style={{ color: color.textMuted }}>
+        <T variant="bodyEmphasis">{tip.title}</T>
+        <T variant="secondary" muted>
           {tip.message}
         </T>
       </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Close Tip"
-        hitSlop={8}
         onPress={() => {
           haptics.light();
           walkthrough.dismiss(tip.id);
         }}
         style={styles.close}
       >
-        <Icon name="close" size={16} color={color.textMuted} />
+        <WebIcon name="close" size={16} color={color.textMuted} strokeWidth={2} />
       </Pressable>
     </View>
   );
@@ -55,16 +56,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: space["3"],
-    backgroundColor: color.surface,
-    borderRadius: radius.lg,
+    borderRadius: shape.card,
     paddingVertical: space["3"],
     paddingLeft: space["4"],
     paddingRight: space["1"],
   },
+  icon: { marginTop: 2 },
   close: {
-    width: touch,
-    height: touch,
-    marginTop: -space["2"],
+    width: minTap,
+    height: minTap,
+    marginTop: -space["1"],
     alignItems: "center",
     justifyContent: "center",
   },
