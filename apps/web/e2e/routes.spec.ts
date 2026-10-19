@@ -281,6 +281,10 @@ test("Today shows a tech's route with directions", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Today · Priya Shah" })).toBeVisible();
   await expect(page.getByTestId("today-summary")).toContainText(/stops? · .* driving/);
   const stop = page.getByTestId("today-stop").filter({ hasText: name("scottsdale") });
+  // Stops are one row except the one you're on (owner, 2026-10-19); a tap opens it.
+  const toggle = stop.getByRole("button", { expanded: false });
+  if (await toggle.count()) await toggle.first().click();
+  await expect(stop.getByRole("button", { name: /^Mark Complete for/ })).toBeVisible();
   const href = (await stop.getByTestId("address-link").getAttribute("href"))!;
   expect(await mapsTarget(page, href)).toMatch(/destination=33\.4919%2C-111\.9236/);
   await expect(page.getByRole("link", { name: "Open Route in Google Maps" })).toBeVisible();
