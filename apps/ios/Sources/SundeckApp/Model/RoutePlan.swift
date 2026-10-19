@@ -84,10 +84,19 @@ public func parseInstant(_ text: String?) -> Date? {
         s.replaceSubrange(s.index(s.startIndex, offsetBy: 10)...s.index(s.startIndex, offsetBy: 10), with: "T")
     }
     if s.range(of: #"[+-]\d{2}$"#, options: .regularExpression) != nil { s += ":00" }
-    let plain = ISO8601DateFormatter()
-    let fractional = ISO8601DateFormatter()
-    fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    return fractional.date(from: s) ?? plain.date(from: s)
+    return ISOParsers.fractional.date(from: s) ?? ISOParsers.plain.date(from: s)
+}
+
+/// Made once: building a formatter costs far more than parsing, and lists parse every row
+/// (1,000 jobs took 4 s with a formatter per call). Parsing doesn't change them, so sharing is
+/// safe.
+enum ISOParsers {
+    nonisolated(unsafe) static let plain = ISO8601DateFormatter()
+    nonisolated(unsafe) static let fractional: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
 }
 
 public func isoString(_ date: Date) -> String {

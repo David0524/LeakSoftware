@@ -139,12 +139,7 @@ public enum MediaDetail {
 
 /// Parses an ISO time with or without fractional seconds.
 func parseISODate(_ text: String) -> Date? {
-    let withFraction = ISO8601DateFormatter()
-    withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    if let date = withFraction.date(from: text) { return date }
-    let plain = ISO8601DateFormatter()
-    plain.formatOptions = [.withInternetDateTime]
-    return plain.date(from: text)
+    ISOParsers.fractional.date(from: text) ?? ISOParsers.plain.date(from: text)
 }
 
 // MARK: - Markup editing

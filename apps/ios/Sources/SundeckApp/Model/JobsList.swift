@@ -148,7 +148,11 @@ public func jobList(
         if let number, v.number == number { return true }
         return v.customerName.localizedCaseInsensitiveContains(q)
     }
-    let start = { (v: JobView) in parseInstant(v.job["scheduled_start"]?.string)?.timeIntervalSince1970 }
+    // Parsed once per job, not once per comparison.
+    let starts = Dictionary(
+        picked.map { ($0.id, parseInstant($0.job["scheduled_start"]?.string)?.timeIntervalSince1970) },
+        uniquingKeysWith: { a, _ in a })
+    let start = { (v: JobView) in starts[v.id] ?? nil }
     let sorted = picked.sorted { a, b in
         switch (start(a), start(b)) {
         case (let x?, let y?) where x != y: return x < y
