@@ -80,6 +80,8 @@ const SHAPES = {
   chevronDown: { line: "M6 9l6 6 6-6" },
   search: { line: "M20 20l-4.3-4.3", circles: [[11, 11, 6.5]] },
   close: { line: "M6 6l12 12M18 6L6 18" },
+  // A done stop on Today (the website's TodayStop check).
+  check: { line: "M5 12.5l4.5 4.5L19 7.5" },
   lightbulb: {
     line: "M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z",
   },

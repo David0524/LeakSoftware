@@ -7,7 +7,7 @@ import {
   DRAWING_MAX,
   LANDMARKS,
   LANDMARKS_MAX,
-  LANDMARK_SIZE,
+  clampLandmarkSize,
   clampSpaR,
   drawnPath,
   drawnShapeFrom,
@@ -27,7 +27,7 @@ import { useSession } from "../../state/session";
 import { Button, Segmented, T, Toggle } from "../../ui/components";
 import { confirmDestructive } from "../../ui/confirm";
 import { haptics } from "../../ui/haptics";
-import { DiagramShapes } from "../../ui/PoolDiagram";
+import { DiagramShapes, LandmarkArt } from "../../ui/PoolDiagram";
 import { color, face, minTap, shape as radii, space, type } from "../../ui/theme";
 
 // The Pool Shape sheet (owner, 2026-10-19), as the website's PoolShapeEditor
@@ -47,7 +47,7 @@ const TOOLS: { value: Tool; label: string }[] = [
 type Point = { x: number; y: number };
 type Spa = { x: number; y: number; r: number; shape: SpaShape };
 type Press = {
-  what: "spa" | "resize" | "landmark" | "draw" | "pinch" | null;
+  what: "spa" | "resize" | "landmark" | "landmark-resize" | "draw" | "pinch" | null;
   index?: number;
   start: Point;
   moved: boolean;
@@ -151,12 +151,12 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
     spaNow && setSpa({ ...spaNow, shape: spaNow.shape === "square" ? "round" : "square" });
 
   // The gesture handlers read the latest state through this ref (the responder is made once).
-  const live = useRef({ spaNow, d, landmarks, drawing, panel, placing, tool });
+  const live = useRef({ spaNow, d, landmarks, drawing, panel, placing, tool, selected });
   const view = useRef<View>(null);
   const origin = useRef({ x: 0, y: 0 });
   const box = useRef({ w: 0, h: 0 });
   useLayoutEffect(() => {
-    live.current = { spaNow, d, landmarks, drawing, panel, placing, tool };
+    live.current = { spaNow, d, landmarks, drawing, panel, placing, tool, selected };
     box.current = { w: width, h: height };
   });
   const press = useRef<Press>({ what: null, start: { x: 0, y: 0 }, moved: false });
@@ -167,12 +167,26 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
     y: unit((pageY - origin.current.y) / (box.current.h || 1)),
   });
 
+  // The selected landmark: an X at its top right deletes it (owner, 2026-10-19), and the
+  // handle at its bottom right resizes it, as the spa's does.
+  const picked = selected !== null ? d.landmarks[selected] : undefined;
+  const setLandmarkSize = (index: number, size: number) =>
+    setLandmarks((all) =>
+      all.map((l, i) => (i === index ? { ...l, s: clampLandmarkSize(size) } : l)),
+    );
+  const flipLandmark = (index: number) =>
+    setLandmarks((all) => all.map((l, i) => (i === index ? { ...l, flip: !l.flip } : l)));
+  const removeLandmark = (index: number) => {
+    setLandmarks((all) => all.filter((_, i) => i !== index));
+    setSelected(null);
+  };
+
   const gap = (e: GestureResponderEvent) => {
     const [a, b] = e.nativeEvent.touches;
     return a && b ? Math.hypot(a.pageX - b.pageX, a.pageY - b.pageY) : 0;
   };
   function down(p: Point) {
-    const { spaNow: s, d: dd, landmarks: lm, panel: pn, placing: pl } = live.current;
+    const { spaNow: s, d: dd, landmarks: lm, panel: pn, placing: pl, selected: sel } = live.current;
     if (pn === "draw") {
       press.current = { what: "draw", start: p, moved: false };
       strokeRef.current = [p];
@@ -186,17 +200,33 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
       press.current = { what: null, start: p, moved: false };
       return;
     }
+    const pk = sel !== null ? dd.landmarks[sel] : undefined;
+    const near = (x: number, y: number) => Math.hypot(p.x * W - x, p.y * H - y) <= 6;
+    if (sel !== null && pk && near(pk.cx + pk.size / 2, pk.cy - pk.size / 2)) {
+      removeLandmark(sel);
+      haptics.selection();
+      press.current = { what: null, start: p, moved: false };
+      return;
+    }
+    if (sel !== null && pk && near(pk.cx + pk.size / 2, pk.cy + pk.size / 2)) {
+      press.current = { what: "landmark-resize", index: sel, start: p, moved: false };
+      return;
+    }
     const onHandle =
       !!s && Math.hypot((p.x - s.x) * W - s.r * 0.71, (p.y - s.y) * H - s.r * 0.71) <= 6;
     const onSpa = !!s && Math.hypot((p.x - s.x) * W, (p.y - s.y) * H) <= s.r + 2;
     if (onHandle) press.current = { what: "resize", start: p, moved: false, startR: s!.r };
     else if (onSpa) press.current = { what: "spa", start: p, moved: false };
     else {
-      const i = dd.landmarks.findIndex(
-        (l) =>
-          Math.abs(p.x * W - l.cx) <= LANDMARK_SIZE / 2 + 2 &&
-          Math.abs(p.y * H - l.cy) <= LANDMARK_SIZE / 2 + 2,
-      );
+      // The top one under the finger (the last drawn).
+      let i = -1;
+      dd.landmarks.forEach((l, k) => {
+        if (
+          Math.abs(p.x * W - l.cx) <= l.size / 2 + 2 &&
+          Math.abs(p.y * H - l.cy) <= l.size / 2 + 2
+        )
+          i = k;
+      });
       press.current =
         i >= 0
           ? { what: "landmark", index: i, start: p, moved: false }
@@ -225,19 +255,23 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
     },
     onResponderMove: (e: GestureResponderEvent) => {
       const now = press.current;
-      const { spaNow: s, landmarks: lm, panel: pn } = live.current;
-      if (e.nativeEvent.touches.length === 2 && s && pn !== "draw") {
-        // A pinch resizes the spa (owner, 2026-10-19).
+      const { spaNow: s, landmarks: lm, panel: pn, d: dd, selected: sel } = live.current;
+      const pk = sel !== null ? dd.landmarks[sel] : undefined;
+      if (e.nativeEvent.touches.length === 2 && (pk || s) && pn !== "draw") {
+        // A pinch resizes the selected landmark, otherwise the spa (owner, 2026-10-19).
         if (now.what !== "pinch")
           press.current = {
             what: "pinch",
             start: now.start,
             moved: true,
-            startR: s.r,
+            startR: pk ? pk.size : s!.r,
             startGap: gap(e),
           };
-        else if (now.startGap)
-          setSpa({ ...s, r: clampSpaR(now.startR! * (gap(e) / now.startGap)) });
+        else if (now.startGap) {
+          const scaled = now.startR! * (gap(e) / now.startGap);
+          if (pk && sel !== null) setLandmarkSize(sel, scaled);
+          else if (s) setSpa({ ...s, r: clampSpaR(scaled) });
+        }
         return;
       }
       const p = at(e.nativeEvent.pageX, e.nativeEvent.pageY);
@@ -249,12 +283,17 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
       } else if (now.what === "spa" && now.moved && s) setSpa({ ...s, x: p.x, y: p.y });
       else if (now.what === "resize" && s)
         setSpa({ ...s, r: clampSpaR(Math.hypot((p.x - s.x) * W, (p.y - s.y) * H)) });
+      else if (now.what === "landmark-resize" && pk && now.index !== undefined)
+        setLandmarkSize(
+          now.index,
+          2 * Math.max(Math.abs(p.x * W - pk.cx), Math.abs(p.y * H - pk.cy)),
+        );
       else if (now.what === "landmark" && now.moved && now.index !== undefined)
         setLandmarks(lm.map((l, i) => (i === now.index ? { ...l, x: p.x, y: p.y } : l)));
     },
     onResponderRelease: (e: GestureResponderEvent) => {
       const now = press.current;
-      const { spaNow: s, drawing: dr, tool: tl } = live.current;
+      const { spaNow: s, drawing: dr, tool: tl, selected: sel } = live.current;
       if (now.what === "draw" && strokeRef.current) {
         const made = drawnShapeFrom(tl, [
           ...strokeRef.current,
@@ -266,7 +305,11 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
       } else if (now.what === "spa" && !now.moved && s)
         // Tapping the spa switches it round and square (owner, 2026-10-19).
         setSpa({ ...s, shape: s.shape === "square" ? "round" : "square" });
-      else if (now.what === "landmark" && !now.moved) setSelected(now.index ?? null);
+      else if (now.what === "landmark" && !now.moved && now.index !== undefined) {
+        // A tap selects a landmark; a tap on the selected one mirrors it (owner, 2026-10-19).
+        if (now.index === sel) flipLandmark(now.index);
+        else setSelected(now.index);
+      }
       press.current = { what: null, start: { x: 0, y: 0 }, moved: false };
     },
     onResponderTerminate: () => {
@@ -312,6 +355,16 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
     : null;
   const move = (dx: number, dy: number) =>
     spaNow && setSpa({ ...spaNow, x: unit(spaNow.x + dx), y: unit(spaNow.y + dy) });
+  const pickedLabel = picked ? LANDMARKS.find((l) => l.key === picked.kind)!.label : null;
+  const landmarkActions =
+    picked && pickedLabel
+      ? [
+          { name: "landmarkLarger", label: `Make the ${pickedLabel} Larger` },
+          { name: "landmarkSmaller", label: `Make the ${pickedLabel} Smaller` },
+          { name: "landmarkFlip", label: `Flip the ${pickedLabel}` },
+          { name: "landmarkDelete", label: `Delete the ${pickedLabel}` },
+        ]
+      : [];
   const actions = spaNow
     ? [
         { name: "moveLeft", label: "Move Spa Left" },
@@ -373,16 +426,7 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
                       setPlacing(null);
                     }}
                   >
-                    <G transform="translate(37 7) scale(3.6)">
-                      <Path
-                        d={LANDMARKS[0]!.path}
-                        fill="none"
-                        stroke={panel === "landmarks" ? color.link : color.text}
-                        strokeWidth={2.5}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </G>
+                    <LandmarkArt parts={LANDMARKS[0]!.parts} transform="translate(56 2) scale(2)" />
                   </Tile>
                 ) : t.kind === "draw" ? (
                   <Tile
@@ -436,15 +480,8 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
                     pressed && { opacity: 0.8 },
                   ]}
                 >
-                  <Svg width={20} height={20} viewBox="0 0 24 24">
-                    <Path
-                      d={l.path}
-                      fill="none"
-                      stroke={on ? color.link : color.text}
-                      strokeWidth={1.8}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                  <Svg width={24} height={24} viewBox="0 0 24 24">
+                    <LandmarkArt parts={l.parts} />
                   </Svg>
                   <Text
                     style={[
@@ -464,7 +501,7 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
           <T variant="secondary" muted>
             {placing
               ? `Tap the drawing to put the ${LANDMARKS.find((l) => l.key === placing)!.label.toLowerCase()} there.`
-              : "Pick one, then tap the drawing. Drag one to move it; tap it to remove it."}
+              : "Pick one, then tap the drawing. Tap a landmark to select it: tap again to flip it, pinch or drag its corner to resize, or tap its X to delete it."}
           </T>
         </View>
       ) : null}
@@ -472,14 +509,21 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
       {panel === "draw" ? (
         <View style={{ gap: space["2"] }}>
           <View style={styles.drawRow}>
-            <View style={{ flex: 1 }}>
-              <Segmented label="Draw" value={tool} onChange={setTool} options={TOOLS} />
+            <View style={{ flexShrink: 1 }}>
+              <Segmented
+                label="Draw"
+                value={tool}
+                onChange={setTool}
+                options={TOOLS}
+                fill={false}
+              />
             </View>
             <Button
               title="Undo"
               kind="secondary"
               disabled={drawing.length === 0}
               onPress={() => setDrawing(drawing.slice(0, -1))}
+              style={{ alignSelf: "flex-end" }}
             />
           </View>
           <T variant="secondary" muted>
@@ -515,6 +559,7 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
           accessibilityActions={[
             { name: "increment", label: "Larger" },
             { name: "decrement", label: "Smaller" },
+            ...landmarkActions,
             ...actions,
           ]}
           onAccessibilityAction={(e) => {
@@ -526,6 +571,12 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
             else if ((name === "larger" || name === "increment") && spaNow) setSpaR(spaNow.r + 2);
             else if ((name === "smaller" || name === "decrement") && spaNow) setSpaR(spaNow.r - 2);
             else if (name === "spaShape") toggleSpaShape();
+            else if (selected !== null && picked) {
+              if (name === "landmarkLarger") setLandmarkSize(selected, picked.size + 2);
+              else if (name === "landmarkSmaller") setLandmarkSize(selected, picked.size - 2);
+              else if (name === "landmarkFlip") flipLandmark(selected);
+              else if (name === "landmarkDelete") removeLandmark(selected);
+            }
           }}
           {...handlers}
         >
@@ -542,17 +593,42 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
                   strokeLinecap="round"
                 />
               ) : null}
-              {selected !== null && d.landmarks[selected] ? (
-                <Rect
-                  x={d.landmarks[selected]!.cx - LANDMARK_SIZE / 2 - 2}
-                  y={d.landmarks[selected]!.cy - LANDMARK_SIZE / 2 - 2}
-                  width={LANDMARK_SIZE + 4}
-                  height={LANDMARK_SIZE + 4}
-                  rx={4}
-                  fill="none"
-                  stroke={color.link}
-                  strokeWidth={1.5}
-                />
+              {picked ? (
+                <G>
+                  <Rect
+                    x={picked.cx - picked.size / 2 - 1.5}
+                    y={picked.cy - picked.size / 2 - 1.5}
+                    width={picked.size + 3}
+                    height={picked.size + 3}
+                    rx={3}
+                    fill="none"
+                    stroke={color.link}
+                    strokeWidth={1.2}
+                    strokeDasharray="3 2"
+                  />
+                  {/* Delete: an X in the top-right corner. */}
+                  <Circle
+                    cx={picked.cx + picked.size / 2}
+                    cy={picked.cy - picked.size / 2}
+                    r={4.5}
+                    fill={color.fail}
+                  />
+                  <Path
+                    d={`M${picked.cx + picked.size / 2 - 1.8} ${picked.cy - picked.size / 2 - 1.8} l3.6 3.6 m0 -3.6 l-3.6 3.6`}
+                    stroke={color.paper}
+                    strokeWidth={1.3}
+                    strokeLinecap="round"
+                  />
+                  {/* Resize: the same handle as the spa's. */}
+                  <Circle
+                    cx={picked.cx + picked.size / 2}
+                    cy={picked.cy + picked.size / 2}
+                    r={3.2}
+                    fill={color.surface}
+                    stroke={color.link}
+                    strokeWidth={1.5}
+                  />
+                </G>
               ) : null}
               {d.spa && panel !== "draw" ? (
                 // The spa's resize handle, at its lower right.
@@ -573,16 +649,6 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
             ? "Tap the spa to make it round or square. Drag it to move it; pinch or drag its corner to resize."
             : "Turn on Has a spa to put a spa on the drawing."}
         </T>
-        {selected !== null && landmarks[selected] ? (
-          <Button
-            title={`Remove ${LANDMARKS.find((l) => l.key === landmarks[selected]!.kind)!.label}`}
-            kind="danger"
-            onPress={() => {
-              setLandmarks(landmarks.filter((_, i) => i !== selected));
-              setSelected(null);
-            }}
-          />
-        ) : null}
       </View>
 
       <Button title="Save Pool Shape" wide onPress={save} />

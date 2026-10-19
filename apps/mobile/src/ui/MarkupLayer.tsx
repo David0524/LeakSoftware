@@ -1,5 +1,5 @@
 import Svg, { Ellipse, G, Line, Path, Polygon, Text as SvgText } from "react-native-svg";
-import { arrowHead, penPath, type MarkupShape } from "@leakbook/core";
+import { arrowShape, penPath, type MarkupShape } from "@leakbook/core";
 import { font, markupColor } from "./theme";
 
 /** The pixel space a pool diagram's markup is drawn in: its 160 x 100, five times over. */
@@ -50,30 +50,35 @@ export function MarkupLayer({
           const y1 = s.y1 * height;
           const x2 = s.x2 * width;
           const y2 = s.y2 * height;
-          const head = arrowHead(x1, y1, x2, y2, Math.max(10, 22 * scale))
-            .map(([x, y]) => `${x},${y}`)
-            .join(" ");
+          const { shaftEnd, head } = arrowShape(x1, y1, x2, y2, scale);
+          const points = head.map(([x, y]) => `${x},${y}`).join(" ");
+          // Outline first (shaft and head), then the color; the head on top keeps its point
+          // (owner, 2026-10-19), as the website's MarkupOverlay.
           return (
-            <G key={i}>
+            <G key={i} strokeLinecap="round" strokeLinejoin="round">
               <Line
                 x1={x1}
                 y1={y1}
-                x2={x2}
-                y2={y2}
+                x2={shaftEnd[0]}
+                y2={shaftEnd[1]}
                 stroke={markupColor.outline}
                 strokeWidth={outline}
-                strokeLinecap="round"
               />
-              <Polygon points={head} fill={c} stroke={markupColor.outline} strokeWidth={1.5} />
+              <Polygon
+                points={points}
+                fill={markupColor.outline}
+                stroke={markupColor.outline}
+                strokeWidth={outline - stroke}
+              />
               <Line
                 x1={x1}
                 y1={y1}
-                x2={x2}
-                y2={y2}
+                x2={shaftEnd[0]}
+                y2={shaftEnd[1]}
                 stroke={c}
                 strokeWidth={stroke}
-                strokeLinecap="round"
               />
+              <Polygon points={points} fill={c} />
             </G>
           );
         }

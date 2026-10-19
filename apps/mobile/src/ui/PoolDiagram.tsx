@@ -1,11 +1,12 @@
 import { useRef, useState } from "react";
 import { Pressable, StyleSheet, View, type GestureResponderEvent } from "react-native";
 import Svg, { Circle, G, Path, Rect, Text as SvgText } from "react-native-svg";
+import { tokens } from "@leakbook/tokens";
 import {
-  LANDMARK_SIZE,
   parseDiagramLayout,
   poolDiagram,
   type DiagramShape,
+  type LandmarkPart,
   type MarkupShape,
   type PoolDiagram as Drawing,
 } from "@leakbook/core";
@@ -151,6 +152,34 @@ export function PoolDiagram({
   );
 }
 
+/** Where a landmark's 24 x 24 drawing goes: its size box on its center, mirrored when flipped. */
+export function landmarkTransform(l: { cx: number; cy: number; size: number; flip: boolean }) {
+  const k = l.size / 24;
+  return l.flip
+    ? `translate(${l.cx + l.size / 2} ${l.cy - l.size / 2}) scale(${-k} ${k})`
+    : `translate(${l.cx - l.size / 2} ${l.cy - l.size / 2}) scale(${k})`;
+}
+
+/**
+ * A landmark's drawing (owner, 2026-10-19: "hard to interpret"), as the website's LandmarkArt:
+ * filled parts in their color.landmark tones with a thin dark outline; water streaks ("foam")
+ * as white lines. In a 24 x 24 box.
+ */
+export function LandmarkArt({ parts, transform }: { parts: LandmarkPart[]; transform?: string }) {
+  const tone = tokens.color.landmark;
+  return (
+    <G transform={transform} strokeLinecap="round" strokeLinejoin="round">
+      {parts.map((p, i) =>
+        p.tone === "foam" ? (
+          <Path key={i} d={p.d} fill="none" stroke={tone.foam} strokeWidth={1.4} />
+        ) : (
+          <Path key={i} d={p.d} fill={tone[p.tone]} stroke={tone.outline} strokeWidth={1} />
+        ),
+      )}
+    </G>
+  );
+}
+
 /**
  * The pool, what was drawn on it, its landmarks, and the spa, as the website's DiagramShapes
  * (apps/web/src/components/pool-diagram.tsx), in the diagram's 160 x 100 units.
@@ -174,19 +203,7 @@ export function DiagramShapes({ d }: { d: Drawing }) {
         />
       ))}
       {d.landmarks.map((l, i) => (
-        <G
-          key={`landmark-${i}`}
-          transform={`translate(${l.cx - LANDMARK_SIZE / 2} ${l.cy - LANDMARK_SIZE / 2}) scale(${LANDMARK_SIZE / 24})`}
-        >
-          <Path
-            d={l.path}
-            fill="none"
-            stroke={color.textMuted}
-            strokeWidth={1.8}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </G>
+        <LandmarkArt key={`landmark-${i}`} parts={l.parts} transform={landmarkTransform(l)} />
       ))}
       {d.spa ? (
         d.spa.square ? (

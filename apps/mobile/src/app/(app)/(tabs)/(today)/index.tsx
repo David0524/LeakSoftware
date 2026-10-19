@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Linking, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Animated, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import {
   LOCK_LABELS,
   canMakeJobs,
@@ -13,6 +13,7 @@ import {
   isManagerRole,
   localDate,
   onMyWayVia,
+  stopDone,
   localMinutes,
   minutesLabel,
   propertyLocation,
@@ -56,9 +57,6 @@ import {
   tabular,
   type,
 } from "../../../../ui/theme";
-
-/** A stop still to do: the next one is the first of these. */
-const open = (j: JobView) => j.status === "scheduled" || j.status === "in_progress";
 
 /**
  * Today (spec 5.1): your day stop by stop, from the jobs on this phone. Stops are in route
@@ -145,7 +143,8 @@ export default function Today() {
     workDay(settings),
     drive,
   );
-  const next = stops.find(open);
+  // The stop you're on: the first not done today (Mark Complete moves it on).
+  const next = stops.find((j) => !stopDone(j, today));
   const depotAddress = formatAddress(company as unknown as Parameters<typeof formatAddress>[0]);
   const directions = dayDirections(
     mapsAppFor(choice),
@@ -153,7 +152,7 @@ export default function Today() {
     stops.map((j) => ({
       address: j.property ? formatAddress(j.property) : "",
       location: propertyLocation(j.property),
-      done: !open(j),
+      done: stopDone(j, today),
     })),
   );
   const backLeg = summary.driveMin - summary.legs.reduce((a, b) => a + b, 0);
@@ -234,7 +233,7 @@ export default function Today() {
                 n={i + 1}
                 next={j.id === next?.id}
                 timeZone={tz}
-                mine={mine}
+                day={today}
                 onMyWay={
                   mine ? (
                     <OnMyWay
@@ -287,90 +286,115 @@ function Leg({ text, late }: { text: string; late?: string | null }) {
   );
 }
 
-/** One stop: number, time, status; the customer; the address; access notes. */
+/**
+ * One stop (owner, 2026-10-19: "keep these cards on Today collapsed except for the job you are
+ * on. Then a tap on an old job or future job expands it"), as the website's TodayStop: one row
+ * (number, or a green check when done; time; customer; state) that opens to the address,
+ * cleanings, access notes, Mark Complete, Open Job, call, and On My Way.
+ */
 function Stop({
   job,
   n,
   next,
   timeZone,
+  day,
   onDirections,
   onMyWay,
-  mine,
 }: {
   job: JobView;
   n: number;
+  /** The stop you're on: open, and ringed. */
   next: boolean;
   timeZone: string;
-  /** On your own route: a visit can be completed from here. */
-  mine: boolean;
+  day: string;
   onMyWay: ReactNode;
   onDirections: () => void;
 }) {
-  const done = !open(job);
+  const done = stopDone(job, day);
+  const [expanded, setExpanded] = useState(next);
+  const [turn] = useState(() => new Animated.Value(next ? 1 : 0));
+  useEffect(() => {
+    Animated.timing(turn, {
+      toValue: expanded ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [expanded, turn]);
   const lock = jobLock(job);
   const name = job.customer?.name ?? "Customer";
   const phone = job.customer?.phone;
   return (
-    <Pressable
-      accessibilityRole="button"
+    <View
       accessibilityLabel={`Stop ${n}: ${name}`}
-      onPress={() => router.push(`/jobs/${job.id}`)}
-      style={({ pressed }) => [
+      style={[
         styles.stop,
         { backgroundColor: color.surface },
         cardShadow(),
-        next && { borderWidth: 2, borderColor: color.link, padding: space["3"] - 2 },
-        done && { opacity: 0.7 },
-        pressed && { opacity: done ? 0.6 : 0.85 },
+        next && { borderWidth: 2, borderColor: color.link },
       ]}
     >
-      <View style={styles.stopTop}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Stop ${n}: ${name}${done ? ", done" : ""}`}
+        accessibilityState={{ expanded }}
+        onPress={() => setExpanded(!expanded)}
+        style={({ pressed }) => [styles.stopTop, pressed && { opacity: 0.7 }]}
+      >
         <View
-          style={[styles.number, { backgroundColor: next ? color.link : color.bg }]}
+          style={[
+            styles.number,
+            { backgroundColor: done ? color.pass : next ? color.link : color.bg },
+          ]}
           accessibilityElementsHidden
           importantForAccessibility="no"
         >
-          <Text style={[styles.numberText, { color: next ? color.bg : color.text }]}>{n}</Text>
+          {done ? (
+            <WebIcon name="check" size={16} color={color.onStatus} strokeWidth={3} />
+          ) : (
+            <Text style={[styles.numberText, { color: next ? color.bg : color.text }]}>{n}</Text>
+          )}
         </View>
-        <Text style={[styles.time, tabular, { color: color.text }]}>
-          {job.scheduled_start ? formatTime(job.scheduled_start, timeZone) : ""}
-        </Text>
-        {job.status !== "scheduled" ? <StatusChip status={job.status} /> : null}
-        {lock && lock !== "started" ? (
-          <T variant="footnote" muted style={face.semiBold}>
-            {LOCK_LABELS[lock]}
-          </T>
-        ) : null}
-        {!done && (phone || onMyWay) ? (
-          <View style={styles.actions}>
-            {phone ? (
-              <RoundButton
-                icon="phone"
-                label={`Call ${name}, ${phone}`}
-                onPress={() => void Linking.openURL(`tel:${phone}`)}
-              />
-            ) : null}
-            {onMyWay}
-          </View>
-        ) : null}
-      </View>
-      <T variant="bodyEmphasis" numberOfLines={1} style={{ marginTop: space["1"] }}>
-        {name}
-      </T>
-      {done || !job.property ? null : (
-        <>
-          <Text
-            accessibilityRole="link"
-            accessibilityHint="Directions"
-            onPress={onDirections}
-            style={[type.secondary, { color: color.link, alignSelf: "flex-start" }]}
-            maxFontSizeMultiplier={MAX_TEXT_SCALE}
-          >
-            {formatAddress(job.property)}
+        <View style={[styles.summary, done && { opacity: 0.7 }]}>
+          <Text style={[styles.time, tabular, { color: color.text }]}>
+            {job.scheduled_start ? formatTime(job.scheduled_start, timeZone) : ""}
           </Text>
-          {/* A cleaning on this visit's checklist (owner, 2026-10-19), as the website. */}
-          <CleaningsDue job={job} />
-          {job.property.access_notes ? (
+          <T variant="bodyEmphasis" numberOfLines={1} style={{ flexShrink: 1 }}>
+            {name}
+          </T>
+          {/* Most stops are scheduled; the chip shows other states. */}
+          {job.status !== "scheduled" ? <StatusChip status={job.status} /> : null}
+          {lock && lock !== "started" ? (
+            <T variant="footnote" muted style={face.semiBold}>
+              {LOCK_LABELS[lock]}
+            </T>
+          ) : null}
+        </View>
+        <Animated.View
+          style={{
+            transform: [
+              { rotate: turn.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "180deg"] }) },
+            ],
+          }}
+        >
+          <WebIcon name="chevronDown" size={20} color={color.textMuted} strokeWidth={2.2} />
+        </Animated.View>
+      </Pressable>
+      {expanded ? (
+        <View style={styles.body}>
+          {job.property ? (
+            <Text
+              accessibilityRole="link"
+              accessibilityHint="Directions"
+              onPress={onDirections}
+              style={[type.secondary, { color: color.link, alignSelf: "flex-start" }]}
+              maxFontSizeMultiplier={MAX_TEXT_SCALE}
+            >
+              {formatAddress(job.property)}
+            </Text>
+          ) : null}
+          {/* Just the icon and how soon (owner, 2026-10-19), as the website. */}
+          {done ? null : <CleaningsDue job={job} />}
+          {job.property?.access_notes ? (
             <View
               accessible
               accessibilityLabel={`Access: ${job.property.access_notes}`}
@@ -388,13 +412,35 @@ function Stop({
               </Text>
             </View>
           ) : null}
-          {/* Onto the next stop without opening the visit (owner, 2026-10-19). */}
-          {mine && job.type === "maintenance" ? (
-            <TodayComplete job={job} customer={job.customer?.name ?? "this stop"} />
-          ) : null}
-        </>
-      )}
-    </Pressable>
+          <View style={styles.buttons}>
+            {/* Every stop: done for the day without the full process (owner, 2026-10-19). */}
+            <TodayComplete
+              job={job}
+              customer={job.customer?.name ?? "this stop"}
+              day={day}
+              done={done}
+            />
+            <Button
+              title="Open Job"
+              kind="secondary"
+              onPress={() => router.push(`/jobs/${job.id}`)}
+            />
+            {done ? null : (
+              <View style={styles.actions}>
+                {phone ? (
+                  <RoundButton
+                    icon="phone"
+                    label={`Call ${name}, ${phone}`}
+                    onPress={() => void Linking.openURL(`tel:${phone}`)}
+                  />
+                ) : null}
+                {onMyWay}
+              </View>
+            )}
+          </View>
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -417,8 +463,31 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   dots: { height: 16, borderLeftWidth: 2, borderStyle: "dotted" },
-  stop: { borderRadius: shape.card, padding: space["3"] },
-  stopTop: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space["2"] },
+  stop: { borderRadius: shape.card, overflow: "hidden" },
+  stopTop: {
+    minHeight: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space["2"],
+    paddingHorizontal: space["3"],
+    paddingVertical: space["2"],
+  },
+  summary: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    columnGap: space["2"],
+  },
+  body: { gap: space["1"], paddingHorizontal: space["3"], paddingBottom: space["3"] },
+  buttons: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "flex-start",
+    gap: space["2"],
+    paddingTop: space["2"],
+  },
   number: {
     width: 32,
     height: 32,

@@ -794,6 +794,26 @@ export function Segmented<V extends string>({
   const [w] = useState(() => new Animated.Value(0));
   const placed = useRef(false);
   const chosen = value != null ? layouts[value] : undefined;
+  // Hold the chosen segment and drag it along the track, as iOS 26's segmented controls do
+  // (owner, 2026-10-19: "hold the slider/selector like a bubble and drag it around"): the
+  // choice follows the finger and the segment lifts while held (the website's Segmented).
+  const [held, setHeld] = useState(false);
+  const holding = useRef(false);
+  const dragging = useRef(false);
+  const track = useRef<View>(null);
+  const trackX = useRef(0);
+  const measureTrack = () =>
+    track.current?.measure((_x, _y, _w, _h, pageX) => {
+      if (Number.isFinite(pageX)) trackX.current = pageX;
+    });
+  const segmentAt = (pageX: number): V | null => {
+    const at = pageX - trackX.current;
+    const hit = options.find((o) => {
+      const l = layouts[o.value];
+      return l && at >= l.x && at <= l.x + l.width;
+    });
+    return hit ? hit.value : null;
+  };
 
   useEffect(() => {
     if (!chosen) return;
@@ -811,6 +831,29 @@ export function Segmented<V extends string>({
 
   const control = (
     <View
+      ref={track}
+      onLayout={measureTrack}
+      // A held chosen segment takes over the touch once it moves; then it follows the finger.
+      onMoveShouldSetResponderCapture={() => holding.current}
+      onResponderGrant={() => {
+        dragging.current = true;
+        measureTrack();
+      }}
+      onResponderMove={(e) => {
+        const next = segmentAt(e.nativeEvent.pageX);
+        if (next !== null && next !== value) {
+          haptics.selection();
+          onChange(next);
+        }
+      }}
+      onResponderRelease={() => {
+        dragging.current = holding.current = false;
+        setHeld(false);
+      }}
+      onResponderTerminate={() => {
+        dragging.current = holding.current = false;
+        setHeld(false);
+      }}
       style={[
         styles.track,
         { backgroundColor: color.fill },
@@ -826,6 +869,7 @@ export function Segmented<V extends string>({
             styles.thumb,
             { backgroundColor: color.thumb, left: x, width: w, top: 2, bottom: 2 },
             thumbShadow(),
+            held && !reduceMotion && { transform: [{ scale: 1.06 }] },
           ]}
         />
       ) : null}
@@ -844,6 +888,21 @@ export function Segmented<V extends string>({
                 if (p && p.x === l.x && p.width === l.width) return prev;
                 return { ...prev, [o.value]: l };
               });
+            }}
+            onPressIn={() => {
+              if (!on) return;
+              holding.current = true;
+              setHeld(true);
+              measureTrack();
+            }}
+            onPressOut={() => {
+              // Released without dragging (a drag hands the touch to the track instead, which
+              // ends the press too: then the track lets go).
+              setTimeout(() => {
+                if (dragging.current || !holding.current) return;
+                holding.current = false;
+                setHeld(false);
+              }, 0);
             }}
             onPress={() => {
               if (on) return;
@@ -864,8 +923,9 @@ export function Segmented<V extends string>({
                 !switcher && on && face.semiBold,
                 { color: color.text },
               ]}
-              numberOfLines={switcher ? 1 : 2}
-              adjustsFontSizeToFit={switcher}
+              // One word never breaks across lines ("Freefor / m"): it shrinks to fit instead.
+              numberOfLines={switcher || !o.label.includes(" ") ? 1 : 2}
+              adjustsFontSizeToFit={switcher || !o.label.includes(" ")}
               maxFontSizeMultiplier={switcher ? 1.4 : MAX_TEXT_SCALE}
             >
               {o.label}
@@ -1696,6 +1756,8 @@ const styles = StyleSheet.create({
     borderRadius: shape.segmentTrack,
     padding: 2,
     gap: 2,
+    // A held drag in the browser build doesn't select the labels.
+    userSelect: "none",
   },
   thumb: { position: "absolute", borderRadius: shape.segmentTrack - 2 },
   segment: {
