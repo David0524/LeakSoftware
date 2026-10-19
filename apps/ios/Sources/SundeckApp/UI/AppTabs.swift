@@ -62,13 +62,13 @@
                     tabLabel(.schedule)
                 }
                 Tab(value: AppTab.messages) {
-                    stack(.messages) { MessagesTab() }
+                    stack(.messages) { MessagesScreen() }
                 } label: {
                     tabLabel(.messages)
                 }
                 .badge(badgeText(unread).map { Text($0) })
                 Tab(value: AppTab.more) {
-                    stack(.more) { MoreView(showWelcome: { showWelcome = true }, showReauth: { showReauth = true }) }
+                    stack(.more) { MoreScreen(showWelcome: { showWelcome = true }, showReauth: { showReauth = true }) }
                 } label: {
                     tabLabel(.more)
                 }
