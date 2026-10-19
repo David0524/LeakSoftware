@@ -33,13 +33,19 @@ public struct BookingQuestion: Equatable, Sendable, Identifiable {
 public enum NewJobFormError: Error, Equatable, CustomStringConvertible {
     /// Owners stopped techs making jobs.
     case notAllowed
-    /// Some fields need fixing; `errors` and `feeError` say which.
+    /// Some fields need fixing; `errors`, `planErrors` and `feeError` say which.
     case invalid
+    /// Starting a plan needs a connection: the server makes its visits.
+    case offline
+    /// The server refused to start the plan.
+    case server(String)
 
     public var description: String {
         switch self {
         case .notAllowed: NewJobForm.notAllowedMessage
         case .invalid: "Fix the highlighted fields."
+        case .offline: NewJobForm.offlinePlanMessage
+        case .server(let message): message
         }
     }
 }
@@ -75,6 +81,12 @@ public final class NewJobForm {
 
     public nonisolated static let notAllowedMessage =
         "Your office makes new jobs. Ask an owner or admin to add this one."
+    /// The Expo app's wording (the website is always online).
+    public nonisolated static let offlinePlanMessage =
+        "You’re offline. Starting a plan needs a connection; try again once you’re back online."
+    /// Shown while offline, before Start Plan is tapped.
+    public nonisolated static let offlinePlanNotice =
+        "You’re offline. Starting a plan needs a connection, since the visits are made on the server."
 
     // MARK: - Context
 
@@ -118,8 +130,16 @@ public final class NewJobForm {
     public var notes = ""
     /// "Tue, Oct 20 at 9:00 AM with Tony Tech." after a suggestion fills the visit fields.
     public private(set) var picked: String?
+    /// Maintenance for owners and admins: nil is Just once (a single visit), else a plan that
+    /// repeats (the website's PlanRepeat menu).
+    public var repeatChoice: PlanRepeat?
+    /// The plan's days (Several Days), first visit, time, length and last visit. Its tech,
+    /// price and notes are the form's own Tech, price and notes.
+    public var plan: PlanDraft
 
     public private(set) var errors: [String: String] = [:]
+    /// The plan's fields to fix: weekdays, startsOn, time, minutes, endsOn.
+    public private(set) var planErrors: [String: String] = [:]
     public private(set) var feeError: String?
 
     public convenience init(sync: SyncService, company: CompanyContext, userId: String) {
@@ -139,6 +159,7 @@ public final class NewJobForm {
         let type: JobType = company.services == .pool ? .maintenance : .detection
         jobType = type
         hours = NewJobForm.hours(for: type, settings: company.settings)
+        plan = PlanDraft.new(today: today, settings: company.settings)
         input.scheduleDate = today
         input.scheduleTime = "09:00"
         // A tech who sees only their own jobs books them for themselves.
@@ -153,6 +174,12 @@ public final class NewJobForm {
     public var jobTypes: [JobTypeOption] { newJobTypes(company.services) }
     public var isLeak: Bool { jobType == .detection }
     public var isMaintenance: Bool { jobType == .maintenance }
+    /// Owners and admins can start a maintenance plan here (the server checks again).
+    public var canPlan: Bool { isManagerRole(company.role) }
+    /// The Repeats menu shows for maintenance when this person can start plans.
+    public var showsRepeat: Bool { isMaintenance && canPlan }
+    /// A plan that repeats rather than one visit: Start Plan, which needs a connection.
+    public var isPlan: Bool { showsRepeat && repeatChoice != nil }
     public var questions: [BookingQuestion] { BookingQuestion.list(company.settings) }
     /// "When they called": leak detection with intake questions set up (else a Notes card).
     public var showsBooking: Bool { isLeak && !questions.isEmpty }
@@ -219,7 +246,7 @@ public final class NewJobForm {
     }
 
     /// The price field's label and hint.
-    public var feeLabel: String { isLeak ? "Detection fee ($)" : "Price ($)" }
+    public var feeLabel: String { isPlan ? "Price per month ($)" : isLeak ? "Detection fee ($)" : "Price ($)" }
     public var feeHint: String {
         isMaintenance
             ? "Billed monthly with the customer's other visits."
@@ -235,10 +262,13 @@ public final class NewJobForm {
             input.state, input.postalCode, accessNotes, otherEmails, fee, notes,
         ]
         return customerId != nil || shape != nil || !answers.isEmpty || typed.contains { !trim($0).isEmpty }
-            || input.scheduleDate != today || input.scheduleTime != "09:00"
+            || input.scheduleDate != today || input.scheduleTime != "09:00" || repeatChoice != nil
     }
 
-    public var saveTitle: String { "Create Job" }
+    public var saveTitle: String { isPlan ? "Start Plan" : "Create Job" }
+
+    /// The First visit field's hint for the repeat chosen.
+    public var firstVisitHintText: String { firstVisitHint(repeatChoice ?? .weekly, long: false) }
 
     // MARK: - Changes
 
@@ -295,7 +325,12 @@ public final class NewJobForm {
         let checked = checkedInput()
         var e = validateNewJob(checked)
         if mode == .existing && customerId == nil { e["customer"] = "Pick a customer." }
-        if when == .scheduled {
+        planErrors = [:]
+        if isPlan, case .failure(let problems) = planDraft.check(endsMessage: "End on or after the first visit.") {
+            // The price is the form's own, checked below with New Job's wording.
+            planErrors = problems.fields.filter { $0.key != "price" }
+        }
+        if when == .scheduled && !isPlan {
             if checked.scheduleDate.isEmpty { e["scheduleDate"] = "Pick a date." }
             if hoursValue == nil { e["hours"] = "Enter 0.5 to 24 hours." }
         }
@@ -305,7 +340,69 @@ public final class NewJobForm {
         }
         errors = e
         feeError = badFee ? "Enter a price like 649." : nil
-        return e.isEmpty && !badFee
+        return e.isEmpty && planErrors.isEmpty && !badFee
+    }
+
+    /// Starts a maintenance plan, with a new customer and pool if needed, in one step on the
+    /// server (create_service_plan, as the website's New Job): the server makes its visits, so
+    /// this needs a connection. Returns the customer's id; sync next to bring the rows here.
+    public func startPlan(_ rpc: any RPCClient) async throws -> String {
+        guard canMakeJobs, canPlan else { throw NewJobFormError.notAllowed }
+        guard validate() else { throw NewJobFormError.invalid }
+        let checked = checkedInput()
+        let records = try newJobRecords(
+            checked,
+            NewJobDetails(
+                poolType: poolType, hasSpa: hasSpa, accessNotes: accessNotes, timing: .later,
+                assignedUserId: nil, jobType: .maintenance))
+        guard case .success(let values) = planDraft.check(endsMessage: "End on or after the first visit.") else {
+            throw NewJobFormError.invalid
+        }
+        let newCustomer: JSONValue =
+            records.customer.map { c in
+                [
+                    "name": .string(c.name), "phone": optional(c.phone), "email": optional(c.email),
+                    "cc_emails": .array(splitEmails(otherEmails).map { .string($0) }),
+                ]
+            } ?? .null
+        let newProperty: JSONValue =
+            records.property.map { p in
+                [
+                    "address_line1": .string(p.addressLine1), "city": optional(p.city),
+                    "state": optional(p.state?.uppercased()), "postal_code": optional(p.postalCode),
+                    "pool_type": optional(p.poolType?.rawValue), "has_spa": .bool(p.hasSpa),
+                    "access_notes": optional(p.accessNotes),
+                ]
+            } ?? .null
+        let arguments: JSONValue = [
+            "target_company": .string(company.id), "new_customer": newCustomer,
+            "existing_customer": optional(checked.customerId), "new_property": newProperty,
+            "existing_property": optional(checked.propertyId), "plan": .object(values),
+        ]
+        let reply: JSONValue
+        do {
+            reply = try await rpc.call("create_service_plan", arguments)
+        } catch {
+            let message = String(describing: error)
+            if error is URLError || isNetworkFailure(message) {
+                throw NewJobFormError.offline
+            }
+            throw NewJobFormError.server(message)
+        }
+        guard let customer = reply["customer"]?.string ?? checked.customerId else {
+            throw NewJobFormError.server("The plan started, but the customer couldn’t be opened. Pull to refresh.")
+        }
+        return customer
+    }
+
+    /// The plan's fields with the form's own tech, price and notes.
+    private var planDraft: PlanDraft {
+        var draft = plan
+        draft.repeats = repeatChoice ?? .weekly
+        draft.tech = seesAll ? techId : userId
+        draft.price = fee
+        draft.notes = notes
+        return draft
     }
 
     /// Saves the customer (if new), property (if new), job, and its checklist together, or
@@ -405,7 +502,8 @@ public final class NewJobForm {
         var checked = input
         checked.customerId = mode == .existing ? customerId : nil
         checked.propertyId = mode == .existing ? propertyId : nil
-        if when != .scheduled {
+        // A plan has no When: its visits come from the plan's dates.
+        if when != .scheduled || isPlan {
             checked.scheduleDate = ""
             checked.scheduleTime = ""
         }
@@ -436,6 +534,14 @@ private func dollarsText(_ cents: Cents) -> String {
 }
 
 private func optional(_ s: String?) -> JSONValue { s.map { .string($0) } ?? .null }
+
+/// A network failure, as opposed to the server saying no.
+private func isNetworkFailure(_ message: String) -> Bool {
+    message.firstMatch(
+        of:
+            /(?i)network|offline|timed? ?out|could not connect|internet connection|NSURLErrorDomain|URLError|no connection/
+    ) != nil
+}
 
 private func customerRow(_ c: NewCustomerValues?, _ ccEmails: [String]) -> Row {
     guard let c else { return [:] }

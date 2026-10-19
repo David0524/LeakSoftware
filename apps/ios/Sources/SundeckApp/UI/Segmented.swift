@@ -34,6 +34,8 @@
                             .font(.role(.segment).weight(chosen ? .semibold : .medium))
                             .foregroundStyle(Color.text)
                             .lineLimit(1)
+                            // Long labels in a full row (Every 2 Weeks) shrink a little, never cut.
+                            .minimumScaleFactor(0.8)
                             .padding(.horizontal, segmentPadding)
                             .frame(minWidth: minSegmentWidth, maxWidth: fillsWidth ? .infinity : nil, minHeight: 40)
                             .background {

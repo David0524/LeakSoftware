@@ -1,0 +1,1904 @@
+{
+  "maintenanceSettings": [
+    {
+      "args": [
+        null
+      ],
+      "result": {
+        "visitMinutes": 30,
+        "weeksAhead": 4
+      }
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": {
+        "visitMinutes": 30,
+        "weeksAhead": 4
+      }
+    },
+    {
+      "args": [
+        {
+          "maintenance": null
+        }
+      ],
+      "result": {
+        "visitMinutes": 30,
+        "weeksAhead": 4
+      }
+    },
+    {
+      "args": [
+        {
+          "maintenance": {
+            "visit_minutes": 45,
+            "weeks_ahead": 8
+          }
+        }
+      ],
+      "result": {
+        "visitMinutes": 45,
+        "weeksAhead": 8
+      }
+    },
+    {
+      "args": [
+        {
+          "maintenance": {
+            "visit_minutes": "60",
+            "weeks_ahead": "2"
+          }
+        }
+      ],
+      "result": {
+        "visitMinutes": 60,
+        "weeksAhead": 2
+      }
+    },
+    {
+      "args": [
+        {
+          "maintenance": {
+            "visit_minutes": 5,
+            "weeks_ahead": 13
+          }
+        }
+      ],
+      "result": {
+        "visitMinutes": 30,
+        "weeksAhead": 4
+      }
+    },
+    {
+      "args": [
+        {
+          "maintenance": {
+            "visit_minutes": 240,
+            "weeks_ahead": 12
+          }
+        }
+      ],
+      "result": {
+        "visitMinutes": 240,
+        "weeksAhead": 12
+      }
+    },
+    {
+      "args": [
+        {
+          "maintenance": {
+            "visit_minutes": 241,
+            "weeks_ahead": 0
+          }
+        }
+      ],
+      "result": {
+        "visitMinutes": 30,
+        "weeksAhead": 4
+      }
+    },
+    {
+      "args": [
+        {
+          "maintenance": {
+            "visit_minutes": 30.5,
+            "weeks_ahead": 1.5
+          }
+        }
+      ],
+      "result": {
+        "visitMinutes": 30,
+        "weeksAhead": 4
+      }
+    },
+    {
+      "args": [
+        {
+          "maintenance": {
+            "visit_minutes": true,
+            "weeks_ahead": [
+              3
+            ]
+          }
+        }
+      ],
+      "result": {
+        "visitMinutes": 30,
+        "weeksAhead": 3
+      }
+    },
+    {
+      "args": [
+        {
+          "maintenance": {
+            "visit_minutes": "",
+            "weeks_ahead": "abc"
+          }
+        }
+      ],
+      "result": {
+        "visitMinutes": 30,
+        "weeksAhead": 4
+      }
+    }
+  ],
+  "planRepeat": [
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "weekly"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 2,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "biweekly"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            4,
+            1
+          ],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "days"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            5,
+            1,
+            3
+          ],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "days"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            0
+          ],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "days"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "weekly"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "monthly"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-01",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "monthly"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-29",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "monthly"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-31",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "monthly"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 3,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "monthly"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-11-15",
+          "interval_weeks": 4,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "monthly"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": "10:00:00",
+          "duration_minutes": 30,
+          "price_cents": 18000,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "weekly"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": "07:05",
+          "duration_minutes": 45,
+          "price_cents": 0,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "weekly"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": "",
+          "duration_minutes": 30,
+          "price_cents": 123456,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "weekly"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            2,
+            6
+          ],
+          "monthly": false,
+          "visit_time": "13:30:00",
+          "duration_minutes": 30,
+          "price_cents": 9950,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "days"
+    }
+  ],
+  "cadenceLabel": [
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Tuesday"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 2,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every 2 weeks on Tuesday"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            4,
+            1
+          ],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Monday and Thursday"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            5,
+            1,
+            3
+          ],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Monday, Wednesday, and Friday"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            0
+          ],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Sunday"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Tuesday"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Monthly on the 3rd Tuesday"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-01",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Monthly on the 1st Thursday"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-29",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Monthly on the 4th Thursday"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-31",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Monthly on the 4th Saturday"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 3,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Monthly on the 3rd Tuesday"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-11-15",
+          "interval_weeks": 4,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Monthly on the 3rd Sunday"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": "10:00:00",
+          "duration_minutes": 30,
+          "price_cents": 18000,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Tuesday"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": "07:05",
+          "duration_minutes": 45,
+          "price_cents": 0,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Tuesday"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": "",
+          "duration_minutes": 30,
+          "price_cents": 123456,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Tuesday"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            2,
+            6
+          ],
+          "monthly": false,
+          "visit_time": "13:30:00",
+          "duration_minutes": 30,
+          "price_cents": 9950,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Tuesday and Saturday"
+    }
+  ],
+  "planSummary": [
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Tuesday · any time · 30 min"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 2,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every 2 weeks on Tuesday · any time · 30 min"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            4,
+            1
+          ],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Monday and Thursday · any time · 30 min"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            5,
+            1,
+            3
+          ],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Monday, Wednesday, and Friday · any time · 30 min"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            0
+          ],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Sunday · any time · 30 min"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Tuesday · any time · 30 min"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Monthly on the 3rd Tuesday · any time · 30 min"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-01",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Monthly on the 1st Thursday · any time · 30 min"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-29",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Monthly on the 4th Thursday · any time · 30 min"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-31",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Monthly on the 4th Saturday · any time · 30 min"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 3,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Monthly on the 3rd Tuesday · any time · 30 min"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-11-15",
+          "interval_weeks": 4,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Monthly on the 3rd Sunday · any time · 30 min"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": "10:00:00",
+          "duration_minutes": 30,
+          "price_cents": 18000,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Tuesday · 10:00 AM · 30 min · $180.00 a month"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": "07:05",
+          "duration_minutes": 45,
+          "price_cents": 0,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Tuesday · 7:05 AM · 45 min · $0.00 a month"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": "",
+          "duration_minutes": 30,
+          "price_cents": 123456,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Tuesday · any time · 30 min · $1,234.56 a month"
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            2,
+            6
+          ],
+          "monthly": false,
+          "visit_time": "13:30:00",
+          "duration_minutes": 30,
+          "price_cents": 9950,
+          "ends_on": null,
+          "paused": false
+        }
+      ],
+      "result": "Every Tuesday and Saturday · 1:30 PM · 30 min · $99.50 a month"
+    }
+  ],
+  "upcomingVisitDates": [
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-10-20",
+        "2026-10-27",
+        "2026-11-03",
+        "2026-11-10"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 2,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-10-20",
+        "2026-11-03",
+        "2026-11-17",
+        "2026-12-01"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            4,
+            1
+          ],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-10-22",
+        "2026-10-26",
+        "2026-10-29",
+        "2026-11-02"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            5,
+            1,
+            3
+          ],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-10-21",
+        "2026-10-23",
+        "2026-10-26",
+        "2026-10-28"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            0
+          ],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-10-25",
+        "2026-11-01",
+        "2026-11-08",
+        "2026-11-15"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-10-20",
+        "2026-10-27",
+        "2026-11-03",
+        "2026-11-10"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-10-20",
+        "2026-11-17",
+        "2026-12-15",
+        "2027-01-19"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-01",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-11-05",
+        "2026-12-03",
+        "2027-01-07",
+        "2027-02-04"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-29",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-11-26",
+        "2026-12-24",
+        "2027-01-28",
+        "2027-02-25"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-31",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-11-28",
+        "2026-12-26",
+        "2027-01-23",
+        "2027-02-27"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 3,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-10-20",
+        "2026-11-17",
+        "2026-12-15",
+        "2027-01-19"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-11-15",
+          "interval_weeks": 4,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-11-15",
+        "2026-12-20",
+        "2027-01-17",
+        "2027-02-21"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": "10:00:00",
+          "duration_minutes": 30,
+          "price_cents": 18000,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-10-20",
+        "2026-10-27",
+        "2026-11-03",
+        "2026-11-10"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": "07:05",
+          "duration_minutes": 45,
+          "price_cents": 0,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-10-20",
+        "2026-10-27",
+        "2026-11-03",
+        "2026-11-10"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": "",
+          "duration_minutes": 30,
+          "price_cents": 123456,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-10-20",
+        "2026-10-27",
+        "2026-11-03",
+        "2026-11-10"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            2,
+            6
+          ],
+          "monthly": false,
+          "visit_time": "13:30:00",
+          "duration_minutes": 30,
+          "price_cents": 9950,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-10-20",
+        "2026-10-24",
+        "2026-10-27",
+        "2026-10-31"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-12-30",
+        6
+      ],
+      "result": [
+        "2027-01-05",
+        "2027-01-12",
+        "2027-01-19",
+        "2027-01-26",
+        "2027-02-02",
+        "2027-02-09"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 2,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-12-30",
+        6
+      ],
+      "result": [
+        "2027-01-12",
+        "2027-01-26",
+        "2027-02-09",
+        "2027-02-23",
+        "2027-03-09",
+        "2027-03-23"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            4,
+            1
+          ],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-12-30",
+        6
+      ],
+      "result": [
+        "2026-12-31",
+        "2027-01-04",
+        "2027-01-07",
+        "2027-01-11",
+        "2027-01-14",
+        "2027-01-18"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            5,
+            1,
+            3
+          ],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-12-30",
+        6
+      ],
+      "result": [
+        "2026-12-30",
+        "2027-01-01",
+        "2027-01-04",
+        "2027-01-06",
+        "2027-01-08",
+        "2027-01-11"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            0
+          ],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-12-30",
+        6
+      ],
+      "result": [
+        "2027-01-03",
+        "2027-01-10",
+        "2027-01-17",
+        "2027-01-24",
+        "2027-01-31",
+        "2027-02-07"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-12-30",
+        6
+      ],
+      "result": [
+        "2027-01-05",
+        "2027-01-12",
+        "2027-01-19",
+        "2027-01-26",
+        "2027-02-02",
+        "2027-02-09"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-12-30",
+        6
+      ],
+      "result": [
+        "2027-01-19",
+        "2027-02-16",
+        "2027-03-16",
+        "2027-04-20",
+        "2027-05-18",
+        "2027-06-15"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-01",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-12-30",
+        6
+      ],
+      "result": [
+        "2027-01-07",
+        "2027-02-04",
+        "2027-03-04",
+        "2027-04-01",
+        "2027-05-06",
+        "2027-06-03"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-29",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-12-30",
+        6
+      ],
+      "result": [
+        "2027-01-28",
+        "2027-02-25",
+        "2027-03-25",
+        "2027-04-22",
+        "2027-05-27",
+        "2027-06-24"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-31",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-12-30",
+        6
+      ],
+      "result": [
+        "2027-01-23",
+        "2027-02-27",
+        "2027-03-27",
+        "2027-04-24",
+        "2027-05-22",
+        "2027-06-26"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 3,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-12-30",
+        6
+      ],
+      "result": [
+        "2027-01-19",
+        "2027-02-16",
+        "2027-03-16",
+        "2027-04-20",
+        "2027-05-18",
+        "2027-06-15"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-11-15",
+          "interval_weeks": 4,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-12-30",
+        6
+      ],
+      "result": [
+        "2027-01-17",
+        "2027-02-21",
+        "2027-03-21",
+        "2027-04-18",
+        "2027-05-16",
+        "2027-06-20"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": "10:00:00",
+          "duration_minutes": 30,
+          "price_cents": 18000,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-12-30",
+        6
+      ],
+      "result": [
+        "2027-01-05",
+        "2027-01-12",
+        "2027-01-19",
+        "2027-01-26",
+        "2027-02-02",
+        "2027-02-09"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": "07:05",
+          "duration_minutes": 45,
+          "price_cents": 0,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-12-30",
+        6
+      ],
+      "result": [
+        "2027-01-05",
+        "2027-01-12",
+        "2027-01-19",
+        "2027-01-26",
+        "2027-02-02",
+        "2027-02-09"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": "",
+          "duration_minutes": 30,
+          "price_cents": 123456,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-12-30",
+        6
+      ],
+      "result": [
+        "2027-01-05",
+        "2027-01-12",
+        "2027-01-19",
+        "2027-01-26",
+        "2027-02-02",
+        "2027-02-09"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            2,
+            6
+          ],
+          "monthly": false,
+          "visit_time": "13:30:00",
+          "duration_minutes": 30,
+          "price_cents": 9950,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-12-30",
+        6
+      ],
+      "result": [
+        "2027-01-02",
+        "2027-01-05",
+        "2027-01-09",
+        "2027-01-12",
+        "2027-01-16",
+        "2027-01-19"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": true
+        },
+        "2026-10-19"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": "2026-11-03",
+          "paused": false
+        },
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-10-20",
+        "2026-10-27",
+        "2026-11-03"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": "2026-10-19",
+          "paused": false
+        },
+        "2026-10-01"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 2,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": "2027-01-01",
+          "paused": false
+        },
+        "2026-11-01",
+        10
+      ],
+      "result": [
+        "2026-11-03",
+        "2026-11-17",
+        "2026-12-01",
+        "2026-12-15",
+        "2026-12-29"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-31",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19",
+        3
+      ],
+      "result": [
+        "2026-11-28",
+        "2026-12-26",
+        "2027-01-23"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2026-10-20",
+          "interval_weeks": 1,
+          "weekdays": [
+            1,
+            3,
+            5
+          ],
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19",
+        0
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2027-02-28",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": false,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2026-10-19",
+        3
+      ],
+      "result": [
+        "2027-02-28",
+        "2027-03-07",
+        "2027-03-14"
+      ]
+    },
+    {
+      "args": [
+        {
+          "starts_on": "2028-02-29",
+          "interval_weeks": 1,
+          "weekdays": null,
+          "monthly": true,
+          "visit_time": null,
+          "duration_minutes": 30,
+          "price_cents": null,
+          "ends_on": null,
+          "paused": false
+        },
+        "2028-01-01",
+        5
+      ],
+      "result": [
+        "2028-03-28",
+        "2028-04-25",
+        "2028-05-23",
+        "2028-06-27",
+        "2028-07-25"
+      ]
+    }
+  ]
+}

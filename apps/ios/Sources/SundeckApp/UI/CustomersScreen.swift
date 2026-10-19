@@ -162,7 +162,7 @@
                 }
                 if c.pools.isEmpty { EmptyState(text: "No pools.") }
                 ForEach(Array(c.pools.enumerated()), id: \.element.id) { index, pool in
-                    poolGroups(pool, title: c.pools.count > 1 ? "Pool \(index + 1)" : "Pool")
+                    poolGroups(pool, customer: c, title: c.pools.count > 1 ? "Pool \(index + 1)" : "Pool")
                 }
                 if manager {
                     VStack(alignment: .leading, spacing: 8) {
@@ -222,8 +222,11 @@
             }
         }
 
-        @ViewBuilder private func poolGroups(_ pool: CustomerPool, title: String) -> some View {
-            let leak = (session.company?.services ?? .both) != .pool
+        @ViewBuilder private func poolGroups(_ pool: CustomerPool, customer: CustomerDetail, title: String)
+            -> some View
+        {
+            let services = session.company?.services ?? .both
+            let leak = services != .pool
             Grouped(label: title) {
                 Button {
                     editingPool = pool
@@ -240,6 +243,12 @@
                 ActionRow("Get Directions") {
                     if let url = directionsURL(pool.place, choice: sync.kv.directionsChoice) { openURL(url) }
                 }
+            }
+            // Pool shops: the pool's visit plans; owners and admins change them here.
+            if services != .leak {
+                MaintenancePlansGroup(
+                    customerId: customer.id, pool: pool, canEdit: isManagerRole(session.company?.role)
+                ) { saved = $0 }
             }
             Grouped(label: leak ? "Leak detection and repairs" : "Repairs") {
                 if pool.jobs.isEmpty {

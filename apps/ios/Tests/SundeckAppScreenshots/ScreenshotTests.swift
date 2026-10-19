@@ -740,6 +740,47 @@
                 "45-customer", height: 1600, NavigationStack { CustomerScreen(customerId: maria) }.app(env))
         }
 
+        /// Maintenance plans (spec 5.5 and 5.9): a customer's plan on their page, the plan sheet,
+        /// and New Job starting a plan for a pool shop.
+        @Test func maintenancePlans() async throws {
+            let env = try sampleEnvironment()
+            let store = env.session.sync.store
+            let maria = try #require(try store.list("customer").first { $0["name"] == "Maria Alvarez" }?.id)
+            let pool = try #require(try store.list("property").first { $0["customer_id"] == .string(maria) }?.id)
+            let starts = localDay(Date().addingTimeInterval(86_400), timeZone: "America/Phoenix")
+            try store.applyPage(
+                PullPage(
+                    rows: [
+                        PulledRow(
+                            table: "service_plan", xid: "2",
+                            row: [
+                                "id": "sp1", "company_id": "c1", "customer_id": .string(maria),
+                                "property_id": .string(pool), "assigned_user_id": "u2", "starts_on": .string(starts),
+                                "interval_weeks": 1, "weekdays": nil, "monthly": false, "visit_time": "10:00:00",
+                                "duration_minutes": 45, "price_cents": 18000, "ends_on": nil, "paused": false,
+                                "notes": "Brush the steps.", "deleted_at": nil,
+                            ])
+                    ], done: true, cursor: [:], serverHLC: "1760000000001-0000-srv"))
+            try await snapshot(
+                "49-customer-plans", height: 1800, NavigationStack { CustomerScreen(customerId: maria) }.app(env))
+            let detail = try #require(
+                customerDetail(store, companyId: "c1", customerId: maria, timeZone: "America/Phoenix"))
+            let plan = try #require(detail.pools.first?.plans.first)
+            try await snapshot(
+                "50-plan-sheet", height: 1500,
+                PlanSheet(customerId: maria, propertyId: pool, plan: plan, saved: { _ in }).app(env))
+
+            let company = CompanyContext(
+                id: "c1", name: "Demo Leak Co.", timeZone: "America/Phoenix", settings: ["services": "pool"],
+                role: "owner")
+            let form = NewJobForm(sync: env.session.sync, company: company, userId: "u1")
+            form.repeatChoice = .days
+            form.plan.days = [1, 4]
+            try await snapshot(
+                "51-new-plan", height: 2400,
+                NavigationStack { NewJobView(form: form, back: "Jobs") { _ in } }.app(env))
+        }
+
         @Test func invoices() async throws {
             let env = try sampleEnvironment()
             let ids = try seedInspection(env)

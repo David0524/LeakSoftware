@@ -212,6 +212,8 @@ public struct CustomerPool: Identifiable, Equatable, Sendable {
     public var accessNotes: String?
     /// Leak detection and repair jobs (maintenance visits are summed up by their plan).
     public var jobs: [CustomerJob]
+    /// Its maintenance plans (pool shops show them).
+    public var plans: [CustomerPlan]
     public var place: MapPlace
 }
 
@@ -247,6 +249,8 @@ public func customerDetail(
 ) -> CustomerDetail? {
     guard let c = try? store.get("customer", customerId), c["deleted_at"]?.string == nil else { return nil }
     let jobs = ((try? store.list("job", companyId: companyId)) ?? [])
+    let plans = (try? store.list("service_plan", companyId: companyId)) ?? []
+    let today = (try? localDate(now, timeZone)) ?? ""
     let pools = ((try? store.list("property", companyId: companyId)) ?? [])
         .filter { $0["customer_id"]?.string == customerId }
         .sorted { ($0["created_at"]?.string ?? $0.id) < ($1["created_at"]?.string ?? $1.id) }
@@ -277,6 +281,7 @@ public func customerDetail(
                 detail: [decoded?.poolType?.label, p["has_spa"]?.bool == true ? "Pool and spa" : "Pool"]
                     .compactMap { $0 }.joined(separator: " · "),
                 accessNotes: trimmed(p["access_notes"]), jobs: poolJobs,
+                plans: customerPlans(plans, propertyId: p.id, jobs: jobs, names: names, today: today),
                 place: MapPlace(address: address, location: propertyLocation(decoded)))
         }
     return CustomerDetail(

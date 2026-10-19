@@ -13,7 +13,9 @@
         var body: some View {
             Group {
                 if let form {
-                    NewJobView(form: form, back: back) { replaceRoute(.job($0)) }
+                    NewJobView(
+                        form: form, back: back, onCreated: { replaceRoute(.job($0)) },
+                        onPlanStarted: { replaceRoute(.more(.customer($0))) })
                 }
             }
             .onAppear {
@@ -26,11 +28,15 @@
 
     /// New Job as the website's form (apps/web/src/components/new-job-form.tsx): Customer, Pool,
     /// Visit, and When They Called (or Notes) as cards of outlined fields, then Create Job. Saves
-    /// everything in one transaction, offline. Leaving with entries asks first.
+    /// everything in one transaction, offline. Leaving with entries asks first. Owners and admins
+    /// of pool shops can instead start a plan that repeats (Start Plan), which needs a
+    /// connection: the server makes its visits, then the customer's page opens.
     struct NewJobView: View {
         @Bindable var form: NewJobForm
         var back = "Jobs"
         var onCreated: (String) -> Void
+        /// After Start Plan, with the customer's id.
+        var onPlanStarted: (String) -> Void = { _ in }
 
         @Environment(\.dismiss) private var dismiss
         @Environment(SyncService.self) private var sync
@@ -39,6 +45,10 @@
         @State private var saveProblem: String?
         @State private var saved = 0
         @State private var suggestions: (list: [Suggestion], note: String?)?
+        @State private var starting = false
+        @State private var planProblem: String?
+
+        private var offline: Bool { sync.status.phase == .offline }
 
         var body: some View {
             ScreenScroll(spacing: 16) {
@@ -48,10 +58,23 @@
                     if form.newPool { poolCard }
                     visitCard
                     calledCard
-                    if !form.errors.isEmpty || form.feeError != nil {
+                    if !form.errors.isEmpty || !form.planErrors.isEmpty || form.feeError != nil {
                         Notice(kind: .error, text: "Fix the highlighted fields.")
                     }
-                    Button(form.saveTitle, action: save).buttonStyle(.primary)
+                    if form.isPlan {
+                        if let planProblem {
+                            Notice(kind: .error, text: planProblem)
+                        } else if offline {
+                            Notice(kind: .warning, text: NewJobForm.offlinePlanNotice)
+                        }
+                        Button(action: startPlan) {
+                            BusyButtonLabel(form.saveTitle, busy: starting, busyTitle: "Starting…")
+                        }
+                        .buttonStyle(.primary)
+                        .disabled(starting || offline)
+                    } else {
+                        Button(form.saveTitle, action: save).buttonStyle(.primary)
+                    }
                 } else {
                     // Owners can stop techs making jobs (owner setting, 2026-10-18).
                     Notice(kind: .info, text: NewJobForm.notAllowedMessage)
@@ -194,11 +217,21 @@
                             label: { t in form.jobTypes.first { $0.value == t }?.label ?? "" }, title: "Job")
                     }
                 }
-                VStack(alignment: .leading, spacing: 4) {
-                    FieldLabel("When")
-                    Segmented(selection: $form.when, options: NewJobForm.When.allCases, label: \.label, title: "When")
+                if form.showsRepeat {
+                    PlanRepeatPicker(
+                        choice: $form.repeatChoice, days: $form.plan.days, once: true,
+                        error: form.planErrors["weekdays"])
                 }
-                if form.when == .scheduled {
+                if form.isPlan {
+                    planFields
+                } else {
+                    VStack(alignment: .leading, spacing: 4) {
+                        FieldLabel("When")
+                        Segmented(
+                            selection: $form.when, options: NewJobForm.When.allCases, label: \.label, title: "When")
+                    }
+                }
+                if form.when == .scheduled && !form.isPlan {
                     if let property = form.selectedProperty, form.mode == .existing {
                         VStack(alignment: .leading, spacing: 4) {
                             Button("Suggest Times") { suggest(property) }
@@ -237,6 +270,39 @@
                 OutlinedField(
                     label: form.feeLabel, text: $form.fee, hint: form.feeHint, error: form.feeError,
                     keyboard: .decimalPad)
+            }
+        }
+
+        /// A plan's First visit and Time, then Visit length and Last visit, two to a row as on the
+        /// website.
+        private var planFields: some View {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(alignment: .top, spacing: 16) {
+                    PlanDateField(
+                        label: "First visit", value: $form.plan.startsOn, timeZone: form.company.timeZone,
+                        start: form.today, hint: form.firstVisitHintText, error: form.planErrors["startsOn"]
+                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    PlanDateField(
+                        label: "Time (optional)", value: $form.plan.time, kind: .time,
+                        timeZone: form.company.timeZone, start: "09:00", optional: true, placeholder: "Any time",
+                        clearLabel: "Any Time", hint: "Blank: route planning picks it.", error: form.planErrors["time"]
+                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                HStack(alignment: .top, spacing: 16) {
+                    OutlinedField(
+                        label: "Visit length (minutes)", text: $form.plan.minutes, error: form.planErrors["minutes"],
+                        keyboard: .numberPad
+                    )
+                    .frame(maxWidth: .infinity)
+                    PlanDateField(
+                        label: "Last visit (optional)", value: $form.plan.endsOn, timeZone: form.company.timeZone,
+                        start: form.plan.startsOn.isEmpty ? form.today : form.plan.startsOn, optional: true,
+                        placeholder: "No end date", clearLabel: "No End Date", error: form.planErrors["endsOn"]
+                    )
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
         }
 
@@ -333,6 +399,26 @@
         }
 
         // MARK: - Actions
+
+        /// Start Plan: the server starts it, then a sync brings the customer, pool, plan and visits
+        /// here before the customer's page opens.
+        private func startPlan() {
+            planProblem = nil
+            starting = true
+            Task {
+                defer { starting = false }
+                do {
+                    let customer = try await form.startPlan(LenientRPC(client: app.client))
+                    await sync.syncNow()
+                    saved += 1
+                    onPlanStarted(customer)
+                } catch NewJobFormError.invalid {
+                    // The fields show what to fix.
+                } catch {
+                    planProblem = String(describing: error)
+                }
+            }
+        }
 
         private func save() {
             do {
