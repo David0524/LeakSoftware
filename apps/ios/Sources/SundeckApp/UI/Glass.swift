@@ -20,34 +20,30 @@
         static var reduced: Bool { UIAccessibility.isReduceMotionEnabled }
     }
 
+    extension EnvironmentValues {
+        /// Off only for the simulator screenshots, which render off screen, where glass can't be
+        /// drawn; they show the flat look of iOS 18 to 25 instead.
+        @Entry var drawsGlass = true
+    }
+
+    /// Whether this view draws Liquid Glass: iOS 26 and not turned off.
+    func usesGlass(_ drawsGlass: Bool) -> Bool {
+        if #available(iOS 26, *) { drawsGlass } else { false }
+    }
+
     extension View {
         /// Liquid Glass in `shape` on iOS 26, tinted (`interactive` for controls: it reacts to
         /// touch). Before iOS 26: `fallback` as a fill, else the regular material.
-        @ViewBuilder
         func glassSurface<S: Shape>(
             _ shape: S, tint: Color? = nil, interactive: Bool = false, fallback: Color? = nil
         ) -> some View {
-            if #available(iOS 26, *) {
-                glassEffect(Glass.regular.tint(tint).interactive(interactive), in: shape)
-            } else if let fallback {
-                background(shape.fill(fallback))
-            } else {
-                background(shape.fill(.regularMaterial))
-            }
+            modifier(GlassSurface(shape: shape, tint: tint, interactive: interactive, fallback: fallback))
         }
 
-        /// A bar pinned over scrolling content (the job's section switcher, the message composer,
-        /// a photo's toolbar): glass on iOS 26, the bar material with a hairline before.
-        @ViewBuilder
+        /// A bar pinned over scrolling content (the message composer, a photo's toolbar): glass on
+        /// iOS 26, the bar material with an optional hairline before.
         func chromeBar(hairline: VerticalEdge? = .bottom) -> some View {
-            if #available(iOS 26, *) {
-                glassEffect(.regular, in: .rect)
-            } else {
-                background(.bar)
-                    .overlay(alignment: hairline == .top ? .top : .bottom) {
-                        if hairline != nil { Hairline() }
-                    }
-            }
+            modifier(ChromeBar(hairline: hairline))
         }
 
         /// Presses shrink a little and spring back (iOS 26 glass does this itself).
@@ -61,11 +57,46 @@
         }
     }
 
-    private struct PressScale: ViewModifier {
-        var pressed: Bool
+    private struct GlassSurface<S: Shape>: ViewModifier {
+        var shape: S
+        var tint: Color?
+        var interactive: Bool
+        var fallback: Color?
+        @Environment(\.drawsGlass) private var drawsGlass
 
         func body(content: Content) -> some View {
-            if #available(iOS 26, *) {
+            if #available(iOS 26, *), drawsGlass {
+                content.glassEffect(Glass.regular.tint(tint).interactive(interactive), in: shape)
+            } else if let fallback {
+                content.background(shape.fill(fallback))
+            } else {
+                content.background(shape.fill(.regularMaterial))
+            }
+        }
+    }
+
+    private struct ChromeBar: ViewModifier {
+        var hairline: VerticalEdge?
+        @Environment(\.drawsGlass) private var drawsGlass
+
+        func body(content: Content) -> some View {
+            if #available(iOS 26, *), drawsGlass {
+                content.glassEffect(.regular, in: .rect)
+            } else {
+                content.background(.bar)
+                    .overlay(alignment: hairline == .top ? .top : .bottom) {
+                        if hairline != nil { Hairline() }
+                    }
+            }
+        }
+    }
+
+    private struct PressScale: ViewModifier {
+        var pressed: Bool
+        @Environment(\.drawsGlass) private var drawsGlass
+
+        func body(content: Content) -> some View {
+            if usesGlass(drawsGlass) {
                 content
             } else {
                 content

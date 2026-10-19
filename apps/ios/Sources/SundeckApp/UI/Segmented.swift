@@ -68,8 +68,10 @@
     /// On iOS 26 the thumb is a drop of Liquid Glass sliding over the track, as in the system's
     /// segmented control.
     struct SegmentThumb: View {
+        @Environment(\.drawsGlass) private var drawsGlass
+
         var body: some View {
-            if #available(iOS 26, *) {
+            if usesGlass(drawsGlass) {
                 Color.clear.glassSurface(Capsule(), tint: Color.thumb.opacity(0.7), interactive: true)
             } else {
                 Capsule()

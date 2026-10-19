@@ -179,8 +179,10 @@
     /// Behind the pinned switcher: nothing on iOS 26, where the switcher itself is glass and the
     /// page scrolls under it; the bar material and a hairline before.
     private struct SwitcherBar: ViewModifier {
+        @Environment(\.drawsGlass) private var drawsGlass
+
         func body(content: Content) -> some View {
-            if #available(iOS 26, *) {
+            if usesGlass(drawsGlass) {
                 content
             } else {
                 content.background(.bar).overlay(alignment: .bottom) { Hairline() }

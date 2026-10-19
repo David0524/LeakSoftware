@@ -408,11 +408,7 @@
             .background {
                 // Docked under a thread: Liquid Glass on iOS 26, the bar material before.
                 if docked {
-                    if #available(iOS 26, *) {
-                        Rectangle().fill(.clear).glassEffect(.regular, in: .rect).ignoresSafeArea(edges: .bottom)
-                    } else {
-                        Rectangle().fill(.bar).ignoresSafeArea(edges: .bottom)
-                    }
+                    Color.clear.chromeBar(hairline: nil).ignoresSafeArea(edges: .bottom)
                 }
             }
             .sheet(isPresented: $choosing) {

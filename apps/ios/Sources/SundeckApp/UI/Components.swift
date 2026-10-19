@@ -93,9 +93,10 @@
     /// before iOS 26 always the gray with 20 corners.
     private struct SheetSurface: ViewModifier {
         var partial: Bool
+        @Environment(\.drawsGlass) private var drawsGlass
 
         func body(content: Content) -> some View {
-            if #available(iOS 26, *) {
+            if usesGlass(drawsGlass) {
                 if partial { content } else { content.presentationBackground(Color.bg) }
             } else {
                 content.presentationBackground(Color.bg).presentationCornerRadius(20)

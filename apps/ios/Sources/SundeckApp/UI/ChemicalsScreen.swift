@@ -219,9 +219,10 @@
     private struct FloatingGlass<S: InsettableShape>: ViewModifier {
         var shape: S
         var reduceTransparency: Bool
+        @Environment(\.drawsGlass) private var drawsGlass
 
         func body(content: Content) -> some View {
-            if #available(iOS 26, *) {
+            if usesGlass(drawsGlass) {
                 content.glassSurface(shape, interactive: true)
             } else {
                 content

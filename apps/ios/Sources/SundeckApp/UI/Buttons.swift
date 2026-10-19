@@ -62,9 +62,10 @@
     private struct PillBackground: ViewModifier {
         var background: Color
         var glass: Color?
+        @Environment(\.drawsGlass) private var drawsGlass
 
         func body(content: Content) -> some View {
-            if #available(iOS 26, *), let glass {
+            if usesGlass(drawsGlass), let glass {
                 content.glassSurface(Capsule(), tint: glass, interactive: true)
             } else {
                 content.background(Capsule().fill(background))
@@ -209,12 +210,14 @@
     }
 
     private struct BarIconStyle: ButtonStyle {
+        @Environment(\.drawsGlass) private var drawsGlass
+
         func makeBody(configuration: Configuration) -> some View {
             configuration.label
                 .foregroundStyle(Color.link)
                 .background {
                     // On iOS 26 the toolbar puts the button on its own glass, which reacts to touch.
-                    if #unavailable(iOS 26) {
+                    if !usesGlass(drawsGlass) {
                         Circle().fill(configuration.isPressed ? Color.iconTint : .clear)
                     }
                 }
