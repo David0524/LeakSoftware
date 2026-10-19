@@ -274,7 +274,11 @@ ported to SundeckCore with fixtures from TypeScript. Checked by the simulator sc
 against the website's at iPhone size. Also built: the job's Schedule and Timeline groups on
 Details, maintenance plans in New Job (Start Plan, through `create_service_plan`) and editing a
 customer's visit plans (synced `service_plan` writes). Regular cleanings (`plan_cleaning`) stay
-on the website, since that table isn't synced to phones.
+on the website, since that table isn't synced to phones. Getting Started on Today is built but off on
+the phone (`GettingStartedCard.enabled`): inside the tab view the whole card stops the tab
+drawing in the simulator screenshots, though Today and the card each draw alone, and the
+card's header, rows and progress bar each draw in a tab view; not the clip, the separators or
+the server check (AccessibilityShots 66–74). To find before it's switched on.
 
 ### S9 Switch-over
 - The move from the Expo app's database, accessibility (Dynamic Type, VoiceOver, contrast),
