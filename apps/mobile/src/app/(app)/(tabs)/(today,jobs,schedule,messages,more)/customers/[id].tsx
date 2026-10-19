@@ -193,6 +193,9 @@ export default function CustomerPage() {
                       {[
                         p.pool_type ? POOL_TYPE_LABELS[p.pool_type as PoolType] : null,
                         p.has_spa ? "Pool and spa" : "Pool",
+                        p.approx_gallons
+                          ? `${p.approx_gallons.toLocaleString("en-US")} gallons`
+                          : null,
                       ]
                         .filter(Boolean)
                         .join(" · ")}
@@ -418,14 +421,25 @@ function PoolForm({ pool, onSaved }: { pool: Property; onSaved: () => void }) {
     postal_code: pool.postal_code ?? "",
     pool_type: (pool.pool_type ?? "") as string,
     has_spa: Boolean(pool.has_spa),
+    approx_gallons: pool.approx_gallons ? pool.approx_gallons.toLocaleString("en-US") : "",
     access_notes: pool.access_notes ?? "",
   });
   const [error, setError] = useState<string | undefined>();
+  const [gallonsError, setGallonsError] = useState<string | undefined>();
   const set = (k: keyof typeof f) => (v: string) => setF({ ...f, [k]: v });
 
   function save() {
+    setError(undefined);
+    setGallonsError(undefined);
     if (!f.address_line1.trim()) {
       setError("Enter the street address.");
+      return;
+    }
+    // Gallons as typed ("20,000", "20000"); blank clears it (owner, 2026-10-19), as the website.
+    const gallonsText = f.approx_gallons.replace(/[,\s]/g, "");
+    const gallons = gallonsText ? Math.round(Number(gallonsText)) : null;
+    if (gallons !== null && !(Number.isFinite(gallons) && gallons > 0 && gallons < 10_000_000)) {
+      setGallonsError("Enter the gallons as a number, like 20,000.");
       return;
     }
     const address = {
@@ -443,6 +457,7 @@ function PoolForm({ pool, onSaved }: { pool: Property; onSaved: () => void }) {
       ...address,
       pool_type: f.pool_type || null,
       has_spa: f.has_spa,
+      approx_gallons: gallons,
       access_notes: f.access_notes.trim() || null,
       ...(moved
         ? { latitude: null, longitude: null, geocoded_address: null, location_source: null }
@@ -495,6 +510,14 @@ function PoolForm({ pool, onSaved }: { pool: Property; onSaved: () => void }) {
         ]}
       />
       <FieldGroup footer="Gate code, dog, where to park.">
+        <FieldRow
+          label="Gallons"
+          value={f.approx_gallons}
+          onChangeText={set("approx_gallons")}
+          keyboardType="number-pad"
+          placeholder="20,000"
+          error={gallonsError}
+        />
         <Toggle
           inList
           label="Has a spa"

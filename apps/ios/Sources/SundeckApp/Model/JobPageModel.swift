@@ -113,7 +113,7 @@ public struct JobDetails: Equatable, Sendable {
     public var email: String?
     /// The Pool group, when the job has a property.
     public var address: String?
-    /// "Gunite / plaster · Pool and spa".
+    /// "Gunite / plaster · Pool and spa · 20,000 gallons".
     public var poolDetail: String?
     public var accessNotes: String?
     /// The pool has no map location yet: offer Mark Location Here.
@@ -133,8 +133,11 @@ public struct JobDetails: Equatable, Sendable {
         email = job.customer?["email"]?.string.flatMap { $0.isEmpty ? nil : $0 }
         if let property = job.decodedProperty {
             address = job.address
-            poolDetail = [property.poolType?.label, property.hasSpa ? "Pool and spa" : "Pool"]
-                .compactMap { $0 }.joined(separator: " · ")
+            poolDetail = [
+                property.poolType?.label, property.hasSpa ? "Pool and spa" : "Pool",
+                poolGallonsLabel(job.property?["approx_gallons"]),
+            ]
+            .compactMap { $0 }.joined(separator: " · ")
             accessNotes = job.property?["access_notes"]?.string.flatMap { $0.isEmpty ? nil : $0 }
             needsMapLocation = propertyLocation(property) == nil
         } else {

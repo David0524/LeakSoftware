@@ -162,6 +162,45 @@ import Testing
         #expect(detail.subtitle == "Homeowner")
         #expect(detail.pools.first?.jobs.first?.title == "Job #1072")
         #expect(detail.pools.first?.jobs.first?.typeLabel == "Leak detection")
+        #expect(detail.pools.first?.detail == "Pool")
+    }
+
+    /// Pool Details' Gallons (owner, 2026-10-19): typed as "20,000", blank clears it, saved
+    /// through sync, and shown as "20,000 gallons" on the pool's row.
+    @Test func poolGallonsSaveAndShow() throws {
+        #expect(try parsePoolGallons("20,000") == 20000)
+        #expect(try parsePoolGallons(" 18 500 ") == 18500)
+        #expect(try parsePoolGallons("12000.6") == 12001)
+        #expect(try parsePoolGallons("") == .null)
+        #expect(try parsePoolGallons("  ") == .null)
+        for bad in ["0", "-5", "abc", "10000000", "0.4"] {
+            #expect(throws: PoolGallonsError.self) { try parsePoolGallons(bad) }
+        }
+        #expect(PoolGallonsError().message == "Enter the gallons as a number, like 20,000.")
+        #expect(poolGallonsLabel(20000) == "20,000 gallons")
+        #expect(poolGallonsLabel(1_250_000) == "1,250,000 gallons")
+        #expect(poolGallonsLabel(nil) == nil && poolGallonsLabel(.null) == nil && poolGallonsLabel(0) == nil)
+        #expect(poolGallonsField(20000) == "20,000" && poolGallonsField(.null) == "")
+
+        let s = try seeded()
+        let now = parseISODate("2026-10-19T17:00:00Z")!
+        try CustomerWrites.savePool(
+            s.sync, companyId: "c1", propertyId: "p",
+            ["pool_type": "gunite_plaster", "approx_gallons": try parsePoolGallons("20,000")])
+        #expect(try s.sync.store.get("property", "p")?["approx_gallons"] == 20000)
+        #expect(try s.sync.store.pendingCount() > 0)
+        let detail = try #require(
+            customerDetail(s.sync.store, companyId: "c1", customerId: "a", now: now, timeZone: "America/Phoenix"))
+        #expect(detail.pools.first?.detail == "Gunite / plaster · Pool · 20,000 gallons")
+        // Blank clears it.
+        try CustomerWrites.savePool(
+            s.sync, companyId: "c1", propertyId: "p", ["approx_gallons": try parsePoolGallons("")])
+        #expect(try s.sync.store.get("property", "p")?["approx_gallons"] == .null)
+        let cleared = try #require(
+            customerDetail(s.sync.store, companyId: "c1", customerId: "a", now: now, timeZone: "America/Phoenix"))
+        #expect(cleared.pools.first?.detail == "Gunite / plaster · Pool")
+        // The Chemical screen opened for this pool starts from its gallons.
+        #expect(ChemicalForm(gallons: 20000).gallons == "20,000")
     }
 
     @Test func invoicesListAndExport() throws {

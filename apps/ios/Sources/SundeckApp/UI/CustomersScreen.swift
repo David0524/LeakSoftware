@@ -387,7 +387,7 @@
         }
     }
 
-    /// Pool Details: the address, the pool type, the spa, and access notes.
+    /// Pool Details: the address, the pool type, gallons, the spa, and access notes.
     struct PoolSheet: View {
         var pool: CustomerPool
         var saved: () -> Void
@@ -400,12 +400,13 @@
         @State private var state = ""
         @State private var zip = ""
         @State private var poolType = ""
+        @State private var gallons = ""
         @State private var hasSpa = false
         @State private var access = ""
         @State private var original: [String] = []
         @State private var error: String?
 
-        private var current: [String] { [street, unit, city, state, zip, poolType, String(hasSpa), access] }
+        private var current: [String] { [street, unit, city, state, zip, poolType, gallons, String(hasSpa), access] }
 
         var body: some View {
             FormSheet(title: "Pool Details", dirty: !original.isEmpty && current != original) {
@@ -420,6 +421,11 @@
                     LabeledPickerRow(
                         label: "Pool type", selection: $poolType, options: [""] + PoolType.allCases.map(\.rawValue),
                         optionLabel: { PoolType(rawValue: $0)?.label ?? "Not sure" })
+                    // Typed as "20,000" (commas added as they're typed); blank clears it.
+                    LabeledFieldRow(
+                        label: "Gallons",
+                        text: Binding(get: { gallons }, set: { gallons = gallonsWithCommas($0) }),
+                        placeholder: "20,000", keyboard: .numberPad)
                     SwitchRow("Has a spa", isOn: $hasSpa)
                     LabeledFieldRow(label: "Access notes", text: $access, multiline: true)
                 }
@@ -435,6 +441,7 @@
                 state = r["state"]?.string ?? ""
                 zip = r["postal_code"]?.string ?? ""
                 poolType = r["pool_type"]?.string ?? ""
+                gallons = poolGallonsField(r["approx_gallons"])
                 hasSpa = r["has_spa"]?.bool ?? false
                 access = r["access_notes"]?.string ?? ""
                 original = current
@@ -451,6 +458,13 @@
                 let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
                 return t.isEmpty ? .null : .string(t)
             }
+            let approxGallons: JSONValue
+            do {
+                approxGallons = try parsePoolGallons(gallons)
+            } catch {
+                self.error = error.message
+                return
+            }
             do {
                 try CustomerWrites.savePool(
                     sync, companyId: companyId, propertyId: pool.id,
@@ -458,7 +472,7 @@
                         "address_line1": .string(street.trimmingCharacters(in: .whitespaces)),
                         "address_line2": opt(unit), "city": opt(city), "state": opt(state.uppercased()),
                         "postal_code": opt(zip), "pool_type": opt(poolType), "has_spa": .bool(hasSpa),
-                        "access_notes": opt(access),
+                        "approx_gallons": approxGallons, "access_notes": opt(access),
                     ])
                 saved()
                 dismiss()

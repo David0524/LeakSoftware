@@ -85,7 +85,7 @@
             [
                 "customer_id": .string(maria), "address_line1": "1423 Palm Ct", "city": "Mesa", "state": "AZ",
                 "postal_code": "85201", "has_pool": true, "has_spa": true, "pool_type": "gunite_plaster",
-                "access_notes": "Gate code 4417. Dog in the side yard.",
+                "approx_gallons": 20000, "access_notes": "Gate code 4417. Dog in the side yard.",
             ])
         try store.insert(
             "job", companyId: "c1",
@@ -755,6 +755,12 @@
                 try env.session.sync.store.list("customer").first { $0["name"] == "Maria Alvarez" }?.id)
             try await snapshot(
                 "45-customer", height: 1600, NavigationStack { CustomerScreen(customerId: maria) }.app(env))
+            // Pool Details with Gallons (owner, 2026-10-19).
+            let detail = try #require(
+                customerDetail(
+                    env.session.sync.store, companyId: "c1", customerId: maria, timeZone: "America/Phoenix"))
+            let pool = try #require(detail.pools.first)
+            try await snapshot("45-pool-details", height: 1400, PoolSheet(pool: pool, saved: {}).app(env))
         }
 
         /// Maintenance plans (spec 5.5 and 5.9): a customer's plan on their page, the plan sheet,

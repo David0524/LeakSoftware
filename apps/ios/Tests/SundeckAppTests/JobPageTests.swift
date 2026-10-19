@@ -71,6 +71,7 @@ import Testing
             property: [
                 "id": "p1", "address_line1": "41 Demo Lane", "city": "Mesa", "state": "AZ", "postal_code": "85201",
                 "has_pool": true, "has_spa": true, "pool_type": "gunite_plaster", "access_notes": "Gate code 4417",
+                "approx_gallons": 20000,
             ],
             customer: ["id": "cu1", "name": "Riley Rivera", "phone": "(480) 555-0188", "email": "riley@example.com"])
         let settings: JSONValue = [
@@ -84,7 +85,7 @@ import Testing
         #expect(d.customerName == "Riley Rivera")
         #expect(d.contactLine == "(480) 555-0188" && d.contactDetail == "riley@example.com")
         #expect(d.address == "41 Demo Lane, Mesa, AZ 85201")
-        #expect(d.poolDetail == "Gunite / plaster · Pool and spa")
+        #expect(d.poolDetail == "Gunite / plaster · Pool and spa · 20,000 gallons")
         #expect(d.accessNotes == "Gate code 4417")
         #expect(d.needsMapLocation)
         #expect(d.tech == "Tony Tech" && d.with == "Teammate")

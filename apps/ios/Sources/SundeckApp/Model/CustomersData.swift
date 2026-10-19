@@ -207,7 +207,7 @@ public struct CustomerPool: Identifiable, Equatable, Sendable {
     public var id: String
     public var row: Row
     public var address: String
-    /// "Gunite / plaster · Pool and spa".
+    /// "Gunite / plaster · Pool and spa · 20,000 gallons".
     public var detail: String
     public var accessNotes: String?
     /// Leak detection and repair jobs (maintenance visits are summed up by their plan).
@@ -278,8 +278,11 @@ public func customerDetail(
                 }
             return CustomerPool(
                 id: p.id, row: p, address: address,
-                detail: [decoded?.poolType?.label, p["has_spa"]?.bool == true ? "Pool and spa" : "Pool"]
-                    .compactMap { $0 }.joined(separator: " · "),
+                detail: [
+                    decoded?.poolType?.label, p["has_spa"]?.bool == true ? "Pool and spa" : "Pool",
+                    poolGallonsLabel(p["approx_gallons"]),
+                ]
+                .compactMap { $0 }.joined(separator: " · "),
                 accessNotes: trimmed(p["access_notes"]), jobs: poolJobs,
                 plans: customerPlans(plans, propertyId: p.id, jobs: jobs, names: names, today: today),
                 place: MapPlace(address: address, location: propertyLocation(decoded)))
@@ -316,6 +319,36 @@ public enum CustomerWrites {
     public static func savePool(_ sync: SyncService, companyId: String, propertyId: String, _ values: Row) throws {
         try sync.write("property", id: propertyId, companyId: companyId, values)
     }
+}
+
+// MARK: - Gallons (owner, 2026-10-19)
+
+/// "20,000 gallons" for a pool row's detail line (a plain number, no size remarks), or nil when
+/// the pool's gallons aren't set.
+public func poolGallonsLabel(_ value: JSONValue?) -> String? {
+    guard let n = value?.number, n > 0 else { return nil }
+    return "\(gallonsWithCommas(String(Int(n.rounded())))) gallons"
+}
+
+/// The Gallons field's starting text: "20,000", or blank.
+public func poolGallonsField(_ value: JSONValue?) -> String {
+    guard let n = value?.number, n > 0 else { return "" }
+    return gallonsWithCommas(String(Int(n.rounded())))
+}
+
+/// What Pool Details saves for Gallons, as the website reads it: commas and spaces ignored,
+/// rounded to a whole number, blank clears it (null). Throws the field's message otherwise.
+public func parsePoolGallons(_ text: String) throws(PoolGallonsError) -> JSONValue {
+    let t = text.filter { $0 != "," && !$0.isWhitespace }
+    if t.isEmpty { return .null }
+    guard let n = Double(t), n.isFinite else { throw PoolGallonsError() }
+    let rounded = n.rounded(.toNearestOrAwayFromZero)
+    guard rounded > 0, rounded < 10_000_000 else { throw PoolGallonsError() }
+    return .number(rounded)
+}
+
+public struct PoolGallonsError: Error, Equatable, Sendable {
+    public let message = "Enter the gallons as a number, like 20,000."
 }
 
 /// Why a customer's contact form can't be saved, or nil.

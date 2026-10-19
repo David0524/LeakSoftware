@@ -10,6 +10,7 @@ import {
   type AcidProduct,
   type ChemistryResult,
   type ChlorineProduct,
+  type Property,
   type ReadingKey,
   type Readings,
 } from "@leakbook/core";
@@ -36,7 +37,7 @@ import {
 // The pool chemical calculator (spec 5.11; owner, 2026-10-16): the pool's size and today's
 // readings in, what to add out, in order. Readings fill the screen; What to Add is a glass bar
 // floating above the tab bar that opens a sheet. Nothing is saved but the levels a tech aims
-// for. The math is packages/core/src/chemistry.ts. A visit opens it with the pool's gallons.
+// for. The math is packages/core/src/chemistry.ts. A visit opens it for its pool, whose gallons fill in.
 
 const num = (v: string) => {
   const n = Number(v.replace(/,/g, ""));
@@ -99,10 +100,15 @@ function Cell({ style, ...input }: TextInputProps) {
 }
 
 export default function Chemicals() {
-  const params = useLocalSearchParams<{ gallons?: string }>();
-  const [gallonsText, setGallonsText] = useState(
-    Number(params.gallons) > 0 ? withCommas(String(Math.round(Number(params.gallons)))) : "",
-  );
+  // Opened for a pool (a visit's Chemical Calculator), its gallons fill in (owner, 2026-10-19).
+  const params = useLocalSearchParams<{ property?: string }>();
+  const [gallonsText, setGallonsText] = useState(() => {
+    const pool = params.property
+      ? (getServices().sync.get("property", params.property) as unknown as Property | undefined)
+      : undefined;
+    const g = Number(pool?.approx_gallons);
+    return g > 0 ? withCommas(String(Math.round(g))) : "";
+  });
   const [sheet, setSheet] = useState(false);
   const barTop = useTabBarTop();
   const [values, setValues] = useState<Record<string, string>>({});

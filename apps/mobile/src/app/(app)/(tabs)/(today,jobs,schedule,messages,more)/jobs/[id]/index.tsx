@@ -260,12 +260,7 @@ export default function JobDetail() {
                   onPress={() =>
                     router.push({
                       pathname: "/chemicals",
-                      params: {
-                        gallons: String(
-                          (property as { approx_gallons?: number | null } | null)?.approx_gallons ??
-                            "",
-                        ),
-                      },
+                      params: property ? { property: property.id } : {},
                     })
                   }
                 />
@@ -495,6 +490,9 @@ function Details({
                 {[
                   property.pool_type ? POOL_TYPE_LABELS[property.pool_type] : null,
                   property.has_spa ? "Pool and spa" : "Pool",
+                  property.approx_gallons
+                    ? `${property.approx_gallons.toLocaleString("en-US")} gallons`
+                    : null,
                 ]
                   .filter(Boolean)
                   .join(" · ")}
