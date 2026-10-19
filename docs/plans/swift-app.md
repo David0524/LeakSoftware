@@ -178,6 +178,13 @@ cloud session).
   against local Postgres in CI.
 
 ### S3 App shell
+
+Built 2026-10-19 (`Sources/SundeckApp`): sign-in with the cached session and two-step code,
+company context, the sync service and bar, Today and the jobs list, new customer, pool and job
+offline, the job page shell, settings and the welcome cards. Linux tests cover the session,
+sync bar wording, jobs list and new-job form; CI renders every screen in the iPhone simulator
+(artifact `iphone-screenshots`). Waiting on the owner: the airplane-mode check on a phone
+(batched with S0's install check).
 - Sign in (cached session offline, two-step sign-in, reauth), company context, sync bar (synced,
   pending count, problems), Today and jobs list, new customer, pool and job offline, job page
   shell, settings basics, the welcome cards.
@@ -191,6 +198,17 @@ cloud session).
 - **Done when:** BUILD_PLAN M4 and M8.5's phone samples (27 items, two techs, one leak
   repaired on site, 5 pressure tests, 1 bucket test, 2 findings with pins) are done offline and
   sync correctly.
+
+Built 2026-10-19: the Checklist, Tests and Findings tabs, the checklist item screen, the test
+and finding editors, the pool diagram with pins and the shape picker, ported from the Expo
+screens with the same wording and the same writes (`InspectionWrites`, through the sync layer).
+The verdict rules are ported to `SundeckCore` with fixtures from TypeScript; form logic is in
+`Model/` and tested on Linux (57 app tests). `FieldWorkIntegrationTests` enters both samples
+offline through the app's own writes, then syncs: the server and a second tech's phone hold the
+same rows (`pnpm test:db`). Simulator screenshots show each new screen. Differences from Expo:
+iOS swipe actions with a visible Remove or Delete on the detail screen, select fields as menus,
+and pin labels for VoiceOver that say whose pin it is (fixed in the Expo app too). Photos on
+items, tests and findings come with S5.
 
 ### S5 Media
 - Photo and video capture, compression, markup over the unchanged original, SHA-256, GPS, voice

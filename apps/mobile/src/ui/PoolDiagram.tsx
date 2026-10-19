@@ -43,7 +43,10 @@ export function PoolDiagram({
   // VoiceOver can't aim a tap on the drawing (design review M6): the diagram reads as one
   // element that names its pins, and double-tapping drops the pin in the middle; the finding's
   // location field then says where it is.
-  const pinSummary = pins.length ? pins.map((p) => `Pin ${p.label}`).join(", ") : "No pins";
+  // Numbered pins read "Pin 1"; in the editor, "!" is this finding and unlabelled pins are others.
+  const pinName = (label: string) =>
+    label === "!" ? "This finding’s pin" : label ? `Pin ${label}` : "Another finding’s pin";
+  const pinSummary = pins.length ? pins.map((p) => pinName(p.label)).join(", ") : "No pins";
 
   return (
     <View

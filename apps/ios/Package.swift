@@ -55,7 +55,9 @@ let package = Package(
         // iPhone simulator only (macOS CI): renders each screen to a PNG.
         .testTarget(
             name: "SundeckAppScreenshots",
-            dependencies: ["SundeckApp", "SundeckCore", "SundeckStorage", "SundeckSync"]
+            dependencies: ["SundeckApp", "SundeckCore", "SundeckStorage", "SundeckSync"],
+            // A new shop's default checklist, tests and severities, exported from create_company.
+            resources: [.copy("Resources/config.json")]
         ),
         .testTarget(name: "SundeckCoreTests", dependencies: ["SundeckCore"]),
         .testTarget(name: "SundeckSyncTests", dependencies: ["SundeckSync"]),

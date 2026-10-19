@@ -7,6 +7,18 @@
     enum Route: Hashable {
         case job(String)
         case settings
+        /// A checklist item's screen: its answer, notes, tests and findings.
+        case component(jobId: String, componentId: String)
+    }
+
+    /// The editors that open as sheets over the job (S4).
+    enum EditorSheet: Identifiable, Hashable {
+        /// A test: `testId` nil for a new one of `typeId`, optionally on a checklist item.
+        case test(jobId: String, testId: String?, typeId: String?, componentId: String?)
+        /// A finding: `findingId` nil for a new one, optionally on a checklist item.
+        case finding(jobId: String, findingId: String?, componentId: String?)
+
+        var id: Self { self }
     }
 
     /// The signed-in app: the jobs list, and everything pushed or presented from it.
@@ -17,6 +29,7 @@
         @State private var showNewJob = false
         @State private var showWelcome = false
         @State private var showReauth = false
+        @State private var editor: EditorSheet?
 
         var body: some View {
             NavigationStack(path: $path) {
@@ -26,10 +39,21 @@
                         case .job(let id): JobScreen(jobId: id)
                         case .settings:
                             SettingsView(showWelcome: { showWelcome = true }, showReauth: { showReauth = true })
+                        case .component(let jobId, let componentId):
+                            ComponentScreen(jobId: jobId, componentId: componentId)
                         }
                     }
             }
             .environment(\.openRoute) { path.append($0) }
+            .environment(\.openEditor) { editor = $0 }
+            .sheet(item: $editor) { sheet in
+                switch sheet {
+                case .test(let jobId, let testId, let typeId, let componentId):
+                    TestEditor(jobId: jobId, testId: testId, typeId: typeId, componentId: componentId)
+                case .finding(let jobId, let findingId, let componentId):
+                    FindingEditor(jobId: jobId, findingId: findingId, componentId: componentId)
+                }
+            }
             .sheet(isPresented: $showNewJob) {
                 if let company = session.company, let user = session.user {
                     NewJobView(form: NewJobForm(sync: session.sync, company: company, userId: user.id)) { id in
@@ -49,6 +73,8 @@
     extension EnvironmentValues {
         /// Pushes a screen on the main stack.
         @Entry var openRoute: (Route) -> Void = { _ in }
+        /// Opens a test or finding editor as a sheet.
+        @Entry var openEditor: (EditorSheet) -> Void = { _ in }
     }
 
     /// Today's jobs first, then upcoming, not scheduled and recent. Port of

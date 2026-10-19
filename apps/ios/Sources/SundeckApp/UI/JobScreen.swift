@@ -3,8 +3,8 @@
     import SundeckSync
     import SwiftUI
 
-    /// The job page: who, where, the status actions, and the work tabs. S3 builds the shell; the
-    /// tabs fill in from S4 (inspection) to S7 (quotes and invoices). Port of
+    /// The job page: who, where, the status actions, and the work tabs. The inspection tabs
+    /// came in S4; reports and quotes fill in by S7. Port of
     /// apps/mobile/src/app/(app)/jobs/[id]/index.tsx.
     struct JobScreen: View {
         var jobId: String
@@ -22,6 +22,11 @@
 
         enum Field { case fee, notes }
 
+        init(jobId: String, tab: JobTab = .checklist) {
+            self.jobId = jobId
+            _tab = State(initialValue: tab)
+        }
+
         var body: some View {
             Group {
                 if let view, let company = session.company {
@@ -30,7 +35,8 @@
                     ContentUnavailableView("This job isn’t on this phone.", systemImage: "questionmark.folder")
                 }
             }
-            .navigationTitle(view?.job.number.map { "Job #\($0)" } ?? "New Job")
+            // A plain String: a localized title would print 1042 as "1,042".
+            .navigationTitle(view?.job.number.map { "Job #" + String($0) } ?? "New Job")
             .navigationBarTitleDisplayMode(.inline)
             .task(id: sync.revision) { reload() }
             .onDisappear { saveNotes() }
@@ -107,9 +113,17 @@
                     .pickerStyle(.segmented)
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets())
-                    Text(tab.comingIn)
-                        .font(.subheadline).foregroundStyle(Color.muted)
-                        .frame(maxWidth: .infinity, minHeight: 88)
+                }
+                switch tab {
+                case .checklist: ChecklistTab(job: job)
+                case .tests: TestsTab(job: job)
+                case .findings: FindingsTab(job: job)
+                case .report, .quote:
+                    Section {
+                        Text(tab.comingIn)
+                            .font(.subheadline).foregroundStyle(Color.muted)
+                            .frame(maxWidth: .infinity, minHeight: 88)
+                    }
                 }
                 Section("Job notes") {
                     TextField("Anything the office should know", text: $notes, axis: .vertical)
@@ -257,7 +271,7 @@
         }
     }
 
-    /// The work on a job. Their screens arrive in later milestones.
+    /// The work on a job. Reports and quotes arrive in later milestones (S6, S7).
     enum JobTab: String, Identifiable, Hashable {
         case checklist, tests, findings, report, quote
 
@@ -275,10 +289,8 @@
 
         var comingIn: String {
             switch self {
-            case .checklist: "The checklist arrives in the next test build."
-            case .tests, .findings: "\(title) arrive in the next test build."
-            case .report: "Reports arrive in a later test build."
             case .quote: "Quotes arrive in a later test build."
+            default: "Reports arrive in a later test build."
             }
         }
 

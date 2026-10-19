@@ -103,6 +103,60 @@
             "job", companyId: "c1", ["property_id": .string(samPool), "status": "unscheduled", "type": "repair"])
     }
 
+    /// The sample job's inspection, partly done: config from a new shop, the default checklist,
+    /// a few verdicts, a failing pressure test, and a pinned finding on a kidney pool.
+    @MainActor
+    func seedInspection(_ env: AppEnvironment) throws -> (job: String, seam: String, test: String, finding: String) {
+        let sync = env.session.sync
+        let url = try #require(Bundle.module.url(forResource: "config", withExtension: "json"))
+        let config = try JSONDecoder().decode([String: [Row]].self, from: Data(contentsOf: url))
+        var rows: [PulledRow] = []
+        for (table, list) in config {
+            for row in list {
+                var r = row
+                r["company_id"] = "c1"
+                rows.append(PulledRow(table: table, xid: "2", row: r))
+            }
+        }
+        try sync.store.applyPage(PullPage(rows: rows, done: true, cursor: [:], serverHLC: "1760000000001-0000-srv"))
+
+        let jobs = try sync.store.list("job")
+        let jobRow = try #require(jobs.first { $0["number"] == 1042 })
+        let job = try #require(jobRow["id"]?.string)
+        let propertyId = try #require(jobRow["property_id"]?.string)
+        let stored = try sync.store.get("property", propertyId)
+        let property = try JSONValue.object(try #require(stored)).decode(Property.self)
+        try InspectionWrites.setDiagramShape(sync, propertyId: propertyId, companyId: "c1", shape: .kidney)
+        let types = InspectionConfig(sync.store, companyId: "c1")
+        try InspectionWrites.createChecklist(
+            sync, companyId: "c1", jobId: job, types: types.componentTypes, property: property, jobType: .detection)
+        let inspection = JobInspection(sync.store, jobId: job)
+        let key = { (c: JobComponent) in types.componentTypeById[c.componentTypeId]?.key ?? "" }
+        for (i, c) in inspection.components.enumerated() where i < 12 {
+            let verdict: Verdict = key(c) == "skimmer_seam" ? .leaking : key(c) == "backwash" ? .attention : .ok
+            try InspectionWrites.setVerdict(
+                sync, companyId: "c1", jobId: job, componentId: c.id, existing: inspection.resultByComponent[c.id],
+                verdict: verdict, userId: "u1")
+        }
+        let seam = try #require(inspection.components.first { key($0) == "skimmer_seam" })
+        try InspectionWrites.saveChecklistResult(
+            sync, companyId: "c1", jobId: job, componentId: seam.id,
+            existing: JobInspection(sync.store, jobId: job).resultByComponent[seam.id],
+            ["location_text": "Seam at the skimmer throat"])
+        let pressure = try #require(types.testTypes.first { $0.key == "pressure" })
+        let data = normalizeTestData(
+            pressure.fieldSchema,
+            ["line_name": "Skimmer", "start_psi": "20", "end_psi": "12", "duration_min": "15"].mapValues { .string($0) }
+        )
+        let test = try InspectionWrites.saveTest(
+            sync, companyId: "c1", jobId: job, existing: nil, type: pressure, componentId: seam.id, data: data,
+            outcome: calculate(pressure, data).suggested, notes: "")
+        let finding = try InspectionWrites.saveFinding(
+            sync, companyId: "c1", jobId: job, existing: nil, title: "Skimmer seam leak", componentId: seam.id,
+            severityKey: "major", location: "Skimmer throat", pin: (0.18, 0.12), status: .open, notes: "")
+        return (job, seam.id, test, finding)
+    }
+
     @MainActor
     func snapshot(_ name: String, dark: Bool = false, largeText: Bool = false, _ view: some View) async throws {
         // Package tests run in a bare xctest host with no app scene. With a scene, draw the window on
@@ -183,6 +237,26 @@
             let id = try #require(env.session.sync.store.list("job").first { $0["number"] == 1042 }?.id)
             try await snapshot("04-job", NavigationStack { JobScreen(jobId: id) }.app(env))
             try await snapshot("04-job-dark", dark: true, NavigationStack { JobScreen(jobId: id) }.app(env))
+        }
+
+        @Test func inspection() async throws {
+            let env = try sampleEnvironment()
+            let ids = try seedInspection(env)
+            try await snapshot("09-checklist", NavigationStack { JobScreen(jobId: ids.job) }.app(env))
+            try await snapshot("09-checklist-dark", dark: true, NavigationStack { JobScreen(jobId: ids.job) }.app(env))
+            try await snapshot("10-tests", NavigationStack { JobScreen(jobId: ids.job, tab: .tests) }.app(env))
+            try await snapshot("11-findings", NavigationStack { JobScreen(jobId: ids.job, tab: .findings) }.app(env))
+            try await snapshot(
+                "12-component", NavigationStack { ComponentScreen(jobId: ids.job, componentId: ids.seam) }.app(env))
+            try await snapshot(
+                "13-test-editor",
+                TestEditor(jobId: ids.job, testId: ids.test, typeId: nil, componentId: nil).app(env))
+            try await snapshot(
+                "14-finding-editor",
+                FindingEditor(jobId: ids.job, findingId: ids.finding, componentId: nil).app(env))
+            try await snapshot(
+                "14-finding-editor-large-text", largeText: true,
+                FindingEditor(jobId: ids.job, findingId: ids.finding, componentId: nil).app(env))
         }
 
         @Test func settings() async throws {
