@@ -14,6 +14,10 @@ import {
   LANDMARKS,
   LANDMARKS_MAX,
   LANDMARK_SIZE,
+  LANDMARK_MIN,
+  LANDMARK_MAX,
+  LINE_SNAP_DEGREES,
+  clampLandmarkSize,
   SPA_R_MAX,
   SPA_R_MIN,
   clampSpaR,
@@ -224,6 +228,13 @@ export const inspection: ModuleCases = {
   DRAWING_MAX: rule(() => DRAWING_MAX, [[]]),
   LANDMARKS_MAX: rule(() => LANDMARKS_MAX, [[]]),
   LANDMARK_SIZE: rule(() => LANDMARK_SIZE, [[]]),
+  LANDMARK_MIN: rule(() => LANDMARK_MIN, [[]]),
+  LANDMARK_MAX: rule(() => LANDMARK_MAX, [[]]),
+  LINE_SNAP_DEGREES: rule(() => LINE_SNAP_DEGREES, [[]]),
+  clampLandmarkSize: rule(
+    (size: number) => clampLandmarkSize(size),
+    [[3], [10], [22.26], [22.25], [44], [60], [-1]],
+  ),
   SPA_R_MIN: rule(() => SPA_R_MIN, [[]]),
   SPA_R_MAX: rule(() => SPA_R_MAX, [[]]),
   CLEARED_DIAGRAM: rule(() => CLEARED_DIAGRAM, [[]]),
@@ -619,6 +630,8 @@ export const inspection: ModuleCases = {
             { kind: "tree", x: 0, y: 0 },
             { kind: "house", x: 1, y: 1 },
             { kind: "rock", x: 0.5, y: 0.5 },
+            { kind: "waterfall", x: 0, y: 1, s: 40, flip: true },
+            { kind: "steps", x: 0.9, y: 0.1, s: 12 },
           ],
         },
       ],
@@ -733,6 +746,17 @@ export const inspection: ModuleCases = {
         },
       ],
       [{ landmarks: [{ kind: "rock", x: "0.1", y: 0.2 }] }],
+      [
+        {
+          landmarks: [
+            { kind: "tree", x: 0.5, y: 0.5, s: 30, flip: true },
+            { kind: "rock", x: 0.5, y: 0.5, s: 99, flip: "yes" },
+            { kind: "house", x: 0.5, y: 0.5, s: 9.9, flip: false },
+            { kind: "steps", x: 0.5, y: 0.5, s: 10, flip: 1 },
+            { kind: "equipment", x: 0.5, y: 0.5, s: "20" },
+          ],
+        },
+      ],
       [
         {
           drawing: [

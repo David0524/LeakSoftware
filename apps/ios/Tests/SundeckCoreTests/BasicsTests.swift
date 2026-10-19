@@ -13,7 +13,7 @@ import Testing
             "isManagerRole", "splitEmails", "POOL_TYPE_LABELS", "jobOnPhones", "requiresFinishPhoto",
             "FINISH_PHOTO_MESSAGE", "REPAIR_ITEM_KEY", "REPAIR_ITEM_LABEL", "jobActionLabel", "jobFeeLabel",
             "parseGallons", "requiresFinishedChecklist", "FINISH_CHECKLIST_MESSAGE", "completeJobBlocker",
-            "jobHasWrapUp",
+            "jobHasWrapUp", "stopDone", "markCompleteValues",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -63,6 +63,14 @@ import Testing
             let job = try c.arg(1, as: [String: Int].self)
             return completeJobBlocker(
                 try c.arg(0, as: JSONValue?.self), checklistToDo: job["checklistToDo"] ?? 0, photos: job["photos"] ?? 0)
+        }
+        checkRule(module, "stopDone") { c in
+            let job = try c.arg(0, as: JSONValue.self)
+            return stopDone(
+                status: job["status"]?.string ?? "", stopDoneOn: job["stop_done_on"]?.string, day: try c.arg(1))
+        }
+        checkRule(module, "markCompleteValues") { c in
+            markCompleteValues(type: try c.arg(0, as: JSONValue.self)["type"]?.string ?? "", day: try c.arg(1))
         }
         checkRule(module, "jobHasWrapUp") { c in jobHasWrapUp(try c.arg(0, as: String?.self)) }
         checkRule(module, "REPAIR_ITEM_KEY") { _ in repairItemKey }

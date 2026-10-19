@@ -5,6 +5,7 @@ import {
   MIN_INK,
   SIGNATURE_PURPOSE_LABELS,
   arrowHead,
+  arrowShape,
   enabledSignaturePurposes,
   extensionForMime,
   fitWithin,
@@ -481,6 +482,18 @@ export const media: ModuleCases = {
       [100, 100, 0, 0, 12],
       [10, 20, 10, 20, 15],
       [37.5, 12.25, -40, 80.125, 18],
+    ],
+  ),
+  arrowShape: rule(
+    (x1: number, y1: number, x2: number, y2: number, unit: number) =>
+      arrowShape(x1, y1, x2, y2, unit),
+    [
+      [0, 0, 100, 0, 1],
+      [0, 0, 5, 0, 0.1],
+      [0, 0, 0, 100, 2],
+      [100, 100, 0, 0, 0.5],
+      [10, 20, 10, 20, 1],
+      [37.5, 12.25, -40, 80.125, 1.7],
     ],
   ),
   SIGNATURE_PURPOSE_LABELS: rule(() => SIGNATURE_PURPOSE_LABELS, [[]]),

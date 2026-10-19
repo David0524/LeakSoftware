@@ -165,12 +165,14 @@
         func name(_ id: String) -> String { techs.first { $0.id == id }?.name ?? "Teammate" }
 
         var mine: Bool { techId == ctx.userId }
-        var next: ScheduleJob? { route?.jobs.first { $0.status == .scheduled || $0.status == .inProgress } }
+        /// The stop you're on: the first not done today (Mark Complete moves it on).
+        var next: ScheduleJob? { route?.jobs.first { !$0.doneOn(ctx.today) } }
 
         var directions: URL? {
             guard let route, !route.jobs.isEmpty else { return nil }
             return dayDirections(
-                app: mapsApp, origin: ctx.origin, stops: route.jobs.map { (place: $0.place, done: $0.done) })
+                app: mapsApp, origin: ctx.origin,
+                stops: route.jobs.map { (place: $0.place, done: $0.doneOn(ctx.today)) })
         }
 
         /// "3 stops · 1 hr 20 min driving · back by 4:30 PM"
@@ -182,141 +184,197 @@
         }
     }
 
-    /// A stop on Today (spec 5.1): number, time, status, Call and On My Way; the customer; the
-    /// address opening directions; access notes. The whole card opens the job.
+    /// A stop on Today (spec 5.1; owner, 2026-10-19: "keep these cards on Today collapsed except
+    /// for the job you are on"): one row (the number, or a green check when done; the time, the
+    /// customer, the state, a chevron) that opens to the address, cleanings, access notes, Mark
+    /// Complete, Open Job, and call and On My Way. The stop you're on starts open and ringed.
+    /// Website components/today-stop.tsx.
     struct TodayStopCard: View {
         var number: Int
         var job: ScheduleJob
         var day: TodayDay
         var leg: Int
         var isNext: Bool
+        @State private var open: Bool?
         @Environment(\.openRoute) private var openRoute
         @Environment(\.openURL) private var openURL
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         var body: some View {
             let shape = RoundedRectangle(cornerRadius: CGFloat(Radius.card), style: .continuous)
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 8) {
-                    Text("\(number)")
-                        .font(.custom(BrandFonts.Weight.bold.rawValue, size: 17, relativeTo: .body))
-                        .foregroundStyle(isNext ? Color.bg : Color.text)
-                        .frame(width: 32, height: 32)
-                        .background(Circle().fill(isNext ? Color.link : Color.bg))
-                        .accessibilityHidden(true)
-                    Text(formatTime(job.scheduledStart, timeZone: day.ctx.timeZone))
-                        .font(.custom(BrandFonts.Weight.bold.rawValue, size: 17, relativeTo: .body))
-                        .monospacedDigit()
-                        .foregroundStyle(Color.text)
-                    if job.status != .scheduled { StatusChip(status: job.status) }
-                    if let lock = job.lock, lock != .started {
-                        Text(lock.label).font(.role(.footnote).weight(.semibold)).foregroundStyle(Color.textMuted)
-                    }
-                    Spacer(minLength: 0)
-                    if !job.done {
-                        if let phone = job.customerPhone {
-                            RoundIconButton(systemImage: "phone", label: "Call \(job.customerName), \(phone)") {
-                                if let url = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") {
-                                    openURL(url)
-                                }
-                            }
-                        }
-                        if day.mine { OnMyWayButton(job: job, day: day, leg: leg) }
-                    }
-                }
+            let done = job.doneOn(day.ctx.today)
+            let expanded = open ?? isNext
+            VStack(alignment: .leading, spacing: 0) {
                 Button {
-                    openRoute(.job(job.id))
+                    withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { open = !expanded }
                 } label: {
-                    Text(job.customerName)
-                        .textRole(.bodyEmphasis)
-                        .foregroundStyle(Color.text)
-                        .lineLimit(1)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    summary(done: done, expanded: expanded)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Stop \(number): \(job.customerName)")
-                .accessibilityHint("Opens the job")
-                if !job.done {
-                    AddressButton(place: job.place)
-                    if let cleanings = day.cleanings[job.id] {
-                        FlowRow(spacing: 16) { ForEach(cleanings) { CleaningDueLabel(cleaning: $0) } }
-                            .accessibilityElement(children: .contain)
-                            .accessibilityLabel("Cleanings due")
-                    }
-                    if let notes = job.accessNotes {
-                        // A plain muted line with a key, no fill (owner, 2026-10-19).
-                        HStack(alignment: .firstTextBaseline, spacing: 6) {
-                            Image(systemName: "key")
-                                .font(.system(size: 15))
-                                .accessibilityHidden(true)
-                            Text(notes).lineLimit(2)
+                .accessibilityLabel(stopLabel(done: done))
+                .accessibilityValue(expanded ? "Expanded" : "Collapsed")
+                .accessibilityHint(expanded ? "Folds the stop" : "Shows the address and buttons")
+                if expanded {
+                    VStack(alignment: .leading, spacing: 4) {
+                        AddressButton(place: job.place)
+                        if !done, let cleanings = day.cleanings[job.id] {
+                            FlowRow(spacing: 16) { ForEach(cleanings) { CleaningDueLabel(cleaning: $0) } }
+                                .accessibilityElement(children: .contain)
+                                .accessibilityLabel("Cleanings due")
                         }
-                        .textRole(.secondary)
-                        .foregroundStyle(Color.textMuted)
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(CleaningText.accessSpoken(notes))
+                        if let notes = job.accessNotes {
+                            // A plain muted line with a key, no fill (owner, 2026-10-19).
+                            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                Image(systemName: "key")
+                                    .font(.system(size: 15))
+                                    .accessibilityHidden(true)
+                                Text(notes).lineLimit(2)
+                            }
+                            .textRole(.secondary)
+                            .foregroundStyle(Color.textMuted)
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(CleaningText.accessSpoken(notes))
+                        }
+                        buttons(done: done)
                     }
-                    // Onto the next stop without opening the visit (owner, 2026-10-19).
-                    if day.mine && job.type == .maintenance { TodayCompleteButton(job: job) }
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 12)
+                    .transition(.opacity)
                 }
             }
-            .card(padding: 12)
+            .card(padding: 0)
             .overlay { if isNext { shape.strokeBorder(Color.link, lineWidth: 2) } }
-            .opacity(job.done ? 0.7 : 1)
-            .contentShape(shape)
             .zoomSource(job.id)
-            .onTapGesture { openRoute(.job(job.id)) }
             // Cards ease in as they scroll onto the screen.
             .scrollTransition(.animated(.smooth)) { card, phase in
                 card.opacity(phase.isIdentity ? 1 : 0.6).scaleEffect(phase.isIdentity ? 1 : 0.96)
             }
         }
+
+        private func stopLabel(done: Bool) -> String {
+            ["Stop \(number): \(job.customerName)", done ? "done" : nil].compactMap { $0 }.joined(separator: ", ")
+        }
+
+        private func summary(done: Bool, expanded: Bool) -> some View {
+            HStack(spacing: 8) {
+                ZStack {
+                    Circle().fill(done ? Color.pass : isNext ? Color.link : Color.bg)
+                    if done {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(Color.onStatus)
+                    } else {
+                        Text("\(number)")
+                            .font(.custom(BrandFonts.Weight.bold.rawValue, size: 17, relativeTo: .body))
+                            .foregroundStyle(isNext ? Color.bg : Color.text)
+                    }
+                }
+                .frame(width: 32, height: 32)
+                .accessibilityHidden(true)
+                HStack(spacing: 8) {
+                    Text(formatTime(job.scheduledStart, timeZone: day.ctx.timeZone))
+                        .font(.custom(BrandFonts.Weight.bold.rawValue, size: 17, relativeTo: .body))
+                        .monospacedDigit()
+                        .foregroundStyle(Color.text)
+                    Text(job.customerName)
+                        .textRole(.bodyEmphasis)
+                        .foregroundStyle(Color.text)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    // Most stops are scheduled; the chip shows other states.
+                    if job.status != .scheduled { StatusChip(status: job.status) }
+                    if let lock = job.lock, lock != .started {
+                        Text(lock.label).font(.role(.footnote).weight(.semibold)).foregroundStyle(Color.textMuted)
+                    }
+                }
+                .opacity(done ? 0.7 : 1)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Color.textMuted)
+                    .rotationEffect(.degrees(expanded ? 180 : 0))
+                    .accessibilityHidden(true)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(minHeight: 56)
+            .contentShape(Rectangle())
+        }
+
+        /// Mark Complete (primary) or Mark Not Complete, Open Job, then call and On My Way.
+        private func buttons(done: Bool) -> some View {
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 8) {
+                    FlowRow(spacing: 8) {
+                        if markStopTitle(job, day: day.ctx.today) != nil { TodayMarkButton(job: job, day: day) }
+                        Button(MarkStopText.openJob) { openRoute(.job(job.id)) }
+                            .buttonStyle(.secondary)
+                    }
+                }
+                Spacer(minLength: 0)
+                if !done {
+                    if let phone = job.customerPhone {
+                        RoundIconButton(systemImage: "phone", label: "Call \(job.customerName), \(phone)") {
+                            if let url = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") {
+                                openURL(url)
+                            }
+                        }
+                    }
+                    if day.mine { OnMyWayButton(job: job, day: day, leg: leg) }
+                }
+            }
+            .padding(.top, 8)
+        }
     }
 
-    /// An address in `link`, opening directions in the chosen maps app.
-    /// Complete Job on one of your own maintenance stops (owner, 2026-10-19: "there should be a
-    /// way to mark that you're onto the next job"): a secondary pill under the card's lines. When
-    /// the shop wants the checklist or a photo first, it says so, with Open Job. Website
+    /// Mark Complete on a Today stop (owner, 2026-10-19: every stop on the day's route): a
+    /// maintenance visit is completed; a leak or repair job's stop is done for the day, and its
+    /// report and invoice still follow. When the shop wants the checklist or a photo first, it
+    /// says so, with Open Job. A stop marked by mistake is marked not complete again. Website
     /// components/today-complete.tsx.
-    struct TodayCompleteButton: View {
+    struct TodayMarkButton: View {
         var job: ScheduleJob
+        var day: TodayDay
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
         @Environment(\.openRoute) private var openRoute
         @State private var blocked: String?
-        @State private var done = 0
+        @State private var marked = 0
 
         var body: some View {
+            let done = job.doneOn(day.ctx.today)
             VStack(alignment: .leading, spacing: 4) {
-                Button(CompleteJobText.title) { complete() }
-                    .buttonStyle(.secondary)
-                    .accessibilityLabel(CompleteJobText.spoken(job.customerName))
+                if done {
+                    Button(MarkStopText.notComplete) { mark(complete: false) }
+                        .buttonStyle(.secondary)
+                        .accessibilityLabel(MarkStopText.spoken(true, job.customerName))
+                } else {
+                    Button(MarkStopText.complete) { mark(complete: true) }
+                        .buttonStyle(.primary)
+                        .accessibilityLabel(MarkStopText.spoken(false, job.customerName))
+                }
                 if let blocked {
-                    InlineLinkText(text: blocked, link: CompleteJobText.openJob) { openRoute(.job(job.id)) }
+                    InlineLinkText(text: blocked, link: MarkStopText.openJob) { openRoute(.job(job.id)) }
                         .textRole(.secondary)
                         .foregroundStyle(Color.fail)
                 }
             }
-            .padding(.top, 4)
-            .sensoryFeedback(.success, trigger: done)
+            .sensoryFeedback(.success, trigger: marked)
         }
 
-        private func complete() {
-            guard let company = session.company, let row = try? sync.store.get("job", job.id) else { return }
-            if let block = statusChangeBlock(.done, sync.store, settings: company.settings, jobId: job.id) {
-                blocked = block
-                AccessibilityNotification.Announcement(block).post()
-                return
-            }
+        private func mark(complete: Bool) {
+            guard let company = session.company else { return }
             do {
-                try sync.write("job", id: job.id, companyId: company.id, jobStatusValues(.done, job: row))
-                blocked = nil
-                done += 1
+                blocked = try StopWrites.mark(
+                    sync, companyId: company.id, settings: company.settings, jobId: job.id, complete: complete,
+                    day: day.ctx.today)
+                if let blocked { AccessibilityNotification.Announcement(blocked).post() } else { marked += 1 }
             } catch {
                 blocked = String(describing: error)
             }
         }
     }
 
+    /// An address in `link`, opening directions in the chosen maps app.
     struct AddressButton: View {
         var place: MapPlace
         @Environment(\.openURL) private var openURL

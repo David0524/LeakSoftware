@@ -21,11 +21,13 @@
         /// Side padding inside each segment: 16; Day | Week | Month use 12.
         var segmentPadding: CGFloat = 16
         @Namespace private var thumb
+        @State private var held = false
+        @State private var frames: [Int: CGRect] = [:]
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         var body: some View {
             HStack(spacing: 2) {
-                ForEach(options, id: \.self) { option in
+                ForEach(Array(options.enumerated()), id: \.element) { index, option in
                     let chosen = option == selection
                     Button {
                         withAnimation(reduceMotion ? nil : .snappy(duration: 0.3, extraBounce: 0.08)) {
@@ -41,14 +43,18 @@
                             .padding(.horizontal, segmentPadding)
                             .frame(minWidth: minSegmentWidth, maxWidth: fillsWidth ? .infinity : nil, minHeight: 40)
                             .background {
-                                if chosen { SegmentThumb().matchedGeometryEffect(id: "thumb", in: thumb) }
+                                if chosen {
+                                    SegmentThumb(held: held).matchedGeometryEffect(id: "thumb", in: thumb)
+                                }
                             }
                             .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
+                    .segmentFrame(index) { frames[index] = $0 }
                 }
             }
             .padding(2)
+            .modifier(SegmentDrag(selection: $selection, options: options, frames: frames, held: $held))
             .glassSurface(
                 RoundedRectangle(cornerRadius: CGFloat(Radius.segmentTrack), style: .continuous),
                 tint: Color.fill.opacity(0.6), fallback: .fill
@@ -68,18 +74,84 @@
     /// On iOS 26 the thumb is a drop of Liquid Glass sliding over the track, as in the system's
     /// segmented control.
     struct SegmentThumb: View {
+        /// Held and being dragged: lifted (a little larger, a deeper shadow), as iOS 26's.
+        var held = false
         @Environment(\.drawsGlass) private var drawsGlass
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         var body: some View {
-            if usesGlass(drawsGlass) {
-                Color.clear.glassSurface(Capsule(), tint: Color.thumb.opacity(0.7), interactive: true)
-            } else {
-                Capsule()
-                    .fill(Color.thumb)
-                    .shadow(color: .black.opacity(0.12), radius: 4, x: 0, y: 3)
-                    .shadow(color: .black.opacity(0.04), radius: 0.5, x: 0, y: 3)
+            Group {
+                if usesGlass(drawsGlass) {
+                    Color.clear.glassSurface(Capsule(), tint: Color.thumb.opacity(0.7), interactive: true)
+                } else {
+                    Capsule()
+                        .fill(Color.thumb)
+                        .shadow(color: .black.opacity(held ? 0.2 : 0.12), radius: held ? 10 : 4, x: 0, y: held ? 6 : 3)
+                        .shadow(color: .black.opacity(0.04), radius: 0.5, x: 0, y: 3)
+                }
+            }
+            .scaleEffect(held && !reduceMotion ? 1.06 : 1)
+        }
+    }
+
+    extension View {
+        /// Reports a segment's frame in its track, for dragging the thumb along it.
+        func segmentFrame(_ index: Int, _ changed: @escaping (CGRect) -> Void) -> some View {
+            onGeometryChange(for: CGRect.self) {
+                $0.frame(in: .named(segmentTrackSpace))
+            } action: {
+                changed($0)
             }
         }
+    }
+
+    let segmentTrackSpace = "segment-track"
+
+    /// Hold the chosen segment and drag along the track: the selection follows the finger live,
+    /// the thumb lifts while held, with selection haptics, like iOS 26's segmented control
+    /// (owner, 2026-10-19: "hold the slider/selector like a bubble and drag it around"). A drag
+    /// that starts elsewhere, or mostly up and down (scrolling), does nothing. Taps stay the
+    /// segments' own buttons.
+    struct SegmentDrag<Value: Hashable>: ViewModifier {
+        @Binding var selection: Value
+        var options: [Value]
+        var frames: [Int: CGRect]
+        @Binding var held: Bool
+        /// nil until the drag decides whether it's on the chosen segment.
+        @State private var active: Bool?
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+        func body(content: Content) -> some View {
+            content
+                .coordinateSpace(.named(segmentTrackSpace))
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 4, coordinateSpace: .named(segmentTrackSpace))
+                        .onChanged { value in
+                            if active == nil {
+                                let chosen = options.firstIndex(of: selection).flatMap { frames[$0] }
+                                active =
+                                    chosen?.insetBy(dx: -2, dy: -8).contains(value.startLocation) == true
+                                    && abs(value.translation.width) >= abs(value.translation.height)
+                                if active == true { withAnimation(lift) { held = true } }
+                            }
+                            guard active == true,
+                                let index = frames.first(where: {
+                                    $0.value.minX <= value.location.x && value.location.x <= $0.value.maxX
+                                })?.key,
+                                options.indices.contains(index), options[index] != selection
+                            else { return }
+                            withAnimation(reduceMotion ? nil : .snappy(duration: 0.25, extraBounce: 0.05)) {
+                                selection = options[index]
+                            }
+                        }
+                        .onEnded { _ in
+                            active = nil
+                            withAnimation(lift) { held = false }
+                        }
+                )
+        }
+
+        private var lift: Animation? { reduceMotion ? nil : .spring(duration: 0.25) }
     }
 
     /// The job's section switcher (spec 3.9): the segmented control with equal columns filling the
@@ -93,6 +165,8 @@
         /// The count of things still to do on a segment (0: no badge).
         var badge: (Value) -> Int = { _ in 0 }
         @Namespace private var thumb
+        @State private var held = false
+        @State private var frames: [Int: CGRect] = [:]
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
         @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -109,7 +183,7 @@
 
         private func track(fill: Bool) -> some View {
             HStack(spacing: 2) {
-                ForEach(options, id: \.self) { option in
+                ForEach(Array(options.enumerated()), id: \.element) { index, option in
                     let chosen = option == selection
                     let count = badge(option)
                     Button {
@@ -125,7 +199,9 @@
                             .padding(.horizontal, fill ? 4 : 16)
                             .frame(maxWidth: fill ? .infinity : nil, minHeight: minTarget)
                             .background {
-                                if chosen { SegmentThumb().matchedGeometryEffect(id: "thumb", in: thumb) }
+                                if chosen {
+                                    SegmentThumb(held: held).matchedGeometryEffect(id: "thumb", in: thumb)
+                                }
                             }
                             .overlay(alignment: .topTrailing) {
                                 if let text = badgeText(count) { CountBadge(text: text, tone: .warning).offset(y: -6) }
@@ -137,9 +213,11 @@
                         [label(option), toDoAccessibilityText(count)].compactMap { $0 }.joined(separator: ", ")
                     )
                     .accessibilityAddTraits(chosen ? [.isSelected] : [])
+                    .segmentFrame(index) { frames[index] = $0 }
                 }
             }
             .padding(2)
+            .modifier(SegmentDrag(selection: $selection, options: options, frames: frames, held: $held))
             .glassSurface(
                 RoundedRectangle(cornerRadius: CGFloat(Radius.segmentTrack), style: .continuous),
                 tint: Color.fill.opacity(0.6), fallback: .fill

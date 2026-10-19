@@ -18,6 +18,8 @@ import {
   FINISH_CHECKLIST_MESSAGE,
   completeJobBlocker,
   jobHasWrapUp,
+  markCompleteValues,
+  stopDone,
   REPAIR_ITEM_KEY,
   REPAIR_ITEM_LABEL,
   FINISH_PHOTO_MESSAGE,
@@ -188,6 +190,28 @@ export const basics: ModuleCases = {
         { checklistToDo: 3, photos: 2 },
       ].map((job) => [s, job] as [unknown, { checklistToDo: number; photos: number }]),
     ),
+  ),
+  // Mark Complete on Today (owner, 2026-10-19).
+  stopDone: rule(
+    (job: { status: string; stop_done_on?: string | null }, day: string) => stopDone(job, day),
+    [
+      [{ status: "scheduled" }, "2026-10-19"],
+      [{ status: "in_progress", stop_done_on: "2026-10-19" }, "2026-10-19"],
+      [{ status: "scheduled", stop_done_on: "2026-10-18" }, "2026-10-19"],
+      [{ status: "scheduled", stop_done_on: null }, "2026-10-19"],
+      [{ status: "done" }, "2026-10-19"],
+      [{ status: "report_sent" }, "2026-10-19"],
+      [{ status: "unscheduled" }, "2026-10-19"],
+      [{ status: "canceled", stop_done_on: "2026-10-19" }, "2026-10-19"],
+    ],
+  ),
+  markCompleteValues: rule(
+    (job: { type: string }, day: string) => markCompleteValues(job, day),
+    [
+      [{ type: "maintenance" }, "2026-10-19"],
+      [{ type: "detection" }, "2026-10-19"],
+      [{ type: "repair" }, "2026-10-20"],
+    ],
   ),
   jobHasWrapUp: rule(
     (t: string | null) => jobHasWrapUp(t),

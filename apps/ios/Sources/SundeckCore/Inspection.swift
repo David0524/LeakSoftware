@@ -812,43 +812,122 @@ public enum DrawnShape: Codable, Equatable, Sendable {
 public enum LandmarkKind: String, Codable, CaseIterable, Sendable {
     case tree, rock, waterfall, steps, equipment, house
 
-    public var label: String { landmarkIcons.first { $0.key == self }!.label }
-    /// Its outlined drawing in a 24 x 24 box (absolute M, L, H, V, Q, C, Z only).
-    public var path: String { landmarkIcons.first { $0.key == self }!.path }
+    public var label: String { landmarkDrawings.first { $0.key == self }!.label }
+    /// Its filled parts in a 24 x 24 box (absolute M, L, H, V, Q, C, Z only).
+    public var parts: [LandmarkPart] { landmarkDrawings.first { $0.key == self }!.parts }
 }
 
-/// The Landmarks tile's icons (`LANDMARKS`, owner 2026-10-19: "icons for landmarks... kept
-/// clean"): one outlined drawing each, in a 24 x 24 box.
-public let landmarkIcons: [(key: LandmarkKind, label: String, path: String)] = [
+/// A landmark drawing's colors (brand/tokens.json color.landmark): filled, with a thin dark
+/// outline (owner, 2026-10-19: "All of the landmarks are hard to interpret").
+public enum LandmarkTone: String, Codable, CaseIterable, Sendable {
+    case leaf, leafDark, trunk, stone, stoneDark, water, foam, concrete, metal, wall, roof, door
+}
+
+/// One filled piece of a landmark drawing, in its 24 x 24 box. "foam" parts are white lines
+/// (water streaks), stroked rather than filled.
+public struct LandmarkPart: Codable, Equatable, Sendable {
+    public var d: String
+    public var tone: LandmarkTone
+
+    public init(_ d: String, _ tone: LandmarkTone) {
+        self.d = d
+        self.tone = tone
+    }
+}
+
+/// The landmarks (`LANDMARKS`), drawn as small filled pictures in a 24 x 24 box. Each part is
+/// filled with its tone and outlined in color.landmark.outline (stroke 1 in the box).
+public let landmarkDrawings: [(key: LandmarkKind, label: String, parts: [LandmarkPart])] = [
     (
         .tree, "Tree",
-        "M12 3 C15.3 3 18 5.7 18 9 C18 12.3 15.3 15 12 15 C8.7 15 6 12.3 6 9 C6 5.7 8.7 3 12 3 Z M12 15 V21 M9 21 H15"
+        [
+            LandmarkPart("M10.6 15.5 H13.4 V22.5 H10.6 Z", .trunk),
+            LandmarkPart(
+                "M12 1.5 C15.6 1.5 18.2 4 18.4 7.2 C20.6 8.2 21.8 10.4 21.4 12.8 C21 15.4 18.8 17.2 16.2 17 "
+                    + "C15 17.8 13.6 18.2 12 18.2 C10.4 18.2 9 17.8 7.8 17 C5.2 17.2 3 15.4 2.6 12.8 "
+                    + "C2.2 10.4 3.4 8.2 5.6 7.2 C5.8 4 8.4 1.5 12 1.5 Z", .leaf),
+            LandmarkPart(
+                "M8.4 7.4 C9.4 6 11 5.4 12.6 5.6 C11.2 6.4 10.2 7.6 9.8 9.2 C9.2 8.8 8.7 8.2 8.4 7.4 Z", .leafDark),
+        ]
     ),
-    (.rock, "Rock", "M3 18 L6 11 L10 7 L15 8 L20 13 L21 18 Z M10 7 L12 12 L20 13"),
-    (.waterfall, "Waterfall", "M3 6 H21 M7 6 V17 M12 6 V19 M17 6 V17 M4 21 Q12 17 20 21"),
-    (.steps, "Steps", "M5 4 H19 V20 H5 Z M5 9.3 H19 M5 14.7 H19"),
-    (.equipment, "Equipment", "M3 15 H21 V20 H3 Z M6 15 V8 H13 V15 M13 10 H18 V15 M8.5 11.5 H10.5"),
-    (.house, "House", "M3 11 L12 4 L21 11 M5.5 9 V20 H18.5 V9 M10 20 V14 H14 V20"),
+    (
+        .rock, "Rock",
+        [
+            LandmarkPart(
+                "M2 19.5 C2 15.5 4 11.6 7.6 9.6 C9.6 7.4 13.6 6.8 16.4 8.4 C19.8 10.2 22 14.2 22 19.5 Z", .stone),
+            LandmarkPart("M12.6 9.4 C15 9.6 17.2 11.4 18 14 C16.4 12.6 14.6 12 12.6 12.2 Z", .stoneDark),
+        ]
+    ),
+    (
+        .waterfall, "Waterfall",
+        [
+            LandmarkPart("M4.5 7 H19.5 V18 Q15.75 20.2 12 18 Q8.25 15.8 4.5 18 Z", .water),
+            LandmarkPart("M8.5 9 V15.5 M12 9 V16.5 M15.5 9 V15.5", .foam),
+            LandmarkPart("M1.5 8 C1.5 5 3.4 3 6.5 3 H17.5 C20.6 3 22.5 5 22.5 8 Z", .stone),
+            LandmarkPart("M2.5 22.5 Q12 18.5 21.5 22.5 Z", .water),
+        ]
+    ),
+    (
+        .steps, "Steps",
+        [
+            LandmarkPart("M2.5 15.5 H21.5 V21.5 H2.5 Z", .concrete),
+            LandmarkPart("M5.5 9.5 H18.5 V15.5 H5.5 Z", .concrete),
+            LandmarkPart("M8.5 3.5 H15.5 V9.5 H8.5 Z", .concrete),
+        ]
+    ),
+    (
+        .equipment, "Equipment",
+        [
+            LandmarkPart("M1.5 18 H22.5 V22 H1.5 Z", .concrete),
+            LandmarkPart("M3.5 9 H13.5 V18 H3.5 Z", .metal),
+            LandmarkPart(
+                "M13.5 10.5 H19 C20.4 10.5 21.5 11.6 21.5 13 V15.5 C21.5 16.9 20.4 18 19 18 H13.5 Z", .stoneDark),
+            LandmarkPart("M6.5 9 V4 H12 V6 H8.5 V9 Z", .metal),
+        ]
+    ),
+    (
+        .house, "House",
+        [
+            LandmarkPart("M4.5 10.5 H19.5 V22 H4.5 Z", .wall),
+            LandmarkPart("M1.5 11.5 L12 2.5 L22.5 11.5 Z", .roof),
+            LandmarkPart("M10 22 V15.5 H14 V22 Z", .door),
+        ]
+    ),
 ]
 
-/// A landmark placed around the pool, its center 0..1 of the diagram.
+/// A landmark placed around the pool, its center 0..1 of the diagram, its size in diagram
+/// units (nil: `landmarkSize`) and whether it's mirrored.
 public struct Landmark: Codable, Equatable, Sendable {
     public var kind: LandmarkKind
     public var x: Double
     public var y: Double
+    public var s: Double?
+    public var flip: Bool?
 
-    public init(kind: LandmarkKind, x: Double, y: Double) {
+    public init(kind: LandmarkKind, x: Double, y: Double, s: Double? = nil, flip: Bool? = nil) {
         self.kind = kind
         self.x = x
         self.y = y
+        self.s = s
+        self.flip = flip
     }
 }
+
+/// A drawn line this close to level or plumb (degrees) is drawn straight.
+public let lineSnapDegrees = 8.0
 
 /// At most this many drawn shapes and landmarks on one pool.
 public let drawingMax = 40
 public let landmarksMax = 30
-/// A landmark's drawn size, in diagram units (of 160 x 100).
-public let landmarkSize = 14.0
+/// A landmark's drawn size, in diagram units (of 160 x 100), and how far it can be resized.
+public let landmarkSize = 20.0
+public let landmarkMin = 10.0
+public let landmarkMax = 44.0
+
+/// A landmark size kept within what can be pinched, to a tenth.
+public func clampLandmarkSize(_ size: Double) -> Double {
+    ECMA.round(min(landmarkMax, max(landmarkMin, size)) * 10) / 10
+}
 /// How small and large a spa can be pinched, as a radius in diagram units.
 public let spaRMin = 7.0
 public let spaRMax = 28.0
@@ -863,12 +942,15 @@ public struct PoolDiagram: Codable, Equatable, Sendable {
         public var square: Bool
     }
 
-    /// A landmark's icon (`LandmarkKind.path`) drawn in a `landmarkSize` box centered on cx, cy.
+    /// A landmark's parts in a `size` box centered on cx, cy: translate(cx - size / 2, cy -
+    /// size / 2) scale(size / 24); flipped, mirrored about cx.
     public struct PlacedLandmark: Codable, Equatable, Sendable {
         public var kind: LandmarkKind
         public var cx: Double
         public var cy: Double
-        public var path: String
+        public var size: Double
+        public var flip: Bool
+        public var parts: [LandmarkPart]
     }
 
     public var width: Double
@@ -969,7 +1051,9 @@ public func parseDiagramLayout(_ value: JSONValue?) -> DiagramLayout {
                 guard case .object = l, let kind = l["kind"]?.string.flatMap(LandmarkKind.init(rawValue:)),
                     let x = unit(l["x"]), let y = unit(l["y"])
                 else { return nil }
-                return Landmark(kind: kind, x: x, y: y)
+                var s: Double?
+                if case .number(let n) = l["s"], n >= landmarkMin, n <= landmarkMax { s = n }
+                return Landmark(kind: kind, x: x, y: y, s: s, flip: l["flip"] == .bool(true) ? true : nil)
             }
             .prefix(landmarksMax))
         if !landmarks.isEmpty { layout.landmarks = landmarks }
@@ -1079,7 +1163,16 @@ public func drawnShapeFrom(_ tool: DrawTool, _ points: [(x: Double, y: Double)])
         return .pen(points: Array(thin.prefix(400)))
     }
     if (last.x - first.x).hypot(last.y - first.y) < 0.02 { return nil }
-    if tool == .line { return .line(x1: c(first.x), y1: c(first.y), x2: c(last.x), y2: c(last.y)) }
+    if tool == .line {
+        // Within 8 degrees of level or plumb (in the diagram's own units), the line snaps
+        // straight (owner, 2026-10-19).
+        let dx = abs(last.x - first.x) * diagramWidth
+        let dy = abs(last.y - first.y) * diagramHeight
+        let tan = Foundation.tan(lineSnapDegrees * Double.pi / 180)
+        let end =
+            dy <= dx * tan ? (x: last.x, y: first.y) : dx <= dy * tan ? (x: first.x, y: last.y) : (x: last.x, y: last.y)
+        return .line(x1: c(first.x), y1: c(first.y), x2: c(end.x), y2: c(end.y))
+    }
     return .circle(
         cx: c((first.x + last.x) / 2), cy: c((first.y + last.y) / 2), rx: c(abs(last.x - first.x) / 2),
         ry: c(abs(last.y - first.y) / 2))
@@ -1103,7 +1196,6 @@ public func poolDiagram(_ shape: DiagramShape?, _ hasSpa: Bool, _ layout: Diagra
     let mirror = layout?.mirror == true
     let placed = layout?.spa
     let r = placed?.r ?? (placed?.size ?? .medium).r
-    let half = landmarkSize / 2
     return PoolDiagram(
         width: diagramWidth, height: diagramHeight, pool: mirror && !path.isEmpty ? mirrorPath(path) : path,
         spa: hasSpa
@@ -1113,9 +1205,12 @@ public func poolDiagram(_ shape: DiagramShape?, _ hasSpa: Bool, _ layout: Diagra
             : nil,
         drawing: (layout?.drawing ?? []).map(drawnPath),
         landmarks: (layout?.landmarks ?? []).map { l in
-            .init(
+            let size = l.s ?? landmarkSize
+            let half = size / 2
+            return .init(
                 kind: l.kind, cx: min(diagramWidth - half, max(half, l.x * diagramWidth)),
-                cy: min(diagramHeight - half, max(half, l.y * diagramHeight)), path: l.kind.path)
+                cy: min(diagramHeight - half, max(half, l.y * diagramHeight)), size: size, flip: l.flip == true,
+                parts: l.kind.parts)
         })
 }
 

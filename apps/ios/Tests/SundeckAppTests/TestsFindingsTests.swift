@@ -565,12 +565,29 @@ private struct Inspection {
                 "landmarks": [["kind": "tree", "x": 0.05, "y": 0.05], ["kind": "house", "x": 0.6, "y": 0.95]],
             ])
         #expect(form.diagram.drawing == ["M16 20 L144 80"])
-        #expect(form.diagram.landmarks.map(\.cx) == [8, 96])
+        #expect(form.diagram.landmarks.map(\.cx) == [10, 96])
+        // Selected: a tap on it again flips it, its corner resizes it, its X deletes it.
+        form.flipLandmark(1)
+        form.setLandmarkSize(1, 60)
+        #expect(form.landmarks[1].flip == true && form.landmarks[1].s == 44)
+        let house = form.diagram.landmarks[1]
+        #expect(form.onLandmarkDelete(1, x: (house.cx + 22) / 160, y: (house.cy - 22) / 100))
+        #expect(form.onLandmarkHandle(1, x: (house.cx + 22) / 160, y: (house.cy + 22) / 100))
+        form.resizeLandmark(1, toX: (house.cx + 8) / 160, y: house.cy / 100)
+        #expect(form.landmarks[1].s == 16 && form.landmarkSizeAt(1) == 16 && form.landmarkSizeAt(0) == 20)
+        #expect(
+            form.layoutJSON["landmarks"]
+                == [
+                    ["kind": "tree", "x": 0.05, "y": 0.05],
+                    ["kind": "house", "x": 0.6, "y": 0.95, "s": 16, "flip": true],
+                ])
+        form.flipLandmark(1)
+        #expect(form.landmarks[1].flip == nil)
         #expect(form.drawingLabel == "Pool drawing, 2 landmarks, 1 drawn")
         form.removeLandmark(0)
         #expect(form.landmarks.map(\.kind) == [.house])
         #expect(PoolShapeForm.placingHint(.tree) == "Tap the drawing to put the tree there.")
-        #expect(PoolShapeForm.removeTitle(.house) == "Remove House")
+        #expect(PoolShapeForm.deleteTitle(.house) == "Delete House")
         // At most 30 landmarks.
         for _ in 0..<40 { form.placeLandmark(.rock, x: 0.5, y: 0.5) }
         #expect(form.landmarks.count == landmarksMax)

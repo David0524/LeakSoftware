@@ -617,6 +617,16 @@
             env.session.reloadCompanies()
             try await snapshot("30-today", height: 1500, MainView().app(env))
             try await snapshot("30-today-dark", dark: true, height: 1500, MainView().app(env))
+            // Mark Complete (owner, 2026-10-19): the first stop done for the day, so the second is
+            // the one you're on, open and ringed; the rest are one row each.
+            let store = env.session.sync.store
+            if let first = try store.list("job").filter({ $0["type"]?.string != "maintenance" })
+                .min(by: { ($0["scheduled_start"]?.string ?? "") < ($1["scheduled_start"]?.string ?? "") })
+            {
+                let today = try localDate(Date(), env.session.company?.timeZone ?? "America/Phoenix")
+                try store.write("job", id: first.id, companyId: "c1", ["stop_done_on": .string(today)])
+            }
+            try await snapshot("30-today-marked", height: 1500, MainView().app(env))
             let empty = try sampleEnvironment(jobs: false)
             try await snapshot("30-today-empty", MainView().app(empty))
         }
@@ -755,6 +765,16 @@
             try await snapshot(
                 "10-pool-shape-landmarks", height: 2000,
                 PoolShapeSheet(propertyId: propertyId, companyId: "c1", form: shapeForm, panel: .landmarks).app(env))
+            // A landmark selected (owner, 2026-10-19): dashed ring, the X to delete, the resize
+            // handle; the waterfall drawn larger and flipped.
+            var sized = shapeForm
+            sized.setLandmarkSize(2, 30)
+            sized.flipLandmark(2)
+            try await snapshot(
+                "10-pool-shape-landmark-selected", height: 2000,
+                PoolShapeSheet(
+                    propertyId: propertyId, companyId: "c1", form: sized, panel: .landmarks, selected: 2
+                ).app(env))
             // Markup on the diagram (owner, 2026-10-19): a pen ring round the pin and an arrow.
             let ring = (0...40).map { i in
                 MarkupPoint(x: 0.18 + 0.08 * cos(Double(i) / 6.4), y: 0.12 + 0.12 * sin(Double(i) / 6.4))

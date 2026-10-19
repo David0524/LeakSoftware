@@ -16,7 +16,8 @@ import Testing
             "verdictOptions", "currentVerdict", "verdictValues", "checklistSectionSummary", "markRemainingLabel",
             "SPA_SIZES", "SPA_SHAPES", "mirrorPath", "parseDiagramLayout", "removeItemConfirm", "LANDMARKS",
             "DRAWING_MAX",
-            "LANDMARKS_MAX", "LANDMARK_SIZE", "SPA_R_MIN", "SPA_R_MAX", "CLEARED_DIAGRAM", "isDiagramShape",
+            "LANDMARKS_MAX", "LANDMARK_SIZE", "LANDMARK_MIN", "LANDMARK_MAX", "LINE_SNAP_DEGREES", "clampLandmarkSize",
+            "SPA_R_MIN", "SPA_R_MAX", "CLEARED_DIAGRAM", "isDiagramShape",
             "spaSizeFor",
             "clampSpaR", "drawnPath", "drawnShapeFrom",
         ]
@@ -61,11 +62,20 @@ import Testing
             DiagramShape.tiles.map { ["key": $0.rawValue, "label": $0.label] }
         }
         checkRule(module, "LANDMARKS") { _ in
-            landmarkIcons.map { ["key": $0.key.rawValue, "label": $0.label, "path": $0.path] }
+            try landmarkDrawings.map {
+                JSONValue.object([
+                    "key": .string($0.key.rawValue), "label": .string($0.label),
+                    "parts": try JSONValue(encoding: $0.parts),
+                ])
+            }
         }
         checkRule(module, "DRAWING_MAX") { _ in drawingMax }
         checkRule(module, "LANDMARKS_MAX") { _ in landmarksMax }
         checkRule(module, "LANDMARK_SIZE") { _ in landmarkSize }
+        checkRule(module, "LANDMARK_MIN") { _ in landmarkMin }
+        checkRule(module, "LANDMARK_MAX") { _ in landmarkMax }
+        checkRule(module, "LINE_SNAP_DEGREES") { _ in lineSnapDegrees }
+        checkRule(module, "clampLandmarkSize") { c in clampLandmarkSize(try c.arg(0)) }
         checkRule(module, "SPA_R_MIN") { _ in spaRMin }
         checkRule(module, "SPA_R_MAX") { _ in spaRMax }
         checkRule(module, "CLEARED_DIAGRAM") { _ in

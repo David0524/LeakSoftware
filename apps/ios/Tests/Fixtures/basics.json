@@ -1754,6 +1754,119 @@
       "result": "Finish the checklist before completing this job."
     }
   ],
+  "stopDone": [
+    {
+      "args": [
+        {
+          "status": "scheduled"
+        },
+        "2026-10-19"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "in_progress",
+          "stop_done_on": "2026-10-19"
+        },
+        "2026-10-19"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "scheduled",
+          "stop_done_on": "2026-10-18"
+        },
+        "2026-10-19"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "scheduled",
+          "stop_done_on": null
+        },
+        "2026-10-19"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "done"
+        },
+        "2026-10-19"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "report_sent"
+        },
+        "2026-10-19"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "unscheduled"
+        },
+        "2026-10-19"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "canceled",
+          "stop_done_on": "2026-10-19"
+        },
+        "2026-10-19"
+      ],
+      "result": true
+    }
+  ],
+  "markCompleteValues": [
+    {
+      "args": [
+        {
+          "type": "maintenance"
+        },
+        "2026-10-19"
+      ],
+      "result": {
+        "status": "done"
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection"
+        },
+        "2026-10-19"
+      ],
+      "result": {
+        "stop_done_on": "2026-10-19"
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair"
+        },
+        "2026-10-20"
+      ],
+      "result": {
+        "stop_done_on": "2026-10-20"
+      }
+    }
+  ],
   "jobHasWrapUp": [
     {
       "args": [

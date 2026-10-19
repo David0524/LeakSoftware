@@ -404,6 +404,30 @@ public func arrowHead(_ x1: Double, _ y1: Double, _ x2: Double, _ y2: Double, _ 
     ]
 }
 
+/// How a markup arrow is drawn (owner, 2026-10-19: "the mockup arrow looks strange"): a wider
+/// head, and a shaft that stops inside the head, so the head's point stays sharp. `unit` is the
+/// drawing's width / 400.
+public struct ArrowShape: Codable, Equatable, Sendable {
+    public var shaftEnd: [Double]
+    public var head: [[Double]]
+}
+
+public func arrowShape(_ x1: Double, _ y1: Double, _ x2: Double, _ y2: Double, _ unit: Double) -> ArrowShape {
+    let size = max(14, 30 * unit)
+    let angle = atan2(y2 - y1, x2 - x1)
+    let spread = Double.pi / 6
+    let length = hypot(x2 - x1, y2 - y1)
+    // The shaft ends 60% of the way into the head (never behind where it starts).
+    let back = min(size * 0.6, length)
+    return ArrowShape(
+        shaftEnd: [x2 - back * cos(angle), y2 - back * sin(angle)],
+        head: [
+            [x2, y2],
+            [x2 - size * cos(angle - spread), y2 - size * sin(angle - spread)],
+            [x2 - size * cos(angle + spread), y2 - size * sin(angle + spread)],
+        ])
+}
+
 /// A default shape for a tap (no drag): a circle around the tap, or an arrow pointing at it
 /// from up and to the left (from the other side when the tap is near that edge).
 /// `aspect` is the photo's width / height, so the circle is round on screen.

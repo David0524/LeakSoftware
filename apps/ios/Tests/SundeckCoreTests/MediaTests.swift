@@ -10,7 +10,7 @@ import Testing
         let checked: Set<String> = [
             "MEDIA_LIMITS", "MEDIA_KIND_LABELS", "MARKUP_COLORS", "extensionForMime", "mimeFromFileName",
             "mediaStoragePath", "fitWithin", "formatDuration", "formatBytes", "parseMarkup", "shapeFromDrag",
-            "textShape", "shapeAtTap", "arrowHead", "SIGNATURE_PURPOSE_LABELS", "MIN_INK",
+            "textShape", "shapeAtTap", "arrowHead", "arrowShape", "SIGNATURE_PURPOSE_LABELS", "MIN_INK",
             "enabledSignaturePurposes", "reportSignOffPurposes", "signatureStoragePath", "inkLength", "strokePath",
             "signatureSvg", "signatureStatement", "REPORT_BLOCKS", "testOutcomeLabel",
             "PEN_POINTS_MAX", "penShape", "penPath",
@@ -45,6 +45,9 @@ import Testing
         }
         checkRule(module, "textShape") { c in textShape(try c.arg(0), try c.arg(1), try c.arg(2)) }
         checkRule(module, "shapeAtTap") { c in shapeAtTap(try c.arg(0), try c.arg(1), try c.arg(2), try c.arg(3)) }
+        checkRule(module, "arrowShape") { c in
+            arrowShape(try c.arg(0), try c.arg(1), try c.arg(2), try c.arg(3), try c.arg(4))
+        }
         checkRule(module, "arrowHead") { c in
             arrowHead(try c.arg(0), try c.arg(1), try c.arg(2), try c.arg(3), try c.arg(4))
         }

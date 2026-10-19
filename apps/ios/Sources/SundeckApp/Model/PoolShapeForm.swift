@@ -63,7 +63,8 @@ public struct PoolShapeForm: Equatable, Sendable {
         "Tap the spa to make it round or square. Drag it to move it; pinch or drag its corner to resize."
     public static let noSpaHint = "Turn on Has a spa to put a spa on the drawing."
     public static let drawHint = "Drag on the drawing. Draw on a shape, or Clear and start from nothing."
-    public static let landmarksHint = "Pick one, then tap the drawing. Drag one to move it; tap it to remove it."
+    public static let landmarksHint =
+        "Pick one, then tap the drawing. Tap a landmark to select it: tap again to flip it, pinch or drag its corner to resize, or tap its X to delete it."
     public static let undo = "Undo"
     public static let clearTitle = "Clear the pool diagram?"
     public static let clearMessage = "The shape, spa, drawing, and landmarks are removed. Pins and markup stay."
@@ -75,8 +76,8 @@ public struct PoolShapeForm: Equatable, Sendable {
         "Tap the drawing to put the \(kind.label.lowercased()) there."
     }
 
-    /// "Remove Tree", under the drawing while a landmark is selected.
-    public static func removeTitle(_ kind: LandmarkKind) -> String { "Remove \(kind.label)" }
+    /// VoiceOver's name for a selected landmark's delete action: "Delete Tree".
+    public static func deleteTitle(_ kind: LandmarkKind) -> String { "Delete \(kind.label)" }
 
     /// The form for a property as it is now.
     public init(property: Row?) {
@@ -145,11 +146,53 @@ public struct PoolShapeForm: Equatable, Sendable {
         return hypot((x - s.x) * 160 - s.r * 0.71, (y - s.y) * 100 - s.r * 0.71) <= 6
     }
 
-    /// The landmark under a point, if any.
+    /// The landmark under a point, if any: the top one (drawn last).
     public func landmarkAt(x: Double, y: Double) -> Int? {
-        diagram.landmarks.firstIndex {
-            abs(x * 160 - $0.cx) <= landmarkSize / 2 + 2 && abs(y * 100 - $0.cy) <= landmarkSize / 2 + 2
+        diagram.landmarks.lastIndex {
+            abs(x * 160 - $0.cx) <= $0.size / 2 + 2 && abs(y * 100 - $0.cy) <= $0.size / 2 + 2
         }
+    }
+
+    /// A selected landmark's corners as drawn: the X (delete) at its top right, the resize
+    /// handle at its bottom right.
+    private func near(_ x: Double, _ y: Double, _ px: Double, _ py: Double) -> Bool {
+        hypot(x * 160 - px, y * 100 - py) <= 6
+    }
+
+    public func onLandmarkDelete(_ index: Int, x: Double, y: Double) -> Bool {
+        guard diagram.landmarks.indices.contains(index) else { return false }
+        let l = diagram.landmarks[index]
+        return near(x, y, l.cx + l.size / 2, l.cy - l.size / 2)
+    }
+
+    public func onLandmarkHandle(_ index: Int, x: Double, y: Double) -> Bool {
+        guard diagram.landmarks.indices.contains(index) else { return false }
+        let l = diagram.landmarks[index]
+        return near(x, y, l.cx + l.size / 2, l.cy + l.size / 2)
+    }
+
+    /// A landmark's size as drawn (its own, else `landmarkSize`).
+    public func landmarkSizeAt(_ index: Int) -> Double? {
+        landmarks.indices.contains(index) ? landmarks[index].s ?? landmarkSize : nil
+    }
+
+    /// Resizes a landmark, kept within what can be pinched (`clampLandmarkSize`).
+    public mutating func setLandmarkSize(_ index: Int, _ size: Double) {
+        guard landmarks.indices.contains(index), size.isFinite else { return }
+        landmarks[index].s = clampLandmarkSize(size)
+    }
+
+    /// Its corner handle dragged to a point: the size reaches it from the center.
+    public mutating func resizeLandmark(_ index: Int, toX x: Double, y: Double) {
+        guard diagram.landmarks.indices.contains(index) else { return }
+        let l = diagram.landmarks[index]
+        setLandmarkSize(index, 2 * max(abs(x * 160 - l.cx), abs(y * 100 - l.cy)))
+    }
+
+    /// A tap on the selected landmark mirrors it.
+    public mutating func flipLandmark(_ index: Int) {
+        guard landmarks.indices.contains(index) else { return }
+        landmarks[index].flip = landmarks[index].flip == true ? nil : true
     }
 
     /// Tapping the spa switches it round and square.
@@ -241,7 +284,14 @@ public struct PoolShapeForm: Equatable, Sendable {
         if let drawing = l.drawing { object["drawing"] = .array(drawing.map(\.json)) }
         if let landmarks = l.landmarks {
             object["landmarks"] = .array(
-                landmarks.map { ["kind": .string($0.kind.rawValue), "x": .number($0.x), "y": .number($0.y)] })
+                landmarks.map { l in
+                    var o: [String: JSONValue] = [
+                        "kind": .string(l.kind.rawValue), "x": .number(l.x), "y": .number(l.y),
+                    ]
+                    if let size = l.s { o["s"] = .number(size) }
+                    if l.flip == true { o["flip"] = .bool(true) }
+                    return .object(o)
+                })
         }
         return object.isEmpty ? .null : .object(object)
     }

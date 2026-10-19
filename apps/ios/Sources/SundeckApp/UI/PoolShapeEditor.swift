@@ -29,12 +29,16 @@
         @State private var original: PoolShapeForm?
         @State private var error: String?
 
-        /// `panel` opens Draw or Landmarks (screenshots).
-        init(propertyId: String, companyId: String, form: PoolShapeForm, panel: PoolShapePanel? = nil) {
+        /// `panel` opens Draw or Landmarks, `selected` a landmark selected (screenshots).
+        init(
+            propertyId: String, companyId: String, form: PoolShapeForm, panel: PoolShapePanel? = nil,
+            selected: Int? = nil
+        ) {
             self.propertyId = propertyId
             self.companyId = companyId
             _form = State(initialValue: form)
             _panel = State(initialValue: panel)
+            _selected = State(initialValue: selected)
         }
 
         var body: some View {
@@ -49,13 +53,6 @@
                 VStack(alignment: .leading, spacing: 8) {
                     PoolShapeCanvas(form: $form, panel: panel, tool: tool, placing: $placing, selected: $selected)
                     FieldHint(text: form.hasSpa ? PoolShapeForm.spaHint : PoolShapeForm.noSpaHint)
-                    if let selected, form.landmarks.indices.contains(selected) {
-                        Button(PoolShapeForm.removeTitle(form.landmarks[selected].kind), role: .destructive) {
-                            form.removeLandmark(selected)
-                            self.selected = nil
-                        }
-                        .buttonStyle(.danger)
-                    }
                 }
                 if let error { Notice(kind: .error, text: error) }
                 Button(PoolShapeForm.save) { save() }.buttonStyle(.primary(fullWidth: true, size: .field))
@@ -142,12 +139,7 @@
                             placing = on ? nil : kind
                         } label: {
                             HStack(spacing: 6) {
-                                DiagramOutline(kind.path, box: CGSize(width: 24, height: 24))
-                                    .stroke(
-                                        style: StrokeStyle(lineWidth: 1.8 * 20 / 24, lineCap: .round, lineJoin: .round)
-                                    )
-                                    .frame(width: 20, height: 20)
-                                    .accessibilityHidden(true)
+                                LandmarkArt(parts: kind.parts, side: 24)
                                 Text(kind.label).font(.role(.secondary).weight(.medium))
                             }
                             .foregroundStyle(on ? Color.link : Color.text)
@@ -211,13 +203,9 @@
                         DiagramOutline("M58 22 L102 78 M102 22 L58 78")
                             .stroke(style: StrokeStyle(lineWidth: 6 * scale, lineCap: .round))
                     case .landmarks:
-                        // The tree, at translate(37 7) scale(3.6) in the tile's box.
-                        DiagramOutline(LandmarkKind.tree.path, box: CGSize(width: 24, height: 24))
-                            .stroke(
-                                style: StrokeStyle(lineWidth: 2.5 * 3.6 * scale, lineCap: .round, lineJoin: .round)
-                            )
-                            .frame(width: 24 * 3.6 * scale, height: 24 * 3.6 * scale)
-                            .position(x: (37 + 12 * 3.6) * scale, y: (7 + 12 * 3.6) * scale)
+                        // The tree, at translate(56 2) scale(2) in the tile's box.
+                        LandmarkArt(parts: LandmarkKind.tree.parts, side: 48 * scale)
+                            .position(x: (56 + 24) * scale, y: (2 + 24) * scale)
                     }
                 }
                 .frame(width: box.width * scale, height: box.height * scale)
@@ -244,6 +232,7 @@
             enum What {
                 case spa, resize
                 case landmark(Int)
+                case landmarkResize(Int)
                 case draw, nothing
             }
             var what: What
@@ -274,7 +263,7 @@
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(form.drawingLabel)
                 .accessibilityHint(form.hasSpa ? "Use the actions to move, resize, or reshape the spa." : "")
-                .modifier(SpaActions(form: $form, placing: $placing))
+                .modifier(SpaActions(form: $form, placing: $placing, selected: $selected))
         }
 
         @ViewBuilder private func overlays(_ d: SundeckCore.PoolDiagram, scale: CGFloat) -> some View {
@@ -285,12 +274,27 @@
                         style: StrokeStyle(lineWidth: 2 * scale, lineCap: .round, dash: [4 * scale, 3 * scale]))
             }
             if let selected, d.landmarks.indices.contains(selected) {
+                // Selected: a dashed ring, an X at the top right (delete) and the resize handle
+                // at the bottom right, as the spa's (owner, 2026-10-19).
                 let l = d.landmarks[selected]
-                let side = (landmarkSize + 4) * scale
-                RoundedRectangle(cornerRadius: 4 * scale)
-                    .stroke(Color.link, lineWidth: 1.5 * scale)
+                let side = (l.size + 3) * scale
+                RoundedRectangle(cornerRadius: 3 * scale)
+                    .stroke(Color.link, style: StrokeStyle(lineWidth: 1.2 * scale, dash: [3 * scale, 2 * scale]))
                     .frame(width: side, height: side)
                     .position(x: l.cx * scale, y: l.cy * scale)
+                ZStack {
+                    Circle().fill(Color.fail)
+                    Image(systemName: "xmark")
+                        .font(.system(size: 4.2 * scale, weight: .bold))
+                        .foregroundStyle(Color.onHeader)
+                }
+                .frame(width: 9 * scale, height: 9 * scale)
+                .position(x: (l.cx + l.size / 2) * scale, y: (l.cy - l.size / 2) * scale)
+                Circle()
+                    .fill(Color.surface)
+                    .overlay(Circle().stroke(Color.link, lineWidth: 1.5 * scale))
+                    .frame(width: 6.4 * scale, height: 6.4 * scale)
+                    .position(x: (l.cx + l.size / 2) * scale, y: (l.cy + l.size / 2) * scale)
             }
             if let spa = d.spa, panel != .draw {
                 // The spa's resize handle, at its lower right.
@@ -323,6 +327,7 @@
                     case .spa: if now.moved { form.moveSpa(x: p.x, y: p.y) }
                     case .resize: form.resizeSpa(toX: p.x, y: p.y)
                     case .landmark(let i): if now.moved { form.moveLandmark(i, x: p.x, y: p.y) }
+                    case .landmarkResize(let i): form.resizeLandmark(i, toX: p.x, y: p.y)
                     case .nothing: break
                     }
                 }
@@ -337,7 +342,11 @@
                     case .draw: form.draw(tool, (stroke ?? []) + [p])
                     // Tapping the spa switches it round and square.
                     case .spa: if !now.moved { form.toggleSpaShape() }
-                    case .landmark(let i): if !now.moved { selected = i }
+                    case .landmark(let i):
+                        // A tap selects a landmark; a tap on the selected one mirrors it.
+                        if !now.moved {
+                            if selected == i { form.flipLandmark(i) } else { selected = i }
+                        }
                     default: break
                     }
                 }
@@ -351,6 +360,12 @@
                 form.placeLandmark(kind, x: p.x, y: p.y)
                 placing = nil
                 press = Press(what: .nothing, start: p)
+            } else if let i = selected, form.onLandmarkDelete(i, x: p.x, y: p.y) {
+                form.removeLandmark(i)
+                selected = nil
+                press = Press(what: .nothing, start: p)
+            } else if let i = selected, form.onLandmarkHandle(i, x: p.x, y: p.y) {
+                press = Press(what: .landmarkResize(i), start: p)
             } else if form.onHandle(x: p.x, y: p.y) {
                 press = Press(what: .resize, start: p)
             } else if form.onSpa(x: p.x, y: p.y) {
@@ -363,28 +378,36 @@
             }
         }
 
-        /// Two fingers on the drawing resize the spa (not while drawing).
+        /// Two fingers on the drawing resize the selected landmark, else the spa (not while drawing).
         private var pinch: some Gesture {
             MagnifyGesture()
                 .onChanged { value in
-                    guard panel != .draw, let spa = form.spaNow else { return }
-                    let from = pinchFrom ?? spa.r
+                    guard panel != .draw else { return }
+                    let landmark = selected.flatMap { form.landmarkSizeAt($0) }
+                    guard let start = landmark ?? form.spaNow?.r else { return }
+                    let from = pinchFrom ?? start
                     if pinchFrom == nil {
                         pinchFrom = from
                         press = nil
                         stroke = nil
                     }
-                    form.setSpaR(from * value.magnification)
+                    if let i = selected, landmark != nil {
+                        form.setLandmarkSize(i, from * value.magnification)
+                    } else {
+                        form.setSpaR(from * value.magnification)
+                    }
                 }
                 .onEnded { _ in pinchFrom = nil }
         }
     }
 
     /// VoiceOver can't drag or pinch: actions move the spa, resize it and switch its shape (the
-    /// website's arrow, plus, minus and Enter keys), and place a picked landmark in the middle.
+    /// website's arrow, plus, minus and Enter keys), place a picked landmark in the middle, and
+    /// for the selected landmark flip, resize (±2, as the website's keys) and delete it.
     private struct SpaActions: ViewModifier {
         @Binding var form: PoolShapeForm
         @Binding var placing: LandmarkKind?
+        @Binding var selected: Int?
 
         func body(content: Content) -> some View {
             let step = PoolShapeForm.step
@@ -404,8 +427,40 @@
                     if let kind = placing {
                         form.placeLandmark(kind, x: 0.5, y: 0.5)
                         placing = nil
+                        selected = form.landmarks.count - 1
                     }
                 }
+                .accessibilityAction(named: "Select the Next Landmark") {
+                    guard !form.landmarks.isEmpty else { return }
+                    selected = ((selected ?? -1) + 1) % form.landmarks.count
+                }
+                .modifier(LandmarkActions(form: $form, selected: $selected))
+        }
+    }
+
+    /// The selected landmark's VoiceOver actions.
+    private struct LandmarkActions: ViewModifier {
+        @Binding var form: PoolShapeForm
+        @Binding var selected: Int?
+
+        func body(content: Content) -> some View {
+            if let i = selected, form.landmarks.indices.contains(i) {
+                let kind = form.landmarks[i].kind
+                content
+                    .accessibilityAction(named: "Flip \(kind.label)") { form.flipLandmark(i) }
+                    .accessibilityAction(named: "Make the \(kind.label) Larger") {
+                        form.setLandmarkSize(i, (form.landmarkSizeAt(i) ?? landmarkSize) + 2)
+                    }
+                    .accessibilityAction(named: "Make the \(kind.label) Smaller") {
+                        form.setLandmarkSize(i, (form.landmarkSizeAt(i) ?? landmarkSize) - 2)
+                    }
+                    .accessibilityAction(named: PoolShapeForm.deleteTitle(kind)) {
+                        form.removeLandmark(i)
+                        selected = nil
+                    }
+            } else {
+                content
+            }
         }
     }
 #endif

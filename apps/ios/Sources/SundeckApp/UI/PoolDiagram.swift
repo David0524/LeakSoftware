@@ -139,7 +139,7 @@
     }
 
     /// The pool's outline (none for a drawn pool), what was drawn with Draw, and the landmarks
-    /// (muted, a 1.8 stroke in their 24 box scaled to `landmarkSize`): website `DiagramShapes`.
+    /// (filled pictures, `LandmarkArt`, in their own size, flipped or not): website `DiagramShapes`.
     struct DiagramShapesLayer: View {
         var d: SundeckCore.PoolDiagram
         var scale: CGFloat
@@ -156,17 +156,67 @@
                         Color.water, style: StrokeStyle(lineWidth: 2 * scale, lineCap: .round, lineJoin: .round))
                 }
                 ForEach(Array(d.landmarks.enumerated()), id: \.offset) { _, l in
-                    let side = landmarkSize * scale
-                    DiagramOutline(l.path, box: CGSize(width: 24, height: 24))
-                        .stroke(
-                            Color.textMuted,
-                            style: StrokeStyle(lineWidth: 1.8 * side / 24, lineCap: .round, lineJoin: .round)
-                        )
-                        .frame(width: side, height: side)
-                        .offset(x: (l.cx - landmarkSize / 2) * scale, y: (l.cy - landmarkSize / 2) * scale)
+                    let side = l.size * scale
+                    LandmarkArt(parts: l.parts, side: side, flip: l.flip)
+                        .offset(x: (l.cx - l.size / 2) * scale, y: (l.cy - l.size / 2) * scale)
                 }
             }
             .frame(width: d.width * scale, height: d.height * scale, alignment: .topLeading)
+        }
+    }
+
+    extension LandmarkTone {
+        /// From brand/tokens.json (color.landmark), the same in light and dark.
+        var color: Color { Color(uiColor: token.uiColor) }
+
+        private var token: TokenColor {
+            switch self {
+            case .leaf: Tokens.Landmark.leaf
+            case .leafDark: Tokens.Landmark.leafDark
+            case .trunk: Tokens.Landmark.trunk
+            case .stone: Tokens.Landmark.stone
+            case .stoneDark: Tokens.Landmark.stoneDark
+            case .water: Tokens.Landmark.water
+            case .foam: Tokens.Landmark.foam
+            case .concrete: Tokens.Landmark.concrete
+            case .metal: Tokens.Landmark.metal
+            case .wall: Tokens.Landmark.wall
+            case .roof: Tokens.Landmark.roof
+            case .door: Tokens.Landmark.door
+            }
+        }
+
+        static var outline: Color { Color(uiColor: Tokens.Landmark.outline.uiColor) }
+    }
+
+    /// A landmark's drawing (owner, 2026-10-19: "hard to interpret"): its parts filled in their
+    /// colors with a thin dark outline (1 in the 24 box), water streaks as white lines (1.4), in a
+    /// `side` square, mirrored when flipped. Website pool-diagram.tsx `LandmarkArt`.
+    struct LandmarkArt: View {
+        var parts: [LandmarkPart]
+        var side: CGFloat
+        var flip = false
+
+        var body: some View {
+            let k = side / 24
+            let box = CGSize(width: 24, height: 24)
+            ZStack {
+                ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
+                    let shape = DiagramOutline(part.d, box: box)
+                    if part.tone == .foam {
+                        shape.stroke(
+                            part.tone.color, style: StrokeStyle(lineWidth: 1.4 * k, lineCap: .round, lineJoin: .round))
+                    } else {
+                        shape.fill(part.tone.color)
+                        shape.stroke(
+                            LandmarkTone.outline,
+                            style: StrokeStyle(lineWidth: 1 * k, lineCap: .round, lineJoin: .round))
+                    }
+                }
+            }
+            .frame(width: side, height: side)
+            .scaleEffect(x: flip ? -1 : 1, y: 1)
+            .accessibilityHidden(true)
         }
     }
 

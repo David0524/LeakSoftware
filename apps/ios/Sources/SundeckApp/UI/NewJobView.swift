@@ -11,11 +11,17 @@
         @State private var form: NewJobForm?
 
         var body: some View {
-            Group {
+            // A ZStack with a clear layer, not a Group: an empty Group never appears, so its
+            // onAppear never ran and New Job opened blank (owner, 2026-10-19: "The plus
+            // button does not work on iOS app").
+            ZStack {
+                Color.clear
                 if let form {
                     NewJobView(
                         form: form, back: back, onCreated: { replaceRoute(.job($0)) },
                         onPlanStarted: { replaceRoute(.more(.customer($0))) })
+                } else {
+                    ProgressView()
                 }
             }
             .onAppear {

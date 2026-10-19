@@ -107,9 +107,12 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
     /// The maintenance plan a visit belongs to, and the plan's day for it (its cleanings).
     public var servicePlanId: String?
     public var planDate: String?
+    /// Today's Mark Complete on a leak or repair job: the shop-local day its stop was done.
+    public var stopDoneOn: String?
 
     public init(_ v: JobView) {
         let j = v.job
+        stopDoneOn = j["stop_done_on"]?.string.map { String($0.prefix(10)) }
         servicePlanId = j["service_plan_id"]?.string
         planDate = j["plan_date"]?.string
         id = v.id
@@ -140,6 +143,9 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
     public var label: String? { customerName }
     /// Started, finished, or canceled: shown faded on Today.
     public var done: Bool { status != .scheduled && status != .inProgress }
+    /// Done as a stop on `day`'s route (core `stopDone`): past the field part of its pipeline, or
+    /// marked complete that day.
+    public func doneOn(_ day: String) -> Bool { stopDone(status: status.rawValue, stopDoneOn: stopDoneOn, day: day) }
     public var start: Date? { parseInstant(scheduledStart) }
     public var place: MapPlace { MapPlace(address: address, location: location) }
     public var numberText: String { number.map { "#\($0)" } ?? "New" }

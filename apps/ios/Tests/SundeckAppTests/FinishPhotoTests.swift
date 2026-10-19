@@ -108,6 +108,44 @@ import Testing
         #expect(company["settings"] == ["services": "pool", "require_checklist_to_finish": true])
     }
 
+    /// Mark Complete on every Today stop (owner, 2026-10-19): a visit is completed with the
+    /// shop's rules; a leak or repair stop is done for the day and can be undone.
+    @Test func markCompleteOnTodayStops() throws {
+        let s = try shell(["require_finish_photo": true])
+        let store = s.sync.store
+        let day = "2026-10-19"
+        let rules: JSONValue = ["require_finish_photo": true]
+        // A leak job: its stop is done for the day, its status kept; then undone.
+        #expect(
+            try StopWrites.mark(s.sync, companyId: "c1", settings: rules, jobId: "j3", complete: true, day: day) == nil)
+        var row = try #require(try store.get("job", "j3"))
+        #expect(row["stop_done_on"] == "2026-10-19" && row["status"] == "in_progress")
+        func stop(_ id: String) throws -> ScheduleJob {
+            ScheduleJob(try #require(try jobViews(store, companyId: "c1").first { $0.id == id }))
+        }
+        let leak = try stop("j3")
+        #expect(leak.doneOn(day) && !leak.doneOn("2026-10-20"))
+        #expect(markStopTitle(leak, day: day) == "Mark Not Complete")
+        try StopWrites.mark(s.sync, companyId: "c1", settings: rules, jobId: "j3", complete: false, day: day)
+        row = try #require(try store.get("job", "j3"))
+        let undone = try stop("j3")
+        #expect(row["stop_done_on"] == .null && markStopTitle(undone, day: day) == "Mark Complete")
+        // A visit waits for its photo, then completes; done, it shows no Mark Complete.
+        #expect(
+            try StopWrites.mark(s.sync, companyId: "c1", settings: rules, jobId: "j1", complete: true, day: day)
+                == finishPhotoMessage)
+        #expect(try store.get("job", "j1")?["status"] == "in_progress")
+        #expect(
+            try StopWrites.mark(s.sync, companyId: "c1", settings: rules, jobId: "j2", complete: true, day: day) == nil)
+        #expect(try store.get("job", "j2")?["status"] == "done")
+        let visit = try stop("j2")
+        #expect(markStopTitle(visit, day: day) == nil)
+        #expect(
+            try StopWrites.mark(s.sync, companyId: "c1", settings: rules, jobId: "j2", complete: false, day: day)
+                == "Reopen the visit from its page.")
+        #expect(MarkStopText.spoken(false, "Maria Lopez") == "Mark Complete for Maria Lopez")
+    }
+
     @Test func theRuleIsOffUnlessTheShopTurnsItOn() throws {
         let s = try shell([:])
         for settings: JSONValue? in [

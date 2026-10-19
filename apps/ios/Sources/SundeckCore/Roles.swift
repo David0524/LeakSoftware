@@ -40,6 +40,20 @@ public func completeJobBlocker(_ settings: JSONValue?, checklistToDo: Int, photo
     return nil
 }
 
+/// Whether a stop on a day's route is done (owner, 2026-10-19: Mark Complete on every stop): a
+/// job past the field part of its pipeline is done; a leak or repair job is also done for the
+/// day once Mark Complete set `stop_done_on` to that day.
+public func stopDone(status: String, stopDoneOn: String?, day: String) -> Bool {
+    if status != "scheduled" && status != "in_progress" { return true }
+    return stopDoneOn == day
+}
+
+/// What Mark Complete on Today writes: a maintenance visit is completed (status done); a leak
+/// or repair job keeps its pipeline and its stop is marked done for the day.
+public func markCompleteValues(type: String, day: String) -> [String: JSONValue] {
+    type == "maintenance" ? ["status": "done"] : ["stop_done_on": .string(day)]
+}
+
 /// Whether the job page has a Wrap-Up section (report, signatures, quotes, invoice).
 /// Maintenance visits don't (owner, 2026-10-19): they end with Complete Job, are billed monthly,
 /// and quote repairs from Details.

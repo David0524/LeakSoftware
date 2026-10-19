@@ -58,6 +58,23 @@ public enum Tokens {
         public static let n900 = TokenColor(0x12, 0x26, 0x3A, 0xFF)
     }
 
+    /// Pool diagram landmarks, the same in light and dark.
+    public enum Landmark {
+        public static let leaf = TokenColor(0x4C, 0x9A, 0x52, 0xFF)
+        public static let leafDark = TokenColor(0x2F, 0x6E, 0x3A, 0xFF)
+        public static let trunk = TokenColor(0x8B, 0x5E, 0x34, 0xFF)
+        public static let stone = TokenColor(0xA3, 0xAB, 0xB3, 0xFF)
+        public static let stoneDark = TokenColor(0x6E, 0x78, 0x80, 0xFF)
+        public static let water = TokenColor(0x8C, 0xC8, 0xF0, 0xFF)
+        public static let foam = TokenColor(0xFF, 0xFF, 0xFF, 0xFF)
+        public static let concrete = TokenColor(0xD4, 0xD0, 0xC8, 0xFF)
+        public static let metal = TokenColor(0x7D, 0x8A, 0x96, 0xFF)
+        public static let wall = TokenColor(0xEA, 0xDF, 0xCB, 0xFF)
+        public static let roof = TokenColor(0xB4, 0x53, 0x3C, 0xFF)
+        public static let door = TokenColor(0x7A, 0x4A, 0x2A, 0xFF)
+        public static let outline = TokenColor(0x2B, 0x36, 0x40, 0xFF)
+    }
+
     public enum Markup {
         public static let red = TokenColor(0xFF, 0x3B, 0x30, 0xFF)
         public static let yellow = TokenColor(0xFF, 0xD6, 0x0A, 0xFF)

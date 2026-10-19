@@ -67,20 +67,26 @@
             let h = size.height
             switch shape {
             case .arrow(let color, let x1, let y1, let x2, let y2):
+                // A wider head and a shaft that stops inside it, so the point stays sharp (core
+                // `arrowShape`): outline shaft and head first, then the color, the head on top.
                 let a = CGPoint(x: x1 * w, y: y1 * h)
                 let b = CGPoint(x: x2 * w, y: y2 * h)
+                let arrow = arrowShape(a.x, a.y, b.x, b.y, scale)
                 var line = Path()
                 line.move(to: a)
-                line.addLine(to: b)
-                let points = arrowHead(a.x, a.y, b.x, b.y, max(10, 22 * scale))
+                line.addLine(to: CGPoint(x: arrow.shaftEnd[0], y: arrow.shaftEnd[1]))
                 var head = Path()
-                head.addLines(points.map { CGPoint(x: $0.x, y: $0.y) })
+                head.addLines(arrow.head.map { CGPoint(x: $0[0], y: $0[1]) })
                 head.closeSubpath()
+                let round = StrokeStyle(lineWidth: outline, lineCap: .round, lineJoin: .round)
+                context.stroke(line, with: .color(MarkupColor.outline), style: round)
+                context.fill(head, with: .color(MarkupColor.outline))
                 context.stroke(
-                    line, with: .color(MarkupColor.outline), style: StrokeStyle(lineWidth: outline, lineCap: .round))
+                    head, with: .color(MarkupColor.outline),
+                    style: StrokeStyle(lineWidth: outline - stroke, lineCap: .round, lineJoin: .round))
+                context.stroke(
+                    line, with: .color(color.color), style: StrokeStyle(lineWidth: stroke, lineCap: .round))
                 context.fill(head, with: .color(color.color))
-                context.stroke(head, with: .color(MarkupColor.outline), lineWidth: 1.5)
-                context.stroke(line, with: .color(color.color), style: StrokeStyle(lineWidth: stroke, lineCap: .round))
             case .circle(let color, let cx, let cy, let rx, let ry):
                 let rect = CGRect(x: (cx - rx) * w, y: (cy - ry) * h, width: 2 * rx * w, height: 2 * ry * h)
                 let ellipse = Path(ellipseIn: rect)

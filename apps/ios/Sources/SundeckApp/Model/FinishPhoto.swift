@@ -63,3 +63,50 @@ public enum FinishPhotoText {
     /// After the photo is saved: the tech finishes again.
     public static let taken = "Photo added. You can finish the job now."
 }
+
+/// Mark Complete on a Today stop's words (owner, 2026-10-19).
+public enum MarkStopText {
+    public static let complete = "Mark Complete"
+    public static let notComplete = "Mark Not Complete"
+    public static let openJob = "Open Job"
+    public static let reopenVisit = "Reopen the visit from its page."
+
+    /// What VoiceOver reads: "Mark Complete for Maria Lopez".
+    public static func spoken(_ done: Bool, _ customer: String) -> String {
+        "\(done ? notComplete : complete) for \(customer)"
+    }
+}
+
+/// Whether a stop's Mark Complete shows, and as Mark Not Complete: a leak or repair stop done
+/// only for the day can be undone; a finished visit or a job further on shows neither.
+public func markStopTitle(_ job: ScheduleJob, day: String) -> String? {
+    let done = job.doneOn(day)
+    let undoable = job.type != .maintenance && job.stopDoneOn == day
+    if done && !undoable { return nil }
+    return done ? MarkStopText.notComplete : MarkStopText.complete
+}
+
+@MainActor
+public enum StopWrites {
+    /// Mark Complete (`complete`) or Mark Not Complete on a Today stop, through the sync layer
+    /// (website `markStop`): a maintenance visit is completed (Complete Job, with the shop's
+    /// rules); a leak or repair job keeps its status and its stop is marked done for `day`
+    /// (core `markCompleteValues`), or cleared. Returns why it was stopped, or nil.
+    @discardableResult
+    public static func mark(
+        _ sync: SyncService, companyId: String, settings: JSONValue?, jobId: String, complete: Bool, day: String
+    ) throws -> String? {
+        guard let row = try sync.store.get("job", jobId) else { return "Job not found." }
+        let type = row["type"]?.string ?? "detection"
+        if type == "maintenance" {
+            if !complete { return MarkStopText.reopenVisit }
+            if let block = statusChangeBlock(.done, sync.store, settings: settings, jobId: jobId) { return block }
+            try sync.write("job", id: jobId, companyId: companyId, jobStatusValues(.done, job: row))
+            return nil
+        }
+        try sync.write(
+            "job", id: jobId, companyId: companyId,
+            complete ? markCompleteValues(type: type, day: day) : ["stop_done_on": .null])
+        return nil
+    }
+}
