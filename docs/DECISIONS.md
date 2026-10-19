@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-19 (owner: "I have been approved to Apple Developer")
+- **Apple Developer Program account is approved** (company account). Next, owner steps: register the bundle ID `com.sundeckpro.app`, create the App Store Connect app record, and create an App Store Connect API key for uploads to TestFlight (`docs/release/LAUNCH.md` § 1).
+
 ## 2026-10-19 (owner's overnight list: "I will trust your judgement")
 Built on the website first; `docs/plans/owner-list-2026-10-19.md` has each change and what the apps need for the same.
 - **Free trial is 30 days** (was 14). The first charge is on day 31.
