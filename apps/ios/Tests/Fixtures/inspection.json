@@ -2569,6 +2569,974 @@
       }
     }
   ],
+  "instanceLabel": [
+    {
+      "args": [
+        {
+          "id": "return",
+          "company_id": "c",
+          "key": "return",
+          "name": "Return",
+          "allows_multiple": true,
+          "default_count": 4,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 20,
+          "active": true
+        },
+        1
+      ],
+      "result": "Return 1"
+    },
+    {
+      "args": [
+        {
+          "id": "return",
+          "company_id": "c",
+          "key": "return",
+          "name": "Return",
+          "allows_multiple": true,
+          "default_count": 4,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 20,
+          "active": true
+        },
+        3
+      ],
+      "result": "Return 3"
+    },
+    {
+      "args": [
+        {
+          "id": "skimmer",
+          "company_id": "c",
+          "key": "skimmer",
+          "name": "Skimmer",
+          "allows_multiple": true,
+          "default_count": 2,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true
+        },
+        1
+      ],
+      "result": "Skimmer 1"
+    },
+    {
+      "args": [
+        {
+          "id": "skimmer",
+          "company_id": "c",
+          "key": "skimmer",
+          "name": "Skimmer",
+          "allows_multiple": true,
+          "default_count": 2,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true
+        },
+        2
+      ],
+      "result": "Skimmer 2"
+    },
+    {
+      "args": [
+        {
+          "id": "single",
+          "company_id": "c",
+          "key": "single",
+          "name": "Single",
+          "allows_multiple": true,
+          "default_count": 1,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true
+        },
+        1
+      ],
+      "result": "Single"
+    },
+    {
+      "args": [
+        {
+          "id": "single",
+          "company_id": "c",
+          "key": "single",
+          "name": "Single",
+          "allows_multiple": true,
+          "default_count": 1,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true
+        },
+        2
+      ],
+      "result": "Single 2"
+    }
+  ],
+  "FINDING_STATUS_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "open": "Open",
+        "quoted": "Quoted",
+        "repaired": "Repaired",
+        "monitor": "Monitor"
+      }
+    }
+  ],
+  "verdictLabel": [
+    {
+      "args": [
+        null
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        null,
+        "leak"
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        null,
+        "yes_no"
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        null,
+        "done"
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": null
+        }
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": null
+        },
+        "leak"
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": null
+        },
+        "yes_no"
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": null
+        },
+        "done"
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "ok"
+        }
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "ok"
+        },
+        "leak"
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "ok"
+        },
+        "yes_no"
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "ok"
+        },
+        "done"
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "leaking"
+        }
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "leaking"
+        },
+        "leak"
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "leaking"
+        },
+        "yes_no"
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "leaking"
+        },
+        "done"
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "attention"
+        }
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "attention"
+        },
+        "leak"
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "attention"
+        },
+        "yes_no"
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "attention"
+        },
+        "done"
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": null
+        }
+      ],
+      "result": "Not leaking"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": null
+        },
+        "leak"
+      ],
+      "result": "Not leaking"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": null
+        },
+        "yes_no"
+      ],
+      "result": "Yes"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": null
+        },
+        "done"
+      ],
+      "result": "Done"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "ok"
+        }
+      ],
+      "result": "Not leaking"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "ok"
+        },
+        "leak"
+      ],
+      "result": "Not leaking"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "ok"
+        },
+        "yes_no"
+      ],
+      "result": "No"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "ok"
+        },
+        "done"
+      ],
+      "result": "Done"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "leaking"
+        }
+      ],
+      "result": "Leaking"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "leaking"
+        },
+        "leak"
+      ],
+      "result": "Leaking"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "leaking"
+        },
+        "yes_no"
+      ],
+      "result": "Yes"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "leaking"
+        },
+        "done"
+      ],
+      "result": "Done"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "attention"
+        }
+      ],
+      "result": "Attention"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "attention"
+        },
+        "leak"
+      ],
+      "result": "Attention"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "attention"
+        },
+        "yes_no"
+      ],
+      "result": "Yes"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "attention"
+        },
+        "done"
+      ],
+      "result": "Needs attention"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": null
+        }
+      ],
+      "result": "Not applicable"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": null
+        },
+        "leak"
+      ],
+      "result": "Not applicable"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": null
+        },
+        "yes_no"
+      ],
+      "result": "Not applicable"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": null
+        },
+        "done"
+      ],
+      "result": "Skipped"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "ok"
+        }
+      ],
+      "result": "Not applicable"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "ok"
+        },
+        "leak"
+      ],
+      "result": "Not applicable"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "ok"
+        },
+        "yes_no"
+      ],
+      "result": "Not applicable"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "ok"
+        },
+        "done"
+      ],
+      "result": "Skipped"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "leaking"
+        }
+      ],
+      "result": "Not applicable"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "leaking"
+        },
+        "leak"
+      ],
+      "result": "Not applicable"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "leaking"
+        },
+        "yes_no"
+      ],
+      "result": "Not applicable"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "leaking"
+        },
+        "done"
+      ],
+      "result": "Skipped"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "attention"
+        }
+      ],
+      "result": "Not applicable"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "attention"
+        },
+        "leak"
+      ],
+      "result": "Not applicable"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "attention"
+        },
+        "yes_no"
+      ],
+      "result": "Not applicable"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "attention"
+        },
+        "done"
+      ],
+      "result": "Skipped"
+    }
+  ],
+  "verdictOptions": [
+    {
+      "args": [
+        null
+      ],
+      "result": [
+        {
+          "value": "ok",
+          "label": "Not Leaking"
+        },
+        {
+          "value": "leaking",
+          "label": "Leaking"
+        },
+        {
+          "value": "attention",
+          "label": "Attention"
+        },
+        {
+          "value": "na",
+          "label": "N/A"
+        }
+      ]
+    },
+    {
+      "args": [
+        "leak"
+      ],
+      "result": [
+        {
+          "value": "ok",
+          "label": "Not Leaking"
+        },
+        {
+          "value": "leaking",
+          "label": "Leaking"
+        },
+        {
+          "value": "attention",
+          "label": "Attention"
+        },
+        {
+          "value": "na",
+          "label": "N/A"
+        }
+      ]
+    },
+    {
+      "args": [
+        "yes_no"
+      ],
+      "result": [
+        {
+          "value": "ok",
+          "label": "No"
+        },
+        {
+          "value": "attention",
+          "label": "Yes"
+        },
+        {
+          "value": "na",
+          "label": "N/A"
+        }
+      ]
+    },
+    {
+      "args": [
+        "done"
+      ],
+      "result": [
+        {
+          "value": "ok",
+          "label": "Done"
+        },
+        {
+          "value": "attention",
+          "label": "Needs Attention"
+        },
+        {
+          "value": "na",
+          "label": "Skipped"
+        }
+      ]
+    }
+  ],
+  "currentVerdict": [
+    {
+      "args": [
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": null
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "ok"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "leaking"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "attention"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": null
+        }
+      ],
+      "result": "ok"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "ok"
+        }
+      ],
+      "result": "ok"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "leaking"
+        }
+      ],
+      "result": "leaking"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "attention"
+        }
+      ],
+      "result": "attention"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": null
+        }
+      ],
+      "result": "na"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "ok"
+        }
+      ],
+      "result": "na"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "leaking"
+        }
+      ],
+      "result": "na"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "attention"
+        }
+      ],
+      "result": "na"
+    }
+  ],
+  "verdictValues": [
+    {
+      "args": [
+        null,
+        "u1",
+        "2026-10-19T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        null,
+        null,
+        "2026-01-01T00:00:00.000Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        "ok",
+        "u1",
+        "2026-10-19T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "location_text": null,
+        "inspected_at": "2026-10-19T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        "ok",
+        null,
+        "2026-01-01T00:00:00.000Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "location_text": null,
+        "inspected_at": "2026-01-01T00:00:00.000Z",
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        "leaking",
+        "u1",
+        "2026-10-19T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "leaking",
+        "inspected_at": "2026-10-19T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        "leaking",
+        null,
+        "2026-01-01T00:00:00.000Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "leaking",
+        "inspected_at": "2026-01-01T00:00:00.000Z",
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        "attention",
+        "u1",
+        "2026-10-19T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "attention",
+        "inspected_at": "2026-10-19T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        "attention",
+        null,
+        "2026-01-01T00:00:00.000Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "attention",
+        "inspected_at": "2026-01-01T00:00:00.000Z",
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        "na",
+        "u1",
+        "2026-10-19T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "excluded",
+        "outcome": null,
+        "location_text": null,
+        "inspected_at": "2026-10-19T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        "na",
+        null,
+        "2026-01-01T00:00:00.000Z"
+      ],
+      "result": {
+        "status": "excluded",
+        "outcome": null,
+        "location_text": null,
+        "inspected_at": "2026-01-01T00:00:00.000Z",
+        "inspected_by": null
+      }
+    }
+  ],
   "checklistTally": [
     {
       "args": [

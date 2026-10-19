@@ -19,6 +19,11 @@ public enum ChecklistSection: String, Codable, CaseIterable, Sendable {
         case .service: "Service"
         }
     }
+
+    /// A section this app doesn't know (added on the server later) lists under Other.
+    public init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .other
+    }
 }
 
 /// How an item is answered: a leak verdict, yes or no, or a maintenance task.
@@ -26,11 +31,21 @@ public enum ComponentAnswer: String, Codable, Sendable {
     case leak
     case yesNo = "yes_no"
     case done
+
+    /// An answer kind this app doesn't know reads as a leak verdict, the default.
+    public init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .leak
+    }
 }
 
 /// Whether an item is for the pool, the spa, or both.
 public enum ComponentAppliesTo: String, Codable, Sendable {
     case pool, spa, both
+
+    /// A value this app doesn't know counts as the pool, the default.
+    public init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .pool
+    }
 }
 
 /// A checklist item type (config row from the database).
@@ -162,6 +177,12 @@ public struct TestFieldSchema: Codable, Equatable, Sendable {
 public enum Calculator: String, Codable, Sendable {
     case pressureDrop = "pressure_drop"
     case bucketEvaporation = "bucket_evaporation"
+    /// A calculator added on the server after this app: the test is entered without one.
+    case unsupported
+
+    public init(from decoder: Decoder) throws {
+        self = Self(rawValue: try decoder.singleValueContainer().decode(String.self)) ?? .unsupported
+    }
 }
 
 public enum Outcome: String, Codable, Sendable {
@@ -288,8 +309,17 @@ public struct ExclusionReason: Codable, Equatable, Sendable {
     }
 }
 
-public enum FindingStatus: String, Codable, Sendable {
+public enum FindingStatus: String, Codable, CaseIterable, Sendable {
     case open, quoted, repaired, monitor
+
+    public var label: String {
+        switch self {
+        case .open: "Open"
+        case .quoted: "Quoted"
+        case .repaired: "Repaired"
+        case .monitor: "Monitor"
+        }
+    }
 }
 
 /// Something wrong the tech found, pinned on the pool diagram.
@@ -339,7 +369,8 @@ public func componentApplies(_ type: ComponentType, _ property: Property) -> Boo
 }
 
 /// "Skimmer", then "Skimmer 2" when another is added; numbered from 1 when a job starts with several.
-private func instanceLabel(_ type: ComponentType, _ n: Int) -> String {
+/// "Skimmer", then "Skimmer 2" when another is added; numbered from 1 when a job starts with several.
+public func instanceLabel(_ type: ComponentType, _ n: Int) -> String {
     if !type.allowsMultiple { return type.name }
     return n == 1 && type.defaultCount <= 1 ? type.name : "\(type.name) \(n)"
 }
@@ -533,7 +564,7 @@ public func calculate(_ type: TestType, _ data: TestData) -> Calculation {
     switch type.calculator {
     case .pressureDrop: return pressureDrop(data, options)
     case .bucketEvaporation: return bucketEvaporation(data, options)
-    case nil: return .empty
+    case nil, .unsupported: return .empty
     }
 }
 
@@ -629,4 +660,69 @@ extension ECMA {
         case .number(let n): numberString(n)
         }
     }
+}
+
+// MARK: - Verdicts
+
+/// Badge text for an item, in the design partner's words. Yes/no items read "Yes" or "No".
+public func verdictLabel(status: ChecklistStatus?, outcome: ChecklistOutcome?, answer: ComponentAnswer = .leak)
+    -> String
+{
+    guard let status, status != .pending else { return "To do" }
+    if answer == .done {
+        if status == .excluded { return "Skipped" }
+        return outcome == .attention ? "Needs attention" : "Done"
+    }
+    if status == .excluded { return "Not applicable" }
+    if answer == .yesNo { return outcome == .ok ? "No" : "Yes" }
+    return outcome == .leaking ? "Leaking" : outcome == .attention ? "Attention" : "Not leaking"
+}
+
+/// One tap per item: the shop's verdicts (yes/no items: No, Yes, N/A).
+public enum Verdict: String, Codable, Sendable {
+    case ok, leaking, attention, na
+}
+
+public struct VerdictOption: Codable, Equatable, Sendable {
+    public var value: Verdict
+    public var label: String
+}
+
+public func verdictOptions(_ answer: ComponentAnswer?) -> [VerdictOption] {
+    switch answer {
+    case .done:
+        [
+            .init(value: .ok, label: "Done"), .init(value: .attention, label: "Needs Attention"),
+            .init(value: .na, label: "Skipped"),
+        ]
+    case .yesNo:
+        [.init(value: .ok, label: "No"), .init(value: .attention, label: "Yes"), .init(value: .na, label: "N/A")]
+    default:
+        [
+            .init(value: .ok, label: "Not Leaking"), .init(value: .leaking, label: "Leaking"),
+            .init(value: .attention, label: "Attention"), .init(value: .na, label: "N/A"),
+        ]
+    }
+}
+
+/// The verdict an item has now; nil while it's to do.
+public func currentVerdict(status: ChecklistStatus?, outcome: ChecklistOutcome?) -> Verdict? {
+    guard let status, status != .pending else { return nil }
+    if status == .excluded { return .na }
+    return outcome.flatMap { Verdict(rawValue: $0.rawValue) } ?? .ok
+}
+
+/// The checklist row values for a verdict. "Where" only stays for Leaking and Attention.
+public func verdictValues(_ v: Verdict?, userId: String?, now: Date = Date()) -> [String: JSONValue] {
+    let at = JSONValue.string((try? ECMA.isoString(ECMA.milliseconds(now))) ?? "")
+    let by = userId.map(JSONValue.string) ?? .null
+    guard let v else { return ["status": "pending", "outcome": .null, "inspected_at": .null, "inspected_by": .null] }
+    if v == .na {
+        return ["status": "excluded", "outcome": .null, "location_text": .null, "inspected_at": at, "inspected_by": by]
+    }
+    var values: [String: JSONValue] = [
+        "status": "inspected", "outcome": .string(v.rawValue), "inspected_at": at, "inspected_by": by,
+    ]
+    if v == .ok { values["location_text"] = .null }
+    return values
 }

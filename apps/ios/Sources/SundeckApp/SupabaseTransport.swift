@@ -80,7 +80,3 @@ public struct SupabaseRPC: RPCClient {
         }
     }
 }
-
-private func json<T: Encodable>(_ value: T) throws -> JSONValue {
-    try JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode(value))
-}

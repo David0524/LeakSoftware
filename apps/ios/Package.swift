@@ -63,6 +63,7 @@ let package = Package(
             name: "SundeckSyncIntegrationTests",
             dependencies: [
                 "SundeckSyncPostgres",
+                "SundeckApp",
                 .product(name: "PostgresNIO", package: "postgres-nio"),
                 .product(name: "Logging", package: "swift-log"),
             ]

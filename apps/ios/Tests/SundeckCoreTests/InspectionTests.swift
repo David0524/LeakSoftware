@@ -11,7 +11,8 @@ import Testing
             "CHECKLIST_SECTION_LABELS", "DIAGRAM_SHAPES", "componentApplies", "planComponents", "nextInstance",
             "checklistTally", "calculate", "validateTestData", "normalizeTestData", "validateFinding", "poolDiagram",
             "validateNewJob", "formatAddress", "newJobRecords", "localDate", "groupJobs", "formatSchedule",
-            "propertyLocation", "nativeMapsUrl",
+            "propertyLocation", "nativeMapsUrl", "instanceLabel", "FINDING_STATUS_LABELS", "verdictLabel",
+            "verdictOptions", "currentVerdict", "verdictValues",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -121,6 +122,30 @@ import Testing
     @Test func routing() {
         checkRule(module, "propertyLocation") { c in propertyLocation(try c.arg(0, as: Property?.self)) }
         checkRule(module, "nativeMapsUrl") { c in nativeMapsUrl(try c.arg(0), try c.arg(1)) }
+    }
+
+    struct ResultArg: Decodable {
+        var status: ChecklistStatus?
+        var outcome: ChecklistOutcome?
+    }
+
+    @Test func verdicts() {
+        checkRule(module, "instanceLabel") { c in instanceLabel(try c.arg(0), try c.arg(1)) }
+        checkRule(module, "FINDING_STATUS_LABELS") { _ in labelTable(\FindingStatus.label) }
+        checkRule(module, "verdictLabel") { c in
+            let r = try c.arg(0, as: ResultArg?.self)
+            let answer = try c.arg(1, as: ComponentAnswer?.self) ?? .leak
+            return verdictLabel(status: r?.status, outcome: r?.outcome, answer: answer)
+        }
+        checkRule(module, "verdictOptions") { c in verdictOptions(try c.arg(0, as: ComponentAnswer?.self)) }
+        checkRule(module, "currentVerdict") { c in
+            let r = try c.arg(0, as: ResultArg?.self)
+            return currentVerdict(status: r?.status, outcome: r?.outcome)
+        }
+        checkRule(module, "verdictValues") { c in
+            let date = try instant(try c.arg(2, as: String.self))
+            return verdictValues(try c.arg(0, as: Verdict?.self), userId: try c.arg(1, as: String?.self), now: date)
+        }
     }
 }
 

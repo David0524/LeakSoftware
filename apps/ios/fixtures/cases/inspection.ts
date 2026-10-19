@@ -1,5 +1,11 @@
 import {
   CHECKLIST_SECTION_LABELS,
+  FINDING_STATUS_LABELS,
+  currentVerdict,
+  instanceLabel,
+  verdictLabel,
+  verdictOptions,
+  verdictValues,
   DIAGRAM_SHAPES,
   calculate,
   checklistTally,
@@ -244,6 +250,54 @@ export const inspection: ModuleCases = {
     ],
   ),
 
+  instanceLabel: rule(
+    (t: ComponentType, n: number) => instanceLabel(t, n),
+    [
+      [types[1]!, 1],
+      [types[1]!, 3],
+      [types[0]!, 1],
+      [types[0]!, 2],
+      [type("single", { allows_multiple: true, default_count: 1 }), 1],
+      [type("single", { allows_multiple: true, default_count: 1 }), 2],
+    ],
+  ),
+  FINDING_STATUS_LABELS: rule(() => FINDING_STATUS_LABELS, [[]]),
+  verdictLabel: rule(
+    (
+      r: { status: "pending" | "inspected" | "excluded"; outcome: string | null } | null,
+      answer?: string,
+    ) => verdictLabel(r as never, answer as never),
+    [
+      null,
+      ...(["pending", "inspected", "excluded"] as const).flatMap((status) =>
+        [null, "ok", "leaking", "attention"].map((outcome) => ({ status, outcome })),
+      ),
+    ].flatMap(
+      (r) => [[r], [r, "leak"], [r, "yes_no"], [r, "done"]] as unknown as [never, string?][],
+    ),
+  ),
+  verdictOptions: rule(
+    (answer: string | null) => verdictOptions(answer === null ? undefined : ({ answer } as never)),
+    [[null], ["leak"], ["yes_no"], ["done"]],
+  ),
+  currentVerdict: rule(
+    (r: { status: string; outcome: string | null } | null) =>
+      currentVerdict((r ?? undefined) as never),
+    [
+      null,
+      ...["pending", "inspected", "excluded"].flatMap((status) =>
+        [null, "ok", "leaking", "attention"].map((outcome) => ({ status, outcome })),
+      ),
+    ].map((r) => [r] as [never]),
+  ),
+  verdictValues: rule(
+    (v: string | null, userId: string | null, now: string) =>
+      verdictValues(v as never, userId, new Date(now)),
+    [null, "ok", "leaking", "attention", "na"].flatMap((v) => [
+      [v, "u1", "2026-10-19T15:04:05.123Z"],
+      [v, null, "2026-01-01T00:00:00.000Z"],
+    ]) as [string | null, string | null, string][],
+  ),
   checklistTally: rule(
     (components: JobComponent[], results: ChecklistItemResult[]) =>
       checklistTally(components, results),
