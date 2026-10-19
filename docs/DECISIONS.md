@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-19 (owner: "Let all future updates be pushed to all of the following: desktop site, mobile site, Swift app, android app")
+- **Every update ships on all four platforms:** the desktop website, the mobile website, the Swift iPhone app, and the Android (Expo) app, with the same wording and behavior, unless the owner says a change is for one platform. Recorded in CLAUDE.md (How to work).
+- **Cleanings sync to phones** (owner: "Sync"): `plan_cleaning` is synced to phones (`device_sync = true`), so the apps show the countdowns, cadence, and due-soon pills the website shows.
+- **Request a Feature is a text box in the apps** (owner: "Make it a text box built into the platform. No need to make a separate email"): the apps post to a new `POST /api/feature-requests` (bearer token) that saves to `feature_request` like the website; no mailto.
+- **Wording** (owner: "Your call"): scheduled → unscheduled is **Unschedule**; **Reopen Job** only for a canceled job; a finished visit back to in progress is **Reopen Visit**. The job's price is **Detection fee** on leak detection only, **Price** on repairs and visits.
+- **Second batch of requests** planned in `docs/plans/owner-list-2026-10-19b.md`: Chemical as a dropdown on the visit's checklist with What to Add inside it; remove any checklist item; "When they called" renamed **From the Customer**, with Gallons instead of "Size of the pool"; Pool gallons in job Details; no leak checkbox on visits; plain icon-and-time cleaning pills; a **Replace filter** tracker with the filter's age; directions and routes from the address, no Mark Location Here; pool shape tiles with **Landmarks**, **Draw**, and **Clear** (Freeform leaves the tiles); the spa resized and reshaped on the diagram itself. The landmark button is named **Landmarks** (the owner's own word, and plain on a tile).
+
 ## 2026-10-19 (owner: "Ensure you include Liquid Glass, smooth animations, all of that uniquely swift stuff")
 - **The Swift app uses Liquid Glass on iOS 26** for the controls layer: pill buttons (tinted with their usual colors, so primary stays blue), round icon buttons, segmented controls (a glass thumb that slides), the job page's section switcher (floating over the page instead of a bar), the What to Add bar, the message composer, a photo's toolbar, and half-height sheets. Content (cards, lists, the checklist) stays solid, as Apple's guidelines ask. iOS 18 to 25 keep the website's look.
 - **The tab bar shrinks while scrolling down on iOS 26** (`tabBarMinimizeBehavior(.onScrollDown)`). Replaces the spec's "Don't turn on" (8.1).

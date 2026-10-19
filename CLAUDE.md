@@ -10,6 +10,7 @@ Offline-first field app and office web app for pool leak detection shops.
 
 ## How to work
 - Build one milestone at a time (BUILD_PLAN section 8). When a milestone's "Done when" passes, commit, then stop and report: what was built, what was verified (with command output), and decisions for the owner. Do not start the next milestone until the owner says go.
+- **Every update ships on all four platforms** (owner, 2026-10-19): the desktop website, the mobile website, the Swift iPhone app (`apps/ios`), and the Android app (`apps/mobile`, Expo). A change asked for on one of them is built on all four in the same piece of work, with the same wording and behavior, unless the owner says it's for one platform only.
 - Do not build ahead of the current milestone or add features not in the plan. If the plan looks wrong, say so and propose the change instead of silently deviating.
 - Config, not code: checklist components, test types, severities, exclusion reasons, report templates, and the price book are database rows seeded in `supabase/seed.sql`.
 - Every business table has `company_id` and RLS. To add one (see `supabase/migrations/20261012000100_foundation.sql` header):
