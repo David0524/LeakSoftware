@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-19 (owner: "LLC as of last night")
+- **The business is an LLC** (formed 2026-10-18). Plan: get the LLC's free D-U-N-S number (Apple's lookup tool), then ask Apple Developer Support to convert the individual developer account to the LLC before the public App Store release. The terms, privacy policy, and App Store copyright should name the LLC once its exact legal name is confirmed.
+
 ## 2026-10-19 (owner: "I have been approved to Apple Developer")
 - **Apple Developer Program account is approved, as an individual** in the owner's own name (the plan was a company account, 2026-10-12). TestFlight works the same. Before the public App Store release, decide whether to move it to the company (Apple Developer Support converts an individual membership to an organization with the company's D-U-N-S number; apps and testers carry over), since the seller name and the EU trader details shown on the App Store would otherwise be the owner's personal ones. Next, owner steps: register the bundle ID `com.sundeckpro.app`, create the App Store Connect app record, and create an App Store Connect API key for uploads to TestFlight (`docs/release/LAUNCH.md` § 1).
 
