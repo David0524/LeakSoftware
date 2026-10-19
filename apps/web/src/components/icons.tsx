@@ -69,6 +69,14 @@ export const FilterIcon = ({ className }: { className?: string }) => (
   </Icon>
 );
 
+/** A new cartridge: the filter with an arrow going in (replacing the filter). */
+export const NewFilterIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <rect x="9" y="6" width="10" height="15" rx="2.5" />
+    <path d="M12.5 10v7M15.5 10v7M3 4h6M6 1v6" />
+  </Icon>
+);
+
 /** A salt cell: a tube with plates inside and a spark (salt cell cleanings). */
 export const SaltCellIcon = ({ className }: { className?: string }) => (
   <Icon className={className}>
@@ -90,11 +98,13 @@ export function CleaningIcon({
   kind,
   className,
 }: {
-  kind: "filter" | "salt_cell" | "other";
+  kind: "filter" | "filter_replace" | "salt_cell" | "other";
   className?: string;
 }) {
   return kind === "filter" ? (
     <FilterIcon className={className} />
+  ) : kind === "filter_replace" ? (
+    <NewFilterIcon className={className} />
   ) : kind === "salt_cell" ? (
     <SaltCellIcon className={className} />
   ) : (

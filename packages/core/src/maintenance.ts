@@ -216,11 +216,13 @@ export function cleaningSummary(
 export const CLEANING_DUE_SOON_DAYS = 7;
 
 /** What a scheduled cleaning is, for its icon: the filter, the salt cell, or something else. */
-export type CleaningKind = "filter" | "salt_cell" | "other";
+export type CleaningKind = "filter" | "filter_replace" | "salt_cell" | "other";
 
 export function cleaningKind(type: { key?: string | null; name?: string | null }): CleaningKind {
   const text = `${type.key ?? ""} ${type.name ?? ""}`.toLowerCase();
   if (text.includes("salt")) return "salt_cell";
+  // Replace filter (owner, 2026-10-19): separate from cleaning it, and tracks the filter's age.
+  if (text.includes("filter") && text.includes("replace")) return "filter_replace";
   if (text.includes("filter")) return "filter";
   return "other";
 }
@@ -270,11 +272,40 @@ export function cleaningDueSpoken(name: string, due: { days: number; weeks: numb
 /**
  * The shop's usual cleaning frequency per checklist item key (Settings › Scheduling, owner
  * 2026-10-19), used for new plans: settings.maintenance.cleaning_months, e.g.
- * {"svc_filter_clean": 3, "svc_salt_clean": 6}. 3 months when not set.
+ * {"svc_filter_clean": 3, "svc_salt_clean": 6}. When not set: a year for replacing the filter,
+ * 3 months for anything else.
  */
 export function cleaningDefaultMonths(settings: unknown, key: string | null | undefined): number {
   const raw = (settings as { maintenance?: { cleaning_months?: Record<string, unknown> } } | null)
     ?.maintenance?.cleaning_months;
   const months = Number(key ? raw?.[key] : undefined);
-  return (CLEANING_MONTHS as readonly number[]).includes(months) ? months : 3;
+  if ((CLEANING_MONTHS as readonly number[]).includes(months)) return months;
+  return key === FILTER_REPLACE_KEY ? 12 : 3;
+}
+
+/** The checklist item for putting a new filter in (owner, 2026-10-19). */
+export const FILTER_REPLACE_KEY = "svc_filter_replace";
+
+/**
+ * How old the pool's filter is, from when it was last replaced (plan_cleaning.last_done_on):
+ * "New filter" (this week), "Filter 3 weeks old", "Filter 8 months old", "Filter 2 years old".
+ * Null when nobody has said, or the date is after `today`.
+ */
+export function filterAge(lastReplaced: string | null | undefined, today: string): string | null {
+  if (!lastReplaced) return null;
+  const days = Math.round(
+    (Date.parse(`${today}T12:00:00Z`) - Date.parse(`${lastReplaced}T12:00:00Z`)) / 86_400_000,
+  );
+  if (!Number.isFinite(days) || days < 0) return null;
+  if (days < 7) return "New filter";
+  // Whole calendar months: Feb 19 to Oct 19 is 8.
+  const [y1, m1, d1] = lastReplaced.split("-").map(Number) as [number, number, number];
+  const [y2, m2, d2] = today.split("-").map(Number) as [number, number, number];
+  const months = (y2 - y1) * 12 + (m2 - m1) - (d2 < d1 ? 1 : 0);
+  if (months < 1) {
+    const weeks = Math.floor(days / 7);
+    return `Filter ${weeks} ${weeks === 1 ? "week" : "weeks"} old`;
+  }
+  if (months < 24) return `Filter ${months} ${months === 1 ? "month" : "months"} old`;
+  return `Filter ${Math.floor(months / 12)} years old`;
 }

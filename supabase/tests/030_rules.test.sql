@@ -175,7 +175,7 @@ select is((select count(*) from component_type where company_id = (select id fro
             and job_type = 'detection'), 27::bigint,
   'signup: default checklist components copied');
 select is((select count(*) from component_type where company_id = (select id from signup)
-            and job_type = 'maintenance'), 9::bigint,
+            and job_type = 'maintenance'), 10::bigint,
   'signup: the maintenance checklist too');
 select is((select count(*) from component_type where company_id = (select id from signup) and section = 'bond_beam'), 5::bigint,
   'signup: checklist items come in sections');

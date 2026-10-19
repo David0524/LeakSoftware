@@ -11,7 +11,7 @@ grant select on pool_shop to authenticated;
 select is((select settings ->> 'services' from company where id = (select id from pool_shop)), 'pool',
   'pool: the shop is set to pool care');
 select is((select count(*) from component_type where company_id = (select id from pool_shop)
-            and job_type = 'maintenance'), 9::bigint, 'pool: the visit checklist (2 on a schedule)');
+            and job_type = 'maintenance'), 10::bigint, 'pool: the visit checklist (3 on a schedule)');
 select is((select count(*) from component_type where company_id = (select id from pool_shop)
             and job_type = 'detection'), 0::bigint, 'pool: no inspection checklist');
 select is((select count(*) from test_type where company_id = (select id from pool_shop)), 0::bigint,

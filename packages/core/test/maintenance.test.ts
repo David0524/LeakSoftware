@@ -175,3 +175,29 @@ describe("cleaningShortLabel", () => {
     expect(cleaningDueSpoken("Clean filter", on("2026-10-01"))).toBe("Clean filter overdue");
   });
 });
+
+describe("Replace filter", () => {
+  it("is its own kind, a year apart by default, with the filter's age", async () => {
+    const { cleaningKind, cleaningDefaultMonths, filterAge } = await import("../src/maintenance");
+    expect(cleaningKind({ key: "svc_filter_replace", name: "Replace filter" })).toBe(
+      "filter_replace",
+    );
+    expect(cleaningKind({ key: "svc_filter_clean", name: "Clean filter" })).toBe("filter");
+    expect(cleaningDefaultMonths({}, "svc_filter_replace")).toBe(12);
+    expect(cleaningDefaultMonths({}, "svc_filter_clean")).toBe(3);
+    expect(
+      cleaningDefaultMonths(
+        { maintenance: { cleaning_months: { svc_filter_replace: 6 } } },
+        "svc_filter_replace",
+      ),
+    ).toBe(6);
+    expect(filterAge(null, "2026-10-19")).toBeNull();
+    expect(filterAge("2026-10-20", "2026-10-19")).toBeNull();
+    expect(filterAge("2026-10-15", "2026-10-19")).toBe("New filter");
+    expect(filterAge("2026-10-12", "2026-10-19")).toBe("Filter 1 week old");
+    expect(filterAge("2026-09-28", "2026-10-19")).toBe("Filter 3 weeks old");
+    expect(filterAge("2026-09-18", "2026-10-19")).toBe("Filter 1 month old");
+    expect(filterAge("2026-02-19", "2026-10-19")).toBe("Filter 8 months old");
+    expect(filterAge("2024-08-01", "2026-10-19")).toBe("Filter 2 years old");
+  });
+});

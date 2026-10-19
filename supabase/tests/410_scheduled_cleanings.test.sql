@@ -33,8 +33,8 @@ grant execute on function pg_temp.cleaning(text) to authenticated;
 
 select results_eq($$ select key from component_type
   where company_id = (select ca from ids) and on_schedule and deleted_at is null order by key $$,
-  $$ values ('svc_filter_clean'::text), ('svc_salt_clean') $$,
-  'pool shops have filter and salt cell cleaning on a schedule');
+  $$ values ('svc_filter_clean'::text), ('svc_filter_replace'), ('svc_salt_clean') $$,
+  'pool shops have filter cleaning, filter replacement, and salt cell cleaning on a schedule');
 
 select tests.authenticate_as((select owner_a from ids));
 select lives_ok(format($$ with p as (

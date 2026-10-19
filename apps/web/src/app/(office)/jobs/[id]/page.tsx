@@ -13,6 +13,7 @@ import {
   cleaningCadence,
   cleaningCountdown,
   cleaningKind,
+  filterAge,
   formatDay,
   localDate,
   enabledSignaturePurposes,
@@ -568,11 +569,17 @@ async function Cleanings({ detail, tz }: { detail: JobDetail; tz: string }) {
             key={c.id}
             icon={<CleaningIcon kind={cleaningKind(c.type ?? {})} />}
             label={c.type?.name ?? "Cleaning"}
-            detail={
+            detail={[
               onVisit.has(c.id)
                 ? "On this visit’s checklist"
-                : `${cleaningCadence(c.every_months)} · next ${formatDay(c.next_due)}`
-            }
+                : `${cleaningCadence(c.every_months)} · next ${formatDay(c.next_due)}`,
+              // Replace filter: how old the filter in the pool is (owner, 2026-10-19).
+              cleaningKind(c.type ?? {}) === "filter_replace"
+                ? filterAge(c.last_done_on, visitDay)
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
             value={
               <span className={due.soon ? "font-semibold text-status-warning" : undefined}>
                 {onVisit.has(c.id) ? "Today" : due.label}

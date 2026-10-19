@@ -53,6 +53,8 @@ export async function savePlan(_: FormState, form: FormData): Promise<FormState>
     every_months: number;
     next_due: string;
     price_cents: number | null;
+    /** Replace filter only: when the filter was last put in (its age). */
+    last_done_on?: string | null;
   }[] = [];
   for (const type of new Set(form.getAll("cleaning_type").map(String))) {
     if (!UUID.test(type)) return { error: "This cleaning can't be found. Refresh the page." };
@@ -62,6 +64,10 @@ export async function savePlan(_: FormState, form: FormData): Promise<FormState>
     const due = text(form, `${key}_due`);
     const priceText = text(form, `${key}_price`);
     const cents = priceText ? parseDollars(priceText) : null;
+    const asksLast = form.has(`${key}_last`);
+    const last = text(form, `${key}_last`);
+    if (on && last && (!isDateString(last) || last > due))
+      fields[`${key}_last`] = "Pick a day before it's next due.";
     if (on) {
       if (!(CLEANING_MONTHS as readonly number[]).includes(months))
         fields[`${key}_months`] = "Pick how often.";
@@ -69,7 +75,14 @@ export async function savePlan(_: FormState, form: FormData): Promise<FormState>
       if (priceText && (cents === null || cents < 0))
         fields[`${key}_price`] = "Enter a price like 40.";
     }
-    cleanings.push({ type, on, every_months: months, next_due: due, price_cents: cents });
+    cleanings.push({
+      type,
+      on,
+      every_months: months,
+      next_due: due,
+      price_cents: cents,
+      ...(asksLast ? { last_done_on: last || null } : {}),
+    });
   }
   if (Object.keys(fields).length || "field" in repeat) return { fields };
 
@@ -111,6 +124,7 @@ export async function savePlan(_: FormState, form: FormData): Promise<FormState>
       every_months: c.every_months,
       next_due: c.next_due,
       price_cents: c.price_cents,
+      ...("last_done_on" in c ? { last_done_on: c.last_done_on } : {}),
     };
     const { error: cleaningError } = c.on
       ? had

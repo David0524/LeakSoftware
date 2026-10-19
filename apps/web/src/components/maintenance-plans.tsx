@@ -7,6 +7,7 @@ import {
   cleaningMonthsLabel,
   type CleaningKind,
   cleaningSummary,
+  filterAge,
   formatDay,
   planRepeat,
   planSummary,
@@ -97,6 +98,9 @@ export function MaintenancePlans(p: Props) {
                           {due.label}
                         </span>
                         {due.days > 0 ? ` (${formatDay(c.next_due)})` : ""}
+                        {type?.kind === "filter_replace" && filterAge(c.last_done_on, p.today)
+                          ? ` · ${filterAge(c.last_done_on, p.today)}`
+                          : ""}
                       </span>
                     </span>
                   );
@@ -303,6 +307,15 @@ function CleaningFields({
               type="date"
               defaultValue={cleaning?.next_due ?? firstVisit}
             />
+            {type.kind === "filter_replace" ? (
+              <SField
+                label="Last replaced (optional)"
+                name={`${field}_last`}
+                type="date"
+                defaultValue={cleaning?.last_done_on ?? ""}
+                hint="So the filter's age shows. Doing it on a visit updates it."
+              />
+            ) : null}
             <SField
               label="Price each time ($)"
               name={`${field}_price`}
