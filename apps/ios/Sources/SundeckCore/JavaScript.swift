@@ -235,3 +235,8 @@ extension String {
         self = String(decoding: units, as: UTF16.self)
     }
 }
+
+extension JSONValue {
+    /// JavaScript truthiness (null, false, 0, NaN and "" are false).
+    public var isTruthy: Bool { ECMA.truthy(self) }
+}

@@ -10,7 +10,7 @@ import Testing
         let checked: Set<String> = [
             "formatCents", "parseDollars", "uuidv7TimePrefix", "userTransitions", "JOB_STATUS_LABELS", "toE164",
             "formatPhone", "companyServices", "offersPool", "newJobTypes", "seesAllJobs", "canMakeJobs", "roleLabel",
-            "isManagerRole", "splitEmails", "POOL_TYPE_LABELS",
+            "isManagerRole", "splitEmails", "POOL_TYPE_LABELS", "jobOnPhones",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -55,5 +55,13 @@ import Testing
         checkRule(module, "isManagerRole") { c in isManagerRole(try c.arg(0, as: String?.self)) }
         checkRule(module, "splitEmails") { c in splitEmails(try c.arg(0)) }
         checkRule(module, "POOL_TYPE_LABELS") { _ in labelTable(\PoolType.label) }
+    }
+
+    @Test func phoneHistory() {
+        checkRule(module, "jobOnPhones") { c in
+            let now = try c.arg(1, as: String.self)
+            let date = ISO8601DateFormatter().date(from: now)!
+            return jobOnPhones(try c.arg(0), now: date, extraDays: try c.arg(2, as: Int?.self) ?? 0)
+        }
     }
 }

@@ -16,6 +16,12 @@ if ! /opt/swift/usr/bin/swift --version 2>/dev/null | grep -q "Swift version $SW
 fi
 ln -sf /opt/swift/usr/bin/* /usr/local/bin/
 
+# CI's database job needs only Swift (the sync integration tests).
+if [ -n "${SETUP_IOS_SWIFT_ONLY:-}" ]; then
+  swift --version | head -1
+  exit 0
+fi
+
 if ! xtool --version 2>/dev/null | grep -q "$XTOOL_VERSION"; then
   echo "Installing xtool $XTOOL_VERSION…"
   tmp=$(mktemp -d)

@@ -20,12 +20,38 @@ function run(cmd, args, opts = {}) {
   if (r.status !== 0) process.exit(r.status ?? 1);
 }
 
-// Node integration tests (two simulated devices syncing through the real functions).
+// Integration tests: simulated phones syncing through the real functions. With Swift
+// installed (scripts/setup-ios.sh) the iPhone app's engine runs too: its own scenarios, and a
+// Swift phone beside a TypeScript one (docs/plans/swift-app.md). SYNC_SKIP_SWIFT=1 skips them.
 function runIntegration(databaseUrl) {
+  const env = { ...process.env, SYNC_TEST_DATABASE_URL: databaseUrl };
+  const ios = join(root, "apps", "ios");
+  const swift =
+    !process.env.SYNC_SKIP_SWIFT &&
+    spawnSync("swift", ["--version"], { stdio: "ignore" }).status === 0;
+  if (swift) {
+    console.log("\nbuilding the Swift phone");
+    run("swift", ["build", "--package-path", ios, "--product", "SundeckSyncDevice"]);
+    const bin = spawnSync("swift", ["build", "--package-path", ios, "--show-bin-path"], {
+      cwd: root,
+      encoding: "utf8",
+    }).stdout.trim();
+    env.SWIFT_SYNC_DEVICE = join(bin, "SundeckSyncDevice");
+  } else {
+    console.log("\nSwift is not installed: skipping the Swift phone tests (scripts/setup-ios.sh)");
+  }
   console.log("\nsync integration tests");
-  run("pnpm", ["--filter", "@leakbook/sync", "run", "test:integration"], {
-    env: { ...process.env, SYNC_TEST_DATABASE_URL: databaseUrl },
-  });
+  run("pnpm", ["--filter", "@leakbook/sync", "run", "test:integration"], { env });
+  if (swift) {
+    console.log("\nSwift sync integration tests");
+    // One at a time, like the TypeScript ones (fileParallelism: false): a scenario that holds
+    // a transaction open makes every phone's pull wait behind it.
+    run(
+      "swift",
+      ["test", "--package-path", ios, "--filter", "SundeckSyncIntegrationTests", "--no-parallel"],
+      { env },
+    );
+  }
 }
 
 function dockerAvailable() {

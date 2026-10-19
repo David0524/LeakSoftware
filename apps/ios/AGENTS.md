@@ -26,6 +26,11 @@ is still the shipping app and keeps getting fixes.
   in `fixtures/cases/<module>.ts`, run `pnpm --filter @leakbook/ios fixtures`, and check them in
   `Tests/SundeckCoreTests` with `checkRule`. `pnpm test` fails when the fixtures are stale, so a
   rule changed in TypeScript fails the Swift tests until the port follows.
+- Sync: `Sources/SundeckSync` is the port of `packages/sync` and must behave the same.
+  `pnpm test:db` (with Swift installed) runs the Swift two-device scenarios and the cross-engine
+  test in `packages/sync/test/integration/cross-engine.test.ts`, which drives
+  `SundeckSyncDevice` beside a TypeScript phone. `SundeckSyncPostgres` and `SundeckSyncDevice`
+  are for tests only; the app never reaches Postgres directly.
 - xtool crashes without a terminal; the scripts wrap it in `script -qec … /dev/null`.
 
 ## Rules

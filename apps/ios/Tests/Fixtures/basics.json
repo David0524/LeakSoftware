@@ -1444,5 +1444,565 @@
         "other": "Other"
       }
     }
+  ],
+  "jobOnPhones": [
+    {
+      "args": [
+        {
+          "status": "unscheduled",
+          "scheduled_start": "2020-01-01T00:00:00Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "scheduled",
+          "scheduled_start": "2020-01-01T00:00:00Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "in_progress",
+          "scheduled_start": "2020-01-01T00:00:00Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "report_sent",
+          "scheduled_start": "2020-01-01T00:00:00Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "invoiced",
+          "scheduled_start": "2020-01-01T00:00:00Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "quote_accepted",
+          "scheduled_start": "2020-01-01T00:00:00Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "done",
+          "scheduled_start": null,
+          "completed_at": "2026-07-18T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "done",
+          "scheduled_start": "2026-07-18T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "done",
+          "scheduled_start": null,
+          "completed_at": "2026-07-17T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "done",
+          "scheduled_start": "2026-07-17T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "done",
+          "scheduled_start": null,
+          "completed_at": "2026-07-16T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "done",
+          "scheduled_start": "2026-07-16T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "done",
+          "scheduled_start": null,
+          "completed_at": "2026-07-11T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "done",
+          "scheduled_start": "2026-07-11T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "done",
+          "scheduled_start": null,
+          "completed_at": "2026-07-10T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "done",
+          "scheduled_start": "2026-07-10T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "done",
+          "scheduled_start": null,
+          "completed_at": "2026-07-09T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "done",
+          "scheduled_start": "2026-07-09T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "paid",
+          "scheduled_start": null,
+          "completed_at": "2026-07-18T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "paid",
+          "scheduled_start": "2026-07-18T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "paid",
+          "scheduled_start": null,
+          "completed_at": "2026-07-17T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "paid",
+          "scheduled_start": "2026-07-17T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "paid",
+          "scheduled_start": null,
+          "completed_at": "2026-07-16T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "paid",
+          "scheduled_start": "2026-07-16T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "paid",
+          "scheduled_start": null,
+          "completed_at": "2026-07-11T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "paid",
+          "scheduled_start": "2026-07-11T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "paid",
+          "scheduled_start": null,
+          "completed_at": "2026-07-10T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "paid",
+          "scheduled_start": "2026-07-10T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "paid",
+          "scheduled_start": null,
+          "completed_at": "2026-07-09T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "paid",
+          "scheduled_start": "2026-07-09T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "canceled",
+          "scheduled_start": null,
+          "completed_at": "2026-07-18T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "canceled",
+          "scheduled_start": "2026-07-18T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "canceled",
+          "scheduled_start": null,
+          "completed_at": "2026-07-17T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "canceled",
+          "scheduled_start": "2026-07-17T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "canceled",
+          "scheduled_start": null,
+          "completed_at": "2026-07-16T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "canceled",
+          "scheduled_start": "2026-07-16T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "canceled",
+          "scheduled_start": null,
+          "completed_at": "2026-07-11T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "canceled",
+          "scheduled_start": "2026-07-11T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "canceled",
+          "scheduled_start": null,
+          "completed_at": "2026-07-10T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "canceled",
+          "scheduled_start": "2026-07-10T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "canceled",
+          "scheduled_start": null,
+          "completed_at": "2026-07-09T12:00:00.000Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "canceled",
+          "scheduled_start": "2026-07-09T12:00:00.000Z",
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z",
+        7
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "done",
+          "scheduled_start": "2026-01-01T09:00:00-07:00",
+          "completed_at": null,
+          "updated_at": "2026-10-01T10:00:00.123Z"
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "status": "done",
+          "scheduled_start": null,
+          "completed_at": null,
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "status": "paid",
+          "scheduled_start": "not a date",
+          "completed_at": "2026-10-14T00:00:00Z",
+          "updated_at": null
+        },
+        "2026-10-15T12:00:00Z"
+      ],
+      "result": false
+    }
   ]
 }

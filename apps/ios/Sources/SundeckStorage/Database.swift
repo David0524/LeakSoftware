@@ -17,10 +17,12 @@ public struct DatabaseError: Error, CustomStringConvertible, Sendable {
 }
 
 /// One SQLite connection, encrypted with SQLCipher. The store is one JSON table (DECISIONS,
-/// M2), so a thin wrapper over the C API is all the app needs. Not thread-safe: use it from
-/// one actor or queue.
-public final class Database {
+/// M2), so a thin wrapper over the C API is all the app needs. Safe to share between threads:
+/// each call, and each transaction as a whole, holds the connection's lock.
+public final class Database: @unchecked Sendable {
     private var handle: OpaquePointer?
+    private let lock = NSRecursiveLock()
+    private var depth = 0
 
     /// Opens (or creates) the database at `path`. `key` is the hex passphrase from the
     /// Keychain, the same scheme as the Expo app (`apps/mobile/src/lib/database.ts`), so the
@@ -64,6 +66,8 @@ public final class Database {
 
     /// Runs one or more statements with no parameters and no results.
     public func execute(_ sql: String) throws {
+        lock.lock()
+        defer { lock.unlock() }
         var message: UnsafeMutablePointer<CChar>?
         let rc = sqlite3_exec(handle, sql, nil, nil, &message)
         guard rc == SQLITE_OK else {
@@ -76,6 +80,8 @@ public final class Database {
     /// Runs one statement and returns its rows as column name to value.
     @discardableResult
     public func query(_ sql: String, _ parameters: [SQLValue] = []) throws -> [[String: SQLValue]] {
+        lock.lock()
+        defer { lock.unlock() }
         var statement: OpaquePointer?
         try check(sqlite3_prepare_v2(handle, sql, -1, &statement, nil))
         defer { sqlite3_finalize(statement) }
@@ -98,16 +104,32 @@ public final class Database {
     }
 
     /// Runs `body` in one transaction: committed if it returns, rolled back if it throws.
+    /// Transactions nest: an inner one is a savepoint, so a caller can catch an inner failure
+    /// and keep the outer work (same as `nestedTransactions` in packages/sync).
     public func transaction<T>(_ body: () throws -> T) throws -> T {
-        try execute("BEGIN IMMEDIATE")
+        lock.lock()
+        defer { lock.unlock() }
+        let name = "sp_\(depth)"
+        try execute(depth == 0 ? "BEGIN IMMEDIATE" : "SAVEPOINT \(name)")
+        depth += 1
         do {
             let result = try body()
-            try execute("COMMIT")
+            depth -= 1
+            try execute(depth == 0 ? "COMMIT" : "RELEASE \(name)")
             return result
         } catch {
-            try? execute("ROLLBACK")
+            depth -= 1
+            try? execute(depth == 0 ? "ROLLBACK" : "ROLLBACK TO \(name)")
+            if depth > 0 { try? execute("RELEASE \(name)") }
             throw error
         }
+    }
+
+    /// The number of rows the last INSERT, UPDATE or DELETE changed.
+    public var changes: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return Int(sqlite3_changes(handle))
     }
 
     private var lastMessage: String { String(cString: sqlite3_errmsg(handle)) }

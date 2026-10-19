@@ -67,6 +67,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Swift, so test:db also runs the iPhone app's sync engine against the database.
+      - run: sudo SETUP_IOS_SWIFT_ONLY=1 bash scripts/setup-ios.sh
       - run: pnpm test:db
         env:
           DB_TEST_MODE: docker

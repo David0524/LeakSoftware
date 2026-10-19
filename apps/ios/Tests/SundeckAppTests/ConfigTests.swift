@@ -1,4 +1,6 @@
 import Foundation
+import SundeckStorage
+import SundeckSync
 import Testing
 
 @testable import SundeckApp
@@ -24,7 +26,7 @@ import Testing
 
 /// Signs in to the hosted dev project as the demo tech. Needs the network, so it runs only
 /// with `SUNDECK_LIVE=1` (cloud sessions), not in CI.
-@Suite(.enabled(if: ProcessInfo.processInfo.environment["SUNDECK_LIVE"] == "1"))
+@Suite(.serialized, .enabled(if: ProcessInfo.processInfo.environment["SUNDECK_LIVE"] == "1"))
 struct LiveServerTests {
     @Test func demoTechSignsInAndPulls() async throws {
         let check = ServerCheck(client: ServerCheck.makeClient())
@@ -32,6 +34,23 @@ struct LiveServerTests {
         #expect(email == "tech@demo.leakbook.test")
         let rows = try await check.firstPullRowCount()
         #expect(rows > 0)
+        try await check.signOut()
+    }
+
+    /// The Swift engine pulls the demo shop into an encrypted database through Supabase.
+    /// Pull only: nothing is written to the dev project.
+    @Test func demoTechPullsThroughTheSyncEngine() async throws {
+        let check = ServerCheck(client: ServerCheck.makeClient())
+        _ = try await check.signIn(email: "tech@demo.leakbook.test", password: "leakbook-demo")
+        let path = FileManager.default.temporaryDirectory.appendingPathComponent("live-\(UUID()).db").path
+        let store = try LocalStore.open(Database(path: path, key: String(repeating: "3c", count: 32)))
+        let engine = SyncEngine(store: store, transport: SupabaseTransport(SupabaseRPC(check.client)))
+        let summary = await engine.sync()
+        #expect(summary.error == nil)
+        #expect(summary.pulled > 0)
+        #expect(summary.pending == 0)
+        #expect(try !store.list("job").isEmpty)
+        #expect(try !store.list("component_type").isEmpty)
         try await check.signOut()
     }
 }

@@ -68,4 +68,41 @@ import Testing
         #expect(
             row == [["i": .integer(42), "r": .real(1.5), "t": .text("é"), "b": .blob(Data([0, 1, 2])), "n": .null]])
     }
+
+    @Test func nestedTransactionsCommitTogether() throws {
+        let db = try Database(path: path, key: key)
+        try db.execute("CREATE TABLE note (body TEXT)")
+        try db.transaction {
+            try db.query("INSERT INTO note VALUES ('outer')")
+            try db.transaction { try db.query("INSERT INTO note VALUES ('inner')") }
+        }
+        #expect(try db.query("SELECT count(*) AS n FROM note") == [["n": .integer(2)]])
+    }
+
+    @Test func outerFailureRollsBackInnerWork() throws {
+        struct Stop: Error {}
+        let db = try Database(path: path, key: key)
+        try db.execute("CREATE TABLE note (body TEXT)")
+        #expect(throws: Stop.self) {
+            try db.transaction {
+                try db.transaction { try db.query("INSERT INTO note VALUES ('inner')") }
+                throw Stop()
+            }
+        }
+        #expect(try db.query("SELECT count(*) AS n FROM note") == [["n": .integer(0)]])
+    }
+
+    @Test func caughtInnerFailureKeepsOuterWork() throws {
+        struct Stop: Error {}
+        let db = try Database(path: path, key: key)
+        try db.execute("CREATE TABLE note (body TEXT)")
+        try db.transaction {
+            try db.query("INSERT INTO note VALUES ('outer')")
+            try? db.transaction {
+                try db.query("INSERT INTO note VALUES ('inner')")
+                throw Stop()
+            }
+        }
+        #expect(try db.query("SELECT body FROM note") == [["body": .text("outer")]])
+    }
 }

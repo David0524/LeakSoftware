@@ -7,6 +7,7 @@ import {
   formatCents,
   formatPhone,
   isManagerRole,
+  jobOnPhones,
   newJobTypes,
   offersPool,
   parseDollars,
@@ -118,4 +119,67 @@ export const basics: ModuleCases = {
     [["a@x.com b@y.com, c@z.com"], ["  "], ["no-at-sign, x@y"], ["a@b.co;b@c.org\nc@d.net"]],
   ),
   POOL_TYPE_LABELS: rule(() => POOL_TYPE_LABELS, [[]]),
+  jobOnPhones: rule(
+    (job: Parameters<typeof jobOnPhones>[0], now: string, extraDays?: number) =>
+      jobOnPhones(job, new Date(now), extraDays),
+    [
+      ...[
+        "unscheduled",
+        "scheduled",
+        "in_progress",
+        "report_sent",
+        "invoiced",
+        "quote_accepted",
+      ].map(
+        (status) =>
+          [
+            {
+              status,
+              scheduled_start: "2020-01-01T00:00:00Z",
+              completed_at: null,
+              updated_at: null,
+            },
+            "2026-10-15T12:00:00Z",
+          ] as [Parameters<typeof jobOnPhones>[0], string],
+      ),
+      ...["done", "paid", "canceled"].flatMap((status) =>
+        [89, 90, 91, 96, 97, 98].flatMap((days) => {
+          const at = new Date(Date.parse("2026-10-15T12:00:00Z") - days * 86_400_000).toISOString();
+          return [
+            [
+              { status, scheduled_start: null, completed_at: at, updated_at: null },
+              "2026-10-15T12:00:00Z",
+            ],
+            [
+              { status, scheduled_start: at, completed_at: null, updated_at: null },
+              "2026-10-15T12:00:00Z",
+              7,
+            ],
+          ] as [Parameters<typeof jobOnPhones>[0], string, number?][];
+        }),
+      ),
+      [
+        {
+          status: "done",
+          scheduled_start: "2026-01-01T09:00:00-07:00",
+          completed_at: null,
+          updated_at: "2026-10-01T10:00:00.123Z",
+        },
+        "2026-10-15T12:00:00Z",
+      ],
+      [
+        { status: "done", scheduled_start: null, completed_at: null, updated_at: null },
+        "2026-10-15T12:00:00Z",
+      ],
+      [
+        {
+          status: "paid",
+          scheduled_start: "not a date",
+          completed_at: "2026-10-14T00:00:00Z",
+          updated_at: null,
+        },
+        "2026-10-15T12:00:00Z",
+      ],
+    ],
+  ),
 };

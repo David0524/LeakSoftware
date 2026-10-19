@@ -162,6 +162,15 @@ value must not fail the whole row when synced.
 - **Done when:** every fixture matches on Linux and macOS, and CI fails on stale fixtures.
 
 ### S2 Sync engine
+
+Built 2026-10-19: `Sources/SundeckSync` (clock, outbox, store, engine, upload queue and
+resumable uploads) on the same local tables as the Expo app, and the Supabase transport in the
+app. Tests: 49 unit tests ported from `packages/sync/test`, the 16 two-device scenarios against
+Postgres (`SundeckSyncIntegrationTests`), and 3 tests in `packages/sync` that run a Swift phone
+(`SundeckSyncDevice`) beside a TypeScript phone on one database. `pnpm test:db` runs them all
+when Swift is installed, and CI's database job installs it. A live pull of the demo shop
+through Supabase into an encrypted database works (`SUNDECK_LIVE=1`; about 30 seconds from a
+cloud session).
 - `SundeckSync` and `SundeckStorage`: HLC, outbox with merged patches, push in batches of 200,
   paged pull with the pending-overlay, rejected changes kept as problems, clock clamp handling,
   history window, upload queue and TUS for files over 6 MB.

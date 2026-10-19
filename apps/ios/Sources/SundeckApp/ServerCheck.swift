@@ -52,7 +52,8 @@ public struct ServerCheck: Sendable {
     }
 
     public func signOut() async throws {
-        try await client.auth.signOut()
+        // This phone only: the user stays signed in on their other devices.
+        try await client.auth.signOut(scope: .local)
     }
 }
 
