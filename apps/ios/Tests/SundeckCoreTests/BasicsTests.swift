@@ -1,0 +1,59 @@
+import Foundation
+import SundeckCore
+import Testing
+
+/// money, uuid, job-status, texting (phone numbers) and models.
+@Suite struct BasicsTests {
+    let module = "basics"
+
+    @Test func everyRuleIsChecked() {
+        let checked: Set<String> = [
+            "formatCents", "parseDollars", "uuidv7TimePrefix", "userTransitions", "JOB_STATUS_LABELS", "toE164",
+            "formatPhone", "companyServices", "offersPool", "newJobTypes", "seesAllJobs", "canMakeJobs", "roleLabel",
+            "isManagerRole", "splitEmails", "POOL_TYPE_LABELS",
+        ]
+        #expect(Fixtures.rules(module) == checked)
+    }
+
+    @Test func money() {
+        checkRule(module, "formatCents") { c in
+            let value = try c.arg(0, as: Double.self)
+            guard value.rounded() == value else { throw NotRepresentable() }
+            return formatCents(Int(value))
+        }
+        checkRule(module, "parseDollars") { c in parseDollars(try c.arg(0)) }
+    }
+
+    @Test func uuid() throws {
+        checkRule(module, "uuidv7TimePrefix") { c in
+            String(uuidv7(milliseconds: try c.arg(0, as: UInt64.self)).prefix(13))
+        }
+        let id = uuidv7()
+        #expect(id.wholeMatch(of: /[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/) != nil)
+        #expect(uuidv7() != id)
+    }
+
+    @Test func jobStatus() {
+        checkRule(module, "userTransitions") { c in
+            userTransitions(from: try c.arg(0), type: try c.arg(1, as: String?.self))
+        }
+        checkRule(module, "JOB_STATUS_LABELS") { _ in labelTable(\JobStatus.label) }
+    }
+
+    @Test func phones() {
+        checkRule(module, "toE164") { c in toE164(try c.arg(0, as: String?.self)) }
+        checkRule(module, "formatPhone") { c in formatPhone(try c.arg(0)) }
+    }
+
+    @Test func servicesAndRoles() {
+        checkRule(module, "companyServices") { c in companyServices(try c.arg(0)) }
+        checkRule(module, "offersPool") { c in offersPool(try c.arg(0)) }
+        checkRule(module, "newJobTypes") { c in newJobTypes(try c.arg(0)) }
+        checkRule(module, "seesAllJobs") { c in seesAllJobs(try c.arg(0, as: String?.self), try c.arg(1)) }
+        checkRule(module, "canMakeJobs") { c in canMakeJobs(try c.arg(0, as: String?.self), try c.arg(1)) }
+        checkRule(module, "roleLabel") { c in roleLabel(try c.arg(0, as: String?.self)) }
+        checkRule(module, "isManagerRole") { c in isManagerRole(try c.arg(0, as: String?.self)) }
+        checkRule(module, "splitEmails") { c in splitEmails(try c.arg(0)) }
+        checkRule(module, "POOL_TYPE_LABELS") { _ in labelTable(\PoolType.label) }
+    }
+}

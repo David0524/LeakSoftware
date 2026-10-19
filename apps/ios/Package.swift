@@ -20,6 +20,7 @@ let package = Package(
         .package(url: "https://github.com/getsentry/sentry-cocoa", exact: "9.30.2"),
     ],
     targets: [
+        .target(name: "SundeckCore"),
         .target(
             name: "SundeckStorage",
             dependencies: [.product(name: "SQLCipher", package: "swift-sqlcipher")]
@@ -27,11 +28,13 @@ let package = Package(
         .target(
             name: "SundeckApp",
             dependencies: [
+                "SundeckCore",
                 "SundeckStorage",
                 .product(name: "Supabase", package: "supabase-swift"),
                 .product(name: "Sentry", package: "sentry-cocoa", condition: .when(platforms: [.iOS])),
             ]
         ),
+        .testTarget(name: "SundeckCoreTests", dependencies: ["SundeckCore"]),
         .testTarget(name: "SundeckStorageTests", dependencies: ["SundeckStorage"]),
         .testTarget(
             name: "SundeckAppTests",

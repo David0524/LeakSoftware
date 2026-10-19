@@ -1,0 +1,15 @@
+{
+  "name": "@leakbook/ios",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint fixtures vitest.config.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "fixtures": "UPDATE_FIXTURES=1 vitest run"
+  },
+  "dependencies": {
+    "@leakbook/core": "workspace:*"
+  }
+}

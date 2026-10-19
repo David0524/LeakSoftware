@@ -1,0 +1,1448 @@
+{
+  "formatCents": [
+    {
+      "args": [
+        0
+      ],
+      "result": "$0.00"
+    },
+    {
+      "args": [
+        1
+      ],
+      "result": "$0.01"
+    },
+    {
+      "args": [
+        99
+      ],
+      "result": "$0.99"
+    },
+    {
+      "args": [
+        100
+      ],
+      "result": "$1.00"
+    },
+    {
+      "args": [
+        123456
+      ],
+      "result": "$1,234.56"
+    },
+    {
+      "args": [
+        -500
+      ],
+      "result": "-$5.00"
+    },
+    {
+      "args": [
+        -1
+      ],
+      "result": "-$0.01"
+    },
+    {
+      "args": [
+        100000000
+      ],
+      "result": "$1,000,000.00"
+    },
+    {
+      "args": [
+        1.5
+      ],
+      "throws": "Expected integer cents, got 1.5"
+    }
+  ],
+  "parseDollars": [
+    {
+      "args": [
+        "1,234.56"
+      ],
+      "result": 123456
+    },
+    {
+      "args": [
+        "$12"
+      ],
+      "result": 1200
+    },
+    {
+      "args": [
+        "0.1"
+      ],
+      "result": 10
+    },
+    {
+      "args": [
+        "19.99"
+      ],
+      "result": 1999
+    },
+    {
+      "args": [
+        "-5"
+      ],
+      "result": -500
+    },
+    {
+      "args": [
+        "12.345"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "abc"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        " $ 7 "
+      ],
+      "result": 700
+    },
+    {
+      "args": [
+        "-0.5"
+      ],
+      "result": -50
+    },
+    {
+      "args": [
+        "1."
+      ],
+      "result": 100
+    },
+    {
+      "args": [
+        ".5"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "007"
+      ],
+      "result": 700
+    }
+  ],
+  "uuidv7TimePrefix": [
+    {
+      "args": [
+        0
+      ],
+      "result": "00000000-0000"
+    },
+    {
+      "args": [
+        1
+      ],
+      "result": "00000000-0001"
+    },
+    {
+      "args": [
+        1760000000000
+      ],
+      "result": "0199c82c-c000"
+    },
+    {
+      "args": [
+        281474976710655
+      ],
+      "result": "ffffffff-ffff"
+    }
+  ],
+  "userTransitions": [
+    {
+      "args": [
+        "unscheduled"
+      ],
+      "result": [
+        "scheduled",
+        "in_progress",
+        "canceled"
+      ]
+    },
+    {
+      "args": [
+        "unscheduled",
+        "maintenance"
+      ],
+      "result": [
+        "scheduled",
+        "in_progress",
+        "canceled"
+      ]
+    },
+    {
+      "args": [
+        "scheduled"
+      ],
+      "result": [
+        "unscheduled",
+        "in_progress",
+        "canceled"
+      ]
+    },
+    {
+      "args": [
+        "scheduled",
+        "maintenance"
+      ],
+      "result": [
+        "unscheduled",
+        "in_progress",
+        "canceled"
+      ]
+    },
+    {
+      "args": [
+        "in_progress"
+      ],
+      "result": [
+        "scheduled",
+        "canceled"
+      ]
+    },
+    {
+      "args": [
+        "in_progress",
+        "maintenance"
+      ],
+      "result": [
+        "scheduled",
+        "canceled",
+        "done"
+      ]
+    },
+    {
+      "args": [
+        "report_sent"
+      ],
+      "result": [
+        "in_progress",
+        "canceled"
+      ]
+    },
+    {
+      "args": [
+        "report_sent",
+        "maintenance"
+      ],
+      "result": [
+        "in_progress",
+        "canceled"
+      ]
+    },
+    {
+      "args": [
+        "quote_sent"
+      ],
+      "result": [
+        "canceled"
+      ]
+    },
+    {
+      "args": [
+        "quote_sent",
+        "maintenance"
+      ],
+      "result": [
+        "canceled"
+      ]
+    },
+    {
+      "args": [
+        "quote_accepted"
+      ],
+      "result": [
+        "canceled"
+      ]
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "maintenance"
+      ],
+      "result": [
+        "canceled"
+      ]
+    },
+    {
+      "args": [
+        "invoiced"
+      ],
+      "result": [
+        "canceled"
+      ]
+    },
+    {
+      "args": [
+        "invoiced",
+        "maintenance"
+      ],
+      "result": [
+        "canceled"
+      ]
+    },
+    {
+      "args": [
+        "paid"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "paid",
+        "maintenance"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "canceled"
+      ],
+      "result": [
+        "unscheduled"
+      ]
+    },
+    {
+      "args": [
+        "canceled",
+        "maintenance"
+      ],
+      "result": [
+        "unscheduled"
+      ]
+    },
+    {
+      "args": [
+        "done"
+      ],
+      "result": [
+        "in_progress"
+      ]
+    },
+    {
+      "args": [
+        "done",
+        "maintenance"
+      ],
+      "result": [
+        "in_progress"
+      ]
+    }
+  ],
+  "JOB_STATUS_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "unscheduled": "Unscheduled",
+        "scheduled": "Scheduled",
+        "in_progress": "In progress",
+        "report_sent": "Report sent",
+        "quote_sent": "Quote sent",
+        "quote_accepted": "Quote accepted",
+        "invoiced": "Invoiced",
+        "paid": "Paid",
+        "canceled": "Canceled",
+        "done": "Done"
+      }
+    }
+  ],
+  "toE164": [
+    {
+      "args": [
+        "(602) 555-0142"
+      ],
+      "result": "+16025550142"
+    },
+    {
+      "args": [
+        "602.555.0142"
+      ],
+      "result": "+16025550142"
+    },
+    {
+      "args": [
+        "1-602-555-0142"
+      ],
+      "result": "+16025550142"
+    },
+    {
+      "args": [
+        "+1 602 555 0142"
+      ],
+      "result": "+16025550142"
+    },
+    {
+      "args": [
+        "+44 20 7946 0958"
+      ],
+      "result": "+442079460958"
+    },
+    {
+      "args": [
+        "+44 12"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "555-0142"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "(102) 555-0142"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "(602) 155-0142"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "  6025550142  "
+      ],
+      "result": "+16025550142"
+    }
+  ],
+  "formatPhone": [
+    {
+      "args": [
+        "+16025550142"
+      ],
+      "result": "(602) 555-0142"
+    },
+    {
+      "args": [
+        "+442079460958"
+      ],
+      "result": "+442079460958"
+    },
+    {
+      "args": [
+        "6025550142"
+      ],
+      "result": "6025550142"
+    }
+  ],
+  "companyServices": [
+    {
+      "args": [
+        null
+      ],
+      "result": "both"
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": "both"
+    },
+    {
+      "args": [
+        {
+          "services": "pool"
+        }
+      ],
+      "result": "pool"
+    },
+    {
+      "args": [
+        {
+          "services": "leak"
+        }
+      ],
+      "result": "leak"
+    },
+    {
+      "args": [
+        {
+          "services": "both"
+        }
+      ],
+      "result": "both"
+    },
+    {
+      "args": [
+        {
+          "services": "boats"
+        }
+      ],
+      "result": "both"
+    },
+    {
+      "args": [
+        {
+          "techs_see_all_jobs": false,
+          "techs_make_jobs": false
+        }
+      ],
+      "result": "both"
+    },
+    {
+      "args": [
+        {
+          "techs_see_all_jobs": true,
+          "techs_make_jobs": true
+        }
+      ],
+      "result": "both"
+    }
+  ],
+  "offersPool": [
+    {
+      "args": [
+        null
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "services": "pool"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "services": "leak"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "services": "both"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "services": "boats"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "techs_see_all_jobs": false,
+          "techs_make_jobs": false
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "techs_see_all_jobs": true,
+          "techs_make_jobs": true
+        }
+      ],
+      "result": true
+    }
+  ],
+  "newJobTypes": [
+    {
+      "args": [
+        "pool"
+      ],
+      "result": [
+        {
+          "value": "maintenance",
+          "label": "Pool Service"
+        },
+        {
+          "value": "repair",
+          "label": "Repair"
+        }
+      ]
+    },
+    {
+      "args": [
+        "leak"
+      ],
+      "result": [
+        {
+          "value": "detection",
+          "label": "Leak Detection"
+        },
+        {
+          "value": "repair",
+          "label": "Repair"
+        }
+      ]
+    },
+    {
+      "args": [
+        "both"
+      ],
+      "result": [
+        {
+          "value": "detection",
+          "label": "Leak Detection"
+        },
+        {
+          "value": "maintenance",
+          "label": "Pool Service"
+        },
+        {
+          "value": "repair",
+          "label": "Repair"
+        }
+      ]
+    }
+  ],
+  "seesAllJobs": [
+    {
+      "args": [
+        "owner",
+        null
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "owner",
+        {}
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "owner",
+        {
+          "services": "pool"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "owner",
+        {
+          "services": "leak"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "owner",
+        {
+          "services": "both"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "owner",
+        {
+          "services": "boats"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "owner",
+        {
+          "techs_see_all_jobs": false,
+          "techs_make_jobs": false
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "owner",
+        {
+          "techs_see_all_jobs": true,
+          "techs_make_jobs": true
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        null
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        {}
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        {
+          "services": "pool"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        {
+          "services": "leak"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        {
+          "services": "both"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        {
+          "services": "boats"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        {
+          "techs_see_all_jobs": false,
+          "techs_make_jobs": false
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        {
+          "techs_see_all_jobs": true,
+          "techs_make_jobs": true
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        null
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        {}
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        {
+          "services": "pool"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        {
+          "services": "leak"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        {
+          "services": "both"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        {
+          "services": "boats"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        {
+          "techs_see_all_jobs": false,
+          "techs_make_jobs": false
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "tech",
+        {
+          "techs_see_all_jobs": true,
+          "techs_make_jobs": true
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        null
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        {}
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        {
+          "services": "pool"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        {
+          "services": "leak"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        {
+          "services": "both"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        {
+          "services": "boats"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        {
+          "techs_see_all_jobs": false,
+          "techs_make_jobs": false
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        null,
+        {
+          "techs_see_all_jobs": true,
+          "techs_make_jobs": true
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "stranger",
+        null
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "stranger",
+        {}
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "stranger",
+        {
+          "services": "pool"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "stranger",
+        {
+          "services": "leak"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "stranger",
+        {
+          "services": "both"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "stranger",
+        {
+          "services": "boats"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "stranger",
+        {
+          "techs_see_all_jobs": false,
+          "techs_make_jobs": false
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "stranger",
+        {
+          "techs_see_all_jobs": true,
+          "techs_make_jobs": true
+        }
+      ],
+      "result": true
+    }
+  ],
+  "canMakeJobs": [
+    {
+      "args": [
+        "owner",
+        null
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "owner",
+        {}
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "owner",
+        {
+          "services": "pool"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "owner",
+        {
+          "services": "leak"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "owner",
+        {
+          "services": "both"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "owner",
+        {
+          "services": "boats"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "owner",
+        {
+          "techs_see_all_jobs": false,
+          "techs_make_jobs": false
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "owner",
+        {
+          "techs_see_all_jobs": true,
+          "techs_make_jobs": true
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        null
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        {}
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        {
+          "services": "pool"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        {
+          "services": "leak"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        {
+          "services": "both"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        {
+          "services": "boats"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        {
+          "techs_see_all_jobs": false,
+          "techs_make_jobs": false
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin",
+        {
+          "techs_see_all_jobs": true,
+          "techs_make_jobs": true
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        null
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        {}
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        {
+          "services": "pool"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        {
+          "services": "leak"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        {
+          "services": "both"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        {
+          "services": "boats"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech",
+        {
+          "techs_see_all_jobs": false,
+          "techs_make_jobs": false
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "tech",
+        {
+          "techs_see_all_jobs": true,
+          "techs_make_jobs": true
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        null
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        {}
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        {
+          "services": "pool"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        {
+          "services": "leak"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        {
+          "services": "both"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        {
+          "services": "boats"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        null,
+        {
+          "techs_see_all_jobs": false,
+          "techs_make_jobs": false
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        null,
+        {
+          "techs_see_all_jobs": true,
+          "techs_make_jobs": true
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "stranger",
+        null
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "stranger",
+        {}
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "stranger",
+        {
+          "services": "pool"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "stranger",
+        {
+          "services": "leak"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "stranger",
+        {
+          "services": "both"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "stranger",
+        {
+          "services": "boats"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "stranger",
+        {
+          "techs_see_all_jobs": false,
+          "techs_make_jobs": false
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "stranger",
+        {
+          "techs_see_all_jobs": true,
+          "techs_make_jobs": true
+        }
+      ],
+      "result": true
+    }
+  ],
+  "roleLabel": [
+    {
+      "args": [
+        "owner"
+      ],
+      "result": "Owner"
+    },
+    {
+      "args": [
+        "admin"
+      ],
+      "result": "Admin"
+    },
+    {
+      "args": [
+        "tech"
+      ],
+      "result": "Tech"
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": "Tech"
+    },
+    {
+      "args": [
+        "stranger"
+      ],
+      "result": "Tech"
+    }
+  ],
+  "isManagerRole": [
+    {
+      "args": [
+        "owner"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "admin"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "tech"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "stranger"
+      ],
+      "result": false
+    }
+  ],
+  "splitEmails": [
+    {
+      "args": [
+        "a@x.com b@y.com, c@z.com"
+      ],
+      "result": [
+        "a@x.com",
+        "b@y.com",
+        "c@z.com"
+      ]
+    },
+    {
+      "args": [
+        "  "
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "no-at-sign, x@y"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "a@b.co;b@c.org\nc@d.net"
+      ],
+      "result": [
+        "a@b.co",
+        "b@c.org",
+        "c@d.net"
+      ]
+    }
+  ],
+  "POOL_TYPE_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "gunite_plaster": "Gunite / plaster",
+        "vinyl": "Vinyl",
+        "fiberglass": "Fiberglass",
+        "other": "Other"
+      }
+    }
+  ]
+}
