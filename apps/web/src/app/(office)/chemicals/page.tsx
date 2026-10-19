@@ -25,7 +25,8 @@ export default async function ChemicalsPage({ searchParams }: PageProps<"/chemic
   const [pool, readings, team] = propertyId
     ? await Promise.all([
         getChemicalPool(office, propertyId),
-        getChemicalReadings(office, propertyId),
+        // Until the chemical log reaches the database, the calculator still works.
+        getChemicalReadings(office, propertyId).catch(() => []),
         getTeam(office),
       ])
     : [null, [], []];

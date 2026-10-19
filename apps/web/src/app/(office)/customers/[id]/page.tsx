@@ -86,7 +86,8 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
     (
       await Promise.all(
         properties.map(
-          async (p) => [p.id, (await getChemicalReadings(office, p.id, 1))[0]] as const,
+          async (p) =>
+            [p.id, (await getChemicalReadings(office, p.id, 1).catch(() => []))[0]] as const,
         ),
       )
     ).filter((e): e is readonly [string, ChemicalReading] => !!e[1]),
