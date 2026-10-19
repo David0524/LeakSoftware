@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import SundeckCore
 import SundeckSync
 
@@ -69,12 +70,65 @@ public func syncRowDetail(_ status: SyncStatus, now: Date = Date()) -> String {
     return "All changes saved to the office · \(ago)"
 }
 
-/// More › Help's mail rows (website `CONTACT_EMAIL`, apps/web/src/lib/site.ts). Request a
-/// Feature opens a mail draft until the website has an endpoint the app can post to.
+/// More › Help's Contact Us row (website `CONTACT_EMAIL`, apps/web/src/lib/site.ts).
 public enum HelpMail {
     public static let contactEmail = "office@sundeckpro.com"
     public static let contactURL = URL(string: "mailto:\(contactEmail)")!
-    public static let featureRequestURL = URL(string: "mailto:\(contactEmail)?subject=Feature%20request")!
+}
+
+/// Request a Feature (owner, 2026-10-19: "a text box built into the platform"): one box, sent
+/// to POST /api/feature-requests and saved like the website's. Port of
+/// apps/web/src/components/feature-request.tsx, with the website's words.
+@MainActor @Observable
+public final class FeatureRequestForm {
+    public static let title = "Request a Feature"
+    public static let prompt = "What would make Sundeck Pro better for your shop?"
+    public static let placeholder = "Describe the feature and how you’d use it."
+    public static let empty = "Tell us what you’d like Sundeck Pro to do."
+    public static let thanks = "Thanks! We read every request."
+    /// Where it was sent from, for the office's list.
+    public static let page = "iPhone app"
+    public static let maxLength = 4000
+
+    public var text = ""
+    public private(set) var sending = false
+    /// Under the box: nothing typed.
+    public private(set) var fieldError: String?
+    /// The server's or the connection's message; the text stays so it can be sent again.
+    public private(set) var error: String?
+    /// Sent: the thanks, then Done.
+    public private(set) var sent: String?
+
+    public init() {}
+
+    /// "Send Request", or "Sending…" while it goes.
+    public var sendTitle: String { sending ? "Sending…" : "Send Request" }
+
+    /// What's sent: trimmed and capped like the website's `featureRequestText`, or nil.
+    public static func requestText(_ text: String) -> String? {
+        let trimmed = String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(maxLength))
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    public func send(_ api: WebAPI, companyId: String?) async {
+        guard !sending else { return }
+        fieldError = nil
+        error = nil
+        guard let request = Self.requestText(text) else {
+            fieldError = Self.empty
+            return
+        }
+        sending = true
+        defer { sending = false }
+        var body: [String: JSONValue] = ["request": .string(request), "page": .string(Self.page)]
+        if let companyId { body["company_id"] = .string(companyId) }
+        do {
+            let reply = try await api.post("api/feature-requests", .object(body))
+            sent = reply["message"]?.string ?? Self.thanks
+        } catch {
+            self.error = String(describing: error)
+        }
+    }
 }
 
 /// "Version 1.2.0 (34)".

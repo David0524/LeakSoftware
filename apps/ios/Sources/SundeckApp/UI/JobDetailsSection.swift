@@ -19,8 +19,6 @@
         @State private var confirmCancel = false
         @State private var saveError: String?
         @State private var saves = 0
-        @State private var locating = false
-        @State private var locationResult: (text: String, ok: Bool)?
         @State private var confirmLink: CustomerLinkRow?
         @State private var turningOff: Set<String> = []
         @State private var turnedOff: Set<String> = []
@@ -253,31 +251,6 @@
                 if let access = details.accessNotes {
                     StackedRow(caption: "Access", value: access)
                 }
-                if details.needsMapLocation {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 12) {
-                            Text("Not on the map yet.")
-                                .textRole(.secondary)
-                                .foregroundStyle(Color.textMuted)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            Button(locating ? "Finding You…" : "Mark Location Here") { markLocation() }
-                                .buttonStyle(.secondary)
-                                .disabled(locating)
-                        }
-                        if let result = locationResult {
-                            Text(result.text).textRole(.secondary).foregroundStyle(result.ok ? Color.pass : Color.fail)
-                        }
-                    }
-                    .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
-                    .padding(.vertical, CGFloat(Spacing.rowVertical))
-                } else if let result = locationResult {
-                    Text(result.text)
-                        .textRole(.secondary)
-                        .foregroundStyle(result.ok ? Color.pass : Color.fail)
-                        .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
-                        .padding(.vertical, CGFloat(Spacing.rowVertical))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
             }
         }
 
@@ -377,33 +350,6 @@
                 try sync.write("job", id: job.id, companyId: company.id, values)
             } catch {
                 saveError = String(describing: error)
-            }
-        }
-
-        /// Mark Location Here: the phone's GPS at the pool, saved on the property.
-        private func markLocation() {
-            guard let company = session.company, let row = job.property, let property = job.decodedProperty else {
-                return
-            }
-            locating = true
-            locationResult = nil
-            Task {
-                let place = await LocationLookup.shared.prepare()
-                locating = false
-                guard let place else {
-                    locationResult = (
-                        "Couldn’t find where you are. Turn on Location for Sundeck Pro, or try again outside.", false
-                    )
-                    return
-                }
-                do {
-                    try sync.write(
-                        "property", id: row.id, companyId: company.id,
-                        poolLocationValues(property, latitude: place.latitude, longitude: place.longitude))
-                    locationResult = ("Pool location saved.", true)
-                } catch {
-                    locationResult = (String(describing: error), false)
-                }
             }
         }
 

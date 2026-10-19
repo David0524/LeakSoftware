@@ -6,6 +6,10 @@ import Testing
 
 @testable import SundeckApp
 
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
+
 // The Messages and More tabs' rules (spec 5.7 to 5.12, 6.6): words, order, filters, exports.
 
 @Suite @MainActor struct MessagesModelTests {
@@ -89,11 +93,62 @@ import Testing
         #expect(versionText("1.2.0", "34") == "Version 1.2.0 (34)")
     }
 
-    /// Help's Contact Us and Request a Feature (owner, 2026-10-19) write to the office address.
+    /// Help's Contact Us writes to the office address.
     @Test func helpMailGoesToTheOffice() {
         #expect(HelpMail.contactEmail == "office@sundeckpro.com")
         #expect(HelpMail.contactURL.absoluteString == "mailto:office@sundeckpro.com")
-        #expect(HelpMail.featureRequestURL.absoluteString == "mailto:office@sundeckpro.com?subject=Feature%20request")
+    }
+
+    func featureAPI(_ host: String) -> WebAPI {
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [StubServer.self]
+        var api = WebAPI(baseURL: URL(string: "https://\(host)")!) { "token" }
+        api.session = URLSession(configuration: config)
+        return api
+    }
+
+    /// Request a Feature (owner, 2026-10-19): one box posted to /api/feature-requests, with the
+    /// website's words; nothing typed or offline keeps the text and says why.
+    @Test func requestAFeaturePostsTheTextAndThanks() async {
+        let host = "features-\(UUID().uuidString.prefix(8).lowercased()).test"
+        StubServer.set(host, "/api/feature-requests", 200, ["message": "Thanks! We read every request."])
+        let form = FeatureRequestForm()
+        #expect(form.sendTitle == "Send Request")
+        form.text = "   \n "
+        await form.send(featureAPI(host), companyId: "c1")
+        #expect(form.fieldError == "Tell us what you’d like Sundeck Pro to do." && form.sent == nil)
+        #expect(StubServer.calls(host).isEmpty)
+
+        form.text = "  Dark mode for night service  "
+        await form.send(featureAPI(host), companyId: "c1")
+        #expect(form.fieldError == nil && form.error == nil)
+        #expect(form.sent == "Thanks! We read every request.")
+        let call = StubServer.calls(host).last
+        #expect(call?.path == "/api/feature-requests")
+        #expect(
+            call?.body
+                == ["request": "Dark mode for night service", "company_id": "c1", "page": "iPhone app"])
+        #expect(FeatureRequestForm.requestText(String(repeating: "a", count: 5000))?.count == 4000)
+    }
+
+    @Test func requestAFeatureKeepsTheTextWhenItFails() async {
+        let host = "features-\(UUID().uuidString.prefix(8).lowercased()).test"
+        StubServer.set(
+            host, "/api/feature-requests", 503,
+            ["error": "That didn’t go through. Email your idea to office@sundeckpro.com instead."])
+        let form = FeatureRequestForm()
+        form.text = "Bulk invoices"
+        await form.send(featureAPI(host), companyId: nil)
+        #expect(form.error == "That didn’t go through. Email your idea to office@sundeckpro.com instead.")
+        #expect(form.text == "Bulk invoices" && form.sent == nil && !form.sending)
+        #expect(StubServer.calls(host).last?.body == ["request": "Bulk invoices", "page": "iPhone app"])
+        // No connection: said so, and the text stays.
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [NoConnection.self]
+        var offline = WebAPI(baseURL: URL(string: "https://\(host)")!) { "token" }
+        offline.session = URLSession(configuration: config)
+        await form.send(offline, companyId: "c1")
+        #expect(form.error == "No connection. Try again when you have signal." && form.text == "Bulk invoices")
     }
 }
 
@@ -379,4 +434,12 @@ import Testing
         #expect(ChemicalLogText.poolRowEmpty == "Readings and the chemical log")
         #expect(ChemicalLogText.removeTitle == "Remove these readings?")
     }
+}
+
+/// A connection that never gets through (airplane mode).
+final class NoConnection: URLProtocol, @unchecked Sendable {
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() { client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet)) }
+    override func stopLoading() {}
 }

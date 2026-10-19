@@ -93,7 +93,6 @@ import Testing
         #expect(d.address == "41 Demo Lane, Mesa, AZ 85201")
         #expect(d.poolDetail == "Gunite / plaster · Pool and spa · 20,000 gallons")
         #expect(d.accessNotes == "Gate code 4417")
-        #expect(d.needsMapLocation)
         #expect(d.tech == "Tony Tech" && d.with == "Teammate")
         #expect(d.fee == "$649.00")
         #expect(d.feeLabel == "Detection fee" && d.marksLeakLocation)
@@ -113,22 +112,10 @@ import Testing
         let bare = JobDetails(job: view(), team: [], settings: .null)
         #expect(bare.customerName == nil && bare.contactLine == nil && bare.address == nil)
         #expect(bare.tech == "Nobody yet" && bare.with == nil && bare.fee == nil && bare.intake.isEmpty)
-        #expect(!bare.needsMapLocation)
 
         let emailOnly = JobDetails(
             job: view(customer: ["id": "cu1", "name": "Sam", "email": "sam@example.com"]), team: [], settings: .null)
         #expect(emailOnly.contactLine == "sam@example.com" && emailOnly.contactDetail == nil)
-    }
-
-    @Test func markLocationHereSavesTheGPSPosition() throws {
-        let row: JSONValue = [
-            "address_line1": "41 Demo Lane", "city": "Mesa", "state": "AZ", "postal_code": "85201", "has_pool": true,
-            "has_spa": false,
-        ]
-        let values = poolLocationValues(try row.decode(Property.self), latitude: 33.4, longitude: -111.8)
-        #expect(values["latitude"] == .number(33.4) && values["longitude"] == .number(-111.8))
-        #expect(values["location_source"] == "gps")
-        #expect(values["geocoded_address"] == "41 Demo Lane, Mesa, AZ 85201")
     }
 
     @Test func customerLinksListOnlyLiveOnesNewestFirst() {

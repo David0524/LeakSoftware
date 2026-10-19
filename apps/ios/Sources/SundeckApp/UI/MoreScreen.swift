@@ -61,6 +61,7 @@
         @State private var browser: BrowserPage?
         @State private var directions = DirectionsChoice.automatic
         @State private var confirmSignOut = false
+        @State private var requesting = false
 
         var body: some View {
             let company = session.company
@@ -122,6 +123,7 @@
             .navigationTitle("More")
             .navigationBarTitleDisplayMode(.large)
             .browserSheet($browser)
+            .sheet(isPresented: $requesting) { FeatureRequestSheet() }
             .confirmationDialog("Sign out?", isPresented: $confirmSignOut, titleVisibility: .visible) {
                 Button("Sign Out", role: .destructive) { Task { await session.signOut() } }
             } message: {
@@ -190,7 +192,7 @@
                 helpRow("Privacy Policy") { browser = .site("privacy") }
                 helpRow("Terms of Service") { browser = .site("terms") }
                 helpRow("System Status") { browser = .site("status") }
-                ActionRow("Request a Feature") { openURL(HelpMail.featureRequestURL) }
+                ActionRow(FeatureRequestForm.title) { requesting = true }
                     .surfaceRow()
                     .listRowInsets(EdgeInsets())
                 ActionRow("Show Tips Again") {

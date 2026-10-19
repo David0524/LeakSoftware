@@ -173,8 +173,7 @@
             }
             if board.unlocated {
                 Text(
-                    "Pools marked “No map location” aren’t counted in drive times. Open the job and use Mark Location Here at the pool"
-                        + (board.ctx.isManager ? ", or Find Pool Locations in Settings › Scheduling" : "") + "."
+                    "Pools marked “No map location” aren’t counted in drive times: their address wasn’t found on the map. Check the address on the customer’s pool."
                 )
                 .textRole(.secondary).foregroundStyle(Color.textMuted)
             }

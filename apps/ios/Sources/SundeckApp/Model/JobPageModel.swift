@@ -104,8 +104,6 @@ public struct JobDetails: Equatable, Sendable {
     /// "Gunite / plaster · Pool and spa · 20,000 gallons".
     public var poolDetail: String?
     public var accessNotes: String?
-    /// The pool has no map location yet: offer Mark Location Here.
-    public var needsMapLocation: Bool
     /// "Tony Tech", or "Nobody yet".
     public var tech: String
     /// The second tech, if any.
@@ -136,9 +134,6 @@ public struct JobDetails: Equatable, Sendable {
             ]
             .compactMap { $0 }.joined(separator: " · ")
             accessNotes = job.property?["access_notes"]?.string.flatMap { $0.isEmpty ? nil : $0 }
-            needsMapLocation = propertyLocation(property) == nil
-        } else {
-            needsMapLocation = false
         }
         let assigned = job.job["assigned_user_id"]?.string
         tech = assigned.map { id in team.first { $0.id == id }?.displayName ?? "Teammate" } ?? "Nobody yet"
@@ -175,14 +170,6 @@ public func intakeAnswers(settings: JSONValue, intake: JSONValue?) -> [IntakeAns
         default: return nil
         }
     }
-}
-
-/// What Mark Location Here writes on the pool: the phone's position, from GPS.
-public func poolLocationValues(_ property: Property, latitude: Double, longitude: Double) -> Row {
-    [
-        "latitude": .number(latitude), "longitude": .number(longitude),
-        "geocoded_address": .string(formatAddress(property)), "location_source": "gps",
-    ]
 }
 
 // MARK: - Customer links
