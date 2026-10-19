@@ -14,8 +14,13 @@
         @Environment(\.openRoute) private var openRoute
         @State private var adding = ""
         @State private var saveError: String?
+        /// Edit, as in an iOS list: every item gets Remove (owner, 2026-10-19).
+        @State private var editing: Bool
 
-        init(job: JobView) { self.job = job }
+        init(job: JobView, editing: Bool = false) {
+            self.job = job
+            _editing = State(initialValue: editing)
+        }
 
         /// The visit's day, else today (website: `plan_date ?? today`).
         private func today(_ company: CompanyContext) -> String {
@@ -47,7 +52,20 @@
                             VisitCleaningsBox(cleanings: cleanings).padding(.bottom, 24)
                         }
                     }
-                    SectionHeading("Checklist")
+                    HStack(alignment: .firstTextBaseline) {
+                        SectionHeading("Checklist").frame(maxWidth: .infinity, alignment: .leading)
+                        if model.canEdit {
+                            // Edit / Done, as an iOS list's: the visible way to remove items
+                            // (rows also swipe to Remove).
+                            Button(editing ? "Done" : "Edit") { editing.toggle() }
+                                .font(.role(editing ? .bodyEmphasis : .body))
+                                .foregroundStyle(Color.link)
+                                .frame(minWidth: minTarget, minHeight: minTarget)
+                                .contentShape(Rectangle())
+                                .buttonStyle(.plain)
+                                .accessibilityHint(editing ? "Stops removing items" : "Shows Remove on every item")
+                        }
+                    }
                     Text(model.isEmpty ? "No checklist yet." : model.tallyText)
                         .textRole(.body)
                         .foregroundStyle(Color.textMuted)
@@ -63,7 +81,7 @@
                         VStack(spacing: 12) {
                             ForEach(model.sections) { section in
                                 ChecklistGroup(
-                                    jobId: job.id, section: section, photos: photos,
+                                    jobId: job.id, section: section, photos: photos, editing: editing,
                                     choose: choose, saveWhere: saveWhere, remove: remove,
                                     markRest: { markRest(section.items) })
                             }
@@ -179,6 +197,7 @@
         var jobId: String
         var section: ChecklistSectionRows
         var photos: [String: Int]
+        var editing: Bool
         var choose: (ChecklistItemRow, Verdict?) -> Void
         var saveWhere: (ChecklistItemRow, String) -> Void
         var remove: (ChecklistItemRow) -> Void
@@ -188,10 +207,12 @@
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         var body: some View {
-            let open = !(folded ?? !section.startsOpen)
+            // Editing opens every section, so each item shows its Remove button.
+            let open = section.isOpen(folded: folded, editing: editing)
             VStack(spacing: 0) {
                 Button {
-                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { folded = open }
+                    let shown = !(folded ?? !section.startsOpen)
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { folded = shown }
                 } label: {
                     HStack(spacing: 12) {
                         Image(systemName: "chevron.right")
@@ -225,7 +246,7 @@
                     ForEach(Array(section.items.enumerated()), id: \.element.id) { index, item in
                         if index > 0 { Hairline().padding(.leading, 16) }
                         ChecklistItemView(
-                            jobId: jobId, item: item, photos: photos[item.component.id] ?? 0,
+                            jobId: jobId, item: item, photos: photos[item.component.id] ?? 0, editing: editing,
                             choose: { choose(item, $0) }, saveWhere: { saveWhere(item, $0) },
                             remove: { remove(item) })
                     }
@@ -261,6 +282,7 @@
         var jobId: String
         var item: ChecklistItemRow
         var photos: Int
+        var editing: Bool
         var choose: (Verdict?) -> Void
         var saveWhere: (String) -> Void
         var remove: () -> Void
@@ -270,15 +292,38 @@
         @FocusState private var focused: Bool
 
         var body: some View {
+            let ask = item.removeConfirm
             Group {
-                if item.isCheck { checkRow } else { verdictRow }
+                if editing {
+                    editRow
+                } else {
+                    // Swipe left to Remove; Edit over the checklist is the visible way.
+                    SwipeDeleteRow(name: item.component.label, title: "Remove", delete: { confirmRemove = true }) {
+                        if item.isCheck { checkRow } else { verdictRow }
+                    }
+                }
             }
-            .confirmationDialog(
-                "Remove \(item.component.label) from the checklist?", isPresented: $confirmRemove,
-                titleVisibility: .visible
-            ) {
-                Button("Remove Item", role: .destructive, action: remove)
+            .confirmationDialog(ask.title, isPresented: $confirmRemove, titleVisibility: .visible) {
+                Button(ask.confirm, role: .destructive, action: remove)
+            } message: {
+                if let message = ask.message { Text(message) }
             }
+        }
+
+        /// In Edit: the name and a red Remove (website: the same row with a danger button).
+        private var editRow: some View {
+            HStack(spacing: 12) {
+                Text(item.component.label)
+                    .font(.role(.bodyMedium))
+                    .foregroundStyle(Color.text)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
+                Button("Remove", role: .destructive) { confirmRemove = true }
+                    .buttonStyle(.danger)
+                    .accessibilityLabel("Remove \(item.component.label)")
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 4)
         }
 
         /// The name and its sub-line; tapping opens the item's screen (apps only).
@@ -332,26 +377,13 @@
                 .accessibilityValue(item.isDone ? "Done" : "Not done")
                 .accessibilityAddTraits(.isToggle)
                 name
-                if item.type.allowsMultiple {
-                    Button {
-                        confirmRemove = true
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(Color.textMuted)
-                            .frame(width: minTarget, height: minTarget)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Remove \(item.component.label)")
-                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 4)
         }
 
         /// The verdict pill: "To Do" on `fill`, else the verdict's status color; a menu of the
-        /// options, and Remove Item… for items that can repeat.
+        /// options, and Remove Item… on every item (owner, 2026-10-19).
         private var verdictMenu: some View {
             Menu {
                 ForEach(item.options, id: \.value) { option in
@@ -365,10 +397,8 @@
                         }
                     }
                 }
-                if item.type.allowsMultiple {
-                    Divider()
-                    Button("Remove Item…", role: .destructive) { confirmRemove = true }
-                }
+                Divider()
+                Button("Remove Item…", role: .destructive) { confirmRemove = true }
             } label: {
                 Text(item.verdictLabel)
                     .font(.role(.secondary).weight(.semibold))

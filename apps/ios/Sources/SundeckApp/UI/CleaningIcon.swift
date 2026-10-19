@@ -55,20 +55,20 @@
         }
     }
 
-    /// The Today card's pill: "Clean filter: due today", warning-tinted, with the icon.
-    struct CleaningPill: View {
+    /// A cleaning on a Today card: just its icon and how soon ("Today", "3 days"), muted, in
+    /// the fail color when overdue, no fill (owner, 2026-10-19: "Don't make it too wordy");
+    /// VoiceOver reads it with the cleaning's name ("Clean filter due today").
+    struct CleaningDueLabel: View {
         var cleaning: VisitCleaning
 
         var body: some View {
             HStack(spacing: 6) {
-                CleaningIcon(kind: cleaning.kind, size: 16)
-                Text(CleaningText.pill(cleaning)).font(.role(.secondary).weight(.semibold))
+                CleaningIcon(kind: cleaning.kind, size: 18)
+                Text(CleaningText.short(cleaning)).font(.role(.secondary).weight(.medium))
             }
-            .foregroundStyle(Color.text)
-            .padding(.horizontal, 12)
-            .frame(minHeight: 32)
-            .background(Capsule().fill(Color.warning.opacity(0.1)))
-            .accessibilityElement(children: .combine)
+            .foregroundStyle(CleaningText.isOverdue(cleaning) ? Color.fail : Color.textMuted)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(CleaningText.spoken(cleaning))
         }
     }
 #endif

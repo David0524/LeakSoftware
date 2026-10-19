@@ -24,8 +24,14 @@ public enum CleaningText {
     public static let onVisit = "On this visit’s checklist"
     public static let today = "Today"
 
-    /// The Today card's pill: "Clean filter: due today".
-    public static func pill(_ c: VisitCleaning) -> String { "\(c.name): \(c.due.label.lowercased())" }
+    /// Beside the icon on a Today card: "Today", "3 days", "Overdue" (core `cleaningShortLabel`).
+    public static func short(_ c: VisitCleaning) -> String { cleaningShortLabel(c.due) }
+    /// What VoiceOver reads: "Clean filter due today" (core `cleaningDueSpoken`).
+    public static func spoken(_ c: VisitCleaning) -> String { cleaningDueSpoken(c.name, c.due) }
+    /// Overdue shows in the fail color, the rest muted.
+    public static func isOverdue(_ c: VisitCleaning) -> Bool { c.due.days < 0 }
+    /// VoiceOver's prefix on a stop's access notes (the key icon says it on screen).
+    public static func accessSpoken(_ notes: String) -> String { "Access: \(notes)" }
 }
 
 /// The cleanings on a visit's checklist, in checklist order.

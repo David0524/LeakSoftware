@@ -592,7 +592,8 @@
         }
 
         /// Filter and salt cell cleanings (owner, 2026-10-19): a maintenance stop on Today with
-        /// both on its checklist, and that visit's Checklist with Regular cleanings.
+        /// both on its checklist (icon and "Today" only), and that visit's Checklist with
+        /// Regular cleanings, also in Edit.
         @Test func cleanings() async throws {
             let env = try sampleEnvironment()
             let store = env.session.sync.store
@@ -601,6 +602,12 @@
             let visit = try #require(try seedCleanings(store))
             try await snapshot("30-today-cleanings", height: 1500, MainView().app(env))
             try await snapshot("30-today-cleanings-dark", dark: true, height: 1500, MainView().app(env))
+            // Just the icon and how soon, muted; access notes a plain line with a key.
+            try await snapshot("30-today-cleanings-large-text", largeText: true, height: 2400, MainView().app(env))
+            // The visit's checklist in Edit: a cleaning's Remove says it goes on the next visit.
+            try await snapshot(
+                "30-checklist-cleanings-edit", height: 2400,
+                NavigationStack { JobScreen(jobId: visit, section: .checklist, checklistEditing: true) }.app(env))
             try await snapshot(
                 "30-checklist-cleanings", height: 2400,
                 NavigationStack { JobScreen(jobId: visit, section: .checklist) }.app(env))
@@ -650,6 +657,13 @@
             try await snapshot(
                 "09-checklist-dark", dark: true, height: 3000,
                 NavigationStack { JobScreen(jobId: ids.job, section: .checklist) }.app(env))
+            // Edit (owner, 2026-10-19): every section open, a red Remove on every item.
+            try await snapshot(
+                "09-checklist-edit", height: 3600,
+                NavigationStack { JobScreen(jobId: ids.job, section: .checklist, checklistEditing: true) }.app(env))
+            try await snapshot(
+                "09-checklist-edit-dark", dark: true, height: 3600,
+                NavigationStack { JobScreen(jobId: ids.job, section: .checklist, checklistEditing: true) }.app(env))
             // Tests and findings together, as on the website.
             try await snapshot(
                 "10-findings", height: 1800, NavigationStack { JobScreen(jobId: ids.job, section: .findings) }.app(env))

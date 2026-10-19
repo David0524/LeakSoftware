@@ -2327,6 +2327,52 @@
       "result": []
     }
   ],
+  "removeItemConfirm": [
+    {
+      "args": [
+        "Skimmer 2",
+        false
+      ],
+      "result": {
+        "title": "Remove Skimmer 2 from the checklist?",
+        "message": null,
+        "confirm": "Remove Item"
+      }
+    },
+    {
+      "args": [
+        "Clean filter",
+        true
+      ],
+      "result": {
+        "title": "Remove Clean filter from the checklist?",
+        "message": "It’s still due, so it goes on the next visit.",
+        "confirm": "Remove Item"
+      }
+    },
+    {
+      "args": [
+        "Main drain",
+        false
+      ],
+      "result": {
+        "title": "Remove Main drain from the checklist?",
+        "message": null,
+        "confirm": "Remove Item"
+      }
+    },
+    {
+      "args": [
+        "",
+        true
+      ],
+      "result": {
+        "title": "Remove  from the checklist?",
+        "message": "It’s still due, so it goes on the next visit.",
+        "confirm": "Remove Item"
+      }
+    }
+  ],
   "nextInstance": [
     {
       "args": [

@@ -47,6 +47,20 @@ public enum JobStatus: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// The button that moves a job from one status to another (owner, 2026-10-19). Unschedule takes
+/// a job off the calendar; Reopen Job is only for a canceled one; Reopen Visit puts a finished
+/// visit back in progress.
+public func jobActionLabel(from: JobStatus, to: JobStatus) -> String {
+    switch to {
+    case .unscheduled: from == .canceled ? "Reopen Job" : "Unschedule"
+    case .inProgress: from == .done ? "Reopen Visit" : "Start Job"
+    case .scheduled: "Move Back to Scheduled"
+    case .canceled: "Cancel Job"
+    case .done: "Mark Done"
+    default: to.label
+    }
+}
+
 /// Next statuses a person (not the server) can pick. Done is how a maintenance visit ends;
 /// leak detection and repairs end with a report or invoice.
 public func userTransitions(from: JobStatus, type: String? = nil) -> [JobStatus] {

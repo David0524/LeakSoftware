@@ -32,6 +32,13 @@ public enum JobType: String, Codable, CaseIterable, Sendable {
     case detection, repair, maintenance
 }
 
+/// What the job's price is called (owner, 2026-10-19): a detection fee on leak detection, a
+/// price on repairs and visits.
+public func jobFeeLabel(_ type: String?) -> String { type == "detection" ? "Detection fee" : "Price" }
+
+/// The same, for a typed job.
+public func jobFeeLabel(_ type: JobType) -> String { jobFeeLabel(type.rawValue) }
+
 public struct JobTypeOption: Codable, Equatable, Sendable {
     public let value: JobType
     public let label: String

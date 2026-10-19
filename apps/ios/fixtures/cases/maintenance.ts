@@ -3,6 +3,8 @@ import {
   CLEANING_MONTHS,
   cadenceLabel,
   cleaningCountdown,
+  cleaningDueSpoken,
+  cleaningShortLabel,
   cleaningKind,
   cleaningMonthsLabel,
   maintenanceSettings,
@@ -61,6 +63,20 @@ const plans: Shape[] = [
 ];
 
 // maintenance.ts: plan settings, how often, the plan in one line, and its next visit dates.
+const dues = [
+  { days: -30, weeks: 0 },
+  { days: -1, weeks: 0 },
+  { days: 0, weeks: 0 },
+  { days: 1, weeks: 0 },
+  { days: 3, weeks: 0 },
+  { days: 6, weeks: 1 },
+  { days: 7, weeks: 1 },
+  { days: 10, weeks: 1 },
+  { days: 11, weeks: 2 },
+  { days: 28, weeks: 4 },
+  { days: 365, weeks: 52 },
+];
+
 export const maintenance: ModuleCases = {
   maintenanceSettings: rule(
     (settings: unknown) => maintenanceSettings(settings),
@@ -140,5 +156,17 @@ export const maintenance: ModuleCases = {
       ["2028-03-01", "2028-02-28"],
       ["2026-11-02", "2026-10-31"],
     ],
+  ),
+  // Today's few words beside a cleaning's icon, and what VoiceOver reads.
+  cleaningShortLabel: rule(
+    (due: { days: number; weeks: number }) => cleaningShortLabel(due),
+    dues.map((d) => [d]),
+  ),
+  cleaningDueSpoken: rule(
+    (name: string, due: { days: number; weeks: number }) => cleaningDueSpoken(name, due),
+    dues.flatMap((d) => [
+      ["Clean filter", d] as [string, typeof d],
+      ["Clean salt cell", d] as [string, typeof d],
+    ]),
   ),
 };

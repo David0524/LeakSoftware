@@ -418,6 +418,28 @@ public func nextInstance(_ type: ComponentType, _ existing: [JobComponent]) -> P
         componentTypeId: type.id, instanceNumber: n, label: instanceLabel(type, n), sortOrder: type.sortOrder * 100 + n)
 }
 
+/// The confirm before removing an item from a job's checklist.
+public struct RemoveItemConfirm: Codable, Equatable, Sendable {
+    public var title: String
+    public var message: String?
+    public var confirm: String
+
+    public init(title: String, message: String?, confirm: String) {
+        self.title = title
+        self.message = message
+        self.confirm = confirm
+    }
+}
+
+/// Removing an item from a job's checklist (owner, 2026-10-19): any item can go. A scheduled
+/// cleaning stays due on its plan, so it goes on the next visit, and the confirm says so.
+public func removeItemConfirm(_ label: String, fromPlan: Bool) -> RemoveItemConfirm {
+    RemoveItemConfirm(
+        title: "Remove \(label) from the checklist?",
+        message: fromPlan ? "It’s still due, so it goes on the next visit." : nil,
+        confirm: "Remove Item")
+}
+
 /// The verdict counts on a checklist.
 public struct ChecklistTally: Codable, Equatable, Sendable {
     /// Not leaking (or "no" on a yes/no item).

@@ -14,7 +14,7 @@ import Testing
             "validateNewJob", "formatAddress", "newJobRecords", "localDate", "groupJobs", "formatSchedule",
             "propertyLocation", "nativeMapsUrl", "instanceLabel", "FINDING_STATUS_LABELS", "verdictLabel",
             "verdictOptions", "currentVerdict", "verdictValues", "checklistSectionSummary", "markRemainingLabel",
-            "SPA_SIZES", "SPA_SHAPES", "mirrorPath", "parseDiagramLayout",
+            "SPA_SIZES", "SPA_SHAPES", "mirrorPath", "parseDiagramLayout", "removeItemConfirm",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -28,6 +28,7 @@ import Testing
             try planComponents(c.arg(0), c.arg(1), c.arg(2, as: JobType?.self) ?? .detection)
         }
         checkRule(module, "nextInstance") { c in nextInstance(try c.arg(0), try c.arg(1)) }
+        checkRule(module, "removeItemConfirm") { c in removeItemConfirm(try c.arg(0), fromPlan: try c.arg(1)) }
         checkRule(module, "checklistTally") { c in checklistTally(try c.arg(0), try c.arg(1)) }
     }
 

@@ -282,6 +282,42 @@ import Testing
         #expect(model(property: try property()).missing.map(\.key).contains("bond_beam"))
     }
 
+    @Test func anyItemCanBeRemovedAndACleaningSaysItStaysDue() throws {
+        try setUp(property: try property())
+        let m = model(property: try property())
+        #expect(m.canEdit)
+        // Not only items that repeat: a single item has Remove too (owner, 2026-10-19).
+        let beam = try row("Bond beam")
+        #expect(!beam.type.allowsMultiple && !beam.fromPlan)
+        #expect(
+            beam.removeConfirm
+                == RemoveItemConfirm(
+                    title: "Remove Bond beam from the checklist?", message: nil, confirm: "Remove Item"))
+        try InspectionWrites.setVerdict(
+            sync, companyId: Self.company, jobId: Self.job, componentId: beam.component.id, existing: beam.result,
+            verdict: .ok, userId: Self.me)
+        let answered = try row("Bond beam")
+        let before = sync.revision
+        try InspectionWrites.removeComponent(
+            sync, companyId: Self.company, component: answered.component, result: answered.result)
+        #expect(sync.revision == before + 1)
+        #expect(!inspection.components.contains { $0.label == "Bond beam" })
+        let results = try sync.store.list("checklist_item_result", jobId: Self.job, includeDeleted: true)
+        #expect(results.first { $0.id == answered.result?.id }?["deleted_at"]?.string != nil)
+
+        // Edit opens every section; otherwise a section follows the person's choice.
+        let section = try #require(m.sections.first)
+        #expect(section.isOpen(folded: true, editing: true))
+        #expect(!section.isOpen(folded: true, editing: false) && section.isOpen(folded: false, editing: false))
+        #expect(section.isOpen(folded: nil, editing: false) == section.startsOpen)
+
+        // An item a plan's cleaning put on says it goes on the next visit.
+        var cleaning = beam
+        cleaning.component.planCleaningId = "pc1"
+        #expect(cleaning.fromPlan)
+        #expect(cleaning.removeConfirm.message == "It’s still due, so it goes on the next visit.")
+    }
+
     // MARK: - The item's screen
 
     @Test func componentScreenSavesItsFormOnlyOnSave() throws {
@@ -498,10 +534,18 @@ import Testing
         #expect(found.map(\.name) == ["Clean filter", "Clean salt cell", "Brush tile"])
         #expect(found.map(\.kind) == [.filter, .saltCell, .other])
         #expect(found.allSatisfy { $0.due.label == "Due today" && $0.due.soon })
+        // Today: just the icon and how soon; VoiceOver reads the name (owner, 2026-10-19).
+        #expect(found.map(CleaningText.short) == ["Today", "Today", "Today"])
         #expect(
-            found.map(CleaningText.pill) == [
-                "Clean filter: due today", "Clean salt cell: due today", "Brush tile: due today",
+            found.map(CleaningText.spoken) == [
+                "Clean filter due today", "Clean salt cell due today", "Brush tile due today",
             ])
+        #expect(!found.contains(where: CleaningText.isOverdue))
+        var late = found[0]
+        late.due = try #require(cleaningCountdown("2026-10-12", "2026-10-19"))
+        #expect(CleaningText.isOverdue(late) && CleaningText.short(late) == "Overdue")
+        #expect(CleaningText.spoken(late) == "Clean filter overdue")
+        #expect(CleaningText.accessSpoken("Gate code 4417") == "Access: Gate code 4417")
         #expect(CleaningText.title == "Regular cleanings")
         #expect(CleaningText.onVisit == "On this visit’s checklist" && CleaningText.today == "Today")
         // A visit with no cleanings on its checklist shows none.

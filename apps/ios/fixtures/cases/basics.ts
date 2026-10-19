@@ -7,6 +7,8 @@ import {
   formatCents,
   formatPhone,
   isManagerRole,
+  jobActionLabel,
+  jobFeeLabel,
   jobOnPhones,
   newJobTypes,
   offersPool,
@@ -72,6 +74,14 @@ export const basics: ModuleCases = {
     JOB_STATUSES.flatMap((s) => [[s] as [JobStatus], [s, "maintenance"] as [JobStatus, string]]),
   ),
   JOB_STATUS_LABELS: rule(() => JOB_STATUS_LABELS, [[]]),
+  jobActionLabel: rule(
+    (from: JobStatus, to: JobStatus) => jobActionLabel(from, to),
+    JOB_STATUSES.flatMap((from) => JOB_STATUSES.map((to) => [from, to] as [JobStatus, JobStatus])),
+  ),
+  jobFeeLabel: rule(
+    (t: string | null) => jobFeeLabel(t),
+    [["detection"], ["repair"], ["maintenance"], [null], [""], ["Detection"]],
+  ),
   toE164: rule(
     (s: string | null) => toE164(s),
     [

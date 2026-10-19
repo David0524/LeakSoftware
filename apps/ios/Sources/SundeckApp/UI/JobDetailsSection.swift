@@ -45,7 +45,7 @@
                 Grouped(label: "Assigned to") {
                     ListRow("Tech", value: details.tech)
                     if let with = details.with { ListRow("With", value: with) }
-                    if let fee = details.fee { ListRow("Detection fee", value: fee) }
+                    if let fee = details.fee { ListRow(details.feeLabel, value: fee) }
                 }
                 if !details.intake.isEmpty {
                     Grouped(label: details.intakeTitle) {
@@ -54,7 +54,7 @@
                         }
                     }
                 }
-                onSite
+                onSite(details)
                 if JobScheduleGroup.shows(job) { JobScheduleGroup(job: job) }
                 if isManagerRole(company?.role) { JobTimeline(jobId: job.id) }
                 if jobCanCancel(job.status, type: job.type) {
@@ -281,13 +281,14 @@
             }
         }
 
-        /// On Site, as a grouped form: the fee, Leak location marked, job notes. Each saves as it
-        /// changes through the sync layer; Save confirms and saves a field still being typed in.
-        private var onSite: some View {
+        /// On Site, as a grouped form: the price, Leak location marked (leak detection only), job
+        /// notes. Each saves as it changes through the sync layer; Save confirms and saves a field
+        /// still being typed in. Fee and notes never write location_marked.
+        private func onSite(_ details: JobDetails) -> some View {
             VStack(alignment: .leading, spacing: 16) {
-                Grouped(label: "On site", footer: "The detection fee is shown on the report.") {
+                Grouped(label: "On site", footer: details.feeFooter) {
                     HStack(spacing: 12) {
-                        Text("Detection fee")
+                        Text(details.feeLabel)
                             .textRole(.body)
                             .foregroundStyle(Color.text)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -300,15 +301,17 @@
                             .onSubmit { focus = nil }
                             .fieldBox(focused: focus == .fee)
                             .frame(width: 112)
-                            .accessibilityLabel("Detection fee, dollars")
+                            .accessibilityLabel("\(details.feeLabel), dollars")
                     }
                     .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
                     .padding(.vertical, 6)
-                    SwitchRow(
-                        "Leak location marked",
-                        isOn: Binding(
-                            get: { job.job["location_marked"]?.bool ?? false },
-                            set: { save(["location_marked": .bool($0)]) }))
+                    if details.marksLeakLocation {
+                        SwitchRow(
+                            "Leak location marked",
+                            isOn: Binding(
+                                get: { job.job["location_marked"]?.bool ?? false },
+                                set: { save(["location_marked": .bool($0)]) }))
+                    }
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Job notes").textRole(.secondary).foregroundStyle(Color.textMuted)
                         TextField(

@@ -23,6 +23,7 @@ import {
   nativeMapsUrl,
   newJobRecords,
   nextInstance,
+  removeItemConfirm,
   normalizeTestData,
   planComponents,
   poolDiagram,
@@ -242,6 +243,15 @@ export const inspection: ModuleCases = {
     ],
   ),
 
+  removeItemConfirm: rule(
+    (label: string, fromPlan: boolean) => removeItemConfirm(label, fromPlan),
+    [
+      ["Skimmer 2", false],
+      ["Clean filter", true],
+      ["Main drain", false],
+      ["", true],
+    ],
+  ),
   nextInstance: rule(
     (t: ComponentType, existing: JobComponent[]) => nextInstance(t, existing),
     [

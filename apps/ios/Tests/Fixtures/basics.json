@@ -359,6 +359,746 @@
       }
     }
   ],
+  "jobActionLabel": [
+    {
+      "args": [
+        "unscheduled",
+        "unscheduled"
+      ],
+      "result": "Unschedule"
+    },
+    {
+      "args": [
+        "unscheduled",
+        "scheduled"
+      ],
+      "result": "Move Back to Scheduled"
+    },
+    {
+      "args": [
+        "unscheduled",
+        "in_progress"
+      ],
+      "result": "Start Job"
+    },
+    {
+      "args": [
+        "unscheduled",
+        "report_sent"
+      ],
+      "result": "Report sent"
+    },
+    {
+      "args": [
+        "unscheduled",
+        "quote_sent"
+      ],
+      "result": "Quote sent"
+    },
+    {
+      "args": [
+        "unscheduled",
+        "quote_accepted"
+      ],
+      "result": "Quote accepted"
+    },
+    {
+      "args": [
+        "unscheduled",
+        "invoiced"
+      ],
+      "result": "Invoiced"
+    },
+    {
+      "args": [
+        "unscheduled",
+        "paid"
+      ],
+      "result": "Paid"
+    },
+    {
+      "args": [
+        "unscheduled",
+        "canceled"
+      ],
+      "result": "Cancel Job"
+    },
+    {
+      "args": [
+        "unscheduled",
+        "done"
+      ],
+      "result": "Mark Done"
+    },
+    {
+      "args": [
+        "scheduled",
+        "unscheduled"
+      ],
+      "result": "Unschedule"
+    },
+    {
+      "args": [
+        "scheduled",
+        "scheduled"
+      ],
+      "result": "Move Back to Scheduled"
+    },
+    {
+      "args": [
+        "scheduled",
+        "in_progress"
+      ],
+      "result": "Start Job"
+    },
+    {
+      "args": [
+        "scheduled",
+        "report_sent"
+      ],
+      "result": "Report sent"
+    },
+    {
+      "args": [
+        "scheduled",
+        "quote_sent"
+      ],
+      "result": "Quote sent"
+    },
+    {
+      "args": [
+        "scheduled",
+        "quote_accepted"
+      ],
+      "result": "Quote accepted"
+    },
+    {
+      "args": [
+        "scheduled",
+        "invoiced"
+      ],
+      "result": "Invoiced"
+    },
+    {
+      "args": [
+        "scheduled",
+        "paid"
+      ],
+      "result": "Paid"
+    },
+    {
+      "args": [
+        "scheduled",
+        "canceled"
+      ],
+      "result": "Cancel Job"
+    },
+    {
+      "args": [
+        "scheduled",
+        "done"
+      ],
+      "result": "Mark Done"
+    },
+    {
+      "args": [
+        "in_progress",
+        "unscheduled"
+      ],
+      "result": "Unschedule"
+    },
+    {
+      "args": [
+        "in_progress",
+        "scheduled"
+      ],
+      "result": "Move Back to Scheduled"
+    },
+    {
+      "args": [
+        "in_progress",
+        "in_progress"
+      ],
+      "result": "Start Job"
+    },
+    {
+      "args": [
+        "in_progress",
+        "report_sent"
+      ],
+      "result": "Report sent"
+    },
+    {
+      "args": [
+        "in_progress",
+        "quote_sent"
+      ],
+      "result": "Quote sent"
+    },
+    {
+      "args": [
+        "in_progress",
+        "quote_accepted"
+      ],
+      "result": "Quote accepted"
+    },
+    {
+      "args": [
+        "in_progress",
+        "invoiced"
+      ],
+      "result": "Invoiced"
+    },
+    {
+      "args": [
+        "in_progress",
+        "paid"
+      ],
+      "result": "Paid"
+    },
+    {
+      "args": [
+        "in_progress",
+        "canceled"
+      ],
+      "result": "Cancel Job"
+    },
+    {
+      "args": [
+        "in_progress",
+        "done"
+      ],
+      "result": "Mark Done"
+    },
+    {
+      "args": [
+        "report_sent",
+        "unscheduled"
+      ],
+      "result": "Unschedule"
+    },
+    {
+      "args": [
+        "report_sent",
+        "scheduled"
+      ],
+      "result": "Move Back to Scheduled"
+    },
+    {
+      "args": [
+        "report_sent",
+        "in_progress"
+      ],
+      "result": "Start Job"
+    },
+    {
+      "args": [
+        "report_sent",
+        "report_sent"
+      ],
+      "result": "Report sent"
+    },
+    {
+      "args": [
+        "report_sent",
+        "quote_sent"
+      ],
+      "result": "Quote sent"
+    },
+    {
+      "args": [
+        "report_sent",
+        "quote_accepted"
+      ],
+      "result": "Quote accepted"
+    },
+    {
+      "args": [
+        "report_sent",
+        "invoiced"
+      ],
+      "result": "Invoiced"
+    },
+    {
+      "args": [
+        "report_sent",
+        "paid"
+      ],
+      "result": "Paid"
+    },
+    {
+      "args": [
+        "report_sent",
+        "canceled"
+      ],
+      "result": "Cancel Job"
+    },
+    {
+      "args": [
+        "report_sent",
+        "done"
+      ],
+      "result": "Mark Done"
+    },
+    {
+      "args": [
+        "quote_sent",
+        "unscheduled"
+      ],
+      "result": "Unschedule"
+    },
+    {
+      "args": [
+        "quote_sent",
+        "scheduled"
+      ],
+      "result": "Move Back to Scheduled"
+    },
+    {
+      "args": [
+        "quote_sent",
+        "in_progress"
+      ],
+      "result": "Start Job"
+    },
+    {
+      "args": [
+        "quote_sent",
+        "report_sent"
+      ],
+      "result": "Report sent"
+    },
+    {
+      "args": [
+        "quote_sent",
+        "quote_sent"
+      ],
+      "result": "Quote sent"
+    },
+    {
+      "args": [
+        "quote_sent",
+        "quote_accepted"
+      ],
+      "result": "Quote accepted"
+    },
+    {
+      "args": [
+        "quote_sent",
+        "invoiced"
+      ],
+      "result": "Invoiced"
+    },
+    {
+      "args": [
+        "quote_sent",
+        "paid"
+      ],
+      "result": "Paid"
+    },
+    {
+      "args": [
+        "quote_sent",
+        "canceled"
+      ],
+      "result": "Cancel Job"
+    },
+    {
+      "args": [
+        "quote_sent",
+        "done"
+      ],
+      "result": "Mark Done"
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "unscheduled"
+      ],
+      "result": "Unschedule"
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "scheduled"
+      ],
+      "result": "Move Back to Scheduled"
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "in_progress"
+      ],
+      "result": "Start Job"
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "report_sent"
+      ],
+      "result": "Report sent"
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "quote_sent"
+      ],
+      "result": "Quote sent"
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "quote_accepted"
+      ],
+      "result": "Quote accepted"
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "invoiced"
+      ],
+      "result": "Invoiced"
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "paid"
+      ],
+      "result": "Paid"
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "canceled"
+      ],
+      "result": "Cancel Job"
+    },
+    {
+      "args": [
+        "quote_accepted",
+        "done"
+      ],
+      "result": "Mark Done"
+    },
+    {
+      "args": [
+        "invoiced",
+        "unscheduled"
+      ],
+      "result": "Unschedule"
+    },
+    {
+      "args": [
+        "invoiced",
+        "scheduled"
+      ],
+      "result": "Move Back to Scheduled"
+    },
+    {
+      "args": [
+        "invoiced",
+        "in_progress"
+      ],
+      "result": "Start Job"
+    },
+    {
+      "args": [
+        "invoiced",
+        "report_sent"
+      ],
+      "result": "Report sent"
+    },
+    {
+      "args": [
+        "invoiced",
+        "quote_sent"
+      ],
+      "result": "Quote sent"
+    },
+    {
+      "args": [
+        "invoiced",
+        "quote_accepted"
+      ],
+      "result": "Quote accepted"
+    },
+    {
+      "args": [
+        "invoiced",
+        "invoiced"
+      ],
+      "result": "Invoiced"
+    },
+    {
+      "args": [
+        "invoiced",
+        "paid"
+      ],
+      "result": "Paid"
+    },
+    {
+      "args": [
+        "invoiced",
+        "canceled"
+      ],
+      "result": "Cancel Job"
+    },
+    {
+      "args": [
+        "invoiced",
+        "done"
+      ],
+      "result": "Mark Done"
+    },
+    {
+      "args": [
+        "paid",
+        "unscheduled"
+      ],
+      "result": "Unschedule"
+    },
+    {
+      "args": [
+        "paid",
+        "scheduled"
+      ],
+      "result": "Move Back to Scheduled"
+    },
+    {
+      "args": [
+        "paid",
+        "in_progress"
+      ],
+      "result": "Start Job"
+    },
+    {
+      "args": [
+        "paid",
+        "report_sent"
+      ],
+      "result": "Report sent"
+    },
+    {
+      "args": [
+        "paid",
+        "quote_sent"
+      ],
+      "result": "Quote sent"
+    },
+    {
+      "args": [
+        "paid",
+        "quote_accepted"
+      ],
+      "result": "Quote accepted"
+    },
+    {
+      "args": [
+        "paid",
+        "invoiced"
+      ],
+      "result": "Invoiced"
+    },
+    {
+      "args": [
+        "paid",
+        "paid"
+      ],
+      "result": "Paid"
+    },
+    {
+      "args": [
+        "paid",
+        "canceled"
+      ],
+      "result": "Cancel Job"
+    },
+    {
+      "args": [
+        "paid",
+        "done"
+      ],
+      "result": "Mark Done"
+    },
+    {
+      "args": [
+        "canceled",
+        "unscheduled"
+      ],
+      "result": "Reopen Job"
+    },
+    {
+      "args": [
+        "canceled",
+        "scheduled"
+      ],
+      "result": "Move Back to Scheduled"
+    },
+    {
+      "args": [
+        "canceled",
+        "in_progress"
+      ],
+      "result": "Start Job"
+    },
+    {
+      "args": [
+        "canceled",
+        "report_sent"
+      ],
+      "result": "Report sent"
+    },
+    {
+      "args": [
+        "canceled",
+        "quote_sent"
+      ],
+      "result": "Quote sent"
+    },
+    {
+      "args": [
+        "canceled",
+        "quote_accepted"
+      ],
+      "result": "Quote accepted"
+    },
+    {
+      "args": [
+        "canceled",
+        "invoiced"
+      ],
+      "result": "Invoiced"
+    },
+    {
+      "args": [
+        "canceled",
+        "paid"
+      ],
+      "result": "Paid"
+    },
+    {
+      "args": [
+        "canceled",
+        "canceled"
+      ],
+      "result": "Cancel Job"
+    },
+    {
+      "args": [
+        "canceled",
+        "done"
+      ],
+      "result": "Mark Done"
+    },
+    {
+      "args": [
+        "done",
+        "unscheduled"
+      ],
+      "result": "Unschedule"
+    },
+    {
+      "args": [
+        "done",
+        "scheduled"
+      ],
+      "result": "Move Back to Scheduled"
+    },
+    {
+      "args": [
+        "done",
+        "in_progress"
+      ],
+      "result": "Reopen Visit"
+    },
+    {
+      "args": [
+        "done",
+        "report_sent"
+      ],
+      "result": "Report sent"
+    },
+    {
+      "args": [
+        "done",
+        "quote_sent"
+      ],
+      "result": "Quote sent"
+    },
+    {
+      "args": [
+        "done",
+        "quote_accepted"
+      ],
+      "result": "Quote accepted"
+    },
+    {
+      "args": [
+        "done",
+        "invoiced"
+      ],
+      "result": "Invoiced"
+    },
+    {
+      "args": [
+        "done",
+        "paid"
+      ],
+      "result": "Paid"
+    },
+    {
+      "args": [
+        "done",
+        "canceled"
+      ],
+      "result": "Cancel Job"
+    },
+    {
+      "args": [
+        "done",
+        "done"
+      ],
+      "result": "Mark Done"
+    }
+  ],
+  "jobFeeLabel": [
+    {
+      "args": [
+        "detection"
+      ],
+      "result": "Detection fee"
+    },
+    {
+      "args": [
+        "repair"
+      ],
+      "result": "Price"
+    },
+    {
+      "args": [
+        "maintenance"
+      ],
+      "result": "Price"
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": "Price"
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": "Price"
+    },
+    {
+      "args": [
+        "Detection"
+      ],
+      "result": "Price"
+    }
+  ],
   "toE164": [
     {
       "args": [

@@ -10,6 +10,8 @@
     struct SwipeDeleteRow<Content: View>: View {
         /// Read with the action: "Delete Pressure test".
         var name: String
+        /// The red button's word: "Delete", or "Remove" for a checklist item.
+        var title = "Delete"
         var delete: () -> Void
         @ViewBuilder var content: Content
         @State private var offset: CGFloat = 0
@@ -25,7 +27,7 @@
                         close()
                         delete()
                     } label: {
-                        Text("Delete")
+                        Text(title)
                             .font(.role(.bodyEmphasis))
                             .foregroundStyle(Color.onHeader)
                             .frame(width: max(width, -offset))
@@ -65,7 +67,7 @@
                         }
                     }
             )
-            .accessibilityAction(named: "Delete \(name)", delete)
+            .accessibilityAction(named: "\(title) \(name)", delete)
         }
 
         private func close() {

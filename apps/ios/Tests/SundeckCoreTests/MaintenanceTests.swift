@@ -11,8 +11,13 @@ import Testing
             Fixtures.rules(module) == [
                 "maintenanceSettings", "planRepeat", "cadenceLabel", "planSummary", "upcomingVisitDates",
                 "CLEANING_MONTHS", "CLEANING_DUE_SOON_DAYS", "cleaningMonthsLabel", "cleaningKind",
-                "cleaningCountdown",
+                "cleaningCountdown", "cleaningShortLabel", "cleaningDueSpoken",
             ])
+    }
+
+    struct Due: Decodable {
+        let days: Int
+        let weeks: Int
     }
 
     struct CleaningType: Decodable {
@@ -20,7 +25,7 @@ import Testing
         let name: String?
     }
 
-    @Test func cleanings() {
+    @Test func cleanings() throws {
         checkRule(module, "CLEANING_MONTHS") { _ in cleaningMonths }
         checkRule(module, "CLEANING_DUE_SOON_DAYS") { _ in cleaningDueSoonDays }
         checkRule(module, "cleaningMonthsLabel") { c in cleaningMonthsLabel(try c.arg(0)) }
@@ -32,6 +37,19 @@ import Testing
             guard let countdown = cleaningCountdown(try c.arg(0), try c.arg(1)) else { throw NotRepresentable() }
             return countdown
         }
+        checkRule(module, "cleaningShortLabel") { c in
+            let due = try c.arg(0, as: Due.self)
+            return cleaningShortLabel(days: due.days, weeks: due.weeks)
+        }
+        checkRule(module, "cleaningDueSpoken") { c in
+            let due = try c.arg(1, as: Due.self)
+            return cleaningDueSpoken(try c.arg(0), days: due.days, weeks: due.weeks)
+        }
+        // The countdown overloads read the same.
+        let soon = try #require(cleaningCountdown("2026-10-22", "2026-10-19"))
+        #expect(
+            cleaningShortLabel(soon) == "3 days"
+                && cleaningDueSpoken("Clean filter", soon) == "Clean filter due in 3 days")
     }
 
     @Test func settings() {

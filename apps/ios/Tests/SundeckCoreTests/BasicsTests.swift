@@ -11,7 +11,7 @@ import Testing
             "formatCents", "parseDollars", "uuidv7TimePrefix", "userTransitions", "JOB_STATUS_LABELS", "toE164",
             "formatPhone", "companyServices", "offersPool", "newJobTypes", "seesAllJobs", "canMakeJobs", "roleLabel",
             "isManagerRole", "splitEmails", "POOL_TYPE_LABELS", "jobOnPhones", "requiresFinishPhoto",
-            "FINISH_PHOTO_MESSAGE", "REPAIR_ITEM_KEY", "REPAIR_ITEM_LABEL",
+            "FINISH_PHOTO_MESSAGE", "REPAIR_ITEM_KEY", "REPAIR_ITEM_LABEL", "jobActionLabel", "jobFeeLabel",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -39,6 +39,8 @@ import Testing
             userTransitions(from: try c.arg(0), type: try c.arg(1, as: String?.self))
         }
         checkRule(module, "JOB_STATUS_LABELS") { _ in labelTable(\JobStatus.label) }
+        checkRule(module, "jobActionLabel") { c in jobActionLabel(from: try c.arg(0), to: try c.arg(1)) }
+        checkRule(module, "jobFeeLabel") { c in jobFeeLabel(try c.arg(0, as: String?.self)) }
     }
 
     @Test func phones() {

@@ -229,18 +229,22 @@
                 if !job.done {
                     AddressButton(place: job.place)
                     if let cleanings = day.cleanings[job.id] {
-                        FlowRow(spacing: 6) { ForEach(cleanings) { CleaningPill(cleaning: $0) } }
+                        FlowRow(spacing: 16) { ForEach(cleanings) { CleaningDueLabel(cleaning: $0) } }
                             .accessibilityElement(children: .contain)
                             .accessibilityLabel("Cleanings due")
                     }
                     if let notes = job.accessNotes {
-                        Text(notes)
-                            .textRole(.secondary)
-                            .foregroundStyle(Color.text)
-                            .lineLimit(2)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.accessFill))
+                        // A plain muted line with a key, no fill (owner, 2026-10-19).
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Image(systemName: "key")
+                                .font(.system(size: 15))
+                                .accessibilityHidden(true)
+                            Text(notes).lineLimit(2)
+                        }
+                        .textRole(.secondary)
+                        .foregroundStyle(Color.textMuted)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(CleaningText.accessSpoken(notes))
                     }
                 }
             }

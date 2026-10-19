@@ -329,3 +329,27 @@ public func cleaningCountdown(_ nextDue: String, _ on: String) -> CleaningCountd
                 ? "Due in \(days) \(days == 1 ? "day" : "days")" : "In \(weeks) \(weeks == 1 ? "week" : "weeks")"
     return CleaningCountdown(days: days, weeks: weeks, soon: days <= cleaningDueSoonDays, label: label)
 }
+
+/// The few words beside a cleaning's icon on Today (owner, 2026-10-19): "Overdue", "Today",
+/// "3 days", "1 week".
+public func cleaningShortLabel(days: Int, weeks: Int) -> String {
+    if days < 0 { return "Overdue" }
+    if days == 0 { return "Today" }
+    if days < 7 { return "\(days) \(days == 1 ? "day" : "days")" }
+    return "\(weeks) \(weeks == 1 ? "week" : "weeks")"
+}
+
+public func cleaningShortLabel(_ due: CleaningCountdown) -> String {
+    cleaningShortLabel(days: due.days, weeks: due.weeks)
+}
+
+/// The same, read aloud with the cleaning's name: "Clean filter due in 3 days".
+public func cleaningDueSpoken(_ name: String, days: Int, weeks: Int) -> String {
+    if days < 0 { return "\(name) overdue" }
+    if days == 0 { return "\(name) due today" }
+    return "\(name) due in \(cleaningShortLabel(days: days, weeks: weeks))"
+}
+
+public func cleaningDueSpoken(_ name: String, _ due: CleaningCountdown) -> String {
+    cleaningDueSpoken(name, days: due.days, weeks: due.weeks)
+}

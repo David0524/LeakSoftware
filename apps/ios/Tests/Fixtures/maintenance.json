@@ -2183,5 +2183,328 @@
         "label": "Due in 2 days"
       }
     }
+  ],
+  "cleaningShortLabel": [
+    {
+      "args": [
+        {
+          "days": -30,
+          "weeks": 0
+        }
+      ],
+      "result": "Overdue"
+    },
+    {
+      "args": [
+        {
+          "days": -1,
+          "weeks": 0
+        }
+      ],
+      "result": "Overdue"
+    },
+    {
+      "args": [
+        {
+          "days": 0,
+          "weeks": 0
+        }
+      ],
+      "result": "Today"
+    },
+    {
+      "args": [
+        {
+          "days": 1,
+          "weeks": 0
+        }
+      ],
+      "result": "1 day"
+    },
+    {
+      "args": [
+        {
+          "days": 3,
+          "weeks": 0
+        }
+      ],
+      "result": "3 days"
+    },
+    {
+      "args": [
+        {
+          "days": 6,
+          "weeks": 1
+        }
+      ],
+      "result": "6 days"
+    },
+    {
+      "args": [
+        {
+          "days": 7,
+          "weeks": 1
+        }
+      ],
+      "result": "1 week"
+    },
+    {
+      "args": [
+        {
+          "days": 10,
+          "weeks": 1
+        }
+      ],
+      "result": "1 week"
+    },
+    {
+      "args": [
+        {
+          "days": 11,
+          "weeks": 2
+        }
+      ],
+      "result": "2 weeks"
+    },
+    {
+      "args": [
+        {
+          "days": 28,
+          "weeks": 4
+        }
+      ],
+      "result": "4 weeks"
+    },
+    {
+      "args": [
+        {
+          "days": 365,
+          "weeks": 52
+        }
+      ],
+      "result": "52 weeks"
+    }
+  ],
+  "cleaningDueSpoken": [
+    {
+      "args": [
+        "Clean filter",
+        {
+          "days": -30,
+          "weeks": 0
+        }
+      ],
+      "result": "Clean filter overdue"
+    },
+    {
+      "args": [
+        "Clean salt cell",
+        {
+          "days": -30,
+          "weeks": 0
+        }
+      ],
+      "result": "Clean salt cell overdue"
+    },
+    {
+      "args": [
+        "Clean filter",
+        {
+          "days": -1,
+          "weeks": 0
+        }
+      ],
+      "result": "Clean filter overdue"
+    },
+    {
+      "args": [
+        "Clean salt cell",
+        {
+          "days": -1,
+          "weeks": 0
+        }
+      ],
+      "result": "Clean salt cell overdue"
+    },
+    {
+      "args": [
+        "Clean filter",
+        {
+          "days": 0,
+          "weeks": 0
+        }
+      ],
+      "result": "Clean filter due today"
+    },
+    {
+      "args": [
+        "Clean salt cell",
+        {
+          "days": 0,
+          "weeks": 0
+        }
+      ],
+      "result": "Clean salt cell due today"
+    },
+    {
+      "args": [
+        "Clean filter",
+        {
+          "days": 1,
+          "weeks": 0
+        }
+      ],
+      "result": "Clean filter due in 1 day"
+    },
+    {
+      "args": [
+        "Clean salt cell",
+        {
+          "days": 1,
+          "weeks": 0
+        }
+      ],
+      "result": "Clean salt cell due in 1 day"
+    },
+    {
+      "args": [
+        "Clean filter",
+        {
+          "days": 3,
+          "weeks": 0
+        }
+      ],
+      "result": "Clean filter due in 3 days"
+    },
+    {
+      "args": [
+        "Clean salt cell",
+        {
+          "days": 3,
+          "weeks": 0
+        }
+      ],
+      "result": "Clean salt cell due in 3 days"
+    },
+    {
+      "args": [
+        "Clean filter",
+        {
+          "days": 6,
+          "weeks": 1
+        }
+      ],
+      "result": "Clean filter due in 6 days"
+    },
+    {
+      "args": [
+        "Clean salt cell",
+        {
+          "days": 6,
+          "weeks": 1
+        }
+      ],
+      "result": "Clean salt cell due in 6 days"
+    },
+    {
+      "args": [
+        "Clean filter",
+        {
+          "days": 7,
+          "weeks": 1
+        }
+      ],
+      "result": "Clean filter due in 1 week"
+    },
+    {
+      "args": [
+        "Clean salt cell",
+        {
+          "days": 7,
+          "weeks": 1
+        }
+      ],
+      "result": "Clean salt cell due in 1 week"
+    },
+    {
+      "args": [
+        "Clean filter",
+        {
+          "days": 10,
+          "weeks": 1
+        }
+      ],
+      "result": "Clean filter due in 1 week"
+    },
+    {
+      "args": [
+        "Clean salt cell",
+        {
+          "days": 10,
+          "weeks": 1
+        }
+      ],
+      "result": "Clean salt cell due in 1 week"
+    },
+    {
+      "args": [
+        "Clean filter",
+        {
+          "days": 11,
+          "weeks": 2
+        }
+      ],
+      "result": "Clean filter due in 2 weeks"
+    },
+    {
+      "args": [
+        "Clean salt cell",
+        {
+          "days": 11,
+          "weeks": 2
+        }
+      ],
+      "result": "Clean salt cell due in 2 weeks"
+    },
+    {
+      "args": [
+        "Clean filter",
+        {
+          "days": 28,
+          "weeks": 4
+        }
+      ],
+      "result": "Clean filter due in 4 weeks"
+    },
+    {
+      "args": [
+        "Clean salt cell",
+        {
+          "days": 28,
+          "weeks": 4
+        }
+      ],
+      "result": "Clean salt cell due in 4 weeks"
+    },
+    {
+      "args": [
+        "Clean filter",
+        {
+          "days": 365,
+          "weeks": 52
+        }
+      ],
+      "result": "Clean filter due in 52 weeks"
+    },
+    {
+      "args": [
+        "Clean salt cell",
+        {
+          "days": 365,
+          "weeks": 52
+        }
+      ],
+      "result": "Clean salt cell due in 52 weeks"
+    }
   ]
 }

@@ -19,13 +19,18 @@
         @State private var changes = 0
         /// Mark Done was stopped by the shop's photo rule: the notice with Take Photo shows.
         @State private var photoNeeded = false
+        /// Opens the checklist in Edit (screenshots).
+        private let checklistEditing: Bool
 
         /// `section` opens a given part (links from Reports and Invoices open Wrap-Up; screenshots);
         /// otherwise the part last shown on this job while the app runs, else Details.
         /// `photoNeeded` opens it as Mark Done leaves it when the shop's photo rule stops it
-        /// (screenshots).
-        init(jobId: String, section: JobPageSection? = nil, photoNeeded: Bool = false) {
+        /// (screenshots). `checklistEditing` opens the checklist in Edit (screenshots).
+        init(
+            jobId: String, section: JobPageSection? = nil, photoNeeded: Bool = false, checklistEditing: Bool = false
+        ) {
             self.jobId = jobId
+            self.checklistEditing = checklistEditing
             _section = State(initialValue: section)
             _photoNeeded = State(initialValue: photoNeeded)
         }
@@ -104,9 +109,11 @@
                     FlowRow(spacing: 12) {
                         ForEach(actions, id: \.self) { to in
                             if to == .inProgress {
-                                Button(jobActionTitle(to)) { changeStatus(to) }.buttonStyle(.primary)
+                                Button(jobActionLabel(from: job.status, to: to)) { changeStatus(to) }.buttonStyle(
+                                    .primary)
                             } else {
-                                Button(jobActionTitle(to)) { changeStatus(to) }.buttonStyle(.secondary)
+                                Button(jobActionLabel(from: job.status, to: to)) { changeStatus(to) }.buttonStyle(
+                                    .secondary)
                             }
                         }
                     }
@@ -135,7 +142,7 @@
         @ViewBuilder private func sectionContent(_ current: JobPageSection, _ job: JobView) -> some View {
             switch current {
             case .details: JobDetailsSection(job: job)
-            case .checklist: ChecklistTab(job: job)
+            case .checklist: ChecklistTab(job: job, editing: checklistEditing)
             case .findings:
                 VStack(alignment: .leading, spacing: 32) {
                     // The pool's drawing first, as on the website (owner, 2026-10-19).

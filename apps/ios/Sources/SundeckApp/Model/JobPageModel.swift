@@ -76,18 +76,6 @@ public func jobCanCancel(_ status: JobStatus, type: JobType) -> Bool {
     userTransitions(from: status, type: type.rawValue).contains(.canceled)
 }
 
-/// A status button's words.
-public func jobActionTitle(_ to: JobStatus) -> String {
-    switch to {
-    case .inProgress: "Start Job"
-    case .scheduled: "Move Back to Scheduled"
-    case .unscheduled: "Reopen Job"
-    case .canceled: "Cancel Job"
-    case .done: "Mark Done"
-    default: to.label
-    }
-}
-
 /// What a status change writes: the status, and the start time the first time it starts.
 public func jobStatusValues(_ to: JobStatus, job: Row, now: Date = Date()) -> Row {
     var values: Row = ["status": .string(to.rawValue)]
@@ -124,6 +112,13 @@ public struct JobDetails: Equatable, Sendable {
     public var with: String?
     /// "$649.00", when the job has a fee.
     public var fee: String?
+    /// "Detection fee" on leak detection, else "Price" (core `jobFeeLabel`).
+    public var feeLabel: String
+    /// Only leak detection marks a leak's location (owner, 2026-10-19: no leak checkbox on
+    /// visits); it's also what makes the price a detection fee.
+    public var marksLeakLocation: Bool
+    /// The On Site footer: "The detection fee is shown on the report." or "Billed on the invoice."
+    public var feeFooter: String
     public var intake: [IntakeAnswer]
     /// "When they called" on a repair, else "When they booked".
     public var intakeTitle: String
@@ -149,6 +144,9 @@ public struct JobDetails: Equatable, Sendable {
         tech = assigned.map { id in team.first { $0.id == id }?.displayName ?? "Teammate" } ?? "Nobody yet"
         with = job.job["second_tech_id"]?.string.map { id in team.first { $0.id == id }?.displayName ?? "Teammate" }
         fee = job.job["fee_cents"]?.number.map { formatCents(Int($0)) }
+        feeLabel = jobFeeLabel(job.type)
+        marksLeakLocation = job.type == .detection
+        feeFooter = marksLeakLocation ? "The detection fee is shown on the report." : "Billed on the invoice."
         intake = intakeAnswers(settings: settings, intake: job.job["intake"])
         // When They Call on a repair (owner, 2026-10-19): what the customer needs, first.
         if let need = job.job["intake"]?[repairItemKey]?.string, !need.isEmpty {

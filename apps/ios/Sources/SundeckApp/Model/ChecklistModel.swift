@@ -38,6 +38,13 @@ public struct ChecklistItemRow: Identifiable, Equatable, Sendable {
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
+    /// Put on this visit by the plan's scheduled cleaning (`job_component.plan_cleaning_id`).
+    public var fromPlan: Bool { component.planCleaningId != nil }
+
+    /// The confirm before Remove (core `removeItemConfirm`): any item can go (owner, 2026-10-19),
+    /// and a scheduled cleaning's says it goes on the next visit.
+    public var removeConfirm: RemoveItemConfirm { removeItemConfirm(component.label, fromPlan: fromPlan) }
+
     /// Why an item was left out ("Covered by deck"), shown under its row.
     public var exclusionText: String? {
         guard result?.status == .excluded, let reason = result?.exclusionReason, !reason.isEmpty else { return nil }
@@ -69,6 +76,12 @@ public struct ChecklistSectionRows: Identifiable, Equatable, Sendable {
     public var summaryTone: ChecklistSummaryTone { header.tone }
     /// Open while it has items to do.
     public var startsOpen: Bool { header.open }
+
+    /// Whether the section shows its items: the person's choice (nil follows `startsOpen`), and
+    /// always while the checklist is in Edit, so each item shows its Remove button.
+    public func isOpen(folded: Bool?, editing: Bool) -> Bool {
+        editing || !(folded ?? !startsOpen)
+    }
 
     /// The action under the items while any are to do (`markRemainingLabel`).
     public var markRemainingTitle: String? {
@@ -135,6 +148,9 @@ public struct ChecklistModel: Equatable, Sendable {
                 && (property.map { componentApplies(t, $0) } ?? true)
         }
     }
+
+    /// Edit sits over the checklist once it has items (owner, 2026-10-19).
+    public var canEdit: Bool { !sections.isEmpty }
 
     /// "Add an item": another of each type on the list that repeats, then the missing types.
     public var addOptions: [ChecklistAddOption] {

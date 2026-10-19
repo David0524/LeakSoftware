@@ -52,9 +52,15 @@ import Testing
         let scheduled = jobHeaderActions(.scheduled, type: .detection)
         #expect(scheduled.contains(.inProgress) && !scheduled.contains(.canceled))
         #expect(jobCanCancel(.scheduled, type: .detection))
-        #expect(scheduled.map(jobActionTitle).contains("Start Job"))
-        #expect(jobActionTitle(.scheduled) == "Move Back to Scheduled")
-        #expect(jobActionTitle(.unscheduled) == "Reopen Job")
+        // Buttons from core's jobActionLabel (owner, 2026-10-19).
+        #expect(scheduled.map { jobActionLabel(from: .scheduled, to: $0) } == ["Unschedule", "Start Job"])
+        #expect(
+            jobHeaderActions(.canceled, type: .detection).map { jobActionLabel(from: .canceled, to: $0) } == [
+                "Reopen Job"
+            ])
+        #expect(
+            jobHeaderActions(.done, type: .maintenance).map { jobActionLabel(from: .done, to: $0) } == ["Reopen Visit"])
+        #expect(jobActionLabel(from: .inProgress, to: .scheduled) == "Move Back to Scheduled")
 
         // Starting writes the start time once.
         let values = jobStatusValues(.inProgress, job: [:])
@@ -90,6 +96,14 @@ import Testing
         #expect(d.needsMapLocation)
         #expect(d.tech == "Tony Tech" && d.with == "Teammate")
         #expect(d.fee == "$649.00")
+        #expect(d.feeLabel == "Detection fee" && d.marksLeakLocation)
+        #expect(d.feeFooter == "The detection fee is shown on the report.")
+        // Off leak detection the fee is a price and there's no leak checkbox (owner, 2026-10-19).
+        for type in ["repair", "maintenance"] {
+            let other = JobDetails(job: view(type: type), team: [], settings: .null)
+            #expect(other.feeLabel == "Price" && !other.marksLeakLocation)
+            #expect(other.feeFooter == "Billed on the invoice.")
+        }
         #expect(
             d.intake == [
                 IntakeAnswer(question: "Why they called", answer: "Pool water level dropping"),
