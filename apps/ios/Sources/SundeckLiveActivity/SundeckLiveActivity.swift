@@ -20,12 +20,12 @@
     struct StopActivityWidget: Widget {
         var body: some WidgetConfiguration {
             ActivityConfiguration(for: StopAttributes.self) { context in
-                LiveStopLockScreen(content: liveStopContent(context.state), logo: LiveStopLogo.image())
+                LiveStopLockScreen(content: liveStopContent(context.state.stop), logo: LiveStopLogo.image())
                     .activityBackgroundTint(LiveStopStyle.background)
                     .activitySystemActionForegroundColor(.white)
-                    .widgetURL(LiveStopLink.job(context.attributes.jobId))
+                    .widgetURL(LiveStopLink.job(context.state.jobId))
             } dynamicIsland: { context in
-                let content = liveStopContent(context.state)
+                let content = liveStopContent(context.state.stop)
                 let logo = LiveStopLogo.image()
                 return DynamicIsland {
                     DynamicIslandExpandedRegion(.leading) { LiveStopIsland.leading(logo: logo) }
@@ -33,8 +33,8 @@
                     DynamicIslandExpandedRegion(.center) { LiveStopIsland.center(content) }
                     DynamicIslandExpandedRegion(.bottom) {
                         LiveStopIsland.bottom(
-                            content, call: LiveStopLink.call(context.attributes.phone),
-                            open: LiveStopLink.job(context.attributes.jobId))
+                            content, call: LiveStopLink.call(context.state.phone),
+                            open: LiveStopLink.job(context.state.jobId))
                     }
                 } compactLeading: {
                     LiveStopIsland.mark(logo: logo)
@@ -43,7 +43,7 @@
                 } minimal: {
                     LiveStopIsland.mark(logo: logo)
                 }
-                .widgetURL(LiveStopLink.job(context.attributes.jobId))
+                .widgetURL(LiveStopLink.job(context.state.jobId))
                 .keylineTint(LiveStopStyle.water)
             }
         }

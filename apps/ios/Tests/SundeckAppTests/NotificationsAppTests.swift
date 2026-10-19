@@ -164,6 +164,15 @@ import Testing
         #expect(done.phase == .done)
         #expect(liveStopContent(done).next == "Next: Riley Rivera at 11:00 AM")
 
+        // Before On My Way (no arrival time): ahead, at its scheduled time.
+        let ahead = try #require(
+            liveStopInput(
+                s.sync.store, kv: s.sync.kv, company: s.company, userId: ScheduleDataTests.me,
+                target: LiveStopTarget(jobId: s.id(1), eta: nil), now: ScheduleDataTests.now))
+        #expect(ahead.phase == .ahead && ahead.scheduled == "11:00 AM" && ahead.eta == nil)
+        #expect(ahead.stop == 2 && ahead.next == nil)
+        #expect(liveStopContent(ahead).headline == "Up next: Riley Rivera")
+
         // A job not on the phone: no activity.
         #expect(
             liveStopInput(
@@ -181,5 +190,37 @@ import Testing
             PullPage(
                 rows: [PulledRow(table: "job", xid: "2", row: row)], done: true, cursor: [:],
                 serverHLC: "1792508400001-0000-server"))
+    }
+
+    /// The workday (owner, 2026-10-19: "Live Activity should begin at the beginning of the
+    /// workday"): it runs from the day's start on a work day while a stop isn't done, on the
+    /// first stop not done, and moves on from a done one.
+    @Test func liveStopBeginsWithTheWorkday() throws {
+        let s = try ScheduleDataTests()
+        let me = ScheduleDataTests.me
+        // 8:00 AM Tuesday in Phoenix, the default day start.
+        let day = liveStopDay(s.sync.store, kv: s.sync.kv, company: s.company, userId: me, now: ScheduleDataTests.now)
+        #expect(day.today == "2026-10-20" && day.runs)
+        #expect(day.stops.map(\.id) == [s.id(2), s.id(1)])
+        #expect(day.open()?.id == s.id(2))
+        #expect(day.open(after: s.id(2))?.id == s.id(1))
+        // After the last stop, one skipped earlier is next.
+        #expect(day.open(after: s.id(1))?.id == s.id(2))
+        // Before the day starts: not yet.
+        let early = liveStopDay(
+            s.sync.store, kv: s.sync.kv, company: s.company, userId: me,
+            now: ScheduleDataTests.now.addingTimeInterval(-60))
+        #expect(!early.runs)
+        // Both stops done: it doesn't run, and there's nothing to move on to.
+        try setStatus(s, s.id(2), "completed")
+        try setStatus(s, s.id(1), "completed")
+        let after = liveStopDay(s.sync.store, kv: s.sync.kv, company: s.company, userId: me, now: ScheduleDataTests.now)
+        #expect(!after.runs && after.open() == nil && after.open(after: s.id(2)) == nil)
+        // Sam has no stops today.
+        #expect(
+            !liveStopDay(
+                s.sync.store, kv: s.sync.kv, company: s.company, userId: ScheduleDataTests.sam,
+                now: ScheduleDataTests.now
+            ).runs)
     }
 }

@@ -31,20 +31,29 @@ public enum LiveStopLink {
     }
 }
 
+/// What the activity shows now: the stop (`LiveStopInput`), and the job it is for, so one
+/// activity can move from stop to stop through the day (Open Job and Call follow it).
+public struct LiveStopState: Codable, Hashable, Sendable {
+    public var stop: LiveStopInput
+    public var jobId: String
+    public var phone: String?
+
+    public init(stop: LiveStopInput, jobId: String, phone: String?) {
+        self.stop = stop
+        self.jobId = jobId
+        self.phone = phone
+    }
+}
+
 #if canImport(ActivityKit)
-    /// What stays the same for the whole stop (the job, the customer, their phone), and the
-    /// content state, `LiveStopInput`, which the app updates.
+    /// One activity a work day (owner, 2026-10-19: "Live Activity should begin at the beginning
+    /// of the workday"): the day stays the same, and the content state moves along its stops.
     public struct StopAttributes: ActivityAttributes {
-        public typealias ContentState = LiveStopInput
+        public typealias ContentState = LiveStopState
 
-        public var jobId: String
-        public var customer: String
-        public var phone: String?
+        /// The shop's local date ("2026-10-20").
+        public var day: String
 
-        public init(jobId: String, customer: String, phone: String?) {
-            self.jobId = jobId
-            self.customer = customer
-            self.phone = phone
-        }
+        public init(day: String) { self.day = day }
     }
 #endif

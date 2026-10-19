@@ -181,7 +181,7 @@
             }
             .onChange(of: sync.revision) {
                 session.reloadCompanies()
-                app.liveStop.refresh()
+                app.liveStop.check()
             }
             .onChange(of: session.user) { app.walkthrough.reload() }
             .task(id: session.user?.id) {
@@ -189,6 +189,15 @@
                 guard let id = session.user?.id else { return }
                 await app.push.registerIfNeeded(api: app.api, userId: id)
                 await NotificationPermission.registerIfAllowed()
+            }
+            .task(id: "\(scenePhase == .active)|\(session.user?.id ?? "")|\(session.company?.id ?? "")") {
+                // The Live Activity begins with the workday by itself: checked on launch, on coming
+                // back to the app, and every minute while it's open (and after each change, above).
+                guard scenePhase == .active, session.user != nil, session.company != nil else { return }
+                while !Task.isCancelled {
+                    app.liveStop.check()
+                    try? await Task.sleep(for: .seconds(60))
+                }
             }
             .onOpenURL { url in
                 if let link = AppLink(url: url) { app.link = link }

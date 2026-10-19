@@ -25,6 +25,12 @@
     private let next = LiveStopNext(customer: "Riley Rivera", time: "11:00 AM")
     private let phases: [(name: String, input: LiveStopInput)] = [
         (
+            "ahead",
+            LiveStopInput(
+                phase: .ahead, customer: "Grace Holloway", address: "2 Palm Ct, Mesa", stop: 3, stops: 7, eta: nil,
+                scheduled: "9:00 AM", checklistDone: 0, checklistTotal: 0, next: next)
+        ),
+        (
             "driving",
             LiveStopInput(
                 phase: .driving, customer: "Grace Holloway", address: "2 Palm Ct, Mesa", stop: 3, stops: 7,
@@ -101,8 +107,8 @@
                     .padding(18)
                     .background(Color.black, in: RoundedRectangle(cornerRadius: 44, style: .continuous))
                 }
-                HStack(spacing: 16) {
-                    ForEach(phases.prefix(3), id: \.name) { phase in
+                LazyVGrid(columns: [GridItem(), GridItem()], spacing: 12) {
+                    ForEach(phases.prefix(4), id: \.name) { phase in
                         HStack(spacing: 40) {
                             LiveStopIsland.mark(logo: logo)
                             LiveStopIsland.compact(liveStopContent(phase.input))
@@ -132,10 +138,10 @@
             BrandFonts.register()
             let logo = liveLogo
             #expect(logo != nil, "brand/logo/png/mark-reverse-512.png not found")
-            try await snapshot("66-live-activity-lock", height: 1200, LockScreenSample(dark: false, logo: logo))
+            try await snapshot("66-live-activity-lock", height: 1500, LockScreenSample(dark: false, logo: logo))
             try await snapshot(
-                "66-live-activity-lock-dark", dark: true, height: 1200, LockScreenSample(dark: true, logo: logo))
-            try await snapshot("66-live-activity-island", height: 1300, IslandSample(logo: logo))
+                "66-live-activity-lock-dark", dark: true, height: 1500, LockScreenSample(dark: true, logo: logo))
+            try await snapshot("66-live-activity-island", height: 1600, IslandSample(logo: logo))
         }
 
         @Test func notificationsSettings() async throws {

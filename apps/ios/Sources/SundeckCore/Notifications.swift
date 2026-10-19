@@ -79,9 +79,11 @@ public func reportNotification(_ customer: String) -> NotificationText {
 
 // MARK: - The Live Activity: the stop a tech is on
 
-/// What the Live Activity shows. No timer or stopwatch (owner, 2026-10-19): on the way, the
-/// arrival time of day; at the pool, the checklist; done, the next stop.
+/// What the Live Activity shows. No timer or stopwatch (owner, 2026-10-19): before leaving, the
+/// stop's scheduled time ("ahead", from the start of the workday); on the way, the arrival time
+/// of day; at the pool, the checklist; done, the next stop.
 public enum LiveStopPhase: String, Codable, CaseIterable, Hashable, Sendable {
+    case ahead
     case driving
     case onSite = "on_site"
     case done
@@ -107,13 +109,15 @@ public struct LiveStopInput: Codable, Hashable, Sendable {
     public var stops: Int
     /// Arrival, as a time of day ("9:42 AM"), when driving.
     public var eta: String?
+    /// The stop's scheduled time of day ("9:00 AM"), shown before On My Way.
+    public var scheduled: String?
     public var checklistDone: Int
     public var checklistTotal: Int
     public var next: LiveStopNext?
 
     public init(
         phase: LiveStopPhase, customer: String, address: String?, stop: Int, stops: Int, eta: String?,
-        checklistDone: Int, checklistTotal: Int, next: LiveStopNext?
+        scheduled: String? = nil, checklistDone: Int, checklistTotal: Int, next: LiveStopNext?
     ) {
         self.phase = phase
         self.customer = customer
@@ -121,6 +125,7 @@ public struct LiveStopInput: Codable, Hashable, Sendable {
         self.stop = stop
         self.stops = stops
         self.eta = eta
+        self.scheduled = scheduled
         self.checklistDone = checklistDone
         self.checklistTotal = checklistTotal
         self.next = next
@@ -156,6 +161,14 @@ public func liveStopContent(_ s: LiveStopInput) -> LiveStopContent {
         s.stops > 0
         ? min(1, max(0, (Double(doneStops) + (s.phase == .onSite ? 0.5 : 0)) / Double(s.stops))) : 0
     switch s.phase {
+    case .ahead:
+        let at = s.scheduled ?? ""
+        let compact = at.replacing(/\s?[AaPp][Mm]$/, with: "")
+        return LiveStopContent(
+            headline: "Up next: \(s.customer)", figure: at.isEmpty ? "Today" : at,
+            figureLabel: at.isEmpty ? "" : "Scheduled", detail: detail, next: next, progress: progress,
+            compact: compact.isEmpty ? "…" : compact,
+            spoken: "Up next: \(s.customer)\(at.isEmpty ? "" : " at \(at)"). \(of).")
     case .driving:
         let eta = s.eta ?? ""
         let compact = eta.replacing(/\s?[AaPp][Mm]$/, with: "")
@@ -178,4 +191,13 @@ public func liveStopContent(_ s: LiveStopInput) -> LiveStopContent {
             detail: of, next: next ?? "That was the last stop today.", progress: progress, compact: "✓",
             spoken: "\(s.customer) done. \(next.map { "\($0)." } ?? "That was the last stop today.")")
     }
+}
+
+/// Whether the Live Activity runs now (owner, 2026-10-19: "Live Activity should begin at the
+/// beginning of the workday"): on one of the shop's work days, from the start of its working
+/// day (Settings › Scheduling), while any of the tech's stops today aren't done.
+public func liveStopRuns(settings: JSONValue?, date: String, nowMin: Int, stopsLeft: Int) -> Bool {
+    let r = routingSettings(settings)
+    guard let day = weekday(date), r.workDays.contains(day) else { return false }
+    return nowMin >= workDay(r).startMin && stopsLeft > 0
 }

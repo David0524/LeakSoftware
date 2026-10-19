@@ -9,7 +9,7 @@ import Testing
     @Test func everyRuleIsChecked() {
         let checked: Set<String> = [
             "NOTIFICATION_KINDS", "SHOP_KINDS", "notificationOn", "textNotification", "jobNotification",
-            "quoteNotification", "paymentNotification", "reportNotification", "liveStopContent",
+            "quoteNotification", "paymentNotification", "reportNotification", "liveStopContent", "liveStopRuns",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -41,5 +41,8 @@ import Testing
 
     @Test func liveStop() {
         checkRule(module, "liveStopContent") { c in liveStopContent(try c.arg(0)) }
+        checkRule(module, "liveStopRuns") { c in
+            liveStopRuns(settings: try c.arg(0), date: try c.arg(1), nowMin: try c.arg(2), stopsLeft: try c.arg(3))
+        }
     }
 }

@@ -103,6 +103,11 @@
             self.alignment = alignment
         }
 
+        /// The ahead phase's symbol: a clock by its scheduled time, a calendar for "Today".
+        var symbol: String? {
+            content.figureLabel == "Scheduled" ? "clock" : content.figure == "Today" ? "calendar" : nil
+        }
+
         public var body: some View {
             VStack(alignment: alignment, spacing: 0) {
                 if content.figure == "✓" {
@@ -118,10 +123,14 @@
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
                 }
-                if !content.figureLabel.isEmpty {
-                    Text(content.figureLabel)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(LiveStopStyle.muted)
+                if !content.figureLabel.isEmpty || symbol != nil {
+                    HStack(spacing: 3) {
+                        // Before On My Way: a clock beside "Scheduled" (a time of day, not a countdown).
+                        if let symbol { Image(systemName: symbol) }
+                        if !content.figureLabel.isEmpty { Text(content.figureLabel) }
+                    }
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(LiveStopStyle.muted)
                 }
             }
         }
