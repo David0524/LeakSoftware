@@ -2,6 +2,7 @@
  * Row shapes for synced tables, as phones store them (server bookkeeping columns removed).
  * Mirrors supabase/migrations; only the tables the apps read so far.
  */
+import type { DiagramShape } from "./inspection";
 import type { JobStatus } from "./job-status";
 
 interface Base {
@@ -30,7 +31,16 @@ export interface CompanySettings {
   services?: Services;
   /** Where On My Way texts go out from (owner, 2026-10-16). Default: Sundeck Pro Messages. */
   on_my_way?: OnMyWayVia;
+  /** A photo is needed before a tech finishes a job (owner setting, 2026-10-19). */
+  require_finish_photo?: boolean;
 }
+
+/** Whether finishing a job needs a pool photo first (default off). */
+export function requiresFinishPhoto(settings: unknown): boolean {
+  return (settings as Partial<CompanySettings> | null)?.require_finish_photo === true;
+}
+
+export const FINISH_PHOTO_MESSAGE = "Take a photo of the pool before finishing this job.";
 
 /**
  * On My Way texts: from the company number into Sundeck Pro's shared Messages (the default), or
@@ -102,6 +112,10 @@ export function canMakeJobs(role: string | null | undefined, settings: unknown):
   if (isManagerRole(role)) return true;
   return (settings as Partial<CompanySettings> | null)?.techs_make_jobs !== false;
 }
+
+/** job.intake's key for the price book item a repair was booked for (When They Call). */
+export const REPAIR_ITEM_KEY = "repair_item";
+export const REPAIR_ITEM_LABEL = "What they need";
 
 export interface IntakeQuestion {
   key: string;
@@ -185,7 +199,10 @@ export interface Property extends Base {
   pool_type?: PoolType | null;
   has_pool: boolean;
   has_spa: boolean;
-  diagram_shape?: "rectangle" | "oval" | "kidney" | "l_shape" | "freeform" | null;
+  diagram_shape?: DiagramShape | null;
+  approx_gallons?: number | null;
+  /** Mirror and spa placement (owner, 2026-10-19); read with parseDiagramLayout. */
+  diagram_layout?: unknown;
   access_notes?: string | null;
   notes?: string | null;
   latitude?: number | null;
@@ -212,6 +229,8 @@ export interface Job extends Base {
   second_tech_id?: string | null;
   intake?: Record<string, string | string[]> | null;
   location_marked?: boolean | null;
+  /** Markup on the job's pool diagram (owner, 2026-10-19); read with parseMarkup. */
+  diagram_markup?: unknown;
   /** Place in the tech's route that day, 1 = first stop (routing). */
   route_order?: number | null;
   /** The customer was told this time: planning never moves it. */

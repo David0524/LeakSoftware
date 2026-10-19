@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import {
+  BOTH_ADDON_CENTS,
   competitorPrices,
   COMPETITORS_CHECKED,
   extraUsers,
@@ -9,6 +10,7 @@ import {
   monthlyPriceCents,
   planTier,
   PLANS,
+  servicesPriceCents,
   type PlanId,
 } from "@leakbook/core";
 import { ButtonLink } from "../ui";
@@ -143,9 +145,15 @@ export function Pricing() {
           Start Free Trial
         </ButtonLink>
       </section>
+      {/* Shops that do both (owner, 2026-10-19). */}
+      <p className="mx-auto mt-6 max-w-xl text-center" data-testid="both-price">
+        <strong>Do pool care and leak detection?</strong> Pick Both when you sign up: Pool
+        Maintenance for your team plus {dollars(BOTH_ADDON_CENTS)} a month for leak detection (
+        {dollars(servicesPriceCents("both", users))} a month for {people(users)}).
+      </p>
       {pkg === "maintenance" ? <Compare users={users} /> : null}
       <p className="mt-6 text-center text-[0.9375rem] text-text-muted">
-        14 days free, then billed monthly; cancel any time. Customer payments go to your own Stripe
+        30 days free, then billed monthly; cancel any time. Customer payments go to your own Stripe
         account at Stripe’s usual fees.
       </p>
     </div>

@@ -4,8 +4,6 @@ import { useActionState, useEffect, useRef, useState, type ReactNode } from "rea
 import {
   BRAND_SWATCHES,
   calculateChemistry,
-  CHLORINE_CHOICES,
-  CHLORINE_PRODUCTS,
   DEPOSIT_CHOICES,
   formatCents,
   LEAK_DEMO_SPOTS,
@@ -14,6 +12,7 @@ import {
   planForServices,
   planTier,
   servicesPriceCents,
+  servicesPriceLines,
   type ChlorineProduct,
   type OnboardingAnswers,
   type OnboardingPackage,
@@ -27,7 +26,7 @@ import { Button, cx } from "./ui";
 // New-shop onboarding (owner, 2026-10-16), planned with the app-onboarding-questionnaire and
 // apple-design skills: a goal, what's in the way, how Sundeck Pro helps, a few choices that set
 // the shop up, a hands-on sample visit (Pool Maintenance) or inspection report (Leak
-// Detection), then the card for the 14-day trial. Questions can be skipped; the purchase
+// Detection), then the card for the 30-day trial. Questions can be skipped; the purchase
 // comes after the demo (HIG Onboarding). Copy: packages/core/src/onboarding.ts.
 
 const STEPS = [
@@ -507,20 +506,8 @@ function SetupChoices({
         </p>
       </section>
 
-      {pkg === "maintenance" ? (
-        <section>
-          <h2 className="mb-1 px-4 text-[0.8125rem] text-text-muted uppercase">
-            Chlorine your techs carry
-          </h2>
-          <ChoiceList
-            label="Chlorine your techs carry"
-            multiple={false}
-            options={CHLORINE_CHOICES.map((c) => ({ id: c, label: CHLORINE_PRODUCTS[c] }))}
-            chosen={[answers.chlorine ?? "liquid12"]}
-            onToggle={(id) => set({ chlorine: id as ChlorineProduct })}
-          />
-        </section>
-      ) : (
+      {/* Pool shops pick their chlorine in the Chemical screen, not here (owner, 2026-10-19). */}
+      {pkg === "maintenance" ? null : (
         <section className="grouped px-4 py-3">
           <Segmented
             label="Deposit on repairs"
@@ -725,25 +712,6 @@ function InspectionDemo({
   );
 }
 
-/** Shares the sample with the phone's share sheet, or copies it. */
-function ShareButton({ title, text }: { title: string; text: string }) {
-  const [copied, setCopied] = useState(false);
-  async function share() {
-    try {
-      if (navigator.share) return await navigator.share({ title, text });
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-    } catch {
-      // Closed the share sheet: nothing to do.
-    }
-  }
-  return (
-    <Button kind="secondary" onClick={share} className="mt-4 w-full">
-      {copied ? "Copied" : "Share This Sample"}
-    </Button>
-  );
-}
-
 function SummaryCard({
   company,
   color,
@@ -783,12 +751,6 @@ function VisitSummary({
       ? `${s.measure ?? s.amount} of ${s.product.charAt(0).toLowerCase()}${s.product.slice(1)}`
       : s.product,
   );
-  const text = [
-    `${company}: pool service at the Rivera pool (sample).`,
-    "Done: skimmed, brushed, baskets emptied, filter checked.",
-    `Readings: chlorine ${fmt("fc", readings.fc)}, pH ${fmt("ph", readings.ph)}, alkalinity ${readings.ta}.`,
-    added.length ? `Added: ${added.join("; ")}.` : "Nothing needed adding.",
-  ].join("\n");
   return (
     <>
       <SummaryCard company={company} color={color} kind="Pool service">
@@ -808,7 +770,6 @@ function VisitSummary({
           <p className="text-text-muted">{added.length ? added.join(", ") : "Nothing needed."}</p>
         </section>
       </SummaryCard>
-      <ShareButton title={`${company} visit summary`} text={text} />
     </>
   );
 }
@@ -831,12 +792,6 @@ function ReportSummary({
   const next = leaks.length
     ? `We’ll send a quote to repair the ${leaks.map(lower).join(" and ")}. You can accept it and pay the deposit online.`
     : "If the pool keeps losing water, we’ll check the plumbing under pressure.";
-  const text = [
-    `${company}: leak inspection, the Rivera pool (sample).`,
-    `We checked ${LEAK_DEMO_SPOTS.length} spots. ${passed} passed.`,
-    found,
-    `Next: ${next}`,
-  ].join("\n");
   return (
     <>
       <SummaryCard company={company} color={color} kind="Leak inspection">
@@ -866,7 +821,6 @@ function ReportSummary({
           <p className="text-text-muted">{next}</p>
         </section>
       </SummaryCard>
-      <ShareButton title={`${company} leak report`} text={text} />
     </>
   );
 }
@@ -905,8 +859,25 @@ function TrialOffer({
           {tier.name}, for {people === 1 ? "1 person" : `${people} people`}. The price follows the
           people on your team.
         </p>
+        {/* Both: Pool Maintenance plus the leak detection add-on, spelled out (owner,
+            2026-10-19). */}
+        {services === "both" ? (
+          <ul className="mt-3 space-y-1 text-[0.9375rem]" data-testid="onboarding-price-lines">
+            {servicesPriceLines(services, people).map((l) => (
+              <li key={l.label} className="flex justify-between gap-3">
+                <span>{l.label}</span>
+                <span className="tabular-nums">{dollars(l.cents)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         <ul className="mt-4 space-y-2">
-          {content.included.map((f) => (
+          {[
+            ...content.included,
+            ...(services === "both"
+              ? ["Leak detection: inspections, tests, reports, and repair quotes"]
+              : []),
+          ].map((f) => (
             <li key={f} className="flex gap-3">
               <span aria-hidden="true" className="text-status-pass">
                 ✓
@@ -927,11 +898,11 @@ function TrialOffer({
         className="sticky bottom-0 -mx-4 mt-6 bg-bg/90 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:static sm:mx-0 sm:mt-8 sm:bg-transparent sm:p-0 sm:backdrop-blur-none"
       >
         <Button type="submit" disabled={pending || !billing} className="w-full">
-          Start 14-Day Free Trial
+          Start 30-Day Free Trial
         </Button>
         <p className="mt-3 text-center text-[0.9375rem] text-text-muted">
           {billing
-            ? `Add a card on Stripe’s secure page. You won’t be charged until ${trialEnds ? longDate(trialEnds) : "14 days from today"}; cancel before then in Settings › Sundeck Pro Billing and you never will be.`
+            ? `Add a card on Stripe’s secure page. You won’t be charged until ${trialEnds ? longDate(trialEnds) : "30 days from today"}; cancel before then in Settings › Sundeck Pro Billing and you never will be.`
             : "Card payments aren’t connected yet. Use a demo code above to continue."}
         </p>
         {billing && !showCode ? (

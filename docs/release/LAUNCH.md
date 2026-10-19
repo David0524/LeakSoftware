@@ -7,7 +7,7 @@ and can't be done from here.
 
 | Step | Notes |
 |---|---|
-| Apple Developer Program, company account | Needs a D-U-N-S number (takes days). $99/year. |
+| Apple Developer Program | **Approved 2026-10-19, as an individual (owner's name).** Before the public release, decide whether to convert it to the company (Apple Developer Support, with the company's D-U-N-S number); otherwise the store shows the owner's name as the seller. Next: register `com.sundeckpro.app`, create the App Store Connect app record, and an App Store Connect API key (App Manager) for TestFlight uploads; keep the key in GitHub and EAS secrets, never in the repo. |
 | Google Play Console | One-time $25. |
 | Bundle ID / package name | `com.sundeckpro.app` on iOS and Android (owner, 2026-10-18; link scheme `sundeckpro`). It can't change after the first upload. |
 | Domain, support mailbox | `sundeckpro.com` (bought 2026-10-18, Google Workspace for mail). Support is `support@sundeckpro.com` (`SUPPORT_EMAIL`); app email sends from `send.sundeckpro.com` (`EMAIL_FROM_DOMAIN`, Resend). |
@@ -68,7 +68,7 @@ The listing leads with what both share and names each package; each shop sees on
   > • One company number for texts and calls, with a shared inbox the whole team sees
   > • Quotes customers accept and pay online, by card or bank
   >
-  > Requires a Sundeck Pro shop account. Owners start a free 14-day trial at sundeckpro.com and invite
+  > Requires a Sundeck Pro shop account. Owners start a free 30-day trial at sundeckpro.com and invite
   > their techs.
 - **What's New (first release):** First release.
 - **Support URL:** `https://<site>/status` · **Privacy URL:** `https://<site>/privacy` ·

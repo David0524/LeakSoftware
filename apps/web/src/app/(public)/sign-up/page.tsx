@@ -10,7 +10,7 @@ export default function SignUpPage({ searchParams }: PageProps<"/sign-up">) {
   return (
     <AuthCard
       title="Start Your Free Trial"
-      intro="14 days free. You’ll set up your shop next, then invite your techs."
+      intro="30 days free. You’ll set up your shop next, then invite your techs."
     >
       <Suspense fallback={<TrialForm />}>
         <TrialBody searchParams={searchParams} />

@@ -20,10 +20,16 @@ export function PayForm({
   action: pay,
   demo = false,
   print = false,
+  cardFee = null,
 }: {
   token: string;
   label: string;
   action: (state: PayState, form: FormData) => Promise<PayState>;
+  /**
+   * The shop passes the card fee on (owner, 2026-10-19): two buttons, bank (no fee) and card
+   * (with the fee), and the fee spelled out before paying.
+   */
+  cardFee?: { bankLabel: string; cardLabel: string; note: string } | null;
   /** No Stripe keys on this server: show the button and a preview of the form, charge nothing. */
   demo?: boolean;
   /** The page is being printed (?print=1): keep the look the PDF has always had. */
@@ -83,6 +89,32 @@ export function PayForm({
       </div>
     );
   }
+
+  if (cardFee)
+    return (
+      <form action={action} className="space-y-3">
+        <input type="hidden" name="token" value={token} />
+        {state.error ? (
+          <Banner tone="error" print={print}>
+            {state.error}
+          </Banner>
+        ) : null}
+        <Button type="submit" name="method" value="bank" disabled={pending} className={button}>
+          {pending ? "Opening secure payment…" : cardFee.bankLabel}
+        </Button>
+        <Button
+          type="submit"
+          name="method"
+          value="card"
+          kind="secondary"
+          disabled={pending}
+          className={button}
+        >
+          {cardFee.cardLabel}
+        </Button>
+        <p className={note}>{cardFee.note}</p>
+      </form>
+    );
 
   return (
     <form action={action} className="space-y-3">

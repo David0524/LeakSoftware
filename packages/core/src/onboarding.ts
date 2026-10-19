@@ -3,7 +3,7 @@ import type { Services } from "./models";
 
 // New-shop onboarding (owner, 2026-10-16), designed with the app-onboarding-questionnaire
 // skill: a goal, what gets in the way, how Sundeck Pro answers each, a few choices that set the
-// shop up, a hands-on demo, then the card for the 14-day trial. Pool Maintenance and Leak
+// shop up, a hands-on demo, then the card for the 30-day trial. Pool Maintenance and Leak
 // Detection each get their own questions and demo; Both follows Pool Maintenance. No
 // testimonials or invented statistics: Sundeck Pro has none yet (docs/DECISIONS.md).
 

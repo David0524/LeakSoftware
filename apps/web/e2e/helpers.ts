@@ -15,7 +15,10 @@ export async function signIn(page: Page, who: { email: string; password: string 
 }
 
 export async function signOut(page: Page) {
-  await page.getByRole("button", { name: "Sign Out" }).click();
+  // On a computer, Sign Out is in the account menu at the end of the header.
+  const out = page.getByRole("button", { name: "Sign Out" });
+  if (!(await out.isVisible())) await page.getByRole("button", { name: /: account$/ }).click();
+  await out.click();
   await page.waitForURL((url) => url.pathname === "/");
   await expect(page.getByRole("banner").getByRole("link", { name: "Sign In" })).toBeVisible();
 }

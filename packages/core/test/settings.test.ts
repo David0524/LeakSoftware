@@ -81,3 +81,36 @@ describe("custom test fields", () => {
     expect(parseFieldLines("Pick: One /").errors[0]).toMatch(/two choices/);
   });
 });
+
+describe("requiresFinishPhoto (owner, 2026-10-19)", () => {
+  it("is off unless the shop turns it on", async () => {
+    const { requiresFinishPhoto } = await import("../src/models");
+    expect(requiresFinishPhoto({})).toBe(false);
+    expect(requiresFinishPhoto(null)).toBe(false);
+    expect(requiresFinishPhoto({ require_finish_photo: true })).toBe(true);
+  });
+});
+
+describe("card fee (owner, 2026-10-19)", () => {
+  it("is off by default, capped at 3%, and rounds to the cent", async () => {
+    const { cardFeeBps, cardFeeCents } = await import("../src/settings");
+    expect(cardFeeBps({})).toBe(0);
+    expect(cardFeeBps({ card_fee_bps: 290 })).toBe(290);
+    expect(cardFeeBps({ card_fee_bps: 500 })).toBe(300);
+    expect(cardFeeBps({ card_fee_bps: -1 })).toBe(0);
+    expect(cardFeeCents(18_500, 300)).toBe(555);
+    expect(cardFeeCents(10_001, 290)).toBe(290);
+    expect(cardFeeCents(18_500, 0)).toBe(0);
+  });
+});
+
+describe("cardFeeChoice", () => {
+  it("labels bank without the fee and card with it", async () => {
+    const { cardFeeChoice } = await import("../src/settings");
+    const c = cardFeeChoice(65_730, 300, " Deposit");
+    expect(c.feeCents).toBe(1_972);
+    expect(c.bankLabel).toBe("Pay $657.30 Deposit by Bank");
+    expect(c.cardLabel).toBe("Pay $677.02 Deposit by Card");
+    expect(c.note).toContain("3% card fee ($19.72)");
+  });
+});

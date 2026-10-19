@@ -187,8 +187,8 @@ select is((select enabled from report_template where company_id = (select id fro
   false, 'signup: insurance template exists but is disabled');
 select is((select status from subscription where company_id = (select id from signup)), 'trialing',
   'signup: trial starts');
-select ok((select trial_ends_at between now() + interval '13 days 23 hours' and now() + interval '14 days 1 hour'
-            from subscription where company_id = (select id from signup)), 'signup: the trial is 14 days');
+select ok((select trial_ends_at between now() + interval '29 days 23 hours' and now() + interval '30 days 1 hour'
+            from subscription where company_id = (select id from signup)), 'signup: the trial is 30 days');
 select is((select onboarded_at from subscription where company_id = (select id from signup)), null,
   'signup: a new shop has onboarding to do');
 select throws_ok('select create_company(''X'', ''Not/AZone'')', '22023', null,

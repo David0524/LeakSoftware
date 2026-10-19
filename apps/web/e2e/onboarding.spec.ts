@@ -2,8 +2,8 @@ import { expect, test } from "@playwright/test";
 import { adminClient } from "./backend";
 import { RUN } from "./helpers";
 
-// New-shop onboarding for Pool Maintenance (owner, 2026-10-16): its own questions, the
-// chlorine the techs carry, and a sample visit whose What to Add follows the readings. The
+// New-shop onboarding for Pool Maintenance (owner, 2026-10-16): its own questions and
+// a sample visit whose What to Add follows the readings. The
 // leak detection flow runs in new-shop.spec.ts. Phones: an iPhone-sized window.
 
 test.use({ viewport: { width: 390, height: 844 } });
@@ -29,16 +29,16 @@ test("a new pool company sets up its shop and tries a visit", async ({ page }) =
   // The questions can be skipped; the usual three answers show.
   await page.getByRole("button", { name: "Skip" }).click();
   await expect(page.getByRole("heading", { name: /^Set up Blue Lagoon Pools/ })).toBeVisible();
-  await page.getByRole("radio", { name: "Cal-hypo 65%" }).click();
   await page.getByRole("button", { name: "Save and Continue" }).click();
 
   await expect(page.getByRole("heading", { name: "Try a visit" })).toBeVisible();
   const steps = page.getByTestId("demo-steps");
-  await expect(steps).toContainText("Cal-hypo 65%");
+  // No chlorine question anymore (owner, 2026-10-19): the sample doses liquid chlorine.
+  await expect(steps).toContainText("Liquid chlorine 12.5%");
   // Raise the chlorine to the target: chlorine drops off the list.
   for (let i = 0; i < 6; i++)
     await page.getByRole("button", { name: "Raise Free chlorine" }).click();
-  await expect(steps).not.toContainText("Cal-hypo");
+  await expect(steps).not.toContainText("Liquid chlorine");
   await page.getByRole("button", { name: "Finish Visit" }).click();
   await expect(page.getByTestId("onboarding-sample")).toContainText("Pool service");
   await page.getByRole("button", { name: "Keep Going" }).click();
@@ -46,7 +46,7 @@ test("a new pool company sets up its shop and tries a visit", async ({ page }) =
   await expect(page.getByText("Unlimited pools", { exact: false })).toBeVisible();
   // The payment page (owner, 2026-10-16). CI has no Stripe keys, so cards can't be taken and
   // the demo code is the way in; a wrong code is refused.
-  await expect(page.getByRole("button", { name: "Start 14-Day Free Trial" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Start 30-Day Free Trial" })).toBeDisabled();
   await page.getByLabel("Demo code").fill("VIP25");
   await page.getByRole("button", { name: "Apply" }).click();
   await expect(page.getByText("That code isn’t valid.")).toBeVisible();

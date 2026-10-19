@@ -175,3 +175,69 @@ export async function endPlan(_: FormState, form: FormData): Promise<FormState> 
   refresh(customer);
   return { message: "Plan ended." };
 }
+
+/**
+ * Settings › Scheduling › Regular cleanings (owner, 2026-10-19: "a place where we can set how
+ * frequently we will do filter/salt cell cleanings"): the usual frequency of each cleaning,
+ * which new plans start with. With "Also change existing plans", every plan's cleaning of that
+ * kind changes too; each keeps its next due date and repeats at the new frequency after it.
+ */
+export async function saveCleaningDefaults(_: FormState, form: FormData): Promise<FormState> {
+  const office = await requireManager();
+  const keys = [...new Set(form.getAll("cleaning_key").map(String))];
+  const months: Record<string, number> = {};
+  for (const key of keys) {
+    if (!/^[a-z0-9_]{1,60}$/.test(key)) return { error: "Refresh the page and try again." };
+    const m = Number(text(form, `months_${key}`));
+    if (!(CLEANING_MONTHS as readonly number[]).includes(m))
+      return { fields: { [`months_${key}`]: "Pick how often." } };
+    months[key] = m;
+  }
+  const db = await createClient();
+  const company = office.company.id;
+  const { data } = await db.from("company").select("settings").eq("id", company).single();
+  const settings = (data?.settings ?? {}) as Record<string, unknown>;
+  const maintenance = (settings.maintenance ?? {}) as Record<string, unknown>;
+  const { error } = await db
+    .from("company")
+    .update({
+      settings: {
+        ...settings,
+        maintenance: {
+          ...maintenance,
+          cleaning_months: {
+            ...((maintenance.cleaning_months ?? {}) as Record<string, unknown>),
+            ...months,
+          },
+        },
+      },
+    })
+    .eq("id", company);
+  if (error) return { error: error.message };
+  if (form.get("apply_existing") === "on") {
+    const { data: types, error: typeError } = await db
+      .from("component_type")
+      .select("id, key")
+      .eq("company_id", company)
+      .in("key", keys)
+      .is("deleted_at", null);
+    if (typeError) return { error: typeError.message };
+    for (const t of types ?? []) {
+      const { error: planError } = await db
+        .from("plan_cleaning")
+        .update({ every_months: months[t.key as string] })
+        .eq("company_id", company)
+        .eq("component_type_id", t.id)
+        .is("deleted_at", null);
+      if (planError) return { error: planError.message };
+    }
+    revalidatePath("/customers", "layout");
+  }
+  revalidatePath("/settings/scheduling");
+  return {
+    message:
+      form.get("apply_existing") === "on"
+        ? "Saved, and every plan changed."
+        : "Saved for new plans.",
+  };
+}

@@ -44,7 +44,16 @@ export async function payDeposit(_: PayState, form: FormData): Promise<PayState>
   const token = text(form, "token");
   let start: CheckoutStart;
   try {
-    start = await depositCheckout(token, await siteOrigin());
+    // With the shop's card fee on, the customer chose card or bank (owner, 2026-10-19).
+    const method = text(form, "method");
+    start = await depositCheckout(
+      token,
+      await siteOrigin(),
+      undefined,
+      undefined,
+      undefined,
+      method === "card" || method === "bank" ? method : null,
+    );
   } catch (e) {
     if (e instanceof CheckoutRefused || e instanceof PaymentsNotConfigured)
       return { error: e.message };

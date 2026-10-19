@@ -1,6 +1,7 @@
 // Company settings helpers: colors, rates, and config keys (no I/O).
 
 import type { TestField } from "./inspection";
+import { formatCents } from "./money";
 
 // ---------------------------------------------------------------------------
 // Colors (WCAG 2 contrast)
@@ -43,6 +44,42 @@ export function percentToBps(input: string): number | null {
 
 export function bpsToPercent(bps: number): string {
   return (bps / 100).toFixed(2).replace(/\.?0+$/, "");
+}
+
+// ---------------------------------------------------------------------------
+// Card fee (owner, 2026-10-19: "Pass on credit card fee to customer setting")
+// ---------------------------------------------------------------------------
+
+/** Card surcharges are capped at 3% in the US (card network rules). */
+export const CARD_FEE_MAX_BPS = 300;
+
+/** The shop's card fee in basis points: 0 when off; settings.card_fee_bps, at most 3%. */
+export function cardFeeBps(settings: unknown): number {
+  const v = Number((settings as { card_fee_bps?: unknown } | null)?.card_fee_bps);
+  return Number.isInteger(v) && v > 0 ? Math.min(v, CARD_FEE_MAX_BPS) : 0;
+}
+
+/** The fee on an amount paid by card, rounded to the cent. */
+export function cardFeeCents(amountCents: number, bps: number): number {
+  return bps > 0 ? Math.round((amountCents * bps) / 10_000) : 0;
+}
+
+/**
+ * The two pay buttons when the shop passes on the card fee, and the line under them:
+ * "Pay $657.30 by Bank" / "Pay $677.02 by Card". `what` follows the amount (" Deposit").
+ */
+export function cardFeeChoice(
+  amountCents: number,
+  bps: number,
+  what = "",
+): { feeCents: number; bankLabel: string; cardLabel: string; note: string } {
+  const feeCents = cardFeeCents(amountCents, bps);
+  return {
+    feeCents,
+    bankLabel: `Pay ${formatCents(amountCents)}${what} by Bank`,
+    cardLabel: `Pay ${formatCents(amountCents + feeCents)}${what} by Card`,
+    note: `Paying by card adds a ${bpsToPercent(bps)}% card fee (${formatCents(feeCents)}). Bank account payments have no fee and take a few business days to clear. Payments are handled by Stripe.`,
+  };
 }
 
 // ---------------------------------------------------------------------------

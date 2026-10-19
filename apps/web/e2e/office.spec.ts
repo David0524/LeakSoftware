@@ -246,9 +246,10 @@ test("the site starts light; the sun/moon button switches it and remembers", asy
   await expect(html).toHaveAttribute("data-theme", "dark");
   await expect(page.getByRole("img", { name: "Sundeck Pro" }).first()).toBeVisible();
 
-  // The office header has the button too.
+  // The office has the button too, in the account menu.
   await signIn(page, OWNER);
   await expect(html).toHaveAttribute("data-theme", "dark");
+  await page.getByRole("button", { name: /: account$/ }).click();
   await page.getByRole("button", { name: "Light mode" }).click();
   await expect(html).toHaveAttribute("data-theme", "light");
   await signOut(page);
@@ -541,6 +542,8 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   await expect(tech.getByText("Photo added.")).toBeVisible();
   await tech.getByRole("button", { name: /^Mark Up: Photo/ }).click();
   const editor = tech.getByRole("dialog", { name: "Mark Up" });
+  // Pen is the first tool (owner, 2026-10-19); a tap places a circle.
+  await editor.getByRole("radio", { name: "Circle" }).click();
   await editor.getByTestId("markup-canvas").click({ position: { x: 120, y: 80 } });
   await editor.getByRole("button", { name: "Save" }).click();
   await expect(tech.getByRole("button", { name: /^Edit Markup: Photo/ })).toBeVisible();

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { buttonClass } from "@/components/ui";
-import { SUPPORT_EMAIL } from "@/lib/site";
+import { CONTACT_EMAIL } from "@/lib/site";
 
 export default function PublicLayout({ children }: LayoutProps<"/">) {
   return (
@@ -49,7 +49,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
             { href: "/terms", label: "Terms" },
             { href: "/security", label: "Security" },
             { href: "/status", label: "Status" },
-            { href: `mailto:${SUPPORT_EMAIL}`, label: "Support" },
+            { href: `mailto:${CONTACT_EMAIL}`, label: `Contact Us: ${CONTACT_EMAIL}` },
           ].map((l) => (
             <a key={l.href} href={l.href} className="min-h-11 content-center px-3 text-link">
               {l.label}

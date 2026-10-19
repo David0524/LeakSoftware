@@ -16,6 +16,7 @@ import {
   calculate,
   currentVerdict,
   normalizeTestData,
+  parseDiagramLayout,
   poolDiagram,
   userTransitions,
   verdictOptions,
@@ -47,7 +48,7 @@ import {
   setPoolSpa,
   setVerdict,
 } from "@/app/actions/inspection";
-import { PoolDiagram } from "./pool-diagram";
+import { DiagramShapes } from "./pool-diagram";
 import { Segmented } from "./segmented";
 import { ShapePicker } from "./shape-picker";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
@@ -1049,6 +1050,8 @@ export interface FindingRow {
 interface Diagram {
   shape: DiagramShape | null;
   hasSpa: boolean;
+  /** property.diagram_layout: mirror and the spa's place (owner, 2026-10-19). */
+  layout?: unknown;
   /** The pool, so its shape can be changed here. */
   propertyId?: string;
 }
@@ -1080,25 +1083,8 @@ export function FindingsEditor({
       {findings.length === 0 ? (
         <p className="text-text-muted">No findings recorded.</p>
       ) : (
-        <div className="grid items-start gap-5 lg:grid-cols-2">
-          {diagram ? (
-            <PoolDiagram
-              shape={diagram.shape}
-              hasSpa={diagram.hasSpa}
-              title={`Pool diagram with ${findings.length} finding pins`}
-              className="w-full rounded-xl bg-surface"
-              pins={findings
-                .map((f, i) => ({ f, n: i + 1 }))
-                .filter(({ f }) => f.pinX != null && f.pinY != null)
-                .map(({ f, n }) => ({
-                  id: f.id,
-                  x: f.pinX!,
-                  y: f.pinY!,
-                  color: sev.get(f.severity)?.color ?? "currentColor",
-                  label: String(n),
-                }))}
-            />
-          ) : null}
+        // The diagram with its pins is the Pool Diagram section above (owner, 2026-10-19).
+        <div className="max-w-2xl">
           <ol className="grouped" aria-label="Findings">
             {findings.map((f, i) => (
               <SwipeRow
@@ -1328,7 +1314,7 @@ function PinPicker({
   color: string | undefined;
   onChange: (pin: { x: number; y: number } | null) => void;
 }) {
-  const d = poolDiagram(diagram.shape, diagram.hasSpa);
+  const d = poolDiagram(diagram.shape, diagram.hasSpa, parseDiagramLayout(diagram.layout));
   const round = (n: number) => Math.round(Math.min(1, Math.max(0, n)) * 10_000) / 10_000;
   return (
     <div className="space-y-2">
@@ -1369,16 +1355,7 @@ function PinPicker({
           onChange({ x: round(at.x + delta[0]), y: round(at.y + delta[1]) });
         }}
       >
-        <path d={d.pool} className="fill-diagram-water stroke-water" strokeWidth={2} />
-        {d.spa ? (
-          <circle
-            cx={d.spa.cx}
-            cy={d.spa.cy}
-            r={d.spa.r}
-            className="fill-diagram-water stroke-water"
-            strokeWidth={2}
-          />
-        ) : null}
+        <DiagramShapes d={d} />
         {pin ? (
           <g>
             <circle cx={pin.x * d.width} cy={pin.y * d.height} r={7.5} className="fill-surface" />

@@ -14,7 +14,7 @@ normally keeps it in memory): read it before changing the flow. Code:
   signs in, and selling in an iOS app would need in-app purchase.
 - **Permissions:** camera, microphone, location are phone-only and already asked in context,
   so there is no permission priming.
-- **Paywall:** Stripe Checkout for a card-first 14-day trial, priced by package and people.
+- **Paywall:** Stripe Checkout for a card-first 30-day trial, priced by package and people.
 
 ## Transformation
 - **Pool Maintenance.** Before: the route lives in group texts, customers say a pool was
@@ -36,7 +36,7 @@ normally keeps it in memory): read it before changing the flow. Code:
 | 6 | Setting up | saves the answers; only as long as the save takes (min 0.9 s) | same |
 | 7 | Demo | sample visit: change 3 readings, What to Add updates | sample inspection: mark 4 spots |
 | 8 | Result + Share | the visit summary in their color | the homeowner report in their color |
-| 9 | Trial | price for their team, what's included, Start 14-Day Free Trial (Stripe) | same |
+| 9 | Trial | price for their team, what's included, Start 30-Day Free Trial (Stripe) | same |
 | — | Done | next steps: invite techs, add customers, customer payments | invite techs, customer payments, first job |
 
 Skipped from the skill on purpose: social proof (no real testimonials yet; never invent them),

@@ -24,6 +24,8 @@ NAVY = "#12263A"
 WATER = "#1F6FAE"
 SAFETY = "#EE6A1F"
 WHITE = "#FFFFFF"
+# brand/tokens.json color.role.dark.link: the water blue that reads on dark backgrounds.
+WATER_ON_DARK = "#6AAEE6"
 BLACK = "#000000"
 
 # Geometry, in mark units, fitted to the approved concept (wave RMS error ~0.2 unit).
@@ -285,6 +287,16 @@ def square_icon(size, bg, pin_fill, dot_fill, mark_height_ratio, small=False, li
     return svg(size, size, group, bg=bg)
 
 
+def tab_icon(size, mark_height_ratio):
+    """Transparent square icon for browser tabs, following the browser's light or dark mode."""
+    icon = square_icon(size, None, WATER, None, mark_height_ratio, small=True)
+    style = (
+        f"<style>path{{fill:{WATER}}}"
+        f"@media (prefers-color-scheme: dark){{path{{fill:{WATER_ON_DARK}}}}}</style>"
+    )
+    return icon.replace("</title>", "</title>" + style, 1)
+
+
 def wordmark_paths(text_parts, cap_height):
     """Outline text with the brand font. text_parts: [(text, fill)]. Returns (svg, width)."""
     font = TTFont(FONT)
@@ -346,10 +358,10 @@ def main():
         ),
         # Android 13+ themed (monochrome) icon: one color, dot and lines cut out, transparent.
         "sundeck-adaptive-monochrome.svg": square_icon(1024, None, WHITE, None, 0.46),
-        # Favicon: larger mark, small-size cut (thicker, wider-spaced lines, bigger dot).
-        "sundeck-favicon.svg": square_icon(
-            64, NAVY, WHITE, SAFETY, 0.84, small=True, line_fill=WATER
-        ),
+        # Favicon: the mark alone on a transparent tab (owner, 2026-10-18), large, with the
+        # small-size cut (thicker, wider-spaced lines, bigger dot). Water blue, lighter when
+        # the browser is dark so it stays visible on a dark tab bar.
+        "sundeck-favicon.svg": tab_icon(64, 0.96),
     }
     for name, content in files.items():
         (OUT / name).write_text(content)

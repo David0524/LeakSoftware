@@ -8,6 +8,13 @@ import {
   POOL_TYPE_LABELS,
   SIGNATURE_PURPOSE_LABELS,
   checklistTally,
+  REPAIR_ITEM_KEY,
+  REPAIR_ITEM_LABEL,
+  cleaningCadence,
+  cleaningCountdown,
+  cleaningKind,
+  formatDay,
+  localDate,
   enabledSignaturePurposes,
   componentApplies,
   formatCents,
@@ -25,9 +32,10 @@ import {
   dateFormat,
 } from "@leakbook/core";
 import { CustomerLinks } from "@/components/customer-links";
+import { DiagramPanel } from "@/components/diagram-work";
 import { GalleryImage } from "@/components/gallery-image";
 import { Thread } from "@/components/inbox";
-import { MailIcon, MessageIcon, PhoneIcon } from "@/components/icons";
+import { CleaningIcon, MailIcon, MessageIcon, PhoneIcon } from "@/components/icons";
 import { JobSections } from "@/components/job-sections";
 import { MediaActions, MediaCapture, SignatureForm } from "@/components/media-work";
 import {
@@ -57,6 +65,7 @@ import {
   getInvoices,
   getJob,
   getPaymentAccount,
+  getPlanCleanings,
   getQuotes,
   getReports,
   getSignatures,
@@ -104,9 +113,11 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   const questions = (company.settings as Partial<CompanySettings>).intake_questions ?? [];
   // With a company number, texts go out from it (Messages), not this device.
   const texting = line?.status === "active";
-  const answers = questions
-    .map((q) => ({ q, a: job.intake?.[q.key] }))
-    .filter(({ a }) => (Array.isArray(a) ? a.length > 0 : !!a));
+  const answers = [
+    // When They Call on a repair (owner, 2026-10-19): what the customer needs.
+    { q: { key: REPAIR_ITEM_KEY, label: REPAIR_ITEM_LABEL }, a: job.intake?.[REPAIR_ITEM_KEY] },
+    ...questions.map((q) => ({ q, a: job.intake?.[q.key] })),
+  ].filter(({ a }) => (Array.isArray(a) ? a.length > 0 : !!a));
 
   return (
     <>
@@ -197,6 +208,9 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                               ? POOL_TYPE_LABELS[job.property.pool_type]
                               : null,
                             job.property.has_spa ? "Pool and spa" : "Pool",
+                            job.property.approx_gallons
+                              ? `${job.property.approx_gallons.toLocaleString("en-US")} gallons`
+                              : null,
                           ]
                             .filter(Boolean)
                             .join(" · ")}
@@ -235,7 +249,9 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                     </Grouped>
 
                     {answers.length ? (
-                      <Grouped title="When they booked">
+                      <Grouped
+                        title={job.type === "repair" ? "When they called" : "When they booked"}
+                      >
                         {answers.map(({ q, a }) => (
                           <Row key={q.key}>
                             <span className="min-w-0 flex-1">
@@ -302,6 +318,21 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
             badge: tally.pending,
             content: (
               <section aria-labelledby="checklist">
+                {/* Chemical first, at the top of the checklist (owner, 2026-10-19). */}
+                {job.type === "maintenance" ? (
+                  <ButtonLink
+                    href={chemicalsHref(job.property, job.id)}
+                    kind="secondary"
+                    className="mb-4"
+                  >
+                    Chemical
+                  </ButtonLink>
+                ) : null}
+                {job.type === "maintenance" && job.service_plan_id ? (
+                  <Suspense fallback={null}>
+                    <Cleanings detail={detail} tz={tz} />
+                  </Suspense>
+                ) : null}
                 <h2 id="checklist" className="font-display text-2xl font-bold">
                   Checklist
                 </h2>
@@ -329,11 +360,6 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                 ) : (
                   <SetUpChecklist jobId={job.id} />
                 )}
-                {job.type === "maintenance" ? (
-                  <ButtonLink href={chemicalsHref(job.property)} kind="secondary" className="mt-4">
-                    Chemical Calculator
-                  </ButtonLink>
-                ) : null}
               </section>
             ),
           },
@@ -346,6 +372,14 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                   label: "Findings",
                   content: (
                     <>
+                      {job.property ? (
+                        <section className="mb-8" aria-labelledby="pool-diagram">
+                          <h2 id="pool-diagram" className="mb-3 font-display text-2xl font-bold">
+                            Pool Diagram
+                          </h2>
+                          <Diagram detail={detail} />
+                        </section>
+                      ) : null}
                       <section aria-labelledby="tests">
                         <h2 id="tests" className="mb-3 font-display text-2xl font-bold">
                           Tests
@@ -515,10 +549,72 @@ function Findings({ detail }: { detail: JobDetail }) {
           ? {
               shape: property.diagram_shape ?? null,
               hasSpa: property.has_spa,
+              layout: property.diagram_layout,
               propertyId: property.id,
             }
           : null
       }
+    />
+  );
+}
+
+/**
+ * The plan's filter and salt cell cleanings (owner, 2026-10-19): how long until each is due
+ * from this visit, called out from a week before, with whether it's on this visit's list.
+ */
+async function Cleanings({ detail, tz }: { detail: JobDetail; tz: string }) {
+  const office = await getOffice();
+  const cleanings = await getPlanCleanings(office, [detail.job.service_plan_id!]).catch(() => []);
+  if (cleanings.length === 0) return null;
+  const visitDay = detail.job.plan_date ?? localDate(new Date(), tz);
+  const onVisit = new Set(detail.components.map((c) => c.plan_cleaning_id).filter(Boolean));
+  return (
+    <Grouped title="Regular cleanings" className="mb-6 max-w-2xl">
+      {cleanings.map((c) => {
+        const due = cleaningCountdown(c.next_due, visitDay);
+        return (
+          <Row
+            key={c.id}
+            icon={<CleaningIcon kind={cleaningKind(c.type ?? {})} />}
+            label={c.type?.name ?? "Cleaning"}
+            detail={
+              onVisit.has(c.id)
+                ? "On this visit’s checklist"
+                : `${cleaningCadence(c.every_months)} · next ${formatDay(c.next_due)}`
+            }
+            value={
+              <span className={due.soon ? "font-semibold text-status-warning" : undefined}>
+                {onVisit.has(c.id) ? "Today" : due.label}
+              </span>
+            }
+          />
+        );
+      })}
+    </Grouped>
+  );
+}
+
+/** The pool's drawing with the findings' pins and the job's markup (owner, 2026-10-19). */
+function Diagram({ detail }: { detail: JobDetail }) {
+  const property = detail.job.property!;
+  return (
+    <DiagramPanel
+      jobId={detail.job.id}
+      propertyId={property.id}
+      shape={property.diagram_shape ?? null}
+      hasSpa={property.has_spa}
+      layout={property.diagram_layout}
+      markup={parseMarkup(detail.job.diagram_markup).shapes}
+      pins={detail.findings
+        .map((f, i) => ({ f, n: i + 1 }))
+        .filter(({ f }) => f.pin_x != null && f.pin_y != null)
+        .map(({ f, n }) => ({
+          id: f.id,
+          x: Number(f.pin_x),
+          y: Number(f.pin_y),
+          color: detail.severities.get(f.severity_key)?.color ?? "currentColor",
+          label: String(n),
+        }))}
     />
   );
 }
@@ -952,14 +1048,12 @@ async function Timeline({ detail, tz }: { detail: JobDetail; tz: string }) {
   );
 }
 
-/** The calculator, with the pool's gallons and type filled in. */
-function chemicalsHref(
-  pool: { approx_gallons?: number | null; pool_type?: string | null } | null | undefined,
-) {
+/** Chemical for this visit's pool: its gallons fill in and Submit saves to its log. */
+function chemicalsHref(pool: { id: string } | null | undefined, jobId: string) {
   const q = new URLSearchParams();
-  if (pool?.approx_gallons) q.set("gallons", String(pool.approx_gallons));
-  if (pool?.pool_type) q.set("pool", pool.pool_type);
-  return `/chemicals${q.size ? `?${q}` : ""}`;
+  if (pool) q.set("property", pool.id);
+  q.set("job", jobId);
+  return `/chemicals?${q}`;
 }
 
 /**

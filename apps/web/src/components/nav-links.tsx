@@ -194,7 +194,7 @@ export function TabBar({ links: all }: { links: OfficeLink[] }) {
 /** A tab in the desktop bar: muted text, the current one in the link color, underlined. */
 const barLink = (active: boolean) =>
   cx(
-    "relative inline-flex h-12 items-center gap-1.5 px-3 text-[0.9375rem] font-semibold",
+    "relative inline-flex h-14 items-center gap-1.5 px-2 text-[0.9375rem] font-semibold lg:px-3",
     "after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full",
     active ? "text-link after:bg-link" : "text-text-muted hover:text-text",
   );
@@ -208,11 +208,14 @@ export function DesktopNav({
   main,
   more,
   settings,
+  action,
   className,
 }: {
   main: OfficeLink[];
   more: OfficeLink[];
   settings: OfficeLink | null;
+  /** The page-wide main action (New Job), just before the gear. */
+  action?: ReactNode;
   className?: string;
 }) {
   const path = usePathname();
@@ -242,7 +245,7 @@ export function DesktopNav({
   }, [open]);
 
   return (
-    <nav aria-label="Main" className={cx("-ml-3 flex items-center", className)}>
+    <nav aria-label="Main" className={cx("flex min-w-0 flex-1 items-center", className)}>
       {main.map((l) => {
         const active = inSection(path, l);
         return (
@@ -311,13 +314,14 @@ export function DesktopNav({
           ) : null}
         </div>
       ) : null}
+      <div className="ml-auto flex items-center pr-1">{action}</div>
       {settings ? (
         <Link
           href={settings.href}
           aria-label="Settings"
           title="Settings"
           aria-current={inSection(path, settings) ? "page" : undefined}
-          className={cx(barLink(inSection(path, settings)), "ml-auto w-12 justify-center px-0")}
+          className={cx(barLink(inSection(path, settings)), "w-11 justify-center px-0 lg:px-0")}
         >
           <svg
             viewBox="0 0 24 24"

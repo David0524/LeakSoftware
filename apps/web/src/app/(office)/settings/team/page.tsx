@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import { inviteMember, revokeInvite, updateMember } from "@/app/actions/settings";
-import { assignableRoles, canMakeJobs, roleLabel, seesAllJobs } from "@leakbook/core";
+import {
+  assignableRoles,
+  canMakeJobs,
+  requiresFinishPhoto,
+  roleLabel,
+  seesAllJobs,
+} from "@leakbook/core";
 import { JobVisibilityForm } from "@/components/job-visibility";
 import {
   CopyLink,
@@ -82,6 +88,7 @@ export default async function TeamSettingsPage() {
           <JobVisibilityForm
             seesAll={seesAllJobs("tech", company.settings)}
             makesJobs={canMakeJobs("tech", company.settings)}
+            finishPhoto={requiresFinishPhoto(company.settings)}
           />
         ) : (
           <div className="space-y-2 px-4 sm:px-0">
@@ -89,6 +96,9 @@ export default async function TeamSettingsPage() {
               Techs see{" "}
               {seesAllJobs("tech", company.settings) ? "every job" : "only their own jobs"} and{" "}
               {canMakeJobs("tech", company.settings) ? "can" : "can’t"} make new jobs.
+              {requiresFinishPhoto(company.settings)
+                ? " A pool photo is needed to finish a job."
+                : ""}
             </p>
             <Banner tone="info">{OWNER_ONLY}</Banner>
           </div>

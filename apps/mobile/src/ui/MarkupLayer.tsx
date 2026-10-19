@@ -1,5 +1,5 @@
-import Svg, { Ellipse, G, Line, Polygon, Text as SvgText } from "react-native-svg";
-import { arrowHead, type MarkupShape } from "@leakbook/core";
+import Svg, { Ellipse, G, Line, Path, Polygon, Text as SvgText } from "react-native-svg";
+import { arrowHead, penPath, type MarkupShape } from "@leakbook/core";
 import { font, markupColor } from "./theme";
 
 /**
@@ -74,6 +74,16 @@ export function MarkupLayer({
             <G key={i}>
               <Ellipse {...common} fill="none" stroke={markupColor.outline} strokeWidth={outline} />
               <Ellipse {...common} fill="none" stroke={c} strokeWidth={stroke} />
+            </G>
+          );
+        }
+        if (s.type === "pen") {
+          // Freehand from the website's pen (owner, 2026-10-19); drawing one here is to come.
+          const d = penPath(s.points, width, height);
+          return (
+            <G key={i} fill="none" strokeLinecap="round" strokeLinejoin="round">
+              <Path d={d} stroke={markupColor.outline} strokeWidth={outline} />
+              <Path d={d} stroke={c} strokeWidth={stroke} />
             </G>
           );
         }

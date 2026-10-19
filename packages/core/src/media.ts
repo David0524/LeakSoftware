@@ -125,7 +125,12 @@ export const MARKUP_COLORS: MarkupColor[] = ["red", "yellow", "white"];
 export type MarkupShape =
   | { type: "arrow"; color: MarkupColor; x1: number; y1: number; x2: number; y2: number }
   | { type: "circle"; color: MarkupColor; cx: number; cy: number; rx: number; ry: number }
-  | { type: "text"; color: MarkupColor; x: number; y: number; text: string };
+  | { type: "text"; color: MarkupColor; x: number; y: number; text: string }
+  /** Freehand (owner, 2026-10-19: "Mark up should have a pen"): points as 0..1 [x, y]. */
+  | { type: "pen"; color: MarkupColor; points: [number, number][] };
+
+/** The most points one pen stroke keeps (after thinning). */
+export const PEN_POINTS_MAX = 400;
 
 export interface Markup {
   version: 1;
@@ -151,6 +156,14 @@ function validShape(s: unknown): MarkupShape | null {
       return isUnit(o.cx) && isUnit(o.cy) && isUnit(o.rx) && isUnit(o.ry)
         ? { type: "circle", color: o.color, cx: o.cx, cy: o.cy, rx: o.rx, ry: o.ry }
         : null;
+    case "pen": {
+      if (!Array.isArray(o.points)) return null;
+      const points = o.points
+        .filter((p): p is [number, number] => Array.isArray(p) && isUnit(p[0]) && isUnit(p[1]))
+        .slice(0, PEN_POINTS_MAX)
+        .map(([x, y]) => [x, y] as [number, number]);
+      return points.length >= 2 ? { type: "pen", color: o.color, points } : null;
+    }
     case "text": {
       const text = typeof o.text === "string" ? o.text.trim().slice(0, MARKUP_TEXT_MAX) : "";
       return isUnit(o.x) && isUnit(o.y) && text
@@ -192,6 +205,37 @@ export function shapeFromDrag(
     rx: clampUnit(Math.max(Math.abs(a.x - b.x) / 2, 0.01)),
     ry: clampUnit(Math.max(Math.abs(a.y - b.y) / 2, 0.01)),
   };
+}
+
+/**
+ * A pen stroke from the points of a drag (fractions of the image). Points closer than 0.4% of
+ * the image to the last kept one are dropped, so a stroke stays small. Null for a tap.
+ */
+export function penShape(
+  color: MarkupColor,
+  points: { x: number; y: number }[],
+): MarkupShape | null {
+  const kept: [number, number][] = [];
+  for (const p of points) {
+    const q: [number, number] = [clampUnit(p.x), clampUnit(p.y)];
+    const last = kept[kept.length - 1];
+    if (!last || Math.hypot(q[0] - last[0], q[1] - last[1]) >= 0.004) kept.push(q);
+  }
+  if (kept.length < 2) return null;
+  // Too long: keep every nth point, and always the last.
+  const step = Math.ceil(kept.length / PEN_POINTS_MAX);
+  const thin = step > 1 ? kept.filter((_, i) => i % step === 0 || i === kept.length - 1) : kept;
+  return { type: "pen", color, points: thin.slice(0, PEN_POINTS_MAX) };
+}
+
+/** An SVG path for a pen stroke in a width x height space. */
+export function penPath(points: [number, number][], width: number, height: number): string {
+  return points
+    .map(
+      ([x, y], i) =>
+        `${i ? "L" : "M"}${Math.round(x * width * 10) / 10} ${Math.round(y * height * 10) / 10}`,
+    )
+    .join(" ");
 }
 
 export function textShape(

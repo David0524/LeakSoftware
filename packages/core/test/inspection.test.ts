@@ -277,6 +277,23 @@ describe("findings and diagram", () => {
     expect(poolDiagram("kidney", true).spa).not.toBeNull();
     expect(poolDiagram(null, false)).toMatchObject({ width: 160, height: 100, spa: null });
   });
+
+  it("draws the new shapes, mirrors, and puts the spa where it was placed (owner, 2026-10-19)", async () => {
+    const { DIAGRAM_SHAPES, mirrorPath, parseDiagramLayout } = await import("../src/inspection");
+    for (const s of DIAGRAM_SHAPES) expect(poolDiagram(s.key, false).pool).toMatch(/^M.*Z$/);
+    expect(mirrorPath("M10 18 H124 V76 Q130 82 124 82 Z")).toBe(
+      "M 130 18 H 16 V 76 Q 10 82 16 82 Z",
+    );
+    expect(poolDiagram("rectangle", true, { mirror: true }).spa).toMatchObject({ cx: 15, cy: 22 });
+    const placed = poolDiagram("oval", true, {
+      spa: { x: 0.5, y: 0.5, size: "large", shape: "square" },
+    }).spa;
+    expect(placed).toEqual({ cx: 80, cy: 50, r: 17, square: true });
+    expect(parseDiagramLayout({ mirror: "yes", spa: { x: 2, y: 0.5 } })).toEqual({});
+    expect(parseDiagramLayout({ spa: { x: 0.1, y: 0.2, size: "huge" } })).toEqual({
+      spa: { x: 0.1, y: 0.2 },
+    });
+  });
 });
 
 describe("verdicts", () => {

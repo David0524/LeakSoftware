@@ -491,14 +491,29 @@ export function validateFinding(f: {
   return e;
 }
 
-export type DiagramShape = "rectangle" | "oval" | "kidney" | "l_shape" | "freeform";
+export type DiagramShape =
+  "rectangle" | "oval" | "kidney" | "l_shape" | "freeform" | "roman" | "grecian" | "figure_eight";
+
+export type SpaSize = "small" | "medium" | "large";
+export type SpaShape = "round" | "square";
+
+/**
+ * How a pool's diagram is laid out beyond its shape (owner, 2026-10-19: "More customization to
+ * pool shape. Be able to place the spa wherever"): the shape mirrored left to right, and the
+ * spa's center (0..1 of the diagram), size, and shape. Stored in property.diagram_layout.
+ */
+export interface DiagramLayout {
+  mirror?: boolean;
+  spa?: { x: number; y: number; size?: SpaSize; shape?: SpaShape };
+}
 
 export interface PoolDiagram {
   width: number;
   height: number;
   /** SVG path for the pool outline, in the diagram's coordinates. */
   pool: string;
-  spa: { cx: number; cy: number; r: number } | null;
+  /** The spa: a circle of radius r, or with `square`, a rounded square r from its center. */
+  spa: { cx: number; cy: number; r: number; square: boolean } | null;
 }
 
 export const DIAGRAM_SHAPES: { key: DiagramShape; label: string }[] = [
@@ -507,6 +522,20 @@ export const DIAGRAM_SHAPES: { key: DiagramShape; label: string }[] = [
   { key: "kidney", label: "Kidney" },
   { key: "l_shape", label: "L-shape" },
   { key: "freeform", label: "Freeform" },
+  { key: "roman", label: "Roman" },
+  { key: "grecian", label: "Grecian" },
+  { key: "figure_eight", label: "Figure 8" },
+];
+
+export const SPA_SIZES: { key: SpaSize; label: string; r: number }[] = [
+  { key: "small", label: "Small", r: 10 },
+  { key: "medium", label: "Medium", r: 13 },
+  { key: "large", label: "Large", r: 17 },
+];
+
+export const SPA_SHAPES: { key: SpaShape; label: string }[] = [
+  { key: "round", label: "Round" },
+  { key: "square", label: "Square" },
 ];
 
 const POOL_PATHS: Record<DiagramShape, string> = {
@@ -518,14 +547,84 @@ const POOL_PATHS: Record<DiagramShape, string> = {
     "M14 14 H74 Q80 14 80 20 V48 H124 Q130 48 130 54 V80 Q130 86 124 86 H14 Q8 86 8 80 V20 Q8 14 14 14 Z",
   freeform:
     "M24 22 C46 8 70 26 92 16 C114 8 132 26 128 46 C124 62 134 74 116 82 C96 90 76 76 56 84 C34 92 10 80 12 60 C14 44 6 34 24 22 Z",
+  // Rectangle with a half-round end, where the steps usually are.
+  roman:
+    "M16 18 H104 C120 18 132 32 132 50 C132 68 120 82 104 82 H16 Q10 82 10 76 V24 Q10 18 16 18 Z",
+  // Rectangle with the corners cut.
+  grecian: "M26 18 H114 L130 34 V66 L114 82 H26 L10 66 V34 Z",
+  figure_eight:
+    "M40 16 C58 16 64 28 70 34 C76 28 82 16 100 16 C120 16 132 32 132 50 C132 68 120 84 100 84 C82 84 76 72 70 66 C64 72 58 84 40 84 C20 84 8 68 8 50 C8 32 20 16 40 16 Z",
 };
 
-/** Top-down diagram for a property. Pins are stored as 0..1 of width and height. */
-export function poolDiagram(shape: DiagramShape | null | undefined, hasSpa: boolean): PoolDiagram {
+const DIAGRAM_WIDTH = 160;
+const DIAGRAM_HEIGHT = 100;
+/** Pools are drawn in x 8..132; mirroring flips them about the middle of that. */
+const MIRROR_AXIS = 140;
+
+/**
+ * Mirrors a pool path left to right. The paths use absolute M, L, H, V, Q, C, and Z only, so
+ * every x (each pair's first number, and H's) becomes MIRROR_AXIS - x.
+ */
+export function mirrorPath(path: string): string {
+  const out: string[] = [];
+  let command = "";
+  let index = 0;
+  for (const token of path.match(/[A-Za-z]|-?\d*\.?\d+/g) ?? []) {
+    if (/[A-Za-z]/.test(token)) {
+      command = token;
+      index = 0;
+      out.push(token);
+      continue;
+    }
+    const n = Number(token);
+    const isX = command === "H" || (command !== "V" && index % 2 === 0);
+    out.push(String(isX ? MIRROR_AXIS - n : n));
+    index++;
+  }
+  return out.join(" ").replace(/ ([A-Za-z])/g, " $1");
+}
+
+const isUnitNumber = (v: unknown): v is number => typeof v === "number" && v >= 0 && v <= 1;
+
+/** Read a layout from a synced row. Anything unrecognized is dropped, never thrown. */
+export function parseDiagramLayout(value: unknown): DiagramLayout {
+  if (!value || typeof value !== "object") return {};
+  const o = value as Record<string, unknown>;
+  const layout: DiagramLayout = {};
+  if (o.mirror === true) layout.mirror = true;
+  const spa = o.spa as Record<string, unknown> | undefined;
+  if (spa && isUnitNumber(spa.x) && isUnitNumber(spa.y)) {
+    layout.spa = { x: spa.x, y: spa.y };
+    if (SPA_SIZES.some((z) => z.key === spa.size)) layout.spa.size = spa.size as SpaSize;
+    if (SPA_SHAPES.some((z) => z.key === spa.shape)) layout.spa.shape = spa.shape as SpaShape;
+  }
+  return layout;
+}
+
+/**
+ * Top-down diagram for a property. Pins are stored as 0..1 of width and height. Without a
+ * layout, the spa sits at the top right as before (on the left when mirrored).
+ */
+export function poolDiagram(
+  shape: DiagramShape | null | undefined,
+  hasSpa: boolean,
+  layout?: DiagramLayout | null,
+): PoolDiagram {
+  const path = POOL_PATHS[shape ?? "rectangle"] ?? POOL_PATHS.rectangle;
+  const mirror = layout?.mirror === true;
+  const placed = layout?.spa;
+  const r = SPA_SIZES.find((z) => z.key === (placed?.size ?? "medium"))!.r;
   return {
-    width: 160,
-    height: 100,
-    pool: POOL_PATHS[shape ?? "rectangle"] ?? POOL_PATHS.rectangle,
-    spa: hasSpa ? { cx: 145, cy: 22, r: 13 } : null,
+    width: DIAGRAM_WIDTH,
+    height: DIAGRAM_HEIGHT,
+    pool: mirror ? mirrorPath(path) : path,
+    spa: hasSpa
+      ? {
+          cx: placed ? placed.x * DIAGRAM_WIDTH : mirror ? DIAGRAM_WIDTH - 145 : 145,
+          cy: placed ? placed.y * DIAGRAM_HEIGHT : 22,
+          r,
+          square: placed?.shape === "square",
+        }
+      : null,
   };
 }

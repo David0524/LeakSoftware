@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { PlanId } from "@leakbook/core";
+import { CONTACT_EMAIL } from "@/lib/site";
 import { ButtonLink } from "../ui";
 import {
   DashboardDemo,
@@ -173,6 +174,14 @@ function Body() {
               <p className="text-text-muted">{a}</p>
             </details>
           ))}
+          {/* Contact Us (owner, 2026-10-19). */}
+          <p className="pt-4 text-center text-[1.0625rem]">
+            Still have a question? Contact us at{" "}
+            <a href={`mailto:${CONTACT_EMAIL}`} className="font-semibold text-link underline">
+              {CONTACT_EMAIL}
+            </a>
+            .
+          </p>
         </div>
       </Section>
 
@@ -186,7 +195,7 @@ function Body() {
             <span className="whitespace-nowrap text-safety">Get paid.</span>
           </h2>
           <p className="mt-5 max-w-xl text-[1.1875rem] text-neutral-200">
-            Try Sundeck Pro free for 14 days with your whole crew. Cancel before then and you pay
+            Try Sundeck Pro free for 30 days with your whole crew. Cancel before then and you pay
             nothing.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
@@ -218,7 +227,7 @@ const SHARED: [string, string][] = [
   ],
   [
     "What happens after the free trial?",
-    "You add a card when you sign up, and the first charge is on day 15. Cancel any time before then in Settings and you won’t be charged. A canceled shop becomes read-only; nothing is deleted.",
+    "You add a card when you sign up, and the first charge is on day 31. Cancel any time before then in Settings and you won’t be charged. A canceled shop becomes read-only; nothing is deleted.",
   ],
 ];
 

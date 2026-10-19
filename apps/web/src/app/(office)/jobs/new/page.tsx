@@ -20,6 +20,7 @@ interface PriceItem {
   price_cents: number;
   active: boolean;
   deleted_at: string | null;
+  on_repair_call?: boolean;
 }
 
 /** A new detection job from the office: the same fields as the phone's New Job screen. */
@@ -69,7 +70,22 @@ export default async function NewJobPage() {
           .filter((p) => p.active && !p.deleted_at && p.category === "Detection")
           .map((p) => ({ id: p.id, name: p.name, cents: p.price_cents }))}
         questions={settings.intake_questions ?? []}
+        repairItems={repairCallItems(prices)}
       />
     </>
   );
+}
+
+/**
+ * When They Call (owner, 2026-10-19): the price book items the owner picked for booking a
+ * repair, or every active item when none are picked yet.
+ */
+function repairCallItems(prices: PriceItem[]) {
+  const live = prices.filter((p) => p.active && !p.deleted_at);
+  const picked = live.filter((p) => p.on_repair_call);
+  return (picked.length ? picked : live).map((p) => ({
+    id: p.id,
+    name: p.name,
+    cents: p.price_cents,
+  }));
 }

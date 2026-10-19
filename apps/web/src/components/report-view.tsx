@@ -8,6 +8,8 @@ import {
   reportChecklist,
   snapshotTally,
   testSummary,
+  parseMarkup,
+  testOutcomeLabel,
   textOnBrand,
   type FinalSection,
   type PoolType,
@@ -128,6 +130,8 @@ export function ReportView(p: ReportViewProps) {
   const brand = s.company.brand_primary;
   const onBrand = textOnBrand(brand, tokens.color.brand.navy, tokens.color.brand.paper);
   const section = (key: string) => p.sections.find((x) => x.key === key);
+  // What the tech drew on the diagram (owner, 2026-10-19).
+  const diagramMarkup = parseMarkup(s.job.diagram_markup).shapes;
   const labelOf = new Map(s.components.map((c) => [c.id, c.label]));
   const blocks = REPORT_BLOCKS[narrativeTemplate(p.templateKey)];
   const checklist = reportChecklist(s);
@@ -294,7 +298,7 @@ export function ReportView(p: ReportViewProps) {
       </Block>
     ),
     diagram: () =>
-      s.findings.some((f) => f.pin_x != null) ? (
+      s.findings.some((f) => f.pin_x != null) || diagramMarkup.length ? (
         <section
           className={cx(
             "report-block mx-auto mt-6 break-inside-avoid max-sm:mt-4 sm:max-w-sm print:mt-4 print:max-w-xs",
@@ -305,7 +309,9 @@ export function ReportView(p: ReportViewProps) {
             className="w-full"
             shape={s.property.diagram_shape as never}
             hasSpa={s.property.has_spa}
-            title={`Pool diagram with ${s.findings.length} numbered findings`}
+            layout={s.property.diagram_layout}
+            markup={diagramMarkup}
+            title={`Pool diagram with ${s.findings.length} numbered findings${diagramMarkup.length ? " and markings" : ""}`}
             pins={s.findings
               .map((f, i) => ({ f, n: i + 1 }))
               .filter(({ f }) => f.pin_x != null && f.pin_y != null)
@@ -325,45 +331,48 @@ export function ReportView(p: ReportViewProps) {
           <Paragraphs text={section("next_steps")!.text} />
         </Block>
       ) : null,
-    tests: () => (
-      <Block title={section("tests")?.title ?? "Test results"}>
-        {section("tests")?.text ? <Paragraphs text={section("tests")!.text} /> : null}
-        {s.tests.length ? (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-[0.9375rem]">
-              <thead>
-                <tr className="border-b" style={{ borderColor: NEUTRAL["300"] }}>
-                  <th className="py-1 pr-3 font-semibold">Test</th>
-                  <th className="py-1 pr-3 font-semibold">Where</th>
-                  <th className="py-1 pr-3 font-semibold">Result</th>
-                  <th className="py-1 font-semibold">Outcome</th>
-                </tr>
-              </thead>
-              <tbody>
-                {s.tests.map((t) => (
-                  <tr
-                    key={t.id}
-                    className="border-b break-inside-avoid"
-                    style={{ borderColor: NEUTRAL["200"] }}
-                  >
-                    <td className="py-1 pr-3">{t.type_name}</td>
-                    <td className="py-1 pr-3">
-                      {t.component_id ? labelOf.get(t.component_id) : ""}
-                    </td>
-                    <td className="py-1 pr-3">
-                      {testSummary(t) ?? Object.values(t.data).filter(Boolean).join(", ")}
-                    </td>
-                    <td className="py-1 capitalize">
-                      {t.outcome === "inconclusive" ? "Unclear" : t.outcome}
-                    </td>
+    tests: () =>
+      s.tests.length || section("tests")?.text ? (
+        <Block title={section("tests")?.title ?? "Tests we ran"}>
+          {section("tests")?.text ? <Paragraphs text={section("tests")!.text} /> : null}
+          {s.tests.length ? (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full text-left text-[0.9375rem]">
+                <thead>
+                  <tr className="border-b" style={{ borderColor: NEUTRAL["300"] }}>
+                    <th className="py-1 pr-3 font-semibold">Test</th>
+                    <th className="py-1 pr-3 font-semibold">Where</th>
+                    <th className="py-1 pr-3 font-semibold">Result</th>
+                    <th className="py-1 font-semibold">Outcome</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
-      </Block>
-    ),
+                </thead>
+                <tbody>
+                  {s.tests.map((t) => (
+                    <tr
+                      key={t.id}
+                      className="border-b break-inside-avoid"
+                      style={{ borderColor: NEUTRAL["200"] }}
+                    >
+                      <td className="py-1 pr-3">{t.type_name}</td>
+                      <td className="py-1 pr-3">
+                        {t.component_id ? labelOf.get(t.component_id) : ""}
+                      </td>
+                      <td className="py-1 pr-3">
+                        {testSummary(t) ?? Object.values(t.data).filter(Boolean).join(", ")}
+                      </td>
+                      <td className="py-1">
+                        <Badge tone={testOutcomeLabel(t.outcome).tone}>
+                          {testOutcomeLabel(t.outcome).label}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </Block>
+      ) : null,
     coverage: () =>
       checklist ? (
         <Block title="What we checked">

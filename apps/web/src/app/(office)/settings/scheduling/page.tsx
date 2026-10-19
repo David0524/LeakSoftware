@@ -2,6 +2,7 @@ import { offersPool } from "@leakbook/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
+  cleaningDefaultMonths,
   formatAddress,
   maintenanceSettings,
   propertyLocation,
@@ -9,11 +10,15 @@ import {
 } from "@leakbook/core";
 import { locatePools, locateShop } from "@/app/actions/routes";
 import { MarkLocationHere } from "@/components/pool-location";
-import { ActionButton, SchedulingForm } from "@/components/scheduling-settings";
+import {
+  ActionButton,
+  CleaningDefaultsForm,
+  SchedulingForm,
+} from "@/components/scheduling-settings";
 import { SettingsSection } from "@/components/settings-forms";
 import { PageHeader } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getCompany } from "@/lib/data";
+import { getCompany, listConfig, type ComponentType } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { routingConfigured } from "@/server/routing";
 
@@ -22,7 +27,7 @@ export const metadata: Metadata = { title: "Scheduling and Routes · Sundeck Pro
 export default async function SchedulingSettingsPage() {
   const office = await getOffice();
   const supabase = await createClient();
-  const [company, { count: unlocated }] = await Promise.all([
+  const [company, { count: unlocated }, componentTypes] = await Promise.all([
     getCompany(office),
     supabase
       .from("property")
@@ -30,7 +35,12 @@ export default async function SchedulingSettingsPage() {
       .eq("company_id", office.company.id)
       .is("deleted_at", null)
       .is("latitude", null),
+    listConfig<ComponentType>(office, "component_type"),
   ]);
+  // Filter and salt cell cleanings: checklist items done on a schedule (owner, 2026-10-19).
+  const cleaningTypes = componentTypes.filter(
+    (t) => t.job_type === "maintenance" && t.on_schedule && t.active && !t.deleted_at,
+  );
   const s = routingSettings(company.settings);
   const address = formatAddress(company as unknown as Parameters<typeof formatAddress>[0]);
   const shopAt = propertyLocation(
@@ -60,6 +70,18 @@ export default async function SchedulingSettingsPage() {
             }}
           />
         </SettingsSection>
+
+        {offersPool(company.settings) && cleaningTypes.length ? (
+          <SettingsSection title="Regular cleanings">
+            <CleaningDefaultsForm
+              types={cleaningTypes.map((t) => ({
+                key: t.key,
+                name: t.name,
+                months: cleaningDefaultMonths(company.settings, t.key),
+              }))}
+            />
+          </SettingsSection>
+        ) : null}
 
         <SettingsSection title="Shop location" titleId="shop-location" boxed>
           <p className="font-semibold">{address || "No address yet."}</p>

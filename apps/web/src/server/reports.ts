@@ -1,6 +1,8 @@
 import "server-only";
 import { createClient as createSupabase, type SupabaseClient } from "@supabase/supabase-js";
 import {
+  FINISH_PHOTO_MESSAGE,
+  requiresFinishPhoto,
   narrativeTemplate,
   reportShareText,
   toFinalSections,
@@ -119,12 +121,36 @@ export async function finishReport(
   reportId: string,
   unsignedReason: string | null = null,
 ): Promise<string> {
+  const { data: report } = await db.from("report").select("job_id").eq("id", reportId).single();
+  if (report) await requireFinishPhoto(db, report.job_id as string);
   const { data, error } = await db.rpc("send_report", {
     target_report: reportId,
     unsigned_reason: unsignedReason,
   });
   if (error) throw new Error(error.message);
   return (data as { token: string }).token;
+}
+
+/**
+ * With the shop's "Require a pool photo to finish a job" on (owner, 2026-10-19), a job can't
+ * be finished (report sent, visit marked Done) until it has a photo. Photos still uploading
+ * from a phone count: the row is there.
+ */
+export async function requireFinishPhoto(db: SupabaseClient, jobId: string): Promise<void> {
+  const { data: job } = await db
+    .from("job")
+    .select("company:company!job_company_id_fkey(settings)")
+    .eq("id", jobId)
+    .single();
+  const company = job?.company as unknown as { settings: unknown } | null;
+  if (!requiresFinishPhoto(company?.settings)) return;
+  const { count } = await db
+    .from("media")
+    .select("id", { count: "exact", head: true })
+    .eq("job_id", jobId)
+    .eq("kind", "photo")
+    .is("deleted_at", null);
+  if (!count) throw new Error(FINISH_PHOTO_MESSAGE);
 }
 
 /** The link of a report to send: a draft is finished first; a finished one is sent as is. */

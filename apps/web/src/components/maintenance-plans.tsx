@@ -3,6 +3,9 @@
 import { useState } from "react";
 import {
   CLEANING_MONTHS,
+  cleaningCountdown,
+  cleaningMonthsLabel,
+  type CleaningKind,
   cleaningSummary,
   formatDay,
   planRepeat,
@@ -13,6 +16,7 @@ import {
 } from "@leakbook/core";
 import { endPlan, savePlan, setPlanPaused } from "@/app/actions/maintenance";
 import type { RepeatChoice } from "@/lib/plan-repeat";
+import { CleaningIcon } from "./icons";
 import { PlanRepeat } from "./plan-repeat";
 import { Segmented } from "./segmented";
 import { FieldError, SField, SSwitch, STextArea, SettingsForm } from "./settings-forms";
@@ -28,6 +32,9 @@ export interface CleaningType {
   name: string;
   /** The price book's price for it, offered for a new cleaning. */
   defaultPriceCents: number | null;
+  /** Settings › Scheduling: how often the shop usually does it (owner, 2026-10-19). */
+  defaultMonths: number;
+  kind: CleaningKind;
 }
 
 interface Props {
@@ -47,7 +54,7 @@ interface Props {
 
 export function MaintenancePlans(p: Props) {
   const names = new Map(p.techs.map((t) => [t.id, t.name]));
-  const cleaningNames = new Map(p.cleaningTypes.map((t) => [t.id, t.name]));
+  const cleaningTypes = new Map(p.cleaningTypes.map((t) => [t.id, t]));
   return (
     <Grouped
       title="Maintenance"
@@ -76,12 +83,24 @@ export function MaintenancePlans(p: Props) {
             detail={
               <>
                 {detail}
-                {plan.cleanings.map((c) => (
-                  <span key={c.id} className="block">
-                    {cleaningSummary(cleaningNames.get(c.component_type_id) ?? "Cleaning", c)} ·{" "}
-                    {c.next_due <= p.today ? "due now" : `next ${formatDay(c.next_due)}`}
-                  </span>
-                ))}
+                {plan.cleanings.map((c) => {
+                  const type = cleaningTypes.get(c.component_type_id);
+                  const due = cleaningCountdown(c.next_due, p.today);
+                  return (
+                    <span key={c.id} className="flex items-center gap-1.5">
+                      <CleaningIcon kind={type?.kind ?? "other"} className="size-4 shrink-0" />
+                      <span>
+                        {cleaningSummary(type?.name ?? "Cleaning", c)} ·{" "}
+                        <span
+                          className={due.soon ? "font-semibold text-status-warning" : undefined}
+                        >
+                          {due.label}
+                        </span>
+                        {due.days > 0 ? ` (${formatDay(c.next_due)})` : ""}
+                      </span>
+                    </span>
+                  );
+                })}
                 {plan.notes ? <span className="block">{plan.notes}</span> : null}
               </>
             }
@@ -252,7 +271,7 @@ function CleaningFields({
   firstVisit: string;
 }) {
   const [on, setOn] = useState(cleaning !== null);
-  const [months, setMonths] = useState(String(cleaning?.every_months ?? 3));
+  const [months, setMonths] = useState(String(cleaning?.every_months ?? type.defaultMonths));
   const price = cleaning ? cleaning.price_cents : type.defaultPriceCents;
   const field = `clean_${type.id}`;
   return (
@@ -274,7 +293,7 @@ function CleaningFields({
             fit
             options={CLEANING_MONTHS.map((m) => ({
               value: String(m),
-              label: m === 1 ? "Monthly" : `${m} Months`,
+              label: cleaningMonthsLabel(m),
             }))}
           />
           <div className="grid gap-3 sm:grid-cols-2">

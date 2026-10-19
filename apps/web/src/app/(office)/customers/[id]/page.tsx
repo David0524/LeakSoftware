@@ -9,6 +9,10 @@ import {
   formatSchedule,
   localDate,
   maintenanceSettings,
+  cleaningDefaultMonths,
+  cleaningKind,
+  readingSummary,
+  type ChemicalReading,
   type PoolType,
 } from "@leakbook/core";
 import { saveCustomer, savePool } from "@/app/actions/jobs";
@@ -26,7 +30,14 @@ import { SheetNotices, SheetRow } from "@/components/settings-list";
 import { ContactButtons } from "@/components/contact-buttons";
 import { Empty, Grouped, PageHeader, Row, StatusBadge } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getCompany, getCustomer, getTeam, listConfig, type ComponentType } from "@/lib/data";
+import {
+  getChemicalReadings,
+  getCompany,
+  getCustomer,
+  getTeam,
+  listConfig,
+  type ComponentType,
+} from "@/lib/data";
 import { getLine } from "@/lib/messages";
 
 export const metadata: Metadata = { title: "Customer · Sundeck Pro" };
@@ -70,8 +81,21 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
       name: t.name,
       defaultPriceCents:
         priceBook.find((item) => item.component_type_key === t.key)?.price_cents ?? null,
+      defaultMonths: cleaningDefaultMonths(company.settings, t.key),
+      kind: cleaningKind(t),
     }));
   const { customer, properties, plans, jobs } = data;
+  // Each pool's latest chemical log entry (owner, 2026-10-19).
+  const lastReadings = new Map(
+    (
+      await Promise.all(
+        properties.map(
+          async (p) =>
+            [p.id, (await getChemicalReadings(office, p.id, 1).catch(() => []))[0]] as const,
+        ),
+      )
+    ).filter((e): e is readonly [string, ChemicalReading] => !!e[1]),
+  );
   const now = new Date();
   const techs = team
     .filter((t) => t.status === "active")
@@ -199,6 +223,9 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                     detail={[
                       p.pool_type ? POOL_TYPE_LABELS[p.pool_type] : null,
                       p.has_spa ? "Pool and spa" : "Pool",
+                      p.approx_gallons
+                        ? `${p.approx_gallons.toLocaleString("en-US")} gallons`
+                        : null,
                     ]
                       .filter(Boolean)
                       .join(" · ")}
@@ -249,6 +276,16 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                           defaultValue={p.pool_type ?? ""}
                           options={poolOptions}
                         />
+                        <SField
+                          label="Gallons"
+                          name="approx_gallons"
+                          defaultValue={
+                            p.approx_gallons ? p.approx_gallons.toLocaleString("en-US") : ""
+                          }
+                          inputMode="numeric"
+                          placeholder="20,000"
+                          autoComplete="off"
+                        />
                         <SSwitch name="has_spa" label="Has a spa" defaultChecked={p.has_spa} />
                         <STextArea
                           label="Access notes"
@@ -260,6 +297,17 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                     </SettingsForm>
                   </SheetRow>
                   {p.access_notes ? <Row label="Access notes" detail={p.access_notes} /> : null}
+                  {offersPool(company.settings) ? (
+                    <Row
+                      href={`/chemicals?property=${p.id}`}
+                      label={<span className="text-link">Chemical</span>}
+                      detail={
+                        lastReadings.get(p.id)
+                          ? `Last: ${readingSummary(lastReadings.get(p.id)!)} · ${formatSchedule(lastReadings.get(p.id)!.recorded_at, now, office.company.timezone)}`
+                          : "Readings and the chemical log"
+                      }
+                    />
+                  ) : null}
                   <Row
                     href={directionsHref({ address })}
                     label={<span className="text-link">Get Directions</span>}

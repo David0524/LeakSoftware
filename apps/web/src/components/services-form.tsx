@@ -9,7 +9,7 @@ import { SettingsForm } from "./settings-forms";
 const NOTE: Record<Services, string> = {
   pool: "Cleaning routes, maintenance plans, the service checklist, the chemical calculator, repair quotes, and monthly billing. Leak detection is hidden.",
   leak: "Leak detection jobs, tests, findings, reports, and repair quotes. Cleaning plans and monthly billing are hidden.",
-  both: "Everything for pool care and leak detection.",
+  both: "Everything for pool care and leak detection. Priced as Pool Maintenance for your team plus $49 a month for leak detection.",
 };
 
 /**

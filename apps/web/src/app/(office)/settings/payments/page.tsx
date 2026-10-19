@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { bpsToPercent } from "@leakbook/core";
-import { savePayments } from "@/app/actions/settings";
+import { CARD_FEE_MAX_BPS, bpsToPercent, cardFeeBps } from "@leakbook/core";
+import { saveCardFee, savePayments } from "@/app/actions/settings";
 import { Banner } from "@/components/doc-ui";
 import {
   SField,
   SSelect,
+  SSwitch,
   SettingsFields,
   SettingsForm,
   SettingsSection,
@@ -101,6 +102,37 @@ export default async function PaymentsSettingsPage({
             )}
           </div>
         </SettingsSection>
+        <SettingsSection title="Card fee">
+          {office.isOwner ? (
+            <SettingsForm action={saveCardFee} full>
+              <SSwitch
+                label="Pass the card fee to customers"
+                name="card_fee_on"
+                defaultChecked={cardFeeBps(company.settings) > 0}
+                hint="Customers choose card or bank account before paying. Card adds the fee as its own line; bank has no fee."
+              />
+              <SettingsFields labelWidth="10rem">
+                <SField
+                  label="Card fee (%)"
+                  name="card_fee"
+                  inputMode="decimal"
+                  defaultValue={bpsToPercent(cardFeeBps(company.settings) || CARD_FEE_MAX_BPS)}
+                  hint="Up to 3%. Some states don’t allow card fees; check yours before turning this on."
+                />
+              </SettingsFields>
+            </SettingsForm>
+          ) : (
+            <div className="space-y-2 px-4 sm:px-0">
+              <p>
+                {cardFeeBps(company.settings)
+                  ? `Customers who pay by card pay a ${bpsToPercent(cardFeeBps(company.settings))}% card fee.`
+                  : "Customers pay no card fee."}
+              </p>
+              <Banner tone="info">{OWNER_ONLY}</Banner>
+            </div>
+          )}
+        </SettingsSection>
+
         <SettingsSection title="Deposits, tax, and discounts">
           <SettingsForm action={savePayments} primary={!setupPending} full>
             <SettingsFields labelWidth="10rem" className="sm:grid sm:grid-cols-2 sm:gap-4">

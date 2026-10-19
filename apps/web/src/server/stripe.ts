@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+import { CARD_FEE_MAX_BPS, bpsToPercent, cardFeeBps, cardFeeCents } from "@leakbook/core";
 import { adminClient } from "./admin";
 import { applyBillingEvent, finishOnboarding } from "./billing";
 
@@ -177,6 +178,55 @@ export type CheckoutStart =
 
 const PAYMENT_METHODS = ["card", "link", "us_bank_account"] as const;
 
+/** How the customer chose to pay when the shop passes on the card fee. */
+export type PayMethod = "card" | "bank";
+
+/**
+ * The card fee (owner, 2026-10-19: "Pass on credit card fee to customer"). With the shop's fee
+ * on, the customer picks card or bank first: card adds the fee as its own line, and bank has
+ * none. With it off, one Checkout offers every method, as before.
+ */
+async function feeTerms(
+  db: SupabaseClient,
+  companyId: string,
+  amountCents: number,
+  method: PayMethod | null,
+): Promise<{
+  methods: Stripe.Checkout.SessionCreateParams.PaymentMethodType[];
+  feeCents: number;
+  bps: number;
+}> {
+  const { data } = await db.from("company").select("settings").eq("id", companyId).single();
+  const bps = cardFeeBps(data?.settings);
+  if (bps === 0) return { methods: [...PAYMENT_METHODS], feeCents: 0, bps };
+  if (method === "bank") return { methods: ["us_bank_account"], feeCents: 0, bps };
+  if (method === "card")
+    return { methods: ["card", "link"], feeCents: cardFeeCents(amountCents, bps), bps };
+  throw new CheckoutRefused("Choose card or bank account.");
+}
+
+/** The shop's card fee for a customer's quote or invoice page (0 when off or unknown). */
+export async function cardFeeFor(table: "quote" | "invoice", id: string): Promise<number> {
+  const db = adminClient();
+  if (!db) return 0;
+  const { data } = await db
+    .from(table)
+    .select(`company:company!${table}_company_id_fkey(settings)`)
+    .eq("id", id)
+    .maybeSingle();
+  return cardFeeBps((data?.company as { settings?: unknown } | null)?.settings);
+}
+
+/** The fee line on a card payment's Checkout. */
+const feeLine = (feeCents: number, bps: number) => ({
+  quantity: 1,
+  price_data: {
+    currency: "usd",
+    unit_amount: feeCents,
+    product_data: { name: `Card fee (${bpsToPercent(bps)}%)` },
+  },
+});
+
 async function startCheckout(
   stripe: Stripe,
   account: string,
@@ -185,9 +235,14 @@ async function startCheckout(
   params: Pick<
     Stripe.Checkout.SessionCreateParams,
     "line_items" | "customer_email" | "metadata" | "payment_intent_data"
-  >,
+  > & { methods?: Stripe.Checkout.SessionCreateParams.PaymentMethodType[] },
 ): Promise<CheckoutStart> {
-  const base = { mode: "payment" as const, payment_method_types: [...PAYMENT_METHODS], ...params };
+  const { methods, ...rest } = params;
+  const base = {
+    mode: "payment" as const,
+    payment_method_types: methods ?? [...PAYMENT_METHODS],
+    ...rest,
+  };
   if (key) {
     // After paying, Stripe sends the customer back to the same page, as the hosted flow does.
     const session = await stripe.checkout.sessions.create(
@@ -227,6 +282,7 @@ export async function depositCheckout(
   stripe?: Stripe | null,
   db?: SupabaseClient | null,
   key: string | null = publishableKey(),
+  method: PayMethod | null = null,
 ): Promise<CheckoutStart> {
   const d = deps(stripe, db);
   const q = await rpc<CheckoutDetails | null>(d.db, "quote_checkout_details", {
@@ -238,8 +294,15 @@ export async function depositCheckout(
   if (q.deposit_cents <= 0) throw new CheckoutRefused("This quote has no deposit to pay.");
   if (!q.stripe_account_id || !q.charges_enabled)
     throw new CheckoutRefused(`${q.company_name} can’t take online payments yet.`);
-  const metadata = { kind: "quote_deposit", quote_id: q.quote_id, company_id: q.company_id };
+  const fee = await feeTerms(d.db, q.company_id, q.deposit_cents, method);
+  const metadata = {
+    kind: "quote_deposit",
+    quote_id: q.quote_id,
+    company_id: q.company_id,
+    ...(fee.feeCents ? { card_fee_cents: String(fee.feeCents) } : {}),
+  };
   return startCheckout(d.stripe, q.stripe_account_id, `${origin}/q/${token}`, key, {
+    methods: fee.methods,
     line_items: [
       {
         quantity: 1,
@@ -251,6 +314,7 @@ export async function depositCheckout(
           },
         },
       },
+      ...(fee.feeCents ? [feeLine(fee.feeCents, fee.bps)] : []),
     ],
     customer_email: q.customer_email ?? undefined,
     metadata,
@@ -282,6 +346,7 @@ export async function invoiceCheckout(
   stripe?: Stripe | null,
   db?: SupabaseClient | null,
   key: string | null = publishableKey(),
+  method: PayMethod | null = null,
 ): Promise<CheckoutStart> {
   const d = deps(stripe, db);
   const i = await rpc<InvoiceCheckoutDetails | null>(d.db, "invoice_checkout_details", {
@@ -296,8 +361,15 @@ export async function invoiceCheckout(
   if (i.payment_pending) throw new CheckoutRefused("A payment is already processing.");
   if (!i.stripe_account_id || !i.charges_enabled)
     throw new CheckoutRefused(`${i.company_name} can’t take online payments yet.`);
-  const metadata = { kind: "invoice_payment", invoice_id: i.invoice_id, company_id: i.company_id };
+  const fee = await feeTerms(d.db, i.company_id, i.balance_cents, method);
+  const metadata = {
+    kind: "invoice_payment",
+    invoice_id: i.invoice_id,
+    company_id: i.company_id,
+    ...(fee.feeCents ? { card_fee_cents: String(fee.feeCents) } : {}),
+  };
   return startCheckout(d.stripe, i.stripe_account_id, `${origin}/i/${token}`, key, {
+    methods: fee.methods,
     line_items: [
       {
         quantity: 1,
@@ -309,6 +381,7 @@ export async function invoiceCheckout(
           },
         },
       },
+      ...(fee.feeCents ? [feeLine(fee.feeCents, fee.bps)] : []),
     ],
     customer_email: i.customer_email ?? undefined,
     metadata,
@@ -350,6 +423,15 @@ const sessionStatus = (event: Stripe.Event, s: Stripe.Checkout.Session) => {
   return s.payment_status === "unpaid" ? "pending" : "succeeded";
 };
 
+/** The card fee a Checkout Session carried (its own line), at most 3% of what it paid for. */
+function cardFeeOf(s: Stripe.Checkout.Session): number {
+  const fee = Number(s.metadata?.card_fee_cents ?? 0);
+  if (!Number.isInteger(fee) || fee <= 0) return 0;
+  const total = s.amount_total ?? 0;
+  const cap = Math.ceil((total * CARD_FEE_MAX_BPS) / (10_000 + CARD_FEE_MAX_BPS));
+  return Math.min(fee, cap);
+}
+
 /**
  * Applies one verified event. Replays (same event id) change nothing; so do events that
  * arrive out of order, because a payment never goes back to pending.
@@ -389,7 +471,9 @@ export async function applyEvent(
         session_id: s.id,
         intent_id:
           typeof s.payment_intent === "string" ? s.payment_intent : (s.payment_intent?.id ?? null),
-        amount: s.amount_total ?? 0,
+        // The card fee is the shop's to keep, not a payment on the quote or invoice. It is
+        // never more than the 3% cap, whatever the session's metadata says.
+        amount: (s.amount_total ?? 0) - cardFeeOf(s),
         pay_method: method,
         pay_status: status,
         // The database records the payment only when it was taken on the record's own shop's

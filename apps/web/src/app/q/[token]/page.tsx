@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { formatCents, lineTotal, textOnBrand, dateFormat } from "@leakbook/core";
+import { cardFeeChoice, formatCents, lineTotal, textOnBrand, dateFormat } from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import { AcceptForm, PayDepositForm } from "@/components/quote-actions";
 import { cx } from "@/components/ui";
 import { publicClient } from "@/server/reports";
-import { paymentsConfigured } from "@/server/stripe";
+import { cardFeeFor, paymentsConfigured } from "@/server/stripe";
 import { ContactLine } from "@/components/contact-line";
 import {
   Banner,
@@ -87,6 +87,8 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
   const { data } = await db.rpc("quote_for_token", { link_token: token, count_view: !paid });
   const q = data as TokenQuote | null;
   if (!q) notFound();
+  // The shop passes the card fee on: card or bank, chosen before paying (owner, 2026-10-19).
+  const feeBps = paymentsConfigured() && q.can_pay ? await cardFeeFor("quote", q.quote_id) : 0;
 
   const c = q.company;
   const tz = c.timezone;
@@ -261,6 +263,7 @@ async function QuotePage({ params, searchParams }: PageProps<"/q/[token]">) {
                 amount={formatCents(q.deposit_cents)}
                 demo={!paymentsConfigured()}
                 print={isPrint}
+                cardFee={feeBps ? cardFeeChoice(q.deposit_cents, feeBps, " Deposit") : null}
               />
             ) : q.deposit_cents > 0 ? (
               <p>

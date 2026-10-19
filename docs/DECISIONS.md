@@ -36,6 +36,35 @@ Newest first. Each entry: date, decision, reason.
 - **iOS builds from Linux use xtool** (xtool.sh: SwiftPM projects built, signed and installed without a Mac). Cloud sessions can build and sign an `.ipa` but cannot install to a phone (no USB); installing runs on a machine with the iPhone plugged in. xtool needs `Xcode.xip` (Xcode 27, downloaded by the owner) to make its iOS SDK.
 - **Apple Developer Program enrollment is pending.** Once it is active, sign in to xtool with an App Store Connect Team API key (App Manager role) as a session secret, not an Apple ID password.
 
+## 2026-10-19 (owner: "LLC as of last night")
+- **The business is an LLC** (formed 2026-10-18). Plan: get the LLC's free D-U-N-S number (Apple's lookup tool), then ask Apple Developer Support to convert the individual developer account to the LLC before the public App Store release. The terms, privacy policy, and App Store copyright should name the LLC once its exact legal name is confirmed.
+
+## 2026-10-19 (owner: "I have been approved to Apple Developer")
+- **Apple Developer Program account is approved, as an individual** in the owner's own name (the plan was a company account, 2026-10-12). TestFlight works the same. Before the public App Store release, decide whether to move it to the company (Apple Developer Support converts an individual membership to an organization with the company's D-U-N-S number; apps and testers carry over), since the seller name and the EU trader details shown on the App Store would otherwise be the owner's personal ones. Next, owner steps: register the bundle ID `com.sundeckpro.app`, create the App Store Connect app record, and create an App Store Connect API key for uploads to TestFlight (`docs/release/LAUNCH.md` § 1).
+
+## 2026-10-19 (owner's overnight list: "I will trust your judgement")
+Built on the website first; `docs/plans/owner-list-2026-10-19.md` has each change and what the apps need for the same.
+- **Free trial is 30 days** (was 14). The first charge is on day 31.
+- **Contact us is office@sundeckpro.com**, on the landing page (under the FAQ and in the footer) and in the portal (More › Help, account menu).
+- **Onboarding** drops the "Chlorine your techs carry" question and Share This Sample.
+- **Gallons** is a plain number on the pool profile; no size remarks.
+- **Chemical** (was "Chemical Calculator") is the first thing on a visit's checklist. **Submit** saves the left side (gallons, readings, products) to the pool's chemical log, a new synced table `chemical_reading`; any team member adds or removes entries. Judgment call: one entry per Submit (not one per week), so a second visit in a week is kept too; the log is listed newest first.
+- **Require a pool photo to finish a job** is an owner setting (off by default). It blocks Mark Done on visits and finishing or sending a report until the job has a photo. Judgment call: any photo on the job counts, and it is checked by the website and apps, not a database rule (an offline phone's status change could sync before its photo row).
+- **Every test, pass or fail, is on the homeowner report** ("Tests we ran"), after What we checked.
+- **Pool shapes:** Roman, Grecian, and Figure 8 added; any shape can be mirrored; the spa goes anywhere, small/medium/large, round or square (`property.diagram_layout`).
+- **Markup has a Pen** (freehand, first tool), on photos and on the pool diagram. Diagram markup is per job (`job.diagram_markup`) and shows on the report. Judgment call: per job, because each visit marks what it found; the pool's shape and spa stay per pool.
+- **Filter and salt cell cleanings due within a week** show on Today (a pill with an icon) and on the visit's checklist (Regular cleanings, with weeks to go). Settings › Scheduling › Regular cleanings sets the shop's usual frequency for new plans, optionally applied to existing plans. Frequencies: monthly, 2, 3, 6 months, yearly.
+- **Card fee to customers** is an owner setting (off; up to 3%). Customers then choose Pay by Bank (no fee) or Pay by Card (fee added as its own line). Judgment calls: a percentage only (no fixed 30¢), capped at 3% per card network rules, bank payments never carry it, and the fee is not recorded as a payment on the invoice or deposit. **Owner to check:** some states restrict card surcharges; the settings hint says so.
+- **When They Call for repairs:** New Job › Repair asks "What do they need?" from the price book and fills the price. The owner picks the menu (Settings › Price Book › Show in When They Call); with none picked, every active item shows.
+- **Both packages pricing** (proposed, owner to confirm): the Pool Maintenance price for the team plus a flat $49 a month for leak detection, as already in `plans.ts` (`BOTH_ADDON_CENTS`). For example 4 people: $149 + $49 = $198 (the two bought separately would be $248). Now shown on sign-up (Both), the home page's pricing, and the onboarding trial page as two lines.
+- **Request a Feature** in the portal (More › Help, account menu) saves to a staff-only list (`/admin/requests`) and emails office@sundeckpro.com.
+
+## 2026-10-18 (owner: "Should we change the favicon to have a transparent background?")
+- **Yes, for the browser tab:** the favicon is the pin alone on a transparent background, water blue, switching to the lighter dark-mode blue (`color.role.dark.link`) when the browser is dark. The home-screen and app icons keep the navy square, since iOS and Android fill transparency with black or white.
+
+## 2026-10-18 (owner: "Can we clean up the header? Can it all fit in one row?"; the "+" was "in a weird spot and it disappears as you scroll")
+- **Desktop header is one row that stays in view:** logo (the mark alone on narrower screens), the sections as tabs, a blue New Job button (just "+" on narrower screens), the Settings gear, and a round account button with initials. The account menu holds the name, email, shop (and switching shops), Appearance, Account and Help, and Sign Out.
+
 ## 2026-10-18 (owner: "Partner report should be gone")
 - **One report per job, the homeowner report.** The partner (pool company) report is gone from the job page, the app, Settings › Report Templates, and the report API. Partner reports already sent still open from their links and the Reports list. Its template rows stay (off) in the database, so it could come back.
 

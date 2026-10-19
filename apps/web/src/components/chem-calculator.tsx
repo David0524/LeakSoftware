@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useState, type ComponentProps } from "react";
+import { useActionState, useEffect, useId, useState, type ComponentProps } from "react";
+import { submitReadings } from "@/app/actions/chemicals";
 import {
   ACID_PRODUCTS,
   calculateChemistry,
@@ -14,10 +15,11 @@ import {
   targets,
 } from "@leakbook/core";
 import { Sheet } from "./sheet";
-import { cx, Select } from "./ui";
+import { Button, cx, Notice, Select } from "./ui";
 
-// The pool chemical calculator (owner, 2026-10-16). Live: every change recalculates. Nothing is
-// saved; it is a tool for the visit. The math is packages/core/src/chemistry.ts.
+// The pool chemical calculator (owner, 2026-10-16). Live: every change recalculates. Opened for
+// a pool, Submit saves the left side (gallons, readings, products) to the pool's chemical log
+// (owner, 2026-10-19). The math is packages/core/src/chemistry.ts.
 
 const num = (v: string) => {
   const n = Number(v.replace(/,/g, ""));
@@ -172,7 +174,21 @@ function Doses({ result }: { result: ChemistryResult }) {
   );
 }
 
-export function ChemCalculator({ initialGallons }: { initialGallons?: number | null }) {
+/** The pool the screen was opened for: Submit saves the readings to its log. */
+export interface ChemicalPool {
+  propertyId: string;
+  jobId: string | null;
+  name: string;
+}
+
+export function ChemCalculator({
+  initialGallons,
+  pool,
+}: {
+  initialGallons?: number | null;
+  pool?: ChemicalPool | null;
+}) {
+  const [submitted, submit, submitting] = useActionState(submitReadings, {});
   const [gallonsText, setGallonsText] = useState(
     initialGallons ? withCommas(String(initialGallons)) : "",
   );
@@ -328,6 +344,35 @@ export function ChemCalculator({ initialGallons }: { initialGallons?: number | n
               options={Object.entries(ACID_PRODUCTS).map(([value, label]) => ({ value, label }))}
             />
           </div>
+          {/* Submit: the left side goes into this pool's weekly log (owner, 2026-10-19). */}
+          {pool ? (
+            <form action={submit} className="space-y-3 border-t-[0.5px] border-separator pt-4">
+              <input type="hidden" name="property" value={pool.propertyId} />
+              <input type="hidden" name="job" value={pool.jobId ?? ""} />
+              <input type="hidden" name="gallons" value={gallonsText} />
+              <input type="hidden" name="chlorine" value={chlorine} />
+              <input type="hidden" name="acid" value={acid} />
+              {READINGS.map((r) => (
+                <input key={r.key} type="hidden" name={r.key} value={values[r.key] ?? ""} />
+              ))}
+              <Button
+                type="submit"
+                disabled={submitting || result.statuses.length === 0}
+                className="w-full sm:w-auto sm:px-8"
+              >
+                {submitting ? "Submitting…" : "Submit"}
+              </Button>
+              <p className="text-[0.9375rem] text-text-muted">
+                Saves these readings to {pool.name}’s chemical log.
+              </p>
+              {submitted.error ? <Notice tone="error">{submitted.error}</Notice> : null}
+              {submitted.message ? <Notice tone="success">{submitted.message}</Notice> : null}
+            </form>
+          ) : (
+            <p className="border-t-[0.5px] border-separator pt-4 text-[0.9375rem] text-text-muted">
+              To save readings to a pool’s log, open Chemical from a visit or the customer’s pool.
+            </p>
+          )}
         </section>
         {/* Room to scroll the last fields clear of the docked bar. */}
         <div aria-hidden="true" className="h-20 lg:hidden" />
