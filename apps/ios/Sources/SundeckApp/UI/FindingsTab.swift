@@ -3,7 +3,7 @@
     import SundeckSync
     import SwiftUI
 
-    /// "Findings" in the job's Findings section (spec 5.4): the pool diagram with every pin, a
+    /// "Findings" in the job's Findings section (spec 5.4): a
     /// numbered grouped row per finding (swipe left to delete), then Add Finding. Tapping a row
     /// opens its Edit sheet; the pool's shape is set in that sheet. Port of FindingsEditor in
     /// apps/web/src/components/job-work.tsx.
@@ -20,8 +20,6 @@
             let _ = sync.revision  // reload after any write or pull
             let config = InspectionConfig(sync.store, companyId: companyId)
             let insp = JobInspection(sync.store, jobId: job.id)
-            // The property as it is now (the finding sheet's shape picker writes it).
-            let property = job.property.flatMap { (try? sync.store.get("property", $0.id)) ?? $0 }
             let rows = findingRows(insp, config)
             VStack(alignment: .leading, spacing: 12) {
                 SectionHeading("Findings")
@@ -29,13 +27,8 @@
                     if rows.isEmpty {
                         Text("No findings recorded.").textRole(.body).foregroundStyle(Color.textMuted)
                     } else {
+                        // The diagram with the pins is the Pool Diagram section above (owner, 2026-10-19).
                         VStack(spacing: 20) {
-                            if let property {
-                                PoolDiagram(
-                                    shape: diagramShape(of: property), hasSpa: property["has_spa"]?.bool ?? false,
-                                    layout: diagramLayout(of: property),
-                                    pins: findingPins(insp, config))
-                            }
                             Grouped(separatorInset: 60) {
                                 ForEach(rows) { row in
                                     SwipeDeleteRow(name: row.title, delete: { deleting = row }) {

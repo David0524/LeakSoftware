@@ -69,6 +69,7 @@ import {
   tabular,
 } from "../../../../../../ui/theme";
 import { ChecklistTab } from "../../../../../../features/inspection/ChecklistTab";
+import { DiagramPanel } from "../../../../../../features/inspection/DiagramPanel";
 import { FindingsTab } from "../../../../../../features/inspection/FindingsTab";
 import { TestsTab } from "../../../../../../features/inspection/TestsTab";
 import { JobSchedule, showsJobSchedule } from "../../../../../../features/job/JobSchedule";
@@ -280,13 +281,19 @@ export default function JobDetail() {
           ) : null}
           {shown === "findings" ? (
             <View style={styles.parts}>
+              {property ? (
+                <View style={styles.part}>
+                  <T variant="sectionHeading">Pool Diagram</T>
+                  <DiagramPanel job={job} property={property} />
+                </View>
+              ) : null}
               <View style={styles.part}>
                 <T variant="sectionHeading">Tests</T>
                 <TestsTab job={job} />
               </View>
               <View style={styles.part}>
                 <T variant="sectionHeading">Findings</T>
-                <FindingsTab job={job} property={property} />
+                <FindingsTab job={job} />
               </View>
             </View>
           ) : null}

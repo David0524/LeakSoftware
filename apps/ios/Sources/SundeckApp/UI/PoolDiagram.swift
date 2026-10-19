@@ -58,6 +58,8 @@
         /// The finding sheet's pin picker draws a 1 pt `controlBorder` outline; the Findings
         /// section's diagram is a plain white block.
         var outlined = false
+        /// Edit Pool Shape's spa picker: VoiceOver moves the spa with actions instead of a tap.
+        var spaPlacement: SpaPlacement?
         var onPlace: ((Double, Double) -> Void)?
 
         private var diagram: SundeckCore.PoolDiagram { poolDiagram(shape, hasSpa, layout) }
@@ -86,7 +88,7 @@
                     if outlined { corner.strokeBorder(Color.controlBorder, lineWidth: 1) }
                 }
                 .accessibilityElement(children: .ignore)
-                .modifier(DiagramAccessibility(pins: pins, onPlace: onPlace))
+                .modifier(DiagramAccessibility(pins: pins, spaPlacement: spaPlacement, onPlace: onPlace))
         }
 
         /// Barlow Bold at a size in the diagram's units, for "SPA" and the pin numbers.
@@ -132,12 +134,39 @@
     /// VoiceOver can't aim a tap on the drawing: the diagram reads as one element that names its
     /// pins, and when it takes a pin, activating it drops the pin in the middle (the finding's
     /// location field then says where it is).
+    /// The spa picker for VoiceOver (the website's arrow keys): where the spa is, and an action
+    /// per direction that moves it a step.
+    struct SpaPlacement {
+        var value: String
+        var move: (_ dx: Double, _ dy: Double) -> Void
+    }
+
     private struct DiagramAccessibility: ViewModifier {
         var pins: [DiagramPin]
+        var spaPlacement: SpaPlacement?
         var onPlace: ((Double, Double) -> Void)?
 
         func body(content: Content) -> some View {
-            if let onPlace {
+            if let spa = spaPlacement {
+                let step = PoolShapeForm.step
+                content
+                    .accessibilityLabel(PoolShapeForm.placeLabel)
+                    .accessibilityValue(spa.value)
+                    .accessibilityHint(
+                        "Swipe up or down to move the spa up or down. Use the actions to move it left or right."
+                    )
+                    .accessibilityAdjustableAction { direction in
+                        switch direction {
+                        case .increment: spa.move(0, -step)
+                        case .decrement: spa.move(0, step)
+                        @unknown default: break
+                        }
+                    }
+                    .accessibilityAction(named: "Move Spa Left") { spa.move(-step, 0) }
+                    .accessibilityAction(named: "Move Spa Right") { spa.move(step, 0) }
+                    .accessibilityAction(named: "Move Spa Up") { spa.move(0, -step) }
+                    .accessibilityAction(named: "Move Spa Down") { spa.move(0, step) }
+            } else if let onPlace {
                 content
                     .accessibilityLabel("Pool diagram. Tap where the leak is.")
                     .accessibilityValue(pinSummary(pins))

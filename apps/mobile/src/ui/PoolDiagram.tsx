@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Pressable, StyleSheet, View, type GestureResponderEvent } from "react-native";
 import Svg, { Circle, Path, Rect, Text as SvgText } from "react-native-svg";
 import { parseDiagramLayout, poolDiagram, type DiagramShape } from "@leakbook/core";
@@ -26,6 +26,7 @@ export function PoolDiagram({
   onPlace,
   title = "Pool diagram",
   outlined = false,
+  placing,
 }: {
   shape: DiagramShape | null | undefined;
   hasSpa: boolean;
@@ -37,16 +38,34 @@ export function PoolDiagram({
   title?: string;
   /** The finding sheet's pin picker: a 1 pt outline, at most 448 wide (spec 6.2). */
   outlined?: boolean;
+  /**
+   * Placing the spa instead of a pin (Edit Pool Shape): what the drawing is called, and its
+   * nudges, so VoiceOver and TalkBack users move it with Move Left / Right / Up / Down.
+   */
+  placing?: {
+    label: string;
+    hint: string;
+    value: string;
+    onMove: (dx: number, dy: number) => void;
+  };
 }) {
   const d = poolDiagram(shape, hasSpa, parseDiagramLayout(layout));
   const [width, setWidth] = useState(0);
   const height = (width * d.height) / d.width;
 
+  const surface = useRef<View>(null);
   function place(e: GestureResponderEvent) {
     if (!onPlace || width === 0) return;
-    const x = Math.min(Math.max(e.nativeEvent.locationX / width, 0), 1);
-    const y = Math.min(Math.max(e.nativeEvent.locationY / height, 0), 1);
-    onPlace(Math.round(x * 10000) / 10000, Math.round(y * 10000) / 10000);
+    const put = (lx: number, ly: number) => {
+      if (!Number.isFinite(lx) || !Number.isFinite(ly)) return;
+      const x = Math.min(Math.max(lx / width, 0), 1);
+      const y = Math.min(Math.max(ly / height, 0), 1);
+      onPlace(Math.round(x * 10000) / 10000, Math.round(y * 10000) / 10000);
+    };
+    const { locationX, locationY, pageX, pageY } = e.nativeEvent;
+    if (Number.isFinite(locationX) && Number.isFinite(locationY)) return put(locationX, locationY);
+    // Some presses come without a position in the view (the browser build): measure it.
+    surface.current?.measure((_x, _y, _w, _h, left, top) => put(pageX - left, pageY - top));
   }
 
   // VoiceOver can't aim a tap on the drawing (design review M6): the diagram reads as one
@@ -71,15 +90,30 @@ export function PoolDiagram({
     >
       {width > 0 ? (
         <Pressable
+          ref={surface}
           onPress={place}
           disabled={!onPlace}
           style={{ width, height }}
           accessible={!!onPlace}
           accessibilityRole="button"
-          accessibilityLabel="Pool diagram. Tap where the leak is."
-          accessibilityValue={{ text: pinSummary }}
-          accessibilityHint="Double-tap to place the pin in the middle, then describe where it is in the location field."
-          onAccessibilityTap={onPlace ? () => onPlace(0.5, 0.5) : undefined}
+          accessibilityLabel={placing?.label ?? "Pool diagram. Tap where the leak is."}
+          accessibilityValue={{ text: placing?.value ?? pinSummary }}
+          accessibilityHint={
+            placing?.hint ??
+            "Double-tap to place the pin in the middle, then describe where it is in the location field."
+          }
+          accessibilityActions={
+            placing ? MOVES.map(({ name, label }) => ({ name, label })) : undefined
+          }
+          onAccessibilityAction={
+            placing
+              ? (e) => {
+                  const m = MOVES.find((x) => x.name === e.nativeEvent.actionName);
+                  if (m) placing.onMove(m.dx, m.dy);
+                }
+              : undefined
+          }
+          onAccessibilityTap={onPlace && !placing ? () => onPlace(0.5, 0.5) : undefined}
         >
           <Svg
             width={width}
@@ -132,6 +166,14 @@ export function PoolDiagram({
     </View>
   );
 }
+
+/** The spa's nudges for screen readers: 2% of the drawing a step, as the website's arrow keys. */
+const MOVES = [
+  { name: "moveLeft", label: "Move Left", dx: -0.02, dy: 0 },
+  { name: "moveRight", label: "Move Right", dx: 0.02, dy: 0 },
+  { name: "moveUp", label: "Move Up", dx: 0, dy: -0.02 },
+  { name: "moveDown", label: "Move Down", dx: 0, dy: 0.02 },
+];
 
 function Pin({ pin, x, y }: { pin: DiagramPin; x: number; y: number }) {
   const r = pin.active ? 7 : 6;

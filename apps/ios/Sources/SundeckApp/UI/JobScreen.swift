@@ -138,6 +138,8 @@
             case .checklist: ChecklistTab(job: job)
             case .findings:
                 VStack(alignment: .leading, spacing: 32) {
+                    // The pool's drawing first, as on the website (owner, 2026-10-19).
+                    if job.property != nil { PoolDiagramSection(job: job) }
                     TestsTab(job: job)
                     FindingsTab(job: job)
                 }

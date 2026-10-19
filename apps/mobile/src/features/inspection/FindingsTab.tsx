@@ -1,10 +1,9 @@
 import { router } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
-import { FINDING_STATUS_LABELS, type Job, type Property } from "@leakbook/core";
+import { FINDING_STATUS_LABELS, type Job } from "@leakbook/core";
 import { useInspectionConfig, useJobInspection } from "../../data/inspection";
 import { useSession } from "../../state/session";
 import { Button, Group, ListRow, T } from "../../ui/components";
-import { PoolDiagram } from "../../ui/PoolDiagram";
 import { color, face, space } from "../../ui/theme";
 import { confirmDeleteFinding } from "./remove";
 
@@ -12,11 +11,11 @@ import { confirmDeleteFinding } from "./remove";
 const NUM = 28;
 
 /**
- * Findings, as on the website (spec 5.4): the pool diagram with the numbered pins, then a row
- * per finding with its severity circle; tap to edit, swipe left to delete; then Add Finding.
- * The pool's shape is picked in the finding sheet, next to the pin.
+ * Findings, as on the website (spec 5.4): a row per finding with its severity circle; tap to
+ * edit, swipe left to delete; then Add Finding. The pool diagram with the numbered pins is its
+ * own section above (DiagramPanel).
  */
-export function FindingsTab({ job, property }: { job: Job; property?: Property }) {
+export function FindingsTab({ job }: { job: Job }) {
   const { services } = useSession();
   const config = useInspectionConfig(job.company_id);
   const insp = useJobInspection(job.company_id, job.id);
@@ -28,24 +27,6 @@ export function FindingsTab({ job, property }: { job: Job; property?: Property }
         <T muted>No findings recorded.</T>
       ) : (
         <View style={{ gap: space["5"] }}>
-          {property ? (
-            <PoolDiagram
-              shape={property.diagram_shape}
-              hasSpa={property.has_spa}
-              layout={property.diagram_layout}
-              title={`Pool diagram with ${ordered.length} finding pins`}
-              pins={ordered
-                .map((f, i) => ({ f, n: i + 1 }))
-                .filter(({ f }) => f.pin_x != null && f.pin_y != null)
-                .map(({ f, n }) => ({
-                  id: f.id,
-                  x: Number(f.pin_x),
-                  y: Number(f.pin_y),
-                  color: config.severityByKey.get(f.severity_key)?.color ?? color.fail,
-                  label: String(n),
-                }))}
-            />
-          ) : null}
           {/* Hairlines start after the number, where the text does (60). */}
           <Group separatorInset={space["4"] + NUM + space["4"]}>
             {ordered.map((f, i) => {

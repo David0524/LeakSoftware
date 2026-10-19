@@ -623,6 +623,18 @@
             try await snapshot(
                 "10-findings-layout", height: 1800,
                 NavigationStack { JobScreen(jobId: ids.job, section: .findings) }.app(env))
+            // Edit Pool Shape (owner, 2026-10-19): the sheet as the property is now (a mirrored
+            // Figure 8, a large square spa placed by hand), in light, dark and large text.
+            let shapeForm = PoolShapeForm(property: try store.get("property", propertyId))
+            try await snapshot(
+                "10-pool-shape", height: 1900,
+                PoolShapeSheet(propertyId: propertyId, companyId: "c1", form: shapeForm).app(env))
+            try await snapshot(
+                "10-pool-shape-dark", dark: true, height: 1900,
+                PoolShapeSheet(propertyId: propertyId, companyId: "c1", form: shapeForm).app(env))
+            try await snapshot(
+                "10-pool-shape-large-text", largeText: true, height: 2600,
+                PoolShapeSheet(propertyId: propertyId, companyId: "c1", form: shapeForm).app(env))
             try await snapshot(
                 "12-component", height: 2000,
                 NavigationStack { ComponentScreen(jobId: ids.job, componentId: ids.seam) }.app(env))
