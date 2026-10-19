@@ -100,6 +100,8 @@ const SHAPES = {
   repeat: {
     line: "M20 11a8 8 0 0 0-14.5-4.5M4 13a8 8 0 0 0 14.5 4.5M5 3v4h4M19 21v-4h-4",
   },
+  // The website's KeyIcon: how to get in (a pool's access notes).
+  key: { line: "M11 12l8-8M16 7l2 2M14 9l2 2", circles: [[8, 15, 4]] },
 } satisfies Record<string, Shape>;
 
 export type WebIconName = keyof typeof SHAPES;

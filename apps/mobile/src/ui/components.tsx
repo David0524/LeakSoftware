@@ -431,6 +431,7 @@ export function Button({
   small = false,
   icon,
   style,
+  accessibilityLabel,
 }: {
   title: string;
   onPress: () => void;
@@ -443,10 +444,13 @@ export function Button({
   small?: boolean;
   icon?: WebIconName;
   style?: StyleProp<ViewStyle>;
+  /** When the label alone doesn't say what it acts on ("Remove Skimmer 2"). */
+  accessibilityLabel?: string;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
       onPress={onPress}
       disabled={disabled || loading}

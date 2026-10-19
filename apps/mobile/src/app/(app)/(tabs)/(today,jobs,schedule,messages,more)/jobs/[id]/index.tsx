@@ -12,13 +12,14 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
-  JOB_STATUS_LABELS,
   JOB_TYPE_LABELS,
   POOL_TYPE_LABELS,
   checklistTally,
   formatAddress,
   formatCents,
   formatSchedule,
+  jobActionLabel,
+  jobFeeLabel,
   parseDollars,
   propertyLocation,
   toE164,
@@ -81,14 +82,6 @@ import { MediaSection } from "../../../../../../features/media/MediaSection";
 import { InvoiceSection } from "../../../../../../features/invoice/InvoiceSection";
 import { QuoteTab } from "../../../../../../features/quote/QuoteTab";
 import { ReportTab, Signatures } from "../../../../../../features/report/ReportTab";
-
-/** The status actions under the job's header (spec 5.4). Cancel sits at the end of Details. */
-const ACTION_LABELS: Partial<Record<JobStatus, string>> = {
-  in_progress: "Start Job",
-  scheduled: "Move Back to Scheduled",
-  unscheduled: "Reopen Job",
-  done: "Mark Done",
-};
 
 type JobSection = "details" | "checklist" | "findings" | "photos" | "wrapup";
 
@@ -215,7 +208,7 @@ export default function JobDetail() {
               {transitions.map((to) => (
                 <Button
                   key={to}
-                  title={ACTION_LABELS[to] ?? JOB_STATUS_LABELS[to]}
+                  title={jobActionLabel(job.status, to)}
                   kind={to === "in_progress" ? "primary" : "secondary"}
                   onPress={() => changeStatus(to)}
                 />
@@ -408,6 +401,9 @@ function Details({
   const phone = customer?.phone ? toE164(customer.phone) : null;
   const conversation = phone ? conversations.find((c) => c.phone === phone) : undefined;
   const address = property ? formatAddress(property) : "";
+  // Only leak detection marks a leak's location (owner, 2026-10-19: no leak checkbox on
+  // maintenance visits) and calls its price a detection fee.
+  const detection = job.type === "detection";
   const questions = (company.settings as Partial<CompanySettings>).intake_questions ?? [];
   const answers = [
     // When They Call on a repair (owner, 2026-10-19): what the customer needs.
@@ -545,7 +541,7 @@ function Details({
           ) : null}
           {job.fee_cents != null ? (
             <ListRow
-              title="Detection fee"
+              title={jobFeeLabel(job.type)}
               detail={
                 <T muted style={tabular}>
                   {formatCents(job.fee_cents)}
@@ -573,45 +569,41 @@ function Details({
 
       <Section
         title="On site"
-        footer={
-          job.type === "maintenance" ? undefined : "The detection fee is shown on the report."
-        }
+        footer={detection ? "The detection fee is shown on the report." : "Billed on the invoice."}
       >
         <Group>
-          {job.type === "maintenance" ? null : (
-            <ListRow>
-              <View style={styles.feeRow}>
-                <T style={{ flex: 1 }}>Detection fee</T>
-                <T muted>$</T>
-                <TextInput
-                  accessibilityLabel="Detection fee in dollars"
-                  value={fee ?? (job.fee_cents != null ? (job.fee_cents / 100).toFixed(2) : "")}
-                  onChangeText={setFee}
-                  onBlur={saveFee}
-                  keyboardType="decimal-pad"
-                  placeholder="0.00"
-                  placeholderTextColor={color.placeholder}
-                  style={[
-                    styles.feeInput,
-                    tabular,
-                    {
-                      color: color.text,
-                      borderColor: color.controlBorder,
-                      backgroundColor: color.surface,
-                    },
-                  ]}
-                />
-              </View>
-            </ListRow>
-          )}
-          {job.type === "maintenance" ? null : (
+          <ListRow>
+            <View style={styles.feeRow}>
+              <T style={{ flex: 1 }}>{jobFeeLabel(job.type)}</T>
+              <T muted>$</T>
+              <TextInput
+                accessibilityLabel={`${jobFeeLabel(job.type)} in dollars`}
+                value={fee ?? (job.fee_cents != null ? (job.fee_cents / 100).toFixed(2) : "")}
+                onChangeText={setFee}
+                onBlur={saveFee}
+                keyboardType="decimal-pad"
+                placeholder="0.00"
+                placeholderTextColor={color.placeholder}
+                style={[
+                  styles.feeInput,
+                  tabular,
+                  {
+                    color: color.text,
+                    borderColor: color.controlBorder,
+                    backgroundColor: color.surface,
+                  },
+                ]}
+              />
+            </View>
+          </ListRow>
+          {detection ? (
             <Toggle
               inList
               label="Leak location marked"
               value={job.location_marked ?? false}
               onChange={(v) => update({ location_marked: v })}
             />
-          )}
+          ) : null}
           <View style={styles.notes}>
             <T variant="secondary" muted>
               Job notes

@@ -6,6 +6,7 @@ import {
   checklistSectionSummary,
   componentApplies,
   markRemainingLabel,
+  removeItemConfirm,
   type ChecklistSection,
   type ComponentType,
   type Job,
@@ -46,6 +47,8 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
   const insp = useJobInspection(job.company_id, job.id);
   const media = useJobMedia(job.company_id, job.id);
   const [adding, setAdding] = useState<string | null>(null);
+  // Edit, as in an iOS list: every item gets Remove (owner, 2026-10-19).
+  const [editing, setEditing] = useState(false);
   const maintenance = job.type === "maintenance";
 
   if (insp.components.length === 0) {
@@ -109,6 +112,22 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
 
   return (
     <View style={styles.list}>
+      <View style={styles.editRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected: editing }}
+          onPress={() => setEditing(!editing)}
+          hitSlop={4}
+          style={({ pressed }) => [styles.editButton, pressed && { opacity: 0.5 }]}
+        >
+          <Text
+            style={[styles.editText, { color: color.link }]}
+            maxFontSizeMultiplier={MAX_TEXT_SCALE}
+          >
+            {editing ? "Done" : "Edit"}
+          </Text>
+        </Pressable>
+      </View>
       {SECTIONS.map((section) => {
         const items = insp.components
           .filter((c) => (typeOf(c)?.section ?? "other") === section && typeOf(c))
@@ -125,6 +144,7 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
             section={section}
             items={items.map((c) => ({ component: c, type: typeOf(c)! }))}
             photos={photos}
+            editing={editing}
           />
         );
       })}
@@ -156,17 +176,21 @@ function ChecklistGroup({
   section,
   items,
   photos,
+  editing,
 }: {
   job: Job;
   section: ChecklistSection;
   items: { component: JobComponent; type: ComponentType }[];
   photos: Map<string, number>;
+  editing: boolean;
 }) {
   const { services, user } = useSession();
   const insp = useJobInspection(job.company_id, job.id);
   const rows = items.map((i) => ({ ...i, result: insp.resultByComponent.get(i.component.id) }));
   const summary = checklistSectionSummary(rows, section === "service");
-  const [open, setOpen] = useState(summary.open);
+  const [folded, setOpen] = useState(summary.open);
+  // Editing opens every section, so each item shows its Remove button.
+  const open = folded || editing;
   const [turn] = useState(() => new Animated.Value(summary.open ? 1 : 0));
   useEffect(() => {
     Animated.timing(turn, { toValue: open ? 1 : 0, duration: 200, useNativeDriver: true }).start();
@@ -203,7 +227,7 @@ function ChecklistGroup({
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         accessibilityLabel={`${title}, ${summary.text}`}
-        onPress={() => setOpen(!open)}
+        onPress={() => setOpen(!folded)}
         android_ripple={{ color: color.ripple }}
         style={styles.groupHead}
       >
@@ -233,6 +257,7 @@ function ChecklistGroup({
                 component={r.component}
                 type={r.type}
                 photos={photos.get(r.component.id) ?? 0}
+                editing={editing}
               />
             </View>
           ))}
@@ -274,11 +299,13 @@ function ChecklistItem({
   component,
   type: itemType,
   photos,
+  editing,
 }: {
   job: Job;
   component: JobComponent;
   type: ComponentType;
   photos: number;
+  editing: boolean;
 }) {
   const { services, user } = useSession();
   const insp = useJobInspection(job.company_id, job.id);
@@ -299,14 +326,36 @@ function ChecklistItem({
     });
   }
   function remove() {
+    // A scheduled cleaning stays due on its plan, so it goes on the next visit.
+    const ask = removeItemConfirm(component.label, !!component.plan_cleaning_id);
     confirmDestructive({
-      title: `Remove ${component.label} from the checklist?`,
-      confirm: "Remove Item",
+      title: ask.title,
+      message: ask.message ?? undefined,
+      confirm: ask.confirm,
       onConfirm: () => removeComponent(services.sync, job.company_id, component, result),
     });
   }
 
   const photoText = photos ? `${photos} photo${photos === 1 ? "" : "s"}` : null;
+
+  if (editing) {
+    return (
+      <View style={styles.editItem}>
+        <Text
+          style={[styles.itemName, { flex: 1, color: color.text }]}
+          maxFontSizeMultiplier={MAX_TEXT_SCALE}
+        >
+          {component.label}
+        </Text>
+        <Button
+          title="Remove"
+          kind="danger"
+          accessibilityLabel={`Remove ${component.label}`}
+          onPress={remove}
+        />
+      </View>
+    );
+  }
 
   if (check) {
     const done = verdict === "ok";
@@ -341,16 +390,6 @@ function ChecklistItem({
             </T>
           ) : null}
         </Pressable>
-        {itemType.allows_multiple ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Remove ${component.label}`}
-            onPress={remove}
-            style={styles.removeX}
-          >
-            <WebIcon name="close" size={16} color={color.textMuted} strokeWidth={2.4} />
-          </Pressable>
-        ) : null}
       </View>
     );
   }
@@ -404,9 +443,7 @@ function ChecklistItem({
                     if (o.value !== verdict) choose(o.value);
                   },
                 })),
-                ...(itemType.allows_multiple
-                  ? [{ label: "Remove Item…", destructive: true, onPress: remove }]
-                  : []),
+                { label: "Remove Item…", destructive: true, onPress: remove },
               ],
             })
           }
@@ -532,7 +569,17 @@ const styles = StyleSheet.create({
     paddingVertical: space["1"],
   },
   checkHit: { width: minTap, height: minTap, alignItems: "center", justifyContent: "center" },
-  removeX: { width: minTap, height: minTap, alignItems: "center", justifyContent: "center" },
+  editRow: { flexDirection: "row", justifyContent: "flex-end", marginBottom: -space["1"] },
+  editButton: { minHeight: minTap, justifyContent: "center", paddingHorizontal: space["2"] },
+  editText: { ...face.semiBold, fontSize: 17, lineHeight: 22 },
+  editItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space["3"],
+    minHeight: minTap,
+    paddingHorizontal: space["4"],
+    paddingVertical: space["1"],
+  },
   markRest: { minHeight: minTap, justifyContent: "center", paddingHorizontal: space["4"] },
   addRow: { flexDirection: "row", alignItems: "flex-end", gap: space["3"] },
 });

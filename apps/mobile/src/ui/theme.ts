@@ -102,7 +102,6 @@ function palette(scheme: Scheme) {
     rowPressed: tint(role.text, 0.06),
     well: tint(role.text, 0.04),
     emptyFill: tint(role.text, 0.04),
-    accessFill: tint(status.warning, 0.1),
     ripple: tint(role.text, 0.1),
     grabber: tint(role.text, 0.25),
     scrim: tint(tokens.color.neutral["900"], 0.4),

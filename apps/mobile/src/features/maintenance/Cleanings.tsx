@@ -2,7 +2,9 @@ import { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import {
   cleaningCountdown,
+  cleaningDueSpoken,
   cleaningKind,
+  cleaningShortLabel,
   localDate,
   type CleaningKind,
   type Job,
@@ -11,8 +13,8 @@ import {
 import { useJobRows } from "../../data/hooks";
 import { useInspectionConfig } from "../../data/inspection";
 import { useCompany } from "../../state/session";
-import { Group, ListRow, Section, T } from "../../ui/components";
-import { color, face, MAX_TEXT_SCALE, space, tint, type } from "../../ui/theme";
+import { Group, ListRow, Section } from "../../ui/components";
+import { color, face, MAX_TEXT_SCALE, space, type } from "../../ui/theme";
 import { WebIcon, type WebIconName } from "../../ui/WebIcon";
 
 // Filter and salt cell cleanings (owner, 2026-10-19). Phones don't sync plan_cleaning yet, so
@@ -113,31 +115,43 @@ export function VisitCleanings({ job }: { job: Job }) {
 }
 
 /** Today's stop: "Clean filter: due today" pills, as the website's Today. */
-export function CleaningPills({ job }: { job: Job }) {
+export function CleaningsDue({ job }: { job: Job }) {
   const cleanings = useVisitCleanings(job);
   if (cleanings.length === 0) return null;
+  // Just the icon and how soon (owner, 2026-10-19: "Don't make it too wordy"); read aloud
+  // with the cleaning's name.
   return (
-    <View style={styles.pills} accessibilityLabel="Cleanings due">
-      {cleanings.map((c) => (
-        <View key={c.id} style={[styles.pill, { backgroundColor: tint(color.warning, 0.1) }]}>
-          <CleaningIcon kind={c.kind} size={16} />
-          <T variant="secondary" style={face.semiBold}>
-            {`${c.name}: ${c.due.label.toLowerCase()}`}
-          </T>
-        </View>
-      ))}
+    <View style={styles.due} accessibilityLabel="Cleanings due">
+      {cleanings.map((c) => {
+        const tone = c.due.days < 0 ? color.fail : color.textMuted;
+        return (
+          <View
+            key={c.id}
+            accessible
+            accessibilityLabel={cleaningDueSpoken(c.name, c.due)}
+            style={styles.dueItem}
+          >
+            <CleaningIcon kind={c.kind} size={18} tone={tone} />
+            <Text
+              style={[type.secondary, face.medium, { color: tone }]}
+              maxFontSizeMultiplier={MAX_TEXT_SCALE}
+            >
+              {cleaningShortLabel(c.due)}
+            </Text>
+          </View>
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  pills: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: space["1"] },
-  pill: {
-    minHeight: 32,
+  due: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: 16,
-    paddingHorizontal: space["3"],
+    flexWrap: "wrap",
+    columnGap: space["4"],
+    rowGap: space["1"],
+    marginTop: space["1"],
   },
+  dueItem: { flexDirection: "row", alignItems: "center", gap: 6 },
 });

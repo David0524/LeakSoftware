@@ -24,7 +24,7 @@ import { useDriveTimes, useTeam } from "../../../../data/schedule";
 import { useLine } from "../../../../data/texting";
 import { useWeather } from "../../../../data/weather";
 import { GettingStarted } from "../../../../features/today/GettingStarted";
-import { CleaningPills } from "../../../../features/maintenance/Cleanings";
+import { CleaningsDue } from "../../../../features/maintenance/Cleanings";
 import { OnMyWay } from "../../../../features/today/OnMyWay";
 import { WeatherBadge } from "../../../../features/today/WeatherBadge";
 import { useCompany, useSession } from "../../../../state/session";
@@ -43,6 +43,7 @@ import {
 import { haptics } from "../../../../ui/haptics";
 import { SyncBar } from "../../../../ui/SyncBar";
 import { ScreenTip } from "../../../../ui/Tip";
+import { WebIcon } from "../../../../ui/WebIcon";
 import {
   cardShadow,
   color,
@@ -363,19 +364,24 @@ function Stop({
             {formatAddress(job.property)}
           </Text>
           {/* A cleaning on this visit's checklist (owner, 2026-10-19), as the website. */}
-          <CleaningPills job={job} />
+          <CleaningsDue job={job} />
           {job.property.access_notes ? (
-            <Text
-              numberOfLines={2}
-              style={[
-                type.secondary,
-                styles.access,
-                { color: color.text, backgroundColor: color.accessFill },
-              ]}
-              maxFontSizeMultiplier={MAX_TEXT_SCALE}
+            <View
+              accessible
+              accessibilityLabel={`Access: ${job.property.access_notes}`}
+              style={styles.access}
             >
-              {job.property.access_notes}
-            </Text>
+              <View style={styles.accessIcon}>
+                <WebIcon name="key" size={18} color={color.textMuted} />
+              </View>
+              <Text
+                numberOfLines={2}
+                style={[type.secondary, { flex: 1, color: color.textMuted }]}
+                maxFontSizeMultiplier={MAX_TEXT_SCALE}
+              >
+                {job.property.access_notes}
+              </Text>
+            </View>
           ) : null}
         </>
       )}
@@ -414,11 +420,6 @@ const styles = StyleSheet.create({
   numberText: { fontFamily: font.displayBold, fontSize: 17, fontVariant: ["tabular-nums"] },
   time: { fontFamily: font.displayBold, fontSize: 17 },
   actions: { marginLeft: "auto", flexDirection: "row", gap: space["2"] },
-  access: {
-    marginTop: space["1"],
-    borderRadius: 8,
-    paddingHorizontal: space["2"],
-    paddingVertical: space["1"],
-    overflow: "hidden",
-  },
+  access: { marginTop: space["1"], flexDirection: "row", alignItems: "flex-start", gap: 6 },
+  accessIcon: { marginTop: 1 },
 });
