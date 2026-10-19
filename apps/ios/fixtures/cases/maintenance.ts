@@ -1,5 +1,10 @@
 import {
+  CLEANING_DUE_SOON_DAYS,
+  CLEANING_MONTHS,
   cadenceLabel,
+  cleaningCountdown,
+  cleaningKind,
+  cleaningMonthsLabel,
   maintenanceSettings,
   planRepeat,
   planSummary,
@@ -98,6 +103,42 @@ export const maintenance: ModuleCases = {
       [plan({ weekdays: [1, 3, 5] }), "2026-10-19", 0],
       [plan({ starts_on: "2027-02-28" }), "2026-10-19", 3],
       [plan({ starts_on: "2028-02-29", monthly: true }), "2028-01-01", 5],
+    ],
+  ),
+  CLEANING_MONTHS: rule(() => CLEANING_MONTHS, [[]]),
+  CLEANING_DUE_SOON_DAYS: rule(() => CLEANING_DUE_SOON_DAYS, [[]]),
+  cleaningMonthsLabel: rule((m: number) => cleaningMonthsLabel(m), [[1], [2], [3], [6], [12], [4]]),
+  // Salt wins over filter; key or name; any case.
+  cleaningKind: rule(
+    (t: { key?: string | null; name?: string | null }) => cleaningKind(t),
+    [
+      [{ key: "svc_filter_clean", name: "Clean filter" }],
+      [{ key: "svc_salt_clean", name: "Clean salt cell" }],
+      [{ key: null, name: "FILTER rinse" }],
+      [{ key: "svc_x", name: "Salt and filter check" }],
+      [{ key: "svc_brush", name: "Brush walls" }],
+      [{}],
+      [{ name: null }],
+      [{ key: "SALT" }],
+    ],
+  ),
+  // Days and weeks to a due date, across months, years, and a leap day.
+  cleaningCountdown: rule(
+    (nextDue: string, on: string) => cleaningCountdown(nextDue, on),
+    [
+      ["2026-10-19", "2026-10-19"],
+      ["2026-10-20", "2026-10-19"],
+      ["2026-10-24", "2026-10-19"],
+      ["2026-10-25", "2026-10-19"],
+      ["2026-10-26", "2026-10-19"],
+      ["2026-10-29", "2026-10-19"],
+      ["2026-10-30", "2026-10-19"],
+      ["2026-11-30", "2026-10-19"],
+      ["2026-10-18", "2026-10-19"],
+      ["2025-10-19", "2026-10-19"],
+      ["2027-01-19", "2026-10-19"],
+      ["2028-03-01", "2028-02-28"],
+      ["2026-11-02", "2026-10-31"],
     ],
   ),
 };

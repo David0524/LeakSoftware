@@ -1900,5 +1900,288 @@
         "2028-07-25"
       ]
     }
+  ],
+  "CLEANING_MONTHS": [
+    {
+      "args": [],
+      "result": [
+        1,
+        2,
+        3,
+        6,
+        12
+      ]
+    }
+  ],
+  "CLEANING_DUE_SOON_DAYS": [
+    {
+      "args": [],
+      "result": 7
+    }
+  ],
+  "cleaningMonthsLabel": [
+    {
+      "args": [
+        1
+      ],
+      "result": "Monthly"
+    },
+    {
+      "args": [
+        2
+      ],
+      "result": "2 Months"
+    },
+    {
+      "args": [
+        3
+      ],
+      "result": "3 Months"
+    },
+    {
+      "args": [
+        6
+      ],
+      "result": "6 Months"
+    },
+    {
+      "args": [
+        12
+      ],
+      "result": "Yearly"
+    },
+    {
+      "args": [
+        4
+      ],
+      "result": "4 Months"
+    }
+  ],
+  "cleaningKind": [
+    {
+      "args": [
+        {
+          "key": "svc_filter_clean",
+          "name": "Clean filter"
+        }
+      ],
+      "result": "filter"
+    },
+    {
+      "args": [
+        {
+          "key": "svc_salt_clean",
+          "name": "Clean salt cell"
+        }
+      ],
+      "result": "salt_cell"
+    },
+    {
+      "args": [
+        {
+          "key": null,
+          "name": "FILTER rinse"
+        }
+      ],
+      "result": "filter"
+    },
+    {
+      "args": [
+        {
+          "key": "svc_x",
+          "name": "Salt and filter check"
+        }
+      ],
+      "result": "salt_cell"
+    },
+    {
+      "args": [
+        {
+          "key": "svc_brush",
+          "name": "Brush walls"
+        }
+      ],
+      "result": "other"
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": "other"
+    },
+    {
+      "args": [
+        {
+          "name": null
+        }
+      ],
+      "result": "other"
+    },
+    {
+      "args": [
+        {
+          "key": "SALT"
+        }
+      ],
+      "result": "salt_cell"
+    }
+  ],
+  "cleaningCountdown": [
+    {
+      "args": [
+        "2026-10-19",
+        "2026-10-19"
+      ],
+      "result": {
+        "days": 0,
+        "weeks": 0,
+        "soon": true,
+        "label": "Due today"
+      }
+    },
+    {
+      "args": [
+        "2026-10-20",
+        "2026-10-19"
+      ],
+      "result": {
+        "days": 1,
+        "weeks": 0,
+        "soon": true,
+        "label": "Due in 1 day"
+      }
+    },
+    {
+      "args": [
+        "2026-10-24",
+        "2026-10-19"
+      ],
+      "result": {
+        "days": 5,
+        "weeks": 1,
+        "soon": true,
+        "label": "Due in 5 days"
+      }
+    },
+    {
+      "args": [
+        "2026-10-25",
+        "2026-10-19"
+      ],
+      "result": {
+        "days": 6,
+        "weeks": 1,
+        "soon": true,
+        "label": "Due in 6 days"
+      }
+    },
+    {
+      "args": [
+        "2026-10-26",
+        "2026-10-19"
+      ],
+      "result": {
+        "days": 7,
+        "weeks": 1,
+        "soon": true,
+        "label": "In 1 week"
+      }
+    },
+    {
+      "args": [
+        "2026-10-29",
+        "2026-10-19"
+      ],
+      "result": {
+        "days": 10,
+        "weeks": 1,
+        "soon": false,
+        "label": "In 1 week"
+      }
+    },
+    {
+      "args": [
+        "2026-10-30",
+        "2026-10-19"
+      ],
+      "result": {
+        "days": 11,
+        "weeks": 2,
+        "soon": false,
+        "label": "In 2 weeks"
+      }
+    },
+    {
+      "args": [
+        "2026-11-30",
+        "2026-10-19"
+      ],
+      "result": {
+        "days": 42,
+        "weeks": 6,
+        "soon": false,
+        "label": "In 6 weeks"
+      }
+    },
+    {
+      "args": [
+        "2026-10-18",
+        "2026-10-19"
+      ],
+      "result": {
+        "days": -1,
+        "weeks": 0,
+        "soon": true,
+        "label": "Overdue"
+      }
+    },
+    {
+      "args": [
+        "2025-10-19",
+        "2026-10-19"
+      ],
+      "result": {
+        "days": -365,
+        "weeks": 0,
+        "soon": true,
+        "label": "Overdue"
+      }
+    },
+    {
+      "args": [
+        "2027-01-19",
+        "2026-10-19"
+      ],
+      "result": {
+        "days": 92,
+        "weeks": 13,
+        "soon": false,
+        "label": "In 13 weeks"
+      }
+    },
+    {
+      "args": [
+        "2028-03-01",
+        "2028-02-28"
+      ],
+      "result": {
+        "days": 2,
+        "weeks": 0,
+        "soon": true,
+        "label": "Due in 2 days"
+      }
+    },
+    {
+      "args": [
+        "2026-11-02",
+        "2026-10-31"
+      ],
+      "result": {
+        "days": 2,
+        "weeks": 0,
+        "soon": true,
+        "label": "Due in 2 days"
+      }
+    }
   ]
 }

@@ -453,3 +453,76 @@ import Testing
         #expect(r["exclusion_reason"] == .null && r["method"] == "Visual")
     }
 }
+
+/// Filter and salt cell cleanings on a visit (owner, 2026-10-19), from the visit's own checklist
+/// items (`job_component.plan_cleaning_id`); phones don't sync `plan_cleaning`.
+@MainActor @Suite struct VisitCleaningTests {
+    @Test func cleaningsOnTheChecklistShowWithTheirIconAndToday() throws {
+        let shell = try Shell()
+        try shell.seedCompany(userId: "u1")
+        func type(_ id: String, _ key: String, _ name: String) -> PulledRow {
+            PulledRow(
+                table: "component_type", xid: "1",
+                row: [
+                    "id": .string(id), "company_id": "c1", "key": .string(key), "name": .string(name),
+                    "section": "service", "answer": "done", "job_type": "maintenance", "applies_to": "both",
+                    "on_schedule": false, "allows_multiple": false, "default_count": 1, "methods": [],
+                    "sort_order": 500, "active": true,
+                ])
+        }
+        func item(_ id: String, _ typeId: String, _ label: String, cleaning: JSONValue, sort: Int) -> PulledRow {
+            PulledRow(
+                table: "job_component", xid: "1",
+                row: [
+                    "id": .string(id), "company_id": "c1", "job_id": "v1", "component_type_id": .string(typeId),
+                    "instance_number": 1, "label": .string(label), "sort_order": .number(Double(sort)),
+                    "plan_cleaning_id": cleaning,
+                ])
+        }
+        try shell.sync.store.applyPage(
+            PullPage(
+                rows: [
+                    type("t1", "svc_filter_clean", "Clean filter"), type("t2", "svc_salt_clean", "Clean salt cell"),
+                    type("t3", "svc_skim", "Skim surface"), type("t4", "svc_tile", "Brush tile"),
+                    PulledRow(
+                        table: "job", xid: "1",
+                        row: ["id": "v1", "company_id": "c1", "type": "maintenance", "status": "scheduled"]),
+                    item("c1", "t1", "Clean filter", cleaning: "pc1", sort: 1),
+                    item("c2", "t2", "Clean salt cell", cleaning: "pc2", sort: 2),
+                    item("c3", "t3", "Skim surface", cleaning: .null, sort: 3),
+                    item("c4", "t4", "Brush tile", cleaning: "pc3", sort: 4),
+                ], done: true, cursor: [:], serverHLC: "1800000000000-0000-server"))
+        let found = visitCleanings(
+            JobInspection(shell.sync.store, jobId: "v1"), InspectionConfig(shell.sync.store, companyId: "c1"),
+            day: "2026-10-19")
+        #expect(found.map(\.name) == ["Clean filter", "Clean salt cell", "Brush tile"])
+        #expect(found.map(\.kind) == [.filter, .saltCell, .other])
+        #expect(found.allSatisfy { $0.due.label == "Due today" && $0.due.soon })
+        #expect(
+            found.map(CleaningText.pill) == [
+                "Clean filter: due today", "Clean salt cell: due today", "Brush tile: due today",
+            ])
+        #expect(CleaningText.title == "Regular cleanings")
+        #expect(CleaningText.onVisit == "On this visit’s checklist" && CleaningText.today == "Today")
+        // A visit with no cleanings on its checklist shows none.
+        #expect(
+            visitCleanings(
+                JobInspection(shell.sync.store, jobId: "nope"), InspectionConfig(shell.sync.store, companyId: "c1"),
+                day: "2026-10-19"
+            ).isEmpty)
+    }
+
+    @Test func theIconsDrawTheWebsitesPaths() {
+        #expect(CleaningGlyph.of(.filter).rects == [[6, 3, 12, 18, 3]])
+        #expect(CleaningGlyph.of(.saltCell).rects == [[2.5, 8, 19, 8, 4]])
+        for kind in [CleaningKind.filter, .saltCell, .other] {
+            for d in CleaningGlyph.of(kind).paths {
+                let commands = svgCommands(d)
+                #expect(commands.count >= 4, "\(kind) \(d)")
+            }
+        }
+        // The salt cell's spark ends at (11, 15); the repeat arrows are arcs, read as curves.
+        #expect(svgCommands("m13 9.5-2.5 3h3L11 15").last == .line(SVGPoint(11, 15)))
+        #expect(svgCommands(CleaningGlyph.of(.other).paths[0]).contains { if case .curve = $0 { true } else { false } })
+    }
+}

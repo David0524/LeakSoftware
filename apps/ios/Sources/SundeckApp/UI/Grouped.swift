@@ -78,6 +78,8 @@
         var chevron = false
         /// An SF Symbol leading the row, in `link`.
         var icon: String?
+        /// A drawn icon in place of a symbol (`withLeading(_:)`), in `link`, 28 wide.
+        var leading: AnyView? = nil
         @ViewBuilder var trailing: Trailing
         @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -89,6 +91,8 @@
                         .foregroundStyle(Color.link)
                         .frame(width: 28)
                         .accessibilityHidden(true)
+                } else if let leading {
+                    leading.foregroundStyle(Color.link).frame(width: 28).accessibilityHidden(true)
                 }
                 let layout =
                     typeSize.isAccessibilitySize
@@ -120,6 +124,15 @@
             .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
             .contentShape(Rectangle())
             .accessibilityElement(children: .combine)
+        }
+    }
+
+    extension ListRow {
+        /// The row with a drawn icon leading it (a cleaning's icon).
+        func withLeading(_ view: some View) -> ListRow {
+            var row = self
+            row.leading = AnyView(view)
+            return row
         }
     }
 

@@ -17,6 +17,11 @@
 
         init(job: JobView) { self.job = job }
 
+        /// The visit's day, else today (website: `plan_date ?? today`).
+        private func today(_ company: CompanyContext) -> String {
+            job.job["plan_date"]?.string ?? (try? localDate(Date(), company.timeZone)) ?? ""
+        }
+
         // Worked out on every render: reading `sync.revision` re-renders after any write or pull.
         var body: some View {
             let _ = sync.revision
@@ -36,6 +41,11 @@
                         }
                         .buttonStyle(.secondary)
                         .padding(.bottom, 16)
+                        // Filter and salt cell cleanings on this visit (owner, 2026-10-19).
+                        let cleanings = visitCleanings(inspection, config, day: today(company))
+                        if !cleanings.isEmpty {
+                            VisitCleaningsBox(cleanings: cleanings).padding(.bottom, 24)
+                        }
                     }
                     SectionHeading("Checklist")
                     Text(model.isEmpty ? "No checklist yet." : model.tallyText)

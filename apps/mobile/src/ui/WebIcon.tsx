@@ -89,6 +89,17 @@ const SHAPES = {
   calendar: {
     line: "M7 3v3M17 3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z",
   },
+  // Regular cleanings (owner, 2026-10-19), the website's CleaningIcon: a pleated cartridge
+  // filter, a salt cell (a tube with a spark), and a repeat arrow for any other cleaning.
+  filter: {
+    line: "M9 3h6a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3zM10 7v10M14 7v10",
+  },
+  saltCell: {
+    line: "M6.5 8h11a4 4 0 0 1 0 8h-11a4 4 0 0 1 0-8zM13 9.5l-2.5 3h3L11 15",
+  },
+  repeat: {
+    line: "M20 11a8 8 0 0 0-14.5-4.5M4 13a8 8 0 0 0 14.5 4.5M5 3v4h4M19 21v-4h-4",
+  },
 } satisfies Record<string, Shape>;
 
 export type WebIconName = keyof typeof SHAPES;

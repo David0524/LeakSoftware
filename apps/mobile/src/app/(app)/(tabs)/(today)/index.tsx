@@ -24,6 +24,7 @@ import { useDriveTimes, useTeam } from "../../../../data/schedule";
 import { useLine } from "../../../../data/texting";
 import { useWeather } from "../../../../data/weather";
 import { GettingStarted } from "../../../../features/today/GettingStarted";
+import { CleaningPills } from "../../../../features/maintenance/Cleanings";
 import { OnMyWay } from "../../../../features/today/OnMyWay";
 import { WeatherBadge } from "../../../../features/today/WeatherBadge";
 import { useCompany, useSession } from "../../../../state/session";
@@ -361,6 +362,8 @@ function Stop({
           >
             {formatAddress(job.property)}
           </Text>
+          {/* A cleaning on this visit's checklist (owner, 2026-10-19), as the website. */}
+          <CleaningPills job={job} />
           {job.property.access_notes ? (
             <Text
               numberOfLines={2}

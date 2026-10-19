@@ -70,6 +70,7 @@ import {
 } from "../../../../../../ui/theme";
 import { ChecklistTab } from "../../../../../../features/inspection/ChecklistTab";
 import { DiagramPanel } from "../../../../../../features/inspection/DiagramPanel";
+import { VisitCleanings } from "../../../../../../features/maintenance/Cleanings";
 import { FindingsTab } from "../../../../../../features/inspection/FindingsTab";
 import { TestsTab } from "../../../../../../features/inspection/TestsTab";
 import { JobSchedule, showsJobSchedule } from "../../../../../../features/job/JobSchedule";
@@ -263,6 +264,8 @@ export default function JobDetail() {
                   }
                 />
               ) : null}
+              {/* Its filter and salt cell cleanings (owner, 2026-10-19), as the website. */}
+              {maintenance ? <VisitCleanings job={job} /> : null}
               <View style={styles.heading}>
                 <T variant="sectionHeading">Checklist</T>
                 <T muted>

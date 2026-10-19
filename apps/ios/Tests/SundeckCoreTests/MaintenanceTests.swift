@@ -10,7 +10,28 @@ import Testing
         #expect(
             Fixtures.rules(module) == [
                 "maintenanceSettings", "planRepeat", "cadenceLabel", "planSummary", "upcomingVisitDates",
+                "CLEANING_MONTHS", "CLEANING_DUE_SOON_DAYS", "cleaningMonthsLabel", "cleaningKind",
+                "cleaningCountdown",
             ])
+    }
+
+    struct CleaningType: Decodable {
+        let key: String?
+        let name: String?
+    }
+
+    @Test func cleanings() {
+        checkRule(module, "CLEANING_MONTHS") { _ in cleaningMonths }
+        checkRule(module, "CLEANING_DUE_SOON_DAYS") { _ in cleaningDueSoonDays }
+        checkRule(module, "cleaningMonthsLabel") { c in cleaningMonthsLabel(try c.arg(0)) }
+        checkRule(module, "cleaningKind") { c in
+            let t = try c.arg(0, as: CleaningType.self)
+            return cleaningKind(key: t.key, name: t.name)
+        }
+        checkRule(module, "cleaningCountdown") { c in
+            guard let countdown = cleaningCountdown(try c.arg(0), try c.arg(1)) else { throw NotRepresentable() }
+            return countdown
+        }
     }
 
     @Test func settings() {

@@ -129,6 +129,8 @@
         var route: DayRoute?
         var mapsApp: MapsApp
         var lineActive: Bool
+        /// The cleanings on each stop's checklist, by job (owner, 2026-10-19).
+        var cleanings: [String: [VisitCleaning]] = [:]
 
         init(
             store: LocalStore, kv: KeyValue, company: CompanyContext, userId: String, wanted: String?, drive: DriveTimes
@@ -142,6 +144,11 @@
             let pick = wanted ?? userId
             techId = ctx.isManager && techs.contains { $0.id == pick } ? pick : userId
             route = loaded.routes[routeKey(techId, ctx.today)]
+            let config = InspectionConfig(store, companyId: company.id)
+            for job in route?.jobs ?? [] where job.type == .maintenance {
+                let found = visitCleanings(JobInspection(store, jobId: job.id), config, day: ctx.today)
+                if !found.isEmpty { cleanings[job.id] = found }
+            }
             mapsApp = MapsApp(kv)
             lineActive = companyLine(store, companyId: company.id)?.status == "active"
         }
@@ -221,6 +228,11 @@
                 .accessibilityHint("Opens the job")
                 if !job.done {
                     AddressButton(place: job.place)
+                    if let cleanings = day.cleanings[job.id] {
+                        FlowRow(spacing: 6) { ForEach(cleanings) { CleaningPill(cleaning: $0) } }
+                            .accessibilityElement(children: .contain)
+                            .accessibilityLabel("Cleanings due")
+                    }
                     if let notes = job.accessNotes {
                         Text(notes)
                             .textRole(.secondary)

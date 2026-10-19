@@ -268,3 +268,64 @@ public func firstVisitHint(_ repeats: PlanRepeat, long: Bool) -> String {
     case .weekly, .biweekly: long ? "Visits repeat on this weekday." : "Repeats on this weekday."
     }
 }
+
+// MARK: - Scheduled cleanings (owner, 2026-10-19)
+
+/// How often a cleaning can repeat, in months (`CLEANING_MONTHS`).
+public let cleaningMonths = [1, 2, 3, 6, 12]
+
+/// A frequency choice's label: "Monthly", "3 Months", "Yearly".
+public func cleaningMonthsLabel(_ months: Int) -> String {
+    months == 1 ? "Monthly" : months == 12 ? "Yearly" : "\(months) Months"
+}
+
+/// A cleaning is called out on Today and the checklist from a week before it's due.
+public let cleaningDueSoonDays = 7
+
+/// What a scheduled cleaning is, for its icon: the filter, the salt cell, or something else.
+public enum CleaningKind: String, Codable, Sendable {
+    case filter
+    case saltCell = "salt_cell"
+    case other
+}
+
+/// From the cleaning's checklist item type (its key and name); salt wins over filter.
+public func cleaningKind(key: String?, name: String?) -> CleaningKind {
+    let text = ECMA.lowercase("\(key ?? "") \(name ?? "")")
+    if text.contains("salt") { return .saltCell }
+    if text.contains("filter") { return .filter }
+    return .other
+}
+
+/// How far off a cleaning is from a day: days and weeks until it's due, whether that's within a
+/// week, and a label ("Due today", "Overdue", "Due in 5 days", "In 3 weeks").
+public struct CleaningCountdown: Codable, Equatable, Sendable {
+    public var days: Int
+    public var weeks: Int
+    public var soon: Bool
+    public var label: String
+
+    public init(days: Int, weeks: Int, soon: Bool, label: String) {
+        self.days = days
+        self.weeks = weeks
+        self.soon = soon
+        self.label = label
+    }
+}
+
+/// `cleaningCountdown(nextDue, on)`, both local dates ("2026-11-30"); nil when either isn't a date.
+public func cleaningCountdown(_ nextDue: String, _ on: String) -> CleaningCountdown? {
+    guard let due = ECMA.parseDate("\(nextDue)T12:00:00Z"), let day = ECMA.parseDate("\(on)T12:00:00Z") else {
+        return nil
+    }
+    let days = Int(ECMA.round((due - day) / 86_400_000))
+    let weeks = max(0, Int(ECMA.round(Double(days) / 7)))
+    let label =
+        days < 0
+        ? "Overdue"
+        : days == 0
+            ? "Due today"
+            : days < cleaningDueSoonDays
+                ? "Due in \(days) \(days == 1 ? "day" : "days")" : "In \(weeks) \(weeks == 1 ? "week" : "weeks")"
+    return CleaningCountdown(days: days, weeks: weeks, soon: days <= cleaningDueSoonDays, label: label)
+}

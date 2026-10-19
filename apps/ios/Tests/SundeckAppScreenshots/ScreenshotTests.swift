@@ -162,6 +162,39 @@
         }
     }
 
+    /// Daniel Reyes's stop becomes a maintenance visit with the filter and salt cell cleanings
+    /// on its checklist (as the server puts them, `plan_cleaning_id` set). Returns the visit.
+    @MainActor
+    func seedCleanings(_ store: LocalStore) throws -> String? {
+        let url = try #require(Bundle.module.url(forResource: "config", withExtension: "json"))
+        let config = try JSONDecoder().decode([String: [Row]].self, from: Data(contentsOf: url))
+        let types = (config["component_type"] ?? []).map { row -> PulledRow in
+            var r = row
+            r["company_id"] = "c1"
+            return PulledRow(table: "component_type", xid: "6", row: r)
+        }
+        try store.applyPage(PullPage(rows: types, done: true, cursor: [:], serverHLC: "1760000000006-0000-srv"))
+        guard let visit = try store.list("job").first(where: { $0["number"] == 1102 }) else { return nil }
+        try store.write("job", id: visit.id, companyId: "c1", ["type": "maintenance"])
+        let byKey = Dictionary(
+            (config["component_type"] ?? []).compactMap { r in r["key"]?.string.map { ($0, r) } },
+            uniquingKeysWith: { a, _ in a })
+        for (i, key) in ["svc_skim", "svc_filter_clean", "svc_salt_clean"].enumerated() {
+            guard let type = byKey[key] else { continue }
+            let component = try store.insert(
+                "job_component", companyId: "c1",
+                [
+                    "job_id": .string(visit.id), "component_type_id": type["id"] ?? .null, "instance_number": 1,
+                    "label": type["name"] ?? .null, "sort_order": .number(Double(i)),
+                    "plan_cleaning_id": key == "svc_skim" ? .null : .string("pc-\(key)"),
+                ])
+            try store.insert(
+                "checklist_item_result", companyId: "c1",
+                ["job_id": .string(visit.id), "job_component_id": .string(component), "status": "pending"])
+        }
+        return visit.id
+    }
+
     /// The sample job's inspection, partly done: config from a new shop, the default checklist,
     /// a few verdicts, a failing pressure test, and a pinned finding on a kidney pool.
     @MainActor
@@ -556,6 +589,21 @@
             try await snapshot("30-today-dark", dark: true, height: 1500, MainView().app(env))
             let empty = try sampleEnvironment(jobs: false)
             try await snapshot("30-today-empty", MainView().app(empty))
+        }
+
+        /// Filter and salt cell cleanings (owner, 2026-10-19): a maintenance stop on Today with
+        /// both on its checklist, and that visit's Checklist with Regular cleanings.
+        @Test func cleanings() async throws {
+            let env = try sampleEnvironment()
+            let store = env.session.sync.store
+            try seedRoute(store)
+            env.session.reloadCompanies()
+            let visit = try #require(try seedCleanings(store))
+            try await snapshot("30-today-cleanings", height: 1500, MainView().app(env))
+            try await snapshot("30-today-cleanings-dark", dark: true, height: 1500, MainView().app(env))
+            try await snapshot(
+                "30-checklist-cleanings", height: 2400,
+                NavigationStack { JobScreen(jobId: visit, section: .checklist) }.app(env))
         }
 
         @Test func schedule() async throws {
