@@ -175,8 +175,10 @@
                             .focused($focus, equals: .notes)
                     }
 
-                    // Photos arrive in S5; until then a new finding says when they can be added.
-                    if form.isNew {
+                    // A new finding says when photos can be added.
+                    if let savedId = form.existingId {
+                        MediaSection(target: MediaTarget(jobId: jobId, findingId: savedId))
+                    } else {
                         Section {
                             Text("Save the finding first, then add photos.")
                                 .font(.subheadline).foregroundStyle(Color.muted)

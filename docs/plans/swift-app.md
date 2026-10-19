@@ -216,6 +216,16 @@ items, tests and findings come with S5.
 - **Done when:** BUILD_PLAN M5's test passes: 30 photos and 2 videos offline upload after
   reconnecting with no duplicates, including when the app is closed mid-upload.
 
+Built 2026-10-19: captures kept as Documents/media/{id}.{ext} and never changed, the row and its
+upload ticket in one transaction, uploads after each sync with resumable TUS, transcripts asked
+for after a voice note uploads; the camera, photo library (PHPicker), voice recorder and
+location; the photo and note section on items, tests, findings and the job; the viewer with
+caption, details and delete; markup drawn over the photo and stored in the row. The done-when
+test is `LiveMediaTests` (`SUNDECK_LIVE=1`), the M5 test through the app's own path against the
+dev project: it passed. Differences from Expo: PHPicker and AVPlayerViewController (xtool's SDK
+lacks the SwiftUI overlays for PhotosPicker and VideoPlayer), library videos re-encoded at
+medium quality, and the markup editor as a full-screen cover.
+
 ### S6 Reports, signatures, sending
 - Signatures by purpose, the report tab (draft, review, send by email or text), report links
   and PDF, the review screen.

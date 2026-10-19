@@ -66,7 +66,9 @@ public final class SyncService {
         self.now = now
         self.media = media
         engine = SyncEngine(store: store, transport: transport, now: now)
-        uploads = uploader.map { UploadQueue(store: store, uploader: $0) }
+        uploads = uploader.map {
+            UploadQueue(store: store, uploader: $0) { Int64((now().timeIntervalSince1970 * 1000).rounded(.down)) }
+        }
         status.lastSyncedAt = kv.get(KVKey.lastSyncedAt).flatMap(Double.init).map { Date(timeIntervalSince1970: $0) }
         status.initialSyncDone = kv.get(KVKey.initialSyncDone) == "1"
         refreshCounts()

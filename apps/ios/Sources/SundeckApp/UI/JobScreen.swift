@@ -125,6 +125,7 @@
                             .frame(maxWidth: .infinity, minHeight: 88)
                     }
                 }
+                MediaSection(target: MediaTarget(jobId: job.id), title: "All Photos and Notes")
                 Section("Job notes") {
                     TextField("Anything the office should know", text: $notes, axis: .vertical)
                         .lineLimit(3...8)

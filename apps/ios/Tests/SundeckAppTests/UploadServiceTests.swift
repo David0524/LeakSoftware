@@ -29,6 +29,8 @@ struct UploadShell {
     let transport = FakeTransport()
     let uploader = FakeUploader()
     let folder = FileManager.default.temporaryDirectory.appendingPathComponent("uploads-\(UUID())")
+    /// The service's clock: fixed, so upload backoff doesn't depend on how fast tests run.
+    let clock = TestClock()
     let sync: SyncService
 
     init() throws {
@@ -39,7 +41,7 @@ struct UploadShell {
         auth.stored = SignInResult(user: SignedInUser(id: "u1", email: "tech@shop.test"), needsCode: false)
         sync = SyncService(
             store: try LocalStore.open(db), kv: try KeyValue(db), transport: transport, auth: auth,
-            uploader: uploader, media: MediaFiles(root: folder))
+            uploader: uploader, media: MediaFiles(root: folder), now: { [clock] in clock.now })
     }
 
     /// Captures a small file of `kind` on a new job; returns the media id.
@@ -54,6 +56,15 @@ struct UploadShell {
 
     func queued() throws -> Int {
         Int(try sync.store.database.query("select count(*) as n from upload_queue").first?["n"]?.integerValue ?? 0)
+    }
+}
+
+final class TestClock: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = Date(timeIntervalSince1970: 1_760_000_000)
+    var now: Date {
+        get { lock.withLock { value } }
+        set { lock.withLock { value = newValue } }
     }
 }
 

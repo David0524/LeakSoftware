@@ -4,7 +4,7 @@
     import SwiftUI
 
     /// One checklist item: its verdict and where, notes, tests, and findings. Port of
-    /// apps/mobile/src/app/(app)/jobs/[id]/component/[componentId].tsx. Photos arrive in S5.
+    /// apps/mobile/src/app/(app)/jobs/[id]/component/[componentId].tsx.
     struct ComponentScreen: View {
         var jobId: String
         var componentId: String
@@ -109,6 +109,8 @@
                 }
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets())
+
+                MediaSection(target: MediaTarget(jobId: jobId, componentId: componentId))
 
                 Section("Tests on this item") {
                     ForEach(tests, id: \.id) { test in

@@ -26,6 +26,7 @@
                         .environment(environment.session)
                         .environment(environment.session.sync)
                         .environment(environment)
+                        .environment(\.mediaURLSigner, environment.signer)
                 case .failure(let error):
                     ContentUnavailableView(
                         "Sundeck Pro Couldn’t Start", systemImage: "exclamationmark.triangle",
@@ -41,12 +42,17 @@
         let client: SupabaseClient
         let session: Session
         let walkthrough: Walkthrough
+        /// Signed links to uploaded files, shared by every screen so links are reused.
+        let signer: MediaURLSigner
         @ObservationIgnored private let monitor = NWPathMonitor()
 
         init(client: SupabaseClient, session: Session, walkthrough: Walkthrough) {
             self.client = client
             self.session = session
             self.walkthrough = walkthrough
+            signer = MediaURLSigner { path, seconds in
+                try await client.storage.from("media").createSignedURL(path: path, expiresIn: seconds)
+            }
         }
 
         static func make() -> Result<AppEnvironment, Error> {

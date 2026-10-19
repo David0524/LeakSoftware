@@ -132,8 +132,10 @@
                         .lineLimit(3...8)
                     }
 
-                    // Photos arrive in S5; until then a new test says when they can be added.
-                    if form.isNew {
+                    // A new test says when photos can be added.
+                    if let savedId = form.existingId {
+                        MediaSection(target: MediaTarget(jobId: jobId, testResultId: savedId))
+                    } else {
                         Section {
                             Text("Save the test first, then add photos.")
                                 .font(.subheadline).foregroundStyle(Color.muted)

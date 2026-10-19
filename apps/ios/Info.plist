@@ -8,6 +8,12 @@
 	<string>0.1.0</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>Sundeck Pro takes photos and videos of leaks and equipment for your inspection report.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Sundeck Pro records voice notes and the sound on inspection videos.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Sundeck Pro tags photos with where they were taken so reports show they were taken on site.</string>
 	<key>UIUserInterfaceStyle</key>
 	<string>Light</string>
 	<key>UISupportedInterfaceOrientations</key>

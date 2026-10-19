@@ -41,7 +41,9 @@
         let store = try LocalStore.open(db, deviceId: "shots")
         let kv = try KeyValue(db)
         let auth = SampleAuth()
-        let sync = SyncService(store: store, kv: kv, transport: SilentTransport(), auth: auth)
+        let files = FileManager.default.temporaryDirectory.appendingPathComponent("shots-media-\(UUID())")
+        let sync = SyncService(
+            store: store, kv: kv, transport: SilentTransport(), auth: auth, media: MediaFiles(root: files))
         if signedIn {
             kv.setJSON(KVKey.user, SignedInUser(id: "u1", email: "tech@demo.leakbook.test"))
             kv.set(KVKey.launchSeen, "1")
@@ -154,7 +156,42 @@
         let finding = try InspectionWrites.saveFinding(
             sync, companyId: "c1", jobId: job, existing: nil, title: "Skimmer seam leak", componentId: seam.id,
             severityKey: "major", location: "Skimmer throat", pin: (0.18, 0.12), status: .open, notes: "")
+        try seedPhoto(sync, job: job, componentId: seam.id)
         return (job, seam.id, test, finding)
+    }
+
+    /// A drawn stand-in for a pool photo on the skimmer seam, with markup and a caption.
+    @MainActor
+    func seedPhoto(_ sync: SyncService, job: String, componentId: String) throws {
+        let size = CGSize(width: 1600, height: 1200)
+        let image = UIGraphicsImageRenderer(size: size).image { context in
+            UIColor(red: 0.62, green: 0.80, blue: 0.90, alpha: 1).setFill()
+            context.fill(CGRect(origin: .zero, size: size))
+            UIColor(red: 0.85, green: 0.82, blue: 0.75, alpha: 1).setFill()
+            context.fill(CGRect(x: 0, y: 0, width: size.width, height: 360))
+            UIColor.white.setFill()
+            context.fill(CGRect(x: 520, y: 260, width: 560, height: 220))
+            UIColor(white: 0.25, alpha: 1).setFill()
+            context.fill(CGRect(x: 600, y: 330, width: 400, height: 90))
+        }
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent("shot-\(UUID()).jpg")
+        try #require(image.jpegData(compressionQuality: 0.7)).write(to: temp)
+        let id = try MediaWrites.saveCapture(
+            sync, companyId: "c1", target: MediaTarget(jobId: job, componentId: componentId),
+            CapturedFile(
+                kind: .photo, url: temp, mime: "image/jpeg", width: 1600, height: 1200,
+                capturedAt: isoTimestamp(milliseconds: Date().timeIntervalSince1970 * 1000)),
+            at: Coordinate(latitude: 33.4152, longitude: -111.8315))
+        let media = try #require(jobMedia(sync.store, MediaTarget(jobId: job)).first { $0.id == id })
+        try MediaWrites.setMarkup(
+            sync, media,
+            Markup(
+                shapes: [
+                    .circle(color: .red, cx: 0.5, cy: 0.31, rx: 0.2, ry: 0.12),
+                    .arrow(color: .yellow, x1: 0.18, y1: 0.75, x2: 0.4, y2: 0.4),
+                    .text(color: .white, x: 0.12, y: 0.82, text: "Crack"),
+                ]))
+        try MediaWrites.setCaption(sync, media, "Seam at the skimmer throat")
     }
 
     @MainActor
@@ -268,6 +305,12 @@
             try await snapshot(
                 "14-finding-editor-large-text", largeText: true,
                 FindingEditor(jobId: ids.job, findingId: ids.finding, componentId: nil).app(env))
+            let photo = try #require(jobMedia(env.session.sync.store, MediaTarget(jobId: ids.job)).first?.id)
+            try await snapshot(
+                "15-media", NavigationStack { MediaScreen(jobId: ids.job, mediaId: photo) }.app(env))
+            try await snapshot(
+                "15-media-dark", dark: true,
+                NavigationStack { MediaScreen(jobId: ids.job, mediaId: photo) }.app(env))
         }
 
         @Test func settings() async throws {
