@@ -2,33 +2,81 @@ import Foundation
 import SundeckCore
 import SundeckSync
 
-// Edit Pool Shape (owner, 2026-10-19: "More customization to pool shape. Be able to place the
-// spa wherever"): the shape, mirrored or not, whether there's a spa, and where the spa sits,
-// how big, and round or square. Port of ShapeForm in apps/web/src/components/diagram-work.tsx
-// and savePoolDiagram in app/actions/diagram.ts.
+// Edit Pool Shape (owner, 2026-10-19): ten tiles (the seven preset shapes, Draw, Clear and
+// Landmarks), Mirror and Has a spa, and the drawing itself, where the spa is moved, reshaped
+// (tap) and resized (pinch, or its corner handle), shapes are drawn and landmarks placed. Port
+// of apps/web/src/components/pool-shape-editor.tsx and savePoolDiagram in app/actions/diagram.ts.
 
-/// The Pool Shape sheet's state.
+/// The Pool Shape sheet's tiles, two rows of five, the three creative ones in the middle of the
+/// second (owner, 2026-10-19).
+public enum PoolShapeTile: Hashable, Sendable {
+    case shape(DiagramShape)
+    case draw, clear, landmarks
+
+    public static let all: [PoolShapeTile] =
+        [.rectangle, .oval, .kidney, .lShape, .roman, .grecian].map(PoolShapeTile.shape)
+        + [.draw, .clear, .landmarks, .shape(.figureEight)]
+
+    public var label: String {
+        switch self {
+        case .shape(let s): s.label
+        case .draw: "Draw"
+        case .clear: "Clear"
+        case .landmarks: "Landmarks"
+        }
+    }
+}
+
+/// The spa as placed on the drawing: its center (0..1), radius in diagram units, and shape.
+public struct PlacedSpa: Equatable, Sendable {
+    public var x: Double
+    public var y: Double
+    public var r: Double
+    public var shape: SpaShape
+
+    public init(x: Double, y: Double, r: Double, shape: SpaShape) {
+        self.x = x
+        self.y = y
+        self.r = r
+        self.shape = shape
+    }
+}
+
+/// The Pool Shape sheet's state: what Save writes.
 public struct PoolShapeForm: Equatable, Sendable {
     public var shape: DiagramShape?
     public var hasSpa: Bool
     public var mirror: Bool
-    /// Where the tech put the spa (its center, 0..1 of the drawing); nil leaves it in the corner.
-    public var spaAt: MarkupPoint?
-    public var size: SpaSize
-    public var spaShape: SpaShape
+    /// Where the tech put the spa, and its size and shape; nil leaves it in the corner.
+    public var spa: PlacedSpa?
+    public var drawing: [DrawnShape]
+    public var landmarks: [Landmark]
 
     /// How far one VoiceOver move (the website's arrow key) moves the spa: 2% of the drawing.
     public static let step = 0.02
 
     public static let title = "Pool Shape"
+    public static let tilesLabel = "Pool shape"
     public static let mirrorLabel = "Mirror (flip left to right)"
     public static let spaLabel = "Has a spa"
-    public static let placeLabel = "Where the spa is"
-    public static let placeHint = "Tap the drawing to move the spa anywhere."
-    public static let resetSpa = "Put the Spa Back in the Corner"
-    public static let sizeLabel = "Spa size"
-    public static let shapeLabel = "Spa shape"
+    public static let spaHint =
+        "Tap the spa to make it round or square. Drag it to move it; pinch or drag its corner to resize."
+    public static let noSpaHint = "Turn on Has a spa to put a spa on the drawing."
+    public static let drawHint = "Drag on the drawing. Draw on a shape, or Clear and start from nothing."
+    public static let landmarksHint = "Pick one, then tap the drawing. Drag one to move it; tap it to remove it."
+    public static let undo = "Undo"
+    public static let clearTitle = "Clear the pool diagram?"
+    public static let clearMessage = "The shape, spa, drawing, and landmarks are removed. Pins and markup stay."
+    public static let clearButton = "Clear Diagram"
     public static let save = "Save Pool Shape"
+
+    /// "Tap the drawing to put the tree there."
+    public static func placingHint(_ kind: LandmarkKind) -> String {
+        "Tap the drawing to put the \(kind.label.lowercased()) there."
+    }
+
+    /// "Remove Tree", under the drawing while a landmark is selected.
+    public static func removeTitle(_ kind: LandmarkKind) -> String { "Remove \(kind.label)" }
 
     /// The form for a property as it is now.
     public init(property: Row?) {
@@ -36,55 +84,150 @@ public struct PoolShapeForm: Equatable, Sendable {
         hasSpa = property?["has_spa"]?.bool ?? false
         let layout = diagramLayout(of: property)
         mirror = layout.mirror == true
-        spaAt = layout.spa.map { MarkupPoint(x: $0.x, y: $0.y) }
-        size = layout.spa?.size ?? .medium
-        spaShape = layout.spa?.shape ?? .round
-    }
-
-    /// Where the spa is drawn now: the placed spot, else the corner (top right, or top left
-    /// when mirrored). nil without a spa.
-    public var at: MarkupPoint? {
-        if let spaAt { return spaAt }
-        let corner = poolDiagram(shape, hasSpa, DiagramLayout(mirror: mirror ? true : nil)).spa
-        return corner.map { MarkupPoint(x: $0.cx / 160, y: $0.cy / 100) }
-    }
-
-    /// The layout Save writes. A size or shape alone keeps the spa where it is drawn now; the
-    /// default medium round spa in the corner writes no spa, so it stays the old drawing.
-    public var layout: DiagramLayout {
-        var next = DiagramLayout(mirror: mirror ? true : nil)
-        if hasSpa, let at, spaAt != nil || size != .medium || spaShape != .round {
-            next.spa = .init(x: at.x, y: at.y, size: size, shape: spaShape)
+        spa = layout.spa.map {
+            PlacedSpa(
+                x: $0.x, y: $0.y, r: poolDiagram(diagramShape(of: property), true, layout).spa?.r ?? SpaSize.medium.r,
+                shape: $0.shape ?? .round)
         }
-        return next
+        drawing = layout.drawing ?? []
+        landmarks = layout.landmarks ?? []
+    }
+
+    /// Where the spa is drawn now: placed, or the corner (top right, or top left mirrored). Nil
+    /// without a spa.
+    public var spaNow: PlacedSpa? {
+        guard hasSpa else { return nil }
+        if let spa { return spa }
+        return poolDiagram(shape, true, DiagramLayout(mirror: mirror ? true : nil)).spa.map {
+            PlacedSpa(x: $0.cx / 160, y: $0.cy / 100, r: $0.r, shape: .round)
+        }
+    }
+
+    /// The layout Save writes (the website's `next`): the spa only once it was moved, reshaped
+    /// or resized, so an untouched one stays the old corner drawing.
+    public var layout: DiagramLayout {
+        DiagramLayout(
+            mirror: mirror ? true : nil,
+            spa: hasSpa
+                ? spa.map { .init(x: $0.x, y: $0.y, size: spaSizeFor($0.r), shape: $0.shape, r: $0.r) } : nil,
+            drawing: drawing.isEmpty ? nil : drawing, landmarks: landmarks.isEmpty ? nil : landmarks)
     }
 
     /// The drawing with this form's choices.
     public var diagram: SundeckCore.PoolDiagram { poolDiagram(shape, hasSpa, layout) }
 
-    /// A tap on the drawing (fractions of it): the spa moves there, kept inside the drawing.
-    public mutating func place(x: Double, y: Double) {
-        guard hasSpa else { return }
-        spaAt = MarkupPoint(x: diagramUnit(x), y: diagramUnit(y))
+    // MARK: - Tiles
+
+    /// A shape tile: picks it, or clears it when it's the one picked.
+    public mutating func tapShape(_ tapped: DiagramShape) { shape = shape == tapped ? nil : tapped }
+
+    /// Clear: no outline, no spa, nothing drawn, no landmarks (`CLEARED_DIAGRAM`).
+    public mutating func clear() {
+        shape = clearedDiagram.shape
+        hasSpa = clearedDiagram.hasSpa
+        mirror = false
+        spa = nil
+        drawing = []
+        landmarks = []
+    }
+
+    // MARK: - The drawing (points are 0..1 of it)
+
+    /// On the spa (within its radius and 2 units).
+    public func onSpa(x: Double, y: Double) -> Bool {
+        guard let s = spaNow else { return false }
+        return hypot((x - s.x) * 160, (y - s.y) * 100) <= s.r + 2
+    }
+
+    /// On the spa's corner handle, at its lower right.
+    public func onHandle(x: Double, y: Double) -> Bool {
+        guard let s = spaNow else { return false }
+        return hypot((x - s.x) * 160 - s.r * 0.71, (y - s.y) * 100 - s.r * 0.71) <= 6
+    }
+
+    /// The landmark under a point, if any.
+    public func landmarkAt(x: Double, y: Double) -> Int? {
+        diagram.landmarks.firstIndex {
+            abs(x * 160 - $0.cx) <= landmarkSize / 2 + 2 && abs(y * 100 - $0.cy) <= landmarkSize / 2 + 2
+        }
+    }
+
+    /// Tapping the spa switches it round and square.
+    public mutating func toggleSpaShape() {
+        guard var s = spaNow else { return }
+        s.shape = s.shape == .square ? .round : .square
+        spa = s
+    }
+
+    /// Drags the spa to a point.
+    public mutating func moveSpa(x: Double, y: Double) {
+        guard var s = spaNow else { return }
+        s.x = diagramUnit(x)
+        s.y = diagramUnit(y)
+        spa = s
     }
 
     /// Moves the spa by a step (VoiceOver's actions, as the website's arrow keys).
     public mutating func nudge(dx: Double, dy: Double) {
-        guard hasSpa, let at else { return }
-        spaAt = MarkupPoint(x: diagramUnit(at.x + dx), y: diagramUnit(at.y + dy))
+        guard let s = spaNow else { return }
+        moveSpa(x: s.x + dx, y: s.y + dy)
     }
 
-    /// Put the Spa Back in the Corner.
-    public mutating func resetSpa() { spaAt = nil }
-
-    /// "Spa 85% across, 20% down": the spa's place for VoiceOver.
-    public var placeValue: String {
-        guard let at else { return "" }
-        return "Spa \(Int((at.x * 100).rounded()))% across, \(Int((at.y * 100).rounded()))% down"
+    /// Sets the spa's radius, kept within what can be pinched (`clampSpaR`).
+    public mutating func setSpaR(_ r: Double) {
+        guard var s = spaNow, r.isFinite else { return }
+        s.r = clampSpaR(r)
+        spa = s
     }
 
-    /// `property.diagram_layout` as the website writes it: `{"mirror": true, "spa": {"x", "y",
-    /// "size", "shape"}}`, or null when it's the plain drawing.
+    /// The corner handle dragged to a point: the radius is the distance from the center.
+    public mutating func resizeSpa(toX x: Double, y: Double) {
+        guard let s = spaNow else { return }
+        setSpaR(hypot((x - s.x) * 160, (y - s.y) * 100))
+    }
+
+    /// Puts a landmark where the drawing was tapped (at most `landmarksMax`).
+    public mutating func placeLandmark(_ kind: LandmarkKind, x: Double, y: Double) {
+        guard landmarks.count < landmarksMax else { return }
+        landmarks.append(Landmark(kind: kind, x: diagramUnit(x), y: diagramUnit(y)))
+    }
+
+    public mutating func moveLandmark(_ index: Int, x: Double, y: Double) {
+        guard landmarks.indices.contains(index) else { return }
+        landmarks[index].x = diagramUnit(x)
+        landmarks[index].y = diagramUnit(y)
+    }
+
+    public mutating func removeLandmark(_ index: Int) {
+        guard landmarks.indices.contains(index) else { return }
+        landmarks.remove(at: index)
+    }
+
+    /// A drag with Draw (`drawnShapeFrom`), added when it's big enough to see (at most
+    /// `drawingMax`).
+    public mutating func draw(_ tool: DrawTool, _ points: [(x: Double, y: Double)]) {
+        guard drawing.count < drawingMax, let made = drawnShapeFrom(tool, points) else { return }
+        drawing.append(made)
+    }
+
+    /// Undo: the last drawn shape comes off.
+    public mutating func undo() {
+        if !drawing.isEmpty { drawing.removeLast() }
+    }
+
+    /// "Pool drawing, Spa, round, size 13, 2 landmarks, 3 drawn": the drawing for VoiceOver.
+    public var drawingLabel: String {
+        [
+            "Pool drawing",
+            spaNow.map { "Spa, \($0.shape == .square ? "square" : "round"), size \(Int(($0.r + 0.5).rounded(.down)))" },
+            landmarks.isEmpty ? nil : "\(landmarks.count) landmarks",
+            drawing.isEmpty ? nil : "\(drawing.count) drawn",
+        ]
+        .compactMap { $0 }.joined(separator: ", ")
+    }
+
+    /// `property.diagram_layout` as the website writes it (`parseDiagramLayout` of `next`), or
+    /// null when it's the plain drawing.
     public var layoutJSON: JSONValue {
         let l = layout
         var object: [String: JSONValue] = [:]
@@ -92,8 +235,13 @@ public struct PoolShapeForm: Equatable, Sendable {
         if let spa = l.spa {
             object["spa"] = .object([
                 "x": .number(spa.x), "y": .number(spa.y), "size": .string((spa.size ?? .medium).rawValue),
-                "shape": .string((spa.shape ?? .round).rawValue),
+                "shape": .string((spa.shape ?? .round).rawValue), "r": spa.r.map(JSONValue.number) ?? .null,
             ])
+        }
+        if let drawing = l.drawing { object["drawing"] = .array(drawing.map(\.json)) }
+        if let landmarks = l.landmarks {
+            object["landmarks"] = .array(
+                landmarks.map { ["kind": .string($0.kind.rawValue), "x": .number($0.x), "y": .number($0.y)] })
         }
         return object.isEmpty ? .null : .object(object)
     }

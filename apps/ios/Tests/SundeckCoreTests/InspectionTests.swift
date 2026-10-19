@@ -14,7 +14,11 @@ import Testing
             "validateNewJob", "formatAddress", "newJobRecords", "localDate", "groupJobs", "formatSchedule",
             "propertyLocation", "nativeMapsUrl", "instanceLabel", "FINDING_STATUS_LABELS", "verdictLabel",
             "verdictOptions", "currentVerdict", "verdictValues", "checklistSectionSummary", "markRemainingLabel",
-            "SPA_SIZES", "SPA_SHAPES", "mirrorPath", "parseDiagramLayout", "removeItemConfirm",
+            "SPA_SIZES", "SPA_SHAPES", "mirrorPath", "parseDiagramLayout", "removeItemConfirm", "LANDMARKS",
+            "DRAWING_MAX",
+            "LANDMARKS_MAX", "LANDMARK_SIZE", "SPA_R_MIN", "SPA_R_MAX", "CLEARED_DIAGRAM", "isDiagramShape",
+            "spaSizeFor",
+            "clampSpaR", "drawnPath", "drawnShapeFrom",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -54,7 +58,29 @@ import Testing
             return validateFinding(title: f.title, severityKey: f.severityKey)
         }
         checkRule(module, "DIAGRAM_SHAPES") { _ in
-            DiagramShape.allCases.map { ["key": $0.rawValue, "label": $0.label] }
+            DiagramShape.tiles.map { ["key": $0.rawValue, "label": $0.label] }
+        }
+        checkRule(module, "LANDMARKS") { _ in
+            landmarkIcons.map { ["key": $0.key.rawValue, "label": $0.label, "path": $0.path] }
+        }
+        checkRule(module, "DRAWING_MAX") { _ in drawingMax }
+        checkRule(module, "LANDMARKS_MAX") { _ in landmarksMax }
+        checkRule(module, "LANDMARK_SIZE") { _ in landmarkSize }
+        checkRule(module, "SPA_R_MIN") { _ in spaRMin }
+        checkRule(module, "SPA_R_MAX") { _ in spaRMax }
+        checkRule(module, "CLEARED_DIAGRAM") { _ in
+            JSONValue.object([
+                "shape": .string(clearedDiagram.shape.rawValue), "hasSpa": .bool(clearedDiagram.hasSpa),
+                "layout": try JSONValue(encoding: clearedDiagram.layout),
+            ])
+        }
+        checkRule(module, "isDiagramShape") { c in isDiagramShape(c.args.first) }
+        checkRule(module, "spaSizeFor") { c in spaSizeFor(try c.arg(0)) }
+        checkRule(module, "clampSpaR") { c in clampSpaR(try c.arg(0)) }
+        checkRule(module, "drawnPath") { c in drawnPath(try c.arg(0)) }
+        checkRule(module, "drawnShapeFrom") { c in
+            let points = try c.arg(1, as: [[String: Double]].self).map { (x: $0["x"] ?? 0, y: $0["y"] ?? 0) }
+            return drawnShapeFrom(try c.arg(0), points)
         }
         checkRule(module, "SPA_SIZES") { _ in
             SpaSize.allCases.map {

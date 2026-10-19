@@ -8,7 +8,10 @@
         var commands: [PathCommand]
         var box = CGSize(width: 160, height: 100)
 
-        init(_ d: String) { commands = parseSVGPath(d) }
+        init(_ d: String, box: CGSize = CGSize(width: 160, height: 100)) {
+            commands = parseSVGPath(d)
+            self.box = box
+        }
 
         func path(in rect: CGRect) -> Path {
             let sx = rect.width / box.width
@@ -60,8 +63,6 @@
         /// The finding sheet's pin picker draws a 1 pt `controlBorder` outline; the Findings
         /// section's diagram is a plain white block.
         var outlined = false
-        /// Edit Pool Shape's spa picker: VoiceOver moves the spa with actions instead of a tap.
-        var spaPlacement: SpaPlacement?
         var onPlace: ((Double, Double) -> Void)?
 
         private var diagram: SundeckCore.PoolDiagram { poolDiagram(shape, hasSpa, layout) }
@@ -92,7 +93,7 @@
                 .accessibilityElement(children: .ignore)
                 .modifier(
                     DiagramAccessibility(
-                        pins: pins, marked: !markup.isEmpty, spaPlacement: spaPlacement, onPlace: onPlace))
+                        pins: pins, marked: !markup.isEmpty, onPlace: onPlace))
         }
 
         /// Barlow Bold at a size in the diagram's units, for "SPA" and the pin numbers.
@@ -104,9 +105,7 @@
         private func drawing(_ d: SundeckCore.PoolDiagram, size: CGSize) -> some View {
             let scale = size.width / d.width
             return ZStack(alignment: .topLeading) {
-                let outline = DiagramOutline(d.pool)
-                outline.fill(Color.diagramWater)
-                outline.stroke(Color.water, lineWidth: 2 * scale)
+                DiagramShapesLayer(d: d, scale: scale)
                 if let spa = d.spa {
                     let rect = CGRect(
                         x: (spa.cx - spa.r) * scale, y: (spa.cy - spa.r) * scale, width: 2 * spa.r * scale,
@@ -139,43 +138,48 @@
         }
     }
 
+    /// The pool's outline (none for a drawn pool), what was drawn with Draw, and the landmarks
+    /// (muted, a 1.8 stroke in their 24 box scaled to `landmarkSize`): website `DiagramShapes`.
+    struct DiagramShapesLayer: View {
+        var d: SundeckCore.PoolDiagram
+        var scale: CGFloat
+
+        var body: some View {
+            ZStack(alignment: .topLeading) {
+                if !d.pool.isEmpty {
+                    let outline = DiagramOutline(d.pool)
+                    outline.fill(Color.diagramWater)
+                    outline.stroke(Color.water, lineWidth: 2 * scale)
+                }
+                ForEach(Array(d.drawing.enumerated()), id: \.offset) { _, path in
+                    DiagramOutline(path).stroke(
+                        Color.water, style: StrokeStyle(lineWidth: 2 * scale, lineCap: .round, lineJoin: .round))
+                }
+                ForEach(Array(d.landmarks.enumerated()), id: \.offset) { _, l in
+                    let side = landmarkSize * scale
+                    DiagramOutline(l.path, box: CGSize(width: 24, height: 24))
+                        .stroke(
+                            Color.textMuted,
+                            style: StrokeStyle(lineWidth: 1.8 * side / 24, lineCap: .round, lineJoin: .round)
+                        )
+                        .frame(width: side, height: side)
+                        .offset(x: (l.cx - landmarkSize / 2) * scale, y: (l.cy - landmarkSize / 2) * scale)
+                }
+            }
+            .frame(width: d.width * scale, height: d.height * scale, alignment: .topLeading)
+        }
+    }
+
     /// VoiceOver can't aim a tap on the drawing: the diagram reads as one element that names its
     /// pins, and when it takes a pin, activating it drops the pin in the middle (the finding's
     /// location field then says where it is).
-    /// The spa picker for VoiceOver (the website's arrow keys): where the spa is, and an action
-    /// per direction that moves it a step.
-    struct SpaPlacement {
-        var value: String
-        var move: (_ dx: Double, _ dy: Double) -> Void
-    }
-
     private struct DiagramAccessibility: ViewModifier {
         var pins: [DiagramPin]
         var marked = false
-        var spaPlacement: SpaPlacement?
         var onPlace: ((Double, Double) -> Void)?
 
         func body(content: Content) -> some View {
-            if let spa = spaPlacement {
-                let step = PoolShapeForm.step
-                content
-                    .accessibilityLabel(PoolShapeForm.placeLabel)
-                    .accessibilityValue(spa.value)
-                    .accessibilityHint(
-                        "Swipe up or down to move the spa up or down. Use the actions to move it left or right."
-                    )
-                    .accessibilityAdjustableAction { direction in
-                        switch direction {
-                        case .increment: spa.move(0, -step)
-                        case .decrement: spa.move(0, step)
-                        @unknown default: break
-                        }
-                    }
-                    .accessibilityAction(named: "Move Spa Left") { spa.move(-step, 0) }
-                    .accessibilityAction(named: "Move Spa Right") { spa.move(step, 0) }
-                    .accessibilityAction(named: "Move Spa Up") { spa.move(0, -step) }
-                    .accessibilityAction(named: "Move Spa Down") { spa.move(0, step) }
-            } else if let onPlace {
+            if let onPlace {
                 content
                     .accessibilityLabel("Pool diagram. Tap where the leak is.")
                     .accessibilityValue(pinSummary(pins))
@@ -192,7 +196,7 @@
         }
     }
 
-    /// The pool's shape as eight small drawings to tap (spec 3.18): centered 64 wide tiles on `fill`,
+    /// The pool's shape as seven small drawings to tap (spec 3.18): centered 64 wide tiles on `fill`,
     /// the name under each, a 2 pt `link` ring on the chosen one. The shape can stay blank; tapping
     /// the picked shape again clears it. Port of apps/web/src/components/shape-picker.tsx.
     struct ShapePicker: View {
@@ -219,7 +223,7 @@
         }
 
         @ViewBuilder private var tiles: some View {
-            ForEach(DiagramShape.allCases, id: \.self) { shape in
+            ForEach(DiagramShape.tiles, id: \.self) { shape in
                 let on = value == shape
                 let tile = RoundedRectangle(cornerRadius: CGFloat(Radius.block), style: .continuous)
                 Button {

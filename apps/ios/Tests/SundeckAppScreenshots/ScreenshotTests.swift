@@ -723,14 +723,21 @@
                 [
                     "diagram_shape": "figure_eight",
                     "diagram_layout": [
-                        "mirror": true, "spa": ["x": 0.85, "y": 0.75, "size": "large", "shape": "square"],
+                        "mirror": true, "spa": ["x": 0.85, "y": 0.75, "size": "large", "shape": "square", "r": 19],
+                        // Drawn with Draw, and landmarks around it (owner, 2026-10-19).
+                        "drawing": [["type": "line", "x1": 0.06, "y1": 0.94, "x2": 0.6, "y2": 0.94]],
+                        "landmarks": [
+                            ["kind": "tree", "x": 0.06, "y": 0.1], ["kind": "equipment", "x": 0.94, "y": 0.1],
+                            ["kind": "waterfall", "x": 0.5, "y": 0.08],
+                        ],
                     ],
                 ])
             try await snapshot(
                 "10-findings-layout", height: 1800,
                 NavigationStack { JobScreen(jobId: ids.job, section: .findings) }.app(env))
             // Edit Pool Shape (owner, 2026-10-19): the sheet as the property is now (a mirrored
-            // Figure 8, a large square spa placed by hand), in light, dark and large text.
+            // Figure 8, a large square spa placed by hand, a drawn line and three landmarks), in
+            // light, dark and large text.
             let shapeForm = PoolShapeForm(property: try store.get("property", propertyId))
             try await snapshot(
                 "10-pool-shape", height: 1900,
@@ -741,6 +748,13 @@
             try await snapshot(
                 "10-pool-shape-large-text", largeText: true, height: 2600,
                 PoolShapeSheet(propertyId: propertyId, companyId: "c1", form: shapeForm).app(env))
+            // Draw and Landmarks open under the tiles.
+            try await snapshot(
+                "10-pool-shape-draw", height: 2000,
+                PoolShapeSheet(propertyId: propertyId, companyId: "c1", form: shapeForm, panel: .draw).app(env))
+            try await snapshot(
+                "10-pool-shape-landmarks", height: 2000,
+                PoolShapeSheet(propertyId: propertyId, companyId: "c1", form: shapeForm, panel: .landmarks).app(env))
             // Markup on the diagram (owner, 2026-10-19): a pen ring round the pin and an arrow.
             let ring = (0...40).map { i in
                 MarkupPoint(x: 0.18 + 0.08 * cos(Double(i) / 6.4), y: 0.12 + 0.12 * sin(Double(i) / 6.4))

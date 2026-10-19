@@ -617,12 +617,19 @@ public func validateFinding(title: String, severityKey: String) -> [String: Stri
     return errors
 }
 
-/// The pool outlines the shape picker offers, in order (`DiagramShape.allCases`).
+/// Every shape a pool can be saved with (`isDiagramShape`): the tiles, Freeform (older pools)
+/// and a pool drawn by hand.
 public enum DiagramShape: String, Codable, CaseIterable, Sendable {
     case rectangle, oval, kidney
     case lShape = "l_shape"
     case freeform, roman, grecian
     case figureEight = "figure_eight"
+    /// Drawn by hand: no preset outline (Clear, owner 2026-10-19).
+    case custom
+
+    /// The preset shapes on the Pool Shape tiles (`DIAGRAM_SHAPES`). Freeform left the tiles
+    /// (owner, 2026-10-19: Draw covers it); pools already set to it still draw it.
+    public static let tiles: [DiagramShape] = [.rectangle, .oval, .kidney, .lShape, .roman, .grecian, .figureEight]
 
     public var label: String {
         switch self {
@@ -634,6 +641,7 @@ public enum DiagramShape: String, Codable, CaseIterable, Sendable {
         case .roman: "Roman"
         case .grecian: "Grecian"
         case .figureEight: "Figure 8"
+        case .custom: "Drawn"
         }
     }
 
@@ -655,6 +663,7 @@ public enum DiagramShape: String, Codable, CaseIterable, Sendable {
             "M16 18 H104 C120 18 132 32 132 50 C132 68 120 82 104 82 H16 Q10 82 10 76 V24 Q10 18 16 18 Z"
         // Rectangle with the corners cut.
         case .grecian: "M26 18 H114 L130 34 V66 L114 82 H26 L10 66 V34 Z"
+        case .custom: ""
         case .figureEight:
             "M40 16 C58 16 64 28 70 34 C76 28 82 16 100 16 C120 16 132 32 132 50 C132 68 120 84 100 84 "
                 + "C82 84 76 72 70 66 C64 72 58 84 40 84 C20 84 8 68 8 50 C8 32 20 16 40 16 Z"
@@ -696,32 +705,153 @@ public enum SpaShape: String, Codable, CaseIterable, Sendable {
     }
 }
 
-/// How a pool's diagram is laid out beyond its shape: mirrored left to right, and the spa's
-/// center (0..1 of the diagram), size, and shape. Stored in property.diagram_layout.
+/// Whether `v` is a shape a pool can be saved with (`isDiagramShape`).
+public func isDiagramShape(_ v: JSONValue?) -> Bool {
+    v?.string.flatMap(DiagramShape.init(rawValue:)) != nil
+}
+
+/// How a pool's diagram is laid out beyond its shape: mirrored left to right, the spa's center
+/// (0..1 of the diagram), size, shape and radius, what was drawn, and the landmarks around it.
+/// Stored in property.diagram_layout.
 public struct DiagramLayout: Codable, Equatable, Sendable {
     public struct Spa: Codable, Equatable, Sendable {
         public var x: Double
         public var y: Double
         public var size: SpaSize?
         public var shape: SpaShape?
+        /// Its radius in diagram units, pinched on the diagram (owner, 2026-10-19). `size` is
+        /// the nearest preset, for app builds that predate `r`.
+        public var r: Double?
 
-        public init(x: Double, y: Double, size: SpaSize? = nil, shape: SpaShape? = nil) {
+        public init(x: Double, y: Double, size: SpaSize? = nil, shape: SpaShape? = nil, r: Double? = nil) {
             self.x = x
             self.y = y
             self.size = size
             self.shape = shape
+            self.r = r
         }
     }
 
     /// True or absent (TypeScript leaves the key out unless it's true).
     public var mirror: Bool?
     public var spa: Spa?
+    /// Lines, circles, and freehand strokes drawn on the diagram (Draw), 0..1 of it.
+    public var drawing: [DrawnShape]?
+    /// Trees, rocks, a waterfall, and so on, placed around the pool (Landmarks).
+    public var landmarks: [Landmark]?
 
-    public init(mirror: Bool? = nil, spa: Spa? = nil) {
+    public init(mirror: Bool? = nil, spa: Spa? = nil, drawing: [DrawnShape]? = nil, landmarks: [Landmark]? = nil) {
         self.mirror = mirror
         self.spa = spa
+        self.drawing = drawing
+        self.landmarks = landmarks
     }
 }
+
+/// One thing drawn with Draw, in the pool's outline (owner, 2026-10-19). Encoded as the
+/// website's `{type: "line" | "circle" | "pen", …}`.
+public enum DrawnShape: Codable, Equatable, Sendable {
+    case line(x1: Double, y1: Double, x2: Double, y2: Double)
+    case circle(cx: Double, cy: Double, rx: Double, ry: Double)
+    /// At least two points, each [x, y].
+    case pen(points: [[Double]])
+
+    enum Keys: String, CodingKey { case type, x1, y1, x2, y2, cx, cy, rx, ry, points }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: Keys.self)
+        switch try c.decode(String.self, forKey: .type) {
+        case "line":
+            self = .line(
+                x1: try c.decode(Double.self, forKey: .x1), y1: try c.decode(Double.self, forKey: .y1),
+                x2: try c.decode(Double.self, forKey: .x2), y2: try c.decode(Double.self, forKey: .y2))
+        case "circle":
+            self = .circle(
+                cx: try c.decode(Double.self, forKey: .cx), cy: try c.decode(Double.self, forKey: .cy),
+                rx: try c.decode(Double.self, forKey: .rx), ry: try c.decode(Double.self, forKey: .ry))
+        case "pen": self = .pen(points: try c.decode([[Double]].self, forKey: .points))
+        default: throw DecodingError.dataCorruptedError(forKey: .type, in: c, debugDescription: "unknown shape")
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: Keys.self)
+        switch self {
+        case .line(let x1, let y1, let x2, let y2):
+            try c.encode("line", forKey: .type)
+            try c.encode(x1, forKey: .x1)
+            try c.encode(y1, forKey: .y1)
+            try c.encode(x2, forKey: .x2)
+            try c.encode(y2, forKey: .y2)
+        case .circle(let cx, let cy, let rx, let ry):
+            try c.encode("circle", forKey: .type)
+            try c.encode(cx, forKey: .cx)
+            try c.encode(cy, forKey: .cy)
+            try c.encode(rx, forKey: .rx)
+            try c.encode(ry, forKey: .ry)
+        case .pen(let points):
+            try c.encode("pen", forKey: .type)
+            try c.encode(points, forKey: .points)
+        }
+    }
+
+    /// As a synced JSON value.
+    public var json: JSONValue {
+        switch self {
+        case .line(let x1, let y1, let x2, let y2):
+            ["type": "line", "x1": .number(x1), "y1": .number(y1), "x2": .number(x2), "y2": .number(y2)]
+        case .circle(let cx, let cy, let rx, let ry):
+            ["type": "circle", "cx": .number(cx), "cy": .number(cy), "rx": .number(rx), "ry": .number(ry)]
+        case .pen(let points):
+            ["type": "pen", "points": .array(points.map { .array($0.map(JSONValue.number)) })]
+        }
+    }
+}
+
+/// A landmark's kind (`LandmarkKind`), in the Landmarks row's order.
+public enum LandmarkKind: String, Codable, CaseIterable, Sendable {
+    case tree, rock, waterfall, steps, equipment, house
+
+    public var label: String { landmarkIcons.first { $0.key == self }!.label }
+    /// Its outlined drawing in a 24 x 24 box (absolute M, L, H, V, Q, C, Z only).
+    public var path: String { landmarkIcons.first { $0.key == self }!.path }
+}
+
+/// The Landmarks tile's icons (`LANDMARKS`, owner 2026-10-19: "icons for landmarks... kept
+/// clean"): one outlined drawing each, in a 24 x 24 box.
+public let landmarkIcons: [(key: LandmarkKind, label: String, path: String)] = [
+    (
+        .tree, "Tree",
+        "M12 3 C15.3 3 18 5.7 18 9 C18 12.3 15.3 15 12 15 C8.7 15 6 12.3 6 9 C6 5.7 8.7 3 12 3 Z M12 15 V21 M9 21 H15"
+    ),
+    (.rock, "Rock", "M3 18 L6 11 L10 7 L15 8 L20 13 L21 18 Z M10 7 L12 12 L20 13"),
+    (.waterfall, "Waterfall", "M3 6 H21 M7 6 V17 M12 6 V19 M17 6 V17 M4 21 Q12 17 20 21"),
+    (.steps, "Steps", "M5 4 H19 V20 H5 Z M5 9.3 H19 M5 14.7 H19"),
+    (.equipment, "Equipment", "M3 15 H21 V20 H3 Z M6 15 V8 H13 V15 M13 10 H18 V15 M8.5 11.5 H10.5"),
+    (.house, "House", "M3 11 L12 4 L21 11 M5.5 9 V20 H18.5 V9 M10 20 V14 H14 V20"),
+]
+
+/// A landmark placed around the pool, its center 0..1 of the diagram.
+public struct Landmark: Codable, Equatable, Sendable {
+    public var kind: LandmarkKind
+    public var x: Double
+    public var y: Double
+
+    public init(kind: LandmarkKind, x: Double, y: Double) {
+        self.kind = kind
+        self.x = x
+        self.y = y
+    }
+}
+
+/// At most this many drawn shapes and landmarks on one pool.
+public let drawingMax = 40
+public let landmarksMax = 30
+/// A landmark's drawn size, in diagram units (of 160 x 100).
+public let landmarkSize = 14.0
+/// How small and large a spa can be pinched, as a radius in diagram units.
+public let spaRMin = 7.0
+public let spaRMax = 28.0
 
 /// A top-down pool diagram.
 public struct PoolDiagram: Codable, Equatable, Sendable {
@@ -733,11 +863,22 @@ public struct PoolDiagram: Codable, Equatable, Sendable {
         public var square: Bool
     }
 
+    /// A landmark's icon (`LandmarkKind.path`) drawn in a `landmarkSize` box centered on cx, cy.
+    public struct PlacedLandmark: Codable, Equatable, Sendable {
+        public var kind: LandmarkKind
+        public var cx: Double
+        public var cy: Double
+        public var path: String
+    }
+
     public var width: Double
     public var height: Double
-    /// SVG path for the pool outline, in the diagram's coordinates.
+    /// SVG path for the pool outline, in the diagram's coordinates; empty for a drawn pool.
     public var pool: String
     public var spa: Spa?
+    /// Each drawn shape as an SVG path, stroked like the pool's outline.
+    public var drawing: [String] = []
+    public var landmarks: [PlacedLandmark] = []
 }
 
 private let diagramWidth = 160.0
@@ -812,12 +953,148 @@ public func parseDiagramLayout(_ value: JSONValue?) -> DiagramLayout {
         return nil
     }
     if let spa = value["spa"], let x = unit(spa["x"]), let y = unit(spa["y"]) {
+        var r: Double?
+        if case .number(let n) = spa["r"], n >= spaRMin, n <= spaRMax { r = n }
         layout.spa = .init(
             x: x, y: y, size: spa["size"]?.string.flatMap(SpaSize.init(rawValue:)),
-            shape: spa["shape"]?.string.flatMap(SpaShape.init(rawValue:)))
+            shape: spa["shape"]?.string.flatMap(SpaShape.init(rawValue:)), r: r)
+    }
+    if case .array(let items) = value["drawing"] {
+        let drawing = Array(items.compactMap(drawnShape).prefix(drawingMax))
+        if !drawing.isEmpty { layout.drawing = drawing }
+    }
+    if case .array(let items) = value["landmarks"] {
+        let landmarks = Array(
+            items.compactMap { l -> Landmark? in
+                guard case .object = l, let kind = l["kind"]?.string.flatMap(LandmarkKind.init(rawValue:)),
+                    let x = unit(l["x"]), let y = unit(l["y"])
+                else { return nil }
+                return Landmark(kind: kind, x: x, y: y)
+            }
+            .prefix(landmarksMax))
+        if !landmarks.isEmpty { layout.landmarks = landmarks }
     }
     return layout
 }
+
+private func unitNumber(_ v: JSONValue?) -> Double? {
+    if case .number(let n) = v, n >= 0, n <= 1 { return n }
+    return nil
+}
+
+/// One drawn shape from a synced row, or nil when it isn't one.
+private func drawnShape(_ v: JSONValue) -> DrawnShape? {
+    guard case .object = v else { return nil }
+    switch v["type"]?.string {
+    case "line":
+        guard let x1 = unitNumber(v["x1"]), let y1 = unitNumber(v["y1"]), let x2 = unitNumber(v["x2"]),
+            let y2 = unitNumber(v["y2"])
+        else { return nil }
+        return .line(x1: x1, y1: y1, x2: x2, y2: y2)
+    case "circle":
+        guard let cx = unitNumber(v["cx"]), let cy = unitNumber(v["cy"]), let rx = unitNumber(v["rx"]),
+            let ry = unitNumber(v["ry"])
+        else { return nil }
+        return .circle(cx: cx, cy: cy, rx: rx, ry: ry)
+    case "pen":
+        guard case .array(let raw) = v["points"] else { return nil }
+        let points = raw.compactMap { p -> [Double]? in
+            guard case .array(let pair) = p, pair.count == 2, let x = unitNumber(pair[0]), let y = unitNumber(pair[1])
+            else { return nil }
+            return [x, y]
+        }
+        .prefix(400)
+        return points.count >= 2 ? .pen(points: Array(points)) : nil
+    default: return nil
+    }
+}
+
+/// The nearest preset for a pinched spa radius, written beside `r` for older app builds.
+public func spaSizeFor(_ r: Double) -> SpaSize {
+    SpaSize.allCases.reduce(SpaSize.small) { best, z in abs(z.r - r) < abs(best.r - r) ? z : best }
+}
+
+/// A spa radius kept within what can be pinched, to a tenth.
+public func clampSpaR(_ r: Double) -> Double {
+    ECMA.round(min(spaRMax, max(spaRMin, r)) * 10) / 10
+}
+
+private func tenth(_ n: Double) -> String { ECMA.numberString(ECMA.round(n * 10) / 10) }
+
+/// A drawn shape as an SVG path in the 160 x 100 diagram (circles as four curves, no arcs).
+public func drawnPath(_ d: DrawnShape) -> String {
+    let (w, h) = (diagramWidth, diagramHeight)
+    switch d {
+    case .line(let x1, let y1, let x2, let y2):
+        return "M\(tenth(x1 * w)) \(tenth(y1 * h)) L\(tenth(x2 * w)) \(tenth(y2 * h))"
+    case .pen(let points):
+        return points.enumerated().map { i, p in "\(i > 0 ? "L" : "M")\(tenth(p[0] * w)) \(tenth(p[1] * h))" }
+            .joined(separator: " ")
+    case .circle(let ux, let uy, let urx, let ury):
+        let (cx, cy, rx, ry) = (ux * w, uy * h, urx * w, ury * h)
+        let k = 0.5523
+        return [
+            "M\(tenth(cx)) \(tenth(cy - ry))",
+            "C\(tenth(cx + k * rx)) \(tenth(cy - ry)) \(tenth(cx + rx)) \(tenth(cy - k * ry)) \(tenth(cx + rx)) \(tenth(cy))",
+            "C\(tenth(cx + rx)) \(tenth(cy + k * ry)) \(tenth(cx + k * rx)) \(tenth(cy + ry)) \(tenth(cx)) \(tenth(cy + ry))",
+            "C\(tenth(cx - k * rx)) \(tenth(cy + ry)) \(tenth(cx - rx)) \(tenth(cy + k * ry)) \(tenth(cx - rx)) \(tenth(cy))",
+            "C\(tenth(cx - rx)) \(tenth(cy - k * ry)) \(tenth(cx - k * rx)) \(tenth(cy - ry)) \(tenth(cx)) \(tenth(cy - ry)) Z",
+        ].joined(separator: " ")
+    }
+}
+
+/// Draw's tools.
+public enum DrawTool: String, Codable, CaseIterable, Sendable {
+    case line, circle, pen
+
+    /// The segmented control's words.
+    public var label: String {
+        switch self {
+        case .line: "Line"
+        case .circle: "Circle"
+        case .pen: "Freeform"
+        }
+    }
+}
+
+/// A drag on the diagram as a drawn shape (Draw's Line, Circle, and Freeform), points 0..1.
+/// A line or circle from where the drag started to where it ended (the circle fills the box
+/// between them); a freehand stroke from every point, thinned to at most 400. Nil when too
+/// small to see.
+public func drawnShapeFrom(_ tool: DrawTool, _ points: [(x: Double, y: Double)]) -> DrawnShape? {
+    let c = { (n: Double) in ECMA.round(min(1, max(0, n)) * 10_000) / 10_000 }
+    guard let first = points.first, let last = points.last else { return nil }
+    if tool == .pen {
+        var kept: [[Double]] = []
+        for p in points {
+            let q = [c(p.x), c(p.y)]
+            if let prev = kept.last, (q[0] - prev[0]).hypot(q[1] - prev[1]) < 0.004 { continue }
+            kept.append(q)
+        }
+        if kept.count < 2 { return nil }
+        let step = Int((Double(kept.count) / 400).rounded(.up))
+        let thin =
+            step > 1
+            ? kept.enumerated().filter { $0.offset % step == 0 || $0.offset == kept.count - 1 }.map(\.element) : kept
+        return .pen(points: Array(thin.prefix(400)))
+    }
+    if (last.x - first.x).hypot(last.y - first.y) < 0.02 { return nil }
+    if tool == .line { return .line(x1: c(first.x), y1: c(first.y), x2: c(last.x), y2: c(last.y)) }
+    return .circle(
+        cx: c((first.x + last.x) / 2), cy: c((first.y + last.y) / 2), rx: c(abs(last.x - first.x) / 2),
+        ry: c(abs(last.y - first.y) / 2))
+}
+
+extension Double {
+    /// `Math.hypot(self, other)`.
+    fileprivate func hypot(_ other: Double) -> Double { Foundation.hypot(self, other) }
+}
+
+/// Clear (owner, 2026-10-19: "Clear would empty everything in the diagram"): no outline, no
+/// spa, nothing drawn, no landmarks. What Save writes for a cleared pool (`CLEARED_DIAGRAM`).
+public let clearedDiagram: (shape: DiagramShape, hasSpa: Bool, layout: DiagramLayout) = (
+    .custom, false, DiagramLayout()
+)
 
 /// Top-down diagram for a property. Pins are stored as 0..1 of width and height. Without a
 /// layout, the spa sits at the top right as before (on the left when mirrored).
@@ -825,14 +1102,21 @@ public func poolDiagram(_ shape: DiagramShape?, _ hasSpa: Bool, _ layout: Diagra
     let path = (shape ?? .rectangle).path
     let mirror = layout?.mirror == true
     let placed = layout?.spa
-    let r = (placed?.size ?? .medium).r
+    let r = placed?.r ?? (placed?.size ?? .medium).r
+    let half = landmarkSize / 2
     return PoolDiagram(
-        width: diagramWidth, height: diagramHeight, pool: mirror ? mirrorPath(path) : path,
+        width: diagramWidth, height: diagramHeight, pool: mirror && !path.isEmpty ? mirrorPath(path) : path,
         spa: hasSpa
             ? .init(
                 cx: placed.map { $0.x * diagramWidth } ?? (mirror ? diagramWidth - 145 : 145),
                 cy: placed.map { $0.y * diagramHeight } ?? 22, r: r, square: placed?.shape == .square)
-            : nil)
+            : nil,
+        drawing: (layout?.drawing ?? []).map(drawnPath),
+        landmarks: (layout?.landmarks ?? []).map { l in
+            .init(
+                kind: l.kind, cx: min(diagramWidth - half, max(half, l.x * diagramWidth)),
+                cy: min(diagramHeight - half, max(half, l.y * diagramHeight)), path: l.kind.path)
+        })
 }
 
 // MARK: - JavaScript semantics

@@ -9,6 +9,19 @@ import {
   verdictOptions,
   verdictValues,
   DIAGRAM_SHAPES,
+  CLEARED_DIAGRAM,
+  DRAWING_MAX,
+  LANDMARKS,
+  LANDMARKS_MAX,
+  LANDMARK_SIZE,
+  SPA_R_MAX,
+  SPA_R_MIN,
+  clampSpaR,
+  drawnPath,
+  drawnShapeFrom,
+  isDiagramShape,
+  spaSizeFor,
+  type DrawnShape,
   SPA_SHAPES,
   SPA_SIZES,
   mirrorPath,
@@ -207,6 +220,116 @@ export const inspection: ModuleCases = {
   DIAGRAM_SHAPES: rule(() => DIAGRAM_SHAPES, [[]]),
   SPA_SIZES: rule(() => SPA_SIZES, [[]]),
   SPA_SHAPES: rule(() => SPA_SHAPES, [[]]),
+  LANDMARKS: rule(() => LANDMARKS, [[]]),
+  DRAWING_MAX: rule(() => DRAWING_MAX, [[]]),
+  LANDMARKS_MAX: rule(() => LANDMARKS_MAX, [[]]),
+  LANDMARK_SIZE: rule(() => LANDMARK_SIZE, [[]]),
+  SPA_R_MIN: rule(() => SPA_R_MIN, [[]]),
+  SPA_R_MAX: rule(() => SPA_R_MAX, [[]]),
+  CLEARED_DIAGRAM: rule(() => CLEARED_DIAGRAM, [[]]),
+  isDiagramShape: rule(
+    (v: unknown) => isDiagramShape(v),
+    [
+      ["rectangle"],
+      ["freeform"],
+      ["custom"],
+      ["figure_eight"],
+      ["triangle"],
+      [null],
+      [3],
+      ["Oval"],
+    ],
+  ),
+  spaSizeFor: rule(
+    (r: number) => spaSizeFor(r),
+    [[7], [10], [11.5], [11.6], [13], [15], [15.1], [17], [28]],
+  ),
+  clampSpaR: rule(
+    (r: number) => clampSpaR(r),
+    [[0], [7], [12.34], [12.35], [27.96], [28], [40], [-3]],
+  ),
+  drawnPath: rule(
+    (d: DrawnShape) => drawnPath(d),
+    [
+      [{ type: "line", x1: 0.1, y1: 0.2, x2: 0.9, y2: 0.8 }],
+      [{ type: "line", x1: 0, y1: 0, x2: 1, y2: 1 }],
+      [{ type: "circle", cx: 0.5, cy: 0.5, rx: 0.25, ry: 0.3 }],
+      [{ type: "circle", cx: 0.01, cy: 0.02, rx: 0.01, ry: 0.02 }],
+      [
+        {
+          type: "pen",
+          points: [
+            [0.1, 0.1],
+            [0.123, 0.4567],
+            [0.5, 0.5],
+          ],
+        },
+      ],
+    ],
+  ),
+  drawnShapeFrom: rule(
+    (tool: "line" | "circle" | "pen", points: { x: number; y: number }[]) =>
+      drawnShapeFrom(tool, points),
+    [
+      ["line", []],
+      ["line", [{ x: 0.1, y: 0.1 }]],
+      [
+        "line",
+        [
+          { x: 0.1, y: 0.1 },
+          { x: 0.11, y: 0.11 },
+        ],
+      ],
+      [
+        "line",
+        [
+          { x: 0.1, y: 0.1 },
+          { x: 0.5, y: 0.5 },
+          { x: 0.9, y: 0.3 },
+        ],
+      ],
+      [
+        "line",
+        [
+          { x: -0.2, y: 0.1 },
+          { x: 1.4, y: 0.123456 },
+        ],
+      ],
+      [
+        "circle",
+        [
+          { x: 0.8, y: 0.9 },
+          { x: 0.2, y: 0.1 },
+        ],
+      ],
+      [
+        "circle",
+        [
+          { x: 0.5, y: 0.5 },
+          { x: 0.505, y: 0.5 },
+        ],
+      ],
+      ["pen", [{ x: 0.1, y: 0.1 }]],
+      [
+        "pen",
+        [
+          { x: 0.1, y: 0.1 },
+          { x: 0.101, y: 0.101 },
+        ],
+      ],
+      [
+        "pen",
+        [
+          { x: 0.1, y: 0.1 },
+          { x: 0.101, y: 0.101 },
+          { x: 0.2, y: 0.2 },
+          { x: 1.2, y: -1 },
+        ],
+      ],
+      ["pen", Array.from({ length: 1000 }, (_, i) => ({ x: i / 1000, y: (i % 50) / 50 }))],
+      ["pen", Array.from({ length: 450 }, (_, i) => ({ x: i / 450, y: 0.5 }))],
+    ],
+  ),
 
   componentApplies: rule(
     (t: ComponentType, p: Place) => componentApplies(t, p),
@@ -473,6 +596,32 @@ export const inspection: ModuleCases = {
       ["oval", true, { spa: { x: 0.333, y: 0.1, shape: "square" } }],
       // A placed spa without a spa on the property draws nothing.
       ["oval", false, { mirror: true, spa: { x: 0.5, y: 0.5, size: "large" } }],
+      // A pinched spa, a drawn pool, drawing and landmarks (owner, 2026-10-19).
+      ["oval", true, { spa: { x: 0.5, y: 0.5, size: "large", r: 21.5 } }],
+      ["custom", false],
+      ["custom", true, { mirror: true }],
+      [
+        "custom",
+        false,
+        {
+          drawing: [
+            { type: "line", x1: 0.1, y1: 0.2, x2: 0.9, y2: 0.8 },
+            { type: "circle", cx: 0.5, cy: 0.5, rx: 0.25, ry: 0.3 },
+            {
+              type: "pen",
+              points: [
+                [0.1, 0.1],
+                [0.2, 0.3],
+              ],
+            },
+          ],
+          landmarks: [
+            { kind: "tree", x: 0, y: 0 },
+            { kind: "house", x: 1, y: 1 },
+            { kind: "rock", x: 0.5, y: 0.5 },
+          ],
+        },
+      ],
     ],
   ),
 
@@ -516,6 +665,84 @@ export const inspection: ModuleCases = {
       [{ spa: [0.5, 0.5] }],
       [{ spa: { x: 0.5, y: 0.5, size: 13, shape: null } }],
       [{ spa: { x: 0.5, y: 0.5, size: "Small" } }],
+      [{ spa: { x: 0.5, y: 0.5, r: 20 } }],
+      [{ spa: { x: 0.5, y: 0.5, r: 6.9 } }],
+      [{ spa: { x: 0.5, y: 0.5, r: 28.1 } }],
+      [{ spa: { x: 0.5, y: 0.5, r: "20" } }],
+      [
+        {
+          drawing: [
+            { type: "line", x1: 0.1, y1: 0.2, x2: 0.9, y2: 0.8 },
+            { type: "line", x1: 0.1, y1: 0.2, x2: 1.9, y2: 0.8 },
+            { type: "circle", cx: 0.5, cy: 0.5, rx: 0.25, ry: 0.3, extra: 1 },
+            { type: "circle", cx: 0.5, cy: 0.5, rx: 0.25 },
+            {
+              type: "pen",
+              points: [
+                [0.1, 0.1],
+                [2, 0.1],
+                [0.3, 0.4],
+              ],
+            },
+            {
+              type: "pen",
+              points: [
+                [0.1, 0.1],
+                [2, 0.1],
+              ],
+            },
+            { type: "square" },
+            null,
+            "line",
+            [0.1, 0.2],
+          ],
+        },
+      ],
+      [{ drawing: [] }],
+      [{ drawing: "line" }],
+      [
+        {
+          drawing: Array.from({ length: 45 }, (_, i) => ({
+            type: "line",
+            x1: i / 100,
+            y1: 0,
+            x2: 1,
+            y2: 1,
+          })),
+        },
+      ],
+      [
+        {
+          landmarks: [
+            { kind: "tree", x: 0.1, y: 0.2, extra: true },
+            { kind: "statue", x: 0.1, y: 0.2 },
+            { kind: "rock", x: 1.1, y: 0.2 },
+            { kind: "house", x: 0, y: 1 },
+            null,
+            "tree",
+          ],
+        },
+      ],
+      [
+        {
+          landmarks: Array.from({ length: 35 }, (_, i) => ({
+            kind: "steps",
+            x: i / 100,
+            y: 0.5,
+          })),
+        },
+      ],
+      [{ landmarks: [{ kind: "rock", x: "0.1", y: 0.2 }] }],
+      [
+        {
+          drawing: [
+            {
+              type: "pen",
+              points: Array.from({ length: 450 }, (_, i) => [i / 450, 0.5]),
+            },
+          ],
+        },
+      ],
     ],
   ),
 

@@ -433,7 +433,9 @@ private struct Inspection {
     }
 
     @Test func everyOutlineParses() {
-        for shape in DiagramShape.allCases {
+        // A drawn pool (Clear) has no outline.
+        #expect(poolDiagram(.custom, false).pool.isEmpty)
+        for shape in DiagramShape.allCases where shape != .custom {
             let commands = parseSVGPath(poolDiagram(shape, false).pool)
             #expect(commands.first.map { if case .move = $0 { true } else { false } } == true)
             #expect(commands.last == .close)
@@ -450,7 +452,7 @@ private struct Inspection {
     /// Mirrored outlines (spaced tokens from `mirrorPath`) draw the same commands, flipped.
     @Test func mirroredOutlinesParseFlipped() {
         let layout = DiagramLayout(mirror: true)
-        for shape in DiagramShape.allCases {
+        for shape in DiagramShape.allCases where shape != .custom {
             let plain = parseSVGPath(poolDiagram(shape, false).pool)
             let mirrored = parseSVGPath(poolDiagram(shape, false, layout).pool)
             #expect(mirrored.count == plain.count)
@@ -486,62 +488,105 @@ private struct Inspection {
     }
 }
 
-/// Edit Pool Shape (owner, 2026-10-19; website diagram-work.tsx and actions/diagram.ts).
+/// Edit Pool Shape (owner, 2026-10-19; website pool-shape-editor.tsx and actions/diagram.ts).
 @Suite @MainActor struct PoolShapeFormTests {
-    @Test func aPlainPoolWritesNoLayout() throws {
-        let form = PoolShapeForm(property: ["id": "p1", "has_spa": false])
-        #expect(form.shape == nil && !form.hasSpa && !form.mirror && form.spaAt == nil)
-        #expect(form.size == .medium && form.spaShape == .round)
-        #expect(form.layout == DiagramLayout() && form.layoutJSON == .null)
-        #expect(form.at == nil)
+    @Test func theTilesAreTwoRowsOfFive() {
+        #expect(
+            PoolShapeTile.all.map(\.label) == [
+                "Rectangle", "Oval", "Kidney", "L-shape", "Roman", "Grecian", "Draw", "Clear", "Landmarks", "Figure 8",
+            ])
+        #expect(!DiagramShape.tiles.contains(.freeform) && !DiagramShape.tiles.contains(.custom))
+        var form = PoolShapeForm(property: ["id": "p1", "has_spa": false])
+        form.tapShape(.oval)
+        #expect(form.shape == .oval)
+        form.tapShape(.oval)
+        #expect(form.shape == nil)
     }
 
-    @Test func mirrorAndTheSpaWriteTheWebsitesJSON() throws {
+    @Test func aPlainPoolWritesNoLayout() throws {
+        let form = PoolShapeForm(property: ["id": "p1", "has_spa": false])
+        #expect(form.shape == nil && !form.hasSpa && !form.mirror && form.spa == nil)
+        #expect(form.layout == DiagramLayout() && form.layoutJSON == .null)
+        #expect(form.spaNow == nil && form.drawingLabel == "Pool drawing")
+    }
+
+    @Test func theSpaIsReshapedMovedAndResizedOnTheDrawing() throws {
         var form = PoolShapeForm(property: ["id": "p1", "diagram_shape": "kidney", "has_spa": true])
-        // The default spa sits in the corner and writes nothing.
-        #expect(form.at == MarkupPoint(x: 145.0 / 160, y: 0.22))
+        // The default spa sits in the corner and writes nothing until it's touched.
+        #expect(form.spaNow == PlacedSpa(x: 145.0 / 160, y: 0.22, r: 13, shape: .round))
         #expect(form.layoutJSON == .null)
         form.mirror = true
         #expect(form.layoutJSON == ["mirror": true])
-        #expect(form.at == MarkupPoint(x: 15.0 / 160, y: 0.22))
-        // A size or shape alone keeps the spa where it's drawn now.
-        form.size = .large
+        #expect(form.spaNow?.x == 15.0 / 160)
+        // A tap on the spa makes it square, where it's drawn now.
+        #expect(form.onSpa(x: 15.0 / 160, y: 0.22) && !form.onSpa(x: 0.5, y: 0.5))
+        form.toggleSpaShape()
         #expect(
-            form.layoutJSON == ["mirror": true, "spa": ["x": 0.09375, "y": 0.22, "size": "large", "shape": "round"]])
-        form.size = .medium
-        form.place(x: 0.85, y: 0.2)
-        form.spaShape = .square
-        #expect(
-            form.layoutJSON == ["mirror": true, "spa": ["x": 0.85, "y": 0.2, "size": "medium", "shape": "square"]])
-        #expect(form.diagram.spa.map { [$0.cx, $0.cy, $0.r] } == [136, 20, 13])
-        #expect(form.diagram.spa?.square == true)
-        #expect(form.placeValue == "Spa 85% across, 20% down")
-        // Put the Spa Back in the Corner.
-        form.resetSpa()
-        form.spaShape = .round
-        #expect(form.layoutJSON == ["mirror": true])
-        // No spa: no spa in the layout, and taps don't place one.
+            form.layoutJSON == [
+                "mirror": true, "spa": ["x": 0.09375, "y": 0.22, "size": "medium", "shape": "square", "r": 13],
+            ])
+        // Drag it, then drag its corner handle; the size written is the nearest preset.
+        form.moveSpa(x: 0.85, y: 0.2)
+        let handle = (x: 0.85 + 13 * 0.71 / 160, y: 0.2 + 13 * 0.71 / 100)
+        #expect(form.onHandle(x: handle.x, y: handle.y))
+        form.resizeSpa(toX: 0.85 + 17 / 160, y: 0.2)
+        #expect(form.spa == PlacedSpa(x: 0.85, y: 0.2, r: 17, shape: .square))
+        #expect(form.layout.spa?.size == .large && form.layout.spa?.r == 17)
+        #expect(form.diagram.spa.map { [$0.cx, $0.cy, $0.r] } == [136, 20, 17])
+        // A pinch is kept within 7 to 28.
+        form.setSpaR(40)
+        #expect(form.spa?.r == 28)
+        form.setSpaR(3)
+        #expect(form.spa?.r == 7 && form.layout.spa?.size == .small)
+        #expect(form.drawingLabel == "Pool drawing, Spa, square, size 7")
+        // VoiceOver's moves: 2% a step, clamped.
+        for _ in 0..<20 { form.nudge(dx: PoolShapeForm.step, dy: -PoolShapeForm.step) }
+        #expect(form.spa?.x == 1 && form.spa?.y == 0)
+        // No spa: none in the layout.
         form.hasSpa = false
-        form.place(x: 0.5, y: 0.5)
-        #expect(form.spaAt == nil && form.layoutJSON == ["mirror": true])
+        #expect(form.layoutJSON == ["mirror": true] && form.spaNow == nil)
     }
 
-    @Test func theSpaStaysInsideTheDrawing() throws {
-        var form = PoolShapeForm(property: ["id": "p1", "has_spa": true])
-        form.place(x: 1.4, y: -0.3)
-        #expect(form.spaAt == MarkupPoint(x: 1, y: 0))
-        form.place(x: 0.123456, y: 0.654321)
-        #expect(form.spaAt == MarkupPoint(x: 0.1235, y: 0.6543))
-        form.place(x: .nan, y: .infinity)
-        #expect(form.spaAt == MarkupPoint(x: 0, y: 0))
-        // VoiceOver's moves: 2% a step, from where the spa is drawn, clamped.
-        form.resetSpa()
-        form.nudge(dx: PoolShapeForm.step, dy: 0)
-        #expect(form.spaAt == MarkupPoint(x: diagramUnit(145.0 / 160 + 0.02), y: 0.22))
-        for _ in 0..<20 { form.nudge(dx: PoolShapeForm.step, dy: -PoolShapeForm.step) }
-        #expect(form.spaAt == MarkupPoint(x: 1, y: 0))
-        form.nudge(dx: -0.02, dy: 0.02)
-        #expect(form.spaAt == MarkupPoint(x: 0.98, y: 0.02))
+    @Test func drawingAndLandmarksGoInTheLayout() throws {
+        var form = PoolShapeForm(property: ["id": "p1", "diagram_shape": "oval", "has_spa": false])
+        form.draw(.line, [(0.1, 0.2), (0.9, 0.8)])
+        form.draw(.circle, [(0.5, 0.5), (0.505, 0.5)])  // too small to see
+        form.draw(.pen, [(0.1, 0.1), (0.2, 0.3), (0.3, 0.3)])
+        #expect(form.drawing.count == 2)
+        form.undo()
+        #expect(form.drawing == [.line(x1: 0.1, y1: 0.2, x2: 0.9, y2: 0.8)])
+        form.placeLandmark(.tree, x: 0.05, y: 0.05)
+        form.placeLandmark(.house, x: 0.5, y: 0.9)
+        #expect(form.landmarkAt(x: 0.05, y: 0.05) == 0 && form.landmarkAt(x: 0.5, y: 0.5) == nil)
+        form.moveLandmark(1, x: 0.6, y: 0.95)
+        #expect(
+            form.layoutJSON == [
+                "drawing": [["type": "line", "x1": 0.1, "y1": 0.2, "x2": 0.9, "y2": 0.8]],
+                "landmarks": [["kind": "tree", "x": 0.05, "y": 0.05], ["kind": "house", "x": 0.6, "y": 0.95]],
+            ])
+        #expect(form.diagram.drawing == ["M16 20 L144 80"])
+        #expect(form.diagram.landmarks.map(\.cx) == [8, 96])
+        #expect(form.drawingLabel == "Pool drawing, 2 landmarks, 1 drawn")
+        form.removeLandmark(0)
+        #expect(form.landmarks.map(\.kind) == [.house])
+        #expect(PoolShapeForm.placingHint(.tree) == "Tap the drawing to put the tree there.")
+        #expect(PoolShapeForm.removeTitle(.house) == "Remove House")
+        // At most 30 landmarks.
+        for _ in 0..<40 { form.placeLandmark(.rock, x: 0.5, y: 0.5) }
+        #expect(form.landmarks.count == landmarksMax)
+    }
+
+    @Test func clearEmptiesTheDiagram() throws {
+        var form = PoolShapeForm(property: ["id": "p1", "diagram_shape": "kidney", "has_spa": true])
+        form.mirror = true
+        form.toggleSpaShape()
+        form.draw(.line, [(0.1, 0.2), (0.9, 0.8)])
+        form.placeLandmark(.steps, x: 0.3, y: 0.3)
+        form.clear()
+        #expect(form.shape == .custom && !form.hasSpa && !form.mirror && form.spa == nil)
+        #expect(form.drawing.isEmpty && form.landmarks.isEmpty && form.layoutJSON == .null)
+        #expect(form.diagram.pool.isEmpty)
+        #expect(PoolShapeForm.clearTitle == "Clear the pool diagram?" && PoolShapeForm.clearButton == "Clear Diagram")
     }
 
     @Test func savingWritesShapeSpaAndLayoutThroughSync() throws {
@@ -551,27 +596,31 @@ private struct Inspection {
         form.shape = .figureEight
         form.hasSpa = true
         form.mirror = true
-        form.place(x: 0.2, y: 0.8)
-        form.size = .large
+        form.moveSpa(x: 0.2, y: 0.8)
+        form.setSpaR(17.25)
+        form.draw(.circle, [(0.2, 0.2), (0.4, 0.6)])
+        form.placeLandmark(.waterfall, x: 0.9, y: 0.1)
         try InspectionWrites.savePoolShape(s.sync, propertyId: "p1", companyId: "c1", form)
         let row = try #require(try s.store.get("property", "p1"))
         #expect(row["diagram_shape"] == "figure_eight" && row["has_spa"] == true)
         #expect(
-            row["diagram_layout"] == ["mirror": true, "spa": ["x": 0.2, "y": 0.8, "size": "large", "shape": "round"]])
+            row["diagram_layout"] == [
+                "mirror": true, "spa": ["x": 0.2, "y": 0.8, "size": "large", "shape": "round", "r": 17.3],
+                "drawing": [["type": "circle", "cx": 0.3, "cy": 0.4, "rx": 0.1, "ry": 0.2]],
+                "landmarks": [["kind": "waterfall", "x": 0.9, "y": 0.1]],
+            ])
         #expect(try s.store.pendingCount() == before + 1)
         // What the diagram then draws, and the sheet reopens to the same choices.
         #expect(diagramLayout(of: row) == form.layout)
         #expect(PoolShapeForm(property: row) == form)
-        // Clearing it all writes nulls.
+        // A cleared pool writes the drawn shape and no layout.
         var plain = PoolShapeForm(property: row)
-        plain.shape = nil
-        plain.hasSpa = false
-        plain.mirror = false
+        plain.clear()
         try InspectionWrites.savePoolShape(s.sync, propertyId: "p1", companyId: "c1", plain)
         let cleared = try #require(try s.store.get("property", "p1"))
-        #expect(cleared["diagram_shape"] == .null && cleared["has_spa"] == false && cleared["diagram_layout"] == .null)
+        #expect(
+            cleared["diagram_shape"] == "custom" && cleared["has_spa"] == false && cleared["diagram_layout"] == .null)
         #expect(PoolShapeForm.title == "Pool Shape" && PoolShapeForm.save == "Save Pool Shape")
-        #expect(PoolShapeForm.resetSpa == "Put the Spa Back in the Corner")
         #expect(PoolShapeForm.mirrorLabel == "Mirror (flip left to right)")
     }
 }
