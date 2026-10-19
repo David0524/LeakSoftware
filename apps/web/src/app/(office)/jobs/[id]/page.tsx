@@ -8,6 +8,8 @@ import {
   POOL_TYPE_LABELS,
   SIGNATURE_PURPOSE_LABELS,
   checklistTally,
+  REPAIR_ITEM_KEY,
+  REPAIR_ITEM_LABEL,
   cleaningCadence,
   cleaningCountdown,
   cleaningKind,
@@ -111,9 +113,11 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   const questions = (company.settings as Partial<CompanySettings>).intake_questions ?? [];
   // With a company number, texts go out from it (Messages), not this device.
   const texting = line?.status === "active";
-  const answers = questions
-    .map((q) => ({ q, a: job.intake?.[q.key] }))
-    .filter(({ a }) => (Array.isArray(a) ? a.length > 0 : !!a));
+  const answers = [
+    // When They Call on a repair (owner, 2026-10-19): what the customer needs.
+    { q: { key: REPAIR_ITEM_KEY, label: REPAIR_ITEM_LABEL }, a: job.intake?.[REPAIR_ITEM_KEY] },
+    ...questions.map((q) => ({ q, a: job.intake?.[q.key] })),
+  ].filter(({ a }) => (Array.isArray(a) ? a.length > 0 : !!a));
 
   return (
     <>
@@ -245,7 +249,9 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                     </Grouped>
 
                     {answers.length ? (
-                      <Grouped title="When they booked">
+                      <Grouped
+                        title={job.type === "repair" ? "When they called" : "When they booked"}
+                      >
                         {answers.map(({ q, a }) => (
                           <Row key={q.key}>
                             <span className="min-w-0 flex-1">

@@ -27,6 +27,7 @@ interface PriceItem {
   taxable: boolean;
   sort_order: number;
   active: boolean;
+  on_repair_call?: boolean;
 }
 
 function ItemFields({ item, types }: { item?: PriceItem; types: ComponentType[] }) {
@@ -88,6 +89,13 @@ function ItemFields({ item, types }: { item?: PriceItem; types: ComponentType[] 
           id={`taxable-${p}`}
           defaultChecked={item ? item.taxable : true}
         />
+        <SSwitch
+          label="Show in When They Call"
+          name="on_repair_call"
+          id={`repair-call-${p}`}
+          defaultChecked={item?.on_repair_call ?? false}
+          hint="On the menu of what a customer needs when booking a repair."
+        />
         {item ? (
           <SSwitch
             label="Available on quotes"
@@ -145,7 +153,11 @@ export default async function PriceBookPage() {
               testId="price-item"
               title={item.name}
               label={item.name}
-              detail={item.active ? undefined : "Hidden"}
+              detail={
+                [item.active ? null : "Hidden", item.on_repair_call ? "In When They Call" : null]
+                  .filter(Boolean)
+                  .join(" · ") || undefined
+              }
               value={
                 <span className="tabular-nums">
                   <span className="text-text">{formatCents(item.price_cents)}</span> / {item.unit}

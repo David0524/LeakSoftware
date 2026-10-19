@@ -49,7 +49,10 @@ export function NewJobForm({
   canPlan = false,
   visitMinutes = 30,
   services = "both",
+  repairItems = [],
 }: {
+  /** When They Call: the price book items a repair can be booked for (owner, 2026-10-19). */
+  repairItems?: { id: string; name: string; cents: number }[];
   /** What the shop does: its own jobs, plus Repair for everyone. */
   services?: Services;
   customers: CustomerOption[];
@@ -348,7 +351,33 @@ export function NewJobForm({
         </div>
       </Section>
 
-      {questions.length && detection ? (
+      {kind === "repair" ? (
+        <Section title="When They Call">
+          {repairItems.length ? (
+            <Select
+              label="What do they need?"
+              name="repair_item"
+              defaultValue=""
+              onChange={(e) => {
+                const item = repairItems.find((i) => i.id === e.target.value);
+                if (item) setFee((item.cents / 100).toFixed(2));
+              }}
+              options={[
+                { value: "", label: "Pick from the price book…" },
+                ...repairItems.map((i) => ({
+                  value: i.id,
+                  label: `${i.name} ($${(i.cents / 100).toFixed(2)})`,
+                })),
+              ]}
+            />
+          ) : null}
+          <STextArea
+            label="What they said (optional)"
+            name="notes"
+            hint="Shown to the tech with the job."
+          />
+        </Section>
+      ) : questions.length && detection ? (
         <Section title="When they called">
           {questions.map((q) =>
             q.type === "multi" ? (

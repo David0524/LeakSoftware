@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   parseDollars,
+  REPAIR_ITEM_KEY,
   seesAllJobs,
   planComponents,
   splitEmails,
@@ -339,6 +340,19 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
     } else if (text(form, `q_${q.key}`)) {
       intake[q.key] = text(form, `q_${q.key}`);
     }
+  }
+
+  // When They Call (owner, 2026-10-19): the price book item a repair was booked for.
+  const repairItem = kind === "repair" ? text(form, "repair_item") : "";
+  if (repairItem) {
+    const { data: item } = await supabase
+      .from("price_book_item")
+      .select("name")
+      .eq("id", repairItem)
+      .eq("company_id", office.company.id)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (item) intake[REPAIR_ITEM_KEY] = item.name as string;
   }
 
   const start = scheduled

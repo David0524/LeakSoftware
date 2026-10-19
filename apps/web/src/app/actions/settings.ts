@@ -424,6 +424,7 @@ export async function savePriceItem(_: FormState, form: FormData): Promise<FormS
     taxable: checked(form, "taxable"),
     sort_order: int(form, "sort_order"),
     active: text(form, "id") ? checked(form, "active") : true,
+    on_repair_call: checked(form, "on_repair_call"),
   });
   if (error) return failed(error);
   return done("/settings/price-book", text(form, "id") ? "Saved." : `Added ${name}.`);

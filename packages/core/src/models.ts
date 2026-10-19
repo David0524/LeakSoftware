@@ -113,6 +113,10 @@ export function canMakeJobs(role: string | null | undefined, settings: unknown):
   return (settings as Partial<CompanySettings> | null)?.techs_make_jobs !== false;
 }
 
+/** job.intake's key for the price book item a repair was booked for (When They Call). */
+export const REPAIR_ITEM_KEY = "repair_item";
+export const REPAIR_ITEM_LABEL = "What they need";
+
 export interface IntakeQuestion {
   key: string;
   label: string;

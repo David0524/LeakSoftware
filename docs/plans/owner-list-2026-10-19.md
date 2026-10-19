@@ -199,3 +199,19 @@ Status key: **Website done** means built, checked, and committed on `claude/cool
 - **Apps:** customers pay on the website, so nothing changes in the apps unless an app shows
   totals before sending a pay link (then mention the fee the same way). If the apps get a
   settings screen for payments, add the same switch and percentage.
+
+## 15. When They Call, for repairs
+
+- **Website done.** New Job › Job: **Repair** now has a **When They Call** section: **What do
+  they need?**, a menu of price book items ("Pump motor ($450.00)"), which fills in the Price,
+  and **What they said (optional)** (the job's notes for the tech). The job page shows it under
+  **When they called** ("What they need: Pump motor").
+  - The owner picks the menu: Settings › Price Book › an item › **Show in When They Call**
+    (rows say "In When They Call"). With none picked, every active item is on the menu.
+  - Data: `price_book_item.on_repair_call` (boolean, synced, owner-writable;
+    `20261012005700_repair_call_items.sql`). The chosen item's name is saved in
+    `job.intake.repair_item` (core `REPAIR_ITEM_KEY`, label `REPAIR_ITEM_LABEL`), the price in
+    `job.fee_cents` as before.
+- **Apps:** the app's New Job for a repair should show the same menu (items with
+  `on_repair_call`, or all active ones when none are), fill the price, and save
+  `intake.repair_item`; show "What they need" on the job.

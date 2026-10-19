@@ -54,6 +54,18 @@ select is(app.report_snapshot((select job_a from ids)) #>> '{job,diagram_markup,
 select is(app.report_snapshot((select job_a from ids)) #>> '{property,diagram_shape}',
   'figure_eight', 'reports keep the shape');
 
+-- When They Call: owners pick which price book items show; techs can't
+select tests.authenticate_as((select owner_a from ids));
+select is(tests.rows_affected(format($$ update price_book_item set on_repair_call = true
+  where company_id = %L and name = 'Salt cell clean' $$, (select ca from ids))) > 0, true,
+  'an owner puts an item on the When They Call menu');
+reset role;
+select tests.authenticate_as((select tech_a from ids));
+select is(tests.rows_affected(format($$ update price_book_item set on_repair_call = false
+  where company_id = %L $$, (select ca from ids))), 0::bigint,
+  'a tech cannot change the menu');
+reset role;
+
 -- Feature requests: only the server
 select tests.authenticate_as((select owner_a from ids));
 select throws_ok($$ insert into feature_request (request) values ('More colors') $$,
