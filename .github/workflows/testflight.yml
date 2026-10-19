@@ -1,0 +1,126 @@
+name: TestFlight
+
+# Builds the Swift iPhone app (apps/ios) for the App Store and uploads it to TestFlight
+# (docs/release/LAUNCH.md § 2). Only when asked: Actions › TestFlight › Run workflow, or a tag
+# ios-vX.Y.Z. Not on every push: pushes cancel each other's runs, and an upload per push would
+# flood TestFlight.
+#
+# Signing is automatic, with the App Store Connect API key in the repository secrets (ASC_KEY_ID,
+# ASC_ISSUER_ID, ASC_KEY_P8, APPLE_TEAM_ID); no certificates or profiles are kept in the repo.
+# Build numbers: 1000 + this workflow's run number, clear of the Expo app's (it counts from 1 on
+# the same App Store Connect record, com.sundeckpro.app).
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["ios-v*"]
+
+concurrency:
+  group: testflight
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    name: Build and upload to TestFlight
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      BUILD_NUMBER: ${{ 1000 + github.run_number }}
+      APP_STORE_APP_ID: "6824555420"
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: xcodebuild -version && swift --version
+
+      - name: Make the Xcode project (XcodeGen)
+        working-directory: apps/ios/AppHost
+        run: |
+          brew install xcodegen
+          cp ../../../brand/logo/png/icon-1024.png Assets.xcassets/AppIcon.appiconset/icon-1024.png
+          xcodegen generate --spec project.yml
+
+      - name: Check the App Store settings
+        working-directory: apps/ios
+        run: |
+          # TestFlight skips the export compliance questions (standard HTTPS only).
+          test "$(/usr/libexec/PlistBuddy -c 'Print :ITSAppUsesNonExemptEncryption' Info.plist)" = "false"
+          version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist)
+          echo "MARKETING_VERSION=$version" >> "$GITHUB_ENV"
+          echo "Version $version, build $BUILD_NUMBER"
+
+      - name: Write the App Store Connect key
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          # Outside the workspace, readable only by this user; deleted in the last step.
+          dir="$RUNNER_TEMP/asc"
+          mkdir -m 700 -p "$dir"
+          umask 077
+          printf '%s\n' "$ASC_KEY_P8" > "$dir/AuthKey_$ASC_KEY_ID.p8"
+          echo "ASC_KEY_PATH=$dir/AuthKey_$ASC_KEY_ID.p8" >> "$GITHUB_ENV"
+
+      - name: Archive (Release)
+        working-directory: apps/ios/AppHost
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: >
+          xcodebuild archive
+          -project SundeckPro.xcodeproj -scheme SundeckPro -configuration Release
+          -destination 'generic/platform=iOS'
+          -archivePath "$RUNNER_TEMP/SundeckPro.xcarchive"
+          -skipPackagePluginValidation
+          -allowProvisioningUpdates
+          -authenticationKeyPath "$ASC_KEY_PATH"
+          -authenticationKeyID "$ASC_KEY_ID"
+          -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
+          CODE_SIGN_STYLE=Automatic
+          CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
+          MARKETING_VERSION="$MARKETING_VERSION"
+
+      - name: Export and upload to App Store Connect
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/SundeckPro.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+
+      - name: Summary
+        if: success()
+        run: |
+          {
+            echo "### Uploaded to TestFlight"
+            echo
+            echo "Sundeck Pro **$MARKETING_VERSION ($BUILD_NUMBER)**. Apple processes it for a few minutes before testers can install it."
+            echo
+            echo "[App Store Connect › TestFlight](https://appstoreconnect.apple.com/apps/$APP_STORE_APP_ID/testflight/ios)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Delete the key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/asc" "$RUNNER_TEMP/ExportOptions.plist"

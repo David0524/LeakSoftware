@@ -1,0 +1,69 @@
+# The Xcode project for App Store builds (TestFlight, .github/workflows/testflight.yml).
+# Generated in CI with XcodeGen (`xcodegen generate --spec apps/ios/AppHost/project.yml`); the
+# .xcodeproj isn't committed. The app's code is the SwiftPM package one folder up: these two
+# targets only link its products (SundeckPro, whose @main is the app, and SundeckLiveActivity,
+# the Live Activity's widget extension) and add what an App Store build needs: the Info.plists,
+# entitlements, the app icon, and a launch screen. Day-to-day builds still use xtool.
+name: SundeckPro
+options:
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+packages:
+  SundeckPackage:
+    path: ..
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    # The marketing version comes from ../Info.plist; the build number is set by CI
+    # (CURRENT_PROJECT_VERSION = 1000 + the run number).
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+targets:
+  SundeckPro:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+      - path: Assets.xcassets
+    dependencies:
+      - package: SundeckPackage
+        product: SundeckPro
+      - target: SundeckLiveActivity
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.sundeckpro.app
+        PRODUCT_NAME: SundeckPro
+        INFOPLIST_FILE: ../Info.plist
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        CODE_SIGN_ENTITLEMENTS: ../SundeckPro.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  SundeckLiveActivity:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: LiveActivity
+      # The mark the Live Activity draws (LiveStopLogo), at the extension's root as xtool puts it.
+      - path: ../../../brand/logo/png/mark-reverse-512.png
+        buildPhase: resources
+    dependencies:
+      - package: SundeckPackage
+        product: SundeckLiveActivity
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.sundeckpro.app.SundeckLiveActivity
+        PRODUCT_NAME: SundeckLiveActivity
+        INFOPLIST_FILE: ../LiveActivity-Info.plist
+        GENERATE_INFOPLIST_FILE: YES
+        SKIP_INSTALL: YES
+schemes:
+  SundeckPro:
+    build:
+      targets:
+        SundeckPro: all
+    archive:
+      config: Release

@@ -35,6 +35,24 @@ npx eas-cli@latest build --profile production --platform android
   (`SENTRY_DISABLE_AUTO_UPLOAD`).
 - Set `EXPO_PUBLIC_API_URL` to the website's address in the EAS production environment.
 
+### The Swift iPhone app (apps/ios) to TestFlight
+
+- **Start a build:** GitHub › Actions › **TestFlight** › Run workflow (pick the branch), or
+  push a tag `ios-vX.Y.Z` (for example `git tag ios-v0.1.0 && git push origin ios-v0.1.0`). It
+  doesn't run on ordinary pushes. Run it once CI on that commit is green.
+- It builds a Release archive on macOS from `apps/ios/AppHost/project.yml` (XcodeGen; the
+  Xcode project isn't committed), signs it automatically with the App Store Connect API key
+  (secrets `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, `APPLE_TEAM_ID`; no certificates or
+  profiles in the repo), and uploads it straight to App Store Connect. The job summary has the
+  build number and a link to TestFlight; Apple processes a build for a few minutes before
+  testers can install it.
+- **Build numbers:** `CFBundleVersion` is **1000 + the workflow's run number**, set at build
+  time and never committed. The Expo app uploads to the same record (`com.sundeckpro.app`) and
+  counts its builds from 1, so the Swift builds stay above them. The version
+  (`CFBundleShortVersionString`) is the one in `apps/ios/Info.plist`; raise it there for a new
+  release.
+- Testers are added in App Store Connect › TestFlight.
+
 ## 3. App Store listing (draft, both packages, 2026-10-16)
 
 One app with two packages (owner): Pool Care and Leak Detection, and Both for the rarer shop.
