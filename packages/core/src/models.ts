@@ -2,6 +2,7 @@
  * Row shapes for synced tables, as phones store them (server bookkeeping columns removed).
  * Mirrors supabase/migrations; only the tables the apps read so far.
  */
+import type { DiagramShape } from "./inspection";
 import type { JobStatus } from "./job-status";
 
 interface Base {
@@ -194,8 +195,10 @@ export interface Property extends Base {
   pool_type?: PoolType | null;
   has_pool: boolean;
   has_spa: boolean;
-  diagram_shape?: "rectangle" | "oval" | "kidney" | "l_shape" | "freeform" | null;
+  diagram_shape?: DiagramShape | null;
   approx_gallons?: number | null;
+  /** Mirror and spa placement (owner, 2026-10-19); read with parseDiagramLayout. */
+  diagram_layout?: unknown;
   access_notes?: string | null;
   notes?: string | null;
   latitude?: number | null;
@@ -222,6 +225,8 @@ export interface Job extends Base {
   second_tech_id?: string | null;
   intake?: Record<string, string | string[]> | null;
   location_marked?: boolean | null;
+  /** Markup on the job's pool diagram (owner, 2026-10-19); read with parseMarkup. */
+  diagram_markup?: unknown;
   /** Place in the tech's route that day, 1 = first stop (routing). */
   route_order?: number | null;
   /** The customer was told this time: planning never moves it. */

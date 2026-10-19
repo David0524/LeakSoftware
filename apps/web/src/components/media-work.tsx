@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import {
   MEDIA_KIND_LABELS,
   MARKUP_COLORS,
@@ -15,6 +15,7 @@ import {
   signatureStatement,
   signatureSvg,
   strokePath,
+  penShape,
   textShape,
   type MarkupColor,
   type MarkupShape,
@@ -485,7 +486,10 @@ export function MediaActions({
       {confirmSheet}
       {editing && media.url ? (
         <MarkupEditor
-          url={media.url}
+          background={
+            // eslint-disable-next-line @next/next/no-img-element -- signed storage URL
+            <img src={media.url} alt="" className="block h-full w-full" draggable={false} />
+          }
           width={media.width}
           height={media.height}
           shapes={media.shapes}
@@ -509,37 +513,47 @@ export function MediaActions({
 }
 
 const COLOR_NAMES: Record<MarkupColor, string> = { red: "Red", yellow: "Yellow", white: "White" };
-type Tool = "arrow" | "circle" | "text";
+type Tool = "pen" | "arrow" | "circle" | "text";
 
-function MarkupEditor({
-  url,
+/**
+ * Full-screen markup over a photo or a pool diagram: Pen (owner, 2026-10-19), Arrow, Circle,
+ * and Text, in three colors, with Undo and Clear All. Shapes are fractions of the picture.
+ * Without `caption`, there is no caption field (diagrams).
+ */
+export function MarkupEditor({
+  background,
   width,
   height,
   shapes,
   caption: savedCaption,
+  title = "Mark Up",
+  canvasLabel = "Photo",
   onCancel,
   onSave,
 }: {
-  url: string;
+  background: ReactNode;
   width: number;
   height: number;
   shapes: MarkupShape[];
-  caption: string;
+  caption?: string;
+  title?: string;
+  canvasLabel?: string;
   onCancel: () => void;
   onSave: (shapes: MarkupShape[], caption: string) => Promise<string | null>;
 }) {
   const [history, setHistory] = useState<MarkupShape[][]>([shapes]);
   const draft = history[history.length - 1]!;
   const [live, setLive] = useState<MarkupShape | null>(null);
-  const [tool, setTool] = useState<Tool>("circle");
+  const [tool, setTool] = useState<Tool>("pen");
+  const stroke = useRef<{ x: number; y: number }[]>([]);
   const [ink, setInk] = useState<MarkupColor>("red");
   const [label, setLabel] = useState("");
-  const [caption, setCaption] = useState(savedCaption);
+  const [caption, setCaption] = useState(savedCaption ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const start = useRef<{ x: number; y: number } | null>(null);
   const [confirm, confirmSheet] = useConfirm();
-  const dirty = history.length > 1 || caption !== savedCaption;
+  const dirty = history.length > 1 || caption !== (savedCaption ?? "");
   const push = (next: MarkupShape[]) => setHistory((h) => [...h, next]);
 
   const at = (e: PointerEvent<HTMLDivElement>) => {
@@ -552,6 +566,11 @@ function MarkupEditor({
     start.current = null;
     setLive(null);
     if (!from) return;
+    if (tool === "pen") {
+      const shape = penShape(ink, [...stroke.current, at(e)]);
+      stroke.current = [];
+      return shape ? push([...draft, shape]) : undefined;
+    }
     if (tool === "text") {
       const shape = textShape(ink, from, label);
       if (!shape) return setError("Type a label first, then tap the photo.");
@@ -576,7 +595,7 @@ function MarkupEditor({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Mark Up"
+      aria-label={title}
       className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-bg"
     >
       <div className="glass-bar sticky top-0 z-10 grid grid-cols-[1fr_auto_1fr] items-center px-2 pt-[env(safe-area-inset-top)]">
@@ -598,7 +617,7 @@ function MarkupEditor({
         >
           Cancel
         </Button>
-        <h2 className="font-sans text-[1.0625rem] font-semibold">Mark Up</h2>
+        <h2 className="font-sans text-[1.0625rem] font-semibold">{title}</h2>
         <Button
           type="button"
           kind="quiet"
@@ -622,23 +641,28 @@ function MarkupEditor({
             width: `min(100%, calc(60vh * ${width / height}))`,
           }}
           data-testid="markup-canvas"
-          aria-label="Photo. Tap to place, or drag to draw."
+          aria-label={`${canvasLabel}. ${tool === "pen" ? "Drag to draw." : "Tap to place, or drag to draw."}`}
           onPointerDown={(e) => {
             e.currentTarget.setPointerCapture(e.pointerId);
             start.current = at(e);
+            stroke.current = [at(e)];
           }}
           onPointerMove={(e) => {
-            if (start.current && tool !== "text")
-              setLive(shapeFromDrag(tool, ink, start.current, at(e)));
+            if (!start.current || tool === "text") return;
+            if (tool === "pen") {
+              stroke.current.push(at(e));
+              return setLive(penShape(ink, stroke.current));
+            }
+            setLive(shapeFromDrag(tool, ink, start.current, at(e)));
           }}
           onPointerUp={release}
           onPointerCancel={() => {
             start.current = null;
+            stroke.current = [];
             setLive(null);
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element -- signed storage URL */}
-          <img src={url} alt="" className="block h-full w-full" draggable={false} />
+          {background}
           <MarkupOverlay shapes={live ? [...draft, live] : draft} width={width} height={height} />
         </div>
       </div>
@@ -649,6 +673,7 @@ function MarkupEditor({
           value={tool}
           onChange={setTool}
           options={[
+            { value: "pen", label: "Pen" },
             { value: "arrow", label: "Arrow" },
             { value: "circle", label: "Circle" },
             { value: "text", label: "Text" },
@@ -666,7 +691,9 @@ function MarkupEditor({
           />
         ) : (
           <p className="text-text-muted">
-            Tap to place {tool === "arrow" ? "an arrow" : "a circle"}, or drag to draw one.
+            {tool === "pen"
+              ? "Drag to draw freehand."
+              : `Tap to place ${tool === "arrow" ? "an arrow" : "a circle"}, or drag to draw one.`}
           </p>
         )}
         <div className="flex flex-wrap items-center gap-2">
@@ -706,12 +733,14 @@ function MarkupEditor({
             Clear All
           </Button>
         </div>
-        <Field
-          label="Caption (optional)"
-          name="caption"
-          value={caption}
-          onChange={(e) => setCaption(e.target.value)}
-        />
+        {savedCaption !== undefined ? (
+          <Field
+            label="Caption (optional)"
+            name="caption"
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+          />
+        ) : null}
         {error ? (
           <p role="alert" className="text-status-fail">
             {error}

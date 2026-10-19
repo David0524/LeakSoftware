@@ -25,6 +25,7 @@ import {
   dateFormat,
 } from "@leakbook/core";
 import { CustomerLinks } from "@/components/customer-links";
+import { DiagramPanel } from "@/components/diagram-work";
 import { GalleryImage } from "@/components/gallery-image";
 import { Thread } from "@/components/inbox";
 import { MailIcon, MessageIcon, PhoneIcon } from "@/components/icons";
@@ -354,6 +355,14 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                   label: "Findings",
                   content: (
                     <>
+                      {job.property ? (
+                        <section className="mb-8" aria-labelledby="pool-diagram">
+                          <h2 id="pool-diagram" className="mb-3 font-display text-2xl font-bold">
+                            Pool Diagram
+                          </h2>
+                          <Diagram detail={detail} />
+                        </section>
+                      ) : null}
                       <section aria-labelledby="tests">
                         <h2 id="tests" className="mb-3 font-display text-2xl font-bold">
                           Tests
@@ -523,10 +532,36 @@ function Findings({ detail }: { detail: JobDetail }) {
           ? {
               shape: property.diagram_shape ?? null,
               hasSpa: property.has_spa,
+              layout: property.diagram_layout,
               propertyId: property.id,
             }
           : null
       }
+    />
+  );
+}
+
+/** The pool's drawing with the findings' pins and the job's markup (owner, 2026-10-19). */
+function Diagram({ detail }: { detail: JobDetail }) {
+  const property = detail.job.property!;
+  return (
+    <DiagramPanel
+      jobId={detail.job.id}
+      propertyId={property.id}
+      shape={property.diagram_shape ?? null}
+      hasSpa={property.has_spa}
+      layout={property.diagram_layout}
+      markup={parseMarkup(detail.job.diagram_markup).shapes}
+      pins={detail.findings
+        .map((f, i) => ({ f, n: i + 1 }))
+        .filter(({ f }) => f.pin_x != null && f.pin_y != null)
+        .map(({ f, n }) => ({
+          id: f.id,
+          x: Number(f.pin_x),
+          y: Number(f.pin_y),
+          color: detail.severities.get(f.severity_key)?.color ?? "currentColor",
+          label: String(n),
+        }))}
     />
   );
 }

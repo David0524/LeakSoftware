@@ -542,6 +542,8 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   await expect(tech.getByText("Photo added.")).toBeVisible();
   await tech.getByRole("button", { name: /^Mark Up: Photo/ }).click();
   const editor = tech.getByRole("dialog", { name: "Mark Up" });
+  // Pen is the first tool (owner, 2026-10-19); a tap places a circle.
+  await editor.getByRole("radio", { name: "Circle" }).click();
   await editor.getByTestId("markup-canvas").click({ position: { x: 120, y: 80 } });
   await editor.getByRole("button", { name: "Save" }).click();
   await expect(tech.getByRole("button", { name: /^Edit Markup: Photo/ })).toBeVisible();

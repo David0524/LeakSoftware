@@ -8,6 +8,7 @@ import {
   reportChecklist,
   snapshotTally,
   testSummary,
+  parseMarkup,
   testOutcomeLabel,
   textOnBrand,
   type FinalSection,
@@ -129,6 +130,8 @@ export function ReportView(p: ReportViewProps) {
   const brand = s.company.brand_primary;
   const onBrand = textOnBrand(brand, tokens.color.brand.navy, tokens.color.brand.paper);
   const section = (key: string) => p.sections.find((x) => x.key === key);
+  // What the tech drew on the diagram (owner, 2026-10-19).
+  const diagramMarkup = parseMarkup(s.job.diagram_markup).shapes;
   const labelOf = new Map(s.components.map((c) => [c.id, c.label]));
   const blocks = REPORT_BLOCKS[narrativeTemplate(p.templateKey)];
   const checklist = reportChecklist(s);
@@ -295,7 +298,7 @@ export function ReportView(p: ReportViewProps) {
       </Block>
     ),
     diagram: () =>
-      s.findings.some((f) => f.pin_x != null) ? (
+      s.findings.some((f) => f.pin_x != null) || diagramMarkup.length ? (
         <section
           className={cx(
             "report-block mx-auto mt-6 break-inside-avoid max-sm:mt-4 sm:max-w-sm print:mt-4 print:max-w-xs",
@@ -306,7 +309,9 @@ export function ReportView(p: ReportViewProps) {
             className="w-full"
             shape={s.property.diagram_shape as never}
             hasSpa={s.property.has_spa}
-            title={`Pool diagram with ${s.findings.length} numbered findings`}
+            layout={s.property.diagram_layout}
+            markup={diagramMarkup}
+            title={`Pool diagram with ${s.findings.length} numbered findings${diagramMarkup.length ? " and markings" : ""}`}
             pins={s.findings
               .map((f, i) => ({ f, n: i + 1 }))
               .filter(({ f }) => f.pin_x != null && f.pin_y != null)

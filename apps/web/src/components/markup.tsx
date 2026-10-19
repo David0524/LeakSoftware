@@ -1,11 +1,12 @@
-import { arrowHead, type MarkupShape } from "@leakbook/core";
+import { arrowHead, penPath, type MarkupShape } from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 
 const C = tokens.color.markup;
 
 /**
- * Photo markup drawn over the original, in the photo's own pixel space so it scales with
- * the image. Same shapes and colors as the phone (apps/mobile/src/ui/MarkupLayer.tsx).
+ * Markup drawn over a photo or a pool diagram, in its own pixel space so it scales with it.
+ * Same shapes and colors as the phone (apps/mobile/src/ui/MarkupLayer.tsx). A diagram uses
+ * DIAGRAM_MARKUP_SPACE, so its lines weigh the same as on a photo.
  */
 export function MarkupOverlay({
   shapes,
@@ -50,6 +51,15 @@ export function MarkupOverlay({
             </g>
           );
         }
+        if (s.type === "pen") {
+          const d = penPath(s.points, width, height);
+          return (
+            <g key={i} fill="none" strokeLinecap="round" strokeLinejoin="round">
+              <path d={d} stroke={C.outline} strokeWidth={outline} />
+              <path d={d} stroke={c} strokeWidth={stroke} />
+            </g>
+          );
+        }
         const size = Math.max(10, 24 * unit);
         return (
           <text
@@ -72,3 +82,6 @@ export function MarkupOverlay({
     </svg>
   );
 }
+
+/** The pixel space diagram markup is drawn in: the diagram's 160 x 100, five times over. */
+export const DIAGRAM_MARKUP_SPACE = { width: 800, height: 500 };

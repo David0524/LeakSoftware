@@ -1,5 +1,6 @@
 -- Owner's list of 2026-10-19: the chemical log (readings belong to a pool, at least one
--- reading, anyone on the team can add and remove) and feature requests (server only).
+-- reading, anyone on the team can add and remove), pool diagrams, and feature requests
+-- (server only).
 begin;
 set search_path = public, extensions;
 select no_plan();
@@ -34,6 +35,24 @@ select is(tests.rows_affected(format($$ update chemical_reading set deleted_at =
   where property_id = %L and ta = 90 $$, (select prop_a from ids))), 1::bigint,
   'a mistaken entry is removed');
 reset role;
+
+-- Pool diagrams: new shapes, the spa's place, and the job's markup, carried into reports
+select tests.authenticate_as((select tech_a from ids));
+select lives_ok(format($$ update property set diagram_shape = 'figure_eight',
+  diagram_layout = '{"mirror": true, "spa": {"x": 0.2, "y": 0.8, "size": "large"}}' where id = %L $$,
+  (select prop_a from ids)), 'a tech picks a Figure 8 and places the spa');
+select throws_ok(format($$ update property set diagram_shape = 'star' where id = %L $$,
+  (select prop_a from ids)), '23514', null, 'an unknown shape is refused');
+select lives_ok(format($$ update job set diagram_markup =
+  '{"version": 1, "shapes": [{"type": "pen", "color": "red", "points": [[0.1, 0.1], [0.2, 0.3]]}]}'
+  where id = %L $$, (select job_a from ids)), 'a tech marks up the job''s diagram');
+reset role;
+select is(app.report_snapshot((select job_a from ids)) #>> '{property,diagram_layout,spa,size}',
+  'large', 'reports carry the spa''s place');
+select is(app.report_snapshot((select job_a from ids)) #>> '{job,diagram_markup,shapes,0,type}',
+  'pen', 'reports carry the diagram markup');
+select is(app.report_snapshot((select job_a from ids)) #>> '{property,diagram_shape}',
+  'figure_eight', 'reports keep the shape');
 
 -- Feature requests: only the server
 select tests.authenticate_as((select owner_a from ids));

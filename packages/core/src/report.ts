@@ -122,6 +122,8 @@ export interface ReportSnapshot {
     pool_type: string | null;
     has_spa: boolean;
     diagram_shape: string | null;
+    /** The spa's place and the mirror (2026-10-19); see DiagramLayout. */
+    diagram_layout?: unknown;
   };
   job: {
     id: string;
@@ -136,6 +138,8 @@ export interface ReportSnapshot {
     /** Detection fee, shown on the report. */
     fee_cents?: number | null;
     location_marked?: boolean | null;
+    /** Markup drawn on the pool diagram (2026-10-19), as media markup. */
+    diagram_markup?: unknown;
     /** Booking answers, {question label: answer}. */
     intake?: Record<string, string | string[]> | null;
   };

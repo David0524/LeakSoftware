@@ -103,3 +103,49 @@ Status key: **Website done** means built, checked, and committed on `claude/cool
 - **Apps:** add a Request a Feature row in Settings › Help. Simplest parity: a small website
   API endpoint the apps can POST to with the bearer token (not built yet; ask before adding),
   or open `mailto:office@sundeckpro.com?subject=Feature%20request` for now.
+
+## 10. Markup has a pen
+
+- **Website done.** The photo Mark Up screen's tools are now **Pen**, Arrow, Circle, Text (Pen
+  first and selected). Drag to draw freehand in the chosen color; Undo and Clear All work as
+  before. Stored in the same `markup` JSON as a new shape:
+  `{"type": "pen", "color": "red", "points": [[x, y], ...]}` with x and y 0..1 of the picture,
+  at most 400 points (core `penShape()` thins a drag; `penPath()` draws it; `parseMarkup()`
+  accepts it). Drawn with the same dark outline as the other shapes.
+- **Apps:** add Pen to the markup tools (first). Old app builds ignore unknown shapes only if
+  their parser drops them: the Expo `MarkupLayer` now draws pen strokes; the Swift markup
+  parser must accept or skip `"pen"` without failing.
+
+## 11. Pool shape: more shapes, mirror, and the spa anywhere
+
+- **Website done.** On a leak job's Findings tab, a new **Pool Diagram** section shows the
+  pool with the findings' pins and the job's markup, with **Edit Pool Shape** and **Mark Up**.
+  Edit Pool Shape is a sheet: the shape tiles (now 8: Rectangle, Oval, Kidney, L-shape,
+  Freeform, **Roman**, **Grecian**, **Figure 8**), **Mirror (flip left to right)**, **Has a
+  spa**, then for a spa: tap the drawing to place it anywhere (arrow keys nudge it; "Put the
+  Spa Back in the Corner" resets), **Spa size** Small / Medium / Large, and **Spa shape**
+  Round / Square. Save Pool Shape. The Add Finding sheet's shape tiles and pin picker use the
+  same drawing.
+- **Data:** `property.diagram_shape` allows `roman`, `grecian`, `figure_eight`.
+  `property.diagram_layout` (jsonb, client-writable, synced):
+  `{"mirror": true, "spa": {"x": 0.85, "y": 0.2, "size": "large", "shape": "square"}}`, x and
+  y the spa's center as 0..1 of the 160 x 100 diagram. Empty means the old drawing (spa top
+  right, or top left when mirrored). Core: `poolDiagram(shape, hasSpa, layout)`,
+  `parseDiagramLayout`, `mirrorPath`, `SPA_SIZES` (radius 10 / 13 / 17), `SPA_SHAPES`;
+  `PoolDiagram.spa.square` draws a rounded square (corner radius 4).
+- **Apps:** the Swift and Expo diagrams should draw from `poolDiagram(..., layout)` (or port
+  it): the new shape paths, the mirror, and the spa's place, size, and shape. Add the same
+  editing (shape tiles, mirror, spa tap-to-place, size, shape).
+
+## 12. Markup on pool diagrams
+
+- **Website done.** **Mark Up** on the Pool Diagram opens the same full-screen markup tools
+  (Pen, Arrow, Circle, Text, colors, Undo, Clear All) over the diagram. Saved per job in
+  `job.diagram_markup` (jsonb, client-writable, synced; same format as `media.markup`,
+  coordinates 0..1 of the diagram). The homeowner report's diagram shows the markup with the
+  pins and the spa's place; the report snapshot now carries `property.diagram_layout` and
+  `job.diagram_markup` (`20261012005600_pool_diagram_layout.sql`). The report shows the
+  diagram when there are pins or markup.
+- **Apps:** add Mark Up on the job's diagram, saving `job.diagram_markup` through sync; draw it
+  over the diagram wherever the diagram appears, scaled as the website does (markup space
+  800 x 500 over the 160 x 100 diagram, so lines weigh the same as on photos).
