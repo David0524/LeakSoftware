@@ -24,7 +24,7 @@ interface CustomerOption {
   id: string;
   name: string;
   detail: string;
-  pools: { id: string; label: string }[];
+  pools: { id: string; label: string; gallons?: number | null }[];
 }
 
 /** A group of fields, as iOS forms draw them: a small gray header over a rounded block. */
@@ -40,6 +40,25 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+/** The pool's gallons, saved on the pool (owner, 2026-10-19: it replaced "Size of the pool"). */
+function GallonsField({ known }: { known: number | null }) {
+  const [value, setValue] = useState(known ? known.toLocaleString("en-US") : "");
+  return (
+    <SField
+      label="Gallons (optional)"
+      name="approx_gallons"
+      inputMode="numeric"
+      placeholder="20,000"
+      value={value}
+      onChange={(e) => {
+        const digits = e.target.value.replace(/\D/g, "").slice(0, 7);
+        setValue(digits ? Number(digits).toLocaleString("en-US") : "");
+      }}
+      hint="Saved on the pool for the Chemical calculator."
+    />
+  );
+}
+
 export function NewJobForm({
   customers,
   team,
@@ -51,7 +70,7 @@ export function NewJobForm({
   services = "both",
   repairItems = [],
 }: {
-  /** When They Call: the price book items a repair can be booked for (owner, 2026-10-19). */
+  /** From the Customer: the price book items a repair can be booked for (owner, 2026-10-19). */
   repairItems?: { id: string; name: string; cents: number }[];
   /** What the shop does: its own jobs, plus Repair for everyone. */
   services?: Services;
@@ -80,6 +99,9 @@ export function NewJobForm({
   const plan = maintenance && canPlan && repeat !== "0";
   const customer = customers.find((c) => c.id === customerId);
   const newPool = mode === "new" || pool === "new";
+  const knownGallons = newPool
+    ? null
+    : (customer?.pools.find((p) => p.id === pool)?.gallons ?? null);
   const visit = useRef<HTMLDivElement>(null);
   const [picked, setPicked] = useState("");
 
@@ -186,6 +208,7 @@ export function NewJobForm({
             <div className="self-end">
               <Checkbox name="has_spa" label="Has a spa" />
             </div>
+            {detection ? null : <GallonsField known={null} />}
             <div className={cx("sm:col-span-2", maintenance && "hidden")}>
               <ShapePicker
                 name="diagram_shape"
@@ -352,7 +375,7 @@ export function NewJobForm({
       </Section>
 
       {kind === "repair" ? (
-        <Section title="When They Call">
+        <Section title="From the Customer">
           {repairItems.length ? (
             <Select
               label="What do they need?"
@@ -377,8 +400,9 @@ export function NewJobForm({
             hint="Shown to the tech with the job."
           />
         </Section>
-      ) : questions.length && detection ? (
-        <Section title="When they called">
+      ) : detection ? (
+        <Section title="From the Customer">
+          <GallonsField key={pool} known={knownGallons} />
           {questions.map((q) =>
             q.type === "multi" ? (
               <fieldset key={q.key}>

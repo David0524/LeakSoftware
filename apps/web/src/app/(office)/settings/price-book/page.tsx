@@ -90,7 +90,7 @@ function ItemFields({ item, types }: { item?: PriceItem; types: ComponentType[] 
           defaultChecked={item ? item.taxable : true}
         />
         <SSwitch
-          label="Show in When They Call"
+          label="Show when booking a repair"
           name="on_repair_call"
           id={`repair-call-${p}`}
           defaultChecked={item?.on_repair_call ?? false}
@@ -154,7 +154,7 @@ export default async function PriceBookPage() {
               title={item.name}
               label={item.name}
               detail={
-                [item.active ? null : "Hidden", item.on_repair_call ? "In When They Call" : null]
+                [item.active ? null : "Hidden", item.on_repair_call ? "On the repair menu" : null]
                   .filter(Boolean)
                   .join(" · ") || undefined
               }

@@ -149,12 +149,15 @@ const ROW_INPUT =
 export function JobDetailsForm({
   jobId,
   jobType,
+  pool,
   fee,
   locationMarked,
   notes,
 }: {
   jobId: string;
   jobType: string;
+  /** The job's pool: its gallons are edited here too (owner, 2026-10-19). */
+  pool: { id: string; gallons: number | null } | null;
   fee: number | null;
   locationMarked: boolean;
   notes: string;
@@ -162,6 +165,7 @@ export function JobDetailsForm({
   // Only leak detection marks a leak's location (owner, 2026-10-19: no leak checkbox on
   // maintenance visits) and calls its price a detection fee.
   const detection = jobType === "detection";
+  const [gallons, setGallons] = useState(pool?.gallons ? pool.gallons.toLocaleString("en-US") : "");
   return (
     <SettingsForm action={saveJobDetails} submit="Save">
       <input type="hidden" name="job" value={jobId} />
@@ -185,6 +189,26 @@ export function JobDetailsForm({
               className={cx(ROW_INPUT, "min-h-11 w-28 text-right tabular-nums")}
             />
           </li>
+          {pool ? (
+            <li className="flex min-h-11 items-center gap-3 px-4 py-1.5">
+              <input type="hidden" name="property" value={pool.id} />
+              <label htmlFor="job-gallons" className="min-w-0 flex-1">
+                Pool gallons
+              </label>
+              <input
+                id="job-gallons"
+                name="approx_gallons"
+                inputMode="numeric"
+                placeholder="20,000"
+                value={gallons}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 7);
+                  setGallons(digits ? Number(digits).toLocaleString("en-US") : "");
+                }}
+                className={cx(ROW_INPUT, "min-h-11 w-28 text-right tabular-nums")}
+              />
+            </li>
+          ) : null}
           {detection ? (
             <li className="px-4">
               <Checkbox
@@ -212,6 +236,7 @@ export function JobDetailsForm({
         </p>
         <div className="px-4">
           <FieldError name="fee" />
+          <FieldError name="approx_gallons" />
           <FieldError name="notes" />
         </div>
       </div>

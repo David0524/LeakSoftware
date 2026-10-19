@@ -57,7 +57,11 @@ export default async function NewJobPage() {
           id: c.id,
           name: c.name,
           detail: [c.phone, c.email].filter(Boolean).join(" · "),
-          pools: c.properties.map((p) => ({ id: p.id, label: formatAddress(p) })),
+          pools: c.properties.map((p) => ({
+            id: p.id,
+            label: formatAddress(p),
+            gallons: p.approx_gallons ?? null,
+          })),
         }))}
         team={team
           .filter((m) => m.status === "active")
@@ -77,7 +81,7 @@ export default async function NewJobPage() {
 }
 
 /**
- * When They Call (owner, 2026-10-19): the price book items the owner picked for booking a
+ * From the Customer (owner, 2026-10-19): the price book items the owner picked for booking a
  * repair, or every active item when none are picked yet.
  */
 function repairCallItems(prices: PriceItem[]) {

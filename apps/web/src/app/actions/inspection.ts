@@ -21,6 +21,7 @@ import {
   type TestData,
   type TestType,
   type Verdict,
+  parseGallons,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { requireFinishPhoto } from "@/server/reports";
@@ -88,6 +89,21 @@ export async function saveJobDetails(_: FormState, form: FormData): Promise<Form
   const fee = text(form, "fee");
   const feeCents = fee ? parseDollars(fee) : null;
   if (fee && feeCents === null) return { fields: { fee: "Enter an amount like 649 or 649.00." } };
+  // The pool's gallons (owner, 2026-10-19: "In job details you should be able to include pool
+  // size in gallons"); saved on the pool, so the customer and Chemical see it. Blank clears.
+  const property = text(form, "property");
+  const gallonsText = text(form, "approx_gallons");
+  const gallons = gallonsText ? parseGallons(gallonsText) : null;
+  if (gallonsText && gallons === null)
+    return { fields: { approx_gallons: "Enter the gallons as a number, like 20,000." } };
+  if (property) {
+    const { error: poolError } = await db
+      .from("property")
+      .update({ approx_gallons: gallons })
+      .eq("id", property)
+      .eq("company_id", office.company.id);
+    if (poolError) return { error: poolError.message };
+  }
   const { error } = await db
     .from("job")
     .update({
@@ -100,6 +116,7 @@ export async function saveJobDetails(_: FormState, form: FormData): Promise<Form
     .eq("id", jobId)
     .eq("company_id", office.company.id);
   if (error) return { error: error.message };
+  revalidatePath("/customers", "layout");
   return done(jobId);
 }
 

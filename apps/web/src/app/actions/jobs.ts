@@ -14,6 +14,7 @@ import {
   type ComponentType,
   type JobStatus,
   type NewJobInput,
+  parseGallons,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { getCompany, mayMakeJobs } from "@/lib/data";
@@ -268,9 +269,17 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
   // The create functions don't take a shape; a new pool gets it right after, when one was
   // picked (it can stay blank and be set on the job's Findings).
   const shape = text(form, "diagram_shape");
+  // Gallons from From the Customer (owner, 2026-10-19), saved on the pool; blank keeps it.
+  const gallons = text(form, "approx_gallons") ? parseGallons(text(form, "approx_gallons")) : null;
+  if (text(form, "approx_gallons") && gallons === null)
+    return { fields: { approx_gallons: "Enter the gallons as a number, like 20,000." } };
   async function saveShape(property: string) {
-    if (newProperty && shape)
-      await supabase.from("property").update({ diagram_shape: shape }).eq("id", property);
+    const values = {
+      ...(newProperty && shape ? { diagram_shape: shape } : {}),
+      ...(gallons ? { approx_gallons: gallons } : {}),
+    };
+    if (Object.keys(values).length)
+      await supabase.from("property").update(values).eq("id", property);
   }
 
   // Leak detection, a repair, or maintenance: a single visit, or (owners) a plan that repeats.
@@ -342,7 +351,7 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
     }
   }
 
-  // When They Call (owner, 2026-10-19): the price book item a repair was booked for.
+  // From the Customer (owner, 2026-10-19): the price book item a repair was booked for.
   const repairItem = kind === "repair" ? text(form, "repair_item") : "";
   if (repairItem) {
     const { data: item } = await supabase

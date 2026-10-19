@@ -115,7 +115,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   // With a company number, texts go out from it (Messages), not this device.
   const texting = line?.status === "active";
   const answers = [
-    // When They Call on a repair (owner, 2026-10-19): what the customer needs.
+    // From the Customer on a repair (owner, 2026-10-19): what the customer needs.
     { q: { key: REPAIR_ITEM_KEY, label: REPAIR_ITEM_LABEL }, a: job.intake?.[REPAIR_ITEM_KEY] },
     ...questions.map((q) => ({ q, a: job.intake?.[q.key] })),
   ].filter(({ a }) => (Array.isArray(a) ? a.length > 0 : !!a));
@@ -239,9 +239,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                     </Grouped>
 
                     {answers.length ? (
-                      <Grouped
-                        title={job.type === "repair" ? "When they called" : "When they booked"}
-                      >
+                      <Grouped title="From the Customer">
                         {answers.map(({ q, a }) => (
                           <Row key={q.key}>
                             <span className="min-w-0 flex-1">
@@ -266,6 +264,11 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                     <JobDetailsForm
                       jobId={job.id}
                       jobType={job.type}
+                      pool={
+                        job.property
+                          ? { id: job.property.id, gallons: job.property.approx_gallons ?? null }
+                          : null
+                      }
                       fee={job.fee_cents ?? null}
                       locationMarked={job.location_marked ?? false}
                       notes={job.summary_notes ?? ""}
