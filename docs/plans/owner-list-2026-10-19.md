@@ -174,11 +174,12 @@ Status key: **Website done** means built, checked, and committed on `claude/cool
   days or less), `cleaningKind({ key, name })` → `filter | salt_cell | other`,
   `cleaningDefaultMonths(settings, key)`, `cleaningMonthsLabel`, `CLEANING_DUE_SOON_DAYS`;
   `CLEANING_MONTHS` is now 1, 2, 3, 6, 12.
-- **Apps:** show the same pill on the app's Today/route list and the Regular cleanings box on
-  the visit checklist (data: `plan_cleaning` + `component_type`, already synced to phones? It
-  is office-only today (`device_sync = false`); either turn on device sync for
-  `plan_cleaning` or read the cleaning item already on the visit (`job_component.
-  plan_cleaning_id`). Ask before changing sync scope.
+- **Apps:** show the same pill on the app's Today and the Regular cleanings box on the visit's
+  checklist. Phones don't sync `plan_cleaning` today (`device_sync = false`); the cleaning that
+  is due on a visit is already on its checklist (`job_component.plan_cleaning_id`), which
+  covers "due today". Showing "due in 5 days" and weeks to go on phones needs `plan_cleaning`
+  synced to phones (a registry change: `device_sync = true`). Ask the owner before changing
+  what phones sync.
 
 ## 14. Pass the card fee on to customers
 
@@ -215,3 +216,19 @@ Status key: **Website done** means built, checked, and committed on `claude/cool
 - **Apps:** the app's New Job for a repair should show the same menu (items with
   `on_repair_call`, or all active ones when none are), fill the price, and save
   `intake.repair_item`; show "What they need" on the job.
+
+## 16. Pricing when a new shop picks both
+
+- **Website done (price proposed, owner to confirm).** Both = the Pool Maintenance tier for the
+  team + a flat **$49/month** leak detection add-on (the rule already in `plans.ts`,
+  `BOTH_ADDON_CENTS`; billing in Stripe already charges it). It is now visible: the sign-up
+  "Both" choice says so; the home page's pricing shows "Do pool care and leak detection? ...
+  ($198 a month for 4 people)"; the onboarding trial page lists the two lines (Pool Maintenance
+  · Team $149, Leak Detection add-on $49) and adds leak detection to what's included. Core:
+  `servicesPriceLines(services, users)`.
+- **Apps:** the apps don't sell plans; nothing to do unless they show the shop's plan.
+
+## Deployed
+
+- Migrations `20261012005300` to `20261012005600` are applied to the dev project (after CI
+  run 238 passed). `20261012005700_repair_call_items.sql` follows once CI passes on it.

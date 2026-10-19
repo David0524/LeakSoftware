@@ -72,3 +72,17 @@ describe("on my way", () => {
     expect(onMyWayVia({ on_my_way: "phone" })).toBe("phone");
   });
 });
+
+describe("Both (owner, 2026-10-19)", () => {
+  it("is the Pool Maintenance tier plus the leak detection add-on, line by line", async () => {
+    const { servicesPriceLines, servicesPriceCents } = await import("../src/plans");
+    expect(servicesPriceLines("both", 4)).toEqual([
+      { label: "Pool Maintenance · Team", cents: 14_900 },
+      { label: "Leak Detection add-on", cents: 4_900 },
+    ]);
+    expect(servicesPriceCents("both", 4)).toBe(19_800);
+    expect(servicesPriceLines("leak", 1)).toEqual([
+      { label: "Leak Detection · Solo", cents: 4_900 },
+    ]);
+  });
+});

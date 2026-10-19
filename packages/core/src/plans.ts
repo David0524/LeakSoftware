@@ -118,3 +118,23 @@ export function servicesPriceCents(services: "pool" | "leak" | "both", users: nu
     (services === "both" ? BOTH_ADDON_CENTS : 0)
   );
 }
+
+/**
+ * The lines behind a shop's monthly price (owner, 2026-10-19: "When a new customer selects
+ * both leaks and maintenance, we need to figure out that pricing"). Both is the Pool
+ * Maintenance tier for the team plus a flat leak detection add-on, whatever the team size.
+ */
+export function servicesPriceLines(
+  services: "pool" | "leak" | "both",
+  users: number,
+): { label: string; cents: Cents }[] {
+  const plan = planForServices(services);
+  const lines = [
+    {
+      label: `${plan.name} · ${planTier(plan, users).name}`,
+      cents: monthlyPriceCents(plan, users),
+    },
+  ];
+  if (services === "both") lines.push({ label: "Leak Detection add-on", cents: BOTH_ADDON_CENTS });
+  return lines;
+}

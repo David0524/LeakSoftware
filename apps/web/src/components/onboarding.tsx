@@ -12,6 +12,7 @@ import {
   planForServices,
   planTier,
   servicesPriceCents,
+  servicesPriceLines,
   type ChlorineProduct,
   type OnboardingAnswers,
   type OnboardingPackage,
@@ -858,8 +859,25 @@ function TrialOffer({
           {tier.name}, for {people === 1 ? "1 person" : `${people} people`}. The price follows the
           people on your team.
         </p>
+        {/* Both: Pool Maintenance plus the leak detection add-on, spelled out (owner,
+            2026-10-19). */}
+        {services === "both" ? (
+          <ul className="mt-3 space-y-1 text-[0.9375rem]" data-testid="onboarding-price-lines">
+            {servicesPriceLines(services, people).map((l) => (
+              <li key={l.label} className="flex justify-between gap-3">
+                <span>{l.label}</span>
+                <span className="tabular-nums">{dollars(l.cents)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         <ul className="mt-4 space-y-2">
-          {content.included.map((f) => (
+          {[
+            ...content.included,
+            ...(services === "both"
+              ? ["Leak detection: inspections, tests, reports, and repair quotes"]
+              : []),
+          ].map((f) => (
             <li key={f} className="flex gap-3">
               <span aria-hidden="true" className="text-status-pass">
                 ✓
