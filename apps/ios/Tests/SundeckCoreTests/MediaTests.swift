@@ -13,6 +13,7 @@ import Testing
             "textShape", "shapeAtTap", "arrowHead", "SIGNATURE_PURPOSE_LABELS", "MIN_INK",
             "enabledSignaturePurposes", "reportSignOffPurposes", "signatureStoragePath", "inkLength", "strokePath",
             "signatureSvg", "signatureStatement", "REPORT_BLOCKS", "testOutcomeLabel",
+            "PEN_POINTS_MAX", "penShape", "penPath",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -60,12 +61,35 @@ import Testing
         #expect(markup.shapes == [.text(color: .red, x: 0.5, y: 0.25, text: "Leak")])
     }
 
+    /// Pen strokes round-trip; a shape this app doesn't know is skipped, by the parser and by
+    /// Codable decoding, without failing the rest.
+    @Test func penMarkupRoundTripsAndUnknownShapesAreSkipped() throws {
+        let json = #"""
+            {"version":1,"shapes":[{"type":"pen","color":"red","points":[[0.1,0.2],[0.3,0.4]]},
+            {"type":"hologram","color":"red","z":1},{"type":"circle","color":"white","cx":0.5,"cy":0.5,"rx":0.1,"ry":0.1}]}
+            """#
+        let decoded = try JSONDecoder().decode(Markup.self, from: Data(json.utf8))
+        let pen = MarkupShape.pen(color: .red, points: [MarkupPoint(x: 0.1, y: 0.2), MarkupPoint(x: 0.3, y: 0.4)])
+        #expect(decoded.shapes == [pen, .circle(color: .white, cx: 0.5, cy: 0.5, rx: 0.1, ry: 0.1)])
+        #expect(parseMarkup(try JSONDecoder().decode(JSONValue.self, from: Data(json.utf8))) == decoded)
+        let again = try JSONDecoder().decode(Markup.self, from: JSONEncoder().encode(decoded))
+        #expect(again == decoded)
+        let stored = try JSONValue(encoding: pen)
+        #expect(stored == ["type": "pen", "color": "red", "points": [[0.1, 0.2], [0.3, 0.4]]])
+    }
+
     @Test func signatures() {
         checkRule(module, "SIGNATURE_PURPOSE_LABELS") { _ in labelTable(\SignaturePurpose.label) }
         checkRule(module, "MIN_INK") { _ in minInk }
         checkRule(module, "enabledSignaturePurposes") { c in enabledSignaturePurposes(try c.arg(0, as: JSONValue?.self))
         }
         checkRule(module, "REPORT_BLOCKS") { _ in reportBlocks }
+        checkRule(module, "PEN_POINTS_MAX") { _ in Markup.penPointsMax }
+        checkRule(module, "penShape") { c in penShape(try c.arg(0), try c.arg(1)) }
+        checkRule(module, "penPath") { c in
+            penPath(
+                try c.arg(0, as: [[Double]].self).map { MarkupPoint(x: $0[0], y: $0[1]) }, try c.arg(1), try c.arg(2))
+        }
         checkRule(module, "testOutcomeLabel") { c in testOutcomeLabel(try c.arg(0, as: String?.self)) }
         checkRule(module, "reportSignOffPurposes") { c in reportSignOffPurposes(try c.arg(0, as: JSONValue?.self)) }
         checkRule(module, "signatureStoragePath") { c in signatureStoragePath(try c.arg(0), try c.arg(1), try c.arg(2))

@@ -15,6 +15,8 @@
         @Environment(\.dismiss) private var dismiss
         @State private var draft: MarkupDraft
         @State private var live: MarkupShape?
+        /// The points of the drag in progress (the pen's stroke).
+        @State private var stroke: [MarkupPoint] = []
         @State private var confirmDiscard = false
         @State private var saveError: String?
         @State private var saving = false
@@ -78,25 +80,29 @@
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
-                            live = draft.live(
-                                from: point(value.startLocation, width, height),
-                                to: point(value.location, width, height))
+                            // The live stroke is drawn as the finger moves.
+                            if stroke.isEmpty { stroke = [point(value.startLocation, width, height)] }
+                            stroke.append(point(value.location, width, height))
+                            live = draft.live(stroke: stroke)
                         }
                         .onEnded { value in
+                            if stroke.isEmpty { stroke = [point(value.startLocation, width, height)] }
+                            stroke.append(point(value.location, width, height))
                             live = nil
-                            draft.release(
-                                from: point(value.startLocation, width, height),
-                                to: point(value.location, width, height))
+                            draft.release(stroke: stroke)
+                            stroke = []
                         }
                 )
                 .accessibilityElement()
-                .accessibilityLabel("Photo. Tap to place, or drag to draw.")
+                .accessibilityLabel(
+                    draft.tool == .pen ? "Photo. Drag to draw." : "Photo. Tap to place, or drag to draw."
+                )
                 .accessibilityAddTraits(.allowsDirectInteraction)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
 
-        /// Tool (Arrow | Circle | Text), the label for text, the three colors, Undo, and the caption.
+        /// Tool (Pen | Arrow | Circle | Text), the label for text, the three colors, Undo, and the caption.
         private var tools: some View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {

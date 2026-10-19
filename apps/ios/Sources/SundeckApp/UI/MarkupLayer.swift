@@ -68,6 +68,16 @@
                 let ellipse = Path(ellipseIn: rect)
                 context.stroke(ellipse, with: .color(MarkupColor.outline), lineWidth: outline)
                 context.stroke(ellipse, with: .color(color.color), lineWidth: stroke)
+            case .pen(let color, let points):
+                // The same dark outline under the stroke as the other shapes, round caps and joins.
+                var path = Path()
+                path.addLines(points.map { CGPoint(x: $0.x * w, y: $0.y * h) })
+                context.stroke(
+                    path, with: .color(MarkupColor.outline),
+                    style: StrokeStyle(lineWidth: outline, lineCap: .round, lineJoin: .round))
+                context.stroke(
+                    path, with: .color(color.color),
+                    style: StrokeStyle(lineWidth: stroke, lineCap: .round, lineJoin: .round))
             case .text(let color, let x, let y, let text):
                 let size = max(10, 24 * scale)
                 let font = Font.system(size: size, weight: .bold)

@@ -144,21 +144,23 @@ func parseISODate(_ text: String) -> Date? {
 
 // MARK: - Markup editing
 
-/// The markup editor's tools.
+/// The markup editor's tools, Pen first (owner, 2026-10-19: "Mark up should have a pen").
 public enum MarkupTool: String, CaseIterable, Sendable {
-    case arrow, circle, text
+    case pen, arrow, circle, text
 
     public var label: String {
         switch self {
+        case .pen: "Pen"
         case .arrow: "Arrow"
         case .circle: "Circle"
         case .text: "Text"
         }
     }
 
-    /// Under the tools, for arrow and circle.
+    /// Under the tools, for pen, arrow and circle.
     public var hint: String? {
         switch self {
+        case .pen: "Drag to draw freehand."
         case .arrow: "Tap to place an arrow, or drag to draw one."
         case .circle: "Tap to place a circle, or drag to draw one."
         case .text: nil
@@ -181,7 +183,7 @@ extension MarkupColor {
 /// All. Points are fractions (0..1) of the photo's width and height, as Expo stores them.
 public struct MarkupDraft: Equatable, Sendable {
     public private(set) var history: [[MarkupShape]]
-    public var tool: MarkupTool = .arrow
+    public var tool: MarkupTool = .pen
     public var color: MarkupColor = .red
     /// The text tool's label.
     public var label = "" {
@@ -211,8 +213,28 @@ public struct MarkupDraft: Equatable, Sendable {
     public var canUndo: Bool { isDirty }
     public var canClear: Bool { !shapes.isEmpty }
 
+    /// The shape a drag in progress would make from its points so far (the pen's stroke, or the
+    /// first and last point for arrow and circle), drawn live; nil for text, a tap or a tiny drag.
+    public func live(stroke points: [MarkupPoint]) -> MarkupShape? {
+        guard let first = points.first, let last = points.last else { return nil }
+        if tool == .pen { return penShape(color, points) }
+        return live(from: first, to: last)
+    }
+
+    /// A finger lifted after a drag through `points`: the pen keeps the stroke (a tap draws
+    /// nothing); the other tools work from its first and last point.
+    public mutating func release(stroke points: [MarkupPoint]) {
+        guard let first = points.first, let last = points.last else { return }
+        if tool == .pen {
+            if let shape = penShape(color, points) { push(shapes + [shape]) }
+            return
+        }
+        release(from: first, to: last)
+    }
+
     /// The shape a drag in progress would make (drawn live; nil for text or a tiny drag).
     public func live(from start: MarkupPoint, to end: MarkupPoint) -> MarkupShape? {
+        if tool == .pen { return penShape(color, [start, end]) }
         guard let gesture = gesture else { return nil }
         return shapeFromDrag(gesture, color, start, end)
     }
@@ -220,6 +242,10 @@ public struct MarkupDraft: Equatable, Sendable {
     /// A finger lifted: a text label where it started, or the drag's shape, or a tap's
     /// default-sized shape.
     public mutating func release(from start: MarkupPoint, to end: MarkupPoint) {
+        if tool == .pen {
+            release(stroke: [start, end])
+            return
+        }
         guard let gesture else {
             if let shape = textShape(color, start, label) {
                 push(shapes + [shape])
@@ -244,6 +270,7 @@ public struct MarkupDraft: Equatable, Sendable {
 
     private var gesture: MarkupGesture? {
         switch tool {
+        case .pen: nil
         case .arrow: .arrow
         case .circle: .circle
         case .text: nil

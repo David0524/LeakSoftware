@@ -20,6 +20,7 @@ import {
   MEDIA_KIND_LABELS,
   formatSchedule,
   parseMarkup,
+  penShape,
   shapeAtTap,
   shapeFromDrag,
   textShape,
@@ -43,7 +44,7 @@ import { useSheetLock } from "../../../../../ui/sheet";
 import { color, face, ios, markupColor, minTap, shape, space, type } from "../../../../../ui/theme";
 import { WebIcon } from "../../../../../ui/WebIcon";
 
-type Tool = "arrow" | "circle" | "text";
+type Tool = "pen" | "arrow" | "circle" | "text";
 
 const COLOR_NAMES: Record<MarkupColor, string> = { red: "Red", yellow: "Yellow", white: "White" };
 
@@ -355,7 +356,7 @@ function PhotoView({ media, uri, shapes }: { media: Media; uri: string; shapes: 
 
 /**
  * Mark Up (spec 6.5), full screen: Cancel, the title and Save in the bar; the photo on navy;
- * under it the tool, the label for text, the color, Undo and Clear All, and the caption.
+ * under it the tool (Pen first, owner 2026-10-19), the label for text, the color, Undo and Clear All, and the caption.
  */
 function MarkupEditor({
   media,
@@ -381,7 +382,8 @@ function MarkupEditor({
   const dirty = history.length > 1 || caption !== (media.caption ?? "");
   const [saving, setSaving] = useState(false);
 
-  const [tool, setTool] = useState<Tool>("arrow");
+  // Pen first and on by default (owner, 2026-10-19), as on the website.
+  const [tool, setTool] = useState<Tool>("pen");
   const [ink, setInk] = useState<MarkupColor>("red");
   const [label, setLabel] = useState("");
   const [labelError, setLabelError] = useState<string | undefined>();
@@ -393,6 +395,8 @@ function MarkupEditor({
   const [live, setLive] = useState<MarkupShape | null>(null);
 
   const start = useRef({ x: 0, y: 0, pageX: 0, pageY: 0 });
+  // The pen's points so far, as fractions of the photo.
+  const stroke = useRef<{ x: number; y: number }[]>([]);
   const frac = (x: number, y: number) => ({ x: x / width, y: y / height });
   const startPoint = () => frac(start.current.x, start.current.y);
   const endPoint = (e: GestureResponderEvent) =>
@@ -403,6 +407,12 @@ function MarkupEditor({
 
   function release(e: GestureResponderEvent) {
     setLive(null);
+    if (tool === "pen") {
+      const s = penShape(ink, [...stroke.current, endPoint(e)]);
+      stroke.current = [];
+      if (s) push([...draft, s]);
+      return;
+    }
     if (tool === "text") {
       const s = textShape(ink, startPoint(), label);
       if (s) {
@@ -496,13 +506,21 @@ function MarkupEditor({
             onResponderGrant={(e) => {
               const n = e.nativeEvent;
               start.current = { x: n.locationX, y: n.locationY, pageX: n.pageX, pageY: n.pageY };
+              stroke.current = [startPoint()];
             }}
             onResponderMove={(e) => {
+              if (tool === "pen") {
+                stroke.current.push(endPoint(e));
+                return setLive(penShape(ink, stroke.current));
+              }
               if (tool !== "text") setLive(shapeFromDrag(tool, ink, startPoint(), endPoint(e)));
             }}
             onResponderRelease={release}
-            onResponderTerminate={() => setLive(null)}
-            accessibilityLabel="Photo. Tap to place, or drag to draw."
+            onResponderTerminate={() => {
+              stroke.current = [];
+              setLive(null);
+            }}
+            accessibilityLabel={`Photo. ${tool === "pen" ? "Drag to draw." : "Tap to place, or drag to draw."}`}
           >
             <Image source={{ uri }} style={{ width, height }} resizeMode="contain" />
             <MarkupLayer
@@ -527,6 +545,7 @@ function MarkupEditor({
           label="Tool"
           fill={false}
           options={[
+            { value: "pen", label: "Pen" },
             { value: "arrow", label: "Arrow" },
             { value: "circle", label: "Circle" },
             { value: "text", label: "Text" },
@@ -548,9 +567,11 @@ function MarkupEditor({
             hint="Then tap the photo where it goes."
           />
         ) : (
-          <T
-            muted
-          >{`Tap to place ${tool === "arrow" ? "an arrow" : "a circle"}, or drag to draw one.`}</T>
+          <T muted>
+            {tool === "pen"
+              ? "Drag to draw freehand."
+              : `Tap to place ${tool === "arrow" ? "an arrow" : "a circle"}, or drag to draw one.`}
+          </T>
         )}
         <View style={styles.colorRow}>
           <View style={styles.colors} accessibilityRole="radiogroup" accessibilityLabel="Color">

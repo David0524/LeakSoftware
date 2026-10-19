@@ -78,7 +78,7 @@ export function MarkupLayer({
           );
         }
         if (s.type === "pen") {
-          // Freehand from the website's pen (owner, 2026-10-19); drawing one here is to come.
+          // Freehand, from the Pen tool (owner, 2026-10-19).
           const d = penPath(s.points, width, height);
           return (
             <G key={i} fill="none" strokeLinecap="round" strokeLinejoin="round">

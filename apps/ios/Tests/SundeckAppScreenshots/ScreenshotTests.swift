@@ -389,6 +389,12 @@
                     .circle(color: .red, cx: 0.5, cy: 0.31, rx: 0.2, ry: 0.12),
                     .arrow(color: .yellow, x1: 0.18, y1: 0.75, x2: 0.4, y2: 0.4),
                     .text(color: .white, x: 0.12, y: 0.82, text: "Crack"),
+                    // A pen stroke (owner, 2026-10-19): freehand along the waterline.
+                    penShape(
+                        .red,
+                        (0...60).map { i in
+                            MarkupPoint(x: 0.58 + Double(i) * 0.006, y: 0.62 + 0.05 * sin(Double(i) / 6))
+                        })!,
                 ]))
         try MediaWrites.setCaption(sync, media, "Seam at the skimmer throat")
     }
@@ -659,6 +665,11 @@
             try await snapshot(
                 "15-media-dark", dark: true,
                 NavigationStack { MediaScreen(jobId: ids.job, mediaId: photo) }.app(env))
+            // Mark Up with Pen first and selected, over the photo's markup (pen stroke included).
+            let media = try #require(jobMedia(env.session.sync.store, MediaTarget(jobId: ids.job)).first)
+            let file = try #require(env.session.sync.media?.localURL(media.id, mime: media.mimeType))
+            try await snapshot("15-markup-pen", MarkupEditor(media: media, url: file).app(env))
+            try await snapshot("15-markup-pen-dark", dark: true, MarkupEditor(media: media, url: file).app(env))
         }
 
         @Test func designGallery() async throws {

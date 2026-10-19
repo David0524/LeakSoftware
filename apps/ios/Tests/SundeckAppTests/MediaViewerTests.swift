@@ -165,6 +165,8 @@ private func sha256(_ count: Int) throws -> String {
     @Test func eachToolAddsItsShape() {
         var draft = MarkupDraft(saved: [], width: 4000, height: 3000)
         #expect(!draft.isDirty && !draft.canUndo && !draft.canClear)
+        #expect(draft.tool == .pen)
+        draft.tool = .arrow
         // A drag draws to size.
         draft.release(from: MarkupPoint(x: 0.1, y: 0.2), to: MarkupPoint(x: 0.4, y: 0.6))
         #expect(draft.shapes == [.arrow(color: .red, x1: 0.1, y1: 0.2, x2: 0.4, y2: 0.6)])
@@ -192,6 +194,7 @@ private func sha256(_ count: Int) throws -> String {
 
     @Test func theLiveShapeFollowsTheDragButNotForText() {
         var draft = MarkupDraft(saved: [], width: nil, height: nil)
+        draft.tool = .arrow
         #expect(draft.live(from: start, to: MarkupPoint(x: 0.505, y: 0.505)) == nil)
         #expect(draft.live(from: start, to: MarkupPoint(x: 0.7, y: 0.5)) != nil)
         draft.tool = .text
@@ -213,9 +216,52 @@ private func sha256(_ count: Int) throws -> String {
         draft.undo()
         #expect(draft.shapes == saved)
         // Drawing then undoing back to the start isn't a change.
+        draft.tool = .arrow
         draft.release(from: start, to: start)
         draft.undo()
         #expect(!draft.isDirty)
+    }
+
+    /// Pen (owner, 2026-10-19): first and selected; a drag draws freehand in the chosen color,
+    /// live while the finger moves; a tap draws nothing; Undo and Clear All work as before; saved
+    /// as `{"type": "pen", "color", "points": [[x, y]]}`.
+    @Test func thePenDrawsFreehand() throws {
+        #expect(MarkupTool.allCases.map(\.label) == ["Pen", "Arrow", "Circle", "Text"])
+        #expect(MarkupTool.pen.hint == "Drag to draw freehand.")
+        var draft = MarkupDraft(saved: [], width: 400, height: 300)
+        draft.color = .yellow
+        let drag = (0...50).map { MarkupPoint(x: 0.1 + Double($0) * 0.01, y: 0.5 + 0.1 * sin(Double($0) / 8)) }
+        // Live: the stroke so far.
+        let partial = draft.live(stroke: Array(drag.prefix(10)))
+        guard case .pen(let liveColor, let livePoints)? = partial else {
+            Issue.record("No live pen stroke")
+            return
+        }
+        #expect(liveColor == .yellow && livePoints.count == 10)
+        #expect(draft.live(stroke: [start]) == nil)
+        draft.release(stroke: drag)
+        #expect(draft.shapes == [penShape(.yellow, drag)!])
+        // A tap is not a stroke.
+        draft.release(stroke: [start, start])
+        #expect(draft.shapes.count == 1)
+        draft.release(from: start, to: start)
+        #expect(draft.shapes.count == 1)
+        draft.undo()
+        #expect(draft.shapes.isEmpty)
+        draft.release(stroke: drag)
+        draft.clearAll()
+        #expect(draft.shapes.isEmpty)
+        draft.undo()
+        #expect(draft.shapes.count == 1)
+        // Saved in the row's markup.
+        let v = try Viewer()
+        let photo = try v.capture(.photo, mime: "image/jpeg", bytes: 64, width: 400, height: 300)
+        try MediaWrites.setMarkup(v.sync, photo, draft.markup)
+        let saved = try v.reload(photo)
+        let stored = try #require(saved.markup?["shapes"]?.array?.first)
+        #expect(stored["type"] == "pen" && stored["color"] == "yellow")
+        #expect(stored["points"]?.array?.first == [0.1, 0.5])
+        #expect(parseMarkup(saved.markup).shapes == draft.shapes)
     }
 
     @Test func savingWritesTheMarkupColumnAndLeavesTheFileAlone() throws {
@@ -224,6 +270,7 @@ private func sha256(_ count: Int) throws -> String {
         let file = try #require(v.sync.media?.localURL(photo.id, mime: photo.mimeType))
         let before = try MediaFiles.sha256(file)
         var draft = MarkupDraft(saved: parseMarkup(photo.markup).shapes, width: photo.width, height: photo.height)
+        draft.tool = .arrow
         draft.release(from: MarkupPoint(x: 0.1, y: 0.1), to: MarkupPoint(x: 0.5, y: 0.5))
         try MediaWrites.setMarkup(v.sync, photo, draft.markup)
         var saved = try v.reload(photo)

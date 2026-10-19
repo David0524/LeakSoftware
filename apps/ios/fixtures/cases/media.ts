@@ -14,6 +14,9 @@ import {
   mediaStoragePath,
   mimeFromFileName,
   parseMarkup,
+  penPath,
+  penShape,
+  PEN_POINTS_MAX,
   reportSignOffPurposes,
   REPORT_BLOCKS,
   testOutcomeLabel,
@@ -248,6 +251,54 @@ export const media: ModuleCases = {
           ],
         },
       ],
+      // Pen strokes: kept; bad points dropped; fewer than 2 points dropped; at most 400 points;
+      // a type this app doesn't know is skipped.
+      [
+        {
+          version: 1,
+          shapes: [
+            {
+              type: "pen",
+              color: "red",
+              points: [
+                [0.1, 0.2],
+                [0.15, 0.25],
+                [0.2, 0.3],
+              ],
+            },
+            {
+              type: "pen",
+              color: "yellow",
+              points: [[0.1, 0.2], [2, 0.3], ["x", 0.1], [0.4], [], 5, [0.5, 0.5, 9]],
+            },
+            { type: "pen", color: "white", points: [[0.1, 0.2]] },
+            { type: "pen", color: "red", points: "nope" },
+            {
+              type: "pen",
+              color: "blue",
+              points: [
+                [0, 0],
+                [1, 1],
+              ],
+            },
+            { type: "pen", color: "red" },
+            {
+              type: "pen",
+              color: "white",
+              points: Array.from({ length: 450 }, (_, i) => [i / 450, 0.5]),
+            },
+            {
+              type: "spray",
+              color: "red",
+              points: [
+                [0, 0],
+                [1, 1],
+              ],
+            },
+            { type: "arrow", color: "red", x1: 0.1, y1: 0.2, x2: 0.5, y2: 0.5 },
+          ],
+        },
+      ],
       [null],
       ["junk"],
       [7],
@@ -280,6 +331,101 @@ export const media: ModuleCases = {
             { type: true, color: "red" },
           ],
         },
+      ],
+    ],
+  ),
+  PEN_POINTS_MAX: rule(() => PEN_POINTS_MAX, [[]]),
+  // A drag's points thinned: close points dropped, at most 400 kept (always the last), a tap is null.
+  penShape: rule(
+    (color: MarkupColor, points: Point[]) => penShape(color, points),
+    [
+      ["red", []],
+      ["red", [{ x: 0.5, y: 0.5 }]],
+      [
+        "red",
+        [
+          { x: 0.5, y: 0.5 },
+          { x: 0.501, y: 0.501 },
+          { x: 0.502, y: 0.5 },
+        ],
+      ],
+      [
+        "yellow",
+        [
+          { x: 0.1, y: 0.1 },
+          { x: 0.2, y: 0.2 },
+          { x: 0.203, y: 0.2 },
+          { x: 0.3, y: 0.25 },
+        ],
+      ],
+      [
+        "white",
+        [
+          { x: -0.5, y: 0.1 },
+          { x: 1.5, y: 2 },
+        ],
+      ],
+      [
+        "red",
+        [
+          { x: 0.123456789, y: 0.98765 },
+          { x: 0.333333333, y: 0.1 },
+        ],
+      ],
+      ["red", Array.from({ length: 401 }, (_, i) => ({ x: i / 400, y: 0.5 }))],
+      [
+        "red",
+        Array.from({ length: 1000 }, (_, i) => ({
+          x: 0.5 + 0.4 * Math.cos(i / 50),
+          y: 0.5 + 0.4 * Math.sin(i / 50),
+        })),
+      ],
+      [
+        "yellow",
+        Array.from({ length: 2500 }, (_, i) => ({
+          x: (i % 500) / 500,
+          y: Math.floor(i / 500) / 5,
+        })),
+      ],
+    ],
+  ),
+  penPath: rule(
+    (points: [number, number][], width: number, height: number) => penPath(points, width, height),
+    [
+      [[], 800, 500],
+      [[[0.1, 0.2]], 800, 500],
+      [
+        [
+          [0.1, 0.2],
+          [0.15, 0.25],
+          [1, 1],
+        ],
+        800,
+        500,
+      ],
+      [
+        [
+          [0.12345, 0.6789],
+          [0, 0],
+        ],
+        400,
+        300,
+      ],
+      [
+        [
+          [0.33333, 0.66667],
+          [0.00005, 0.99995],
+        ],
+        160,
+        100,
+      ],
+      [
+        [
+          [0.0625, 0.03125],
+          [0.5, 0.5],
+        ],
+        1,
+        1,
       ],
     ],
   ),

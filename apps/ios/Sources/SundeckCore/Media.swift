@@ -212,9 +212,11 @@ public enum MarkupShape: Codable, Equatable, Sendable {
     case arrow(color: MarkupColor, x1: Double, y1: Double, x2: Double, y2: Double)
     case circle(color: MarkupColor, cx: Double, cy: Double, rx: Double, ry: Double)
     case text(color: MarkupColor, x: Double, y: Double, text: String)
+    /// Freehand (owner, 2026-10-19: "Mark up should have a pen"): stored as `points: [[x, y]]`.
+    case pen(color: MarkupColor, points: [MarkupPoint])
 
     enum CodingKeys: String, CodingKey {
-        case type, color, x1, y1, x2, y2, cx, cy, rx, ry, x, y, text
+        case type, color, x1, y1, x2, y2, cx, cy, rx, ry, x, y, text, points
     }
 
     public init(from decoder: Decoder) throws {
@@ -226,6 +228,9 @@ public enum MarkupShape: Codable, Equatable, Sendable {
         case "circle": self = .circle(color: color, cx: try d(.cx), cy: try d(.cy), rx: try d(.rx), ry: try d(.ry))
         case "text":
             self = .text(color: color, x: try d(.x), y: try d(.y), text: try c.decode(String.self, forKey: .text))
+        case "pen":
+            let pairs = try c.decode([[Double]].self, forKey: .points)
+            self = .pen(color: color, points: pairs.filter { $0.count >= 2 }.map { MarkupPoint(x: $0[0], y: $0[1]) })
         case let other:
             throw DecodingError.dataCorruptedError(
                 forKey: .type, in: c, debugDescription: "Unknown markup shape \(other)")
@@ -255,6 +260,10 @@ public enum MarkupShape: Codable, Equatable, Sendable {
             try c.encode(x, forKey: .x)
             try c.encode(y, forKey: .y)
             try c.encode(text, forKey: .text)
+        case .pen(let color, let points):
+            try c.encode("pen", forKey: .type)
+            try c.encode(color, forKey: .color)
+            try c.encode(points.map { [$0.x, $0.y] }, forKey: .points)
         }
     }
 }
@@ -264,6 +273,23 @@ public struct Markup: Codable, Equatable, Sendable {
     public var shapes: [MarkupShape]
 
     public init(shapes: [MarkupShape]) { self.shapes = shapes }
+
+    /// Decoding goes through `parseMarkup`, so a shape this app doesn't know (from a newer app)
+    /// is skipped instead of failing the whole markup.
+    public init(from decoder: Decoder) throws {
+        self = parseMarkup(try JSONValue(from: decoder))
+    }
+
+    enum CodingKeys: String, CodingKey { case version, shapes }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(version, forKey: .version)
+        try c.encode(shapes, forKey: .shapes)
+    }
+
+    /// The most points one pen stroke keeps (after thinning).
+    public static let penPointsMax = 400
 
     public static let empty = Markup(shapes: [])
     /// The longest text label, in UTF-16 code units like the TypeScript.
@@ -290,6 +316,18 @@ private func validShape(_ s: JSONValue) -> MarkupShape? {
         let text = s["text"]?.string.map { String(utf16Prefix: ECMA.trim($0), Markup.textMax) } ?? ""
         guard let x = unit(s["x"]), let y = unit(s["y"]), !text.isEmpty else { return nil }
         return .text(color: color, x: x, y: y, text: text)
+    case "pen":
+        guard let raw = s["points"]?.array else { return nil }
+        let points =
+            raw
+            .compactMap { p -> MarkupPoint? in
+                guard let pair = p.array, pair.count >= 1, let x = unit(pair[0]),
+                    let y = unit(pair.count > 1 ? pair[1] : nil)
+                else { return nil }
+                return MarkupPoint(x: x, y: y)
+            }
+            .prefix(Markup.penPointsMax)
+        return points.count >= 2 ? .pen(color: color, points: Array(points)) : nil
     default:
         return nil
     }
@@ -318,6 +356,33 @@ public func shapeFromDrag(_ type: MarkupGesture, _ color: MarkupColor, _ start: 
         cy: clampUnit((a.y + b.y) / 2),
         rx: clampUnit(max(abs(a.x - b.x) / 2, 0.01)),
         ry: clampUnit(max(abs(a.y - b.y) / 2, 0.01)))
+}
+
+/// A pen stroke from the points of a drag (fractions of the image). Points closer than 0.4% of
+/// the image to the last kept one are dropped, so a stroke stays small. Nil for a tap.
+public func penShape(_ color: MarkupColor, _ points: [MarkupPoint]) -> MarkupShape? {
+    var kept: [MarkupPoint] = []
+    for p in points {
+        let q = MarkupPoint(x: clampUnit(p.x), y: clampUnit(p.y))
+        if let last = kept.last, hypot(q.x - last.x, q.y - last.y) < 0.004 { continue }
+        kept.append(q)
+    }
+    guard kept.count >= 2 else { return nil }
+    // Too long: keep every nth point, and always the last.
+    let step = Int((Double(kept.count) / Double(Markup.penPointsMax)).rounded(.up))
+    let thin =
+        step > 1
+        ? kept.enumerated().filter { $0.offset % step == 0 || $0.offset == kept.count - 1 }.map(\.element) : kept
+    return .pen(color: color, points: Array(thin.prefix(Markup.penPointsMax)))
+}
+
+/// An SVG path for a pen stroke in a width x height space ("M12 30 L14.5 31 ...").
+public func penPath(_ points: [MarkupPoint], _ width: Double, _ height: Double) -> String {
+    points.enumerated().map { i, p in
+        "\(i == 0 ? "M" : "L")\(ECMA.numberString(ECMA.round(p.x * width * 10) / 10)) "
+            + ECMA.numberString(ECMA.round(p.y * height * 10) / 10)
+    }
+    .joined(separator: " ")
 }
 
 public func textShape(_ color: MarkupColor, _ at: MarkupPoint, _ text: String) -> MarkupShape? {
