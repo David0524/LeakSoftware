@@ -1,0 +1,361 @@
+import Foundation
+
+// Photos, videos, and voice notes (BUILD_PLAN 4.5). Originals are evidence: they are
+// never edited. Markup is vector data stored on the media row and drawn on top.
+
+/// What a media row holds. Port of media.ts.
+public enum MediaKind: String, Codable, CaseIterable, Sendable {
+    case photo, video, audio
+
+    public var label: String {
+        switch self {
+        case .photo: "Photo"
+        case .video: "Video"
+        case .audio: "Voice Note"
+        }
+    }
+}
+
+public enum MediaUploadState: String, Codable, CaseIterable, Sendable {
+    case pending, uploaded
+}
+
+public enum TranscriptStatus: String, Codable, CaseIterable, Sendable {
+    case none, pending, done, failed
+}
+
+/// A synced `media` row. `markup` is kept as stored JSON; read it with `parseMarkup`.
+public struct Media: Codable, Equatable, Sendable {
+    public var id: String
+    public var companyId: String
+    public var jobId: String
+    public var findingId: String?
+    public var jobComponentId: String?
+    public var testResultId: String?
+    public var kind: MediaKind
+    public var storagePath: String?
+    public var uploadState: MediaUploadState
+    public var mimeType: String?
+    public var sizeBytes: Int?
+    public var sha256: String?
+    public var width: Double?
+    public var height: Double?
+    public var durationMs: Double?
+    public var capturedAt: String?
+    public var latitude: Double?
+    public var longitude: Double?
+    public var markup: JSONValue?
+    public var caption: String?
+    public var transcript: String?
+    public var transcriptStatus: TranscriptStatus
+    public var createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, kind, sha256, width, height, latitude, longitude, markup, caption, transcript
+        case companyId = "company_id"
+        case jobId = "job_id"
+        case findingId = "finding_id"
+        case jobComponentId = "job_component_id"
+        case testResultId = "test_result_id"
+        case storagePath = "storage_path"
+        case uploadState = "upload_state"
+        case mimeType = "mime_type"
+        case sizeBytes = "size_bytes"
+        case durationMs = "duration_ms"
+        case capturedAt = "captured_at"
+        case transcriptStatus = "transcript_status"
+        case createdAt = "created_at"
+    }
+}
+
+/// Capture settings. Photos are resized on the device; videos use the camera's medium preset.
+public enum MediaLimits {
+    public static let photoLongEdge = 2048
+    public static let photoQuality = 0.7
+    public static let videoMaxSeconds = 60
+    public static let voiceMaxSeconds = 300
+}
+
+/// MIME type to file extension, in the TypeScript table's order (the first match wins when
+/// guessing a MIME type from an extension).
+private let extensions: [(mime: String, ext: String)] = [
+    ("image/jpeg", "jpg"),
+    ("image/png", "png"),
+    ("image/heic", "heic"),
+    ("video/mp4", "mp4"),
+    ("video/quicktime", "mov"),
+    ("video/webm", "webm"),
+    ("audio/mp4", "m4a"),
+    ("audio/m4a", "m4a"),
+    ("audio/x-m4a", "m4a"),
+    ("audio/aac", "aac"),
+    ("audio/mpeg", "mp3"),
+    ("audio/wav", "wav"),
+    ("audio/webm", "webm"),
+    ("audio/ogg", "ogg"),
+]
+
+/// Thrown for a MIME type the app doesn't store.
+public struct UnsupportedMediaType: Error, CustomStringConvertible {
+    public let mime: String
+    public var description: String { "Unsupported media type: \(mime)" }
+}
+
+public func extensionForMime(_ mime: String) throws -> String {
+    let lower = mime.lowercased()
+    guard let found = extensions.first(where: { $0.mime == lower }) else { throw UnsupportedMediaType(mime: mime) }
+    return found.ext
+}
+
+/// Guess a MIME type from a file name, for pickers that do not report one.
+public func mimeFromFileName(_ name: String, _ kind: MediaKind) -> String {
+    let ext = name.split(separator: ".", omittingEmptySubsequences: false).last.map { $0.lowercased() }
+    if let found = extensions.first(where: { $0.ext == ext }) { return found.mime }
+    switch kind {
+    case .photo: return "image/jpeg"
+    case .video: return "video/mp4"
+    case .audio: return "audio/mp4"
+    }
+}
+
+/// Object path inside the `media` bucket. The first folder is the company (storage RLS).
+public func mediaStoragePath(_ companyId: String, _ jobId: String, _ mediaId: String, _ mime: String) throws
+    -> String
+{
+    "\(companyId)/\(jobId)/\(mediaId).\(try extensionForMime(mime))"
+}
+
+public struct MediaSize: Codable, Equatable, Sendable {
+    public let width: Double
+    public let height: Double
+}
+
+/// Size that fits within `maxEdge` on the long side, or nil when no resize is needed.
+public func fitWithin(_ width: Double, _ height: Double, _ maxEdge: Double) -> MediaSize? {
+    let long = max(width, height)
+    if long <= maxEdge || long == 0 { return nil }
+    let scale = maxEdge / long
+    return MediaSize(width: jsMathRound(width * scale), height: jsMathRound(height * scale))
+}
+
+public func formatDuration(_ ms: Double?) -> String {
+    let total = Int(max(0, jsMathRound((ms ?? 0) / 1000)))
+    let s = total % 60
+    return "\(total / 60):\(s < 10 ? "0" : "")\(s)"
+}
+
+public func formatBytes(_ bytes: Int?) -> String {
+    let b = bytes ?? 0
+    if b < 1024 { return "\(b) B" }
+    if b < 1024 * 1024 { return "\(Int(jsMathRound(Double(b) / 1024))) KB" }
+    // toFixed(1): the nearest tenth of the exact value, ties up.
+    let tenths = (b * 10 + 524_288) / 1_048_576
+    return "\(tenths / 10).\(tenths % 10) MB"
+}
+
+// MARK: - Markup
+
+/// Annotation colors. Values live in brand/tokens.json (color.markup).
+public enum MarkupColor: String, Codable, CaseIterable, Sendable {
+    case red, yellow, white
+}
+
+/// The shapes a drag or a tap makes.
+public enum MarkupGesture: String, Codable, CaseIterable, Sendable {
+    case arrow, circle
+}
+
+/// A point as fractions (0..1) of the image width (x) and height (y).
+public struct MarkupPoint: Codable, Equatable, Sendable {
+    public var x: Double
+    public var y: Double
+
+    public init(x: Double, y: Double) {
+        self.x = x
+        self.y = y
+    }
+}
+
+/// Coordinates are fractions (0..1) of the image width (x) and height (y), so markup lines
+/// up at any display size, on the phone, the office view, and the PDF.
+public enum MarkupShape: Codable, Equatable, Sendable {
+    case arrow(color: MarkupColor, x1: Double, y1: Double, x2: Double, y2: Double)
+    case circle(color: MarkupColor, cx: Double, cy: Double, rx: Double, ry: Double)
+    case text(color: MarkupColor, x: Double, y: Double, text: String)
+
+    enum CodingKeys: String, CodingKey {
+        case type, color, x1, y1, x2, y2, cx, cy, rx, ry, x, y, text
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let color = try c.decode(MarkupColor.self, forKey: .color)
+        func d(_ key: CodingKeys) throws -> Double { try c.decode(Double.self, forKey: key) }
+        switch try c.decode(String.self, forKey: .type) {
+        case "arrow": self = .arrow(color: color, x1: try d(.x1), y1: try d(.y1), x2: try d(.x2), y2: try d(.y2))
+        case "circle": self = .circle(color: color, cx: try d(.cx), cy: try d(.cy), rx: try d(.rx), ry: try d(.ry))
+        case "text":
+            self = .text(color: color, x: try d(.x), y: try d(.y), text: try c.decode(String.self, forKey: .text))
+        case let other:
+            throw DecodingError.dataCorruptedError(
+                forKey: .type, in: c, debugDescription: "Unknown markup shape \(other)")
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .arrow(let color, let x1, let y1, let x2, let y2):
+            try c.encode("arrow", forKey: .type)
+            try c.encode(color, forKey: .color)
+            try c.encode(x1, forKey: .x1)
+            try c.encode(y1, forKey: .y1)
+            try c.encode(x2, forKey: .x2)
+            try c.encode(y2, forKey: .y2)
+        case .circle(let color, let cx, let cy, let rx, let ry):
+            try c.encode("circle", forKey: .type)
+            try c.encode(color, forKey: .color)
+            try c.encode(cx, forKey: .cx)
+            try c.encode(cy, forKey: .cy)
+            try c.encode(rx, forKey: .rx)
+            try c.encode(ry, forKey: .ry)
+        case .text(let color, let x, let y, let text):
+            try c.encode("text", forKey: .type)
+            try c.encode(color, forKey: .color)
+            try c.encode(x, forKey: .x)
+            try c.encode(y, forKey: .y)
+            try c.encode(text, forKey: .text)
+        }
+    }
+}
+
+public struct Markup: Codable, Equatable, Sendable {
+    public var version = 1
+    public var shapes: [MarkupShape]
+
+    public init(shapes: [MarkupShape]) { self.shapes = shapes }
+
+    public static let empty = Markup(shapes: [])
+    /// The longest text label, in UTF-16 code units like the TypeScript.
+    public static let textMax = 80
+}
+
+private func unit(_ value: JSONValue?) -> Double? {
+    guard let v = value?.number, v >= 0, v <= 1 else { return nil }
+    return v
+}
+
+private func validShape(_ s: JSONValue) -> MarkupShape? {
+    guard let color = s["color"]?.string.flatMap(MarkupColor.init(rawValue:)) else { return nil }
+    switch s["type"]?.string {
+    case "arrow":
+        guard let x1 = unit(s["x1"]), let y1 = unit(s["y1"]), let x2 = unit(s["x2"]), let y2 = unit(s["y2"])
+        else { return nil }
+        return .arrow(color: color, x1: x1, y1: y1, x2: x2, y2: y2)
+    case "circle":
+        guard let cx = unit(s["cx"]), let cy = unit(s["cy"]), let rx = unit(s["rx"]), let ry = unit(s["ry"])
+        else { return nil }
+        return .circle(color: color, cx: cx, cy: cy, rx: rx, ry: ry)
+    case "text":
+        let text = s["text"]?.string.map { String(utf16Prefix: jsTrim($0), Markup.textMax) } ?? ""
+        guard let x = unit(s["x"]), let y = unit(s["y"]), !text.isEmpty else { return nil }
+        return .text(color: color, x: x, y: y, text: text)
+    default:
+        return nil
+    }
+}
+
+/// Read markup from a synced row. Anything unrecognized is dropped, never thrown.
+public func parseMarkup(_ value: JSONValue?) -> Markup {
+    guard let shapes = value?["shapes"]?.array else { return .empty }
+    return Markup(shapes: shapes.compactMap(validShape))
+}
+
+private func clampUnit(_ v: Double) -> Double { jsMathRound(min(max(v, 0), 1) * 10000) / 10000 }
+
+/// Build a shape from a drag gesture (start and end as fractions of the image).
+public func shapeFromDrag(_ type: MarkupGesture, _ color: MarkupColor, _ start: MarkupPoint, _ end: MarkupPoint)
+    -> MarkupShape?
+{
+    let a = MarkupPoint(x: clampUnit(start.x), y: clampUnit(start.y))
+    let b = MarkupPoint(x: clampUnit(end.x), y: clampUnit(end.y))
+    // Ignore taps and tiny drags: 2% of the image in both directions.
+    if abs(a.x - b.x) < 0.02 && abs(a.y - b.y) < 0.02 { return nil }
+    if type == .arrow { return .arrow(color: color, x1: a.x, y1: a.y, x2: b.x, y2: b.y) }
+    return .circle(
+        color: color,
+        cx: clampUnit((a.x + b.x) / 2),
+        cy: clampUnit((a.y + b.y) / 2),
+        rx: clampUnit(max(abs(a.x - b.x) / 2, 0.01)),
+        ry: clampUnit(max(abs(a.y - b.y) / 2, 0.01)))
+}
+
+public func textShape(_ color: MarkupColor, _ at: MarkupPoint, _ text: String) -> MarkupShape? {
+    validShape(
+        .object([
+            "type": .string("text"), "color": .string(color.rawValue), "x": .number(clampUnit(at.x)),
+            "y": .number(clampUnit(at.y)), "text": .string(text),
+        ]))
+}
+
+/// Arrow head points (in display pixels) for an arrow from (x1,y1) to (x2,y2).
+public func arrowHead(_ x1: Double, _ y1: Double, _ x2: Double, _ y2: Double, _ size: Double) -> [SIMD2<Double>] {
+    let angle = atan2(y2 - y1, x2 - x1)
+    let spread = Double.pi / 7
+    return [
+        SIMD2(x2, y2),
+        SIMD2(x2 - size * cos(angle - spread), y2 - size * sin(angle - spread)),
+        SIMD2(x2 - size * cos(angle + spread), y2 - size * sin(angle + spread)),
+    ]
+}
+
+/// A default shape for a tap (no drag): a circle around the tap, or an arrow pointing at it
+/// from up and to the left (from the other side when the tap is near that edge).
+/// `aspect` is the photo's width / height, so the circle is round on screen.
+public func shapeAtTap(_ type: MarkupGesture, _ color: MarkupColor, _ at: MarkupPoint, _ aspect: Double)
+    -> MarkupShape
+{
+    let x = clampUnit(at.x)
+    let y = clampUnit(at.y)
+    let dx = 0.15
+    let dy = 0.15 * aspect
+    if type == .circle { return .circle(color: color, cx: x, cy: y, rx: 0.08, ry: clampUnit(0.08 * aspect)) }
+    let x1 = x - dx >= 0 ? x - dx : x + dx
+    let y1 = y - dy >= 0 ? y - dy : y + dy
+    return .arrow(color: color, x1: clampUnit(x1), y1: clampUnit(y1), x2: x, y2: y)
+}
+
+// MARK: - JavaScript number and string behavior
+
+/// JavaScript's `Math.round`: halves round up (toward +∞), not away from zero.
+func jsMathRound(_ x: Double) -> Double {
+    guard x.isFinite else { return x }
+    let down = x.rounded(.down)
+    return x - down >= 0.5 ? down + 1 : down
+}
+
+/// JavaScript's `String.prototype.trim`: its WhiteSpace and LineTerminator characters.
+func jsTrim(_ s: String) -> String {
+    func isSpace(_ u: Unicode.Scalar) -> Bool {
+        switch u.value {
+        case 0x09...0x0D, 0x20, 0xA0, 0x1680, 0x2000...0x200A, 0x2028, 0x2029, 0x202F, 0x205F, 0x3000, 0xFEFF:
+            return true
+        default: return false
+        }
+    }
+    let scalars = s.unicodeScalars
+    guard let start = scalars.firstIndex(where: { !isSpace($0) }),
+        let end = scalars.lastIndex(where: { !isSpace($0) })
+    else { return "" }
+    return String(scalars[start...end])
+}
+
+extension String {
+    /// The first `count` UTF-16 code units, like JavaScript's `slice(0, count)`. A surrogate
+    /// pair cut in half is dropped (JavaScript would keep a lone surrogate, which no Swift string holds).
+    init(utf16Prefix s: String, _ count: Int) {
+        var units = Array(s.utf16.prefix(count))
+        if let last = units.last, UTF16.isLeadSurrogate(last) { units.removeLast() }
+        self = String(decoding: units, as: UTF16.self)
+    }
+}

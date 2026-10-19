@@ -1,0 +1,2656 @@
+{
+  "MEDIA_LIMITS": [
+    {
+      "args": [],
+      "result": {
+        "photoLongEdge": 2048,
+        "photoQuality": 0.7,
+        "videoMaxSeconds": 60,
+        "voiceMaxSeconds": 300
+      }
+    }
+  ],
+  "MEDIA_KIND_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "photo": "Photo",
+        "video": "Video",
+        "audio": "Voice Note"
+      }
+    }
+  ],
+  "MARKUP_COLORS": [
+    {
+      "args": [],
+      "result": [
+        "red",
+        "yellow",
+        "white"
+      ]
+    }
+  ],
+  "extensionForMime": [
+    {
+      "args": [
+        "image/jpeg"
+      ],
+      "result": "jpg"
+    },
+    {
+      "args": [
+        "IMAGE/PNG"
+      ],
+      "result": "png"
+    },
+    {
+      "args": [
+        "image/heic"
+      ],
+      "result": "heic"
+    },
+    {
+      "args": [
+        "video/mp4"
+      ],
+      "result": "mp4"
+    },
+    {
+      "args": [
+        "video/quicktime"
+      ],
+      "result": "mov"
+    },
+    {
+      "args": [
+        "video/webm"
+      ],
+      "result": "webm"
+    },
+    {
+      "args": [
+        "audio/mp4"
+      ],
+      "result": "m4a"
+    },
+    {
+      "args": [
+        "audio/m4a"
+      ],
+      "result": "m4a"
+    },
+    {
+      "args": [
+        "audio/x-m4a"
+      ],
+      "result": "m4a"
+    },
+    {
+      "args": [
+        "audio/aac"
+      ],
+      "result": "aac"
+    },
+    {
+      "args": [
+        "audio/mpeg"
+      ],
+      "result": "mp3"
+    },
+    {
+      "args": [
+        "audio/wav"
+      ],
+      "result": "wav"
+    },
+    {
+      "args": [
+        "audio/webm"
+      ],
+      "result": "webm"
+    },
+    {
+      "args": [
+        "audio/ogg"
+      ],
+      "result": "ogg"
+    },
+    {
+      "args": [
+        "application/pdf"
+      ],
+      "throws": "Unsupported media type: application/pdf"
+    },
+    {
+      "args": [
+        ""
+      ],
+      "throws": "Unsupported media type: "
+    }
+  ],
+  "mimeFromFileName": [
+    {
+      "args": [
+        "IMG_1.MOV",
+        "video"
+      ],
+      "result": "video/quicktime"
+    },
+    {
+      "args": [
+        "a.m4a",
+        "audio"
+      ],
+      "result": "audio/mp4"
+    },
+    {
+      "args": [
+        "noext",
+        "photo"
+      ],
+      "result": "image/jpeg"
+    },
+    {
+      "args": [
+        "noext",
+        "video"
+      ],
+      "result": "video/mp4"
+    },
+    {
+      "args": [
+        "noext",
+        "audio"
+      ],
+      "result": "audio/mp4"
+    },
+    {
+      "args": [
+        "clip.webm",
+        "audio"
+      ],
+      "result": "video/webm"
+    },
+    {
+      "args": [
+        "photo.HEIC",
+        "photo"
+      ],
+      "result": "image/heic"
+    },
+    {
+      "args": [
+        "archive.tar.mp3",
+        "audio"
+      ],
+      "result": "audio/mpeg"
+    },
+    {
+      "args": [
+        "trailing.",
+        "photo"
+      ],
+      "result": "image/jpeg"
+    },
+    {
+      "args": [
+        "",
+        "video"
+      ],
+      "result": "video/mp4"
+    },
+    {
+      "args": [
+        "jpg",
+        "audio"
+      ],
+      "result": "image/jpeg"
+    },
+    {
+      "args": [
+        "x.wav",
+        "photo"
+      ],
+      "result": "audio/wav"
+    },
+    {
+      "args": [
+        "x.ogg",
+        "audio"
+      ],
+      "result": "audio/ogg"
+    },
+    {
+      "args": [
+        "x.aac",
+        "audio"
+      ],
+      "result": "audio/aac"
+    },
+    {
+      "args": [
+        "x.png",
+        "photo"
+      ],
+      "result": "image/png"
+    },
+    {
+      "args": [
+        "x.mp4",
+        "audio"
+      ],
+      "result": "video/mp4"
+    }
+  ],
+  "mediaStoragePath": [
+    {
+      "args": [
+        "c",
+        "j",
+        "m",
+        "image/jpeg"
+      ],
+      "result": "c/j/m.jpg"
+    },
+    {
+      "args": [
+        "c",
+        "j",
+        "m",
+        "video/quicktime"
+      ],
+      "result": "c/j/m.mov"
+    },
+    {
+      "args": [
+        "c",
+        "j",
+        "m",
+        "audio/mp4"
+      ],
+      "result": "c/j/m.m4a"
+    },
+    {
+      "args": [
+        "c",
+        "j",
+        "m",
+        "application/pdf"
+      ],
+      "throws": "Unsupported media type: application/pdf"
+    }
+  ],
+  "fitWithin": [
+    {
+      "args": [
+        4032,
+        3024,
+        2048
+      ],
+      "result": {
+        "width": 2048,
+        "height": 1536
+      }
+    },
+    {
+      "args": [
+        3024,
+        4032,
+        2048
+      ],
+      "result": {
+        "width": 1536,
+        "height": 2048
+      }
+    },
+    {
+      "args": [
+        2048,
+        1000,
+        2048
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        2049,
+        1000,
+        2048
+      ],
+      "result": {
+        "width": 2048,
+        "height": 1000
+      }
+    },
+    {
+      "args": [
+        0,
+        0,
+        2048
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        0,
+        0,
+        0
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        3000,
+        1,
+        2048
+      ],
+      "result": {
+        "width": 2048,
+        "height": 1
+      }
+    },
+    {
+      "args": [
+        4000,
+        3001,
+        2048
+      ],
+      "result": {
+        "width": 2048,
+        "height": 1537
+      }
+    },
+    {
+      "args": [
+        1001,
+        1000,
+        1000
+      ],
+      "result": {
+        "width": 1000,
+        "height": 999
+      }
+    },
+    {
+      "args": [
+        4096,
+        2050,
+        2048
+      ],
+      "result": {
+        "width": 2048,
+        "height": 1025
+      }
+    },
+    {
+      "args": [
+        5000.5,
+        3333.3,
+        2048
+      ],
+      "result": {
+        "width": 2048,
+        "height": 1365
+      }
+    },
+    {
+      "args": [
+        100,
+        300,
+        7
+      ],
+      "result": {
+        "width": 2,
+        "height": 7
+      }
+    }
+  ],
+  "formatDuration": [
+    {
+      "args": [
+        65400
+      ],
+      "result": "1:05"
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": "0:00"
+    },
+    {
+      "args": [
+        0
+      ],
+      "result": "0:00"
+    },
+    {
+      "args": [
+        499
+      ],
+      "result": "0:00"
+    },
+    {
+      "args": [
+        500
+      ],
+      "result": "0:01"
+    },
+    {
+      "args": [
+        1499.999
+      ],
+      "result": "0:01"
+    },
+    {
+      "args": [
+        59499
+      ],
+      "result": "0:59"
+    },
+    {
+      "args": [
+        59500
+      ],
+      "result": "1:00"
+    },
+    {
+      "args": [
+        600000
+      ],
+      "result": "10:00"
+    },
+    {
+      "args": [
+        3599999
+      ],
+      "result": "60:00"
+    },
+    {
+      "args": [
+        3600000
+      ],
+      "result": "60:00"
+    },
+    {
+      "args": [
+        -5000
+      ],
+      "result": "0:00"
+    },
+    {
+      "args": [
+        7261000
+      ],
+      "result": "121:01"
+    }
+  ],
+  "formatBytes": [
+    {
+      "args": [
+        512
+      ],
+      "result": "512 B"
+    },
+    {
+      "args": [
+        2048
+      ],
+      "result": "2 KB"
+    },
+    {
+      "args": [
+        3670016
+      ],
+      "result": "3.5 MB"
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": "0 B"
+    },
+    {
+      "args": [
+        0
+      ],
+      "result": "0 B"
+    },
+    {
+      "args": [
+        -5
+      ],
+      "result": "-5 B"
+    },
+    {
+      "args": [
+        1023
+      ],
+      "result": "1023 B"
+    },
+    {
+      "args": [
+        1024
+      ],
+      "result": "1 KB"
+    },
+    {
+      "args": [
+        1535
+      ],
+      "result": "1 KB"
+    },
+    {
+      "args": [
+        1536
+      ],
+      "result": "2 KB"
+    },
+    {
+      "args": [
+        1048575
+      ],
+      "result": "1024 KB"
+    },
+    {
+      "args": [
+        1048576
+      ],
+      "result": "1.0 MB"
+    },
+    {
+      "args": [
+        1310720
+      ],
+      "result": "1.3 MB"
+    },
+    {
+      "args": [
+        1153433
+      ],
+      "result": "1.1 MB"
+    },
+    {
+      "args": [
+        1205862
+      ],
+      "result": "1.1 MB"
+    },
+    {
+      "args": [
+        1258291
+      ],
+      "result": "1.2 MB"
+    },
+    {
+      "args": [
+        16777216
+      ],
+      "result": "16.0 MB"
+    },
+    {
+      "args": [
+        10737418240
+      ],
+      "result": "10240.0 MB"
+    }
+  ],
+  "parseMarkup": [
+    {
+      "args": [
+        {
+          "version": 1,
+          "shapes": [
+            {
+              "type": "arrow",
+              "color": "red",
+              "x1": 0.1,
+              "y1": 0.2,
+              "x2": 0.5,
+              "y2": 0.5
+            },
+            {
+              "type": "circle",
+              "color": "yellow",
+              "cx": 0.5,
+              "cy": 0.5,
+              "rx": 0.1,
+              "ry": 0.2
+            },
+            {
+              "type": "text",
+              "color": "white",
+              "x": 0.3,
+              "y": 0.3,
+              "text": "  Crack here  "
+            },
+            {
+              "type": "arrow",
+              "color": "red",
+              "x1": 2,
+              "y1": 0,
+              "x2": 0,
+              "y2": 0
+            },
+            {
+              "type": "text",
+              "color": "white",
+              "x": 0.3,
+              "y": 0.3,
+              "text": "   "
+            },
+            {
+              "type": "blob",
+              "color": "red"
+            },
+            {
+              "type": "circle",
+              "color": "purple",
+              "cx": 0.5,
+              "cy": 0.5,
+              "rx": 0.1,
+              "ry": 0.1
+            },
+            null
+          ]
+        }
+      ],
+      "result": {
+        "version": 1,
+        "shapes": [
+          {
+            "type": "arrow",
+            "color": "red",
+            "x1": 0.1,
+            "y1": 0.2,
+            "x2": 0.5,
+            "y2": 0.5
+          },
+          {
+            "type": "circle",
+            "color": "yellow",
+            "cx": 0.5,
+            "cy": 0.5,
+            "rx": 0.1,
+            "ry": 0.2
+          },
+          {
+            "type": "text",
+            "color": "white",
+            "x": 0.3,
+            "y": 0.3,
+            "text": "Crack here"
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": {
+        "version": 1,
+        "shapes": []
+      }
+    },
+    {
+      "args": [
+        "junk"
+      ],
+      "result": {
+        "version": 1,
+        "shapes": []
+      }
+    },
+    {
+      "args": [
+        7
+      ],
+      "result": {
+        "version": 1,
+        "shapes": []
+      }
+    },
+    {
+      "args": [
+        []
+      ],
+      "result": {
+        "version": 1,
+        "shapes": []
+      }
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": {
+        "version": 1,
+        "shapes": []
+      }
+    },
+    {
+      "args": [
+        {
+          "shapes": "x"
+        }
+      ],
+      "result": {
+        "version": 1,
+        "shapes": []
+      }
+    },
+    {
+      "args": [
+        {
+          "version": 2,
+          "shapes": []
+        }
+      ],
+      "result": {
+        "version": 1,
+        "shapes": []
+      }
+    },
+    {
+      "args": [
+        {
+          "version": 9,
+          "shapes": [
+            {
+              "type": "arrow",
+              "color": "white",
+              "x1": 0,
+              "y1": 1,
+              "x2": 1,
+              "y2": 0,
+              "extra": true
+            },
+            {
+              "type": "arrow",
+              "color": "red",
+              "x1": "0.1",
+              "y1": 0,
+              "x2": 0,
+              "y2": 0
+            },
+            {
+              "type": "arrow",
+              "color": "red",
+              "x1": 0.1,
+              "y1": 0,
+              "x2": 0
+            },
+            {
+              "type": "arrow",
+              "color": "red",
+              "x1": -0.01,
+              "y1": 0,
+              "x2": 0,
+              "y2": 0
+            },
+            {
+              "type": "circle",
+              "color": "red",
+              "cx": 1.0001,
+              "cy": 0,
+              "rx": 0,
+              "ry": 0
+            },
+            {
+              "type": "circle",
+              "color": "Red",
+              "cx": 0.5,
+              "cy": 0.5,
+              "rx": 0.1,
+              "ry": 0.1
+            },
+            {
+              "type": "circle",
+              "cx": 0.5,
+              "cy": 0.5,
+              "rx": 0.1,
+              "ry": 0.1
+            },
+            {
+              "type": "text",
+              "color": "red",
+              "x": 0,
+              "y": 1,
+              "text": 42
+            },
+            {
+              "type": "text",
+              "color": "red",
+              "x": 0,
+              "y": 1,
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            },
+            {
+              "type": "text",
+              "color": "red",
+              "x": 0,
+              "y": 1,
+              "text": "a                                                                              bc"
+            },
+            {
+              "type": "text",
+              "color": "red",
+              "x": 0,
+              "y": 1,
+              "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx😀"
+            },
+            {
+              "type": "text",
+              "color": "red",
+              "x": 0,
+              "y": 1,
+              "text": " \t\n﻿  Leak 　 "
+            },
+            {
+              "type": "text",
+              "color": "red",
+              "x": 0,
+              "y": 1,
+              "text": "Leak"
+            },
+            {
+              "type": "text",
+              "color": "yellow",
+              "x": 1.5,
+              "y": 0.5,
+              "text": "off"
+            },
+            [
+              "arrow"
+            ],
+            "arrow",
+            3,
+            true,
+            {
+              "type": true,
+              "color": "red"
+            }
+          ]
+        }
+      ],
+      "result": {
+        "version": 1,
+        "shapes": [
+          {
+            "type": "arrow",
+            "color": "white",
+            "x1": 0,
+            "y1": 1,
+            "x2": 1,
+            "y2": 0
+          },
+          {
+            "type": "text",
+            "color": "red",
+            "x": 0,
+            "y": 1,
+            "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          {
+            "type": "text",
+            "color": "red",
+            "x": 0,
+            "y": 1,
+            "text": "a                                                                              b"
+          },
+          {
+            "type": "text",
+            "color": "red",
+            "x": 0,
+            "y": 1,
+            "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx😀"
+          },
+          {
+            "type": "text",
+            "color": "red",
+            "x": 0,
+            "y": 1,
+            "text": "Leak"
+          },
+          {
+            "type": "text",
+            "color": "red",
+            "x": 0,
+            "y": 1,
+            "text": "Leak"
+          }
+        ]
+      }
+    }
+  ],
+  "shapeFromDrag": [
+    {
+      "args": [
+        "arrow",
+        "red",
+        {
+          "x": 0.1,
+          "y": 0.1
+        },
+        {
+          "x": 0.4,
+          "y": 1.3
+        }
+      ],
+      "result": {
+        "type": "arrow",
+        "color": "red",
+        "x1": 0.1,
+        "y1": 0.1,
+        "x2": 0.4,
+        "y2": 1
+      }
+    },
+    {
+      "args": [
+        "circle",
+        "yellow",
+        {
+          "x": 0.2,
+          "y": 0.2
+        },
+        {
+          "x": 0.6,
+          "y": 0.4
+        }
+      ],
+      "result": {
+        "type": "circle",
+        "color": "yellow",
+        "cx": 0.4,
+        "cy": 0.3,
+        "rx": 0.2,
+        "ry": 0.1
+      }
+    },
+    {
+      "args": [
+        "arrow",
+        "red",
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.51,
+          "y": 0.505
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "circle",
+        "white",
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.52,
+          "y": 0.5
+        }
+      ],
+      "result": {
+        "type": "circle",
+        "color": "white",
+        "cx": 0.51,
+        "cy": 0.5,
+        "rx": 0.01,
+        "ry": 0.01
+      }
+    },
+    {
+      "args": [
+        "circle",
+        "white",
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.5,
+          "y": 0.52
+        }
+      ],
+      "result": {
+        "type": "circle",
+        "color": "white",
+        "cx": 0.5,
+        "cy": 0.51,
+        "rx": 0.01,
+        "ry": 0.01
+      }
+    },
+    {
+      "args": [
+        "arrow",
+        "red",
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "x": 0.5199,
+          "y": 0.5
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "circle",
+        "red",
+        {
+          "x": -1,
+          "y": -1
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "result": {
+        "type": "circle",
+        "color": "red",
+        "cx": 0.5,
+        "cy": 0.5,
+        "rx": 0.5,
+        "ry": 0.5
+      }
+    },
+    {
+      "args": [
+        "circle",
+        "red",
+        {
+          "x": 0.123456789,
+          "y": 0.98765
+        },
+        {
+          "x": 0.333333333,
+          "y": 0.1
+        }
+      ],
+      "result": {
+        "type": "circle",
+        "color": "red",
+        "cx": 0.2284,
+        "cy": 0.5439,
+        "rx": 0.1049,
+        "ry": 0.4439
+      }
+    },
+    {
+      "args": [
+        "arrow",
+        "yellow",
+        {
+          "x": 0.00005,
+          "y": 0.99995
+        },
+        {
+          "x": 0.700049999,
+          "y": 0.3
+        }
+      ],
+      "result": {
+        "type": "arrow",
+        "color": "yellow",
+        "x1": 0.0001,
+        "y1": 1,
+        "x2": 0.7,
+        "y2": 0.3
+      }
+    },
+    {
+      "args": [
+        "circle",
+        "red",
+        {
+          "x": 0.1,
+          "y": 0.2
+        },
+        {
+          "x": 0.2,
+          "y": 0.2
+        }
+      ],
+      "result": {
+        "type": "circle",
+        "color": "red",
+        "cx": 0.15,
+        "cy": 0.2,
+        "rx": 0.05,
+        "ry": 0.01
+      }
+    },
+    {
+      "args": [
+        "arrow",
+        "white",
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 1.5,
+          "y": 2
+        }
+      ],
+      "result": null
+    }
+  ],
+  "textShape": [
+    {
+      "args": [
+        "red",
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        ""
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "red",
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "result": {
+        "type": "text",
+        "color": "red",
+        "x": 0.5,
+        "y": 0.5,
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      }
+    },
+    {
+      "args": [
+        "yellow",
+        {
+          "x": -0.2,
+          "y": 1.7
+        },
+        "  Skimmer crack "
+      ],
+      "result": {
+        "type": "text",
+        "color": "yellow",
+        "x": 0,
+        "y": 1,
+        "text": "Skimmer crack"
+      }
+    },
+    {
+      "args": [
+        "white",
+        {
+          "x": 0.123456789,
+          "y": 0.55555
+        },
+        "Leak"
+      ],
+      "result": {
+        "type": "text",
+        "color": "white",
+        "x": 0.1235,
+        "y": 0.5556,
+        "text": "Leak"
+      }
+    },
+    {
+      "args": [
+        "red",
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        " \n\t "
+      ],
+      "result": null
+    }
+  ],
+  "shapeAtTap": [
+    {
+      "args": [
+        "circle",
+        "red",
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        0.75
+      ],
+      "result": {
+        "type": "circle",
+        "color": "red",
+        "cx": 0.5,
+        "cy": 0.5,
+        "rx": 0.08,
+        "ry": 0.06
+      }
+    },
+    {
+      "args": [
+        "arrow",
+        "red",
+        {
+          "x": 0.5,
+          "y": 0.5
+        },
+        1
+      ],
+      "result": {
+        "type": "arrow",
+        "color": "red",
+        "x1": 0.35,
+        "y1": 0.35,
+        "x2": 0.5,
+        "y2": 0.5
+      }
+    },
+    {
+      "args": [
+        "arrow",
+        "red",
+        {
+          "x": 0.05,
+          "y": 0.05
+        },
+        1
+      ],
+      "result": {
+        "type": "arrow",
+        "color": "red",
+        "x1": 0.2,
+        "y1": 0.2,
+        "x2": 0.05,
+        "y2": 0.05
+      }
+    },
+    {
+      "args": [
+        "arrow",
+        "yellow",
+        {
+          "x": 0.15,
+          "y": 0.15
+        },
+        1
+      ],
+      "result": {
+        "type": "arrow",
+        "color": "yellow",
+        "x1": 0,
+        "y1": 0,
+        "x2": 0.15,
+        "y2": 0.15
+      }
+    },
+    {
+      "args": [
+        "arrow",
+        "white",
+        {
+          "x": 0.9,
+          "y": 0.1
+        },
+        1.333
+      ],
+      "result": {
+        "type": "arrow",
+        "color": "white",
+        "x1": 0.75,
+        "y1": 0.3,
+        "x2": 0.9,
+        "y2": 0.1
+      }
+    },
+    {
+      "args": [
+        "arrow",
+        "white",
+        {
+          "x": 0.95,
+          "y": 0.95
+        },
+        0.5625
+      ],
+      "result": {
+        "type": "arrow",
+        "color": "white",
+        "x1": 0.8,
+        "y1": 0.8656,
+        "x2": 0.95,
+        "y2": 0.95
+      }
+    },
+    {
+      "args": [
+        "circle",
+        "yellow",
+        {
+          "x": 1.2,
+          "y": -0.3
+        },
+        1.7777777
+      ],
+      "result": {
+        "type": "circle",
+        "color": "yellow",
+        "cx": 1,
+        "cy": 0,
+        "rx": 0.08,
+        "ry": 0.1422
+      }
+    },
+    {
+      "args": [
+        "circle",
+        "white",
+        {
+          "x": 0.3,
+          "y": 0.3
+        },
+        20
+      ],
+      "result": {
+        "type": "circle",
+        "color": "white",
+        "cx": 0.3,
+        "cy": 0.3,
+        "rx": 0.08,
+        "ry": 1
+      }
+    },
+    {
+      "args": [
+        "arrow",
+        "red",
+        {
+          "x": 0.99,
+          "y": 0.2
+        },
+        6
+      ],
+      "result": {
+        "type": "arrow",
+        "color": "red",
+        "x1": 0.84,
+        "y1": 1,
+        "x2": 0.99,
+        "y2": 0.2
+      }
+    },
+    {
+      "args": [
+        "arrow",
+        "red",
+        {
+          "x": 1.5,
+          "y": -2
+        },
+        0.75
+      ],
+      "result": {
+        "type": "arrow",
+        "color": "red",
+        "x1": 0.85,
+        "y1": 0.1125,
+        "x2": 1,
+        "y2": 0
+      }
+    }
+  ],
+  "arrowHead": [
+    {
+      "args": [
+        0,
+        0,
+        100,
+        0,
+        20
+      ],
+      "result": [
+        [
+          100,
+          0
+        ],
+        [
+          81.98062264195161,
+          8.677674782351163
+        ],
+        [
+          81.98062264195161,
+          -8.677674782351163
+        ]
+      ]
+    },
+    {
+      "args": [
+        0,
+        0,
+        0,
+        100,
+        20
+      ],
+      "result": [
+        [
+          0,
+          100
+        ],
+        [
+          -8.677674782351163,
+          81.98062264195161
+        ],
+        [
+          8.677674782351161,
+          81.98062264195161
+        ]
+      ]
+    },
+    {
+      "args": [
+        100,
+        100,
+        0,
+        0,
+        12
+      ],
+      "result": [
+        [
+          0,
+          0
+        ],
+        [
+          11.32659996370041,
+          3.9633487434620065
+        ],
+        [
+          3.963348743462004,
+          11.32659996370041
+        ]
+      ]
+    },
+    {
+      "args": [
+        10,
+        20,
+        10,
+        20,
+        15
+      ],
+      "result": [
+        [
+          10,
+          20
+        ],
+        [
+          -3.5145330185362873,
+          26.50825608676337
+        ],
+        [
+          -3.5145330185362873,
+          13.491743913236629
+        ]
+      ]
+    },
+    {
+      "args": [
+        37.5,
+        12.25,
+        -40,
+        80.125,
+        18
+      ],
+      "result": [
+        [
+          -40,
+          80.125
+        ],
+        [
+          -32.94555290016005,
+          63.564964489302575
+        ],
+        [
+          -22.654467062446088,
+          75.31537557472183
+        ]
+      ]
+    }
+  ],
+  "SIGNATURE_PURPOSE_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "inspection_ack": "Inspection acknowledged",
+        "work_authorization": "Work authorized",
+        "quote_acceptance": "Quote accepted",
+        "completion": "Work completed"
+      }
+    }
+  ],
+  "MIN_INK": [
+    {
+      "args": [],
+      "result": 40
+    }
+  ],
+  "enabledSignaturePurposes": [
+    {
+      "args": [
+        null
+      ],
+      "result": [
+        {
+          "value": "inspection_ack",
+          "label": "Inspection acknowledged"
+        }
+      ]
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": [
+        {
+          "value": "inspection_ack",
+          "label": "Inspection acknowledged"
+        }
+      ]
+    },
+    {
+      "args": [
+        "junk"
+      ],
+      "result": [
+        {
+          "value": "inspection_ack",
+          "label": "Inspection acknowledged"
+        }
+      ]
+    },
+    {
+      "args": [
+        7
+      ],
+      "result": [
+        {
+          "value": "inspection_ack",
+          "label": "Inspection acknowledged"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": null
+        }
+      ],
+      "result": [
+        {
+          "value": "inspection_ack",
+          "label": "Inspection acknowledged"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": {}
+        }
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": "inspection_ack"
+        }
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": [
+            "inspection_ack"
+          ]
+        }
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": {
+            "inspection_ack": true,
+            "work_authorization": false,
+            "quote_acceptance": true,
+            "completion": true
+          }
+        }
+      ],
+      "result": [
+        {
+          "value": "inspection_ack",
+          "label": "Inspection acknowledged"
+        },
+        {
+          "value": "completion",
+          "label": "Work completed"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": {
+            "inspection_ack": true,
+            "work_authorization": true,
+            "quote_acceptance": true,
+            "completion": true
+          }
+        }
+      ],
+      "result": [
+        {
+          "value": "inspection_ack",
+          "label": "Inspection acknowledged"
+        },
+        {
+          "value": "work_authorization",
+          "label": "Work authorized"
+        },
+        {
+          "value": "completion",
+          "label": "Work completed"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": {
+            "inspection_ack": 0,
+            "work_authorization": 1,
+            "quote_acceptance": "yes",
+            "completion": ""
+          }
+        }
+      ],
+      "result": [
+        {
+          "value": "work_authorization",
+          "label": "Work authorized"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": {
+            "inspection_ack": {},
+            "completion": [],
+            "work_authorization": null
+          }
+        }
+      ],
+      "result": [
+        {
+          "value": "inspection_ack",
+          "label": "Inspection acknowledged"
+        },
+        {
+          "value": "completion",
+          "label": "Work completed"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": {
+            "inspection_ack": false,
+            "work_authorization": true
+          }
+        }
+      ],
+      "result": [
+        {
+          "value": "work_authorization",
+          "label": "Work authorized"
+        }
+      ]
+    }
+  ],
+  "reportSignOffPurposes": [
+    {
+      "args": [
+        null
+      ],
+      "result": [
+        {
+          "value": "inspection_ack",
+          "label": "Inspection acknowledged"
+        }
+      ]
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": [
+        {
+          "value": "inspection_ack",
+          "label": "Inspection acknowledged"
+        }
+      ]
+    },
+    {
+      "args": [
+        "junk"
+      ],
+      "result": [
+        {
+          "value": "inspection_ack",
+          "label": "Inspection acknowledged"
+        }
+      ]
+    },
+    {
+      "args": [
+        7
+      ],
+      "result": [
+        {
+          "value": "inspection_ack",
+          "label": "Inspection acknowledged"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": null
+        }
+      ],
+      "result": [
+        {
+          "value": "inspection_ack",
+          "label": "Inspection acknowledged"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": {}
+        }
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": "inspection_ack"
+        }
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": [
+            "inspection_ack"
+          ]
+        }
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": {
+            "inspection_ack": true,
+            "work_authorization": false,
+            "quote_acceptance": true,
+            "completion": true
+          }
+        }
+      ],
+      "result": [
+        {
+          "value": "inspection_ack",
+          "label": "Inspection acknowledged"
+        },
+        {
+          "value": "completion",
+          "label": "Work completed"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": {
+            "inspection_ack": true,
+            "work_authorization": true,
+            "quote_acceptance": true,
+            "completion": true
+          }
+        }
+      ],
+      "result": [
+        {
+          "value": "inspection_ack",
+          "label": "Inspection acknowledged"
+        },
+        {
+          "value": "completion",
+          "label": "Work completed"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": {
+            "inspection_ack": 0,
+            "work_authorization": 1,
+            "quote_acceptance": "yes",
+            "completion": ""
+          }
+        }
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": {
+            "inspection_ack": {},
+            "completion": [],
+            "work_authorization": null
+          }
+        }
+      ],
+      "result": [
+        {
+          "value": "inspection_ack",
+          "label": "Inspection acknowledged"
+        },
+        {
+          "value": "completion",
+          "label": "Work completed"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "signature_purposes": {
+            "inspection_ack": false,
+            "work_authorization": true
+          }
+        }
+      ],
+      "result": []
+    }
+  ],
+  "signatureStoragePath": [
+    {
+      "args": [
+        "c",
+        "j",
+        "s"
+      ],
+      "result": "c/j/signature-s.svg"
+    },
+    {
+      "args": [
+        "0192-company",
+        "0192-job",
+        "0192-sig"
+      ],
+      "result": "0192-company/0192-job/signature-0192-sig.svg"
+    }
+  ],
+  "inkLength": [
+    {
+      "args": [
+        [
+          [
+            [
+              0,
+              0
+            ]
+          ]
+        ]
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              3,
+              4
+            ]
+          ],
+          [
+            [
+              10,
+              10
+            ],
+            [
+              10,
+              20
+            ]
+          ]
+        ]
+      ],
+      "result": 15
+    },
+    {
+      "args": [
+        [
+          [
+            [
+              10,
+              10
+            ],
+            [
+              110,
+              60
+            ]
+          ],
+          [
+            [
+              20,
+              50
+            ]
+          ]
+        ]
+      ],
+      "result": 111.80339887498948
+    },
+    {
+      "args": [
+        [
+          [],
+          [
+            [
+              5,
+              5
+            ]
+          ],
+          []
+        ]
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        [
+          [
+            [
+              0.1,
+              0.2
+            ],
+            [
+              0.30000000000000004,
+              0.7
+            ],
+            [
+              12.345,
+              67.891
+            ],
+            [
+              -3.25,
+              -0.05
+            ]
+          ]
+        ]
+      ],
+      "result": 138.50844730100476
+    },
+    {
+      "args": [
+        [
+          [
+            [
+              1e+21,
+              2
+            ],
+            [
+              1.05,
+              2.25
+            ],
+            [
+              1000000,
+              0.15
+            ]
+          ]
+        ]
+      ],
+      "result": 1.000000000000001e+21
+    },
+    {
+      "args": [
+        [
+          [
+            [
+              100.04999,
+              33.333333
+            ],
+            [
+              99.95,
+              0.45
+            ],
+            [
+              -0.04,
+              -1.5
+            ]
+          ]
+        ]
+      ],
+      "result": 132.8924976158185
+    },
+    {
+      "args": [
+        []
+      ],
+      "result": 0
+    }
+  ],
+  "strokePath": [
+    {
+      "args": [
+        []
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        [
+          [
+            1,
+            2
+          ]
+        ]
+      ],
+      "result": "M1 2l0.1 0"
+    },
+    {
+      "args": [
+        [
+          [
+            1,
+            2
+          ],
+          [
+            3.333,
+            4
+          ]
+        ]
+      ],
+      "result": "M1 2L3.3 4"
+    },
+    {
+      "args": [
+        [
+          [
+            0,
+            0
+          ]
+        ]
+      ],
+      "result": "M0 0l0.1 0"
+    },
+    {
+      "args": [
+        [
+          [
+            0,
+            0
+          ],
+          [
+            3,
+            4
+          ]
+        ]
+      ],
+      "result": "M0 0L3 4"
+    },
+    {
+      "args": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            10,
+            20
+          ]
+        ]
+      ],
+      "result": "M10 10L10 20"
+    },
+    {
+      "args": [
+        [
+          [
+            10,
+            10
+          ],
+          [
+            110,
+            60
+          ]
+        ]
+      ],
+      "result": "M10 10L110 60"
+    },
+    {
+      "args": [
+        [
+          [
+            20,
+            50
+          ]
+        ]
+      ],
+      "result": "M20 50l0.1 0"
+    },
+    {
+      "args": [
+        []
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        [
+          [
+            5,
+            5
+          ]
+        ]
+      ],
+      "result": "M5 5l0.1 0"
+    },
+    {
+      "args": [
+        []
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        [
+          [
+            0.1,
+            0.2
+          ],
+          [
+            0.30000000000000004,
+            0.7
+          ],
+          [
+            12.345,
+            67.891
+          ],
+          [
+            -3.25,
+            -0.05
+          ]
+        ]
+      ],
+      "result": "M0.1 0.2L0.3 0.7L12.3 67.9L-3.2 0"
+    },
+    {
+      "args": [
+        [
+          [
+            1e+21,
+            2
+          ],
+          [
+            1.05,
+            2.25
+          ],
+          [
+            1000000,
+            0.15
+          ]
+        ]
+      ],
+      "result": "M1e+21 2L1.1 2.3L1000000 0.2"
+    },
+    {
+      "args": [
+        [
+          [
+            100.04999,
+            33.333333
+          ],
+          [
+            99.95,
+            0.45
+          ],
+          [
+            -0.04,
+            -1.5
+          ]
+        ]
+      ],
+      "result": "M100 33.3L100 0.5L0 -1.5"
+    }
+  ],
+  "signatureSvg": [
+    {
+      "args": [
+        [
+          [
+            [
+              0,
+              0
+            ]
+          ]
+        ]
+      ],
+      "result": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"-6 -6 12 12\" width=\"12\" height=\"12\"><g fill=\"none\" stroke=\"#111111\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M0 0l0.1 0\"/></g></svg>"
+    },
+    {
+      "args": [
+        [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              3,
+              4
+            ]
+          ],
+          [
+            [
+              10,
+              10
+            ],
+            [
+              10,
+              20
+            ]
+          ]
+        ]
+      ],
+      "result": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"-6 -6 22 32\" width=\"22\" height=\"32\"><g fill=\"none\" stroke=\"#111111\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M0 0L3 4\"/><path d=\"M10 10L10 20\"/></g></svg>"
+    },
+    {
+      "args": [
+        [
+          [
+            [
+              10,
+              10
+            ],
+            [
+              110,
+              60
+            ]
+          ],
+          [
+            [
+              20,
+              50
+            ]
+          ]
+        ]
+      ],
+      "result": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"4 4 112 62\" width=\"112\" height=\"62\"><g fill=\"none\" stroke=\"#111111\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10 10L110 60\"/><path d=\"M20 50l0.1 0\"/></g></svg>"
+    },
+    {
+      "args": [
+        [
+          [],
+          [
+            [
+              5,
+              5
+            ]
+          ],
+          []
+        ]
+      ],
+      "result": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"-1 -1 12 12\" width=\"12\" height=\"12\"><g fill=\"none\" stroke=\"#111111\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 5l0.1 0\"/></g></svg>"
+    },
+    {
+      "args": [
+        [
+          [
+            [
+              0.1,
+              0.2
+            ],
+            [
+              0.30000000000000004,
+              0.7
+            ],
+            [
+              12.345,
+              67.891
+            ],
+            [
+              -3.25,
+              -0.05
+            ]
+          ]
+        ]
+      ],
+      "result": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"-9.2 -6 27.6 79.9\" width=\"28\" height=\"80\"><g fill=\"none\" stroke=\"#111111\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M0.1 0.2L0.3 0.7L12.3 67.9L-3.2 0\"/></g></svg>"
+    },
+    {
+      "args": [
+        [
+          [
+            [
+              1e+21,
+              2
+            ],
+            [
+              1.05,
+              2.25
+            ],
+            [
+              1000000,
+              0.15
+            ]
+          ]
+        ]
+      ],
+      "result": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"-4.9 -5.8 1e+21 14.1\" width=\"1e+21\" height=\"14\"><g fill=\"none\" stroke=\"#111111\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M1e+21 2L1.1 2.3L1000000 0.2\"/></g></svg>"
+    },
+    {
+      "args": [
+        [
+          [
+            [
+              100.04999,
+              33.333333
+            ],
+            [
+              99.95,
+              0.45
+            ],
+            [
+              -0.04,
+              -1.5
+            ]
+          ]
+        ]
+      ],
+      "result": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"-6 -7.5 112.1 46.8\" width=\"112\" height=\"47\"><g fill=\"none\" stroke=\"#111111\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M100 33.3L100 0.5L0 -1.5\"/></g></svg>"
+    },
+    {
+      "args": [
+        [
+          [
+            [
+              10,
+              10
+            ],
+            [
+              110,
+              60
+            ]
+          ],
+          [
+            [
+              20,
+              50
+            ]
+          ]
+        ],
+        3
+      ],
+      "result": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"4 4 112 62\" width=\"112\" height=\"62\"><g fill=\"none\" stroke=\"#111111\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M10 10L110 60\"/><path d=\"M20 50l0.1 0\"/></g></svg>"
+    },
+    {
+      "args": [
+        [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              3,
+              4
+            ]
+          ],
+          [
+            [
+              10,
+              10
+            ],
+            [
+              10,
+              20
+            ]
+          ]
+        ],
+        2.5
+      ],
+      "result": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"-5 -5 20 30\" width=\"20\" height=\"30\"><g fill=\"none\" stroke=\"#111111\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M0 0L3 4\"/><path d=\"M10 10L10 20\"/></g></svg>"
+    },
+    {
+      "args": [
+        [
+          [
+            [
+              0.1,
+              0.2
+            ],
+            [
+              0.30000000000000004,
+              0.7
+            ],
+            [
+              12.345,
+              67.891
+            ],
+            [
+              -3.25,
+              -0.05
+            ]
+          ]
+        ],
+        0.30000000000000004
+      ],
+      "result": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"-3.8 -0.7 16.8 69.1\" width=\"17\" height=\"69\"><g fill=\"none\" stroke=\"#111111\" stroke-width=\"0.30000000000000004\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M0.1 0.2L0.3 0.7L12.3 67.9L-3.2 0\"/></g></svg>"
+    },
+    {
+      "args": [
+        [
+          [
+            [
+              100.04999,
+              33.333333
+            ],
+            [
+              99.95,
+              0.45
+            ],
+            [
+              -0.04,
+              -1.5
+            ]
+          ]
+        ],
+        1.15
+      ],
+      "result": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"-2.3 -3.8 104.7 39.4\" width=\"105\" height=\"39\"><g fill=\"none\" stroke=\"#111111\" stroke-width=\"1.15\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M100 33.3L100 0.5L0 -1.5\"/></g></svg>"
+    },
+    {
+      "args": [
+        [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              3,
+              4
+            ]
+          ],
+          [
+            [
+              10,
+              10
+            ],
+            [
+              10,
+              20
+            ]
+          ]
+        ],
+        0
+      ],
+      "result": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 10 20\" width=\"10\" height=\"20\"><g fill=\"none\" stroke=\"#111111\" stroke-width=\"0\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M0 0L3 4\"/><path d=\"M10 10L10 20\"/></g></svg>"
+    },
+    {
+      "args": [
+        []
+      ],
+      "throws": "Nothing was drawn."
+    },
+    {
+      "args": [
+        [
+          []
+        ]
+      ],
+      "throws": "Nothing was drawn."
+    }
+  ],
+  "signatureStatement": [
+    {
+      "args": [
+        "inspection_ack",
+        "Demo Leak Co.",
+        "9 Sample Way, Scottsdale"
+      ],
+      "result": "I confirm Demo Leak Co. inspected the pool at 9 Sample Way, Scottsdale today and explained what they found."
+    },
+    {
+      "args": [
+        "inspection_ack",
+        "Demo Leak Co.",
+        null
+      ],
+      "result": "I confirm Demo Leak Co. inspected the pool today and explained what they found."
+    },
+    {
+      "args": [
+        "inspection_ack",
+        "A&B Pools",
+        ""
+      ],
+      "result": "I confirm A&B Pools inspected the pool today and explained what they found."
+    },
+    {
+      "args": [
+        "work_authorization",
+        "Demo Leak Co.",
+        "9 Sample Way, Scottsdale"
+      ],
+      "result": "I authorize Demo Leak Co. to do the work we agreed on at 9 Sample Way, Scottsdale."
+    },
+    {
+      "args": [
+        "work_authorization",
+        "Demo Leak Co.",
+        null
+      ],
+      "result": "I authorize Demo Leak Co. to do the work we agreed on."
+    },
+    {
+      "args": [
+        "work_authorization",
+        "A&B Pools",
+        ""
+      ],
+      "result": "I authorize A&B Pools to do the work we agreed on."
+    },
+    {
+      "args": [
+        "quote_acceptance",
+        "Demo Leak Co.",
+        "9 Sample Way, Scottsdale"
+      ],
+      "result": "I accept Demo Leak Co.’s quote for the work at 9 Sample Way, Scottsdale."
+    },
+    {
+      "args": [
+        "quote_acceptance",
+        "Demo Leak Co.",
+        null
+      ],
+      "result": "I accept Demo Leak Co.’s quote for the work."
+    },
+    {
+      "args": [
+        "quote_acceptance",
+        "A&B Pools",
+        ""
+      ],
+      "result": "I accept A&B Pools’s quote for the work."
+    },
+    {
+      "args": [
+        "completion",
+        "Demo Leak Co.",
+        "9 Sample Way, Scottsdale"
+      ],
+      "result": "I confirm Demo Leak Co. finished the work at 9 Sample Way, Scottsdale today."
+    },
+    {
+      "args": [
+        "completion",
+        "Demo Leak Co.",
+        null
+      ],
+      "result": "I confirm Demo Leak Co. finished the work today."
+    },
+    {
+      "args": [
+        "completion",
+        "A&B Pools",
+        ""
+      ],
+      "result": "I confirm A&B Pools finished the work today."
+    }
+  ]
+}
