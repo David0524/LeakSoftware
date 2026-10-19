@@ -698,15 +698,12 @@
             let markedProperty = try #require(try store.get("property", propertyId))
             try await snapshot(
                 "10-diagram-markup-editor",
-                MarkupCanvasEditor(
-                    title: "Mark Up Diagram", canvasLabel: "Pool diagram", ratio: 100.0 / 160,
-                    space: diagramMarkupSpace, saved: diagramMarkup.shapes, width: 800, height: 500
-                ) {
-                    PoolDiagram(
-                        shape: diagramShape(of: markedProperty), hasSpa: true,
-                        layout: diagramLayout(of: markedProperty), pins: [])
-                } save: { _, _ in
-                }
+                DiagramMarkupEditor(
+                    jobId: ids.job, companyId: "c1", property: markedProperty,
+                    pins: findingPins(
+                        JobInspection(store, jobId: ids.job), InspectionConfig(store, companyId: "c1")),
+                    saved: diagramMarkup.shapes
+                )
                 .app(env))
             try await snapshot(
                 "12-component", height: 2000,

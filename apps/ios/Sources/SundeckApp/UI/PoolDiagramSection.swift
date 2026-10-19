@@ -36,22 +36,39 @@
                     }
                 }
                 .fullScreenCover(isPresented: $markingUp) {
-                    MarkupCanvasEditor(
-                        title: "Mark Up Diagram", canvasLabel: "Pool diagram", ratio: 100.0 / 160,
-                        space: diagramMarkupSpace, saved: shapes, width: 800, height: 500
-                    ) {
-                        // The diagram with its pins, under the markup tools.
-                        PoolDiagram(
-                            shape: diagramShape(of: property), hasSpa: property["has_spa"]?.bool ?? false,
-                            layout: diagramLayout(of: property), pins: pins)
-                    } save: { markup, _ in
-                        try InspectionWrites.setDiagramMarkup(sync, jobId: job.id, companyId: companyId, markup)
-                    }
+                    DiagramMarkupEditor(
+                        jobId: job.id, companyId: companyId, property: property, pins: pins, saved: shapes)
                 }
                 .sheet(isPresented: $editing) {
                     PoolShapeSheet(
                         propertyId: property.id, companyId: companyId, form: PoolShapeForm(property: property))
                 }
+            }
+        }
+    }
+
+    /// Mark Up Diagram: the markup tools over the pool with its spa and the findings' numbered
+    /// pins (drawn, not tappable), as the website's editor; saves `job.diagram_markup`.
+    struct DiagramMarkupEditor: View {
+        var jobId: String
+        var companyId: String
+        var property: Row
+        var pins: [DiagramPin]
+        var saved: [MarkupShape]
+        @Environment(SyncService.self) private var sync
+
+        var body: some View {
+            MarkupCanvasEditor(
+                title: "Mark Up Diagram", canvasLabel: "Pool diagram", ratio: 100.0 / 160,
+                space: diagramMarkupSpace, saved: saved, width: 800, height: 500
+            ) {
+                PoolDiagram(
+                    shape: diagramShape(of: property), hasSpa: property["has_spa"]?.bool ?? false,
+                    layout: diagramLayout(of: property), pins: pins
+                )
+                .allowsHitTesting(false)
+            } save: { markup, _ in
+                try InspectionWrites.setDiagramMarkup(sync, jobId: jobId, companyId: companyId, markup)
             }
         }
     }
