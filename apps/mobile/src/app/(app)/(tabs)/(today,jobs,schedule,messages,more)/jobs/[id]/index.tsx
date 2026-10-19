@@ -239,6 +239,19 @@ export default function JobDetail() {
           ) : null}
           {shown === "checklist" ? (
             <View style={styles.part}>
+              {/* Chemical first, at the top of the checklist (owner, 2026-10-19), as the website. */}
+              {maintenance ? (
+                <Button
+                  title="Chemical"
+                  kind="secondary"
+                  onPress={() =>
+                    router.push({
+                      pathname: "/chemicals",
+                      params: property ? { property: property.id, job: job.id } : {},
+                    })
+                  }
+                />
+              ) : null}
               <View style={styles.heading}>
                 <T variant="sectionHeading">Checklist</T>
                 <T muted>
@@ -253,18 +266,6 @@ export default function JobDetail() {
                 <ScreenTip screen="job" pkg={maintenance ? "pool" : "leak"} />
               )}
               <ChecklistTab job={job} property={property} />
-              {maintenance ? (
-                <Button
-                  title="Chemical Calculator"
-                  kind="secondary"
-                  onPress={() =>
-                    router.push({
-                      pathname: "/chemicals",
-                      params: property ? { property: property.id } : {},
-                    })
-                  }
-                />
-              ) : null}
             </View>
           ) : null}
           {shown === "findings" ? (

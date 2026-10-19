@@ -4,12 +4,16 @@
     import SundeckTokens
     import SwiftUI
 
-    /// The pool chemical calculator (spec 5.11; website components/chem-calculator.tsx, Expo
-    /// chemicals.tsx; the math is SundeckCore/Chemistry.swift): the pool's size and today's
+    /// Chemical (spec 5.11; website components/chem-calculator.tsx and app/(office)/chemicals,
+    /// Expo chemicals.tsx; the math is SundeckCore/Chemistry.swift): the pool's size and today's
     /// readings in, what to add out, in order. What to Add is a bar floating above the tab bar
-    /// that opens a sheet. Nothing is saved but the levels the tech aims for (on this phone).
+    /// that opens a sheet. Opened for a pool (from a visit or a customer's pool), its gallons fill
+    /// in, Submit saves the readings to the pool's chemical log (a synced row, so it works
+    /// offline), and the log is listed below (owner, 2026-10-19).
     struct ChemicalsScreen: View {
-        /// A visit opens it with the pool's gallons.
+        /// The pool (and visit) it was opened for; nil from More.
+        var target: ChemicalTarget?
+        /// Gallons to start from when the pool has none.
         var gallons: Double?
         @Environment(SyncService.self) private var sync
         @Environment(Session.self) private var session
@@ -17,11 +21,16 @@
         @State private var form = ChemicalForm()
         @State private var started = false
         @State private var showDoses = false
+        @State private var submitResult: (text: String, error: Bool)?
+        @State private var removing: ChemicalLogEntry?
 
         var body: some View {
+            let _ = sync.revision  // the log reloads after any write or pull
             let result = form.result
             let ready = form.ready
+            let pool = target.flatMap { chemicalPool(sync.store, $0) }
             ScreenScroll {
+                if let pool { PageHeader(subtitle: pool.subtitle) }
                 if let company = session.company, let tip = screenTip("chemicals", company: company, app: app) {
                     TipCard(title: tip.title, message: tip.message) { app.walkthrough.dismiss(tip.id) }
                 }
@@ -35,12 +44,13 @@
                     .frame(maxWidth: 320, alignment: .leading)
                 }
                 .card()
-                readings
+                readings(pool)
                     .card()
+                if let pool { log(pool) }
                 // Room to scroll the last fields clear of the docked bar.
                 Color.clear.frame(height: 56)
             }
-            .navigationTitle("Chemical Calculator")
+            .navigationTitle("Chemical")
             .navigationBarTitleDisplayMode(.large)
             .safeAreaInset(edge: .bottom) {
                 WhatToAddBar(summary: form.summary, ready: ready) { showDoses = true }
@@ -50,16 +60,92 @@
             .sheet(isPresented: $showDoses) {
                 FormSheet(title: "What to Add", cancelTitle: "Close") { DoseList(result: result) }
             }
+            .confirmationDialog(
+                ChemicalLogText.removeTitle,
+                isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
+                titleVisibility: .visible, presenting: removing
+            ) { entry in
+                Button(ChemicalLogText.removeButton, role: .destructive) { remove(entry) }
+            } message: { _ in
+                Text(ChemicalLogText.removeMessage)
+            }
             .onAppear {
                 guard !started else { return }
                 started = true
                 form = ChemicalForm(
-                    gallons: gallons, goals: sync.kv.getJSON(KVKey.chemicalGoals, as: [String: String].self) ?? [:])
+                    gallons: pool?.gallons ?? gallons,
+                    goals: sync.kv.getJSON(KVKey.chemicalGoals, as: [String: String].self) ?? [:])
             }
             .onChange(of: form.storedGoals) { _, goals in sync.kv.setJSON(KVKey.chemicalGoals, goals) }
         }
 
-        private var readings: some View {
+        /// Submit, at the end of the Readings card: the left side goes into the pool's log.
+        @ViewBuilder private func submit(_ pool: ChemicalPool?) -> some View {
+            VStack(alignment: .leading, spacing: 12) {
+                Hairline()
+                if let pool {
+                    Button("Submit") { save(pool) }
+                        .buttonStyle(.primary(fullWidth: true, size: .field))
+                        .disabled(form.result.statuses.isEmpty)
+                    Text(ChemicalLogText.submitHint(pool)).textRole(.secondary).foregroundStyle(Color.textMuted)
+                    if let submitResult {
+                        Notice(kind: submitResult.error ? .error : .success, text: submitResult.text)
+                    }
+                } else {
+                    Text(ChemicalLogText.noPool).textRole(.secondary).foregroundStyle(Color.textMuted)
+                }
+            }
+        }
+
+        /// The pool's chemical log, newest first, each entry with Remove.
+        private func log(_ pool: ChemicalPool) -> some View {
+            let entries =
+                session.company.map {
+                    chemicalLog(
+                        sync.store, companyId: $0.id, propertyId: pool.propertyId, names: teamNames(sync.kv),
+                        timeZone: $0.timeZone)
+                } ?? []
+            return Grouped(label: ChemicalLogText.logTitle, footer: ChemicalLogText.logFooter) {
+                if entries.isEmpty {
+                    ListRow(ChemicalLogText.logEmpty).foregroundStyle(Color.textMuted)
+                }
+                ForEach(entries) { entry in
+                    ListRow(entry.summary, detail: entry.detail.isEmpty ? nil : entry.detail) {
+                        Button("Remove") { removing = entry }
+                            .font(.role(.secondary))
+                            .foregroundStyle(Color.fail)
+                            .frame(minWidth: minTarget, minHeight: minTarget)
+                            .contentShape(Rectangle())
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Remove these readings")
+                    }
+                    .monospacedDigit()
+                }
+            }
+        }
+
+        private func save(_ pool: ChemicalPool) {
+            guard let companyId = session.company?.id else { return }
+            do {
+                try ChemicalLogWrites.submit(sync, companyId: companyId, pool: pool, form: form)
+                submitResult = (ChemicalLogText.submitted, false)
+            } catch let error as ChemicalSubmitError {
+                submitResult = (error.message, true)
+            } catch {
+                submitResult = (String(describing: error), true)
+            }
+        }
+
+        private func remove(_ entry: ChemicalLogEntry) {
+            removing = nil
+            do {
+                try ChemicalLogWrites.remove(sync, readingId: entry.id)
+            } catch {
+                submitResult = (String(describing: error), true)
+            }
+        }
+
+        private func readings(_ pool: ChemicalPool?) -> some View {
             let recommended = form.recommended
             return VStack(alignment: .leading, spacing: 16) {
                 CardTitle("Readings")
@@ -100,6 +186,7 @@
                     label: "Chlorine", selection: $form.chlorine, options: ChlorineProduct.allCases,
                     optionLabel: \.label)
                 SelectField(label: "Acid", selection: $form.acid, options: AcidProduct.allCases, optionLabel: \.label)
+                submit(pool)
             }
         }
 

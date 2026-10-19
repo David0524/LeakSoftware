@@ -1,6 +1,8 @@
 import {
   ACID_PRODUCTS,
   CHLORINE_PRODUCTS,
+  READING_LABELS,
+  READING_LIMITS,
   INVOICE_STATUS_LABELS,
   QUOTE_STATUS_LABELS,
   calculateChemistry,
@@ -18,6 +20,7 @@ import {
   lineTotal,
   quoteShareText,
   quoteTotals,
+  readingSummary,
   saturationIndex,
   seenTips,
   suggestItems,
@@ -359,6 +362,26 @@ export const pricing: ModuleCases = {
   ),
   CHLORINE_PRODUCTS: rule(() => CHLORINE_PRODUCTS, [[]]),
   ACID_PRODUCTS: rule(() => ACID_PRODUCTS, [[]]),
+  READING_LABELS: rule(() => READING_LABELS, [[]]),
+  READING_LIMITS: rule(() => READING_LIMITS, [[]]),
+  // The chemical log's line: only the readings taken, pH always to one place.
+  readingSummary: rule(
+    (r: Partial<Readings>) => readingSummary(r),
+    [
+      [{}],
+      [{ fc: 3, ph: 7.6, ta: 90 }],
+      [{ fc: 3, ph: 7.6, ta: 90, ch: 250, cya: 40, salt: 3200 }],
+      [{ salt: 3200, fc: 0 }],
+      [{ ph: 7 }],
+      [{ ph: 7.25 }],
+      [{ ph: 7.35 }],
+      [{ ph: 0.05 }],
+      [{ ph: 14 }],
+      [{ fc: 2.5, ph: null, ta: null, cya: 37.5 }],
+      [{ fc: 0.1, ch: 1234.5, salt: 19999.9 }],
+      [{ ta: 1e-7 }],
+    ],
+  ),
   targets: rule(
     (cya: number | null) => targets(cya),
     [[null], [0], [10], [26], [30], [40], [47], [53.3], [80], [100], [-50]],

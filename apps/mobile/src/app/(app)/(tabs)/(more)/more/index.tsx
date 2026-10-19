@@ -81,7 +81,7 @@ export default function More() {
         <ListRow title="Customers" onPress={() => router.push("/customers")} />
         <ListRow title="Invoices" onPress={() => router.push("/invoices")} />
         {company && offersPool(company.settings) ? (
-          <ListRow title="Chemical Calculator" onPress={() => router.push("/chemicals")} />
+          <ListRow title="Chemicals" onPress={() => router.push("/chemicals")} />
         ) : null}
         {manager ? <ListRow title="Settings" onPress={() => router.push("/settings")} /> : null}
       </Group>

@@ -188,6 +188,26 @@
         }
     }
 
+    /// A row that opens something, `link` text with a muted line under it (a customer's pool:
+    /// "Chemical", "Last: FC 3 · pH 7.6 · …"). Use as a `.row` button's label.
+    struct LinkDetailRow: View {
+        var title: String
+        var detail: String
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).textRole(.body).foregroundStyle(Color.link)
+                Text(detail).textRole(.secondary).monospacedDigit().foregroundStyle(Color.textMuted)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+            .padding(.vertical, CGFloat(Spacing.rowVertical))
+            .frame(minHeight: minTarget)
+            .contentShape(Rectangle())
+            .accessibilityElement(children: .combine)
+        }
+    }
+
     /// A tapped row gets `rowPressed` behind it. `Button { … } label: { ListRow(…) }.buttonStyle(.row)`
     struct RowButtonStyle: ButtonStyle {
         func makeBody(configuration: Configuration) -> some View {

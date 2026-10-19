@@ -12,7 +12,7 @@ import Testing
             "quoteShareText", "INVOICE_STATUS_LABELS", "invoiceTotals", "invoiceBalance", "invoiceShareText",
             "CHLORINE_PRODUCTS", "ACID_PRODUCTS", "targets", "fluidAmount", "gallonMeasure", "dryMeasure",
             "weightAmount", "saturationIndex", "calculateChemistry", "doseSummary", "launchCards", "seenTips",
-            "tipFor", "gettingStarted",
+            "tipFor", "gettingStarted", "READING_LABELS", "READING_LIMITS", "readingSummary",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -51,6 +51,11 @@ import Testing
     @Test func chemistry() {
         checkRule(module, "CHLORINE_PRODUCTS") { _ in labelTable(\ChlorineProduct.label) }
         checkRule(module, "ACID_PRODUCTS") { _ in labelTable(\AcidProduct.label) }
+        checkRule(module, "READING_LABELS") { _ in labelTable(\ReadingKey.label) }
+        checkRule(module, "READING_LIMITS") { _ in
+            Dictionary(uniqueKeysWithValues: ReadingKey.allCases.map { ($0.rawValue, $0.limit) })
+        }
+        checkRule(module, "readingSummary") { c in readingSummary(try c.arg(0)) }
         checkRule(module, "targets") { c in targets(try c.arg(0, as: Double?.self)) }
         checkRule(module, "fluidAmount") { c in fluidAmount(try c.arg(0)) }
         checkRule(module, "gallonMeasure") { c in gallonMeasure(try c.arg(0)) }

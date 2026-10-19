@@ -10,6 +10,7 @@ import {
   offersLeak,
   offersPool,
   propertyLocation,
+  readingSummary,
   splitEmails,
   type PoolType,
   type Property,
@@ -17,6 +18,7 @@ import {
 import type { JsonValue } from "@leakbook/sync";
 import { useState } from "react";
 import { Alert, Linking, StyleSheet, Text, View } from "react-native";
+import { latestByPool, useChemicalLog } from "../../../../../data/chemicals";
 import { KIND_LABELS, useCustomerData } from "../../../../../data/customers";
 import { MaintenancePlans } from "../../../../../features/maintenance/MaintenancePlans";
 import { useTeam } from "../../../../../data/schedule";
@@ -56,6 +58,8 @@ export default function CustomerPage() {
   const manager = isManagerRole(membership?.role);
   const { customers, properties, plans, jobs } = useCustomerData(company.id);
   const team = useTeam(company.id);
+  // Each pool's latest chemical log entry (owner, 2026-10-19), as the website.
+  const lastReadings = latestByPool(useChemicalLog(company.id));
   const line = useLine(company.id);
   const [choice] = useDirectionsChoice();
   const [editing, setEditing] = useState<"contact" | Property | null>(null);
@@ -203,6 +207,22 @@ export default function CustomerPage() {
                   </ListRow>
                   {p.access_notes ? (
                     <ListRow title="Access notes" subtitle={p.access_notes} />
+                  ) : null}
+                  {offersPool(company.settings) ? (
+                    <ListRow
+                      title="Chemical"
+                      tone="link"
+                      chevron
+                      subtitle={(() => {
+                        const last = lastReadings.get(p.id);
+                        return last
+                          ? `Last: ${readingSummary(last)} · ${formatSchedule(last.recorded_at, new Date(), company.timezone)}`
+                          : "Readings and the chemical log";
+                      })()}
+                      onPress={() =>
+                        router.push({ pathname: "/chemicals", params: { property: p.id } })
+                      }
+                    />
                   ) : null}
                   <ListRow
                     title="Get Directions"

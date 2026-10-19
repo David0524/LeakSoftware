@@ -26,6 +26,17 @@
                 let model = ChecklistModel(
                     config: config, inspection: inspection, jobType: job.type, property: job.decodedProperty)
                 VStack(alignment: .leading, spacing: 0) {
+                    // Chemical first, above the checklist (owner, 2026-10-19): for this visit's
+                    // pool, so its gallons fill in and Submit saves to its log.
+                    if job.type == .maintenance {
+                        Button("Chemical") {
+                            openRoute(
+                                .more(.chemicals(job.property.map { ChemicalTarget(propertyId: $0.id, jobId: job.id) }))
+                            )
+                        }
+                        .buttonStyle(.secondary)
+                        .padding(.bottom, 16)
+                    }
                     SectionHeading("Checklist")
                     Text(model.isEmpty ? "No checklist yet." : model.tallyText)
                         .textRole(.body)
@@ -48,14 +59,6 @@
                             }
                         }
                         if !model.addOptions.isEmpty { addItem(model, inspection).padding(.top, 16) }
-                    }
-                    if job.type == .maintenance {
-                        // As the website: the calculator with this pool's size filled in.
-                        Button("Chemical Calculator") {
-                            openRoute(.more(.chemicals(gallons: job.property?["approx_gallons"]?.number)))
-                        }
-                        .buttonStyle(.secondary)
-                        .padding(.top, 16)
                     }
                 }
                 .alert(

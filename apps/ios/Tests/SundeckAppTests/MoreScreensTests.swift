@@ -247,3 +247,136 @@ import Testing
         #expect(priceBookGroups(s.sync.store, companyId: "c1")[0].items.count == 2)
     }
 }
+
+/// Chemical's Submit and the pool's chemical log (owner, 2026-10-19; website actions/chemicals.ts).
+@Suite @MainActor struct ChemicalLogTests {
+    let now = parseISODate("2026-10-19T15:15:00Z")!  // 8:15 AM in Phoenix
+
+    func form(_ readings: [ReadingKey: String], gallons: String = "") -> ChemicalForm {
+        var f = ChemicalForm()
+        f.readings = readings
+        f.gallons = gallons
+        f.chlorine = .calhypo65
+        f.acid = .dryacid
+        return f
+    }
+
+    @Test func submitChecksReadingsAsTheWebsiteDoes() throws {
+        let values = try chemicalSubmitValues(
+            form([.fc: "3", .ph: " 7.6 ", .ta: "", .salt: "3,200"], gallons: "20,000"))
+        #expect(
+            values == [
+                "fc": 3, "ph": 7.6, "salt": 3200, "gallons": 20000, "chlorine_product": "calhypo65",
+                "acid_product": "dryacid",
+            ])
+        // Only filled-in readings are saved: no keys for the blank ones, no gallons when blank.
+        #expect(
+            try chemicalSubmitValues(form([.cya: "40"])).keys.sorted() == ["acid_product", "chlorine_product", "cya"])
+        func message(_ f: ChemicalForm) -> String? {
+            do {
+                _ = try chemicalSubmitValues(f)
+                return nil
+            } catch { return error.message }
+        }
+        #expect(message(form([:])) == "Enter at least one reading.")
+        #expect(message(form([.fc: " ", .ph: ""])) == "Enter at least one reading.")
+        #expect(message(form([.ph: "15"])) == "pH should be between 0 and 14.")
+        #expect(message(form([.fc: "-1"])) == "Free chlorine should be between 0 and 100.")
+        #expect(message(form([.salt: "20001"])) == "Salt should be between 0 and 20000.")
+        #expect(message(form([.ta: "abc"])) == "Alkalinity should be between 0 and 1000.")
+        #expect(message(form([.fc: "3"], gallons: "0")) == "Enter the gallons as a number, like 20,000.")
+        #expect(message(form([.ch: "5000", .cya: "0"])) == nil)
+    }
+
+    @Test func submitWritesOfflineAndRemoveSetsDeletedAt() throws {
+        let s = try CustomersAndInvoicesTests().seeded()
+        let store = s.sync.store
+        let pending = try store.pendingCount()
+        let pool = try #require(chemicalPool(store, ChemicalTarget(propertyId: "p", jobId: "j")))
+        #expect(pool.name == "Alicia Romero")
+        #expect(pool.subtitle == "Alicia Romero · 9555 W Van Buren St, Tolleson, AZ 85353")
+        #expect(pool.gallons == nil)
+        #expect(ChemicalLogText.submitHint(pool) == "Saves these readings to Alicia Romero’s chemical log.")
+        #expect(chemicalPool(store, ChemicalTarget(propertyId: "gone")) == nil)
+
+        // No network: the row and its outbox entry are written locally.
+        let id = try ChemicalLogWrites.submit(
+            s.sync, companyId: "c1", pool: pool, form: form([.fc: "3", .ph: "7.6", .ta: "90"], gallons: "18,500"),
+            now: now)
+        #expect(id.count == 36 && id.dropFirst(14).first == "7")  // UUIDv7
+        let row = try #require(try store.get("chemical_reading", id))
+        #expect(row["property_id"] == "p" && row["job_id"] == "j")
+        #expect(row["recorded_at"] == "2026-10-19T15:15:00.000Z")
+        #expect(row["fc"] == 3 && row["ph"] == 7.6 && row["ta"] == 90 && row["gallons"] == 18500)
+        #expect(row["ch"] == nil && row["recorded_by"] == nil)
+        // The first submit with gallons fills in the pool's missing gallons.
+        #expect(try store.get("property", "p")?["approx_gallons"] == 18500)
+        #expect(try store.pendingCount() == pending + 2)
+
+        // A later submit doesn't change gallons the pool already has.
+        let later = parseISODate("2026-10-19T16:00:00Z")!
+        let second = try ChemicalLogWrites.submit(
+            s.sync, companyId: "c1", pool: pool, form: form([.salt: "3200"], gallons: "30,000"), now: later)
+        #expect(try store.get("property", "p")?["approx_gallons"] == 18500)
+        #expect(try store.pendingCount() == pending + 3)
+
+        // Newest first, with when and gallons; who once the server fills recorded_by in.
+        let log = chemicalLog(
+            store, companyId: "c1", propertyId: "p", names: [:], now: later, timeZone: "America/Phoenix")
+        #expect(log.map(\.id) == [second, id])
+        #expect(log.map(\.summary) == ["Salt 3200", "FC 3 · pH 7.6 · TA 90"])
+        #expect(log[0].detail == "9:00 AM · 30,000 gal")
+        #expect(log[1].detail == "8:15 AM · 18,500 gal")
+        #expect(
+            latestChemicalLine(store, companyId: "c1", propertyId: "p", now: later, timeZone: "America/Phoenix")
+                == "Last: Salt 3200 · 9:00 AM")
+        let detail = try #require(
+            customerDetail(store, companyId: "c1", customerId: "a", now: later, timeZone: "America/Phoenix"))
+        #expect(detail.pools.first?.chemicalLine == "Last: Salt 3200 · 9:00 AM")
+
+        // Remove: deleted_at through sync, gone from the log.
+        try ChemicalLogWrites.remove(s.sync, readingId: second)
+        #expect(try store.get("chemical_reading", second)?["deleted_at"]?.string != nil)
+        #expect(try store.pendingCount() == pending + 4)
+        #expect(
+            chemicalLog(store, companyId: "c1", propertyId: "p", names: [:], now: later, timeZone: "America/Phoenix")
+                .map(\.id) == [id])
+        #expect(
+            latestChemicalLine(store, companyId: "c1", propertyId: "p", now: later, timeZone: "America/Phoenix")
+                == "Last: FC 3 · pH 7.6 · TA 90 · 8:15 AM")
+    }
+
+    @Test func pulledReadingsShowWhoTookThem() throws {
+        let s = try CustomersAndInvoicesTests().seeded()
+        try s.sync.store.applyPage(
+            PullPage(
+                rows: [
+                    PulledRow(
+                        table: "chemical_reading", xid: "5",
+                        row: [
+                            "id": "r1", "company_id": "c1", "property_id": "p", "recorded_at": "2026-10-12T15:15:00Z",
+                            "recorded_by": "u1", "fc": "2.50", "ph": "7.40", "gallons": 20000,
+                        ]),
+                    PulledRow(
+                        table: "chemical_reading", xid: "5",
+                        row: [
+                            "id": "r2", "company_id": "c1", "property_id": "p", "recorded_at": "2026-10-13T15:15:00Z",
+                            "fc": 1, "deleted_at": "2026-10-13T16:00:00Z",
+                        ]),
+                ], done: true, cursor: [:], serverHLC: "1760000000005-0000-srv"))
+        let log = chemicalLog(
+            s.sync.store, companyId: "c1", propertyId: "p", names: ["u1": "Tony Tech"], now: now,
+            timeZone: "America/Phoenix")
+        #expect(log.map(\.summary) == ["FC 2.5 · pH 7.4"])
+        #expect(log.first?.detail == "Mon, Oct 12, 8:15 AM · Tony Tech · 20,000 gal")
+    }
+
+    @Test func wordsMatchTheWebsite() {
+        #expect(MoreLink.chemicals.title == "Chemicals")
+        #expect(
+            ChemicalLogText.noPool
+                == "To save readings to a pool’s log, open Chemical from a visit or the customer’s pool.")
+        #expect(ChemicalLogText.poolRowEmpty == "Readings and the chemical log")
+        #expect(ChemicalLogText.removeTitle == "Remove these readings?")
+    }
+}

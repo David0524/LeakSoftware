@@ -2,7 +2,7 @@ import Foundation
 import SundeckCore
 import SundeckSync
 
-// The More tab (spec 4.2, 5.8, 6.6) and the Chemical Calculator's form (spec 5.11): what each
+// The More tab (spec 4.2, 5.8, 6.6) and the Chemical screen's form (spec 5.11): what each
 // role sees and the words, kept out of SwiftUI so they test on Linux.
 
 // MARK: - More
@@ -15,13 +15,13 @@ public enum MoreLink: String, CaseIterable, Hashable, Sendable {
         switch self {
         case .customers: "Customers"
         case .invoices: "Invoices"
-        case .chemicals: "Chemical Calculator"
+        case .chemicals: "Chemicals"
         case .settings: "Settings"
         }
     }
 }
 
-/// Customers and Invoices for everyone, Chemical Calculator for pool shops, Settings for managers.
+/// Customers and Invoices for everyone, Chemicals for pool shops, Settings for managers.
 public func moreLinks(role: String?, services: Services) -> [MoreLink] {
     var links: [MoreLink] = [.customers, .invoices]
     if services != .leak { links.append(.chemicals) }
@@ -104,7 +104,7 @@ public func byteSize(_ bytes: Int64) -> String {
     return "\(max(1, Int((Double(bytes) / 1024).rounded()))) KB"
 }
 
-// MARK: - Chemical Calculator
+// MARK: - Chemical
 
 /// A reading's row: its name and unit as the website labels them.
 public struct ChemicalReadingRow: Identifiable, Hashable, Sendable {

@@ -492,6 +492,106 @@ public func calculateChemistry(_ input: ChemistryInput) -> ChemistryResult {
     return ChemistryResult(statuses: statuses, steps: steps, lsi: lsi, lsiLabel: lsiLabel)
 }
 
+// MARK: - The pool's chemical log (owner, 2026-10-19)
+
+/// One Submit from the Chemical screen: the pool's gallons and the readings the tech typed,
+/// with the products they dose with (`chemical_reading`, a synced row).
+public struct ChemicalReading: Codable, Equatable, Sendable {
+    public var id: String
+    public var propertyId: String
+    public var jobId: String?
+    public var recordedAt: String
+    public var recordedBy: String?
+    public var gallons: Double?
+    public var fc: Double?
+    public var ph: Double?
+    public var ta: Double?
+    public var ch: Double?
+    public var cya: Double?
+    public var salt: Double?
+    public var chlorineProduct: ChlorineProduct?
+    public var acidProduct: AcidProduct?
+    public var notes: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case propertyId = "property_id"
+        case jobId = "job_id"
+        case recordedAt = "recorded_at"
+        case recordedBy = "recorded_by"
+        case gallons, fc, ph, ta, ch, cya, salt
+        case chlorineProduct = "chlorine_product"
+        case acidProduct = "acid_product"
+        case notes
+    }
+
+    public init(
+        id: String, propertyId: String, jobId: String? = nil, recordedAt: String, recordedBy: String? = nil,
+        gallons: Double? = nil, fc: Double? = nil, ph: Double? = nil, ta: Double? = nil, ch: Double? = nil,
+        cya: Double? = nil, salt: Double? = nil, chlorineProduct: ChlorineProduct? = nil,
+        acidProduct: AcidProduct? = nil, notes: String? = nil
+    ) {
+        self.id = id
+        self.propertyId = propertyId
+        self.jobId = jobId
+        self.recordedAt = recordedAt
+        self.recordedBy = recordedBy
+        self.gallons = gallons
+        self.fc = fc
+        self.ph = ph
+        self.ta = ta
+        self.ch = ch
+        self.cya = cya
+        self.salt = salt
+        self.chlorineProduct = chlorineProduct
+        self.acidProduct = acidProduct
+        self.notes = notes
+    }
+
+    /// The readings that were taken.
+    public var readings: Readings { Readings(fc: fc, ph: ph, ta: ta, ch: ch, cya: cya, salt: salt) }
+}
+
+/// A plausible range for a typed reading; outside it the value is a typo, not a reading.
+public struct ReadingLimit: Codable, Equatable, Sendable {
+    public var min: Double
+    public var max: Double
+}
+
+extension ReadingKey {
+    /// `READING_LIMITS`.
+    public var limit: ReadingLimit {
+        switch self {
+        case .fc: ReadingLimit(min: 0, max: 100)
+        case .ph: ReadingLimit(min: 0, max: 14)
+        case .ta: ReadingLimit(min: 0, max: 1000)
+        case .ch: ReadingLimit(min: 0, max: 5000)
+        case .cya: ReadingLimit(min: 0, max: 1000)
+        case .salt: ReadingLimit(min: 0, max: 20000)
+        }
+    }
+
+    /// The reading's short name in a log line ("FC", "pH", ...).
+    var shortLabel: String {
+        switch self {
+        case .fc: "FC"
+        case .ph: "pH"
+        case .ta: "TA"
+        case .ch: "CH"
+        case .cya: "CYA"
+        case .salt: "Salt"
+        }
+    }
+}
+
+/// "FC 3 · pH 7.6 · TA 90": the readings that were taken, in the calculator's order.
+public func readingSummary(_ r: Readings) -> String {
+    ReadingKey.allCases.compactMap { key in
+        r[key].map { "\(key.shortLabel) \(key == .ph ? ECMA.toFixed($0, 1) : ECMA.numberString($0))" }
+    }
+    .joined(separator: " · ")
+}
+
 // MARK: - JavaScript number formatting
 
 /// `n.toFixed(1)` in JavaScript: an exact tie (a multiple of 0.05 that a double holds exactly,

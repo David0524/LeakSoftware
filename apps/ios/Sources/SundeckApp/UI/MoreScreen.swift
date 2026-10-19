@@ -9,8 +9,8 @@
         case customers
         case customer(String)
         case invoices
-        /// The Chemical Calculator; a visit passes the pool's gallons.
-        case chemicals(gallons: Double?)
+        /// Chemical; a visit or a customer's pool opens it for that pool (Submit and its log).
+        case chemicals(ChemicalTarget?)
         case settings
         case settingsPage(SettingsPage)
         case sync
@@ -27,7 +27,7 @@
             case .customers: CustomersScreen()
             case .customer(let id): CustomerScreen(customerId: id)
             case .invoices: InvoicesScreen()
-            case .chemicals(let gallons): ChemicalsScreen(gallons: gallons)
+            case .chemicals(let target): ChemicalsScreen(target: target)
             case .settings: ShopSettingsScreen()
             case .settingsPage(let page): SettingsListScreen(page: page)
             case .sync: SettingsView(showWelcome: {}, showReauth: showReauth)
@@ -142,7 +142,7 @@
             switch link {
             case .customers: .customers
             case .invoices: .invoices
-            case .chemicals: .chemicals(gallons: nil)
+            case .chemicals: .chemicals(nil)
             case .settings: .settings
             }
         }

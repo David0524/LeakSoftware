@@ -240,6 +240,15 @@
                 .buttonStyle(.row)
                 .accessibilityHint("Opens Pool Details")
                 if let notes = pool.accessNotes { ListRow("Access notes", detail: notes) }
+                // Pool shops: Chemical for this pool, with its latest readings (owner, 2026-10-19).
+                if services != .leak {
+                    Button {
+                        openRoute(.more(.chemicals(ChemicalTarget(propertyId: pool.id))))
+                    } label: {
+                        LinkDetailRow(title: "Chemical", detail: pool.chemicalLine ?? ChemicalLogText.poolRowEmpty)
+                    }
+                    .buttonStyle(.row)
+                }
                 ActionRow("Get Directions") {
                     if let url = directionsURL(pool.place, choice: sync.kv.directionsChoice) { openURL(url) }
                 }

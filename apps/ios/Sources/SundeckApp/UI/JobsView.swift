@@ -12,7 +12,7 @@
         case sync
         /// A Messages screen (a conversation, New Message, a customer) from any tab.
         case messages(MessagesRoute)
-        /// A More screen (a customer, the Chemical Calculator, ...) from any tab.
+        /// A More screen (a customer, Chemical, ...) from any tab.
         case more(MoreRoute)
         /// A checklist item's screen: its answer, notes, tests and findings.
         case component(jobId: String, componentId: String)

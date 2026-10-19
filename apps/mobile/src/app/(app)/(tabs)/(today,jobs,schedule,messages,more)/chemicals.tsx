@@ -4,8 +4,13 @@ import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } fro
 import {
   ACID_PRODUCTS,
   CHLORINE_PRODUCTS,
+  READING_LABELS,
+  READING_LIMITS,
   calculateChemistry,
   doseSummary,
+  formatAddress,
+  formatSchedule,
+  readingSummary,
   targets,
   type AcidProduct,
   type ChemistryResult,
@@ -15,8 +20,22 @@ import {
   type Readings,
 } from "@leakbook/core";
 import { useTabBarTop } from "../../../../features/messages/Composer";
+import { useChemicalLog } from "../../../../data/chemicals";
+import { useRow } from "../../../../data/hooks";
+import { useTeam } from "../../../../data/schedule";
 import { getServices } from "../../../../lib/services";
-import { Card, Screen, T } from "../../../../ui/components";
+import { useCompany } from "../../../../state/session";
+import {
+  Button,
+  Card,
+  Group,
+  ListRow,
+  Notice,
+  Screen,
+  Section,
+  T,
+} from "../../../../ui/components";
+import { confirmDestructive } from "../../../../ui/confirm";
 import { Glass } from "../../../../ui/Glass";
 import { ModalSheet } from "../../../../ui/ModalSheet";
 import { Select } from "../../../../ui/Select";
@@ -36,8 +55,10 @@ import {
 
 // The pool chemical calculator (spec 5.11; owner, 2026-10-16): the pool's size and today's
 // readings in, what to add out, in order. Readings fill the screen; What to Add is a glass bar
-// floating above the tab bar that opens a sheet. Nothing is saved but the levels a tech aims
-// for. The math is packages/core/src/chemistry.ts. A visit opens it for its pool, whose gallons fill in.
+// floating above the tab bar that opens a sheet. The math is packages/core/src/chemistry.ts.
+// A visit or a customer's pool opens it for that pool: its gallons fill in, Submit saves the
+// readings to the pool's chemical log (synced, so it works offline), and the log shows below
+// (owner, 2026-10-19), as on the website. The levels a tech aims for stay on this phone.
 
 const num = (v: string) => {
   const n = Number(v.replace(/,/g, ""));
@@ -100,15 +121,20 @@ function Cell({ style, ...input }: TextInputProps) {
 }
 
 export default function Chemicals() {
-  // Opened for a pool (a visit's Chemical Calculator), its gallons fill in (owner, 2026-10-19).
-  const params = useLocalSearchParams<{ property?: string }>();
+  // Opened for a pool (a visit's or a customer's Chemical), its gallons fill in.
+  const params = useLocalSearchParams<{ property?: string; job?: string }>();
+  const company = useCompany();
+  const found = useRow<Property & { deleted_at?: string | null }>("property", params.property);
+  const pool = found && !found.deleted_at ? found : undefined;
   const [gallonsText, setGallonsText] = useState(() => {
-    const pool = params.property
-      ? (getServices().sync.get("property", params.property) as unknown as Property | undefined)
-      : undefined;
     const g = Number(pool?.approx_gallons);
     return g > 0 ? withCommas(String(Math.round(g))) : "";
   });
+  const log = useChemicalLog(company.id)
+    .filter((r) => pool && r.property_id === pool.id)
+    .slice(0, 12);
+  const team = useTeam(company.id);
+  const [submitted, setSubmitted] = useState<{ error?: string; message?: string }>({});
   const [sheet, setSheet] = useState(false);
   const barTop = useTabBarTop();
   const [values, setValues] = useState<Record<string, string>>({});
@@ -133,9 +159,63 @@ export default function Chemicals() {
   const ready = gallons > 0 && result.statuses.length > 0;
   const line = doseSummary(result, ready);
 
+  /** Submit: the left side (gallons, readings, products) goes into the pool's log. */
+  function submit() {
+    if (!pool) return;
+    const taken: Partial<Record<ReadingKey, number>> = {};
+    for (const key of Object.keys(READING_LIMITS) as ReadingKey[]) {
+      const raw = (values[key] ?? "").replace(/,/g, "").trim();
+      if (!raw) continue;
+      const n = Number(raw);
+      const { min, max } = READING_LIMITS[key];
+      if (!Number.isFinite(n) || n < min || n > max) {
+        setSubmitted({ error: `${READING_LABELS[key]} should be between ${min} and ${max}.` });
+        return;
+      }
+      taken[key] = n;
+    }
+    if (Object.keys(taken).length === 0) {
+      setSubmitted({ error: "Enter at least one reading." });
+      return;
+    }
+    const size = gallons > 0 ? Math.round(gallons) : null;
+    if (size !== null && size >= 10_000_000) {
+      setSubmitted({ error: "Enter the gallons as a number, like 20,000." });
+      return;
+    }
+    const sync = getServices().sync;
+    sync.insert("chemical_reading", company.id, {
+      property_id: pool.id,
+      job_id: params.job || null,
+      recorded_at: new Date().toISOString(),
+      gallons: size,
+      ...taken,
+      chlorine_product: chlorine,
+      acid_product: acid,
+    });
+    // A pool's gallons fill in from the first submit that has them, as on the website.
+    if (size !== null && !pool.approx_gallons)
+      sync.write("property", pool.id, pool.company_id, { approx_gallons: size });
+    setSubmitted({ message: "Submitted." });
+  }
+
+  function remove(id: string) {
+    confirmDestructive({
+      title: "Remove these readings?",
+      message: "They come off the pool’s chemical log.",
+      confirm: "Remove Readings",
+      onConfirm: () =>
+        getServices().sync.write("chemical_reading", id, company.id, {
+          deleted_at: new Date().toISOString(),
+        }),
+    });
+  }
+  const who = (uid: string | null | undefined) =>
+    uid ? team.find((t) => t.user_id === uid)?.name : undefined;
+
   return (
     <View style={{ flex: 1 }}>
-      <Screen title="Chemical Calculator">
+      <Screen title="Chemical" subtitle={pool ? formatAddress(pool) : undefined}>
         <ScreenTip screen="chemicals" />
         <Card style={{ gap: space["4"] }}>
           <T variant="cardTitle">Pool</T>
@@ -236,7 +316,70 @@ export default function Chemicals() {
               label,
             }))}
           />
+          {/* Submit: the left side goes into this pool's weekly log (owner, 2026-10-19). */}
+          <View style={[styles.submit, { borderTopColor: color.separator }]}>
+            {pool ? (
+              <>
+                <Button
+                  title="Submit"
+                  wide
+                  disabled={result.statuses.length === 0}
+                  onPress={submit}
+                />
+                <T variant="secondary" muted>
+                  Saves these readings to this pool’s chemical log.
+                </T>
+                {submitted.error ? <Notice tone="error">{submitted.error}</Notice> : null}
+                {submitted.message ? <Notice tone="success">{submitted.message}</Notice> : null}
+              </>
+            ) : (
+              <T variant="secondary" muted>
+                To save readings to a pool’s log, open Chemical from a visit or the customer’s pool.
+              </T>
+            )}
+          </View>
         </Card>
+        {pool ? (
+          <Section title="Chemical log" footer="One entry for each Submit, newest first.">
+            <Group>
+              {log.length === 0 ? (
+                <ListRow>
+                  <T muted>No readings submitted yet</T>
+                </ListRow>
+              ) : (
+                log.map((r) => (
+                  <ListRow
+                    key={r.id}
+                    onDelete={() => remove(r.id)}
+                    deleteLabel="Remove"
+                    trailing={
+                      <Text
+                        accessibilityRole="button"
+                        accessibilityLabel="Remove these readings"
+                        onPress={() => remove(r.id)}
+                        style={[type.body, styles.remove, { color: color.fail }]}
+                        maxFontSizeMultiplier={MAX_TEXT_SCALE}
+                      >
+                        Remove
+                      </Text>
+                    }
+                  >
+                    <T style={tabular}>{readingSummary(r)}</T>
+                    <T variant="secondary" muted>
+                      {[
+                        formatSchedule(r.recorded_at, new Date(), company.timezone),
+                        who(r.recorded_by),
+                        r.gallons ? `${r.gallons.toLocaleString("en-US")} gal` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </T>
+                  </ListRow>
+                ))
+              )}
+            </Group>
+          </Section>
+        ) : null}
         {/* Room to scroll the last fields clear of the floating bar. */}
         <View style={{ height: 72 }} />
       </Screen>
@@ -373,6 +516,8 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   cellSpace: { width: 80 },
+  submit: { gap: space["3"], borderTopWidth: StyleSheet.hairlineWidth, paddingTop: space["4"] },
+  remove: { minHeight: minTap, lineHeight: minTap, paddingHorizontal: space["2"] },
   unit: {
     position: "absolute",
     right: 12,

@@ -815,6 +815,30 @@
             let env = try sampleEnvironment()
             try await snapshot(
                 "47-chemicals", height: 1500, NavigationStack { ChemicalsScreen(gallons: 18000) }.app(env))
+            // Opened from Sam's maintenance visit (owner, 2026-10-19): Submit under the readings and
+            // the pool's chemical log, two entries submitted on this phone.
+            let store = env.session.sync.store
+            let visit = try #require(try store.list("job").first { $0["number"] == 1043 })
+            let target = ChemicalTarget(
+                propertyId: try #require(visit["property_id"]?.string), jobId: visit.id)
+            let pool = try #require(chemicalPool(store, target))
+            var form = ChemicalForm(gallons: 18000)
+            form.readings = [.fc: "3", .ph: "7.6", .ta: "90"]
+            try ChemicalLogWrites.submit(
+                env.session.sync, companyId: "c1", pool: pool, form: form, now: Date().addingTimeInterval(-7 * 86400))
+            form.readings = [.fc: "1.5", .ph: "7.9", .ta: "80", .cya: "40", .salt: "3200"]
+            try ChemicalLogWrites.submit(env.session.sync, companyId: "c1", pool: pool, form: form)
+            try await snapshot(
+                "47-chemicals-pool", height: 2200, NavigationStack { ChemicalsScreen(target: target) }.app(env))
+            try await snapshot(
+                "47-chemicals-pool-dark", dark: true, height: 2200,
+                NavigationStack { ChemicalsScreen(target: target) }.app(env))
+            try await snapshot(
+                "47-checklist-chemical", height: 1600,
+                NavigationStack { JobScreen(jobId: visit.id, section: .checklist) }.app(env))
+            let sam = try #require(try store.list("customer").first { $0["name"] == "Sam Sample" }?.id)
+            try await snapshot(
+                "47-customer-chemical", height: 1800, NavigationStack { CustomerScreen(customerId: sam) }.app(env))
             try await snapshot(
                 "47-chemicals-doses", height: 1200,
                 FormSheet(title: "What to Add", cancelTitle: "Close") {

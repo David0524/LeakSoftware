@@ -210,6 +210,9 @@ public struct CustomerPool: Identifiable, Equatable, Sendable {
     /// "Gunite / plaster · Pool and spa · 20,000 gallons".
     public var detail: String
     public var accessNotes: String?
+    /// The Chemical row's line: "Last: FC 3 · pH 7.6 · Mon, Oct 19, 8:15 AM", or nil before any
+    /// reading is submitted.
+    public var chemicalLine: String?
     /// Leak detection and repair jobs (maintenance visits are summed up by their plan).
     public var jobs: [CustomerJob]
     /// Its maintenance plans (pool shops show them).
@@ -283,7 +286,10 @@ public func customerDetail(
                     poolGallonsLabel(p["approx_gallons"]),
                 ]
                 .compactMap { $0 }.joined(separator: " · "),
-                accessNotes: trimmed(p["access_notes"]), jobs: poolJobs,
+                accessNotes: trimmed(p["access_notes"]),
+                chemicalLine: latestChemicalLine(
+                    store, companyId: companyId, propertyId: p.id, now: now, timeZone: timeZone),
+                jobs: poolJobs,
                 plans: customerPlans(plans, propertyId: p.id, jobs: jobs, names: names, today: today),
                 place: MapPlace(address: address, location: propertyLocation(decoded)))
         }

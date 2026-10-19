@@ -4764,6 +4764,159 @@
       }
     }
   ],
+  "READING_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "fc": "Free chlorine",
+        "ph": "pH",
+        "ta": "Alkalinity",
+        "ch": "Calcium",
+        "cya": "Stabilizer",
+        "salt": "Salt"
+      }
+    }
+  ],
+  "READING_LIMITS": [
+    {
+      "args": [],
+      "result": {
+        "fc": {
+          "min": 0,
+          "max": 100
+        },
+        "ph": {
+          "min": 0,
+          "max": 14
+        },
+        "ta": {
+          "min": 0,
+          "max": 1000
+        },
+        "ch": {
+          "min": 0,
+          "max": 5000
+        },
+        "cya": {
+          "min": 0,
+          "max": 1000
+        },
+        "salt": {
+          "min": 0,
+          "max": 20000
+        }
+      }
+    }
+  ],
+  "readingSummary": [
+    {
+      "args": [
+        {}
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        {
+          "fc": 3,
+          "ph": 7.6,
+          "ta": 90
+        }
+      ],
+      "result": "FC 3 · pH 7.6 · TA 90"
+    },
+    {
+      "args": [
+        {
+          "fc": 3,
+          "ph": 7.6,
+          "ta": 90,
+          "ch": 250,
+          "cya": 40,
+          "salt": 3200
+        }
+      ],
+      "result": "FC 3 · pH 7.6 · TA 90 · CH 250 · CYA 40 · Salt 3200"
+    },
+    {
+      "args": [
+        {
+          "salt": 3200,
+          "fc": 0
+        }
+      ],
+      "result": "FC 0 · Salt 3200"
+    },
+    {
+      "args": [
+        {
+          "ph": 7
+        }
+      ],
+      "result": "pH 7.0"
+    },
+    {
+      "args": [
+        {
+          "ph": 7.25
+        }
+      ],
+      "result": "pH 7.3"
+    },
+    {
+      "args": [
+        {
+          "ph": 7.35
+        }
+      ],
+      "result": "pH 7.3"
+    },
+    {
+      "args": [
+        {
+          "ph": 0.05
+        }
+      ],
+      "result": "pH 0.1"
+    },
+    {
+      "args": [
+        {
+          "ph": 14
+        }
+      ],
+      "result": "pH 14.0"
+    },
+    {
+      "args": [
+        {
+          "fc": 2.5,
+          "ph": null,
+          "ta": null,
+          "cya": 37.5
+        }
+      ],
+      "result": "FC 2.5 · CYA 37.5"
+    },
+    {
+      "args": [
+        {
+          "fc": 0.1,
+          "ch": 1234.5,
+          "salt": 19999.9
+        }
+      ],
+      "result": "FC 0.1 · CH 1234.5 · Salt 19999.9"
+    },
+    {
+      "args": [
+        {
+          "ta": 1e-7
+        }
+      ],
+      "result": "TA 1e-7"
+    }
+  ],
   "targets": [
     {
       "args": [
