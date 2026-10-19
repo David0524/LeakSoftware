@@ -23,6 +23,7 @@ public final class Database: @unchecked Sendable {
     private var handle: OpaquePointer?
     private let lock = NSRecursiveLock()
     private var depth = 0
+    private static let keying = NSLock()
 
     /// Opens (or creates) the database at `path`. `key` is the hex passphrase from the
     /// Keychain, the same scheme as the Expo app (`apps/mobile/src/lib/database.ts`), so the
@@ -41,6 +42,11 @@ public final class Database: @unchecked Sendable {
             throw error
         }
         do {
+            // One database is keyed at a time: SQLCipher sets up its crypto on first use, and
+            // two threads opening keyed databases at once (parallel tests) could fail with
+            // "PRAGMA key requires a key".
+            Self.keying.lock()
+            defer { Self.keying.unlock() }
             // The key must be the first statement. Hex only, so it is safe to inline.
             try execute("PRAGMA key = '\(key)'")
             // Fails here when the key doesn't match the file.
