@@ -52,6 +52,11 @@ let package = Package(
                 .product(name: "Sentry", package: "sentry-cocoa", condition: .when(platforms: [.iOS])),
             ]
         ),
+        // iPhone simulator only (macOS CI): renders each screen to a PNG.
+        .testTarget(
+            name: "SundeckAppScreenshots",
+            dependencies: ["SundeckApp", "SundeckCore", "SundeckStorage", "SundeckSync"]
+        ),
         .testTarget(name: "SundeckCoreTests", dependencies: ["SundeckCore"]),
         .testTarget(name: "SundeckSyncTests", dependencies: ["SundeckSync"]),
         .testTarget(

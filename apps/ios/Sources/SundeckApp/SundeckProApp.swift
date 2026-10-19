@@ -1,12 +1,14 @@
 #if os(iOS)
-    import Observation
+    import Network
     import Sentry
+    import Supabase
     import SundeckStorage
+    import SundeckSync
     import SwiftUI
 
     @main
     struct SundeckProApp: App {
-        @State private var model = ToolchainCheckModel()
+        @State private var app = AppEnvironment.make()
 
         init() {
             if let dsn = AppConfig.sentryDSN {
@@ -18,143 +20,110 @@
 
         var body: some Scene {
             WindowGroup {
-                ToolchainCheckView(model: model)
-                    .task { model.openDatabase() }
-            }
-        }
-    }
-
-    /// S0's one screen (docs/plans/swift-app.md): the encrypted database, sign-in to the dev
-    /// project, and error reporting. Replaced by the real app shell in S3.
-    @MainActor @Observable
-    final class ToolchainCheckModel {
-        var databaseStatus = "Opening…"
-        var databaseOK = false
-        var email = ""
-        var password = ""
-        var signedInAs: String?
-        var pullStatus: String?
-        var serverError: String?
-        var busy = false
-        var testErrorSent = false
-
-        private let server = ServerCheck(client: ServerCheck.makeClient())
-
-        func openDatabase() {
-            do {
-                let folder = try FileManager.default.url(
-                    for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-                let db = try Database(
-                    path: folder.appendingPathComponent("sundeck.db").path, key: DatabaseKey.loadOrCreate())
-                if let version = try db.cipherVersion() {
-                    databaseStatus = "Encrypted (SQLCipher \(version))"
-                    databaseOK = true
-                } else {
-                    databaseStatus = "Not encrypted"
+                switch app {
+                case .success(let environment):
+                    RootView()
+                        .environment(environment.session)
+                        .environment(environment.session.sync)
+                        .environment(environment)
+                case .failure(let error):
+                    ContentUnavailableView(
+                        "Sundeck Pro Couldn’t Start", systemImage: "exclamationmark.triangle",
+                        description: Text("This phone’s storage couldn’t be opened. \(error.localizedDescription)"))
                 }
-            } catch {
-                databaseStatus = "Couldn’t open: \(error)"
             }
-        }
-
-        func signIn() async {
-            busy = true
-            serverError = nil
-            defer { busy = false }
-            do {
-                signedInAs = try await server.signIn(
-                    email: email.trimmingCharacters(in: .whitespaces), password: password)
-                password = ""
-                let count = try await server.firstPullRowCount()
-                pullStatus = count == 1 ? "1 record" : "\(count) records"
-            } catch {
-                serverError = error.localizedDescription
-            }
-        }
-
-        func signOut() async {
-            try? await server.signOut()
-            signedInAs = nil
-            pullStatus = nil
-        }
-
-        func sendTestError() {
-            struct ToolchainCheckError: Error {}
-            SentrySDK.capture(error: ToolchainCheckError())
-            testErrorSent = true
         }
     }
 
-    struct ToolchainCheckView: View {
-        @Bindable var model: ToolchainCheckModel
+    /// Everything the app runs on: the encrypted database, the server client, sync and the session.
+    @MainActor @Observable
+    final class AppEnvironment {
+        let client: SupabaseClient
+        let session: Session
+        let walkthrough: Walkthrough
+        @ObservationIgnored private let monitor = NWPathMonitor()
+
+        init(client: SupabaseClient, session: Session, walkthrough: Walkthrough) {
+            self.client = client
+            self.session = session
+            self.walkthrough = walkthrough
+        }
+
+        static func make() -> Result<AppEnvironment, Error> {
+            Result {
+                let db = try openDatabase()
+                let store = try LocalStore.open(db)
+                let kv = try KeyValue(db)
+                let client = ServerCheck.makeClient()
+                let auth = SupabaseAuthBackend(client)
+                let sync = SyncService(
+                    store: store, kv: kv, transport: SupabaseTransport(SupabaseRPC(client)), auth: auth)
+                let environment = AppEnvironment(
+                    client: client, session: Session(sync: sync, auth: auth), walkthrough: Walkthrough(kv))
+                sync.afterSync = { [weak environment] in await environment?.afterSync() }
+                environment.watchNetwork()
+                return environment
+            }
+        }
+
+        /// Opens the encrypted database. A file this key can't read (left by an earlier install)
+        /// is replaced: the server's copy comes back on the next sync.
+        private static func openDatabase() throws -> Database {
+            let folder = try FileManager.default.url(
+                for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            let path = folder.appendingPathComponent("sundeck.db").path
+            let key = try DatabaseKey.loadOrCreate()
+            do {
+                return try Database(path: path, key: key)
+            } catch {
+                for suffix in ["", "-wal", "-shm"] { try? FileManager.default.removeItem(atPath: path + suffix) }
+                return try Database(path: path, key: key)
+            }
+        }
+
+        private func watchNetwork() {
+            monitor.pathUpdateHandler = { [weak self] path in
+                let online = path.status == .satisfied
+                Task { @MainActor in self?.session.sync.networkChanged(online: online) }
+            }
+            monitor.start(queue: DispatchQueue(label: "network"))
+        }
+
+        /// After each sync: the company list, and teammates' names for offline use.
+        private func afterSync() async {
+            session.reloadCompanies()
+            if let team: [TeamProfile] = try? await client.from("profile").select("id, full_name, email").execute()
+                .value
+            {
+                session.sync.kv.setTeam(team)
+            }
+        }
+    }
+
+    /// Picks the screen for where the person is: signed out, owing a code, setting up, or in.
+    struct RootView: View {
+        @Environment(Session.self) private var session
+        @Environment(SyncService.self) private var sync
+        @Environment(AppEnvironment.self) private var app
+        @Environment(\.scenePhase) private var scenePhase
 
         var body: some View {
-            NavigationStack {
-                List {
-                    Section {
-                        LabeledContent("Local Database") {
-                            Label(
-                                model.databaseStatus,
-                                systemImage: model.databaseOK ? "lock.fill" : "exclamationmark.triangle")
-                        }
-                    } header: {
-                        Text("This iPhone")
-                    } footer: {
-                        Text("Customer details on the phone are kept in an encrypted database.")
-                    }
-
-                    Section {
-                        if let signedInAs = model.signedInAs {
-                            LabeledContent("Signed In As", value: signedInAs)
-                            LabeledContent("First Sync Page", value: model.pullStatus ?? "Loading…")
-                            Button("Sign Out") { Task { await model.signOut() } }
-                        } else {
-                            TextField("Email", text: $model.email)
-                                .textContentType(.username)
-                                .keyboardType(.emailAddress)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                            SecureField("Password", text: $model.password)
-                                .textContentType(.password)
-                            Button {
-                                Task { await model.signIn() }
-                            } label: {
-                                HStack {
-                                    Text("Sign In")
-                                    if model.busy {
-                                        Spacer()
-                                        ProgressView()
-                                    }
-                                }
-                            }
-                            .disabled(model.busy || model.email.isEmpty || model.password.isEmpty)
-                        }
-                    } header: {
-                        Text("Server")
-                    } footer: {
-                        if let error = model.serverError {
-                            Text(error).foregroundStyle(.red)
-                        } else {
-                            Text("Signs in to the development server.")
-                        }
-                    }
-
-                    Section {
-                        Button(model.testErrorSent ? "Test Error Sent" : "Send Test Error") {
-                            model.sendTestError()
-                        }
-                        .disabled(AppConfig.sentryDSN == nil || model.testErrorSent)
-                    } header: {
-                        Text("Error Reporting")
-                    } footer: {
-                        Text(
-                            AppConfig.sentryDSN == nil
-                                ? "Error reporting is off in this build."
-                                : "Sends a test error to Sentry.")
-                    }
+            Group {
+                switch session.route {
+                case .signedOut: SignInFlow()
+                case .code: CodeView()
+                case .setup: SetupView()
+                case .ready: MainView()
                 }
-                .navigationTitle("Sundeck Pro")
             }
+            .task { await session.launch() }
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .active else { return }
+                sync.appBecameActive()
+                Task { await session.checkSession() }
+            }
+            .onChange(of: sync.revision) { session.reloadCompanies() }
+            .onChange(of: session.user) { app.walkthrough.reload() }
         }
     }
 #endif
