@@ -444,3 +444,60 @@ export function calculateChemistry(input: ChemistryInput): ChemistryResult {
     lsi === null ? null : lsi < -0.3 ? "Corrosive" : lsi > 0.3 ? "Scale forming" : "Balanced";
   return { statuses, steps, lsi, lsiLabel };
 }
+
+/**
+ * A submitted set of readings (owner, 2026-10-19: a weekly note of a pool's chemistry): the
+ * Chemical screen's left side, saved to the pool's log. Table `chemical_reading`.
+ */
+export interface ChemicalReading {
+  id: string;
+  property_id: string;
+  job_id?: string | null;
+  recorded_at: string;
+  recorded_by?: string | null;
+  gallons?: number | null;
+  fc?: number | null;
+  ph?: number | null;
+  ta?: number | null;
+  ch?: number | null;
+  cya?: number | null;
+  salt?: number | null;
+  chlorine_product?: ChlorineProduct | null;
+  acid_product?: AcidProduct | null;
+  notes?: string | null;
+}
+
+export const READING_LABELS: Record<ReadingKey, string> = {
+  fc: "Free chlorine",
+  ph: "pH",
+  ta: "Alkalinity",
+  ch: "Calcium",
+  cya: "Stabilizer",
+  salt: "Salt",
+};
+
+/** Plausible ranges for a typed reading; outside them it is a typo, not a reading. */
+export const READING_LIMITS: Record<ReadingKey, { min: number; max: number }> = {
+  fc: { min: 0, max: 100 },
+  ph: { min: 0, max: 14 },
+  ta: { min: 0, max: 1000 },
+  ch: { min: 0, max: 5000 },
+  cya: { min: 0, max: 1000 },
+  salt: { min: 0, max: 20000 },
+};
+
+/** "FC 3 · pH 7.6 · TA 90": the readings that were taken, in the calculator's order. */
+export function readingSummary(r: Partial<Record<ReadingKey, number | null>>): string {
+  const short: Record<ReadingKey, string> = {
+    fc: "FC",
+    ph: "pH",
+    ta: "TA",
+    ch: "CH",
+    cya: "CYA",
+    salt: "Salt",
+  };
+  return (Object.keys(short) as ReadingKey[])
+    .filter((k) => r[k] != null)
+    .map((k) => `${short[k]} ${k === "ph" ? Number(r[k]).toFixed(1) : Number(r[k])}`)
+    .join(" · ");
+}

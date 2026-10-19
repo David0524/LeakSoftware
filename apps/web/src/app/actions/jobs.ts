@@ -122,6 +122,11 @@ export async function savePool(_: FormState, form: FormData): Promise<FormState>
   const poolType = text(form, "pool_type");
   if (poolType && !(POOL_TYPES as readonly string[]).includes(poolType))
     return { fields: { pool_type: "Pick one." } };
+  // Gallons as typed ("20,000", "20000"); blank clears it (owner, 2026-10-19).
+  const gallonsText = text(form, "approx_gallons").replace(/[,\s]/g, "");
+  const gallons = gallonsText ? Math.round(Number(gallonsText)) : null;
+  if (gallons !== null && !(Number.isFinite(gallons) && gallons > 0 && gallons < 10_000_000))
+    return { fields: { approx_gallons: "Enter the gallons as a number, like 20,000." } };
   const address = {
     address_line1: line1,
     address_line2: text(form, "address_line2") || null,
@@ -146,6 +151,7 @@ export async function savePool(_: FormState, form: FormData): Promise<FormState>
       ...address,
       pool_type: poolType || null,
       has_spa: form.get("has_spa") === "on",
+      approx_gallons: gallons,
       access_notes: text(form, "access_notes") || null,
       ...(moved
         ? { latitude: null, longitude: null, geocoded_address: null, location_source: null }

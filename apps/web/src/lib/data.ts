@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import type {
+  ChemicalReading,
   CompanyAccess,
   ChecklistItemResult,
   ComponentType,
@@ -981,4 +982,34 @@ export async function listReports(
     .limit(limit);
   if (status !== "all") q = q.eq("status", status);
   return must(await q) as unknown as ReportListRow[];
+}
+
+/** A pool's chemical log, newest first (owner, 2026-10-19). */
+export async function getChemicalReadings(office: Office, propertyId: string, limit = 12) {
+  const supabase = await db();
+  return must(
+    await supabase
+      .from("chemical_reading")
+      .select("*")
+      .eq("company_id", office.company.id)
+      .eq("property_id", propertyId)
+      .is("deleted_at", null)
+      .order("recorded_at", { ascending: false })
+      .limit(limit),
+  ) as ChemicalReading[];
+}
+
+/** The pool the Chemical screen was opened for, with its customer's name. */
+export async function getChemicalPool(office: Office, propertyId: string) {
+  const supabase = await db();
+  const row = must(
+    await supabase
+      .from("property")
+      .select("*, customer:customer!property_customer_id_company_id_fkey(id, name)")
+      .eq("company_id", office.company.id)
+      .eq("id", propertyId)
+      .is("deleted_at", null)
+      .maybeSingle(),
+  ) as (Property & { customer: { id: string; name: string } | null }) | null;
+  return row;
 }

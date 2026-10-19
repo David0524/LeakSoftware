@@ -186,6 +186,7 @@ export interface Property extends Base {
   has_pool: boolean;
   has_spa: boolean;
   diagram_shape?: "rectangle" | "oval" | "kidney" | "l_shape" | "freeform" | null;
+  approx_gallons?: number | null;
   access_notes?: string | null;
   notes?: string | null;
   latitude?: number | null;

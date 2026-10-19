@@ -97,6 +97,8 @@ begin
   insert into plan_cleaning (company_id, service_plan_id, component_type_id, every_months, next_due)
     values (c, sp, (select id from component_type where company_id = c and key = 'svc_filter_clean'),
             3, current_date);
+  insert into chemical_reading (company_id, property_id, job_id, recorded_by, gallons, fc, ph)
+    values (c, prop, j, t, 20000, 2.5, 7.6);
   -- Company texting: a number per shop, made unique by the label.
   insert into phone_line (company_id, number)
     values (c, '+1555' || lpad((abs(hashtext(label)) % 10000000)::text, 7, '0'));

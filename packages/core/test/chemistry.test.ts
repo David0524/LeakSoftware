@@ -188,3 +188,12 @@ describe("chosen levels", () => {
     );
   });
 });
+
+describe("readingSummary", () => {
+  it("lists the readings taken, in the calculator's order", async () => {
+    const { readingSummary } = await import("../src/chemistry");
+    expect(readingSummary({ ph: 7.6, fc: 3, salt: null, ta: 90 })).toBe("FC 3 · pH 7.6 · TA 90");
+    expect(readingSummary({ ph: 7 })).toBe("pH 7.0");
+    expect(readingSummary({})).toBe("");
+  });
+});

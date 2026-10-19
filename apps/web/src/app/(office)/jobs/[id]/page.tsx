@@ -197,6 +197,9 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                               ? POOL_TYPE_LABELS[job.property.pool_type]
                               : null,
                             job.property.has_spa ? "Pool and spa" : "Pool",
+                            job.property.approx_gallons
+                              ? `${job.property.approx_gallons.toLocaleString("en-US")} gallons`
+                              : null,
                           ]
                             .filter(Boolean)
                             .join(" · ")}
@@ -302,6 +305,16 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
             badge: tally.pending,
             content: (
               <section aria-labelledby="checklist">
+                {/* Chemical first, at the top of the checklist (owner, 2026-10-19). */}
+                {job.type === "maintenance" ? (
+                  <ButtonLink
+                    href={chemicalsHref(job.property, job.id)}
+                    kind="secondary"
+                    className="mb-4"
+                  >
+                    Chemical
+                  </ButtonLink>
+                ) : null}
                 <h2 id="checklist" className="font-display text-2xl font-bold">
                   Checklist
                 </h2>
@@ -329,11 +342,6 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                 ) : (
                   <SetUpChecklist jobId={job.id} />
                 )}
-                {job.type === "maintenance" ? (
-                  <ButtonLink href={chemicalsHref(job.property)} kind="secondary" className="mt-4">
-                    Chemical Calculator
-                  </ButtonLink>
-                ) : null}
               </section>
             ),
           },
@@ -952,14 +960,12 @@ async function Timeline({ detail, tz }: { detail: JobDetail; tz: string }) {
   );
 }
 
-/** The calculator, with the pool's gallons and type filled in. */
-function chemicalsHref(
-  pool: { approx_gallons?: number | null; pool_type?: string | null } | null | undefined,
-) {
+/** Chemical for this visit's pool: its gallons fill in and Submit saves to its log. */
+function chemicalsHref(pool: { id: string } | null | undefined, jobId: string) {
   const q = new URLSearchParams();
-  if (pool?.approx_gallons) q.set("gallons", String(pool.approx_gallons));
-  if (pool?.pool_type) q.set("pool", pool.pool_type);
-  return `/chemicals${q.size ? `?${q}` : ""}`;
+  if (pool) q.set("property", pool.id);
+  q.set("job", jobId);
+  return `/chemicals?${q}`;
 }
 
 /**
