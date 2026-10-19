@@ -135,11 +135,11 @@ public func fitWithin(_ width: Double, _ height: Double, _ maxEdge: Double) -> M
     let long = max(width, height)
     if long <= maxEdge || long == 0 { return nil }
     let scale = maxEdge / long
-    return MediaSize(width: jsMathRound(width * scale), height: jsMathRound(height * scale))
+    return MediaSize(width: ECMA.round(width * scale), height: ECMA.round(height * scale))
 }
 
 public func formatDuration(_ ms: Double?) -> String {
-    let total = Int(max(0, jsMathRound((ms ?? 0) / 1000)))
+    let total = Int(max(0, ECMA.round((ms ?? 0) / 1000)))
     let s = total % 60
     return "\(total / 60):\(s < 10 ? "0" : "")\(s)"
 }
@@ -147,7 +147,7 @@ public func formatDuration(_ ms: Double?) -> String {
 public func formatBytes(_ bytes: Int?) -> String {
     let b = bytes ?? 0
     if b < 1024 { return "\(b) B" }
-    if b < 1024 * 1024 { return "\(Int(jsMathRound(Double(b) / 1024))) KB" }
+    if b < 1024 * 1024 { return "\(Int(ECMA.round(Double(b) / 1024))) KB" }
     // toFixed(1): the nearest tenth of the exact value, ties up.
     let tenths = (b * 10 + 524_288) / 1_048_576
     return "\(tenths / 10).\(tenths % 10) MB"
@@ -257,7 +257,7 @@ private func validShape(_ s: JSONValue) -> MarkupShape? {
         else { return nil }
         return .circle(color: color, cx: cx, cy: cy, rx: rx, ry: ry)
     case "text":
-        let text = s["text"]?.string.map { String(utf16Prefix: jsTrim($0), Markup.textMax) } ?? ""
+        let text = s["text"]?.string.map { String(utf16Prefix: ECMA.trim($0), Markup.textMax) } ?? ""
         guard let x = unit(s["x"]), let y = unit(s["y"]), !text.isEmpty else { return nil }
         return .text(color: color, x: x, y: y, text: text)
     default:
@@ -271,7 +271,7 @@ public func parseMarkup(_ value: JSONValue?) -> Markup {
     return Markup(shapes: shapes.compactMap(validShape))
 }
 
-private func clampUnit(_ v: Double) -> Double { jsMathRound(min(max(v, 0), 1) * 10000) / 10000 }
+private func clampUnit(_ v: Double) -> Double { ECMA.round(min(max(v, 0), 1) * 10000) / 10000 }
 
 /// Build a shape from a drag gesture (start and end as fractions of the image).
 public func shapeFromDrag(_ type: MarkupGesture, _ color: MarkupColor, _ start: MarkupPoint, _ end: MarkupPoint)
@@ -323,39 +323,4 @@ public func shapeAtTap(_ type: MarkupGesture, _ color: MarkupColor, _ at: Markup
     let x1 = x - dx >= 0 ? x - dx : x + dx
     let y1 = y - dy >= 0 ? y - dy : y + dy
     return .arrow(color: color, x1: clampUnit(x1), y1: clampUnit(y1), x2: x, y2: y)
-}
-
-// MARK: - JavaScript number and string behavior
-
-/// JavaScript's `Math.round`: halves round up (toward +∞), not away from zero.
-func jsMathRound(_ x: Double) -> Double {
-    guard x.isFinite else { return x }
-    let down = x.rounded(.down)
-    return x - down >= 0.5 ? down + 1 : down
-}
-
-/// JavaScript's `String.prototype.trim`: its WhiteSpace and LineTerminator characters.
-func jsTrim(_ s: String) -> String {
-    func isSpace(_ u: Unicode.Scalar) -> Bool {
-        switch u.value {
-        case 0x09...0x0D, 0x20, 0xA0, 0x1680, 0x2000...0x200A, 0x2028, 0x2029, 0x202F, 0x205F, 0x3000, 0xFEFF:
-            return true
-        default: return false
-        }
-    }
-    let scalars = s.unicodeScalars
-    guard let start = scalars.firstIndex(where: { !isSpace($0) }),
-        let end = scalars.lastIndex(where: { !isSpace($0) })
-    else { return "" }
-    return String(scalars[start...end])
-}
-
-extension String {
-    /// The first `count` UTF-16 code units, like JavaScript's `slice(0, count)`. A surrogate
-    /// pair cut in half is dropped (JavaScript would keep a lone surrogate, which no Swift string holds).
-    init(utf16Prefix s: String, _ count: Int) {
-        var units = Array(s.utf16.prefix(count))
-        if let last = units.last, UTF16.isLeadSurrogate(last) { units.removeLast() }
-        self = String(decoding: units, as: UTF16.self)
-    }
 }

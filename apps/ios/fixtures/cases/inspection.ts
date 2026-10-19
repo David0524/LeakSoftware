@@ -1,0 +1,656 @@
+import {
+  CHECKLIST_SECTION_LABELS,
+  DIAGRAM_SHAPES,
+  calculate,
+  checklistTally,
+  componentApplies,
+  formatAddress,
+  formatSchedule,
+  groupJobs,
+  localDate,
+  nativeMapsUrl,
+  newJobRecords,
+  nextInstance,
+  normalizeTestData,
+  planComponents,
+  poolDiagram,
+  propertyLocation,
+  validateFinding,
+  validateNewJob,
+  validateTestData,
+  type ChecklistItemResult,
+  type ComponentType,
+  type DiagramShape,
+  type Job,
+  type JobComponent,
+  type JobType,
+  type MapPlace,
+  type NewJobDetails,
+  type NewJobInput,
+  type Property,
+  type TestData,
+  type TestFieldSchema,
+  type TestType,
+} from "@leakbook/core";
+import { rule, type ModuleCases } from "../case";
+
+// Row builders: the Swift row structs need every field TypeScript marks required.
+const type = (key: string, over: Partial<ComponentType> = {}): ComponentType => ({
+  id: key,
+  company_id: "c",
+  key,
+  name: key[0]!.toUpperCase() + key.slice(1),
+  allows_multiple: false,
+  default_count: 1,
+  applies_to: "pool",
+  methods: ["Visual"],
+  sort_order: 10,
+  active: true,
+  ...over,
+});
+
+type Place = Pick<Property, "has_pool" | "has_spa" | "address_line1"> & Partial<Property>;
+const prop = (over: Partial<Property> = {}): Place => ({
+  address_line1: "1 Main St",
+  has_pool: true,
+  has_spa: false,
+  ...over,
+});
+
+const types = [
+  type("skimmer", { allows_multiple: true, default_count: 2, sort_order: 10 }),
+  type("return", { allows_multiple: true, default_count: 4, sort_order: 20 }),
+  type("spa", { applies_to: "spa", sort_order: 70 }),
+  type("light", { allows_multiple: true, default_count: 1, applies_to: "both", sort_order: 40 }),
+  type("retired", { active: false }),
+  type("gone", { deleted_at: "2026-10-01T00:00:00Z" }),
+  type("vinyl_liner", { applies_to_pool_type: "vinyl", sort_order: 30 }),
+  type("filter_clean", { job_type: "maintenance", on_schedule: true, sort_order: 5 }),
+  type("skim", { job_type: "maintenance", sort_order: 5 }),
+  type("brush", { job_type: "maintenance", sort_order: 5, default_count: 3 }),
+  type("drain", { allows_multiple: true, default_count: 0, sort_order: 15 }),
+  type("tie_a", { sort_order: 25 }),
+  type("tie_b", { sort_order: 25, deleted_at: "" }),
+];
+
+const comp = (id: string, typeId = "t", n = 1, over: Partial<JobComponent> = {}): JobComponent => ({
+  id,
+  company_id: "c",
+  job_id: "j",
+  component_type_id: typeId,
+  instance_number: n,
+  label: id,
+  sort_order: 0,
+  ...over,
+});
+const result = (id: string, over: Partial<ChecklistItemResult>): ChecklistItemResult => ({
+  id: `r-${id}`,
+  company_id: "c",
+  job_id: "j",
+  job_component_id: id,
+  status: "inspected",
+  ...over,
+});
+
+const testType = (over: Partial<TestType>): TestType => ({
+  id: "tt",
+  company_id: "c",
+  key: "k",
+  name: "Test",
+  field_schema: { fields: [] },
+  schema_version: 1,
+  calculator: null,
+  result_options: ["pass", "fail", "inconclusive"],
+  sort_order: 1,
+  active: true,
+  ...over,
+});
+const pressure = (options?: Record<string, number>) =>
+  testType({
+    calculator: "pressure_drop",
+    field_schema: { fields: [], ...(options ? { options } : {}) },
+  });
+const bucket = (options?: Record<string, number>) =>
+  testType({
+    calculator: "bucket_evaporation",
+    field_schema: { fields: [], ...(options ? { options } : {}) },
+  });
+const bucketBase = { pool_start_in: 10, bucket_start_in: 10, duration_hours: 24 };
+
+const schema: TestFieldSchema = {
+  fields: [
+    { key: "line_name", label: "Line", type: "text", required: true },
+    { key: "start_psi", label: "Start pressure", type: "number", unit: "PSI", required: true },
+    { key: "observation", label: "Result", type: "select", options: ["No draw", "Leak", "5"] },
+    { key: "notes", label: "Notes", type: "textarea" },
+    { key: "minutes", label: "Minutes", type: "number" },
+  ],
+};
+
+const blank: NewJobInput = {
+  customerName: "",
+  customerPhone: "",
+  customerEmail: "",
+  addressLine1: "",
+  city: "",
+  state: "",
+  postalCode: "",
+  scheduleDate: "",
+  scheduleTime: "",
+};
+const filled: NewJobInput = { ...blank, customerName: "M", addressLine1: "1 St" };
+
+// Timing as JSON: "now" carries an ISO string, turned into a Date here.
+type Timing =
+  | { kind: "now"; at: string }
+  | { kind: "scheduled"; date: string; time: string; timeZone: string }
+  | { kind: "later" };
+type Details = Omit<NewJobDetails, "timing"> & { timing: Timing };
+const details = (over: Partial<Details> = {}): Details => ({
+  poolType: "vinyl",
+  hasSpa: true,
+  accessNotes: " gate 4821 ",
+  timing: { kind: "now", at: "2026-10-12T17:00:00Z" },
+  assignedUserId: "u1",
+  ...over,
+});
+
+const TZ = "America/Phoenix";
+const NOW = "2026-10-12T17:00:00Z"; // 10:00 AM in Phoenix
+const job = (id: string, over: Partial<Job>): Job => ({
+  id,
+  company_id: "c",
+  type: "detection",
+  property_id: "p",
+  status: "scheduled",
+  ...over,
+});
+const jobs = [
+  job("late-today", { scheduled_start: "2026-10-13T05:30:00Z" }),
+  job("tomorrow", { scheduled_start: "2026-10-13T16:00:00Z" }),
+  job("tomorrow-early", { scheduled_start: "2026-10-13T14:00:00.000Z" }),
+  job("running", { status: "in_progress", scheduled_start: "2026-10-01T16:00:00Z" }),
+  job("running-undated", { status: "in_progress", started_at: "2026-10-12T15:00:00+00:00" }),
+  job("no-date", { status: "unscheduled", created_at: "2026-10-10T00:00:00Z" }),
+  job("no-date-newer", { status: "unscheduled", created_at: "2026-10-11T00:00:00Z" }),
+  job("no-date-blank", { status: "unscheduled" }),
+  job("scheduled-undated", { created_at: "2026-10-09T00:00:00Z" }),
+  job("paid", { status: "paid", scheduled_start: "2026-10-05T16:00:00Z" }),
+  job("old", { status: "paid", scheduled_start: "2026-06-01T16:00:00Z" }),
+  job("canceled-recent", { status: "canceled", created_at: "2026-10-11T12:00:00Z" }),
+  job("done-started", { status: "done", started_at: "2026-10-08T12:00:00Z" }),
+  job("gone", { deleted_at: "2026-10-11T00:00:00Z" }),
+  job("missed", { scheduled_start: "2026-10-09T16:00:00Z" }),
+  job("missed-long-ago", { scheduled_start: "2026-01-09T16:00:00Z" }),
+  job("cutoff", { status: "paid", started_at: "2026-09-12T17:00:00Z" }),
+  job("before-cutoff", { status: "paid", started_at: "2026-09-12T16:59:59.999Z" }),
+];
+
+const POOL = { lat: 33.44962, lng: -111.94637 };
+
+export const inspection: ModuleCases = {
+  CHECKLIST_SECTION_LABELS: rule(() => CHECKLIST_SECTION_LABELS, [[]]),
+  DIAGRAM_SHAPES: rule(() => DIAGRAM_SHAPES, [[]]),
+
+  componentApplies: rule(
+    (t: ComponentType, p: Place) => componentApplies(t, p),
+    [
+      [type("a", { applies_to: "spa" }), prop()],
+      [type("a", { applies_to: "spa" }), prop({ has_spa: true })],
+      [type("a", { applies_to: "pool" }), prop({ has_pool: false, has_spa: true })],
+      [type("a", { applies_to: "both" }), prop({ has_pool: false, has_spa: false })],
+      [type("a", { applies_to: "both" }), prop({ has_pool: false, has_spa: true })],
+      [type("v", { applies_to_pool_type: "vinyl" }), prop({ pool_type: "gunite_plaster" })],
+      [type("v", { applies_to_pool_type: "vinyl" }), prop({ pool_type: "vinyl" })],
+      [type("v", { applies_to_pool_type: "vinyl" }), prop({ pool_type: null })],
+      [type("v", { applies_to_pool_type: "vinyl" }), prop()],
+      [type("v", { applies_to_pool_type: "" }), prop({ pool_type: "fiberglass" })],
+      [
+        type("v", { applies_to_pool_type: "vinyl", applies_to: "spa" }),
+        prop({ pool_type: "vinyl" }),
+      ],
+    ],
+  ),
+
+  planComponents: rule(
+    (ts: ComponentType[], p: Place, jobType?: JobType) => planComponents(ts, p, jobType),
+    [
+      [types, prop()],
+      [types, prop({ has_spa: true })],
+      [types, prop({ has_spa: true, pool_type: "vinyl" })],
+      [types, prop({ pool_type: "fiberglass" })],
+      [types, prop({ has_pool: false, has_spa: true })],
+      [types, prop(), "maintenance"],
+      [types, prop(), "repair"],
+      [types, prop(), "detection"],
+      [[], prop()],
+    ],
+  ),
+
+  nextInstance: rule(
+    (t: ComponentType, existing: JobComponent[]) => nextInstance(t, existing),
+    [
+      [types[1]!, [3, 1, 4].map((n) => comp(`r${n}`, "return", n))],
+      [types[1]!, []],
+      [types[0]!, [comp("x", "other", 7)]],
+      [types[2]!, [comp("s1", "spa", 1)]],
+      [
+        types[1]!,
+        [comp("r9", "return", 9, { deleted_at: "2026-10-01T00:00:00Z" }), comp("r2", "return", 2)],
+      ],
+      [types[1]!, [comp("r9", "return", 9, { deleted_at: "" })]],
+      [type("single", { allows_multiple: true, default_count: 1 }), []],
+      [type("single", { allows_multiple: true, default_count: 1 }), [comp("a", "single", 1)]],
+    ],
+  ),
+
+  checklistTally: rule(
+    (components: JobComponent[], results: ChecklistItemResult[]) =>
+      checklistTally(components, results),
+    [
+      [
+        ["a", "b", "c", "d", "e"].map((id) => comp(id)),
+        [
+          result("a", { outcome: "ok" }),
+          result("b", { outcome: "leaking" }),
+          result("c", { outcome: "attention" }),
+          result("d", { status: "excluded" }),
+        ],
+      ],
+      [[], []],
+      [
+        ["a", "b", "c"].map((id) => comp(id)),
+        [
+          result("a", { outcome: null }),
+          result("b", { status: "pending", outcome: "leaking" }),
+          result("c", { outcome: "leaking", deleted_at: "2026-10-01T00:00:00Z" }),
+        ],
+      ],
+      [
+        [
+          comp("a"),
+          comp("b", "t", 1, { deleted_at: "2026-10-01T00:00:00Z" }),
+          comp("c", "t", 1, { deleted_at: "" }),
+        ],
+        [
+          result("a", { outcome: "ok" }),
+          result("a", { outcome: "leaking" }),
+          result("b", { outcome: "leaking" }),
+          result("c", { status: "excluded", deleted_at: "" }),
+        ],
+      ],
+    ],
+  ),
+
+  // The test types' calculators (pressure drop and bucket evaporation), with vitest's inputs.
+  calculate: rule(
+    (t: TestType, data: TestData) => calculate(t, data),
+    [
+      [pressure(), { start_psi: 20, end_psi: 20, duration_min: 15 }],
+      [pressure(), { start_psi: "20", end_psi: "12", duration_min: "15" }],
+      [pressure({ pass_max_drop_psi: 0.5 }), { start_psi: 20, end_psi: 19.5, duration_min: 15 }],
+      [pressure({ pass_max_drop_psi: 0.5 }), { start_psi: 20, end_psi: 19.4, duration_min: 15 }],
+      [pressure({ min_duration_min: 15 }), { start_psi: 20, end_psi: 20, duration_min: 5 }],
+      [pressure({ min_duration_min: 15 }), { start_psi: 20, end_psi: 20 }],
+      [pressure({ min_duration_min: 15 }), { start_psi: 20, end_psi: 25, duration_min: 5 }],
+      [pressure(), { start_psi: 20, end_psi: 21, duration_min: 15 }],
+      [pressure(), { start_psi: 20, end_psi: "" }],
+      [pressure(), { start_psi: 20.3, end_psi: 20.1 }],
+      [pressure(), { start_psi: 20, end_psi: 19.999 }],
+      [pressure(), { start_psi: 20, end_psi: 20.004 }],
+      [pressure(), { start_psi: 20, end_psi: 19.995, duration_min: 7 }],
+      [pressure(), { start_psi: 20, end_psi: 12, duration_min: 0 }],
+      [pressure(), { start_psi: 20, end_psi: 12, duration_min: -5 }],
+      [pressure(), { start_psi: 20, end_psi: 12, duration_min: 2.5 }],
+      [pressure(), { start_psi: " 0x14 ", end_psi: "1e1", duration_min: ".5" }],
+      [pressure(), { start_psi: "abc", end_psi: 12 }],
+      [pressure(), { start_psi: "Infinity", end_psi: 12 }],
+      [pressure(), { start_psi: "1e21", end_psi: 0, duration_min: 3 }],
+      [pressure(), { start_psi: 1e21, end_psi: 1, duration_min: 3 }],
+      [pressure(), { start_psi: " 20﻿", end_psi: "18." }],
+      [pressure(), { start_psi: "-0x10", end_psi: 0 }],
+      [pressure(), { start_psi: "0b101", end_psi: "0o3" }],
+      [pressure(), { start_psi: "+5", end_psi: "-5" }],
+      [pressure(), { start_psi: null, end_psi: 5 }],
+      [pressure(), {}],
+      [bucket(), { ...bucketBase, pool_end_in: 9.75, bucket_end_in: 9.75 }],
+      [bucket(), { ...bucketBase, pool_end_in: 9.25, bucket_end_in: 9.94 }],
+      [
+        bucket({ fail_over_in_per_day: 0.125 }),
+        { ...bucketBase, duration_hours: 12, pool_end_in: 9.9, bucket_end_in: 9.95 },
+      ],
+      [bucket(), { ...bucketBase, pool_end_in: 9, bucket_end_in: 9, duration_hours: 0 }],
+      [bucket(), { ...bucketBase, pool_end_in: 9, bucket_end_in: 9, duration_hours: -1 }],
+      [bucket(), { ...bucketBase, pool_end_in: 9.9, bucket_end_in: 9.5 }],
+      [bucket(), { ...bucketBase, pool_end_in: 9.5, bucket_end_in: 9.75, duration_hours: 36 }],
+      [bucket(), { ...bucketBase, pool_end_in: 9.7, bucket_end_in: 9.95, duration_hours: 7 }],
+      [bucket(), { ...bucketBase, pool_end_in: "", bucket_end_in: 9 }],
+      [bucket(), { ...bucketBase, pool_end_in: 9.0005, bucket_end_in: 10, duration_hours: 3 }],
+      [testType({}), { start_psi: 20, end_psi: 10 }],
+    ],
+  ),
+
+  validateTestData: rule(
+    (s: TestFieldSchema, data: TestData) => validateTestData(s, data),
+    [
+      [schema, { line_name: "", start_psi: "abc", observation: "Maybe" }],
+      [schema, { line_name: "Return 1", start_psi: "20" }],
+      [schema, {}],
+      [schema, { line_name: "  ", start_psi: null, observation: "", minutes: " " }],
+      [schema, { line_name: "x", start_psi: "-1", minutes: -0.5 }],
+      [schema, { line_name: "x", start_psi: 0, observation: 5 }],
+      [schema, { line_name: 7, start_psi: "-0", observation: "Leak", minutes: "1e2" }],
+      [schema, { line_name: "x", start_psi: "Infinity" }],
+      [schema, { line_name: "x", start_psi: "1,5" }],
+      [{ fields: [{ key: "a", label: "ÀBC Ünit", type: "text", required: true }] }, {}],
+      [{ fields: [{ key: "s", label: "S", type: "select" }] }, { s: "anything" }],
+    ],
+  ),
+
+  normalizeTestData: rule(
+    (s: TestFieldSchema, data: TestData) => normalizeTestData(s, data),
+    [
+      [schema, { line_name: " Return 1 ", start_psi: "20.5", observation: "" }],
+      [schema, {}],
+      [schema, { line_name: 12.5, start_psi: "abc", observation: 5, notes: " \n ", minutes: 0 }],
+      [schema, { line_name: "　x ", start_psi: " 7 ", notes: "a\u0085", minutes: "0.1" }],
+      [schema, { line_name: 1e21, start_psi: 1e-7, notes: 0.000001, minutes: 100 }],
+    ],
+  ),
+
+  validateFinding: rule(
+    (f: { title: string; severity_key: string }) => validateFinding(f),
+    [
+      [{ title: " ", severity_key: "" }],
+      [{ title: "Return 3 line break", severity_key: "major" }],
+      [{ title: "", severity_key: "minor" }],
+      [{ title: "x", severity_key: "" }],
+      [{ title: "﻿ ", severity_key: " " }],
+    ],
+  ),
+
+  // An unknown shape (from an older or newer app) falls back to the rectangle.
+  poolDiagram: rule(
+    (shape: DiagramShape | null, hasSpa: boolean) => poolDiagram(shape, hasSpa),
+    [
+      ["rectangle", false],
+      ["oval", true],
+      ["kidney", true],
+      ["l_shape", false],
+      ["freeform", false],
+      [null, false],
+      [null, true],
+      ["triangle" as DiagramShape, true],
+    ],
+  ),
+
+  validateNewJob: rule(
+    (input: NewJobInput) => validateNewJob(input),
+    [
+      [blank],
+      [{ ...blank, customerId: "c", propertyId: "p" }],
+      [{ ...blank, customerId: "", propertyId: "" }],
+      [
+        {
+          ...filled,
+          customerEmail: "nope",
+          scheduleDate: "10/12/2026",
+          scheduleTime: "9am",
+        },
+      ],
+      [{ ...filled, customerEmail: " a@b.co " }],
+      [{ ...filled, customerEmail: "a@b" }],
+      [{ ...filled, customerEmail: "a@.b" }],
+      [{ ...filled, customerEmail: "a@b." }],
+      [{ ...filled, customerEmail: "a@b.c.d" }],
+      [{ ...filled, customerEmail: "a b@c.d" }],
+      [{ ...filled, customerEmail: "a@@c.d" }],
+      [{ ...filled, customerEmail: "nope", customerId: "c" }],
+      [{ ...filled, customerName: "  " }],
+      [{ ...filled, addressLine1: "\t" }],
+      [{ ...filled, scheduleDate: "2026-10-14", scheduleTime: "09:30" }],
+      [{ ...filled, scheduleDate: "2026-10-14", scheduleTime: "9:30" }],
+      [{ ...filled, scheduleDate: "2026-10-14", scheduleTime: "23:59" }],
+      [{ ...filled, scheduleDate: "2026-10-14", scheduleTime: "24:00" }],
+      [{ ...filled, scheduleDate: "2026-10-14", scheduleTime: "19:60" }],
+      [{ ...filled, scheduleDate: "2026-10-14", scheduleTime: "123:00" }],
+      [{ ...filled, scheduleDate: "2026-10-14", scheduleTime: "09:30\n" }],
+      [{ ...filled, scheduleDate: "2026-10-14\n" }],
+      [{ ...filled, scheduleDate: "2026-1-14" }],
+      [{ ...filled, scheduleDate: "２０２６-10-14" }],
+      [{ ...filled, scheduleTime: "09:30" }],
+      [{ ...filled, scheduleTime: "9am" }],
+    ],
+  ),
+
+  formatAddress: rule(
+    (p: Place) => formatAddress(p),
+    [
+      [prop({ address_line1: "1423 Palm Ct", city: "Phoenix", state: "AZ", postal_code: "85016" })],
+      [prop({ address_line1: "1 Main", city: null, state: null, postal_code: null })],
+      [prop({ address_line1: "1 Main", city: "Mesa" })],
+      [prop({ address_line1: "1 Main", state: "AZ" })],
+      [prop({ address_line1: "1 Main", postal_code: "85016" })],
+      [prop({ address_line1: "", city: "Mesa", state: "AZ" })],
+      [prop({ address_line1: "", city: "", state: "", postal_code: "" })],
+    ],
+  ),
+
+  // newJobRecords makes no ids or clock reads: "now" timing carries its instant, so every
+  // field is compared.
+  newJobRecords: rule(
+    (input: NewJobInput, d: Details) =>
+      newJobRecords(input, {
+        ...d,
+        timing: d.timing.kind === "now" ? { kind: "now", at: new Date(d.timing.at) } : d.timing,
+      }),
+    [
+      [{ ...blank, customerName: " Maria ", addressLine1: "1423 Palm Ct", state: "az" }, details()],
+      [
+        { ...blank, customerName: "M", addressLine1: "1 St", customerId: "c", propertyId: "p" },
+        details({
+          poolType: null,
+          hasSpa: false,
+          accessNotes: "",
+          timing: { kind: "scheduled", date: "2026-10-14", time: "09:00", timeZone: TZ },
+          assignedUserId: null,
+        }),
+      ],
+      [
+        {
+          ...blank,
+          customerName: "M",
+          customerPhone: " 602 ",
+          customerEmail: " a@b.co ",
+          addressLine1: " 1 St ",
+          city: " Mesa ",
+          state: " straße ",
+          postalCode: "  ",
+          customerId: "",
+        },
+        details({ timing: { kind: "later" }, jobType: "maintenance" }),
+      ],
+      [
+        filled,
+        details({
+          timing: { kind: "scheduled", date: "2026-07-01", time: "", timeZone: "America/New_York" },
+          jobType: "repair",
+        }),
+      ],
+      [
+        filled,
+        details({
+          timing: {
+            kind: "scheduled",
+            date: "2026-03-08",
+            time: "02:30",
+            timeZone: "America/New_York",
+          },
+        }),
+      ],
+      [
+        filled,
+        details({
+          timing: {
+            kind: "scheduled",
+            date: "2026-11-01",
+            time: "01:30",
+            timeZone: "America/New_York",
+          },
+        }),
+      ],
+      [
+        filled,
+        details({
+          timing: {
+            kind: "scheduled",
+            date: "2026-03-08",
+            time: "12:00",
+            timeZone: "America/New_York",
+          },
+        }),
+      ],
+      [
+        filled,
+        details({
+          timing: {
+            kind: "scheduled",
+            date: "2026-12-31",
+            time: "23:30",
+            timeZone: "Asia/Kolkata",
+          },
+        }),
+      ],
+      [
+        filled,
+        details({
+          timing: { kind: "scheduled", date: "2026-13-40", time: "25:70", timeZone: "UTC" },
+        }),
+      ],
+      [
+        filled,
+        details({
+          timing: { kind: "scheduled", date: "0026-01-01", time: "09:00", timeZone: "UTC" },
+        }),
+      ],
+      [
+        filled,
+        details({
+          timing: { kind: "scheduled", date: "2026-10", time: "09:00", timeZone: "UTC" },
+        }),
+      ],
+      [
+        filled,
+        details({
+          timing: { kind: "scheduled", date: "2026-10-14", time: "09:00", timeZone: "Mars/Base" },
+        }),
+      ],
+      [filled, details({ timing: { kind: "now", at: "2026-10-12T17:00:00.123+02:00" } })],
+    ],
+  ),
+
+  localDate: rule(
+    (instant: string, tz: string) => localDate(new Date(instant), tz),
+    [
+      ["2026-10-13T05:30:00Z", TZ],
+      ["2026-10-13T07:00:00Z", TZ],
+      ["2026-10-13T06:59:59.999Z", TZ],
+      ["2026-03-08T04:59:00Z", "America/New_York"],
+      ["2026-12-31T18:30:00Z", "Asia/Kolkata"],
+      ["2026-12-31T18:29:00Z", "Asia/Kolkata"],
+      ["2026-01-01T00:00:00Z", "Pacific/Kiritimati"],
+      ["1969-12-31T23:59:59Z", "UTC"],
+      ["2026-10-13T05:30:00Z", "Not/AZone"],
+      ["not a date", TZ],
+    ],
+  ),
+
+  groupJobs: rule(
+    (js: Job[], now: string, tz: string) => {
+      const g = groupJobs(js, new Date(now), tz);
+      const ids = (l: Job[]) => l.map((j) => j.id);
+      return {
+        today: ids(g.today),
+        upcoming: ids(g.upcoming),
+        unscheduled: ids(g.unscheduled),
+        recent: ids(g.recent),
+      };
+    },
+    [
+      [jobs, NOW, TZ],
+      [jobs, "2026-10-13T06:59:00Z", TZ],
+      [jobs, NOW, "America/New_York"],
+      [jobs, NOW, "Asia/Tokyo"],
+      [[], NOW, TZ],
+      // Unscheduled jobs sort by created_at with localeCompare, whatever its format.
+      [
+        [
+          "2026-10-10T00:00:00Z",
+          "2026-10-10T00:00:00.000Z",
+          "2026-10-10 00:00:00+00",
+          "2026-10-10T00:00:00+00:00",
+          "2026-10-09T23:59:59Z",
+          "",
+          "a",
+          "B",
+        ].map((created_at, i) => job(`u${i}`, { status: "unscheduled", created_at })),
+        NOW,
+        TZ,
+      ],
+      [[job("bad", { scheduled_start: "not a date" })], NOW, TZ],
+      [[job("bad-paid", { status: "paid", scheduled_start: "not a date" })], NOW, TZ],
+      [jobs, NOW, "Nowhere/Zone"],
+    ],
+  ),
+
+  formatSchedule: rule(
+    (start: string | null, now: string, tz: string) => formatSchedule(start, new Date(now), tz),
+    [
+      ["2026-10-12T16:00:00Z", NOW, TZ],
+      ["2026-10-14T16:00:00Z", NOW, TZ],
+      [null, NOW, TZ],
+      ["", NOW, TZ],
+      ["2026-10-12T07:00:00Z", NOW, TZ],
+      ["2026-10-12T19:05:00Z", NOW, TZ],
+      ["2026-10-13T06:59:00Z", NOW, TZ],
+      ["2026-10-13T07:00:00Z", NOW, TZ],
+      ["2027-01-01T05:00:00Z", NOW, "America/New_York"],
+      ["2026-02-28T23:45:30.500Z", NOW, "Asia/Kolkata"],
+      ["2026-05-03T12:00:00+05:30", NOW, "UTC"],
+      ["2026-06-07T00:00:00Z", NOW, "Europe/London"],
+      ["2026-08-20T21:30:00Z", NOW, "Australia/Sydney"],
+      ["2026-09-09T09:09:00Z", NOW, "Pacific/Honolulu"],
+      ["2026-04-15", NOW, "UTC"],
+      ["2026-10-14T16:00:00Z", NOW, "Bad/Zone"],
+      ["garbage", NOW, TZ],
+    ],
+  ),
+
+  propertyLocation: rule(
+    (p: Place | null) => propertyLocation(p),
+    [
+      [prop({ latitude: 33.44962, longitude: -111.94637 })],
+      [prop({ latitude: 0, longitude: 0 })],
+      [prop({ latitude: 33.4, longitude: null })],
+      [prop({ latitude: null, longitude: -111.9 })],
+      [prop()],
+      [null],
+    ],
+  ),
+
+  nativeMapsUrl: rule(
+    (p: MapPlace, os: string) => nativeMapsUrl(p, os),
+    [
+      [{ address: "455 N Galvin Pkwy, Phoenix, AZ 85008", location: POOL }, "ios"],
+      [{ address: "455 N Galvin Pkwy, Phoenix, AZ 85008", location: POOL }, "android"],
+      [{ address: "455 N Galvin Pkwy, Phoenix, AZ 85008", location: POOL }, "web"],
+      [{ address: "1 E Main St, Mesa" }, "ios"],
+      [{ address: "1 E Main St, Mesa" }, "android"],
+      [{ address: "1 E Main St, Mesa", location: null }, "web"],
+      [{ address: "Café #5 & Co. (rear) ~'!*", location: { lat: 1e-7, lng: 100 } }, "ios"],
+      [{ address: "Café #5 & Co. (rear) ~'!*", location: { lat: 1e-7, lng: 100 } }, "android"],
+      [{ address: "Ünïcode 😀 / ? = +", location: { lat: -0.5, lng: 1e21 } }, "web"],
+      [{ address: "", location: { lat: 0, lng: -0 } }, "macos"],
+    ],
+  ),
+};

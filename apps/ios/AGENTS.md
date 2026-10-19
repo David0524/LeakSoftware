@@ -22,6 +22,10 @@ is still the shipping app and keeps getting fixes.
   `xtool sdk install <Xcode.xip>` (about 45 minutes, 6.9 GB). `Xcode_27.1.xip` is in the owner's
   Google Drive (Sundeck folder); the Drive connector can't download 2 GB, so the owner shares it
   by link for a few minutes and turns the link off again (Apple's license).
+- Rules from `packages/core` are ported to `Sources/SundeckCore` and must match it: add inputs
+  in `fixtures/cases/<module>.ts`, run `pnpm --filter @leakbook/ios fixtures`, and check them in
+  `Tests/SundeckCoreTests` with `checkRule`. `pnpm test` fails when the fixtures are stale, so a
+  rule changed in TypeScript fails the Swift tests until the port follows.
 - xtool crashes without a terminal; the scripts wrap it in `script -qec … /dev/null`.
 
 ## Rules

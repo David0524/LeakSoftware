@@ -31,7 +31,7 @@ public func enabledSignaturePurposes(_ settings: JSONValue?) -> [SignaturePurpos
         case let value?: value
         }
     return SignaturePurpose.allCases
-        .filter { jsTruthy(on[$0.rawValue]) && $0 != .quoteAcceptance }
+        .filter { ECMA.truthy(on[$0.rawValue]) && $0 != .quoteAcceptance }
         .map { SignaturePurposeOption(value: $0, label: $0.label) }
 }
 
@@ -61,7 +61,7 @@ public let minInk = 40.0
 
 /// SVG path data for one stroke (a dot when it has a single point).
 public func strokePath(_ stroke: SignatureStroke) -> String {
-    func r(_ n: Double) -> String { jsNumberString(jsMathRound(n * 10) / 10) }
+    func r(_ n: Double) -> String { ECMA.numberString(ECMA.round(n * 10) / 10) }
     guard let first = stroke.first else { return "" }
     let start = "M\(r(first.x)) \(r(first.y))"
     if stroke.count == 1 { return start + "l0.1 0" }
@@ -85,11 +85,11 @@ public func signatureSvg(_ strokes: [SignatureStroke], _ strokeWidth: Double = 3
     let minY = ys.min()! - pad
     let w = xs.max()! + pad - minX
     let h = ys.max()! + pad - minY
-    let view = [minX, minY, w, h].map { jsNumberString(jsMathRound($0 * 10) / 10) }.joined(separator: " ")
+    let view = [minX, minY, w, h].map { ECMA.numberString(ECMA.round($0 * 10) / 10) }.joined(separator: " ")
     let paths = strokes.filter { !$0.isEmpty }.map { "<path d=\"\(strokePath($0))\"/>" }.joined()
     return
-        "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"\(view)\" width=\"\(jsNumberString(jsMathRound(w)))\" height=\"\(jsNumberString(jsMathRound(h)))\">"
-        + "<g fill=\"none\" stroke=\"#111111\" stroke-width=\"\(jsNumberString(strokeWidth))\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\(paths)</g></svg>"
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"\(view)\" width=\"\(ECMA.numberString(ECMA.round(w)))\" height=\"\(ECMA.numberString(ECMA.round(h)))\">"
+        + "<g fill=\"none\" stroke=\"#111111\" stroke-width=\"\(ECMA.numberString(strokeWidth))\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\(paths)</g></svg>"
 }
 
 /// What the customer is agreeing to, shown above the box they sign in.
@@ -101,49 +101,4 @@ public func signatureStatement(_ purpose: SignaturePurpose, _ shop: String, _ ad
     case .quoteAcceptance: return "I accept \(shop)’s quote for the work\(at)."
     case .completion: return "I confirm \(shop) finished the work\(at) today."
     }
-}
-
-// MARK: - JavaScript values
-
-/// JavaScript truthiness of a JSON value (missing counts as undefined).
-func jsTruthy(_ value: JSONValue?) -> Bool {
-    switch value {
-    case nil, .null?: false
-    case .bool(let b)?: b
-    case .number(let n)?: n != 0 && !n.isNaN
-    case .string(let s)?: !s.isEmpty
-    case .array?, .object?: true
-    }
-}
-
-/// JavaScript's `String(n)` for a number (ECMAScript Number::toString): shortest round-trip
-/// digits, plain notation from 1e-6 up to 1e21, exponent notation outside it.
-func jsNumberString(_ x: Double) -> String {
-    if x.isNaN { return "NaN" }
-    if x == 0 { return "0" }
-    if x < 0 { return "-" + jsNumberString(-x) }
-    if x.isInfinite { return "Infinity" }
-    // Swift's description is also the shortest round-trip form; read its digits and exponent.
-    let text = x.description
-    let parts = text.split(separator: "e", maxSplits: 1)
-    let exponent = parts.count > 1 ? Int(parts[1])! : 0
-    let mantissa = parts[0].split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false)
-    let whole = String(mantissa[0])
-    var digits = whole + (mantissa.count > 1 ? String(mantissa[1]) : "")
-    var n = whole.count + exponent  // decimal point position, as in value = 0.digits × 10^n
-    while digits.first == "0" {
-        digits.removeFirst()
-        n -= 1
-    }
-    while digits.last == "0" { digits.removeLast() }
-    let k = digits.count
-    if k <= n && n <= 21 { return digits + String(repeating: "0", count: n - k) }
-    if 0 < n && n <= 21 {
-        return String(digits.prefix(n)) + "." + String(digits.dropFirst(n))
-    }
-    if -6 < n && n <= 0 { return "0." + String(repeating: "0", count: -n) + digits }
-    let e = n - 1
-    let sign = e < 0 ? "-" : "+"
-    let head = k == 1 ? digits : String(digits.prefix(1)) + "." + String(digits.dropFirst())
-    return "\(head)e\(sign)\(abs(e))"
 }

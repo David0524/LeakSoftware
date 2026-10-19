@@ -1,0 +1,7611 @@
+{
+  "CHECKLIST_SECTION_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "visual": "Visual Leak Inspection",
+        "plumbing": "Plumbing Static Test",
+        "bond_beam": "Bond Beam",
+        "other": "Other",
+        "service": "Service"
+      }
+    }
+  ],
+  "DIAGRAM_SHAPES": [
+    {
+      "args": [],
+      "result": [
+        {
+          "key": "rectangle",
+          "label": "Rectangle"
+        },
+        {
+          "key": "oval",
+          "label": "Oval"
+        },
+        {
+          "key": "kidney",
+          "label": "Kidney"
+        },
+        {
+          "key": "l_shape",
+          "label": "L-shape"
+        },
+        {
+          "key": "freeform",
+          "label": "Freeform"
+        }
+      ]
+    }
+  ],
+  "componentApplies": [
+    {
+      "args": [
+        {
+          "id": "a",
+          "company_id": "c",
+          "key": "a",
+          "name": "A",
+          "allows_multiple": false,
+          "default_count": 1,
+          "applies_to": "spa",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true
+        },
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "company_id": "c",
+          "key": "a",
+          "name": "A",
+          "allows_multiple": false,
+          "default_count": 1,
+          "applies_to": "spa",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true
+        },
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": true
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "company_id": "c",
+          "key": "a",
+          "name": "A",
+          "allows_multiple": false,
+          "default_count": 1,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true
+        },
+        {
+          "address_line1": "1 Main St",
+          "has_pool": false,
+          "has_spa": true
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "company_id": "c",
+          "key": "a",
+          "name": "A",
+          "allows_multiple": false,
+          "default_count": 1,
+          "applies_to": "both",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true
+        },
+        {
+          "address_line1": "1 Main St",
+          "has_pool": false,
+          "has_spa": false
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "company_id": "c",
+          "key": "a",
+          "name": "A",
+          "allows_multiple": false,
+          "default_count": 1,
+          "applies_to": "both",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true
+        },
+        {
+          "address_line1": "1 Main St",
+          "has_pool": false,
+          "has_spa": true
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "id": "v",
+          "company_id": "c",
+          "key": "v",
+          "name": "V",
+          "allows_multiple": false,
+          "default_count": 1,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true,
+          "applies_to_pool_type": "vinyl"
+        },
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false,
+          "pool_type": "gunite_plaster"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "id": "v",
+          "company_id": "c",
+          "key": "v",
+          "name": "V",
+          "allows_multiple": false,
+          "default_count": 1,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true,
+          "applies_to_pool_type": "vinyl"
+        },
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false,
+          "pool_type": "vinyl"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "id": "v",
+          "company_id": "c",
+          "key": "v",
+          "name": "V",
+          "allows_multiple": false,
+          "default_count": 1,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true,
+          "applies_to_pool_type": "vinyl"
+        },
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false,
+          "pool_type": null
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "id": "v",
+          "company_id": "c",
+          "key": "v",
+          "name": "V",
+          "allows_multiple": false,
+          "default_count": 1,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true,
+          "applies_to_pool_type": "vinyl"
+        },
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "id": "v",
+          "company_id": "c",
+          "key": "v",
+          "name": "V",
+          "allows_multiple": false,
+          "default_count": 1,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true,
+          "applies_to_pool_type": ""
+        },
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false,
+          "pool_type": "fiberglass"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "id": "v",
+          "company_id": "c",
+          "key": "v",
+          "name": "V",
+          "allows_multiple": false,
+          "default_count": 1,
+          "applies_to": "spa",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true,
+          "applies_to_pool_type": "vinyl"
+        },
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false,
+          "pool_type": "vinyl"
+        }
+      ],
+      "result": false
+    }
+  ],
+  "planComponents": [
+    {
+      "args": [
+        [
+          {
+            "id": "skimmer",
+            "company_id": "c",
+            "key": "skimmer",
+            "name": "Skimmer",
+            "allows_multiple": true,
+            "default_count": 2,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true
+          },
+          {
+            "id": "return",
+            "company_id": "c",
+            "key": "return",
+            "name": "Return",
+            "allows_multiple": true,
+            "default_count": 4,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 20,
+            "active": true
+          },
+          {
+            "id": "spa",
+            "company_id": "c",
+            "key": "spa",
+            "name": "Spa",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "spa",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 70,
+            "active": true
+          },
+          {
+            "id": "light",
+            "company_id": "c",
+            "key": "light",
+            "name": "Light",
+            "allows_multiple": true,
+            "default_count": 1,
+            "applies_to": "both",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 40,
+            "active": true
+          },
+          {
+            "id": "retired",
+            "company_id": "c",
+            "key": "retired",
+            "name": "Retired",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": false
+          },
+          {
+            "id": "gone",
+            "company_id": "c",
+            "key": "gone",
+            "name": "Gone",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true,
+            "deleted_at": "2026-10-01T00:00:00Z"
+          },
+          {
+            "id": "vinyl_liner",
+            "company_id": "c",
+            "key": "vinyl_liner",
+            "name": "Vinyl_liner",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 30,
+            "active": true,
+            "applies_to_pool_type": "vinyl"
+          },
+          {
+            "id": "filter_clean",
+            "company_id": "c",
+            "key": "filter_clean",
+            "name": "Filter_clean",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance",
+            "on_schedule": true
+          },
+          {
+            "id": "skim",
+            "company_id": "c",
+            "key": "skim",
+            "name": "Skim",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "brush",
+            "company_id": "c",
+            "key": "brush",
+            "name": "Brush",
+            "allows_multiple": false,
+            "default_count": 3,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "drain",
+            "company_id": "c",
+            "key": "drain",
+            "name": "Drain",
+            "allows_multiple": true,
+            "default_count": 0,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 15,
+            "active": true
+          },
+          {
+            "id": "tie_a",
+            "company_id": "c",
+            "key": "tie_a",
+            "name": "Tie_a",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true
+          },
+          {
+            "id": "tie_b",
+            "company_id": "c",
+            "key": "tie_b",
+            "name": "Tie_b",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true,
+            "deleted_at": ""
+          }
+        ],
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false
+        }
+      ],
+      "result": [
+        {
+          "component_type_id": "skimmer",
+          "instance_number": 1,
+          "label": "Skimmer 1",
+          "sort_order": 1001
+        },
+        {
+          "component_type_id": "skimmer",
+          "instance_number": 2,
+          "label": "Skimmer 2",
+          "sort_order": 1002
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 1,
+          "label": "Return 1",
+          "sort_order": 2001
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 2,
+          "label": "Return 2",
+          "sort_order": 2002
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 3,
+          "label": "Return 3",
+          "sort_order": 2003
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 4,
+          "label": "Return 4",
+          "sort_order": 2004
+        },
+        {
+          "component_type_id": "tie_a",
+          "instance_number": 1,
+          "label": "Tie_a",
+          "sort_order": 2501
+        },
+        {
+          "component_type_id": "tie_b",
+          "instance_number": 1,
+          "label": "Tie_b",
+          "sort_order": 2501
+        },
+        {
+          "component_type_id": "vinyl_liner",
+          "instance_number": 1,
+          "label": "Vinyl_liner",
+          "sort_order": 3001
+        },
+        {
+          "component_type_id": "light",
+          "instance_number": 1,
+          "label": "Light",
+          "sort_order": 4001
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "skimmer",
+            "company_id": "c",
+            "key": "skimmer",
+            "name": "Skimmer",
+            "allows_multiple": true,
+            "default_count": 2,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true
+          },
+          {
+            "id": "return",
+            "company_id": "c",
+            "key": "return",
+            "name": "Return",
+            "allows_multiple": true,
+            "default_count": 4,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 20,
+            "active": true
+          },
+          {
+            "id": "spa",
+            "company_id": "c",
+            "key": "spa",
+            "name": "Spa",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "spa",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 70,
+            "active": true
+          },
+          {
+            "id": "light",
+            "company_id": "c",
+            "key": "light",
+            "name": "Light",
+            "allows_multiple": true,
+            "default_count": 1,
+            "applies_to": "both",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 40,
+            "active": true
+          },
+          {
+            "id": "retired",
+            "company_id": "c",
+            "key": "retired",
+            "name": "Retired",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": false
+          },
+          {
+            "id": "gone",
+            "company_id": "c",
+            "key": "gone",
+            "name": "Gone",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true,
+            "deleted_at": "2026-10-01T00:00:00Z"
+          },
+          {
+            "id": "vinyl_liner",
+            "company_id": "c",
+            "key": "vinyl_liner",
+            "name": "Vinyl_liner",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 30,
+            "active": true,
+            "applies_to_pool_type": "vinyl"
+          },
+          {
+            "id": "filter_clean",
+            "company_id": "c",
+            "key": "filter_clean",
+            "name": "Filter_clean",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance",
+            "on_schedule": true
+          },
+          {
+            "id": "skim",
+            "company_id": "c",
+            "key": "skim",
+            "name": "Skim",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "brush",
+            "company_id": "c",
+            "key": "brush",
+            "name": "Brush",
+            "allows_multiple": false,
+            "default_count": 3,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "drain",
+            "company_id": "c",
+            "key": "drain",
+            "name": "Drain",
+            "allows_multiple": true,
+            "default_count": 0,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 15,
+            "active": true
+          },
+          {
+            "id": "tie_a",
+            "company_id": "c",
+            "key": "tie_a",
+            "name": "Tie_a",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true
+          },
+          {
+            "id": "tie_b",
+            "company_id": "c",
+            "key": "tie_b",
+            "name": "Tie_b",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true,
+            "deleted_at": ""
+          }
+        ],
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": true
+        }
+      ],
+      "result": [
+        {
+          "component_type_id": "skimmer",
+          "instance_number": 1,
+          "label": "Skimmer 1",
+          "sort_order": 1001
+        },
+        {
+          "component_type_id": "skimmer",
+          "instance_number": 2,
+          "label": "Skimmer 2",
+          "sort_order": 1002
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 1,
+          "label": "Return 1",
+          "sort_order": 2001
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 2,
+          "label": "Return 2",
+          "sort_order": 2002
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 3,
+          "label": "Return 3",
+          "sort_order": 2003
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 4,
+          "label": "Return 4",
+          "sort_order": 2004
+        },
+        {
+          "component_type_id": "tie_a",
+          "instance_number": 1,
+          "label": "Tie_a",
+          "sort_order": 2501
+        },
+        {
+          "component_type_id": "tie_b",
+          "instance_number": 1,
+          "label": "Tie_b",
+          "sort_order": 2501
+        },
+        {
+          "component_type_id": "vinyl_liner",
+          "instance_number": 1,
+          "label": "Vinyl_liner",
+          "sort_order": 3001
+        },
+        {
+          "component_type_id": "light",
+          "instance_number": 1,
+          "label": "Light",
+          "sort_order": 4001
+        },
+        {
+          "component_type_id": "spa",
+          "instance_number": 1,
+          "label": "Spa",
+          "sort_order": 7001
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "skimmer",
+            "company_id": "c",
+            "key": "skimmer",
+            "name": "Skimmer",
+            "allows_multiple": true,
+            "default_count": 2,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true
+          },
+          {
+            "id": "return",
+            "company_id": "c",
+            "key": "return",
+            "name": "Return",
+            "allows_multiple": true,
+            "default_count": 4,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 20,
+            "active": true
+          },
+          {
+            "id": "spa",
+            "company_id": "c",
+            "key": "spa",
+            "name": "Spa",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "spa",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 70,
+            "active": true
+          },
+          {
+            "id": "light",
+            "company_id": "c",
+            "key": "light",
+            "name": "Light",
+            "allows_multiple": true,
+            "default_count": 1,
+            "applies_to": "both",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 40,
+            "active": true
+          },
+          {
+            "id": "retired",
+            "company_id": "c",
+            "key": "retired",
+            "name": "Retired",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": false
+          },
+          {
+            "id": "gone",
+            "company_id": "c",
+            "key": "gone",
+            "name": "Gone",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true,
+            "deleted_at": "2026-10-01T00:00:00Z"
+          },
+          {
+            "id": "vinyl_liner",
+            "company_id": "c",
+            "key": "vinyl_liner",
+            "name": "Vinyl_liner",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 30,
+            "active": true,
+            "applies_to_pool_type": "vinyl"
+          },
+          {
+            "id": "filter_clean",
+            "company_id": "c",
+            "key": "filter_clean",
+            "name": "Filter_clean",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance",
+            "on_schedule": true
+          },
+          {
+            "id": "skim",
+            "company_id": "c",
+            "key": "skim",
+            "name": "Skim",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "brush",
+            "company_id": "c",
+            "key": "brush",
+            "name": "Brush",
+            "allows_multiple": false,
+            "default_count": 3,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "drain",
+            "company_id": "c",
+            "key": "drain",
+            "name": "Drain",
+            "allows_multiple": true,
+            "default_count": 0,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 15,
+            "active": true
+          },
+          {
+            "id": "tie_a",
+            "company_id": "c",
+            "key": "tie_a",
+            "name": "Tie_a",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true
+          },
+          {
+            "id": "tie_b",
+            "company_id": "c",
+            "key": "tie_b",
+            "name": "Tie_b",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true,
+            "deleted_at": ""
+          }
+        ],
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": true,
+          "pool_type": "vinyl"
+        }
+      ],
+      "result": [
+        {
+          "component_type_id": "skimmer",
+          "instance_number": 1,
+          "label": "Skimmer 1",
+          "sort_order": 1001
+        },
+        {
+          "component_type_id": "skimmer",
+          "instance_number": 2,
+          "label": "Skimmer 2",
+          "sort_order": 1002
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 1,
+          "label": "Return 1",
+          "sort_order": 2001
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 2,
+          "label": "Return 2",
+          "sort_order": 2002
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 3,
+          "label": "Return 3",
+          "sort_order": 2003
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 4,
+          "label": "Return 4",
+          "sort_order": 2004
+        },
+        {
+          "component_type_id": "tie_a",
+          "instance_number": 1,
+          "label": "Tie_a",
+          "sort_order": 2501
+        },
+        {
+          "component_type_id": "tie_b",
+          "instance_number": 1,
+          "label": "Tie_b",
+          "sort_order": 2501
+        },
+        {
+          "component_type_id": "vinyl_liner",
+          "instance_number": 1,
+          "label": "Vinyl_liner",
+          "sort_order": 3001
+        },
+        {
+          "component_type_id": "light",
+          "instance_number": 1,
+          "label": "Light",
+          "sort_order": 4001
+        },
+        {
+          "component_type_id": "spa",
+          "instance_number": 1,
+          "label": "Spa",
+          "sort_order": 7001
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "skimmer",
+            "company_id": "c",
+            "key": "skimmer",
+            "name": "Skimmer",
+            "allows_multiple": true,
+            "default_count": 2,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true
+          },
+          {
+            "id": "return",
+            "company_id": "c",
+            "key": "return",
+            "name": "Return",
+            "allows_multiple": true,
+            "default_count": 4,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 20,
+            "active": true
+          },
+          {
+            "id": "spa",
+            "company_id": "c",
+            "key": "spa",
+            "name": "Spa",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "spa",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 70,
+            "active": true
+          },
+          {
+            "id": "light",
+            "company_id": "c",
+            "key": "light",
+            "name": "Light",
+            "allows_multiple": true,
+            "default_count": 1,
+            "applies_to": "both",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 40,
+            "active": true
+          },
+          {
+            "id": "retired",
+            "company_id": "c",
+            "key": "retired",
+            "name": "Retired",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": false
+          },
+          {
+            "id": "gone",
+            "company_id": "c",
+            "key": "gone",
+            "name": "Gone",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true,
+            "deleted_at": "2026-10-01T00:00:00Z"
+          },
+          {
+            "id": "vinyl_liner",
+            "company_id": "c",
+            "key": "vinyl_liner",
+            "name": "Vinyl_liner",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 30,
+            "active": true,
+            "applies_to_pool_type": "vinyl"
+          },
+          {
+            "id": "filter_clean",
+            "company_id": "c",
+            "key": "filter_clean",
+            "name": "Filter_clean",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance",
+            "on_schedule": true
+          },
+          {
+            "id": "skim",
+            "company_id": "c",
+            "key": "skim",
+            "name": "Skim",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "brush",
+            "company_id": "c",
+            "key": "brush",
+            "name": "Brush",
+            "allows_multiple": false,
+            "default_count": 3,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "drain",
+            "company_id": "c",
+            "key": "drain",
+            "name": "Drain",
+            "allows_multiple": true,
+            "default_count": 0,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 15,
+            "active": true
+          },
+          {
+            "id": "tie_a",
+            "company_id": "c",
+            "key": "tie_a",
+            "name": "Tie_a",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true
+          },
+          {
+            "id": "tie_b",
+            "company_id": "c",
+            "key": "tie_b",
+            "name": "Tie_b",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true,
+            "deleted_at": ""
+          }
+        ],
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false,
+          "pool_type": "fiberglass"
+        }
+      ],
+      "result": [
+        {
+          "component_type_id": "skimmer",
+          "instance_number": 1,
+          "label": "Skimmer 1",
+          "sort_order": 1001
+        },
+        {
+          "component_type_id": "skimmer",
+          "instance_number": 2,
+          "label": "Skimmer 2",
+          "sort_order": 1002
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 1,
+          "label": "Return 1",
+          "sort_order": 2001
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 2,
+          "label": "Return 2",
+          "sort_order": 2002
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 3,
+          "label": "Return 3",
+          "sort_order": 2003
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 4,
+          "label": "Return 4",
+          "sort_order": 2004
+        },
+        {
+          "component_type_id": "tie_a",
+          "instance_number": 1,
+          "label": "Tie_a",
+          "sort_order": 2501
+        },
+        {
+          "component_type_id": "tie_b",
+          "instance_number": 1,
+          "label": "Tie_b",
+          "sort_order": 2501
+        },
+        {
+          "component_type_id": "light",
+          "instance_number": 1,
+          "label": "Light",
+          "sort_order": 4001
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "skimmer",
+            "company_id": "c",
+            "key": "skimmer",
+            "name": "Skimmer",
+            "allows_multiple": true,
+            "default_count": 2,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true
+          },
+          {
+            "id": "return",
+            "company_id": "c",
+            "key": "return",
+            "name": "Return",
+            "allows_multiple": true,
+            "default_count": 4,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 20,
+            "active": true
+          },
+          {
+            "id": "spa",
+            "company_id": "c",
+            "key": "spa",
+            "name": "Spa",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "spa",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 70,
+            "active": true
+          },
+          {
+            "id": "light",
+            "company_id": "c",
+            "key": "light",
+            "name": "Light",
+            "allows_multiple": true,
+            "default_count": 1,
+            "applies_to": "both",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 40,
+            "active": true
+          },
+          {
+            "id": "retired",
+            "company_id": "c",
+            "key": "retired",
+            "name": "Retired",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": false
+          },
+          {
+            "id": "gone",
+            "company_id": "c",
+            "key": "gone",
+            "name": "Gone",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true,
+            "deleted_at": "2026-10-01T00:00:00Z"
+          },
+          {
+            "id": "vinyl_liner",
+            "company_id": "c",
+            "key": "vinyl_liner",
+            "name": "Vinyl_liner",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 30,
+            "active": true,
+            "applies_to_pool_type": "vinyl"
+          },
+          {
+            "id": "filter_clean",
+            "company_id": "c",
+            "key": "filter_clean",
+            "name": "Filter_clean",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance",
+            "on_schedule": true
+          },
+          {
+            "id": "skim",
+            "company_id": "c",
+            "key": "skim",
+            "name": "Skim",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "brush",
+            "company_id": "c",
+            "key": "brush",
+            "name": "Brush",
+            "allows_multiple": false,
+            "default_count": 3,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "drain",
+            "company_id": "c",
+            "key": "drain",
+            "name": "Drain",
+            "allows_multiple": true,
+            "default_count": 0,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 15,
+            "active": true
+          },
+          {
+            "id": "tie_a",
+            "company_id": "c",
+            "key": "tie_a",
+            "name": "Tie_a",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true
+          },
+          {
+            "id": "tie_b",
+            "company_id": "c",
+            "key": "tie_b",
+            "name": "Tie_b",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true,
+            "deleted_at": ""
+          }
+        ],
+        {
+          "address_line1": "1 Main St",
+          "has_pool": false,
+          "has_spa": true
+        }
+      ],
+      "result": [
+        {
+          "component_type_id": "light",
+          "instance_number": 1,
+          "label": "Light",
+          "sort_order": 4001
+        },
+        {
+          "component_type_id": "spa",
+          "instance_number": 1,
+          "label": "Spa",
+          "sort_order": 7001
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "skimmer",
+            "company_id": "c",
+            "key": "skimmer",
+            "name": "Skimmer",
+            "allows_multiple": true,
+            "default_count": 2,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true
+          },
+          {
+            "id": "return",
+            "company_id": "c",
+            "key": "return",
+            "name": "Return",
+            "allows_multiple": true,
+            "default_count": 4,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 20,
+            "active": true
+          },
+          {
+            "id": "spa",
+            "company_id": "c",
+            "key": "spa",
+            "name": "Spa",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "spa",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 70,
+            "active": true
+          },
+          {
+            "id": "light",
+            "company_id": "c",
+            "key": "light",
+            "name": "Light",
+            "allows_multiple": true,
+            "default_count": 1,
+            "applies_to": "both",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 40,
+            "active": true
+          },
+          {
+            "id": "retired",
+            "company_id": "c",
+            "key": "retired",
+            "name": "Retired",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": false
+          },
+          {
+            "id": "gone",
+            "company_id": "c",
+            "key": "gone",
+            "name": "Gone",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true,
+            "deleted_at": "2026-10-01T00:00:00Z"
+          },
+          {
+            "id": "vinyl_liner",
+            "company_id": "c",
+            "key": "vinyl_liner",
+            "name": "Vinyl_liner",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 30,
+            "active": true,
+            "applies_to_pool_type": "vinyl"
+          },
+          {
+            "id": "filter_clean",
+            "company_id": "c",
+            "key": "filter_clean",
+            "name": "Filter_clean",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance",
+            "on_schedule": true
+          },
+          {
+            "id": "skim",
+            "company_id": "c",
+            "key": "skim",
+            "name": "Skim",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "brush",
+            "company_id": "c",
+            "key": "brush",
+            "name": "Brush",
+            "allows_multiple": false,
+            "default_count": 3,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "drain",
+            "company_id": "c",
+            "key": "drain",
+            "name": "Drain",
+            "allows_multiple": true,
+            "default_count": 0,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 15,
+            "active": true
+          },
+          {
+            "id": "tie_a",
+            "company_id": "c",
+            "key": "tie_a",
+            "name": "Tie_a",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true
+          },
+          {
+            "id": "tie_b",
+            "company_id": "c",
+            "key": "tie_b",
+            "name": "Tie_b",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true,
+            "deleted_at": ""
+          }
+        ],
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false
+        },
+        "maintenance"
+      ],
+      "result": [
+        {
+          "component_type_id": "skim",
+          "instance_number": 1,
+          "label": "Skim",
+          "sort_order": 501
+        },
+        {
+          "component_type_id": "brush",
+          "instance_number": 1,
+          "label": "Brush",
+          "sort_order": 501
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "skimmer",
+            "company_id": "c",
+            "key": "skimmer",
+            "name": "Skimmer",
+            "allows_multiple": true,
+            "default_count": 2,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true
+          },
+          {
+            "id": "return",
+            "company_id": "c",
+            "key": "return",
+            "name": "Return",
+            "allows_multiple": true,
+            "default_count": 4,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 20,
+            "active": true
+          },
+          {
+            "id": "spa",
+            "company_id": "c",
+            "key": "spa",
+            "name": "Spa",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "spa",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 70,
+            "active": true
+          },
+          {
+            "id": "light",
+            "company_id": "c",
+            "key": "light",
+            "name": "Light",
+            "allows_multiple": true,
+            "default_count": 1,
+            "applies_to": "both",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 40,
+            "active": true
+          },
+          {
+            "id": "retired",
+            "company_id": "c",
+            "key": "retired",
+            "name": "Retired",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": false
+          },
+          {
+            "id": "gone",
+            "company_id": "c",
+            "key": "gone",
+            "name": "Gone",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true,
+            "deleted_at": "2026-10-01T00:00:00Z"
+          },
+          {
+            "id": "vinyl_liner",
+            "company_id": "c",
+            "key": "vinyl_liner",
+            "name": "Vinyl_liner",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 30,
+            "active": true,
+            "applies_to_pool_type": "vinyl"
+          },
+          {
+            "id": "filter_clean",
+            "company_id": "c",
+            "key": "filter_clean",
+            "name": "Filter_clean",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance",
+            "on_schedule": true
+          },
+          {
+            "id": "skim",
+            "company_id": "c",
+            "key": "skim",
+            "name": "Skim",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "brush",
+            "company_id": "c",
+            "key": "brush",
+            "name": "Brush",
+            "allows_multiple": false,
+            "default_count": 3,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "drain",
+            "company_id": "c",
+            "key": "drain",
+            "name": "Drain",
+            "allows_multiple": true,
+            "default_count": 0,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 15,
+            "active": true
+          },
+          {
+            "id": "tie_a",
+            "company_id": "c",
+            "key": "tie_a",
+            "name": "Tie_a",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true
+          },
+          {
+            "id": "tie_b",
+            "company_id": "c",
+            "key": "tie_b",
+            "name": "Tie_b",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true,
+            "deleted_at": ""
+          }
+        ],
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false
+        },
+        "repair"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "skimmer",
+            "company_id": "c",
+            "key": "skimmer",
+            "name": "Skimmer",
+            "allows_multiple": true,
+            "default_count": 2,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true
+          },
+          {
+            "id": "return",
+            "company_id": "c",
+            "key": "return",
+            "name": "Return",
+            "allows_multiple": true,
+            "default_count": 4,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 20,
+            "active": true
+          },
+          {
+            "id": "spa",
+            "company_id": "c",
+            "key": "spa",
+            "name": "Spa",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "spa",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 70,
+            "active": true
+          },
+          {
+            "id": "light",
+            "company_id": "c",
+            "key": "light",
+            "name": "Light",
+            "allows_multiple": true,
+            "default_count": 1,
+            "applies_to": "both",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 40,
+            "active": true
+          },
+          {
+            "id": "retired",
+            "company_id": "c",
+            "key": "retired",
+            "name": "Retired",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": false
+          },
+          {
+            "id": "gone",
+            "company_id": "c",
+            "key": "gone",
+            "name": "Gone",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true,
+            "deleted_at": "2026-10-01T00:00:00Z"
+          },
+          {
+            "id": "vinyl_liner",
+            "company_id": "c",
+            "key": "vinyl_liner",
+            "name": "Vinyl_liner",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 30,
+            "active": true,
+            "applies_to_pool_type": "vinyl"
+          },
+          {
+            "id": "filter_clean",
+            "company_id": "c",
+            "key": "filter_clean",
+            "name": "Filter_clean",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance",
+            "on_schedule": true
+          },
+          {
+            "id": "skim",
+            "company_id": "c",
+            "key": "skim",
+            "name": "Skim",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "brush",
+            "company_id": "c",
+            "key": "brush",
+            "name": "Brush",
+            "allows_multiple": false,
+            "default_count": 3,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "drain",
+            "company_id": "c",
+            "key": "drain",
+            "name": "Drain",
+            "allows_multiple": true,
+            "default_count": 0,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 15,
+            "active": true
+          },
+          {
+            "id": "tie_a",
+            "company_id": "c",
+            "key": "tie_a",
+            "name": "Tie_a",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true
+          },
+          {
+            "id": "tie_b",
+            "company_id": "c",
+            "key": "tie_b",
+            "name": "Tie_b",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true,
+            "deleted_at": ""
+          }
+        ],
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false
+        },
+        "detection"
+      ],
+      "result": [
+        {
+          "component_type_id": "skimmer",
+          "instance_number": 1,
+          "label": "Skimmer 1",
+          "sort_order": 1001
+        },
+        {
+          "component_type_id": "skimmer",
+          "instance_number": 2,
+          "label": "Skimmer 2",
+          "sort_order": 1002
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 1,
+          "label": "Return 1",
+          "sort_order": 2001
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 2,
+          "label": "Return 2",
+          "sort_order": 2002
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 3,
+          "label": "Return 3",
+          "sort_order": 2003
+        },
+        {
+          "component_type_id": "return",
+          "instance_number": 4,
+          "label": "Return 4",
+          "sort_order": 2004
+        },
+        {
+          "component_type_id": "tie_a",
+          "instance_number": 1,
+          "label": "Tie_a",
+          "sort_order": 2501
+        },
+        {
+          "component_type_id": "tie_b",
+          "instance_number": 1,
+          "label": "Tie_b",
+          "sort_order": 2501
+        },
+        {
+          "component_type_id": "vinyl_liner",
+          "instance_number": 1,
+          "label": "Vinyl_liner",
+          "sort_order": 3001
+        },
+        {
+          "component_type_id": "light",
+          "instance_number": 1,
+          "label": "Light",
+          "sort_order": 4001
+        }
+      ]
+    },
+    {
+      "args": [
+        [],
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false
+        }
+      ],
+      "result": []
+    }
+  ],
+  "nextInstance": [
+    {
+      "args": [
+        {
+          "id": "return",
+          "company_id": "c",
+          "key": "return",
+          "name": "Return",
+          "allows_multiple": true,
+          "default_count": 4,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 20,
+          "active": true
+        },
+        [
+          {
+            "id": "r3",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "return",
+            "instance_number": 3,
+            "label": "r3",
+            "sort_order": 0
+          },
+          {
+            "id": "r1",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "return",
+            "instance_number": 1,
+            "label": "r1",
+            "sort_order": 0
+          },
+          {
+            "id": "r4",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "return",
+            "instance_number": 4,
+            "label": "r4",
+            "sort_order": 0
+          }
+        ]
+      ],
+      "result": {
+        "component_type_id": "return",
+        "instance_number": 5,
+        "label": "Return 5",
+        "sort_order": 2005
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "return",
+          "company_id": "c",
+          "key": "return",
+          "name": "Return",
+          "allows_multiple": true,
+          "default_count": 4,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 20,
+          "active": true
+        },
+        []
+      ],
+      "result": {
+        "component_type_id": "return",
+        "instance_number": 1,
+        "label": "Return 1",
+        "sort_order": 2001
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "skimmer",
+          "company_id": "c",
+          "key": "skimmer",
+          "name": "Skimmer",
+          "allows_multiple": true,
+          "default_count": 2,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true
+        },
+        [
+          {
+            "id": "x",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "other",
+            "instance_number": 7,
+            "label": "x",
+            "sort_order": 0
+          }
+        ]
+      ],
+      "result": {
+        "component_type_id": "skimmer",
+        "instance_number": 1,
+        "label": "Skimmer 1",
+        "sort_order": 1001
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "spa",
+          "company_id": "c",
+          "key": "spa",
+          "name": "Spa",
+          "allows_multiple": false,
+          "default_count": 1,
+          "applies_to": "spa",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 70,
+          "active": true
+        },
+        [
+          {
+            "id": "s1",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "spa",
+            "instance_number": 1,
+            "label": "s1",
+            "sort_order": 0
+          }
+        ]
+      ],
+      "result": {
+        "component_type_id": "spa",
+        "instance_number": 2,
+        "label": "Spa",
+        "sort_order": 7002
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "return",
+          "company_id": "c",
+          "key": "return",
+          "name": "Return",
+          "allows_multiple": true,
+          "default_count": 4,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 20,
+          "active": true
+        },
+        [
+          {
+            "id": "r9",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "return",
+            "instance_number": 9,
+            "label": "r9",
+            "sort_order": 0,
+            "deleted_at": "2026-10-01T00:00:00Z"
+          },
+          {
+            "id": "r2",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "return",
+            "instance_number": 2,
+            "label": "r2",
+            "sort_order": 0
+          }
+        ]
+      ],
+      "result": {
+        "component_type_id": "return",
+        "instance_number": 3,
+        "label": "Return 3",
+        "sort_order": 2003
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "return",
+          "company_id": "c",
+          "key": "return",
+          "name": "Return",
+          "allows_multiple": true,
+          "default_count": 4,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 20,
+          "active": true
+        },
+        [
+          {
+            "id": "r9",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "return",
+            "instance_number": 9,
+            "label": "r9",
+            "sort_order": 0,
+            "deleted_at": ""
+          }
+        ]
+      ],
+      "result": {
+        "component_type_id": "return",
+        "instance_number": 10,
+        "label": "Return 10",
+        "sort_order": 2010
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "single",
+          "company_id": "c",
+          "key": "single",
+          "name": "Single",
+          "allows_multiple": true,
+          "default_count": 1,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true
+        },
+        []
+      ],
+      "result": {
+        "component_type_id": "single",
+        "instance_number": 1,
+        "label": "Single",
+        "sort_order": 1001
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "single",
+          "company_id": "c",
+          "key": "single",
+          "name": "Single",
+          "allows_multiple": true,
+          "default_count": 1,
+          "applies_to": "pool",
+          "methods": [
+            "Visual"
+          ],
+          "sort_order": 10,
+          "active": true
+        },
+        [
+          {
+            "id": "a",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "single",
+            "instance_number": 1,
+            "label": "a",
+            "sort_order": 0
+          }
+        ]
+      ],
+      "result": {
+        "component_type_id": "single",
+        "instance_number": 2,
+        "label": "Single 2",
+        "sort_order": 1002
+      }
+    }
+  ],
+  "checklistTally": [
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "t",
+            "instance_number": 1,
+            "label": "a",
+            "sort_order": 0
+          },
+          {
+            "id": "b",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "t",
+            "instance_number": 1,
+            "label": "b",
+            "sort_order": 0
+          },
+          {
+            "id": "c",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "t",
+            "instance_number": 1,
+            "label": "c",
+            "sort_order": 0
+          },
+          {
+            "id": "d",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "t",
+            "instance_number": 1,
+            "label": "d",
+            "sort_order": 0
+          },
+          {
+            "id": "e",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "t",
+            "instance_number": 1,
+            "label": "e",
+            "sort_order": 0
+          }
+        ],
+        [
+          {
+            "id": "r-a",
+            "company_id": "c",
+            "job_id": "j",
+            "job_component_id": "a",
+            "status": "inspected",
+            "outcome": "ok"
+          },
+          {
+            "id": "r-b",
+            "company_id": "c",
+            "job_id": "j",
+            "job_component_id": "b",
+            "status": "inspected",
+            "outcome": "leaking"
+          },
+          {
+            "id": "r-c",
+            "company_id": "c",
+            "job_id": "j",
+            "job_component_id": "c",
+            "status": "inspected",
+            "outcome": "attention"
+          },
+          {
+            "id": "r-d",
+            "company_id": "c",
+            "job_id": "j",
+            "job_component_id": "d",
+            "status": "excluded"
+          }
+        ]
+      ],
+      "result": {
+        "pass": 1,
+        "attention": 1,
+        "leaking": 1,
+        "notApplicable": 1,
+        "pending": 1
+      }
+    },
+    {
+      "args": [
+        [],
+        []
+      ],
+      "result": {
+        "pass": 0,
+        "attention": 0,
+        "leaking": 0,
+        "notApplicable": 0,
+        "pending": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "t",
+            "instance_number": 1,
+            "label": "a",
+            "sort_order": 0
+          },
+          {
+            "id": "b",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "t",
+            "instance_number": 1,
+            "label": "b",
+            "sort_order": 0
+          },
+          {
+            "id": "c",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "t",
+            "instance_number": 1,
+            "label": "c",
+            "sort_order": 0
+          }
+        ],
+        [
+          {
+            "id": "r-a",
+            "company_id": "c",
+            "job_id": "j",
+            "job_component_id": "a",
+            "status": "inspected",
+            "outcome": null
+          },
+          {
+            "id": "r-b",
+            "company_id": "c",
+            "job_id": "j",
+            "job_component_id": "b",
+            "status": "pending",
+            "outcome": "leaking"
+          },
+          {
+            "id": "r-c",
+            "company_id": "c",
+            "job_id": "j",
+            "job_component_id": "c",
+            "status": "inspected",
+            "outcome": "leaking",
+            "deleted_at": "2026-10-01T00:00:00Z"
+          }
+        ]
+      ],
+      "result": {
+        "pass": 1,
+        "attention": 0,
+        "leaking": 0,
+        "notApplicable": 0,
+        "pending": 2
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "t",
+            "instance_number": 1,
+            "label": "a",
+            "sort_order": 0
+          },
+          {
+            "id": "b",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "t",
+            "instance_number": 1,
+            "label": "b",
+            "sort_order": 0,
+            "deleted_at": "2026-10-01T00:00:00Z"
+          },
+          {
+            "id": "c",
+            "company_id": "c",
+            "job_id": "j",
+            "component_type_id": "t",
+            "instance_number": 1,
+            "label": "c",
+            "sort_order": 0,
+            "deleted_at": ""
+          }
+        ],
+        [
+          {
+            "id": "r-a",
+            "company_id": "c",
+            "job_id": "j",
+            "job_component_id": "a",
+            "status": "inspected",
+            "outcome": "ok"
+          },
+          {
+            "id": "r-a",
+            "company_id": "c",
+            "job_id": "j",
+            "job_component_id": "a",
+            "status": "inspected",
+            "outcome": "leaking"
+          },
+          {
+            "id": "r-b",
+            "company_id": "c",
+            "job_id": "j",
+            "job_component_id": "b",
+            "status": "inspected",
+            "outcome": "leaking"
+          },
+          {
+            "id": "r-c",
+            "company_id": "c",
+            "job_id": "j",
+            "job_component_id": "c",
+            "status": "excluded",
+            "deleted_at": ""
+          }
+        ]
+      ],
+      "result": {
+        "pass": 0,
+        "attention": 0,
+        "leaking": 1,
+        "notApplicable": 1,
+        "pending": 0
+      }
+    }
+  ],
+  "calculate": [
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20,
+          "end_psi": 20,
+          "duration_min": 15
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 0,
+          "drop_psi_per_min": 0
+        },
+        "suggested": "pass",
+        "summary": "Held at 20 PSI in 15 min"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": "20",
+          "end_psi": "12",
+          "duration_min": "15"
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 8,
+          "drop_psi_per_min": 0.533
+        },
+        "suggested": "fail",
+        "summary": "Dropped 8 PSI in 15 min"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": [],
+            "options": {
+              "pass_max_drop_psi": 0.5
+            }
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20,
+          "end_psi": 19.5,
+          "duration_min": 15
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 0.5,
+          "drop_psi_per_min": 0.033
+        },
+        "suggested": "pass",
+        "summary": "Dropped 0.5 PSI in 15 min"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": [],
+            "options": {
+              "pass_max_drop_psi": 0.5
+            }
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20,
+          "end_psi": 19.4,
+          "duration_min": 15
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 0.6,
+          "drop_psi_per_min": 0.04
+        },
+        "suggested": "fail",
+        "summary": "Dropped 0.6 PSI in 15 min"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": [],
+            "options": {
+              "min_duration_min": 15
+            }
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20,
+          "end_psi": 20,
+          "duration_min": 5
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 0,
+          "drop_psi_per_min": 0
+        },
+        "suggested": "inconclusive",
+        "summary": "Held at 20 PSI in 5 min"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": [],
+            "options": {
+              "min_duration_min": 15
+            }
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20,
+          "end_psi": 20
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 0
+        },
+        "suggested": "pass",
+        "summary": "Held at 20 PSI"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": [],
+            "options": {
+              "min_duration_min": 15
+            }
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20,
+          "end_psi": 25,
+          "duration_min": 5
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": -5,
+          "drop_psi_per_min": -1
+        },
+        "suggested": "inconclusive",
+        "summary": "Rose 5 PSI in 5 min"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20,
+          "end_psi": 21,
+          "duration_min": 15
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": -1,
+          "drop_psi_per_min": -0.067
+        },
+        "suggested": "inconclusive",
+        "summary": "Rose 1 PSI in 15 min"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20,
+          "end_psi": ""
+        }
+      ],
+      "result": {
+        "computed": {},
+        "suggested": null,
+        "summary": null
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20.3,
+          "end_psi": 20.1
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 0.2
+        },
+        "suggested": "fail",
+        "summary": "Dropped 0.2 PSI"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20,
+          "end_psi": 19.999
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 0
+        },
+        "suggested": "pass",
+        "summary": "Held at 20 PSI"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20,
+          "end_psi": 20.004
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 0
+        },
+        "suggested": "pass",
+        "summary": "Held at 20 PSI"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20,
+          "end_psi": 19.995,
+          "duration_min": 7
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 0,
+          "drop_psi_per_min": 0
+        },
+        "suggested": "pass",
+        "summary": "Held at 20 PSI in 7 min"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20,
+          "end_psi": 12,
+          "duration_min": 0
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 8
+        },
+        "suggested": "fail",
+        "summary": "Dropped 8 PSI"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20,
+          "end_psi": 12,
+          "duration_min": -5
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 8
+        },
+        "suggested": "fail",
+        "summary": "Dropped 8 PSI in -5 min"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20,
+          "end_psi": 12,
+          "duration_min": 2.5
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 8,
+          "drop_psi_per_min": 3.2
+        },
+        "suggested": "fail",
+        "summary": "Dropped 8 PSI in 2.5 min"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": " 0x14 ",
+          "end_psi": "1e1",
+          "duration_min": ".5"
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 10,
+          "drop_psi_per_min": 20
+        },
+        "suggested": "fail",
+        "summary": "Dropped 10 PSI in 0.5 min"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": "abc",
+          "end_psi": 12
+        }
+      ],
+      "result": {
+        "computed": {},
+        "suggested": null,
+        "summary": null
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": "Infinity",
+          "end_psi": 12
+        }
+      ],
+      "result": {
+        "computed": {},
+        "suggested": null,
+        "summary": null
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": "1e21",
+          "end_psi": 0,
+          "duration_min": 3
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 999999999999999900000,
+          "drop_psi_per_min": 333333333333333300000
+        },
+        "suggested": "fail",
+        "summary": "Dropped 999999999999999900000 PSI in 3 min"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 1e+21,
+          "end_psi": 1,
+          "duration_min": 3
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 999999999999999900000,
+          "drop_psi_per_min": 333333333333333300000
+        },
+        "suggested": "fail",
+        "summary": "Dropped 999999999999999900000 PSI in 3 min"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": " 20﻿",
+          "end_psi": "18."
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 2
+        },
+        "suggested": "fail",
+        "summary": "Dropped 2 PSI"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": "-0x10",
+          "end_psi": 0
+        }
+      ],
+      "result": {
+        "computed": {},
+        "suggested": null,
+        "summary": null
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": "0b101",
+          "end_psi": "0o3"
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 2
+        },
+        "suggested": "fail",
+        "summary": "Dropped 2 PSI"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": "+5",
+          "end_psi": "-5"
+        }
+      ],
+      "result": {
+        "computed": {
+          "drop_psi": 10
+        },
+        "suggested": "fail",
+        "summary": "Dropped 10 PSI"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": null,
+          "end_psi": 5
+        }
+      ],
+      "result": {
+        "computed": {},
+        "suggested": null,
+        "summary": null
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "pressure_drop",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {}
+      ],
+      "result": {
+        "computed": {},
+        "suggested": null,
+        "summary": null
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "bucket_evaporation",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "pool_start_in": 10,
+          "bucket_start_in": 10,
+          "duration_hours": 24,
+          "pool_end_in": 9.75,
+          "bucket_end_in": 9.75
+        }
+      ],
+      "result": {
+        "computed": {
+          "pool_loss_in": 0.25,
+          "bucket_loss_in": 0.25,
+          "unexplained_loss_in": 0,
+          "unexplained_in_per_day": 0
+        },
+        "suggested": "pass",
+        "summary": "No loss beyond evaporation over 24 h"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "bucket_evaporation",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "pool_start_in": 10,
+          "bucket_start_in": 10,
+          "duration_hours": 24,
+          "pool_end_in": 9.25,
+          "bucket_end_in": 9.94
+        }
+      ],
+      "result": {
+        "computed": {
+          "pool_loss_in": 0.75,
+          "bucket_loss_in": 0.06,
+          "unexplained_loss_in": 0.69,
+          "unexplained_in_per_day": 0.69
+        },
+        "suggested": "fail",
+        "summary": "0.69 in lost beyond evaporation over 24 h (0.69 in/day)"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": [],
+            "options": {
+              "fail_over_in_per_day": 0.125
+            }
+          },
+          "schema_version": 1,
+          "calculator": "bucket_evaporation",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "pool_start_in": 10,
+          "bucket_start_in": 10,
+          "duration_hours": 12,
+          "pool_end_in": 9.9,
+          "bucket_end_in": 9.95
+        }
+      ],
+      "result": {
+        "computed": {
+          "pool_loss_in": 0.1,
+          "bucket_loss_in": 0.05,
+          "unexplained_loss_in": 0.05,
+          "unexplained_in_per_day": 0.1
+        },
+        "suggested": "pass",
+        "summary": "0.05 in lost beyond evaporation over 12 h (0.1 in/day)"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "bucket_evaporation",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "pool_start_in": 10,
+          "bucket_start_in": 10,
+          "duration_hours": 0,
+          "pool_end_in": 9,
+          "bucket_end_in": 9
+        }
+      ],
+      "result": {
+        "computed": {},
+        "suggested": null,
+        "summary": null
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "bucket_evaporation",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "pool_start_in": 10,
+          "bucket_start_in": 10,
+          "duration_hours": -1,
+          "pool_end_in": 9,
+          "bucket_end_in": 9
+        }
+      ],
+      "result": {
+        "computed": {},
+        "suggested": null,
+        "summary": null
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "bucket_evaporation",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "pool_start_in": 10,
+          "bucket_start_in": 10,
+          "duration_hours": 24,
+          "pool_end_in": 9.9,
+          "bucket_end_in": 9.5
+        }
+      ],
+      "result": {
+        "computed": {
+          "pool_loss_in": 0.1,
+          "bucket_loss_in": 0.5,
+          "unexplained_loss_in": -0.4,
+          "unexplained_in_per_day": -0.4
+        },
+        "suggested": "pass",
+        "summary": "No loss beyond evaporation over 24 h"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "bucket_evaporation",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "pool_start_in": 10,
+          "bucket_start_in": 10,
+          "duration_hours": 36,
+          "pool_end_in": 9.5,
+          "bucket_end_in": 9.75
+        }
+      ],
+      "result": {
+        "computed": {
+          "pool_loss_in": 0.5,
+          "bucket_loss_in": 0.25,
+          "unexplained_loss_in": 0.25,
+          "unexplained_in_per_day": 0.167
+        },
+        "suggested": "pass",
+        "summary": "0.25 in lost beyond evaporation over 36 h (0.17 in/day)"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "bucket_evaporation",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "pool_start_in": 10,
+          "bucket_start_in": 10,
+          "duration_hours": 7,
+          "pool_end_in": 9.7,
+          "bucket_end_in": 9.95
+        }
+      ],
+      "result": {
+        "computed": {
+          "pool_loss_in": 0.3,
+          "bucket_loss_in": 0.05,
+          "unexplained_loss_in": 0.25,
+          "unexplained_in_per_day": 0.857
+        },
+        "suggested": "fail",
+        "summary": "0.25 in lost beyond evaporation over 7 h (0.86 in/day)"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "bucket_evaporation",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "pool_start_in": 10,
+          "bucket_start_in": 10,
+          "duration_hours": 24,
+          "pool_end_in": "",
+          "bucket_end_in": 9
+        }
+      ],
+      "result": {
+        "computed": {},
+        "suggested": null,
+        "summary": null
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": "bucket_evaporation",
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "pool_start_in": 10,
+          "bucket_start_in": 10,
+          "duration_hours": 3,
+          "pool_end_in": 9.0005,
+          "bucket_end_in": 10
+        }
+      ],
+      "result": {
+        "computed": {
+          "pool_loss_in": 0.999,
+          "bucket_loss_in": 0,
+          "unexplained_loss_in": 0.999,
+          "unexplained_in_per_day": 7.992
+        },
+        "suggested": "fail",
+        "summary": "1 in lost beyond evaporation over 3 h (7.99 in/day)"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "tt",
+          "company_id": "c",
+          "key": "k",
+          "name": "Test",
+          "field_schema": {
+            "fields": []
+          },
+          "schema_version": 1,
+          "calculator": null,
+          "result_options": [
+            "pass",
+            "fail",
+            "inconclusive"
+          ],
+          "sort_order": 1,
+          "active": true
+        },
+        {
+          "start_psi": 20,
+          "end_psi": 10
+        }
+      ],
+      "result": {
+        "computed": {},
+        "suggested": null,
+        "summary": null
+      }
+    }
+  ],
+  "validateTestData": [
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "line_name",
+              "label": "Line",
+              "type": "text",
+              "required": true
+            },
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true
+            },
+            {
+              "key": "observation",
+              "label": "Result",
+              "type": "select",
+              "options": [
+                "No draw",
+                "Leak",
+                "5"
+              ]
+            },
+            {
+              "key": "notes",
+              "label": "Notes",
+              "type": "textarea"
+            },
+            {
+              "key": "minutes",
+              "label": "Minutes",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "line_name": "",
+          "start_psi": "abc",
+          "observation": "Maybe"
+        }
+      ],
+      "result": {
+        "line_name": "Enter line.",
+        "start_psi": "Enter a number.",
+        "observation": "Pick one of the options."
+      }
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "line_name",
+              "label": "Line",
+              "type": "text",
+              "required": true
+            },
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true
+            },
+            {
+              "key": "observation",
+              "label": "Result",
+              "type": "select",
+              "options": [
+                "No draw",
+                "Leak",
+                "5"
+              ]
+            },
+            {
+              "key": "notes",
+              "label": "Notes",
+              "type": "textarea"
+            },
+            {
+              "key": "minutes",
+              "label": "Minutes",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "line_name": "Return 1",
+          "start_psi": "20"
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "line_name",
+              "label": "Line",
+              "type": "text",
+              "required": true
+            },
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true
+            },
+            {
+              "key": "observation",
+              "label": "Result",
+              "type": "select",
+              "options": [
+                "No draw",
+                "Leak",
+                "5"
+              ]
+            },
+            {
+              "key": "notes",
+              "label": "Notes",
+              "type": "textarea"
+            },
+            {
+              "key": "minutes",
+              "label": "Minutes",
+              "type": "number"
+            }
+          ]
+        },
+        {}
+      ],
+      "result": {
+        "line_name": "Enter line.",
+        "start_psi": "Enter start pressure."
+      }
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "line_name",
+              "label": "Line",
+              "type": "text",
+              "required": true
+            },
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true
+            },
+            {
+              "key": "observation",
+              "label": "Result",
+              "type": "select",
+              "options": [
+                "No draw",
+                "Leak",
+                "5"
+              ]
+            },
+            {
+              "key": "notes",
+              "label": "Notes",
+              "type": "textarea"
+            },
+            {
+              "key": "minutes",
+              "label": "Minutes",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "line_name": "  ",
+          "start_psi": null,
+          "observation": "",
+          "minutes": " "
+        }
+      ],
+      "result": {
+        "line_name": "Enter line.",
+        "start_psi": "Enter start pressure."
+      }
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "line_name",
+              "label": "Line",
+              "type": "text",
+              "required": true
+            },
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true
+            },
+            {
+              "key": "observation",
+              "label": "Result",
+              "type": "select",
+              "options": [
+                "No draw",
+                "Leak",
+                "5"
+              ]
+            },
+            {
+              "key": "notes",
+              "label": "Notes",
+              "type": "textarea"
+            },
+            {
+              "key": "minutes",
+              "label": "Minutes",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "line_name": "x",
+          "start_psi": "-1",
+          "minutes": -0.5
+        }
+      ],
+      "result": {
+        "start_psi": "Can't be negative.",
+        "minutes": "Can't be negative."
+      }
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "line_name",
+              "label": "Line",
+              "type": "text",
+              "required": true
+            },
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true
+            },
+            {
+              "key": "observation",
+              "label": "Result",
+              "type": "select",
+              "options": [
+                "No draw",
+                "Leak",
+                "5"
+              ]
+            },
+            {
+              "key": "notes",
+              "label": "Notes",
+              "type": "textarea"
+            },
+            {
+              "key": "minutes",
+              "label": "Minutes",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "line_name": "x",
+          "start_psi": 0,
+          "observation": 5
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "line_name",
+              "label": "Line",
+              "type": "text",
+              "required": true
+            },
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true
+            },
+            {
+              "key": "observation",
+              "label": "Result",
+              "type": "select",
+              "options": [
+                "No draw",
+                "Leak",
+                "5"
+              ]
+            },
+            {
+              "key": "notes",
+              "label": "Notes",
+              "type": "textarea"
+            },
+            {
+              "key": "minutes",
+              "label": "Minutes",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "line_name": 7,
+          "start_psi": "-0",
+          "observation": "Leak",
+          "minutes": "1e2"
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "line_name",
+              "label": "Line",
+              "type": "text",
+              "required": true
+            },
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true
+            },
+            {
+              "key": "observation",
+              "label": "Result",
+              "type": "select",
+              "options": [
+                "No draw",
+                "Leak",
+                "5"
+              ]
+            },
+            {
+              "key": "notes",
+              "label": "Notes",
+              "type": "textarea"
+            },
+            {
+              "key": "minutes",
+              "label": "Minutes",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "line_name": "x",
+          "start_psi": "Infinity"
+        }
+      ],
+      "result": {
+        "start_psi": "Enter a number."
+      }
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "line_name",
+              "label": "Line",
+              "type": "text",
+              "required": true
+            },
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true
+            },
+            {
+              "key": "observation",
+              "label": "Result",
+              "type": "select",
+              "options": [
+                "No draw",
+                "Leak",
+                "5"
+              ]
+            },
+            {
+              "key": "notes",
+              "label": "Notes",
+              "type": "textarea"
+            },
+            {
+              "key": "minutes",
+              "label": "Minutes",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "line_name": "x",
+          "start_psi": "1,5"
+        }
+      ],
+      "result": {
+        "start_psi": "Enter a number."
+      }
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "a",
+              "label": "ÀBC Ünit",
+              "type": "text",
+              "required": true
+            }
+          ]
+        },
+        {}
+      ],
+      "result": {
+        "a": "Enter àbc ünit."
+      }
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "s",
+              "label": "S",
+              "type": "select"
+            }
+          ]
+        },
+        {
+          "s": "anything"
+        }
+      ],
+      "result": {}
+    }
+  ],
+  "normalizeTestData": [
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "line_name",
+              "label": "Line",
+              "type": "text",
+              "required": true
+            },
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true
+            },
+            {
+              "key": "observation",
+              "label": "Result",
+              "type": "select",
+              "options": [
+                "No draw",
+                "Leak",
+                "5"
+              ]
+            },
+            {
+              "key": "notes",
+              "label": "Notes",
+              "type": "textarea"
+            },
+            {
+              "key": "minutes",
+              "label": "Minutes",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "line_name": " Return 1 ",
+          "start_psi": "20.5",
+          "observation": ""
+        }
+      ],
+      "result": {
+        "line_name": "Return 1",
+        "start_psi": 20.5,
+        "observation": null,
+        "notes": null,
+        "minutes": null
+      }
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "line_name",
+              "label": "Line",
+              "type": "text",
+              "required": true
+            },
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true
+            },
+            {
+              "key": "observation",
+              "label": "Result",
+              "type": "select",
+              "options": [
+                "No draw",
+                "Leak",
+                "5"
+              ]
+            },
+            {
+              "key": "notes",
+              "label": "Notes",
+              "type": "textarea"
+            },
+            {
+              "key": "minutes",
+              "label": "Minutes",
+              "type": "number"
+            }
+          ]
+        },
+        {}
+      ],
+      "result": {
+        "line_name": null,
+        "start_psi": null,
+        "observation": null,
+        "notes": null,
+        "minutes": null
+      }
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "line_name",
+              "label": "Line",
+              "type": "text",
+              "required": true
+            },
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true
+            },
+            {
+              "key": "observation",
+              "label": "Result",
+              "type": "select",
+              "options": [
+                "No draw",
+                "Leak",
+                "5"
+              ]
+            },
+            {
+              "key": "notes",
+              "label": "Notes",
+              "type": "textarea"
+            },
+            {
+              "key": "minutes",
+              "label": "Minutes",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "line_name": 12.5,
+          "start_psi": "abc",
+          "observation": 5,
+          "notes": " \n ",
+          "minutes": 0
+        }
+      ],
+      "result": {
+        "line_name": "12.5",
+        "start_psi": null,
+        "observation": "5",
+        "notes": null,
+        "minutes": 0
+      }
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "line_name",
+              "label": "Line",
+              "type": "text",
+              "required": true
+            },
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true
+            },
+            {
+              "key": "observation",
+              "label": "Result",
+              "type": "select",
+              "options": [
+                "No draw",
+                "Leak",
+                "5"
+              ]
+            },
+            {
+              "key": "notes",
+              "label": "Notes",
+              "type": "textarea"
+            },
+            {
+              "key": "minutes",
+              "label": "Minutes",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "line_name": "　x ",
+          "start_psi": " 7 ",
+          "notes": "a",
+          "minutes": "0.1"
+        }
+      ],
+      "result": {
+        "line_name": "x",
+        "start_psi": 7,
+        "observation": null,
+        "notes": "a",
+        "minutes": 0.1
+      }
+    },
+    {
+      "args": [
+        {
+          "fields": [
+            {
+              "key": "line_name",
+              "label": "Line",
+              "type": "text",
+              "required": true
+            },
+            {
+              "key": "start_psi",
+              "label": "Start pressure",
+              "type": "number",
+              "unit": "PSI",
+              "required": true
+            },
+            {
+              "key": "observation",
+              "label": "Result",
+              "type": "select",
+              "options": [
+                "No draw",
+                "Leak",
+                "5"
+              ]
+            },
+            {
+              "key": "notes",
+              "label": "Notes",
+              "type": "textarea"
+            },
+            {
+              "key": "minutes",
+              "label": "Minutes",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "line_name": 1e+21,
+          "start_psi": 1e-7,
+          "notes": 0.000001,
+          "minutes": 100
+        }
+      ],
+      "result": {
+        "line_name": "1e+21",
+        "start_psi": 1e-7,
+        "observation": null,
+        "notes": "0.000001",
+        "minutes": 100
+      }
+    }
+  ],
+  "validateFinding": [
+    {
+      "args": [
+        {
+          "title": " ",
+          "severity_key": ""
+        }
+      ],
+      "result": {
+        "title": "Describe the finding, like \"Return 3 line break\".",
+        "severity_key": "Pick a severity."
+      }
+    },
+    {
+      "args": [
+        {
+          "title": "Return 3 line break",
+          "severity_key": "major"
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "title": "",
+          "severity_key": "minor"
+        }
+      ],
+      "result": {
+        "title": "Describe the finding, like \"Return 3 line break\"."
+      }
+    },
+    {
+      "args": [
+        {
+          "title": "x",
+          "severity_key": ""
+        }
+      ],
+      "result": {
+        "severity_key": "Pick a severity."
+      }
+    },
+    {
+      "args": [
+        {
+          "title": "﻿ ",
+          "severity_key": " "
+        }
+      ],
+      "result": {
+        "title": "Describe the finding, like \"Return 3 line break\"."
+      }
+    }
+  ],
+  "poolDiagram": [
+    {
+      "args": [
+        "rectangle",
+        false
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M16 18 H124 Q130 18 130 24 V76 Q130 82 124 82 H16 Q10 82 10 76 V24 Q10 18 16 18 Z",
+        "spa": null
+      }
+    },
+    {
+      "args": [
+        "oval",
+        true
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M70 15 C102 15 130 30 130 50 C130 70 102 85 70 85 C38 85 10 70 10 50 C10 30 38 15 70 15 Z",
+        "spa": {
+          "cx": 145,
+          "cy": 22,
+          "r": 13
+        }
+      }
+    },
+    {
+      "args": [
+        "kidney",
+        true
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M30 16 C56 12 70 30 84 28 C100 25 106 14 118 18 C134 24 132 48 126 62 C116 84 88 86 64 84 C38 82 12 78 10 54 C8 32 14 19 30 16 Z",
+        "spa": {
+          "cx": 145,
+          "cy": 22,
+          "r": 13
+        }
+      }
+    },
+    {
+      "args": [
+        "l_shape",
+        false
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M14 14 H74 Q80 14 80 20 V48 H124 Q130 48 130 54 V80 Q130 86 124 86 H14 Q8 86 8 80 V20 Q8 14 14 14 Z",
+        "spa": null
+      }
+    },
+    {
+      "args": [
+        "freeform",
+        false
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M24 22 C46 8 70 26 92 16 C114 8 132 26 128 46 C124 62 134 74 116 82 C96 90 76 76 56 84 C34 92 10 80 12 60 C14 44 6 34 24 22 Z",
+        "spa": null
+      }
+    },
+    {
+      "args": [
+        null,
+        false
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M16 18 H124 Q130 18 130 24 V76 Q130 82 124 82 H16 Q10 82 10 76 V24 Q10 18 16 18 Z",
+        "spa": null
+      }
+    },
+    {
+      "args": [
+        null,
+        true
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M16 18 H124 Q130 18 130 24 V76 Q130 82 124 82 H16 Q10 82 10 76 V24 Q10 18 16 18 Z",
+        "spa": {
+          "cx": 145,
+          "cy": 22,
+          "r": 13
+        }
+      }
+    },
+    {
+      "args": [
+        "triangle",
+        true
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M16 18 H124 Q130 18 130 24 V76 Q130 82 124 82 H16 Q10 82 10 76 V24 Q10 18 16 18 Z",
+        "spa": {
+          "cx": 145,
+          "cy": 22,
+          "r": 13
+        }
+      }
+    }
+  ],
+  "validateNewJob": [
+    {
+      "args": [
+        {
+          "customerName": "",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        }
+      ],
+      "result": {
+        "customerName": "Enter the customer's name.",
+        "addressLine1": "Enter the street address."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": "",
+          "customerId": "c",
+          "propertyId": "p"
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "customerName": "",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": "",
+          "customerId": "",
+          "propertyId": ""
+        }
+      ],
+      "result": {
+        "customerName": "Enter the customer's name.",
+        "addressLine1": "Enter the street address."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "nope",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "10/12/2026",
+          "scheduleTime": "9am"
+        }
+      ],
+      "result": {
+        "customerEmail": "Check the email address.",
+        "scheduleDate": "Use the format YYYY-MM-DD.",
+        "scheduleTime": "Use 24-hour time, like 09:30 or 14:00."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": " a@b.co ",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "a@b",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        }
+      ],
+      "result": {
+        "customerEmail": "Check the email address."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "a@.b",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        }
+      ],
+      "result": {
+        "customerEmail": "Check the email address."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "a@b.",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        }
+      ],
+      "result": {
+        "customerEmail": "Check the email address."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "a@b.c.d",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "a b@c.d",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        }
+      ],
+      "result": {
+        "customerEmail": "Check the email address."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "a@@c.d",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        }
+      ],
+      "result": {
+        "customerEmail": "Check the email address."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "nope",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": "",
+          "customerId": "c"
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "customerName": "  ",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        }
+      ],
+      "result": {
+        "customerName": "Enter the customer's name."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "\t",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        }
+      ],
+      "result": {
+        "addressLine1": "Enter the street address."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "2026-10-14",
+          "scheduleTime": "09:30"
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "2026-10-14",
+          "scheduleTime": "9:30"
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "2026-10-14",
+          "scheduleTime": "23:59"
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "2026-10-14",
+          "scheduleTime": "24:00"
+        }
+      ],
+      "result": {
+        "scheduleTime": "Use 24-hour time, like 09:30 or 14:00."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "2026-10-14",
+          "scheduleTime": "19:60"
+        }
+      ],
+      "result": {
+        "scheduleTime": "Use 24-hour time, like 09:30 or 14:00."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "2026-10-14",
+          "scheduleTime": "123:00"
+        }
+      ],
+      "result": {
+        "scheduleTime": "Use 24-hour time, like 09:30 or 14:00."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "2026-10-14",
+          "scheduleTime": "09:30\n"
+        }
+      ],
+      "result": {
+        "scheduleTime": "Use 24-hour time, like 09:30 or 14:00."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "2026-10-14\n",
+          "scheduleTime": ""
+        }
+      ],
+      "result": {
+        "scheduleDate": "Use the format YYYY-MM-DD."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "2026-1-14",
+          "scheduleTime": ""
+        }
+      ],
+      "result": {
+        "scheduleDate": "Use the format YYYY-MM-DD."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "２０２６-10-14",
+          "scheduleTime": ""
+        }
+      ],
+      "result": {
+        "scheduleDate": "Use the format YYYY-MM-DD."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": "09:30"
+        }
+      ],
+      "result": {
+        "scheduleDate": "Pick a date for this time."
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": "9am"
+        }
+      ],
+      "result": {
+        "scheduleTime": "Use 24-hour time, like 09:30 or 14:00.",
+        "scheduleDate": "Pick a date for this time."
+      }
+    }
+  ],
+  "formatAddress": [
+    {
+      "args": [
+        {
+          "address_line1": "1423 Palm Ct",
+          "has_pool": true,
+          "has_spa": false,
+          "city": "Phoenix",
+          "state": "AZ",
+          "postal_code": "85016"
+        }
+      ],
+      "result": "1423 Palm Ct, Phoenix, AZ 85016"
+    },
+    {
+      "args": [
+        {
+          "address_line1": "1 Main",
+          "has_pool": true,
+          "has_spa": false,
+          "city": null,
+          "state": null,
+          "postal_code": null
+        }
+      ],
+      "result": "1 Main"
+    },
+    {
+      "args": [
+        {
+          "address_line1": "1 Main",
+          "has_pool": true,
+          "has_spa": false,
+          "city": "Mesa"
+        }
+      ],
+      "result": "1 Main, Mesa"
+    },
+    {
+      "args": [
+        {
+          "address_line1": "1 Main",
+          "has_pool": true,
+          "has_spa": false,
+          "state": "AZ"
+        }
+      ],
+      "result": "1 Main, AZ"
+    },
+    {
+      "args": [
+        {
+          "address_line1": "1 Main",
+          "has_pool": true,
+          "has_spa": false,
+          "postal_code": "85016"
+        }
+      ],
+      "result": "1 Main, 85016"
+    },
+    {
+      "args": [
+        {
+          "address_line1": "",
+          "has_pool": true,
+          "has_spa": false,
+          "city": "Mesa",
+          "state": "AZ"
+        }
+      ],
+      "result": "Mesa, AZ"
+    },
+    {
+      "args": [
+        {
+          "address_line1": "",
+          "has_pool": true,
+          "has_spa": false,
+          "city": "",
+          "state": "",
+          "postal_code": ""
+        }
+      ],
+      "result": ""
+    }
+  ],
+  "newJobRecords": [
+    {
+      "args": [
+        {
+          "customerName": " Maria ",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1423 Palm Ct",
+          "city": "",
+          "state": "az",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        },
+        {
+          "poolType": "vinyl",
+          "hasSpa": true,
+          "accessNotes": " gate 4821 ",
+          "timing": {
+            "kind": "now",
+            "at": "2026-10-12T17:00:00Z"
+          },
+          "assignedUserId": "u1"
+        }
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "Maria",
+          "phone": null,
+          "email": null
+        },
+        "property": {
+          "address_line1": "1423 Palm Ct",
+          "city": null,
+          "state": "AZ",
+          "postal_code": null,
+          "pool_type": "vinyl",
+          "has_pool": true,
+          "has_spa": true,
+          "access_notes": "gate 4821"
+        },
+        "job": {
+          "type": "detection",
+          "assigned_user_id": "u1",
+          "status": "in_progress",
+          "started_at": "2026-10-12T17:00:00.000Z"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": "",
+          "customerId": "c",
+          "propertyId": "p"
+        },
+        {
+          "poolType": null,
+          "hasSpa": false,
+          "accessNotes": "",
+          "timing": {
+            "kind": "scheduled",
+            "date": "2026-10-14",
+            "time": "09:00",
+            "timeZone": "America/Phoenix"
+          },
+          "assignedUserId": null
+        }
+      ],
+      "result": {
+        "customer": null,
+        "property": null,
+        "job": {
+          "type": "detection",
+          "assigned_user_id": null,
+          "status": "scheduled",
+          "scheduled_start": "2026-10-14T16:00:00.000Z"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": " 602 ",
+          "customerEmail": " a@b.co ",
+          "addressLine1": " 1 St ",
+          "city": " Mesa ",
+          "state": " straße ",
+          "postalCode": "  ",
+          "scheduleDate": "",
+          "scheduleTime": "",
+          "customerId": ""
+        },
+        {
+          "poolType": "vinyl",
+          "hasSpa": true,
+          "accessNotes": " gate 4821 ",
+          "timing": {
+            "kind": "later"
+          },
+          "assignedUserId": "u1",
+          "jobType": "maintenance"
+        }
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "M",
+          "phone": "602",
+          "email": "a@b.co"
+        },
+        "property": {
+          "address_line1": "1 St",
+          "city": "Mesa",
+          "state": "STRASSE",
+          "postal_code": null,
+          "pool_type": "vinyl",
+          "has_pool": true,
+          "has_spa": true,
+          "access_notes": "gate 4821"
+        },
+        "job": {
+          "type": "maintenance",
+          "assigned_user_id": "u1",
+          "status": "unscheduled"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        },
+        {
+          "poolType": "vinyl",
+          "hasSpa": true,
+          "accessNotes": " gate 4821 ",
+          "timing": {
+            "kind": "scheduled",
+            "date": "2026-07-01",
+            "time": "",
+            "timeZone": "America/New_York"
+          },
+          "assignedUserId": "u1",
+          "jobType": "repair"
+        }
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "M",
+          "phone": null,
+          "email": null
+        },
+        "property": {
+          "address_line1": "1 St",
+          "city": null,
+          "state": null,
+          "postal_code": null,
+          "pool_type": "vinyl",
+          "has_pool": true,
+          "has_spa": true,
+          "access_notes": "gate 4821"
+        },
+        "job": {
+          "type": "repair",
+          "assigned_user_id": "u1",
+          "status": "scheduled",
+          "scheduled_start": "2026-07-01T12:00:00.000Z"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        },
+        {
+          "poolType": "vinyl",
+          "hasSpa": true,
+          "accessNotes": " gate 4821 ",
+          "timing": {
+            "kind": "scheduled",
+            "date": "2026-03-08",
+            "time": "02:30",
+            "timeZone": "America/New_York"
+          },
+          "assignedUserId": "u1"
+        }
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "M",
+          "phone": null,
+          "email": null
+        },
+        "property": {
+          "address_line1": "1 St",
+          "city": null,
+          "state": null,
+          "postal_code": null,
+          "pool_type": "vinyl",
+          "has_pool": true,
+          "has_spa": true,
+          "access_notes": "gate 4821"
+        },
+        "job": {
+          "type": "detection",
+          "assigned_user_id": "u1",
+          "status": "scheduled",
+          "scheduled_start": "2026-03-08T06:30:00.000Z"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        },
+        {
+          "poolType": "vinyl",
+          "hasSpa": true,
+          "accessNotes": " gate 4821 ",
+          "timing": {
+            "kind": "scheduled",
+            "date": "2026-11-01",
+            "time": "01:30",
+            "timeZone": "America/New_York"
+          },
+          "assignedUserId": "u1"
+        }
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "M",
+          "phone": null,
+          "email": null
+        },
+        "property": {
+          "address_line1": "1 St",
+          "city": null,
+          "state": null,
+          "postal_code": null,
+          "pool_type": "vinyl",
+          "has_pool": true,
+          "has_spa": true,
+          "access_notes": "gate 4821"
+        },
+        "job": {
+          "type": "detection",
+          "assigned_user_id": "u1",
+          "status": "scheduled",
+          "scheduled_start": "2026-11-01T05:30:00.000Z"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        },
+        {
+          "poolType": "vinyl",
+          "hasSpa": true,
+          "accessNotes": " gate 4821 ",
+          "timing": {
+            "kind": "scheduled",
+            "date": "2026-03-08",
+            "time": "12:00",
+            "timeZone": "America/New_York"
+          },
+          "assignedUserId": "u1"
+        }
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "M",
+          "phone": null,
+          "email": null
+        },
+        "property": {
+          "address_line1": "1 St",
+          "city": null,
+          "state": null,
+          "postal_code": null,
+          "pool_type": "vinyl",
+          "has_pool": true,
+          "has_spa": true,
+          "access_notes": "gate 4821"
+        },
+        "job": {
+          "type": "detection",
+          "assigned_user_id": "u1",
+          "status": "scheduled",
+          "scheduled_start": "2026-03-08T16:00:00.000Z"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        },
+        {
+          "poolType": "vinyl",
+          "hasSpa": true,
+          "accessNotes": " gate 4821 ",
+          "timing": {
+            "kind": "scheduled",
+            "date": "2026-12-31",
+            "time": "23:30",
+            "timeZone": "Asia/Kolkata"
+          },
+          "assignedUserId": "u1"
+        }
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "M",
+          "phone": null,
+          "email": null
+        },
+        "property": {
+          "address_line1": "1 St",
+          "city": null,
+          "state": null,
+          "postal_code": null,
+          "pool_type": "vinyl",
+          "has_pool": true,
+          "has_spa": true,
+          "access_notes": "gate 4821"
+        },
+        "job": {
+          "type": "detection",
+          "assigned_user_id": "u1",
+          "status": "scheduled",
+          "scheduled_start": "2026-12-31T18:00:00.000Z"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        },
+        {
+          "poolType": "vinyl",
+          "hasSpa": true,
+          "accessNotes": " gate 4821 ",
+          "timing": {
+            "kind": "scheduled",
+            "date": "2026-13-40",
+            "time": "25:70",
+            "timeZone": "UTC"
+          },
+          "assignedUserId": "u1"
+        }
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "M",
+          "phone": null,
+          "email": null
+        },
+        "property": {
+          "address_line1": "1 St",
+          "city": null,
+          "state": null,
+          "postal_code": null,
+          "pool_type": "vinyl",
+          "has_pool": true,
+          "has_spa": true,
+          "access_notes": "gate 4821"
+        },
+        "job": {
+          "type": "detection",
+          "assigned_user_id": "u1",
+          "status": "scheduled",
+          "scheduled_start": "2027-02-10T02:10:00.000Z"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        },
+        {
+          "poolType": "vinyl",
+          "hasSpa": true,
+          "accessNotes": " gate 4821 ",
+          "timing": {
+            "kind": "scheduled",
+            "date": "0026-01-01",
+            "time": "09:00",
+            "timeZone": "UTC"
+          },
+          "assignedUserId": "u1"
+        }
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "M",
+          "phone": null,
+          "email": null
+        },
+        "property": {
+          "address_line1": "1 St",
+          "city": null,
+          "state": null,
+          "postal_code": null,
+          "pool_type": "vinyl",
+          "has_pool": true,
+          "has_spa": true,
+          "access_notes": "gate 4821"
+        },
+        "job": {
+          "type": "detection",
+          "assigned_user_id": "u1",
+          "status": "scheduled",
+          "scheduled_start": "1926-01-01T09:00:00.000Z"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        },
+        {
+          "poolType": "vinyl",
+          "hasSpa": true,
+          "accessNotes": " gate 4821 ",
+          "timing": {
+            "kind": "scheduled",
+            "date": "2026-10",
+            "time": "09:00",
+            "timeZone": "UTC"
+          },
+          "assignedUserId": "u1"
+        }
+      ],
+      "throws": "Invalid time value"
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        },
+        {
+          "poolType": "vinyl",
+          "hasSpa": true,
+          "accessNotes": " gate 4821 ",
+          "timing": {
+            "kind": "scheduled",
+            "date": "2026-10-14",
+            "time": "09:00",
+            "timeZone": "Mars/Base"
+          },
+          "assignedUserId": "u1"
+        }
+      ],
+      "throws": "Invalid time zone specified: Mars/Base"
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        },
+        {
+          "poolType": "vinyl",
+          "hasSpa": true,
+          "accessNotes": " gate 4821 ",
+          "timing": {
+            "kind": "now",
+            "at": "2026-10-12T17:00:00.123+02:00"
+          },
+          "assignedUserId": "u1"
+        }
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "M",
+          "phone": null,
+          "email": null
+        },
+        "property": {
+          "address_line1": "1 St",
+          "city": null,
+          "state": null,
+          "postal_code": null,
+          "pool_type": "vinyl",
+          "has_pool": true,
+          "has_spa": true,
+          "access_notes": "gate 4821"
+        },
+        "job": {
+          "type": "detection",
+          "assigned_user_id": "u1",
+          "status": "in_progress",
+          "started_at": "2026-10-12T15:00:00.123Z"
+        }
+      }
+    }
+  ],
+  "localDate": [
+    {
+      "args": [
+        "2026-10-13T05:30:00Z",
+        "America/Phoenix"
+      ],
+      "result": "2026-10-12"
+    },
+    {
+      "args": [
+        "2026-10-13T07:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "2026-10-13"
+    },
+    {
+      "args": [
+        "2026-10-13T06:59:59.999Z",
+        "America/Phoenix"
+      ],
+      "result": "2026-10-12"
+    },
+    {
+      "args": [
+        "2026-03-08T04:59:00Z",
+        "America/New_York"
+      ],
+      "result": "2026-03-07"
+    },
+    {
+      "args": [
+        "2026-12-31T18:30:00Z",
+        "Asia/Kolkata"
+      ],
+      "result": "2027-01-01"
+    },
+    {
+      "args": [
+        "2026-12-31T18:29:00Z",
+        "Asia/Kolkata"
+      ],
+      "result": "2026-12-31"
+    },
+    {
+      "args": [
+        "2026-01-01T00:00:00Z",
+        "Pacific/Kiritimati"
+      ],
+      "result": "2026-01-01"
+    },
+    {
+      "args": [
+        "1969-12-31T23:59:59Z",
+        "UTC"
+      ],
+      "result": "1969-12-31"
+    },
+    {
+      "args": [
+        "2026-10-13T05:30:00Z",
+        "Not/AZone"
+      ],
+      "throws": "Invalid time zone specified: Not/AZone"
+    },
+    {
+      "args": [
+        "not a date",
+        "America/Phoenix"
+      ],
+      "throws": "Invalid time value"
+    }
+  ],
+  "groupJobs": [
+    {
+      "args": [
+        [
+          {
+            "id": "late-today",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-13T05:30:00Z"
+          },
+          {
+            "id": "tomorrow",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-13T16:00:00Z"
+          },
+          {
+            "id": "tomorrow-early",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-13T14:00:00.000Z"
+          },
+          {
+            "id": "running",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "in_progress",
+            "scheduled_start": "2026-10-01T16:00:00Z"
+          },
+          {
+            "id": "running-undated",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "in_progress",
+            "started_at": "2026-10-12T15:00:00+00:00"
+          },
+          {
+            "id": "no-date",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": "2026-10-10T00:00:00Z"
+          },
+          {
+            "id": "no-date-newer",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": "2026-10-11T00:00:00Z"
+          },
+          {
+            "id": "no-date-blank",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled"
+          },
+          {
+            "id": "scheduled-undated",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "created_at": "2026-10-09T00:00:00Z"
+          },
+          {
+            "id": "paid",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "scheduled_start": "2026-10-05T16:00:00Z"
+          },
+          {
+            "id": "old",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "scheduled_start": "2026-06-01T16:00:00Z"
+          },
+          {
+            "id": "canceled-recent",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "canceled",
+            "created_at": "2026-10-11T12:00:00Z"
+          },
+          {
+            "id": "done-started",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "done",
+            "started_at": "2026-10-08T12:00:00Z"
+          },
+          {
+            "id": "gone",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "deleted_at": "2026-10-11T00:00:00Z"
+          },
+          {
+            "id": "missed",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-09T16:00:00Z"
+          },
+          {
+            "id": "missed-long-ago",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-01-09T16:00:00Z"
+          },
+          {
+            "id": "cutoff",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "started_at": "2026-09-12T17:00:00Z"
+          },
+          {
+            "id": "before-cutoff",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "started_at": "2026-09-12T16:59:59.999Z"
+          }
+        ],
+        "2026-10-12T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "today": [
+          "running",
+          "running-undated",
+          "late-today"
+        ],
+        "upcoming": [
+          "tomorrow-early",
+          "tomorrow"
+        ],
+        "unscheduled": [
+          "no-date-newer",
+          "no-date",
+          "scheduled-undated",
+          "no-date-blank"
+        ],
+        "recent": [
+          "canceled-recent",
+          "missed",
+          "done-started",
+          "paid",
+          "cutoff",
+          "missed-long-ago"
+        ]
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "late-today",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-13T05:30:00Z"
+          },
+          {
+            "id": "tomorrow",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-13T16:00:00Z"
+          },
+          {
+            "id": "tomorrow-early",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-13T14:00:00.000Z"
+          },
+          {
+            "id": "running",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "in_progress",
+            "scheduled_start": "2026-10-01T16:00:00Z"
+          },
+          {
+            "id": "running-undated",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "in_progress",
+            "started_at": "2026-10-12T15:00:00+00:00"
+          },
+          {
+            "id": "no-date",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": "2026-10-10T00:00:00Z"
+          },
+          {
+            "id": "no-date-newer",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": "2026-10-11T00:00:00Z"
+          },
+          {
+            "id": "no-date-blank",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled"
+          },
+          {
+            "id": "scheduled-undated",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "created_at": "2026-10-09T00:00:00Z"
+          },
+          {
+            "id": "paid",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "scheduled_start": "2026-10-05T16:00:00Z"
+          },
+          {
+            "id": "old",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "scheduled_start": "2026-06-01T16:00:00Z"
+          },
+          {
+            "id": "canceled-recent",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "canceled",
+            "created_at": "2026-10-11T12:00:00Z"
+          },
+          {
+            "id": "done-started",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "done",
+            "started_at": "2026-10-08T12:00:00Z"
+          },
+          {
+            "id": "gone",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "deleted_at": "2026-10-11T00:00:00Z"
+          },
+          {
+            "id": "missed",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-09T16:00:00Z"
+          },
+          {
+            "id": "missed-long-ago",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-01-09T16:00:00Z"
+          },
+          {
+            "id": "cutoff",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "started_at": "2026-09-12T17:00:00Z"
+          },
+          {
+            "id": "before-cutoff",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "started_at": "2026-09-12T16:59:59.999Z"
+          }
+        ],
+        "2026-10-13T06:59:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "today": [
+          "running",
+          "running-undated",
+          "late-today"
+        ],
+        "upcoming": [
+          "tomorrow-early",
+          "tomorrow"
+        ],
+        "unscheduled": [
+          "no-date-newer",
+          "no-date",
+          "scheduled-undated",
+          "no-date-blank"
+        ],
+        "recent": [
+          "canceled-recent",
+          "missed",
+          "done-started",
+          "paid",
+          "missed-long-ago"
+        ]
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "late-today",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-13T05:30:00Z"
+          },
+          {
+            "id": "tomorrow",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-13T16:00:00Z"
+          },
+          {
+            "id": "tomorrow-early",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-13T14:00:00.000Z"
+          },
+          {
+            "id": "running",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "in_progress",
+            "scheduled_start": "2026-10-01T16:00:00Z"
+          },
+          {
+            "id": "running-undated",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "in_progress",
+            "started_at": "2026-10-12T15:00:00+00:00"
+          },
+          {
+            "id": "no-date",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": "2026-10-10T00:00:00Z"
+          },
+          {
+            "id": "no-date-newer",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": "2026-10-11T00:00:00Z"
+          },
+          {
+            "id": "no-date-blank",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled"
+          },
+          {
+            "id": "scheduled-undated",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "created_at": "2026-10-09T00:00:00Z"
+          },
+          {
+            "id": "paid",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "scheduled_start": "2026-10-05T16:00:00Z"
+          },
+          {
+            "id": "old",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "scheduled_start": "2026-06-01T16:00:00Z"
+          },
+          {
+            "id": "canceled-recent",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "canceled",
+            "created_at": "2026-10-11T12:00:00Z"
+          },
+          {
+            "id": "done-started",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "done",
+            "started_at": "2026-10-08T12:00:00Z"
+          },
+          {
+            "id": "gone",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "deleted_at": "2026-10-11T00:00:00Z"
+          },
+          {
+            "id": "missed",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-09T16:00:00Z"
+          },
+          {
+            "id": "missed-long-ago",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-01-09T16:00:00Z"
+          },
+          {
+            "id": "cutoff",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "started_at": "2026-09-12T17:00:00Z"
+          },
+          {
+            "id": "before-cutoff",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "started_at": "2026-09-12T16:59:59.999Z"
+          }
+        ],
+        "2026-10-12T17:00:00Z",
+        "America/New_York"
+      ],
+      "result": {
+        "today": [
+          "running",
+          "running-undated"
+        ],
+        "upcoming": [
+          "late-today",
+          "tomorrow-early",
+          "tomorrow"
+        ],
+        "unscheduled": [
+          "no-date-newer",
+          "no-date",
+          "scheduled-undated",
+          "no-date-blank"
+        ],
+        "recent": [
+          "canceled-recent",
+          "missed",
+          "done-started",
+          "paid",
+          "cutoff",
+          "missed-long-ago"
+        ]
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "late-today",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-13T05:30:00Z"
+          },
+          {
+            "id": "tomorrow",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-13T16:00:00Z"
+          },
+          {
+            "id": "tomorrow-early",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-13T14:00:00.000Z"
+          },
+          {
+            "id": "running",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "in_progress",
+            "scheduled_start": "2026-10-01T16:00:00Z"
+          },
+          {
+            "id": "running-undated",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "in_progress",
+            "started_at": "2026-10-12T15:00:00+00:00"
+          },
+          {
+            "id": "no-date",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": "2026-10-10T00:00:00Z"
+          },
+          {
+            "id": "no-date-newer",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": "2026-10-11T00:00:00Z"
+          },
+          {
+            "id": "no-date-blank",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled"
+          },
+          {
+            "id": "scheduled-undated",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "created_at": "2026-10-09T00:00:00Z"
+          },
+          {
+            "id": "paid",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "scheduled_start": "2026-10-05T16:00:00Z"
+          },
+          {
+            "id": "old",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "scheduled_start": "2026-06-01T16:00:00Z"
+          },
+          {
+            "id": "canceled-recent",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "canceled",
+            "created_at": "2026-10-11T12:00:00Z"
+          },
+          {
+            "id": "done-started",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "done",
+            "started_at": "2026-10-08T12:00:00Z"
+          },
+          {
+            "id": "gone",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "deleted_at": "2026-10-11T00:00:00Z"
+          },
+          {
+            "id": "missed",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-09T16:00:00Z"
+          },
+          {
+            "id": "missed-long-ago",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-01-09T16:00:00Z"
+          },
+          {
+            "id": "cutoff",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "started_at": "2026-09-12T17:00:00Z"
+          },
+          {
+            "id": "before-cutoff",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "started_at": "2026-09-12T16:59:59.999Z"
+          }
+        ],
+        "2026-10-12T17:00:00Z",
+        "Asia/Tokyo"
+      ],
+      "result": {
+        "today": [
+          "running",
+          "running-undated",
+          "late-today",
+          "tomorrow-early"
+        ],
+        "upcoming": [
+          "tomorrow"
+        ],
+        "unscheduled": [
+          "no-date-newer",
+          "no-date",
+          "scheduled-undated",
+          "no-date-blank"
+        ],
+        "recent": [
+          "canceled-recent",
+          "missed",
+          "done-started",
+          "paid",
+          "cutoff",
+          "missed-long-ago"
+        ]
+      }
+    },
+    {
+      "args": [
+        [],
+        "2026-10-12T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "today": [],
+        "upcoming": [],
+        "unscheduled": [],
+        "recent": []
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "u0",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": "2026-10-10T00:00:00Z"
+          },
+          {
+            "id": "u1",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": "2026-10-10T00:00:00.000Z"
+          },
+          {
+            "id": "u2",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": "2026-10-10 00:00:00+00"
+          },
+          {
+            "id": "u3",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": "2026-10-10T00:00:00+00:00"
+          },
+          {
+            "id": "u4",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": "2026-10-09T23:59:59Z"
+          },
+          {
+            "id": "u5",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": ""
+          },
+          {
+            "id": "u6",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": "a"
+          },
+          {
+            "id": "u7",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": "B"
+          }
+        ],
+        "2026-10-12T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "today": [],
+        "upcoming": [],
+        "unscheduled": [
+          "u7",
+          "u6",
+          "u0",
+          "u3",
+          "u1",
+          "u2",
+          "u4",
+          "u5"
+        ],
+        "recent": []
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "bad",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "not a date"
+          }
+        ],
+        "2026-10-12T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "throws": "Invalid time value"
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "bad-paid",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "scheduled_start": "not a date"
+          }
+        ],
+        "2026-10-12T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": {
+        "today": [],
+        "upcoming": [],
+        "unscheduled": [],
+        "recent": []
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "late-today",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-13T05:30:00Z"
+          },
+          {
+            "id": "tomorrow",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-13T16:00:00Z"
+          },
+          {
+            "id": "tomorrow-early",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-13T14:00:00.000Z"
+          },
+          {
+            "id": "running",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "in_progress",
+            "scheduled_start": "2026-10-01T16:00:00Z"
+          },
+          {
+            "id": "running-undated",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "in_progress",
+            "started_at": "2026-10-12T15:00:00+00:00"
+          },
+          {
+            "id": "no-date",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": "2026-10-10T00:00:00Z"
+          },
+          {
+            "id": "no-date-newer",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled",
+            "created_at": "2026-10-11T00:00:00Z"
+          },
+          {
+            "id": "no-date-blank",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "unscheduled"
+          },
+          {
+            "id": "scheduled-undated",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "created_at": "2026-10-09T00:00:00Z"
+          },
+          {
+            "id": "paid",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "scheduled_start": "2026-10-05T16:00:00Z"
+          },
+          {
+            "id": "old",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "scheduled_start": "2026-06-01T16:00:00Z"
+          },
+          {
+            "id": "canceled-recent",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "canceled",
+            "created_at": "2026-10-11T12:00:00Z"
+          },
+          {
+            "id": "done-started",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "done",
+            "started_at": "2026-10-08T12:00:00Z"
+          },
+          {
+            "id": "gone",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "deleted_at": "2026-10-11T00:00:00Z"
+          },
+          {
+            "id": "missed",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-09T16:00:00Z"
+          },
+          {
+            "id": "missed-long-ago",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "scheduled",
+            "scheduled_start": "2026-01-09T16:00:00Z"
+          },
+          {
+            "id": "cutoff",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "started_at": "2026-09-12T17:00:00Z"
+          },
+          {
+            "id": "before-cutoff",
+            "company_id": "c",
+            "type": "detection",
+            "property_id": "p",
+            "status": "paid",
+            "started_at": "2026-09-12T16:59:59.999Z"
+          }
+        ],
+        "2026-10-12T17:00:00Z",
+        "Nowhere/Zone"
+      ],
+      "throws": "Invalid time zone specified: Nowhere/Zone"
+    }
+  ],
+  "formatSchedule": [
+    {
+      "args": [
+        "2026-10-12T16:00:00Z",
+        "2026-10-12T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "9:00 AM"
+    },
+    {
+      "args": [
+        "2026-10-14T16:00:00Z",
+        "2026-10-12T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Wed, Oct 14, 9:00 AM"
+    },
+    {
+      "args": [
+        null,
+        "2026-10-12T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Not scheduled"
+    },
+    {
+      "args": [
+        "",
+        "2026-10-12T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Not scheduled"
+    },
+    {
+      "args": [
+        "2026-10-12T07:00:00Z",
+        "2026-10-12T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "12:00 AM"
+    },
+    {
+      "args": [
+        "2026-10-12T19:05:00Z",
+        "2026-10-12T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "12:05 PM"
+    },
+    {
+      "args": [
+        "2026-10-13T06:59:00Z",
+        "2026-10-12T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "11:59 PM"
+    },
+    {
+      "args": [
+        "2026-10-13T07:00:00Z",
+        "2026-10-12T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "Tue, Oct 13, 12:00 AM"
+    },
+    {
+      "args": [
+        "2027-01-01T05:00:00Z",
+        "2026-10-12T17:00:00Z",
+        "America/New_York"
+      ],
+      "result": "Fri, Jan 1, 12:00 AM"
+    },
+    {
+      "args": [
+        "2026-02-28T23:45:30.500Z",
+        "2026-10-12T17:00:00Z",
+        "Asia/Kolkata"
+      ],
+      "result": "Sun, Mar 1, 5:15 AM"
+    },
+    {
+      "args": [
+        "2026-05-03T12:00:00+05:30",
+        "2026-10-12T17:00:00Z",
+        "UTC"
+      ],
+      "result": "Sun, May 3, 6:30 AM"
+    },
+    {
+      "args": [
+        "2026-06-07T00:00:00Z",
+        "2026-10-12T17:00:00Z",
+        "Europe/London"
+      ],
+      "result": "Sun, Jun 7, 1:00 AM"
+    },
+    {
+      "args": [
+        "2026-08-20T21:30:00Z",
+        "2026-10-12T17:00:00Z",
+        "Australia/Sydney"
+      ],
+      "result": "Fri, Aug 21, 7:30 AM"
+    },
+    {
+      "args": [
+        "2026-09-09T09:09:00Z",
+        "2026-10-12T17:00:00Z",
+        "Pacific/Honolulu"
+      ],
+      "result": "Tue, Sep 8, 11:09 PM"
+    },
+    {
+      "args": [
+        "2026-04-15",
+        "2026-10-12T17:00:00Z",
+        "UTC"
+      ],
+      "result": "Wed, Apr 15, 12:00 AM"
+    },
+    {
+      "args": [
+        "2026-10-14T16:00:00Z",
+        "2026-10-12T17:00:00Z",
+        "Bad/Zone"
+      ],
+      "throws": "Invalid time zone specified: Bad/Zone"
+    },
+    {
+      "args": [
+        "garbage",
+        "2026-10-12T17:00:00Z",
+        "America/Phoenix"
+      ],
+      "throws": "Invalid time value"
+    }
+  ],
+  "propertyLocation": [
+    {
+      "args": [
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false,
+          "latitude": 33.44962,
+          "longitude": -111.94637
+        }
+      ],
+      "result": {
+        "lat": 33.44962,
+        "lng": -111.94637
+      }
+    },
+    {
+      "args": [
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false,
+          "latitude": 0,
+          "longitude": 0
+        }
+      ],
+      "result": {
+        "lat": 0,
+        "lng": 0
+      }
+    },
+    {
+      "args": [
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false,
+          "latitude": 33.4,
+          "longitude": null
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false,
+          "latitude": null,
+          "longitude": -111.9
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": null
+    }
+  ],
+  "nativeMapsUrl": [
+    {
+      "args": [
+        {
+          "address": "455 N Galvin Pkwy, Phoenix, AZ 85008",
+          "location": {
+            "lat": 33.44962,
+            "lng": -111.94637
+          }
+        },
+        "ios"
+      ],
+      "result": "https://maps.apple.com/?daddr=33.44962%2C-111.94637&q=455%20N%20Galvin%20Pkwy%2C%20Phoenix%2C%20AZ%2085008&dirflg=d"
+    },
+    {
+      "args": [
+        {
+          "address": "455 N Galvin Pkwy, Phoenix, AZ 85008",
+          "location": {
+            "lat": 33.44962,
+            "lng": -111.94637
+          }
+        },
+        "android"
+      ],
+      "result": "geo:0,0?q=33.44962%2C-111.94637(455%20N%20Galvin%20Pkwy%2C%20Phoenix%2C%20AZ%2085008)"
+    },
+    {
+      "args": [
+        {
+          "address": "455 N Galvin Pkwy, Phoenix, AZ 85008",
+          "location": {
+            "lat": 33.44962,
+            "lng": -111.94637
+          }
+        },
+        "web"
+      ],
+      "result": "https://www.google.com/maps/dir/?api=1&destination=33.44962%2C-111.94637&travelmode=driving"
+    },
+    {
+      "args": [
+        {
+          "address": "1 E Main St, Mesa"
+        },
+        "ios"
+      ],
+      "result": "https://maps.apple.com/?daddr=1%20E%20Main%20St%2C%20Mesa&q=1%20E%20Main%20St%2C%20Mesa&dirflg=d"
+    },
+    {
+      "args": [
+        {
+          "address": "1 E Main St, Mesa"
+        },
+        "android"
+      ],
+      "result": "geo:0,0?q=1%20E%20Main%20St%2C%20Mesa"
+    },
+    {
+      "args": [
+        {
+          "address": "1 E Main St, Mesa",
+          "location": null
+        },
+        "web"
+      ],
+      "result": "https://www.google.com/maps/dir/?api=1&destination=1%20E%20Main%20St%2C%20Mesa&travelmode=driving"
+    },
+    {
+      "args": [
+        {
+          "address": "Café #5 & Co. (rear) ~'!*",
+          "location": {
+            "lat": 1e-7,
+            "lng": 100
+          }
+        },
+        "ios"
+      ],
+      "result": "https://maps.apple.com/?daddr=1e-7%2C100&q=Caf%C3%A9%20%235%20%26%20Co.%20(rear)%20~'!*&dirflg=d"
+    },
+    {
+      "args": [
+        {
+          "address": "Café #5 & Co. (rear) ~'!*",
+          "location": {
+            "lat": 1e-7,
+            "lng": 100
+          }
+        },
+        "android"
+      ],
+      "result": "geo:0,0?q=1e-7%2C100(Caf%C3%A9%20%235%20%26%20Co.%20(rear)%20~'!*)"
+    },
+    {
+      "args": [
+        {
+          "address": "Ünïcode 😀 / ? = +",
+          "location": {
+            "lat": -0.5,
+            "lng": 1e+21
+          }
+        },
+        "web"
+      ],
+      "result": "https://www.google.com/maps/dir/?api=1&destination=-0.5%2C1e%2B21&travelmode=driving"
+    },
+    {
+      "args": [
+        {
+          "address": "",
+          "location": {
+            "lat": 0,
+            "lng": 0
+          }
+        },
+        "macos"
+      ],
+      "result": "https://www.google.com/maps/dir/?api=1&destination=0%2C0&travelmode=driving"
+    }
+  ]
+}

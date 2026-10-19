@@ -147,6 +147,16 @@ project. Waiting on the owner's install check; the Sentry test error waits on a 
   a fallback is proposed for any that doesn't).
 
 ### S1 Core rules
+
+Built 2026-10-19: `Sources/SundeckCore` (money, phones, statuses, roles, inspection and tests,
+new-job forms, job lists and dates, maps links, media and markup, signatures, quotes, invoices,
+chemistry, tips), checked against fixtures from `packages/core` (`apps/ios/fixtures`, about 800
+cases). JavaScript's number printing, rounding, trimming and sorting are in `JavaScript.swift`.
+Found while porting, left as they are in TypeScript: a pressure test with a negative duration
+says "in -5 min"; a negative subtotal (a single credit line) makes the discount negative; a job
+with an unreadable start time breaks the whole job list. For S2: the inspection config enums
+(`calculator`, `applies_to`, `answer`) refuse values this app doesn't know, so a newer server
+value must not fail the whole row when synced.
 - `SundeckCore`: the rules and types listed above, with `pnpm fixtures:swift` and the fixture
   tests.
 - **Done when:** every fixture matches on Linux and macOS, and CI fails on stale fixtures.
