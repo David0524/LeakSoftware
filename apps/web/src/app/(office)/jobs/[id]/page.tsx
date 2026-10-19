@@ -471,6 +471,7 @@ function Checklist({ detail }: { detail: JobDetail }) {
           allows_multiple: type.allows_multiple,
           section: type.section ?? "other",
         },
+        fromPlan: !!c.plan_cleaning_id,
         result: r
           ? {
               id: r.id,

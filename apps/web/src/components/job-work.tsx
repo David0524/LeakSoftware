@@ -31,6 +31,7 @@ import {
   type TestData,
   type TestType,
   type Verdict,
+  removeItemConfirm,
 } from "@leakbook/core";
 import type { FormState } from "@/app/actions/auth";
 import {
@@ -54,7 +55,7 @@ import { Segmented } from "./segmented";
 import { ShapePicker } from "./shape-picker";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
 import { Sheet, useConfirm } from "./sheet";
-import { Button, Checkbox, Chip, Select, cx } from "./ui";
+import { Button, Checkbox, Chip, Select, buttonClass, cx } from "./ui";
 
 // Working a job on the website (M9.5): the phone's job screen, for a browser.
 
@@ -226,6 +227,8 @@ export interface ChecklistRow {
   id: string;
   label: string;
   type: Pick<ComponentType, "id" | "name" | "answer" | "allows_multiple" | "section">;
+  /** Put on this visit by the plan's scheduled cleaning. */
+  fromPlan?: boolean;
   result: Pick<
     ChecklistItemResult,
     "id" | "status" | "outcome" | "location_text" | "method" | "exclusion_reason" | "notes"
@@ -253,6 +256,8 @@ export function ChecklistEditor({
 }) {
   const { pending, error, run } = useRun();
   const [adding, setAdding] = useState("");
+  // Edit, as in an iOS list: every item gets Remove (owner, 2026-10-19).
+  const [editing, setEditing] = useState(false);
   const sections = (Object.keys(CHECKLIST_SECTION_LABELS) as ChecklistSection[])
     .map((section) => ({ section, items: rows.filter((r) => r.type.section === section) }))
     .filter((s) => s.items.length > 0);
@@ -262,8 +267,26 @@ export function ChecklistEditor({
   ];
   return (
     <div className="space-y-3">
+      {rows.length ? (
+        <div className="-mb-1 flex justify-end">
+          <button
+            type="button"
+            aria-pressed={editing}
+            onClick={() => setEditing(!editing)}
+            className="min-h-11 px-2 font-semibold text-link"
+          >
+            {editing ? "Done" : "Edit"}
+          </button>
+        </div>
+      ) : null}
       {sections.map(({ section, items }) => (
-        <ChecklistGroup key={section} jobId={jobId} section={section} items={items} />
+        <ChecklistGroup
+          key={section}
+          jobId={jobId}
+          section={section}
+          items={items}
+          editing={editing}
+        />
       ))}
       {repeatable.length || addable.length ? (
         <div className="flex flex-wrap items-end gap-3">
@@ -302,16 +325,20 @@ function ChecklistGroup({
   jobId,
   section,
   items,
+  editing,
 }: {
   jobId: string;
   section: ChecklistSection;
   items: ChecklistRow[];
+  editing: boolean;
 }) {
   const { pending, error, run } = useRun();
   const toDo = items.filter((r) => currentVerdict(r.result ?? undefined) === null);
   const leaking = items.filter((r) => r.result?.outcome === "leaking").length;
   const attention = items.filter((r) => r.result?.outcome === "attention").length;
-  const [open, setOpen] = useState(toDo.length > 0);
+  const [folded, setOpen] = useState(toDo.length > 0);
+  // Editing opens every section, so each item shows its Remove button.
+  const open = folded || editing;
   const title = CHECKLIST_SECTION_LABELS[section];
   const summary =
     toDo.length > 0
@@ -333,7 +360,7 @@ function ChecklistGroup({
           type="button"
           aria-expanded={open}
           aria-controls={panel}
-          onClick={() => setOpen(!open)}
+          onClick={() => setOpen(!folded)}
           className="flex min-h-14 w-full items-center gap-3 px-4 text-left"
         >
           <svg
@@ -367,7 +394,7 @@ function ChecklistGroup({
           <ul className="grouped rounded-none">
             {items.map((row) => (
               <li key={row.id}>
-                <ChecklistItem jobId={jobId} row={row} />
+                <ChecklistItem jobId={jobId} row={row} editing={editing} />
               </li>
             ))}
           </ul>
@@ -407,7 +434,15 @@ const VERDICT_STYLE: Record<Verdict, string> = {
 const REMOVE = "remove";
 
 /** One row: the item, and its verdict as a pull-down (the system menu on a phone). */
-function ChecklistItem({ jobId, row }: { jobId: string; row: ChecklistRow }) {
+function ChecklistItem({
+  jobId,
+  row,
+  editing,
+}: {
+  jobId: string;
+  row: ChecklistRow;
+  editing: boolean;
+}) {
   const { error, run } = useRun();
   const [confirm, confirmSheet] = useConfirm();
   const saved = currentVerdict(row.result ?? undefined);
@@ -419,10 +454,12 @@ function ChecklistItem({ jobId, row }: { jobId: string; row: ChecklistRow }) {
 
   async function choose(value: string) {
     if (value === REMOVE) {
+      const ask = removeItemConfirm(row.label, row.fromPlan === true);
       if (
         await confirm({
-          title: `Remove ${row.label} from the checklist?`,
-          confirmLabel: "Remove Item",
+          title: ask.title,
+          message: ask.message ?? undefined,
+          confirmLabel: ask.confirm,
           destructive: true,
         })
       )
@@ -434,6 +471,24 @@ function ChecklistItem({ jobId, row }: { jobId: string; row: ChecklistRow }) {
       setVerdict,
       { job: jobId, component: row.id, result: row.result?.id ?? "", verdict: value },
       () => show(v),
+    );
+  }
+
+  if (editing) {
+    return (
+      <div className="flex min-h-11 items-center gap-3 px-4 py-1">
+        <span className="min-w-0 flex-1 leading-tight font-medium">{row.label}</span>
+        <button
+          type="button"
+          aria-label={`Remove ${row.label}`}
+          onClick={() => void choose(REMOVE)}
+          className={buttonClass("danger", "min-h-9 px-4")}
+        >
+          Remove
+        </button>
+        <ErrorText error={error} />
+        {confirmSheet}
+      </div>
     );
   }
 
@@ -481,26 +536,7 @@ function ChecklistItem({ jobId, row }: { jobId: string; row: ChecklistRow }) {
             ) : null}
           </span>
         </label>
-        {row.type.allows_multiple ? (
-          <button
-            type="button"
-            aria-label={`Remove ${row.label}`}
-            onClick={() => void choose(REMOVE)}
-            className="grid size-11 shrink-0 place-items-center rounded-full text-text-muted hover:text-text"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              className="size-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <path d="M6 6l12 12M18 6 6 18" />
-            </svg>
-          </button>
-        ) : null}
+
         <ErrorText error={error} />
         {confirmSheet}
       </div>
@@ -538,7 +574,7 @@ function ChecklistItem({ jobId, row }: { jobId: string; row: ChecklistRow }) {
                 {o.label}
               </option>
             ))}
-            {row.type.allows_multiple ? <option value={REMOVE}>Remove Item…</option> : null}
+            <option value={REMOVE}>Remove Item…</option>
           </select>
           <svg
             viewBox="0 0 24 24"

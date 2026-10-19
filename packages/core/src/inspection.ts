@@ -247,6 +247,22 @@ export function nextInstance(type: ComponentType, existing: JobComponent[]): Pla
   };
 }
 
+/**
+ * Removing an item from a job's checklist (owner, 2026-10-19: "You can't remove items from the
+ * checklist once added"): any item can go. A scheduled cleaning stays due on its plan, so it
+ * goes on the next visit, and the confirm says so.
+ */
+export function removeItemConfirm(
+  label: string,
+  fromPlan: boolean,
+): { title: string; message: string | null; confirm: string } {
+  return {
+    title: `Remove ${label} from the checklist?`,
+    message: fromPlan ? "It’s still due, so it goes on the next visit." : null,
+    confirm: "Remove Item",
+  };
+}
+
 export interface ChecklistTally {
   /** Not leaking (or "no" on a yes/no item). */
   pass: number;

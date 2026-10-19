@@ -18,6 +18,7 @@ import {
   type ComponentType,
   type JobComponent,
   type TestFieldSchema,
+  removeItemConfirm,
 } from "../src";
 
 const type = (key: string, over: Partial<ComponentType> = {}): ComponentType => ({
@@ -331,5 +332,18 @@ describe("verdicts", () => {
       location_text: null,
     });
     expect(verdictValues(null, "u1", now)).toMatchObject({ status: "pending", inspected_at: null });
+  });
+});
+
+describe("removeItemConfirm", () => {
+  it("asks before removing, and says a scheduled cleaning stays due", () => {
+    expect(removeItemConfirm("Skimmer 2", false)).toEqual({
+      title: "Remove Skimmer 2 from the checklist?",
+      message: null,
+      confirm: "Remove Item",
+    });
+    expect(removeItemConfirm("Clean filter", true).message).toBe(
+      "It’s still due, so it goes on the next visit.",
+    );
   });
 });
