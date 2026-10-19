@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-19 (overnight build, owner: "I trust your judgment"; for the owner to review)
+- **Route, schedule and timeline rules run on the phone**, ported to SundeckCore with fixtures from TypeScript, instead of new website endpoints for them. Drive times still come from the shop's cached times on the server (`cached_drive_times`) when online.
+- **The job Timeline reads the audit log straight from Supabase** (managers only; RLS gives techs nothing), like the website, since the audit log isn't synced. Offline it says "The timeline shows when you're online."
+- **Regular cleanings (`plan_cleaning`) stay on the website.** Phones can start, change, pause and end visit plans, but `plan_cleaning` isn't synced to phones; the plan sheet says so. Syncing it would need a migration; ask if you want it.
+- **Starting a maintenance plan needs a signal** (the visits are made on the server by `create_service_plan`); both apps say so and disable Start Plan offline.
+- **Dates and times use the system pickers** in both apps (Android's dialogs, the iPhone's calendar and wheels), per the spec; added `@react-native-community/datetimepicker` to the Expo app.
+- **The Expo app's tints stay computed from token colors** at the spec's opacities rather than becoming new entries in `brand/tokens.json`; no brand color is hardcoded.
+
 ## 2026-10-19 (owner, after installing the Swift build: "The mobile web app is beautiful. Please base the Swift build around that ... Do the same for the expo app, because we're going to have to push to Google Play too.")
 - **Both native apps follow the mobile website.** The Swift app and the Expo app (now also headed to Google Play) take the website's phone design and navigation: the floating tab bar (Today, Jobs, Schedule, Messages, More), large Barlow titles, soft cards, pill buttons and chips, and the job page split into Details, Checklist, Findings, Photos and Wrap-Up. The spec is `docs/design/2026-10-19-native-apps-follow-web.md`.
 - **Supersedes "No tab bar"** in the 2026-10-12 field app review and the phone app's Messages under Settings › Tools (2026-10-16): Messages, Schedule and Today become tabs in both apps.
