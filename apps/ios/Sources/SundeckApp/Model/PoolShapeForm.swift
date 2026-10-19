@@ -120,3 +120,23 @@ extension InspectionWrites {
             ])
     }
 }
+
+// MARK: - Markup on the pool diagram (owner, 2026-10-19: "Add markup tools to the pool diagrams")
+
+/// What's drawn on the job's pool diagram (`job.diagram_markup`, the same format as a photo's
+/// markup, 0..1 of the diagram).
+public func jobDiagramMarkup(_ job: Row?) -> [MarkupShape] { parseMarkup(job?["diagram_markup"]).shapes }
+
+/// "Mark Up", or "Edit Markup" once something is drawn (website DiagramPanel).
+public func diagramMarkupButton(_ shapes: [MarkupShape]) -> String { shapes.isEmpty ? "Mark Up" : "Edit Markup" }
+
+@MainActor
+extension InspectionWrites {
+    /// Saves the diagram's markup on the job through the sync layer; nothing drawn clears it.
+    public static func setDiagramMarkup(_ sync: SyncService, jobId: String, companyId: String, _ markup: Markup?)
+        throws
+    {
+        let value: JSONValue = try markup.flatMap { $0.shapes.isEmpty ? nil : try json($0) } ?? .null
+        try sync.write("job", id: jobId, companyId: companyId, ["diagram_markup": value])
+    }
+}

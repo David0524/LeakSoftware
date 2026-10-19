@@ -26,6 +26,10 @@ export default function AppLayout() {
         options={{ title: "Photo", headerLargeTitleEnabled: false }}
       />
       <Stack.Screen
+        name="jobs/[id]/diagram-markup"
+        options={{ title: "Mark Up Diagram", headerShown: false, gestureEnabled: false }}
+      />
+      <Stack.Screen
         name="jobs/[id]/signature"
         options={{ title: "Signature", headerLargeTitleEnabled: false }}
       />

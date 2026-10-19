@@ -2,6 +2,9 @@ import Svg, { Ellipse, G, Line, Path, Polygon, Text as SvgText } from "react-nat
 import { arrowHead, penPath, type MarkupShape } from "@leakbook/core";
 import { font, markupColor } from "./theme";
 
+/** The pixel space a pool diagram's markup is drawn in: its 160 x 100, five times over. */
+export const DIAGRAM_MARKUP_SPACE = { width: 800, height: 500 };
+
 /**
  * Draws markup over a photo. Shapes are stored as fractions of the image, so the same
  * markup lines up on a thumbnail, the full-screen viewer, and the office view. Each shape
@@ -9,23 +12,34 @@ import { font, markupColor } from "./theme";
  */
 export function MarkupLayer({
   shapes,
-  width,
-  height,
-  scale = 1,
+  width: outerWidth,
+  height: outerHeight,
+  scale: outerScale = 1,
+  space,
 }: {
   shapes: MarkupShape[];
   width: number;
   height: number;
   /** 1 on the full viewer; smaller on thumbnails. */
   scale?: number;
+  /**
+   * Draw in this pixel space, scaled to width x height: a pool diagram's markup uses 800 x 500
+   * over its 160 x 100 drawing, as the website does (DIAGRAM_MARKUP_SPACE), so its lines weigh
+   * the same as on a photo. `scale` is then the space's (its width over 400).
+   */
+  space?: { width: number; height: number };
 }) {
-  if (width === 0 || height === 0) return null;
+  if (outerWidth === 0 || outerHeight === 0) return null;
+  const width = space?.width ?? outerWidth;
+  const height = space?.height ?? outerHeight;
+  const scale = space ? space.width / 400 : outerScale;
   const stroke = Math.max(2, 4 * scale);
   const outline = stroke + Math.max(1.5, 3 * scale);
   return (
     <Svg
-      width={width}
-      height={height}
+      width={outerWidth}
+      height={outerHeight}
+      viewBox={`0 0 ${width} ${height}`}
       style={{ position: "absolute", left: 0, top: 0 }}
       pointerEvents="none"
     >

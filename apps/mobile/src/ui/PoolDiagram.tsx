@@ -1,7 +1,13 @@
 import { useRef, useState } from "react";
 import { Pressable, StyleSheet, View, type GestureResponderEvent } from "react-native";
 import Svg, { Circle, Path, Rect, Text as SvgText } from "react-native-svg";
-import { parseDiagramLayout, poolDiagram, type DiagramShape } from "@leakbook/core";
+import {
+  parseDiagramLayout,
+  poolDiagram,
+  type DiagramShape,
+  type MarkupShape,
+} from "@leakbook/core";
+import { DIAGRAM_MARKUP_SPACE, MarkupLayer } from "./MarkupLayer";
 import { color, font } from "./theme";
 
 export interface DiagramPin {
@@ -23,6 +29,7 @@ export function PoolDiagram({
   hasSpa,
   layout,
   pins,
+  markup = [],
   onPlace,
   title = "Pool diagram",
   outlined = false,
@@ -33,6 +40,8 @@ export function PoolDiagram({
   /** property.diagram_layout as synced: the mirror and the spa's place, size, and shape. */
   layout?: unknown;
   pins: DiagramPin[];
+  /** The job's diagram markup (job.diagram_markup), drawn in DIAGRAM_MARKUP_SPACE. */
+  markup?: MarkupShape[];
   onPlace?: (x: number, y: number) => void;
   /** What a screen reader calls it ("Pool diagram with 2 finding pins"). */
   title?: string;
@@ -161,6 +170,14 @@ export function PoolDiagram({
               <Pin key={p.id} pin={p} x={p.x * d.width} y={p.y * d.height} />
             ))}
           </Svg>
+          {markup.length ? (
+            <MarkupLayer
+              shapes={markup}
+              width={width}
+              height={height}
+              space={DIAGRAM_MARKUP_SPACE}
+            />
+          ) : null}
         </Pressable>
       ) : null}
     </View>

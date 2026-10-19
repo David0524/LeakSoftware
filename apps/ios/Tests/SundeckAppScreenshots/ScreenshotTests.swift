@@ -635,6 +635,31 @@
             try await snapshot(
                 "10-pool-shape-large-text", largeText: true, height: 2600,
                 PoolShapeSheet(propertyId: propertyId, companyId: "c1", form: shapeForm).app(env))
+            // Markup on the diagram (owner, 2026-10-19): a pen ring round the pin and an arrow.
+            let ring = (0...40).map { i in
+                MarkupPoint(x: 0.18 + 0.08 * cos(Double(i) / 6.4), y: 0.12 + 0.12 * sin(Double(i) / 6.4))
+            }
+            let diagramMarkup = Markup(shapes: [
+                penShape(.red, ring)!, .arrow(color: .yellow, x1: 0.5, y1: 0.75, x2: 0.3, y2: 0.3),
+                .text(color: .white, x: 0.55, y: 0.85, text: "Leak"),
+            ])
+            try InspectionWrites.setDiagramMarkup(env.session.sync, jobId: ids.job, companyId: "c1", diagramMarkup)
+            try await snapshot(
+                "10-findings-markup", height: 1800,
+                NavigationStack { JobScreen(jobId: ids.job, section: .findings) }.app(env))
+            let markedProperty = try #require(try store.get("property", propertyId))
+            try await snapshot(
+                "10-diagram-markup-editor",
+                MarkupCanvasEditor(
+                    title: "Mark Up Diagram", canvasLabel: "Pool diagram", ratio: 100.0 / 160,
+                    space: diagramMarkupSpace, saved: diagramMarkup.shapes, width: 800, height: 500
+                ) {
+                    PoolDiagram(
+                        shape: diagramShape(of: markedProperty), hasSpa: true,
+                        layout: diagramLayout(of: markedProperty), pins: [])
+                } save: { _, _ in
+                }
+                .app(env))
             try await snapshot(
                 "12-component", height: 2000,
                 NavigationStack { ComponentScreen(jobId: ids.job, componentId: ids.seam) }.app(env))

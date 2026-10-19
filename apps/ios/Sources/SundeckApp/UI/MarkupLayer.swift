@@ -18,6 +18,9 @@
         static var outline: Color { Color(uiColor: Tokens.Markup.outline.uiColor) }
     }
 
+    /// A pool diagram's markup space (website DIAGRAM_MARKUP_SPACE).
+    let diagramMarkupSpace = CGSize(width: 800, height: 500)
+
     /// Draws markup over a photo. Shapes are stored as fractions of the image, so the same markup
     /// lines up on a thumbnail, the full-screen viewer, and the office view. Each shape gets a dark
     /// outline so it reads on bright and dark photos alike. Port of apps/mobile/src/ui/MarkupLayer.tsx.
@@ -26,11 +29,26 @@
         var shapes: [MarkupShape]
         /// 1 at 400 points wide; nil uses width / 400, as Expo's viewer and editor do.
         var scale: CGFloat?
+        /// Draw in this space, scaled to fit the frame: a pool diagram's markup uses 800 x 500
+        /// (`diagramMarkupSpace`), so its lines weigh the same as on a photo (website
+        /// DIAGRAM_MARKUP_SPACE).
+        var space: CGSize?
+
+        init(shapes: [MarkupShape], scale: CGFloat? = nil, space: CGSize? = nil) {
+            self.shapes = shapes
+            self.scale = scale
+            self.space = space
+        }
 
         var body: some View {
-            Canvas { context, size in
-                guard size.width > 0, size.height > 0 else { return }
-                let scale = scale ?? size.width / 400
+            Canvas { context, frame in
+                guard frame.width > 0, frame.height > 0 else { return }
+                var size = frame
+                if let space, space.width > 0, space.height > 0 {
+                    context.scaleBy(x: frame.width / space.width, y: frame.height / space.height)
+                    size = space
+                }
+                let scale = space != nil ? size.width / 400 : (scale ?? size.width / 400)
                 let stroke = max(2, 4 * scale)
                 let outline = stroke + max(1.5, 3 * scale)
                 for shape in shapes {

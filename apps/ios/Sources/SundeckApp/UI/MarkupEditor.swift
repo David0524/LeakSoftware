@@ -3,15 +3,47 @@
     import SundeckTokens
     import SwiftUI
 
-    /// Full-screen markup editor, presented as a cover. Cancel and Save sit in the bar, the tools in
-    /// a bar at the bottom, and the photo is fitted between them so everything is reachable at any
-    /// shape. The original photo never changes: Save writes the row's `markup` only. Port of
-    /// MarkupEditor in apps/mobile/src/app/(app)/jobs/[id]/media/[mediaId].tsx.
+    /// Full-screen markup editor for a photo, presented as a cover. The original photo never
+    /// changes: Save writes the row's `markup` (and caption) only. Port of MarkupEditor in
+    /// apps/mobile/src/app/(app)/jobs/[id]/media/[mediaId].tsx.
     struct MarkupEditor: View {
         var media: Media
         var url: URL
-
         @Environment(SyncService.self) private var sync
+
+        var body: some View {
+            MarkupCanvasEditor(
+                title: "Mark Up", canvasLabel: "Photo", ratio: MediaDetail.photoRatio(media),
+                saved: parseMarkup(media.markup).shapes, width: media.width, height: media.height,
+                caption: media.caption ?? "", savedCaption: media.caption
+            ) {
+                MediaImage(url: url, label: "Photo")
+            } save: { markup, caption in
+                try MediaWrites.setMarkup(sync, media, markup)
+                if let caption { try MediaWrites.saveCaptionIfChanged(sync, media, caption) }
+            }
+        }
+    }
+
+    /// The markup tools over any picture (a photo, or a pool diagram): Cancel and Save sit in the
+    /// bar, the tools in a bar at the bottom, and the picture is fitted between them so everything
+    /// is reachable at any shape. Shapes are fractions (0..1) of the picture. Port of MarkupEditor
+    /// in apps/web/src/components/media-work.tsx.
+    struct MarkupCanvasEditor<Background: View>: View {
+        var title: String
+        /// VoiceOver's name for the picture ("Photo", "Pool diagram").
+        var canvasLabel: String
+        /// Height / width of the picture.
+        var ratio: Double
+        /// The markup space the layer draws in (a diagram's 800 x 500), nil for the picture's size.
+        var space: CGSize? = nil
+        /// nil: no caption field (a diagram has none).
+        var savedCaption: String?
+        var showsCaption: Bool
+        @ViewBuilder var background: Background
+        /// Save: the markup (nil when nothing's drawn) and the caption (nil without the field).
+        var save: (Markup?, String?) throws -> Void
+
         @Environment(\.dismiss) private var dismiss
         @State private var draft: MarkupDraft
         @State private var live: MarkupShape?
@@ -23,16 +55,27 @@
         @State private var caption: String
         @FocusState private var labelFocused: Bool
 
-        init(media: Media, url: URL) {
-            self.media = media
-            self.url = url
-            _draft = State(
-                initialValue: MarkupDraft(
-                    saved: parseMarkup(media.markup).shapes, width: media.width, height: media.height))
-            _caption = State(initialValue: media.caption ?? "")
+        init(
+            title: String, canvasLabel: String, ratio: Double, space: CGSize? = nil, saved: [MarkupShape],
+            width: Double?, height: Double?, caption: String? = nil, savedCaption: String? = nil,
+            @ViewBuilder background: () -> Background, save: @escaping (Markup?, String?) throws -> Void
+        ) {
+            self.title = title
+            self.canvasLabel = canvasLabel
+            self.ratio = ratio
+            self.space = space
+            self.savedCaption = savedCaption
+            showsCaption = caption != nil
+            self.background = background()
+            self.save = save
+            _draft = State(initialValue: MarkupDraft(saved: saved, width: width, height: height))
+            _caption = State(initialValue: caption ?? "")
         }
 
-        private var dirty: Bool { draft.isDirty || MediaDetail.captionChanged(media, caption) }
+        private var dirty: Bool {
+            draft.isDirty
+                || (showsCaption && caption.trimmingCharacters(in: .whitespacesAndNewlines) != (savedCaption ?? ""))
+        }
 
         var body: some View {
             NavigationStack {
@@ -40,13 +83,13 @@
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(Color.navy.ignoresSafeArea())
                     .safeAreaInset(edge: .bottom, spacing: 0) { tools }
-                    .navigationTitle("Mark Up")
+                    .navigationTitle(title)
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarBackground(.visible, for: .navigationBar)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) { Button("Cancel") { cancel() } }
                         ToolbarItem(placement: .confirmationAction) {
-                            Button(saving ? "Saving…" : "Save") { save() }.fontWeight(.semibold).disabled(saving)
+                            Button(saving ? "Saving…" : "Save") { commit() }.fontWeight(.semibold).disabled(saving)
                         }
                     }
             }
@@ -65,15 +108,14 @@
             }
         }
 
-        /// The photo fitted into the space, with its markup and the shape being drawn.
+        /// The picture fitted into the space, with its markup and the shape being drawn.
         private var canvas: some View {
             GeometryReader { area in
-                let ratio = MediaDetail.photoRatio(media)
                 let width = min(area.size.width, area.size.height / ratio)
                 let height = width * ratio
                 ZStack {
-                    MediaImage(url: url, label: "Photo")
-                    MarkupLayer(shapes: live.map { draft.shapes + [$0] } ?? draft.shapes)
+                    background
+                    MarkupLayer(shapes: live.map { draft.shapes + [$0] } ?? draft.shapes, space: space)
                 }
                 .frame(width: width, height: height)
                 .contentShape(Rectangle())
@@ -158,11 +200,15 @@
                         .disabled(!draft.canClear)
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    FieldLabel("Caption (optional)")
-                    TextField("", text: $caption, prompt: Text("What this shows").foregroundStyle(Color.placeholder))
+                if showsCaption {
+                    VStack(alignment: .leading, spacing: 4) {
+                        FieldLabel("Caption (optional)")
+                        TextField(
+                            "", text: $caption, prompt: Text("What this shows").foregroundStyle(Color.placeholder)
+                        )
                         .accessibilityLabel("Caption (optional)")
                         .fieldBox()
+                    }
                 }
             }
             .padding(.horizontal, 16)
@@ -179,12 +225,11 @@
             if dirty { confirmDiscard = true } else { dismiss() }
         }
 
-        private func save() {
+        private func commit() {
             saving = true
             defer { saving = false }
             do {
-                try MediaWrites.setMarkup(sync, media, draft.markup)
-                try MediaWrites.saveCaptionIfChanged(sync, media, caption)
+                try save(draft.markup, showsCaption ? caption : nil)
                 dismiss()
             } catch {
                 saveError = String(describing: error)

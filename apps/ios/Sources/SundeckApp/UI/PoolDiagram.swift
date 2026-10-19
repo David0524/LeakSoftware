@@ -55,6 +55,8 @@
         /// property.diagram_layout: the mirror and the spa's place, size, and shape.
         var layout = DiagramLayout()
         var pins: [DiagramPin]
+        /// What's drawn on the job's diagram (`job.diagram_markup`), in the 800 x 500 markup space.
+        var markup: [MarkupShape] = []
         /// The finding sheet's pin picker draws a 1 pt `controlBorder` outline; the Findings
         /// section's diagram is a plain white block.
         var outlined = false
@@ -88,7 +90,9 @@
                     if outlined { corner.strokeBorder(Color.controlBorder, lineWidth: 1) }
                 }
                 .accessibilityElement(children: .ignore)
-                .modifier(DiagramAccessibility(pins: pins, spaPlacement: spaPlacement, onPlace: onPlace))
+                .modifier(
+                    DiagramAccessibility(
+                        pins: pins, marked: !markup.isEmpty, spaPlacement: spaPlacement, onPlace: onPlace))
         }
 
         /// Barlow Bold at a size in the diagram's units, for "SPA" and the pin numbers.
@@ -126,6 +130,10 @@
                     }
                     .position(x: pin.point.x * size.width, y: pin.point.y * size.height)
                 }
+                if !markup.isEmpty {
+                    MarkupLayer(shapes: markup, space: diagramMarkupSpace)
+                        .frame(width: size.width, height: size.height)
+                }
             }
             .frame(width: size.width, height: size.height)
         }
@@ -143,6 +151,7 @@
 
     private struct DiagramAccessibility: ViewModifier {
         var pins: [DiagramPin]
+        var marked = false
         var spaPlacement: SpaPlacement?
         var onPlace: ((Double, Double) -> Void)?
 
@@ -177,7 +186,7 @@
                     .accessibilityAction { onPlace(0.5, 0.5) }
             } else {
                 content
-                    .accessibilityLabel("Pool diagram")
+                    .accessibilityLabel(marked ? "Pool diagram with markup" : "Pool diagram")
                     .accessibilityValue(pinSummary(pins))
             }
         }

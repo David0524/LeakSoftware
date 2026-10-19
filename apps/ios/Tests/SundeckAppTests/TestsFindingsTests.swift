@@ -575,3 +575,34 @@ private struct Inspection {
         #expect(PoolShapeForm.mirrorLabel == "Mirror (flip left to right)")
     }
 }
+
+/// Mark Up on the pool diagram (owner, 2026-10-19): `job.diagram_markup`, as a photo's markup.
+@Suite @MainActor struct DiagramMarkupTests {
+    @Test func markupSavesOnTheJobThroughSyncAndReadsBack() throws {
+        let s = try Inspection()
+        let jobId = try #require(try s.store.list("job").first?.id)
+        #expect(jobDiagramMarkup(try s.store.get("job", jobId)).isEmpty)
+        #expect(diagramMarkupButton([]) == "Mark Up")
+        let before = try s.store.pendingCount()
+        // Drawn with the same tools as a photo: a pen stroke and an arrow, on 800 x 500.
+        var draft = MarkupDraft(saved: [], width: 800, height: 500)
+        draft.release(stroke: (0...30).map { MarkupPoint(x: 0.2 + Double($0) * 0.01, y: 0.4) })
+        draft.tool = .arrow
+        draft.release(from: MarkupPoint(x: 0.7, y: 0.2), to: MarkupPoint(x: 0.5, y: 0.5))
+        try InspectionWrites.setDiagramMarkup(s.sync, jobId: jobId, companyId: "c1", draft.markup)
+        let row = try #require(try s.store.get("job", jobId))
+        #expect(row["diagram_markup"]?["version"] == 1)
+        #expect(row["diagram_markup"]?["shapes"]?.array?.map { $0["type"] } == ["pen", "arrow"])
+        #expect(try s.store.pendingCount() == before + 1)
+        let shapes = jobDiagramMarkup(row)
+        #expect(shapes == draft.shapes)
+        #expect(diagramMarkupButton(shapes) == "Edit Markup")
+        // The editor reopens with it, and Clear All then Save clears the column.
+        var again = MarkupDraft(saved: shapes, width: 800, height: 500)
+        #expect(again.shapes == shapes)
+        again.clearAll()
+        try InspectionWrites.setDiagramMarkup(s.sync, jobId: jobId, companyId: "c1", again.markup)
+        #expect(try s.store.get("job", jobId)?["diagram_markup"] == .null)
+        #expect(jobDiagramMarkup(try s.store.get("job", jobId)).isEmpty)
+    }
+}
