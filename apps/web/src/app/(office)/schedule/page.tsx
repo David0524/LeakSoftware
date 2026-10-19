@@ -323,9 +323,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       ) : null}
       {unlocated ? (
         <p className="mb-4 text-[0.9375rem] text-text-muted">
-          Pools marked “No map location” aren’t counted in drive times. Open the job and use Mark
-          Location Here at the pool
-          {office.isManager ? ", or Find Pool Locations in Settings › Scheduling" : ""}.
+          Pools marked “No map location” aren’t counted in drive times: their address wasn’t found
+          on the map. Check the address on the customer’s pool.
         </p>
       ) : null}
 

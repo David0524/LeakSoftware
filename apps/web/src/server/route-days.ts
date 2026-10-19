@@ -114,6 +114,7 @@ export async function loadRoutes(
       byKey.set(key, day);
     }
   }
+  await locateStops(office, jobs);
   const points = [ctx.depot, ...jobs.map((j) => propertyLocation(j.property))].filter(
     (p): p is LatLng => !!p,
   );
@@ -159,12 +160,44 @@ export async function needsScheduling(office: Office): Promise<JobRow[]> {
   ];
 }
 
+/** At most this many pools are looked up each time a route is loaded. */
+const LOOKUPS_PER_LOAD = 10;
+
+/**
+ * Pools on the day's stops with no map location are found from their address (owner,
+ * 2026-10-19: "It should be able to navigate based on the provided address"), so pools added
+ * on a phone are placed too. The jobs' properties get the coordinates in place.
+ */
+async function locateStops(office: Office, jobs: JobRow[]): Promise<void> {
+  if (!routingConfigured()) return;
+  const missing = [
+    ...new Map(
+      jobs
+        .filter((j) => j.property && !propertyLocation(j.property) && j.property.address_line1)
+        .map((j) => [j.property!.id, j.property!]),
+    ).values(),
+  ].slice(0, LOOKUPS_PER_LOAD);
+  const found = await Promise.all(
+    missing.map(async (p) => [p.id, await lookUpProperty(office, p.id)] as const),
+  );
+  for (const [id, at] of found) {
+    if (!at) continue;
+    for (const j of jobs) {
+      if (j.property?.id === id) Object.assign(j.property, { latitude: at.lat, longitude: at.lng });
+    }
+  }
+}
+
 /**
  * Find a pool's coordinates from its address when the routing service is set up and the
  * address changed since the last lookup. Quietly does nothing otherwise.
  */
 export async function locateProperty(office: Office, propertyId: string): Promise<boolean> {
-  if (!routingConfigured()) return false;
+  return !!(await lookUpProperty(office, propertyId));
+}
+
+async function lookUpProperty(office: Office, propertyId: string): Promise<LatLng | null> {
+  if (!routingConfigured()) return null;
   const supabase = await createClient();
   const { data } = await supabase
     .from("property")
@@ -173,13 +206,13 @@ export async function locateProperty(office: Office, propertyId: string): Promis
     .maybeSingle();
   const p = data as
     (Parameters<typeof formatAddress>[0] & { geocoded_address: string | null }) | null;
-  if (!p) return false;
+  if (!p) return null;
   const address = formatAddress(p);
   // Coordinates are kept with the address they belong to, whether looked up, marked at the
   // pool by GPS, or set by hand: only a changed address needs a new lookup.
-  if (p.geocoded_address === address) return false;
+  if (p.geocoded_address === address) return null;
   const found = await geocodeAddress(supabase, office.company.id, address);
-  if (!found) return false;
+  if (!found) return null;
   const { error } = await supabase
     .from("property")
     .update({
@@ -189,7 +222,7 @@ export async function locateProperty(office: Office, propertyId: string): Promis
       location_source: "geocoder",
     })
     .eq("id", propertyId);
-  return !error;
+  return error ? null : found;
 }
 
 /** The shop's coordinates from its address, when the address changed since the last lookup. */

@@ -83,7 +83,6 @@ import { QuotePanel } from "@/components/quote-panel";
 import { RemoveSignature } from "@/components/remove-signature";
 import { ReportPanel } from "@/components/report-panel";
 import { AddressLink } from "@/components/open-in-maps";
-import { MarkLocationHere } from "@/components/pool-location";
 import { JobSchedule } from "@/components/schedule-form";
 import { emailConfigured } from "@/server/email";
 
@@ -224,17 +223,6 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                             </span>
                           </Row>
                         ) : null}
-                        {propertyLocation(job.property) ? null : (
-                          <Row>
-                            <span className="min-w-0 flex-1 text-[0.9375rem] text-text-muted">
-                              Not on the map yet.
-                            </span>
-                            <MarkLocationHere
-                              target={{ property: job.property.id }}
-                              label="Mark Location Here"
-                            />
-                          </Row>
-                        )}
                       </Grouped>
                     ) : null}
 

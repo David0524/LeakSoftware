@@ -113,7 +113,7 @@ export default async function SchedulingSettingsPage() {
             {unlocated
               ? `${unlocated} ${unlocated === 1 ? "pool has" : "pools have"} no map location yet.`
               : "Every pool is on the map."}{" "}
-            A tech can mark a pool exactly with Mark Location Here on the job page.
+            Pools are found from their address when a route is planned.
           </p>
           {live && unlocated ? (
             <div className="mt-3">
