@@ -13,6 +13,8 @@
         static let enabled = false
 
         var company: CompanyContext
+        /// Asks the server for invites and payments (off only in screenshots).
+        var loadsServer = true
         @Environment(SyncService.self) private var sync
         @Environment(AppEnvironment.self) private var app
         @Environment(\.openRoute) private var openRoute
@@ -32,7 +34,7 @@
                 shopProgress(sync.store, company: company, invites: server.invites, payments: server.payments))
             // Nothing at all when hidden or done, so Today keeps its spacing.
             if !app.walkthrough.gettingStartedHidden, steps.contains(where: { !$0.done }) {
-                card(steps).task(id: company.id) { await loadServer() }
+                card(steps).task(id: company.id) { if loadsServer { await loadServer() } }
             }
         }
 
@@ -67,7 +69,7 @@
                     .accessibilityValue("\(done) of \(steps.count)")
                 VStack(spacing: 0) {
                     ForEach(Array(steps.enumerated()), id: \.element.id) { i, step in
-                        if i > 0 { Divider().overlay(Color.separator) }
+                        if i > 0 { Rectangle().fill(Color.separator).frame(height: 0.5) }
                         Button {
                             open(step)
                         } label: {

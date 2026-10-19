@@ -33,6 +33,8 @@
             }
             try await snapshot("70-tabs-card", tabbed(GettingStartedCard(company: company)).app(env))
             try await snapshot(
+                "74-tabs-card-no-server", tabbed(GettingStartedCard(company: company, loadsServer: false)).app(env))
+            try await snapshot(
                 "71-tabs-header",
                 tabbed(
                     VStack {
