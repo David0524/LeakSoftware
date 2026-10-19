@@ -27,6 +27,7 @@
                 if let company = session.company, let day {
                     header(day)
                     SyncBarRow()
+                    if day.ctx.isManager { GettingStartedCard(company: company) }
                     if let tip = tipFor(
                         platform: .web, screen: "today", role: company.role, services: company.services,
                         seen: app.walkthrough.seen)

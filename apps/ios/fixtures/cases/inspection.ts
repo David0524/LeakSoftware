@@ -1,5 +1,7 @@
 import {
   CHECKLIST_SECTION_LABELS,
+  checklistSectionSummary,
+  markRemainingLabel,
   FINDING_STATUS_LABELS,
   currentVerdict,
   instanceLabel,
@@ -705,6 +707,71 @@ export const inspection: ModuleCases = {
       [{ address: "Café #5 & Co. (rear) ~'!*", location: { lat: 1e-7, lng: 100 } }, "android"],
       [{ address: "Ünïcode 😀 / ? = +", location: { lat: -0.5, lng: 1e21 } }, "web"],
       [{ address: "", location: { lat: 0, lng: -0 } }, "macos"],
+    ],
+  ),
+
+  // checklist-summary.ts
+  checklistSectionSummary: rule(
+    (results: ({ status: string; outcome: string | null } | null)[], service?: boolean) =>
+      checklistSectionSummary(
+        results.map((r) => ({ result: r as never })),
+        service,
+      ),
+    [
+      [[]],
+      [[], true],
+      [[null, { status: "pending", outcome: null }, { status: "inspected", outcome: "ok" }]],
+      [
+        [
+          { status: "inspected", outcome: "ok" },
+          { status: "excluded", outcome: null },
+        ],
+      ],
+      [
+        [
+          { status: "inspected", outcome: "attention" },
+          { status: "inspected", outcome: null },
+        ],
+      ],
+      [
+        [
+          { status: "inspected", outcome: "leaking" },
+          { status: "inspected", outcome: "attention" },
+          { status: "inspected", outcome: "leaking" },
+        ],
+      ],
+      [[{ status: "inspected", outcome: "leaking" }]],
+      // An excluded item that still carries an outcome counts by its outcome.
+      [
+        [
+          { status: "excluded", outcome: "leaking" },
+          { status: "inspected", outcome: "ok" },
+        ],
+      ],
+      [[{ status: "inspected", outcome: "ok" }], true],
+      [[{ status: "inspected", outcome: "attention" }], true],
+      [
+        [
+          { status: "inspected", outcome: "attention" },
+          { status: "inspected", outcome: "attention" },
+          { status: "inspected", outcome: "leaking" },
+        ],
+        true,
+      ],
+      [[null, { status: "inspected", outcome: "attention" }], true],
+    ],
+  ),
+  markRemainingLabel: rule(
+    (answers: (string | null)[]) =>
+      markRemainingLabel(answers.map((a) => a ?? undefined) as ComponentType["answer"][]),
+    [
+      [[]],
+      [["yes_no", "yes_no"]],
+      [["done"]],
+      [["leak", "leak", "leak"]],
+      [["yes_no", "leak"]],
+      [["done", "yes_no"]],
+      [[null]],
     ],
   ),
 };

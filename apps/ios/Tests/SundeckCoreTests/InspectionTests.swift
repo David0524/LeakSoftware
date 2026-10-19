@@ -2,7 +2,8 @@ import Foundation
 import SundeckCore
 import Testing
 
-/// inspection (checklist, tests, findings, diagram), forms, job-list, route-plan and routing.
+/// inspection (checklist, tests, findings, diagram), checklist-summary, forms, job-list, and the
+/// places half of route-plan and routing.
 @Suite struct InspectionTests {
     let module = "inspection"
 
@@ -12,7 +13,7 @@ import Testing
             "checklistTally", "calculate", "validateTestData", "normalizeTestData", "validateFinding", "poolDiagram",
             "validateNewJob", "formatAddress", "newJobRecords", "localDate", "groupJobs", "formatSchedule",
             "propertyLocation", "nativeMapsUrl", "instanceLabel", "FINDING_STATUS_LABELS", "verdictLabel",
-            "verdictOptions", "currentVerdict", "verdictValues",
+            "verdictOptions", "currentVerdict", "verdictValues", "checklistSectionSummary", "markRemainingLabel",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -146,6 +147,14 @@ import Testing
             let date = try instant(try c.arg(2, as: String.self))
             return verdictValues(try c.arg(0, as: Verdict?.self), userId: try c.arg(1, as: String?.self), now: date)
         }
+    }
+
+    @Test func checklistSummary() {
+        checkRule(module, "checklistSectionSummary") { c in
+            checklistSectionSummary(
+                try c.arg(0, as: [ChecklistAnswer?].self), service: try c.arg(1, as: Bool?.self) ?? false)
+        }
+        checkRule(module, "markRemainingLabel") { c in markRemainingLabel(try c.arg(0, as: [ComponentAnswer?].self)) }
     }
 }
 

@@ -8575,5 +8575,289 @@
       ],
       "result": "https://www.google.com/maps/dir/?api=1&destination=0%2C0&travelmode=driving"
     }
+  ],
+  "checklistSectionSummary": [
+    {
+      "args": [
+        []
+      ],
+      "result": {
+        "text": "All clear",
+        "tone": "pass",
+        "toDo": 0,
+        "open": false
+      }
+    },
+    {
+      "args": [
+        [],
+        true
+      ],
+      "result": {
+        "text": "All done",
+        "tone": "pass",
+        "toDo": 0,
+        "open": false
+      }
+    },
+    {
+      "args": [
+        [
+          null,
+          {
+            "status": "pending",
+            "outcome": null
+          },
+          {
+            "status": "inspected",
+            "outcome": "ok"
+          }
+        ]
+      ],
+      "result": {
+        "text": "2 of 3 to do",
+        "tone": "muted",
+        "toDo": 2,
+        "open": true
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "status": "inspected",
+            "outcome": "ok"
+          },
+          {
+            "status": "excluded",
+            "outcome": null
+          }
+        ]
+      ],
+      "result": {
+        "text": "All clear",
+        "tone": "pass",
+        "toDo": 0,
+        "open": false
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "status": "inspected",
+            "outcome": "attention"
+          },
+          {
+            "status": "inspected",
+            "outcome": null
+          }
+        ]
+      ],
+      "result": {
+        "text": "1 attention",
+        "tone": "warning",
+        "toDo": 0,
+        "open": false
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "status": "inspected",
+            "outcome": "leaking"
+          },
+          {
+            "status": "inspected",
+            "outcome": "attention"
+          },
+          {
+            "status": "inspected",
+            "outcome": "leaking"
+          }
+        ]
+      ],
+      "result": {
+        "text": "2 leaking · 1 attention",
+        "tone": "fail",
+        "toDo": 0,
+        "open": false
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "status": "inspected",
+            "outcome": "leaking"
+          }
+        ]
+      ],
+      "result": {
+        "text": "1 leaking",
+        "tone": "fail",
+        "toDo": 0,
+        "open": false
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "status": "excluded",
+            "outcome": "leaking"
+          },
+          {
+            "status": "inspected",
+            "outcome": "ok"
+          }
+        ]
+      ],
+      "result": {
+        "text": "1 leaking",
+        "tone": "fail",
+        "toDo": 0,
+        "open": false
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "status": "inspected",
+            "outcome": "ok"
+          }
+        ],
+        true
+      ],
+      "result": {
+        "text": "All done",
+        "tone": "pass",
+        "toDo": 0,
+        "open": false
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "status": "inspected",
+            "outcome": "attention"
+          }
+        ],
+        true
+      ],
+      "result": {
+        "text": "1 needs attention",
+        "tone": "warning",
+        "toDo": 0,
+        "open": false
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "status": "inspected",
+            "outcome": "attention"
+          },
+          {
+            "status": "inspected",
+            "outcome": "attention"
+          },
+          {
+            "status": "inspected",
+            "outcome": "leaking"
+          }
+        ],
+        true
+      ],
+      "result": {
+        "text": "2 need attention",
+        "tone": "warning",
+        "toDo": 0,
+        "open": false
+      }
+    },
+    {
+      "args": [
+        [
+          null,
+          {
+            "status": "inspected",
+            "outcome": "attention"
+          }
+        ],
+        true
+      ],
+      "result": {
+        "text": "1 of 2 to do",
+        "tone": "muted",
+        "toDo": 1,
+        "open": true
+      }
+    }
+  ],
+  "markRemainingLabel": [
+    {
+      "args": [
+        []
+      ],
+      "result": "Answer 0 Remaining No"
+    },
+    {
+      "args": [
+        [
+          "yes_no",
+          "yes_no"
+        ]
+      ],
+      "result": "Answer 2 Remaining No"
+    },
+    {
+      "args": [
+        [
+          "done"
+        ]
+      ],
+      "result": "Mark 1 Remaining Done"
+    },
+    {
+      "args": [
+        [
+          "leak",
+          "leak",
+          "leak"
+        ]
+      ],
+      "result": "Mark 3 Remaining Not Leaking"
+    },
+    {
+      "args": [
+        [
+          "yes_no",
+          "leak"
+        ]
+      ],
+      "result": "Mark 2 Remaining Not Leaking"
+    },
+    {
+      "args": [
+        [
+          "done",
+          "yes_no"
+        ]
+      ],
+      "result": "Mark 2 Remaining Not Leaking"
+    },
+    {
+      "args": [
+        [
+          null
+        ]
+      ],
+      "result": "Mark 1 Remaining Not Leaking"
+    }
   ]
 }

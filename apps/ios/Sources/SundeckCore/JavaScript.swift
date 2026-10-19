@@ -174,6 +174,81 @@ enum ECMA {
         return out
     }
 
+    /// `Number.prototype.toFixed(digits)` for |x| < 1e21: the exact value rounded half up (a tie
+    /// picks the larger number), where C's `%.*f` would round a tie to even.
+    static func toFixed(_ x: Double, _ digits: Int) -> String {
+        if x.isNaN { return "NaN" }
+        if abs(x) >= 1e21 { return numberString(x) }
+        if x < 0 { return "-" + toFixed(-x, digits) }
+        // glibc and Darwin print a double's exact decimal digits.
+        let exact = String(format: "%.80f", x)
+        let parts = exact.split(separator: ".")
+        var kept = Array(parts[0] + parts[1].prefix(digits)).map { Int($0.asciiValue! - 48) }
+        let next = parts[1].dropFirst(digits).first.map { Int($0.asciiValue! - 48) } ?? 0
+        if next >= 5 {
+            var i = kept.count - 1
+            while i >= 0 {
+                if kept[i] == 9 {
+                    kept[i] = 0
+                    i -= 1
+                } else {
+                    kept[i] += 1
+                    break
+                }
+            }
+            if i < 0 { kept.insert(1, at: 0) }
+        }
+        let text = kept.map(String.init).joined()
+        guard digits > 0 else { return text }
+        return text.dropLast(digits) + "." + text.suffix(digits)
+    }
+
+    /// `String(value)` for a JSON value, as `Array.prototype.join` writes each element (null as "").
+    static func joinString(_ value: JSONValue) -> String {
+        switch value {
+        case .null: ""
+        case .bool(let b): b ? "true" : "false"
+        case .number(let n): numberString(n)
+        case .string(let s): s
+        case .array(let a): a.map(joinString).joined(separator: ",")
+        case .object: "[object Object]"
+        }
+    }
+
+    /// `Number(value)` for a JSON value (missing counts as undefined, which is NaN).
+    static func toNumber(_ value: JSONValue?) -> Double {
+        switch value {
+        case nil: .nan
+        case .null?: 0
+        case .bool(let b)?: b ? 1 : 0
+        case .number(let n)?: n
+        case .string(let s)?: number(s)
+        case .array(let a)?: number(joinString(.array(a)))
+        case .object?: .nan
+        }
+    }
+
+    /// `new URLSearchParams(pairs).toString()`: application/x-www-form-urlencoded.
+    static func searchParams(_ pairs: [(String, String)]) -> String {
+        func encode(_ s: String) -> String {
+            var out = ""
+            for byte in s.utf8 {
+                switch byte {
+                case UInt8(ascii: "A")...UInt8(ascii: "Z"), UInt8(ascii: "a")...UInt8(ascii: "z"),
+                    UInt8(ascii: "0")...UInt8(ascii: "9"), UInt8(ascii: "*"), UInt8(ascii: "-"), UInt8(ascii: "."),
+                    UInt8(ascii: "_"):
+                    out.unicodeScalars.append(Unicode.Scalar(byte))
+                case UInt8(ascii: " "):
+                    out += "+"
+                default:
+                    out += "%" + pad(String(byte, radix: 16, uppercase: true), 2)
+                }
+            }
+            return out
+        }
+        return pairs.map { "\(encode($0.0))=\(encode($0.1))" }.joined(separator: "&")
+    }
+
     /// JavaScript truthiness of a JSON value (missing counts as undefined).
     static func truthy(_ value: JSONValue?) -> Bool {
         switch value {

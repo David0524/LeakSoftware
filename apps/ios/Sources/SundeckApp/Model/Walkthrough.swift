@@ -8,12 +8,15 @@ import SundeckCore
 public final class Walkthrough {
     public private(set) var seen: [String]
     public private(set) var launchSeen: Bool
+    /// Today's Getting Started card was hidden (kept on the account too, as on the website).
+    public private(set) var gettingStartedHidden: Bool
     @ObservationIgnored private let kv: KeyValue
 
     public init(_ kv: KeyValue) {
         self.kv = kv
         seen = seenTips(kv.getJSON(KVKey.tipsSeen, as: JSONValue.self))
         launchSeen = kv.get(KVKey.launchSeen) == "1"
+        gettingStartedHidden = kv.get(KVKey.gettingStartedHidden) == "1"
     }
 
     /// The tip for a screen, if there is one this person hasn't closed.
@@ -33,17 +36,26 @@ public final class Walkthrough {
         kv.set(KVKey.launchSeen, "1")
     }
 
-    /// Settings › Show Tips Again.
+    /// Hides or brings back Getting Started on this phone.
+    public func setGettingStartedHidden(_ hidden: Bool) {
+        gettingStartedHidden = hidden
+        if hidden { kv.set(KVKey.gettingStartedHidden, "1") } else { kv.remove(KVKey.gettingStartedHidden) }
+    }
+
+    /// Settings › Show Tips Again (Getting Started comes back too, as on the website).
     public func reset() {
         seen = []
         launchSeen = false
+        gettingStartedHidden = false
         kv.remove(KVKey.tipsSeen)
         kv.remove(KVKey.launchSeen)
+        kv.remove(KVKey.gettingStartedHidden)
     }
 
     /// After sign-out cleared the keys.
     public func reload() {
         seen = seenTips(kv.getJSON(KVKey.tipsSeen, as: JSONValue.self))
         launchSeen = kv.get(KVKey.launchSeen) == "1"
+        gettingStartedHidden = kv.get(KVKey.gettingStartedHidden) == "1"
     }
 }

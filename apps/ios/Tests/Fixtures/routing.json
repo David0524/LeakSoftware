@@ -1,0 +1,4322 @@
+{
+  "haversineMeters": [
+    {
+      "args": [
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "lat": 33.4252,
+          "lng": -111.8315
+        }
+      ],
+      "result": 1111.9492664453662
+    },
+    {
+      "args": [
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "lat": 33.6152,
+          "lng": -111.8315
+        }
+      ],
+      "result": 22238.98532891206
+    },
+    {
+      "args": [
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        }
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        {
+          "lat": 33.45,
+          "lng": -112.07
+        },
+        {
+          "lat": 33.7,
+          "lng": -112
+        }
+      ],
+      "result": 28545.14135431642
+    },
+    {
+      "args": [
+        {
+          "lat": 0,
+          "lng": 179.9
+        },
+        {
+          "lat": 0,
+          "lng": -179.9
+        }
+      ],
+      "result": 22238.985328911924
+    }
+  ],
+  "estimateDriveMinutes": [
+    {
+      "args": [
+        null,
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        }
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        null
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        null,
+        null
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        }
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "lat": 33.4154,
+          "lng": -111.8315
+        }
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "lat": 33.4252,
+          "lng": -111.8315
+        }
+      ],
+      "result": 5
+    },
+    {
+      "args": [
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "lat": 33.6152,
+          "lng": -111.8315
+        }
+      ],
+      "result": 34
+    },
+    {
+      "args": [
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "lat": 33.4152,
+          "lng": -111.6315
+        }
+      ],
+      "result": 30
+    },
+    {
+      "args": [
+        {
+          "lat": 33.45,
+          "lng": -112.07
+        },
+        {
+          "lat": 33.7,
+          "lng": -112
+        }
+      ],
+      "result": 41
+    },
+    {
+      "args": [
+        {
+          "lat": 33.3,
+          "lng": -111.9
+        },
+        {
+          "lat": 33.7,
+          "lng": -112
+        }
+      ],
+      "result": 59
+    },
+    {
+      "args": [
+        {
+          "lat": 33.4,
+          "lng": -112
+        },
+        {
+          "lat": 34.5,
+          "lng": -111.5
+        }
+      ],
+      "result": 151
+    }
+  ],
+  "pointKey": [
+    {
+      "args": [
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        }
+      ],
+      "result": "33.4152,-111.8315"
+    },
+    {
+      "args": [
+        {
+          "lat": 33.41523,
+          "lng": -111.83149
+        }
+      ],
+      "result": "33.4152,-111.8315"
+    },
+    {
+      "args": [
+        {
+          "lat": 0.03125,
+          "lng": -0.03125
+        }
+      ],
+      "result": "0.0313,-0.0313"
+    },
+    {
+      "args": [
+        {
+          "lat": 1.00005,
+          "lng": 2.5
+        }
+      ],
+      "result": "1.0001,2.5000"
+    },
+    {
+      "args": [
+        {
+          "lat": 0,
+          "lng": 0
+        }
+      ],
+      "result": "0.0000,0.0000"
+    },
+    {
+      "args": [
+        {
+          "lat": -0.00001,
+          "lng": 1e-7
+        }
+      ],
+      "result": "-0.0000,0.0000"
+    },
+    {
+      "args": [
+        {
+          "lat": 89.99999,
+          "lng": -179.99995
+        }
+      ],
+      "result": "90.0000,-180.0000"
+    }
+  ],
+  "timeRoute": [
+    {
+      "args": [
+        [],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "stops": [],
+        "driveMin": 0,
+        "backMin": 480,
+        "overtimeMin": 0,
+        "lateMin": 0
+      }
+    },
+    {
+      "args": [
+        [],
+        null,
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "stops": [],
+        "driveMin": 0,
+        "backMin": 480,
+        "overtimeMin": 0,
+        "lateMin": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "far",
+            "location": {
+              "lat": 33.6152,
+              "lng": -111.8315
+            },
+            "durationMin": 60
+          },
+          {
+            "id": "near",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 60
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "stops": [
+          {
+            "id": "far",
+            "driveMin": 34,
+            "arriveMin": 514,
+            "startMin": 514,
+            "endMin": 574,
+            "lateMin": 0,
+            "unlocated": false
+          },
+          {
+            "id": "near",
+            "driveMin": 33,
+            "arriveMin": 607,
+            "startMin": 607,
+            "endMin": 667,
+            "lateMin": 0,
+            "unlocated": false
+          }
+        ],
+        "driveMin": 72,
+        "backMin": 672,
+        "overtimeMin": 0,
+        "lateMin": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "near",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 60
+          },
+          {
+            "id": "far",
+            "location": {
+              "lat": 33.6152,
+              "lng": -111.8315
+            },
+            "durationMin": 60
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "stops": [
+          {
+            "id": "near",
+            "driveMin": 5,
+            "arriveMin": 485,
+            "startMin": 485,
+            "endMin": 545,
+            "lateMin": 0,
+            "unlocated": false
+          },
+          {
+            "id": "far",
+            "driveMin": 33,
+            "arriveMin": 578,
+            "startMin": 578,
+            "endMin": 638,
+            "lateMin": 0,
+            "unlocated": false
+          }
+        ],
+        "driveMin": 72,
+        "backMin": 672,
+        "overtimeMin": 0,
+        "lateMin": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "location": null,
+            "durationMin": 60
+          },
+          {
+            "id": "b",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 60
+          },
+          {
+            "id": "c",
+            "location": null,
+            "durationMin": 30
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "stops": [
+          {
+            "id": "a",
+            "driveMin": 0,
+            "arriveMin": 480,
+            "startMin": 480,
+            "endMin": 540,
+            "lateMin": 0,
+            "unlocated": true
+          },
+          {
+            "id": "b",
+            "driveMin": 5,
+            "arriveMin": 545,
+            "startMin": 545,
+            "endMin": 605,
+            "lateMin": 0,
+            "unlocated": false
+          },
+          {
+            "id": "c",
+            "driveMin": 0,
+            "arriveMin": 605,
+            "startMin": 605,
+            "endMin": 635,
+            "lateMin": 0,
+            "unlocated": true
+          }
+        ],
+        "driveMin": 10,
+        "backMin": 640,
+        "overtimeMin": 0,
+        "lateMin": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 60
+          }
+        ],
+        null,
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "stops": [
+          {
+            "id": "a",
+            "driveMin": 0,
+            "arriveMin": 480,
+            "startMin": 480,
+            "endMin": 540,
+            "lateMin": 0,
+            "unlocated": false
+          }
+        ],
+        "driveMin": 0,
+        "backMin": 540,
+        "overtimeMin": 0,
+        "lateMin": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 60,
+            "fixedStartMin": 600
+          },
+          {
+            "id": "b",
+            "location": {
+              "lat": 33.6152,
+              "lng": -111.8315
+            },
+            "durationMin": 90,
+            "fixedStartMin": 690
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "stops": [
+          {
+            "id": "a",
+            "driveMin": 5,
+            "arriveMin": 485,
+            "startMin": 600,
+            "endMin": 660,
+            "lateMin": 0,
+            "unlocated": false
+          },
+          {
+            "id": "b",
+            "driveMin": 33,
+            "arriveMin": 693,
+            "startMin": 693,
+            "endMin": 783,
+            "lateMin": 3,
+            "unlocated": false
+          }
+        ],
+        "driveMin": 72,
+        "backMin": 817,
+        "overtimeMin": 0,
+        "lateMin": 3
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 60,
+            "earliestMin": 700
+          },
+          {
+            "id": "b",
+            "location": {
+              "lat": 33.4152,
+              "lng": -111.6315
+            },
+            "durationMin": 60,
+            "earliestMin": 0
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "stops": [
+          {
+            "id": "a",
+            "driveMin": 5,
+            "arriveMin": 485,
+            "startMin": 700,
+            "endMin": 760,
+            "lateMin": 0,
+            "unlocated": false
+          },
+          {
+            "id": "b",
+            "driveMin": 30,
+            "arriveMin": 790,
+            "startMin": 790,
+            "endMin": 850,
+            "lateMin": 0,
+            "unlocated": false
+          }
+        ],
+        "driveMin": 65,
+        "backMin": 880,
+        "overtimeMin": 0,
+        "lateMin": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "location": {
+              "lat": 33.6152,
+              "lng": -111.8315
+            },
+            "durationMin": 120
+          },
+          {
+            "id": "b",
+            "location": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "durationMin": 120
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 600
+        }
+      ],
+      "result": {
+        "stops": [
+          {
+            "id": "a",
+            "driveMin": 34,
+            "arriveMin": 514,
+            "startMin": 514,
+            "endMin": 634,
+            "lateMin": 0,
+            "unlocated": false
+          },
+          {
+            "id": "b",
+            "driveMin": 30,
+            "arriveMin": 664,
+            "startMin": 664,
+            "endMin": 784,
+            "lateMin": 0,
+            "unlocated": false
+          }
+        ],
+        "driveMin": 112,
+        "backMin": 832,
+        "overtimeMin": 232,
+        "lateMin": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 60
+          },
+          {
+            "id": "b",
+            "location": {
+              "lat": 33.6152,
+              "lng": -111.8315
+            },
+            "durationMin": 60
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        },
+        {
+          "33.4152,-111.8315>33.4252,-111.8315": 17,
+          "33.6152,-111.8315>33.4152,-111.8315": 2
+        }
+      ],
+      "result": {
+        "stops": [
+          {
+            "id": "a",
+            "driveMin": 17,
+            "arriveMin": 497,
+            "startMin": 497,
+            "endMin": 557,
+            "lateMin": 0,
+            "unlocated": false
+          },
+          {
+            "id": "b",
+            "driveMin": 33,
+            "arriveMin": 590,
+            "startMin": 590,
+            "endMin": 650,
+            "lateMin": 0,
+            "unlocated": false
+          }
+        ],
+        "driveMin": 52,
+        "backMin": 652,
+        "overtimeMin": 0,
+        "lateMin": 0
+      }
+    }
+  ],
+  "routeCost": [
+    {
+      "args": [
+        {
+          "stops": [],
+          "driveMin": 0,
+          "backMin": 480,
+          "overtimeMin": 0,
+          "lateMin": 0
+        }
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        {
+          "stops": [],
+          "driveMin": 42,
+          "backMin": 1100,
+          "overtimeMin": 80,
+          "lateMin": 7
+        }
+      ],
+      "result": 582
+    }
+  ],
+  "optimizeRoute": [
+    {
+      "args": [
+        [],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "order": [],
+        "route": {
+          "stops": [],
+          "driveMin": 0,
+          "backMin": 480,
+          "overtimeMin": 0,
+          "lateMin": 0
+        }
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 60
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "order": [
+          0
+        ],
+        "route": {
+          "stops": [
+            {
+              "id": "a",
+              "driveMin": 5,
+              "arriveMin": 485,
+              "startMin": 485,
+              "endMin": 545,
+              "lateMin": 0,
+              "unlocated": false
+            }
+          ],
+          "driveMin": 10,
+          "backMin": 550,
+          "overtimeMin": 0,
+          "lateMin": 0
+        }
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "far",
+            "location": {
+              "lat": 33.6152,
+              "lng": -111.8315
+            },
+            "durationMin": 60
+          },
+          {
+            "id": "near",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 60
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "order": [
+          0,
+          1
+        ],
+        "route": {
+          "stops": [
+            {
+              "id": "far",
+              "driveMin": 34,
+              "arriveMin": 514,
+              "startMin": 514,
+              "endMin": 574,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "near",
+              "driveMin": 33,
+              "arriveMin": 607,
+              "startMin": 607,
+              "endMin": 667,
+              "lateMin": 0,
+              "unlocated": false
+            }
+          ],
+          "driveMin": 72,
+          "backMin": 672,
+          "overtimeMin": 0,
+          "lateMin": 0
+        }
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "near",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 60
+          },
+          {
+            "id": "far",
+            "location": {
+              "lat": 33.6152,
+              "lng": -111.8315
+            },
+            "durationMin": 60,
+            "fixedStartMin": 480
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "order": [
+          1,
+          0
+        ],
+        "route": {
+          "stops": [
+            {
+              "id": "far",
+              "driveMin": 34,
+              "arriveMin": 514,
+              "startMin": 514,
+              "endMin": 574,
+              "lateMin": 34,
+              "unlocated": false
+            },
+            {
+              "id": "near",
+              "driveMin": 33,
+              "arriveMin": 607,
+              "startMin": 607,
+              "endMin": 667,
+              "lateMin": 0,
+              "unlocated": false
+            }
+          ],
+          "driveMin": 72,
+          "backMin": 672,
+          "overtimeMin": 0,
+          "lateMin": 34
+        }
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "p0",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 50
+          },
+          {
+            "id": "p1",
+            "location": {
+              "lat": 33.6152,
+              "lng": -111.8315
+            },
+            "durationMin": 50
+          },
+          {
+            "id": "p2",
+            "location": {
+              "lat": 33.4152,
+              "lng": -111.6315
+            },
+            "durationMin": 50
+          },
+          {
+            "id": "p3",
+            "location": {
+              "lat": 33.45,
+              "lng": -112.07
+            },
+            "durationMin": 50
+          },
+          {
+            "id": "p4",
+            "location": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "durationMin": 50
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "order": [
+          0,
+          3,
+          4,
+          1,
+          2
+        ],
+        "route": {
+          "stops": [
+            {
+              "id": "p0",
+              "driveMin": 5,
+              "arriveMin": 485,
+              "startMin": 485,
+              "endMin": 535,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "p3",
+              "driveMin": 34,
+              "arriveMin": 569,
+              "startMin": 569,
+              "endMin": 619,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "p4",
+              "driveMin": 41,
+              "arriveMin": 660,
+              "startMin": 660,
+              "endMin": 710,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "p1",
+              "driveMin": 30,
+              "arriveMin": 740,
+              "startMin": 740,
+              "endMin": 790,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "p2",
+              "driveMin": 41,
+              "arriveMin": 831,
+              "startMin": 831,
+              "endMin": 881,
+              "lateMin": 0,
+              "unlocated": false
+            }
+          ],
+          "driveMin": 181,
+          "backMin": 911,
+          "overtimeMin": 0,
+          "lateMin": 0
+        }
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "p0",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 40
+          },
+          {
+            "id": "p1",
+            "location": {
+              "lat": 33.6152,
+              "lng": -111.8315
+            },
+            "durationMin": 40
+          },
+          {
+            "id": "p2",
+            "location": {
+              "lat": 33.4152,
+              "lng": -111.6315
+            },
+            "durationMin": 40
+          },
+          {
+            "id": "p3",
+            "location": {
+              "lat": 33.45,
+              "lng": -112.07
+            },
+            "durationMin": 40
+          },
+          {
+            "id": "p4",
+            "location": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "durationMin": 40
+          },
+          {
+            "id": "p5",
+            "location": {
+              "lat": 33.3,
+              "lng": -111.9
+            },
+            "durationMin": 40
+          },
+          {
+            "id": "p6",
+            "location": {
+              "lat": 33.5,
+              "lng": -111.75
+            },
+            "durationMin": 40
+          },
+          {
+            "id": "x",
+            "location": null,
+            "durationMin": 20
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "order": [
+          0,
+          2,
+          6,
+          1,
+          4,
+          3,
+          5,
+          7
+        ],
+        "route": {
+          "stops": [
+            {
+              "id": "p0",
+              "driveMin": 5,
+              "arriveMin": 485,
+              "startMin": 485,
+              "endMin": 525,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "p2",
+              "driveMin": 30,
+              "arriveMin": 555,
+              "startMin": 555,
+              "endMin": 595,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "p6",
+              "driveMin": 26,
+              "arriveMin": 621,
+              "startMin": 621,
+              "endMin": 661,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "p1",
+              "driveMin": 26,
+              "arriveMin": 687,
+              "startMin": 687,
+              "endMin": 727,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "p4",
+              "driveMin": 30,
+              "arriveMin": 757,
+              "startMin": 757,
+              "endMin": 797,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "p3",
+              "driveMin": 41,
+              "arriveMin": 838,
+              "startMin": 838,
+              "endMin": 878,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "p5",
+              "driveMin": 35,
+              "arriveMin": 913,
+              "startMin": 913,
+              "endMin": 953,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "x",
+              "driveMin": 0,
+              "arriveMin": 953,
+              "startMin": 953,
+              "endMin": 973,
+              "lateMin": 0,
+              "unlocated": true
+            }
+          ],
+          "driveMin": 218,
+          "backMin": 998,
+          "overtimeMin": 0,
+          "lateMin": 0
+        }
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "s0",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s1",
+            "location": {
+              "lat": 33.6152,
+              "lng": -111.8315
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s2",
+            "location": {
+              "lat": 33.4152,
+              "lng": -111.6315
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s3",
+            "location": {
+              "lat": 33.45,
+              "lng": -112.07
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s4",
+            "location": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s5",
+            "location": {
+              "lat": 33.3,
+              "lng": -111.9
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s6",
+            "location": {
+              "lat": 33.5,
+              "lng": -111.75
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s7",
+            "location": {
+              "lat": 33.62,
+              "lng": -111.9
+            },
+            "durationMin": 30
+          },
+          {
+            "id": "s8",
+            "location": null,
+            "durationMin": 30
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "order": [
+          8,
+          0,
+          2,
+          6,
+          1,
+          7,
+          4,
+          3,
+          5
+        ],
+        "route": {
+          "stops": [
+            {
+              "id": "s8",
+              "driveMin": 0,
+              "arriveMin": 480,
+              "startMin": 480,
+              "endMin": 510,
+              "lateMin": 0,
+              "unlocated": true
+            },
+            {
+              "id": "s0",
+              "driveMin": 5,
+              "arriveMin": 515,
+              "startMin": 515,
+              "endMin": 560,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s2",
+              "driveMin": 30,
+              "arriveMin": 590,
+              "startMin": 590,
+              "endMin": 635,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s6",
+              "driveMin": 26,
+              "arriveMin": 661,
+              "startMin": 661,
+              "endMin": 706,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s1",
+              "driveMin": 26,
+              "arriveMin": 732,
+              "startMin": 732,
+              "endMin": 777,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s7",
+              "driveMin": 16,
+              "arriveMin": 793,
+              "startMin": 793,
+              "endMin": 823,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s4",
+              "driveMin": 24,
+              "arriveMin": 847,
+              "startMin": 847,
+              "endMin": 892,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s3",
+              "driveMin": 41,
+              "arriveMin": 933,
+              "startMin": 933,
+              "endMin": 978,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s5",
+              "driveMin": 35,
+              "arriveMin": 1013,
+              "startMin": 1013,
+              "endMin": 1058,
+              "lateMin": 0,
+              "unlocated": false
+            }
+          ],
+          "driveMin": 228,
+          "backMin": 1083,
+          "overtimeMin": 63,
+          "lateMin": 0
+        }
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "s0",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s1",
+            "location": {
+              "lat": 33.6152,
+              "lng": -111.8315
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s2",
+            "location": {
+              "lat": 33.4152,
+              "lng": -111.6315
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s3",
+            "location": {
+              "lat": 33.45,
+              "lng": -112.07
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s4",
+            "location": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s5",
+            "location": {
+              "lat": 33.3,
+              "lng": -111.9
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s6",
+            "location": {
+              "lat": 33.5,
+              "lng": -111.75
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s7",
+            "location": {
+              "lat": 33.62,
+              "lng": -111.9
+            },
+            "durationMin": 30
+          },
+          {
+            "id": "s8",
+            "location": null,
+            "durationMin": 30
+          },
+          {
+            "id": "s9",
+            "location": {
+              "lat": 33.35,
+              "lng": -111.8
+            },
+            "durationMin": 30,
+            "fixedStartMin": 600
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "order": [
+          2,
+          9,
+          5,
+          3,
+          4,
+          7,
+          1,
+          6,
+          0,
+          8
+        ],
+        "route": {
+          "stops": [
+            {
+              "id": "s2",
+              "driveMin": 30,
+              "arriveMin": 510,
+              "startMin": 510,
+              "endMin": 555,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s9",
+              "driveMin": 29,
+              "arriveMin": 584,
+              "startMin": 600,
+              "endMin": 630,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s5",
+              "driveMin": 22,
+              "arriveMin": 652,
+              "startMin": 652,
+              "endMin": 697,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s3",
+              "driveMin": 35,
+              "arriveMin": 732,
+              "startMin": 732,
+              "endMin": 777,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s4",
+              "driveMin": 41,
+              "arriveMin": 818,
+              "startMin": 818,
+              "endMin": 863,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s7",
+              "driveMin": 24,
+              "arriveMin": 887,
+              "startMin": 887,
+              "endMin": 917,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s1",
+              "driveMin": 16,
+              "arriveMin": 933,
+              "startMin": 933,
+              "endMin": 978,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s6",
+              "driveMin": 26,
+              "arriveMin": 1004,
+              "startMin": 1004,
+              "endMin": 1049,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s0",
+              "driveMin": 22,
+              "arriveMin": 1071,
+              "startMin": 1071,
+              "endMin": 1116,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s8",
+              "driveMin": 0,
+              "arriveMin": 1116,
+              "startMin": 1116,
+              "endMin": 1146,
+              "lateMin": 0,
+              "unlocated": true
+            }
+          ],
+          "driveMin": 250,
+          "backMin": 1151,
+          "overtimeMin": 131,
+          "lateMin": 0
+        }
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "s0",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s1",
+            "location": {
+              "lat": 33.6152,
+              "lng": -111.8315
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s2",
+            "location": {
+              "lat": 33.4152,
+              "lng": -111.6315
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s3",
+            "location": {
+              "lat": 33.45,
+              "lng": -112.07
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s4",
+            "location": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s5",
+            "location": {
+              "lat": 33.3,
+              "lng": -111.9
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s6",
+            "location": {
+              "lat": 33.5,
+              "lng": -111.75
+            },
+            "durationMin": 45
+          },
+          {
+            "id": "s7",
+            "location": {
+              "lat": 33.62,
+              "lng": -111.9
+            },
+            "durationMin": 30
+          },
+          {
+            "id": "s8",
+            "location": null,
+            "durationMin": 30
+          },
+          {
+            "id": "s9",
+            "location": {
+              "lat": 33.35,
+              "lng": -111.8
+            },
+            "durationMin": 30,
+            "fixedStartMin": 600
+          }
+        ],
+        null,
+        {
+          "startMin": 480,
+          "endMin": 600
+        }
+      ],
+      "result": {
+        "order": [
+          8,
+          5,
+          9,
+          0,
+          2,
+          6,
+          1,
+          7,
+          4,
+          3
+        ],
+        "route": {
+          "stops": [
+            {
+              "id": "s8",
+              "driveMin": 0,
+              "arriveMin": 480,
+              "startMin": 480,
+              "endMin": 510,
+              "lateMin": 0,
+              "unlocated": true
+            },
+            {
+              "id": "s5",
+              "driveMin": 0,
+              "arriveMin": 510,
+              "startMin": 510,
+              "endMin": 555,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s9",
+              "driveMin": 22,
+              "arriveMin": 577,
+              "startMin": 600,
+              "endMin": 630,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s0",
+              "driveMin": 20,
+              "arriveMin": 650,
+              "startMin": 650,
+              "endMin": 695,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s2",
+              "driveMin": 30,
+              "arriveMin": 725,
+              "startMin": 725,
+              "endMin": 770,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s6",
+              "driveMin": 26,
+              "arriveMin": 796,
+              "startMin": 796,
+              "endMin": 841,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s1",
+              "driveMin": 26,
+              "arriveMin": 867,
+              "startMin": 867,
+              "endMin": 912,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s7",
+              "driveMin": 16,
+              "arriveMin": 928,
+              "startMin": 928,
+              "endMin": 958,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s4",
+              "driveMin": 24,
+              "arriveMin": 982,
+              "startMin": 982,
+              "endMin": 1027,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "s3",
+              "driveMin": 41,
+              "arriveMin": 1068,
+              "startMin": 1068,
+              "endMin": 1113,
+              "lateMin": 0,
+              "unlocated": false
+            }
+          ],
+          "driveMin": 205,
+          "backMin": 1113,
+          "overtimeMin": 513,
+          "lateMin": 0
+        }
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 60
+          },
+          {
+            "id": "b",
+            "location": {
+              "lat": 33.6152,
+              "lng": -111.8315
+            },
+            "durationMin": 60
+          },
+          {
+            "id": "c",
+            "location": {
+              "lat": 33.4152,
+              "lng": -111.6315
+            },
+            "durationMin": 60
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        },
+        {
+          "33.4152,-111.8315>33.4252,-111.8315": 40,
+          "33.4252,-111.8315>33.4152,-111.8315": 1,
+          "33.4152,-111.6315>33.4252,-111.8315": 1
+        }
+      ],
+      "result": {
+        "order": [
+          1,
+          2,
+          0
+        ],
+        "route": {
+          "stops": [
+            {
+              "id": "b",
+              "driveMin": 34,
+              "arriveMin": 514,
+              "startMin": 514,
+              "endMin": 574,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "c",
+              "driveMin": 41,
+              "arriveMin": 615,
+              "startMin": 615,
+              "endMin": 675,
+              "lateMin": 0,
+              "unlocated": false
+            },
+            {
+              "id": "a",
+              "driveMin": 1,
+              "arriveMin": 676,
+              "startMin": 676,
+              "endMin": 736,
+              "lateMin": 0,
+              "unlocated": false
+            }
+          ],
+          "driveMin": 77,
+          "backMin": 737,
+          "overtimeMin": 0,
+          "lateMin": 0
+        }
+      }
+    }
+  ],
+  "suggestSlots": [
+    {
+      "args": [
+        {
+          "location": {
+            "lat": 33.4252,
+            "lng": -111.8315
+          },
+          "durationMin": 60
+        },
+        [],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "location": {
+            "lat": 33.4252,
+            "lng": -111.8315
+          },
+          "durationMin": 60
+        },
+        [
+          {
+            "date": "2026-10-20",
+            "techId": "t1",
+            "techName": "Tony",
+            "stops": [
+              {
+                "id": "a",
+                "location": {
+                  "lat": 33.4252,
+                  "lng": -111.8315
+                },
+                "durationMin": 60,
+                "fixedStartMin": 540
+              }
+            ],
+            "labels": {
+              "a": "Grace Holloway"
+            }
+          },
+          {
+            "date": "2026-10-21",
+            "techId": "t1",
+            "techName": "Tony",
+            "stops": []
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": [
+        {
+          "date": "2026-10-20",
+          "techId": "t1",
+          "techName": "Tony",
+          "position": 1,
+          "startMin": 600,
+          "addedDriveMin": 0,
+          "driveInMin": 0,
+          "near": "after Grace Holloway"
+        },
+        {
+          "date": "2026-10-21",
+          "techId": "t1",
+          "techName": "Tony",
+          "position": 0,
+          "startMin": 485,
+          "addedDriveMin": 10,
+          "driveInMin": 5,
+          "near": "only job that day"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "location": {
+            "lat": 33.4152,
+            "lng": -111.6315
+          },
+          "durationMin": 90
+        },
+        [
+          {
+            "date": "2026-10-23",
+            "techId": "t2",
+            "techName": "Sam",
+            "stops": [
+              {
+                "id": "b",
+                "location": {
+                  "lat": 33.4152,
+                  "lng": -111.6315
+                },
+                "durationMin": 60
+              }
+            ]
+          },
+          {
+            "date": "2026-10-20",
+            "techId": "t1",
+            "techName": "Tony",
+            "stops": [
+              {
+                "id": "a",
+                "location": {
+                  "lat": 33.4252,
+                  "lng": -111.8315
+                },
+                "durationMin": 60
+              },
+              {
+                "id": "c",
+                "location": {
+                  "lat": 33.6152,
+                  "lng": -111.8315
+                },
+                "durationMin": 60
+              }
+            ],
+            "labels": {
+              "a": "Riley"
+            },
+            "notBeforeMin": 720
+          },
+          {
+            "date": "2026-10-20",
+            "techId": "t2",
+            "techName": "Sam",
+            "stops": [
+              {
+                "id": "d",
+                "location": {
+                  "lat": 33.45,
+                  "lng": -112.07
+                },
+                "durationMin": 60,
+                "fixedStartMin": 600
+              }
+            ]
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": [
+        {
+          "date": "2026-10-23",
+          "techId": "t2",
+          "techName": "Sam",
+          "position": 0,
+          "startMin": 510,
+          "addedDriveMin": 0,
+          "driveInMin": 30,
+          "near": "first stop"
+        },
+        {
+          "date": "2026-10-20",
+          "techId": "t1",
+          "techName": "Tony",
+          "position": 2,
+          "startMin": 720,
+          "addedDriveMin": 37,
+          "driveInMin": 41,
+          "near": "after the job before"
+        },
+        {
+          "date": "2026-10-20",
+          "techId": "t2",
+          "techName": "Sam",
+          "position": 1,
+          "startMin": 714,
+          "addedDriveMin": 50,
+          "driveInMin": 54,
+          "near": "after the job before"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "location": null,
+          "durationMin": 240
+        },
+        [
+          {
+            "date": "2026-10-22",
+            "techId": "t1",
+            "techName": "Tony",
+            "stops": [
+              {
+                "id": "a",
+                "location": {
+                  "lat": 33.6152,
+                  "lng": -111.8315
+                },
+                "durationMin": 400,
+                "fixedStartMin": 480
+              }
+            ]
+          },
+          {
+            "date": "2026-10-22",
+            "techId": "t2",
+            "techName": "Sam",
+            "stops": []
+          },
+          {
+            "date": "2026-10-21",
+            "techId": "t3",
+            "techName": "Ana",
+            "stops": []
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 600
+        },
+        null,
+        1
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "location": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "durationMin": 30
+        },
+        [
+          {
+            "date": "2026-10-21",
+            "techId": "t1",
+            "techName": "Tony",
+            "stops": [
+              {
+                "id": "a",
+                "location": null,
+                "durationMin": 60
+              }
+            ]
+          },
+          {
+            "date": "2026-10-21",
+            "techId": "t2",
+            "techName": "Sam",
+            "stops": []
+          },
+          {
+            "date": "2026-10-21",
+            "techId": "t3",
+            "techName": "Ana",
+            "stops": []
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": [
+        {
+          "date": "2026-10-21",
+          "techId": "t1",
+          "techName": "Tony",
+          "position": 0,
+          "startMin": 480,
+          "addedDriveMin": 0,
+          "driveInMin": 0,
+          "near": "first stop"
+        },
+        {
+          "date": "2026-10-21",
+          "techId": "t2",
+          "techName": "Sam",
+          "position": 0,
+          "startMin": 480,
+          "addedDriveMin": 0,
+          "driveInMin": 0,
+          "near": "only job that day"
+        },
+        {
+          "date": "2026-10-21",
+          "techId": "t3",
+          "techName": "Ana",
+          "position": 0,
+          "startMin": 480,
+          "addedDriveMin": 0,
+          "driveInMin": 0,
+          "near": "only job that day"
+        }
+      ]
+    }
+  ],
+  "clockToMinutes": [
+    {
+      "args": [
+        "08:30"
+      ],
+      "result": 510
+    },
+    {
+      "args": [
+        "00:00"
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        "23:59"
+      ],
+      "result": 1439
+    },
+    {
+      "args": [
+        "17:15"
+      ],
+      "result": 1035
+    },
+    {
+      "args": [
+        "9"
+      ],
+      "result": 540
+    },
+    {
+      "args": [
+        "07:5"
+      ],
+      "result": 425
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        "12:00:30"
+      ],
+      "result": 720
+    },
+    {
+      "args": [
+        "8:"
+      ],
+      "result": 480
+    }
+  ],
+  "minutesToClock": [
+    {
+      "args": [
+        510
+      ],
+      "result": "08:30"
+    },
+    {
+      "args": [
+        0
+      ],
+      "result": "00:00"
+    },
+    {
+      "args": [
+        -30
+      ],
+      "result": "00:00"
+    },
+    {
+      "args": [
+        1439
+      ],
+      "result": "23:59"
+    },
+    {
+      "args": [
+        1440
+      ],
+      "result": "00:00"
+    },
+    {
+      "args": [
+        1500
+      ],
+      "result": "01:00"
+    },
+    {
+      "args": [
+        59
+      ],
+      "result": "00:59"
+    }
+  ],
+  "minutesLabel": [
+    {
+      "args": [
+        510
+      ],
+      "result": "8:30 AM"
+    },
+    {
+      "args": [
+        0
+      ],
+      "result": "12:00 AM"
+    },
+    {
+      "args": [
+        -5
+      ],
+      "result": "12:00 AM"
+    },
+    {
+      "args": [
+        719
+      ],
+      "result": "11:59 AM"
+    },
+    {
+      "args": [
+        720
+      ],
+      "result": "12:00 PM"
+    },
+    {
+      "args": [
+        780
+      ],
+      "result": "1:00 PM"
+    },
+    {
+      "args": [
+        1439
+      ],
+      "result": "11:59 PM"
+    },
+    {
+      "args": [
+        1500
+      ],
+      "result": "1:00 AM"
+    }
+  ],
+  "durationLabel": [
+    {
+      "args": [
+        0
+      ],
+      "result": "0 min"
+    },
+    {
+      "args": [
+        -3
+      ],
+      "result": "0 min"
+    },
+    {
+      "args": [
+        25
+      ],
+      "result": "25 min"
+    },
+    {
+      "args": [
+        59
+      ],
+      "result": "59 min"
+    },
+    {
+      "args": [
+        60
+      ],
+      "result": "1 hr"
+    },
+    {
+      "args": [
+        65
+      ],
+      "result": "1 hr 5 min"
+    },
+    {
+      "args": [
+        120
+      ],
+      "result": "2 hr"
+    },
+    {
+      "args": [
+        605
+      ],
+      "result": "10 hr 5 min"
+    }
+  ],
+  "arrivalWindow": [
+    {
+      "args": [
+        612,
+        0
+      ],
+      "result": {
+        "from": 612,
+        "to": 612
+      }
+    },
+    {
+      "args": [
+        612,
+        60
+      ],
+      "result": {
+        "from": 600,
+        "to": 660
+      }
+    },
+    {
+      "args": [
+        600,
+        120
+      ],
+      "result": {
+        "from": 600,
+        "to": 720
+      }
+    },
+    {
+      "args": [
+        629,
+        240
+      ],
+      "result": {
+        "from": 600,
+        "to": 840
+      }
+    },
+    {
+      "args": [
+        630,
+        60
+      ],
+      "result": {
+        "from": 630,
+        "to": 690
+      }
+    }
+  ],
+  "arrivalText": [
+    {
+      "args": [
+        612,
+        0
+      ],
+      "result": "at 10:12 AM"
+    },
+    {
+      "args": [
+        612,
+        60
+      ],
+      "result": "between 10:00 AM and 11:00 AM"
+    },
+    {
+      "args": [
+        690,
+        120
+      ],
+      "result": "between 11:30 AM and 1:30 PM"
+    },
+    {
+      "args": [
+        1410,
+        60
+      ],
+      "result": "between 11:30 PM and 12:30 AM"
+    }
+  ],
+  "onMyWayText": [
+    {
+      "args": [
+        {
+          "customer": "Riley Rivera",
+          "tech": "Tony Tech",
+          "shop": "Desert Leak Co.",
+          "arriveMin": 642
+        }
+      ],
+      "result": "Hi Riley, this is Tony from Desert Leak Co. I’m on my way and should be there about 10:45 AM."
+    },
+    {
+      "args": [
+        {
+          "customer": null,
+          "tech": "Tony",
+          "shop": "Desert Leak",
+          "arriveMin": 600,
+          "windowMin": 120
+        }
+      ],
+      "result": "Hi, this is Tony from Desert Leak. I’m on my way and should be there between 10:00 AM and 12:00 PM."
+    },
+    {
+      "args": [
+        {
+          "customer": "Grace",
+          "tech": "Dana Lee",
+          "shop": "Pools Inc",
+          "arriveMin": 645,
+          "windowMin": 0
+        }
+      ],
+      "result": "Hi Grace, this is Dana from Pools Inc. I’m on my way and should be there about 10:45 AM."
+    },
+    {
+      "args": [
+        {
+          "customer": "",
+          "tech": "Dana",
+          "shop": "Shop..",
+          "arriveMin": 601
+        }
+      ],
+      "result": "Hi, this is Dana from Shop.. I’m on my way and should be there about 10:05 AM."
+    },
+    {
+      "args": [
+        {
+          "customer": " Riley",
+          "tech": " Dana",
+          "shop": "Shop",
+          "arriveMin": 719,
+          "windowMin": 60
+        }
+      ],
+      "result": "Hi , this is  from Shop. I’m on my way and should be there between 12:00 PM and 1:00 PM."
+    }
+  ],
+  "mapsLinks": [
+    {
+      "args": [
+        {
+          "address": "1423 Palm Ct, Mesa, AZ",
+          "location": {
+            "lat": 33.4252,
+            "lng": -111.8315
+          }
+        }
+      ],
+      "result": {
+        "apple": "https://maps.apple.com/?daddr=33.4252%2C-111.8315&q=1423%20Palm%20Ct%2C%20Mesa%2C%20AZ&dirflg=d",
+        "google": "https://www.google.com/maps/dir/?api=1&destination=33.4252%2C-111.8315&travelmode=driving"
+      }
+    },
+    {
+      "args": [
+        {
+          "address": "88 Desert Willow Dr"
+        }
+      ],
+      "result": {
+        "apple": "https://maps.apple.com/?daddr=88%20Desert%20Willow%20Dr&q=88%20Desert%20Willow%20Dr&dirflg=d",
+        "google": "https://www.google.com/maps/dir/?api=1&destination=88%20Desert%20Willow%20Dr&travelmode=driving"
+      }
+    }
+  ],
+  "routeLink": [
+    {
+      "args": [
+        null,
+        []
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "address": "Shop",
+          "location": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          }
+        },
+        []
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "address": "Shop",
+          "location": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          }
+        },
+        [
+          {
+            "address": "1423 Palm Ct, Mesa, AZ",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            }
+          }
+        ]
+      ],
+      "result": "https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=33.4152%2C-111.8315&origin=33.4152%2C-111.8315&waypoints=33.4252%2C-111.8315"
+    },
+    {
+      "args": [
+        null,
+        [
+          {
+            "address": "1 Shop Way, Mesa"
+          },
+          {
+            "address": "Café #5 & Co. ~'!*()"
+          }
+        ]
+      ],
+      "result": "https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=Caf%C3%A9+%235+%26+Co.+%7E%27%21*%28%29&waypoints=1+Shop+Way%2C+Mesa"
+    },
+    {
+      "args": [
+        {
+          "address": "1 Shop Way"
+        },
+        [
+          {
+            "address": "1 Palm Ct"
+          },
+          {
+            "address": "2 Palm Ct"
+          },
+          {
+            "address": "3 Palm Ct"
+          },
+          {
+            "address": "4 Palm Ct"
+          },
+          {
+            "address": "5 Palm Ct"
+          },
+          {
+            "address": "6 Palm Ct"
+          },
+          {
+            "address": "7 Palm Ct"
+          },
+          {
+            "address": "8 Palm Ct"
+          },
+          {
+            "address": "9 Palm Ct"
+          },
+          {
+            "address": "10 Palm Ct"
+          },
+          {
+            "address": "11 Palm Ct"
+          },
+          {
+            "address": "12 Palm Ct"
+          }
+        ]
+      ],
+      "result": "https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=1+Shop+Way&origin=1+Shop+Way&waypoints=1+Palm+Ct%7C2+Palm+Ct%7C3+Palm+Ct%7C4+Palm+Ct%7C5+Palm+Ct%7C6+Palm+Ct%7C7+Palm+Ct%7C8+Palm+Ct%7C9+Palm+Ct%7C10+Palm+Ct"
+    }
+  ],
+  "dayDirections": [
+    {
+      "args": [
+        "google",
+        null,
+        []
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "apple",
+        null,
+        []
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "google",
+        {
+          "address": "Shop",
+          "location": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          }
+        },
+        [
+          {
+            "address": "1 Palm Ct",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "done": true
+          },
+          {
+            "address": "2 Palm Ct"
+          }
+        ]
+      ],
+      "result": {
+        "href": "https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=33.4152%2C-111.8315&origin=33.4152%2C-111.8315&waypoints=33.4252%2C-111.8315%7C2+Palm+Ct",
+        "app": "google"
+      }
+    },
+    {
+      "args": [
+        "apple",
+        {
+          "address": "Shop",
+          "location": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          }
+        },
+        [
+          {
+            "address": "1 Palm Ct",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "done": true
+          },
+          {
+            "address": "2 Palm Ct",
+            "done": false
+          }
+        ]
+      ],
+      "result": {
+        "href": "https://maps.apple.com/?daddr=2%20Palm%20Ct&q=2%20Palm%20Ct&dirflg=d",
+        "app": "apple"
+      }
+    },
+    {
+      "args": [
+        "apple",
+        null,
+        [
+          {
+            "address": "1 Palm Ct",
+            "done": true
+          }
+        ]
+      ],
+      "result": null
+    }
+  ],
+  "ROUTING_DEFAULTS": [
+    {
+      "args": [],
+      "result": {
+        "dayStart": "08:00",
+        "dayEnd": "17:00",
+        "windowMin": 0,
+        "jobMinutes": 150,
+        "workDays": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    }
+  ],
+  "ARRIVAL_WINDOWS": [
+    {
+      "args": [],
+      "result": [
+        0,
+        60,
+        120,
+        240
+      ]
+    }
+  ],
+  "routingSettings": [
+    {
+      "args": [
+        null
+      ],
+      "result": {
+        "dayStart": "08:00",
+        "dayEnd": "17:00",
+        "windowMin": 0,
+        "jobMinutes": 150,
+        "workDays": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": {
+        "dayStart": "08:00",
+        "dayEnd": "17:00",
+        "windowMin": 0,
+        "jobMinutes": 150,
+        "workDays": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "routing": null
+        }
+      ],
+      "result": {
+        "dayStart": "08:00",
+        "dayEnd": "17:00",
+        "windowMin": 0,
+        "jobMinutes": 150,
+        "workDays": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "routing": "x"
+        }
+      ],
+      "result": {
+        "dayStart": "08:00",
+        "dayEnd": "17:00",
+        "windowMin": 0,
+        "jobMinutes": 150,
+        "workDays": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "routing": {
+            "day_start": "07:30",
+            "day_end": "06:00",
+            "arrival_window_minutes": 60,
+            "job_minutes": 90,
+            "work_days": [
+              6,
+              1,
+              1,
+              9
+            ]
+          }
+        }
+      ],
+      "result": {
+        "dayStart": "07:30",
+        "dayEnd": "17:00",
+        "windowMin": 60,
+        "jobMinutes": 90,
+        "workDays": [
+          1,
+          6
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "routing": {
+            "day_start": "7:30",
+            "day_end": "24:00",
+            "arrival_window_minutes": "120",
+            "job_minutes": [
+              "45"
+            ],
+            "work_days": [
+              0,
+              "1",
+              2.5,
+              -1,
+              3
+            ]
+          }
+        }
+      ],
+      "result": {
+        "dayStart": "08:00",
+        "dayEnd": "17:00",
+        "windowMin": 120,
+        "jobMinutes": 45,
+        "workDays": [
+          0,
+          3
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "routing": {
+            "day_start": "09:00",
+            "day_end": "21:30",
+            "arrival_window_minutes": 90,
+            "job_minutes": 14,
+            "work_days": []
+          }
+        }
+      ],
+      "result": {
+        "dayStart": "09:00",
+        "dayEnd": "21:30",
+        "windowMin": 0,
+        "jobMinutes": 150,
+        "workDays": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "routing": {
+            "arrival_window_minutes": true,
+            "job_minutes": 720.5,
+            "work_days": "1,2"
+          }
+        }
+      ],
+      "result": {
+        "dayStart": "08:00",
+        "dayEnd": "17:00",
+        "windowMin": 0,
+        "jobMinutes": 150,
+        "workDays": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "routing": {
+            "arrival_window_minutes": [
+              240
+            ],
+            "job_minutes": 720,
+            "work_days": [
+              5,
+              0,
+              6
+            ]
+          }
+        }
+      ],
+      "result": {
+        "dayStart": "08:00",
+        "dayEnd": "17:00",
+        "windowMin": 240,
+        "jobMinutes": 720,
+        "workDays": [
+          0,
+          5,
+          6
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "routing": {
+            "arrival_window_minutes": null,
+            "job_minutes": "15",
+            "day_end": "08:00"
+          }
+        }
+      ],
+      "result": {
+        "dayStart": "08:00",
+        "dayEnd": "17:00",
+        "windowMin": 0,
+        "jobMinutes": 15,
+        "workDays": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    }
+  ],
+  "workDay": [
+    {
+      "args": [
+        {
+          "dayStart": "08:00",
+          "dayEnd": "17:00",
+          "windowMin": 0,
+          "jobMinutes": 150,
+          "workDays": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "result": {
+        "startMin": 480,
+        "endMin": 1020
+      }
+    },
+    {
+      "args": [
+        {
+          "dayStart": "06:45",
+          "dayEnd": "15:15",
+          "windowMin": 0,
+          "jobMinutes": 150,
+          "workDays": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "result": {
+        "startMin": 405,
+        "endMin": 915
+      }
+    }
+  ],
+  "weekday": [
+    {
+      "args": [
+        "2026-10-18"
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        "2026-10-19"
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        "2026-10-24"
+      ],
+      "result": 6
+    },
+    {
+      "args": [
+        "2024-02-29"
+      ],
+      "result": 4
+    },
+    {
+      "args": [
+        "1999-12-31"
+      ],
+      "result": 5
+    },
+    {
+      "args": [
+        "not a day"
+      ],
+      "result": null
+    }
+  ],
+  "localMinutes": [
+    {
+      "args": [
+        "2026-10-12T16:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": 540
+    },
+    {
+      "args": [
+        "2026-10-12T16:00:59.999Z",
+        "America/Phoenix"
+      ],
+      "result": 540
+    },
+    {
+      "args": [
+        "2026-10-12 16:30:00+00",
+        "America/Phoenix"
+      ],
+      "result": 570
+    },
+    {
+      "args": [
+        "2026-10-12T06:59:00Z",
+        "America/Phoenix"
+      ],
+      "result": 1439
+    },
+    {
+      "args": [
+        "2026-03-08T06:59:00Z",
+        "America/New_York"
+      ],
+      "result": 119
+    },
+    {
+      "args": [
+        "2026-03-08T07:00:00Z",
+        "America/New_York"
+      ],
+      "result": 180
+    },
+    {
+      "args": [
+        "2026-11-01T05:30:00Z",
+        "America/New_York"
+      ],
+      "result": 90
+    },
+    {
+      "args": [
+        "2026-11-01T06:30:00Z",
+        "America/New_York"
+      ],
+      "result": 90
+    },
+    {
+      "args": [
+        "2026-10-12T16:00:00+05:30",
+        "UTC"
+      ],
+      "result": 630
+    },
+    {
+      "args": [
+        "2026-10-12T16:00:00Z",
+        "Mars/Olympus"
+      ],
+      "throws": "Invalid time zone specified: Mars/Olympus"
+    },
+    {
+      "args": [
+        "soon",
+        "UTC"
+      ],
+      "throws": "Invalid time value"
+    }
+  ],
+  "LOCK_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "fixed": "Fixed time",
+        "started": "Started",
+        "two_techs": "Two techs"
+      }
+    }
+  ],
+  "canMoveJob": [
+    {
+      "args": [
+        "unscheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "scheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "in_progress"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "done"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "paid"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "canceled"
+      ],
+      "result": false
+    }
+  ],
+  "canUnschedule": [
+    {
+      "args": [
+        "unscheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "scheduled"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "in_progress"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "done"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "paid"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "canceled"
+      ],
+      "result": false
+    }
+  ],
+  "lockReason": [
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": null,
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "unscheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": null,
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "in_progress",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": null,
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": true,
+          "property": null
+        }
+      ],
+      "result": "started"
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "report_sent",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": null,
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null
+        }
+      ],
+      "result": "started"
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": "t2",
+          "scheduled_start": null,
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": true,
+          "property": null
+        }
+      ],
+      "result": "fixed"
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": "t2",
+          "scheduled_start": null,
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null
+        }
+      ],
+      "result": "two_techs"
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": "",
+          "scheduled_start": null,
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null
+        }
+      ],
+      "result": null
+    }
+  ],
+  "inRouteOrder": [
+    {
+      "args": [
+        []
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "c",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-20T18:00:00Z",
+            "scheduled_end": null,
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": null
+          },
+          {
+            "id": "a",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "scheduled_end": null,
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": null
+          },
+          {
+            "id": "b",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": null
+          }
+        ]
+      ],
+      "result": [
+        "a",
+        "c",
+        "b"
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "e",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": null
+          },
+          {
+            "id": "d",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": 3,
+            "arrival_fixed": false,
+            "property": null
+          },
+          {
+            "id": "b",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "scheduled_end": null,
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": null
+          },
+          {
+            "id": "a",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-20T16:00:00.000Z",
+            "scheduled_end": null,
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": null
+          },
+          {
+            "id": "c",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-20 16:00:00+00",
+            "scheduled_end": null,
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": null
+          },
+          {
+            "id": "B",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": null
+          },
+          {
+            "id": "f",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "not a time",
+            "scheduled_end": null,
+            "route_order": 0,
+            "arrival_fixed": false,
+            "property": null
+          }
+        ]
+      ],
+      "result": [
+        "c",
+        "a",
+        "b",
+        "f",
+        "d",
+        "B",
+        "e"
+      ]
+    }
+  ],
+  "jobMinutes": [
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": null,
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null
+        },
+        {
+          "dayStart": "08:00",
+          "dayEnd": "17:00",
+          "windowMin": 0,
+          "jobMinutes": 150,
+          "workDays": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "result": 150
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "scheduled_end": "2026-10-20T17:30:00Z",
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null
+        },
+        {
+          "dayStart": "08:00",
+          "dayEnd": "17:00",
+          "windowMin": 0,
+          "jobMinutes": 150,
+          "workDays": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "result": 90
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "scheduled_end": "2026-10-20T16:00:29Z",
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null
+        },
+        {
+          "dayStart": "08:00",
+          "dayEnd": "17:00",
+          "windowMin": 0,
+          "jobMinutes": 90,
+          "workDays": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "result": 90
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "scheduled_end": "2026-10-20T16:00:30Z",
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null
+        },
+        {
+          "dayStart": "08:00",
+          "dayEnd": "17:00",
+          "windowMin": 0,
+          "jobMinutes": 150,
+          "workDays": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "scheduled_end": "2026-10-21T16:01:00Z",
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null
+        },
+        {
+          "dayStart": "08:00",
+          "dayEnd": "17:00",
+          "windowMin": 0,
+          "jobMinutes": 45,
+          "workDays": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "result": 45
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "scheduled_end": "2026-10-20T15:00:00Z",
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null
+        },
+        {
+          "dayStart": "08:00",
+          "dayEnd": "17:00",
+          "windowMin": 0,
+          "jobMinutes": 150,
+          "workDays": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "result": 150
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null
+        },
+        {
+          "dayStart": "08:00",
+          "dayEnd": "17:00",
+          "windowMin": 0,
+          "jobMinutes": 150,
+          "workDays": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ],
+      "result": 150
+    }
+  ],
+  "stopFor": [
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "scheduled_end": "2026-10-20T17:00:00Z",
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": {
+            "latitude": 33.4252,
+            "longitude": -111.8315
+          }
+        },
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "techId": "t1",
+          "nowMin": 540
+        }
+      ],
+      "result": {
+        "id": "a",
+        "location": {
+          "lat": 33.4252,
+          "lng": -111.8315
+        },
+        "durationMin": 60,
+        "fixedStartMin": null,
+        "earliestMin": 540,
+        "movable": true,
+        "own": true
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": true,
+          "property": {
+            "latitude": 33.4252,
+            "longitude": -111.8315
+          }
+        },
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "techId": "t2",
+          "nowMin": 540
+        }
+      ],
+      "result": {
+        "id": "a",
+        "location": {
+          "lat": 33.4252,
+          "lng": -111.8315
+        },
+        "durationMin": 150,
+        "fixedStartMin": 540,
+        "earliestMin": null,
+        "movable": false,
+        "own": false
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "in_progress",
+          "assigned_user_id": "t1",
+          "second_tech_id": null,
+          "scheduled_start": null,
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": {
+            "latitude": 33.4,
+            "longitude": null
+          }
+        },
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 75,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "techId": "t1"
+        }
+      ],
+      "result": {
+        "id": "a",
+        "location": null,
+        "durationMin": 75,
+        "fixedStartMin": null,
+        "earliestMin": null,
+        "movable": false,
+        "own": true
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "status": "scheduled",
+          "assigned_user_id": "t1",
+          "second_tech_id": "t2",
+          "scheduled_start": "2026-11-01T06:30:00Z",
+          "scheduled_end": null,
+          "route_order": null,
+          "arrival_fixed": false,
+          "property": null
+        },
+        {
+          "timeZone": "America/New_York",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "techId": "t2",
+          "nowMin": null
+        }
+      ],
+      "result": {
+        "id": "a",
+        "location": null,
+        "durationMin": 150,
+        "fixedStartMin": 90,
+        "earliestMin": null,
+        "movable": false,
+        "own": false
+      }
+    }
+  ],
+  "zonedMinutesToIso": [
+    {
+      "args": [
+        "2026-10-20",
+        540,
+        "America/Phoenix"
+      ],
+      "result": "2026-10-20T16:00:00.000Z"
+    },
+    {
+      "args": [
+        "2026-10-20",
+        -30,
+        "America/Phoenix"
+      ],
+      "result": "2026-10-20T07:00:00.000Z"
+    },
+    {
+      "args": [
+        "2026-10-20",
+        1500,
+        "America/Phoenix"
+      ],
+      "result": "2026-10-21T06:59:00.000Z"
+    },
+    {
+      "args": [
+        "2026-03-08",
+        150,
+        "America/New_York"
+      ],
+      "result": "2026-03-08T06:30:00.000Z"
+    },
+    {
+      "args": [
+        "2026-03-08",
+        180,
+        "America/New_York"
+      ],
+      "result": "2026-03-08T07:00:00.000Z"
+    },
+    {
+      "args": [
+        "2026-11-01",
+        90,
+        "America/New_York"
+      ],
+      "result": "2026-11-01T05:30:00.000Z"
+    },
+    {
+      "args": [
+        "2026-11-01",
+        480,
+        "America/New_York"
+      ],
+      "result": "2026-11-01T13:00:00.000Z"
+    },
+    {
+      "args": [
+        "2026-10-20",
+        540,
+        "Europe/London"
+      ],
+      "result": "2026-10-20T08:00:00.000Z"
+    },
+    {
+      "args": [
+        "2026-10-20",
+        540,
+        "Nowhere/Land"
+      ],
+      "throws": "Invalid time zone specified: Nowhere/Land"
+    }
+  ],
+  "routeUpdates": [
+    {
+      "args": [
+        "2026-10-20",
+        "America/Phoenix",
+        []
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "2026-10-20",
+        "America/Phoenix",
+        [
+          {
+            "id": "a",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 60,
+            "movable": true,
+            "own": true
+          },
+          {
+            "id": "b",
+            "location": {
+              "lat": 33.6152,
+              "lng": -111.8315
+            },
+            "durationMin": 90,
+            "fixedStartMin": 660,
+            "movable": false,
+            "own": true
+          },
+          {
+            "id": "c",
+            "location": {
+              "lat": 33.4152,
+              "lng": -111.6315
+            },
+            "durationMin": 45,
+            "movable": true,
+            "own": false
+          },
+          {
+            "id": "d",
+            "location": null,
+            "durationMin": 1000,
+            "movable": true,
+            "own": true
+          }
+        ]
+      ],
+      "result": [
+        {
+          "id": "a",
+          "route_order": 1,
+          "scheduled_start": "2026-10-20T15:05:00.000Z",
+          "scheduled_end": "2026-10-20T16:05:00.000Z"
+        },
+        {
+          "id": "b",
+          "route_order": 2
+        },
+        {
+          "id": "d",
+          "route_order": 4,
+          "scheduled_start": "2026-10-20T20:56:00.000Z",
+          "scheduled_end": "2026-10-21T13:36:00.000Z"
+        }
+      ]
+    },
+    {
+      "args": [
+        "2026-11-01",
+        "America/New_York",
+        [
+          {
+            "id": "a",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 60,
+            "earliestMin": 60,
+            "movable": true,
+            "own": true
+          }
+        ]
+      ],
+      "result": [
+        {
+          "id": "a",
+          "route_order": 1,
+          "scheduled_start": "2026-11-01T13:05:00.000Z",
+          "scheduled_end": "2026-11-01T14:05:00.000Z"
+        }
+      ]
+    }
+  ],
+  "daySummary": [
+    {
+      "args": [
+        [],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "legs": [],
+        "short": [],
+        "driveMin": 0,
+        "backMin": null,
+        "overtimeMin": 0,
+        "unlocated": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "startMin": 480,
+            "endMin": 600
+          },
+          {
+            "id": "b",
+            "location": {
+              "lat": 33.6152,
+              "lng": -111.8315
+            },
+            "startMin": 610,
+            "endMin": 700
+          },
+          {
+            "id": "c",
+            "location": null,
+            "startMin": 720,
+            "endMin": 780
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 750
+        }
+      ],
+      "result": {
+        "legs": [
+          5,
+          33,
+          0
+        ],
+        "short": [
+          0,
+          23,
+          0
+        ],
+        "driveMin": 72,
+        "backMin": 814,
+        "overtimeMin": 64,
+        "unlocated": 1
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "startMin": null,
+            "endMin": null
+          },
+          {
+            "id": "b",
+            "location": {
+              "lat": 33.4152,
+              "lng": -111.6315
+            },
+            "startMin": 600,
+            "endMin": null
+          },
+          {
+            "id": "c",
+            "location": {
+              "lat": 33.6152,
+              "lng": -111.8315
+            },
+            "startMin": 500,
+            "endMin": 560
+          }
+        ],
+        null,
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "legs": [
+          0,
+          30,
+          41
+        ],
+        "short": [
+          0,
+          0,
+          0
+        ],
+        "driveMin": 71,
+        "backMin": 560,
+        "overtimeMin": 0,
+        "unlocated": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "location": null,
+            "startMin": null,
+            "endMin": null
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        {
+          "startMin": 480,
+          "endMin": 1020
+        }
+      ],
+      "result": {
+        "legs": [
+          0
+        ],
+        "short": [
+          0
+        ],
+        "driveMin": 0,
+        "backMin": null,
+        "overtimeMin": 0,
+        "unlocated": 1
+      }
+    }
+  ]
+}

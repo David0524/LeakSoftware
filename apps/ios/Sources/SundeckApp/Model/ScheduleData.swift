@@ -26,6 +26,10 @@ public struct ScheduleContext: Sendable {
     public var onMyWayFromPhone: Bool
 
     public var workDay: WorkDay { settings.workDay }
+    /// What SundeckCore's planning rules read.
+    public var plan: PlanContext {
+        PlanContext(timeZone: timeZone, settings: settings, depot: depot, today: today, nowMin: nowMin)
+    }
     public var origin: MapPlace? {
         depot != nil || !depotAddress.isEmpty ? MapPlace(address: depotAddress, location: depot) : nil
     }
@@ -82,7 +86,7 @@ public func teamMembers(_ store: LocalStore, kv: KeyValue, companyId: String, us
 }
 
 /// A job as the route, Today, and the schedule show it.
-public struct ScheduleJob: Equatable, Sendable, Identifiable {
+public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
     public var id: String
     public var number: Int?
     public var status: JobStatus
@@ -126,7 +130,9 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable {
         }
     }
 
-    public var lock: LockReason? { lockReason(status: status, arrivalFixed: arrivalFixed, secondTech: secondTechId) }
+    public var lock: LockReason? { lockReason(self) }
+    /// "after Grace Holloway" in Suggest Times.
+    public var label: String? { customerName }
     /// Started, finished, or canceled: shown faded on Today.
     public var done: Bool { status != .scheduled && status != .inProgress }
     public var start: Date? { parseInstant(scheduledStart) }
@@ -134,28 +140,11 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable {
     public var numberText: String { number.map { "#\($0)" } ?? "New" }
 
     /// The job's length: its saved times, else the shop's default.
-    public func minutes(_ settings: RoutingSettings) -> Int {
-        if let a = start, let b = parseInstant(scheduledEnd) {
-            let m = Int((b.timeIntervalSince(a) / 60).rounded())
-            if m > 0 && m <= 24 * 60 { return m }
-        }
-        return settings.jobMinutes
-    }
+    public func minutes(_ settings: RoutingSettings) -> Int { jobMinutes(self, settings) }
 
     public func startMin(_ timeZone: String) -> Int? { start.map { localMinutes($0, timeZone: timeZone) } }
     public func endMin(_ timeZone: String) -> Int? {
         parseInstant(scheduledEnd).map { localMinutes($0, timeZone: timeZone) }
-    }
-}
-
-/// A day's jobs in route order: times first, then the saved place, jobs without a time last.
-public func inRouteOrder(_ jobs: [ScheduleJob]) -> [ScheduleJob] {
-    jobs.sorted { a, b in
-        let (x, y) = (a.start?.timeIntervalSince1970 ?? .infinity, b.start?.timeIntervalSince1970 ?? .infinity)
-        if x != y { return x < y }
-        let (p, q) = (a.routeOrder ?? .max, b.routeOrder ?? .max)
-        if p != q { return p < q }
-        return a.id < b.id
     }
 }
 
@@ -274,80 +263,40 @@ public struct ScheduleProblem: Error, Equatable, CustomStringConvertible {
 public struct JobUpdate: Equatable, Sendable {
     public var id: String
     public var values: Row
-}
 
-private func stop(_ j: ScheduleJob, ctx: ScheduleContext, techId: String, date: String) -> RouteStop {
-    let movable = j.lock == nil
-    return RouteStop(
-        id: j.id, location: j.location, durationMin: j.minutes(ctx.settings),
-        fixedStartMin: !movable ? j.startMin(ctx.timeZone) : nil,
-        earliestMin: movable && date == ctx.today ? ctx.nowMin : nil, movable: movable,
-        own: j.assignedUserId == techId)
-}
-
-private func iso(_ date: String, _ min: Int, _ ctx: ScheduleContext) -> String {
-    zonedInstant(date, min, timeZone: ctx.timeZone).map(isoString) ?? ""
-}
-
-/// Rows to save for a timed route: every stop of this tech's gets its place, and stops that may
-/// move get the route's times.
-func routeUpdates(date: String, ctx: ScheduleContext, stops: [RouteStop], route: TimedRoute) -> [JobUpdate] {
-    stops.enumerated().compactMap { i, s in
-        guard s.own else { return nil }
-        var values: Row = ["route_order": .number(Double(i + 1))]
-        if s.movable, let start = zonedInstant(date, route.stops[i].startMin, timeZone: ctx.timeZone) {
-            values["scheduled_start"] = .string(isoString(start))
-            values["scheduled_end"] = .string(isoString(start.addingTimeInterval(Double(s.durationMin) * 60)))
-        }
-        return JobUpdate(id: s.id, values: values)
+    public init(id: String, values: Row) {
+        self.id = id
+        self.values = values
     }
+
+    public init(_ change: JobChange) { self.init(id: change.id, values: change.values) }
+}
+
+/// The rows to save and the status line, or the website's words for why not.
+private func result(_ change: ScheduleChange) throws -> (updates: [JobUpdate], message: String) {
+    if let error = change.error { throw ScheduleProblem(error) }
+    return (change.updates.map(JobUpdate.init), change.message ?? "")
+}
+
+/// A tech's day in route order, as planning reads it (second-tech jobs included).
+private func dayJobs(
+    _ techId: String, _ date: String, jobs: [ScheduleJob], ctx: ScheduleContext, team: [TeamMember]
+) -> [ScheduleJob] {
+    loadRoutes(jobs, ctx: ctx, dates: [date], team: team, drive: DriveTimes()).routes[routeKey(techId, date)]?
+        .jobs ?? []
 }
 
 /// Plan Route: orders a tech's day for the least driving, keeps promised times, and returns the
-/// rows to save with the website's message.
+/// rows to save with the website's message (`planDay`).
 public func planRoute(
     techId: String, date: String, jobs: [ScheduleJob], ctx: ScheduleContext, team: [TeamMember], drive: DriveTimes
 ) throws -> (updates: [JobUpdate], message: String) {
-    if date < ctx.today { throw ScheduleProblem("Past days can’t be planned.") }
-    let day = loadRoutes(jobs, ctx: ctx, dates: [date], team: team, drive: drive).routes[routeKey(techId, date)]
-    guard let day, !day.jobs.isEmpty else { throw ScheduleProblem("Nothing scheduled for this tech that day.") }
-    let stops = day.jobs.map { stop($0, ctx: ctx, techId: techId, date: date) }
-    let before = timeRoute(stops, depot: ctx.depot, day: ctx.workDay, drive: drive.drive)
-    let (order, route) = optimizeRoute(stops, depot: ctx.depot, day: ctx.workDay, drive: drive.drive)
-    let planned = order.map { stops[$0] }
-    let updates = routeUpdates(date: date, ctx: ctx, stops: planned, route: route)
-    let saved = before.driveMin - route.driveMin
-    let parts = [
-        "Planned: \(durationLabel(route.driveMin)) of driving",
-        saved > 0 ? "\(durationLabel(saved)) less than before" : nil,
-        "back at the shop by \(minutesLabel(route.backMin))",
-    ].compactMap { $0 }
-    let warnings = [
-        route.overtimeMin > 0 ? "runs \(durationLabel(route.overtimeMin)) past the end of the day" : nil,
-        route.lateMin > 0 ? "a fixed time can’t be met (\(durationLabel(route.lateMin)) late)" : nil,
-        stops.contains { $0.location == nil } ? "some pools have no location, so driving to them isn’t counted" : nil,
-        ctx.depot == nil ? "the shop has no location (Settings › Scheduling)" : nil,
-    ].compactMap { $0 }
-    let message =
-        "\(parts.joined(separator: ", "))." + (warnings.isEmpty ? "" : " Note: \(warnings.joined(separator: "; ")).")
-    return (updates, message)
-}
-
-/// After a job leaves a day, close up the order numbers (times stay).
-private func renumber(
-    techId: String, date: String, leaving: String, jobs: [ScheduleJob], ctx: ScheduleContext, team: [TeamMember]
-) -> [JobUpdate] {
-    let left =
-        (loadRoutes(jobs, ctx: ctx, dates: [date], team: team, drive: DriveTimes()).routes[
-            routeKey(techId, date)]?.jobs ?? [])
-        .filter { $0.id != leaving && $0.assignedUserId == techId }
-    return left.enumerated().compactMap { i, j in
-        j.routeOrder == i + 1 ? nil : JobUpdate(id: j.id, values: ["route_order": .number(Double(i + 1))])
-    }
+    try result(
+        planDay(ctx.plan, techId, date, dayJobs(techId, date, jobs: jobs, ctx: ctx, team: team), drive: drive.drive))
 }
 
 /// Move…: puts a job on a tech's day at a place in the route (`tech` nil: nobody yet, it waits in
-/// Needs a Time), or with `date` nil takes it off the schedule. Times customers were promised stay.
+/// Needs a Time), or with `date` nil takes it off the schedule (`moveJobChange`).
 public func moveJob(
     _ jobId: String, tech: String?, date: String?, index: Int, jobs: [ScheduleJob], ctx: ScheduleContext,
     team: [TeamMember], drive: DriveTimes
@@ -355,82 +304,14 @@ public func moveJob(
     guard let job = jobs.first(where: { $0.id == jobId }) else {
         throw ScheduleProblem("This job is gone. Pull down to refresh.")
     }
-    if !canMoveJob(job.status) { throw ScheduleProblem("This job was canceled, so it stays off the schedule.") }
-    if date == nil && !canUnschedule(job.status) {
-        throw ScheduleProblem("This job has started, so it stays on the schedule. Move it to another day instead.")
-    }
-    let status: JobStatus = canUnschedule(job.status) ? .scheduled : job.status
-    if let date, date < ctx.today { throw ScheduleProblem("Pick today or a later day.") }
-    if !ctx.seesAll && tech != ctx.userId && date != nil {
-        throw ScheduleProblem("You can schedule only your own jobs. Ask an owner to move it to someone else.")
-    }
-    if let tech, tech == job.secondTechId { throw ScheduleProblem("This tech is already the second tech on this job.") }
-    let from = job.start.map { (tech: job.assignedUserId, date: localDay($0, timeZone: ctx.timeZone)) }
-    let leaveFrom = { (unless: Bool) -> [JobUpdate] in
-        guard let from, let t = from.tech, !unless else { return [] }
-        return renumber(techId: t, date: from.date, leaving: jobId, jobs: jobs, ctx: ctx, team: team)
-    }
-
-    guard let date else {
-        let off: Row = [
-            "route_order": .null, "status": .string(JobStatus.unscheduled.rawValue), "scheduled_start": .null,
-            "scheduled_end": .null, "arrival_fixed": false,
-        ]
-        return ([JobUpdate(id: jobId, values: off)] + leaveFrom(false), "Taken off the schedule.")
-    }
-
-    let duration = job.minutes(ctx.settings)
-    let fixedMin = job.arrivalFixed ? job.startMin(ctx.timeZone) : nil
-
-    guard let tech else {
-        let startMin = job.startMin(ctx.timeZone) ?? ctx.workDay.startMin
-        let start = zonedInstant(date, startMin, timeZone: ctx.timeZone) ?? Date()
-        let values: Row = [
-            "route_order": .null, "assigned_user_id": .null, "status": .string(status.rawValue),
-            "scheduled_start": .string(isoString(start)),
-            "scheduled_end": .string(isoString(start.addingTimeInterval(Double(duration) * 60))),
-        ]
-        return (
-            [JobUpdate(id: jobId, values: values)] + leaveFrom(false),
-            "No tech yet, so it’s in Needs a Time, still booked for \(minutesLabel(startMin))."
-        )
-    }
-
-    let others =
-        (loadRoutes(jobs, ctx: ctx, dates: [date], team: team, drive: drive).routes[routeKey(tech, date)]?
-        .jobs ?? []).filter { $0.id != jobId }
-    var stops = others.map { j -> RouteStop in
-        var s = stop(j, ctx: ctx, techId: tech, date: date)
-        // Stops already on the day keep their times unless the new order pushes them later.
-        if s.movable, let start = j.startMin(ctx.timeZone) { s.earliestMin = max(s.earliestMin ?? 0, start) }
-        return s
-    }
-    let moved = RouteStop(
-        id: jobId, location: job.location, durationMin: duration, fixedStartMin: fixedMin,
-        earliestMin: date == ctx.today ? ctx.nowMin : nil, movable: fixedMin == nil, own: true)
-    let at = max(0, min(index, others.count))
-    stops.insert(moved, at: at)
-    let route = timeRoute(stops, depot: ctx.depot, day: ctx.workDay, drive: drive.drive)
-    var updates = routeUpdates(date: date, ctx: ctx, stops: stops, route: route)
-    guard let mineIndex = updates.firstIndex(where: { $0.id == jobId }) else { return ([], "") }
-    var mine = updates.remove(at: mineIndex)
-    mine.values["assigned_user_id"] = .string(tech)
-    mine.values["status"] = .string(status.rawValue)
-    if let fixedMin, let start = zonedInstant(date, fixedMin, timeZone: ctx.timeZone) {
-        mine.values["scheduled_start"] = .string(isoString(start))
-        mine.values["scheduled_end"] = .string(isoString(start.addingTimeInterval(Double(duration) * 60)))
-    }
-    let t = route.stops[at]
-    let notes = [
-        t.lateMin > 0 ? "it can’t make its fixed time (\(durationLabel(t.lateMin)) late)" : nil,
-        route.overtimeMin > 0 ? "the day runs \(durationLabel(route.overtimeMin)) late" : nil,
-        route.lateMin - t.lateMin > 0 ? "a fixed time after it can’t be met" : nil,
-    ].compactMap { $0 }
-    let sameDay = from.map { $0.tech == tech && $0.date == date } ?? true
-    return (
-        [mine] + updates + leaveFrom(sameDay),
-        "Moved to \(minutesLabel(t.startMin))." + (notes.isEmpty ? "" : " Note: \(notes.joined(separator: "; ")).")
-    )
+    let fromDate = job.start.map { localDay($0, timeZone: ctx.timeZone) }
+    let input = MoveInput(
+        job: job, tech: tech, date: date, index: index,
+        targetDay: tech.flatMap { t in date.map { dayJobs(t, $0, jobs: jobs, ctx: ctx, team: team) } } ?? [],
+        fromDay: job.assignedUserId.flatMap { t in fromDate.map { dayJobs(t, $0, jobs: jobs, ctx: ctx, team: team) } }
+            ?? [],
+        seesAll: ctx.seesAll, userId: ctx.userId)
+    return try result(moveJobChange(ctx.plan, input, drive: drive.drive))
 }
 
 /// Saves planning changes through the sync layer, all or none.
@@ -444,13 +325,10 @@ public func saveJobUpdates(_ sync: SyncService, companyId: String, _ updates: [J
 
 // MARK: - Suggest Times
 
-public struct Suggestion: Equatable, Sendable, Identifiable {
-    public var slot: SlotSuggestion
-    /// "Today", "Tue, Oct 20"
-    public var dayLabel: String
-    public var timeLabel: String
+/// A suggested time (`SuggestedTime` in SundeckCore), with its line for the list.
+public typealias Suggestion = SuggestedTime
 
-    public var id: String { slot.id }
+extension SuggestedTime {
     /// "Adds 12 min of driving" / "Adds no driving", then where.
     public var detail: String {
         (slot.addedDriveMin > 0 ? "Adds \(durationLabel(slot.addedDriveMin)) of driving" : "Adds no driving")
@@ -458,52 +336,28 @@ public struct Suggestion: Equatable, Sendable, Identifiable {
     }
 }
 
-/// Where a job fits best in the routes already planned for the next 7 working days.
+/// Where a job fits best in the routes already planned for the next 7 working days
+/// (`suggestTimes`). `jobId` nil is a job not made yet (New Job), whose date and time are on the
+/// form, so the note says to pick them there, as the website's New Job does.
 public func suggestTimes(
     location: LatLng?, durationMin: Int, excluding jobId: String?, jobs: [ScheduleJob], ctx: ScheduleContext,
     team: [TeamMember], drive: DriveTimes
 ) throws -> (suggestions: [Suggestion], note: String?) {
-    let hours = ctx.workDay
-    var dates: [String] = []
-    var d = ctx.today
-    while dates.count < 7 && d < addDays(ctx.today, 21) {
-        if ctx.settings.workDays.contains(weekday(d)) && !(d == ctx.today && ctx.nowMin > hours.endMin - 60) {
-            dates.append(d)
-        }
-        d = addDays(d, 1)
-    }
+    let dates = try suggestionDates(ctx.plan)
     if dates.isEmpty { throw ScheduleProblem("No working days are set (Settings › Scheduling).") }
     let loaded = loadRoutes(jobs, ctx: ctx, dates: dates, team: team, drive: drive)
+    // A tech limited to their own jobs gets suggestions on their own route only.
     let techs = team.filter { $0.active && (ctx.seesAll || $0.id == ctx.userId) }
-    var days: [TechDay] = []
-    for date in dates {
-        for t in techs {
-            let list = (loaded.routes[routeKey(t.id, date)]?.jobs ?? []).filter { $0.id != jobId }
-            let stops = list.map { j -> RouteStop in
-                var s = stop(j, ctx: ctx, techId: t.id, date: date)
-                if let start = j.startMin(ctx.timeZone) {
-                    s.fixedStartMin = start
-                    s.earliestMin = nil
-                }
-                return s
-            }
-            days.append(
-                TechDay(
-                    date: date, techId: t.id, techName: t.name, stops: stops,
-                    labels: Dictionary(list.map { ($0.id, $0.customerName) }, uniquingKeysWith: { a, _ in a }),
-                    notBeforeMin: date == ctx.today ? ctx.nowMin : nil))
+    let routes = dates.flatMap { date in
+        techs.map { t in
+            SuggestRoute(
+                techId: t.id, techName: t.name, date: date, jobs: loaded.routes[routeKey(t.id, date)]?.jobs ?? [])
         }
     }
-    let found = suggestSlots(
-        location: location, durationMin: durationMin, days: days, depot: ctx.depot, day: hours, drive: drive.drive)
-    let list = found.map {
-        Suggestion(
-            slot: $0, dayLabel: $0.date == ctx.today ? "Today" : formatDay($0.date),
-            timeLabel: minutesLabel($0.startMin))
-    }
+    let found = try SundeckCore.suggestTimes(
+        ctx.plan, id: jobId, location: location, durationMin: durationMin, routes: routes, drive: drive.drive)
     let note =
-        location == nil
-        ? "This pool has no location yet, so these don’t count driving to it."
-        : found.isEmpty ? "No gaps in the next working days. Pick a day and time below." : nil
-    return (list, note)
+        jobId == nil && location != nil && found.suggestions.isEmpty
+        ? "No gaps in the next working days. Pick a day and time below." : found.note
+    return (found.suggestions, note)
 }

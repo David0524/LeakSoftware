@@ -248,11 +248,31 @@ texts, inset grouped layouts, and VoiceOver users can draw a signature (direct t
 - **Done when:** a quote built and sent from the Swift app is accepted and its deposit paid in
   Stripe test mode, and the job is invoiced and paid.
 
+Built 2026-10-19: quotes on Wrap-Up (lines from findings and the price book, edited offline with
+totals saved on each change, discounts within the shop's limit, deposits, send by email or text,
+Customer Signs Now), invoices (from a quote or from scratch, payments, void, share) and More ›
+Invoices. The done-when test is `LiveQuoteTests` (`SUNDECK_LIVE=1`): a quote built and sent from
+the app, accepted through the customer link, invoiced and sent, and paid. It passed, except the
+card deposit: the demo shop's Stripe test account hasn't finished onboarding (`charges_enabled`
+is false), so no card can be charged until the owner completes it; the deposit is recorded the
+way the website records an offline one.
+
 ### S8 Everything else in the app
 - Routes and Today (Open in Maps, On My Way, Call), maintenance visits with Mark Done, the
   chemicals calculator, Messages (list, thread, new), the rest of Settings, tips.
 - **Done when:** each screen in `apps/mobile/src/app` has a Swift counterpart, checked against
   the M10.5 and M10.6 device checklists.
+
+Redesign 2026-10-19 (owner: "base the Swift build around [the mobile web app]"): both apps now
+follow `docs/design/2026-10-19-native-apps-follow-web.md` — the website's five tabs (Today, Jobs,
+Schedule, Messages, More), its fonts, cards, pills and wording — instead of plain iOS lists. S8
+screens built with it: Today (stops in route order, drive legs, On My Way, Call, weather,
+whose day, Getting Started), Jobs and Reports, Schedule (day, week, month, Needs a Time, Plan
+Route, Move, Suggested Times), New Job as a pushed screen, Messages (list, thread, new, calls),
+More (Customers, Invoices, Chemical Calculator, Settings, account). Route and schedule rules are
+ported to SundeckCore with fixtures from TypeScript. Checked by the simulator screenshots in CI
+against the website's at iPhone size. Still to do: the job's Schedule and Timeline groups on
+Details, editing visit plans, maintenance plans in New Job.
 
 ### S9 Switch-over
 - The move from the Expo app's database, accessibility (Dynamic Type, VoiceOver, contrast),
@@ -261,6 +281,11 @@ texts, inset grouped layouts, and VoiceOver users can draw a signature (direct t
   partner uses the Swift TestFlight build on real jobs for a week with no data loss (M11's
   test). Then `apps/mobile` becomes Android-only (decision 2), CLAUDE.md's mobile sections are
   rewritten for Swift, and the Expo iOS build stops.
+
+Built 2026-10-19: the move from the Expo database (`ExpoMigration.swift`): on first launch the
+Swift app opens the Expo app's encrypted SQLite file with its Keychain key, copies synced rows,
+the outbox, sync state, the upload queue and settings, checks the counts, and only then marks
+the move done; tested in `ExpoMigrationTests`. TestFlight waits for Apple Developer enrollment.
 
 ## Risks
 

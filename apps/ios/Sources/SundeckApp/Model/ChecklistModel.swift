@@ -45,11 +45,6 @@ public struct ChecklistItemRow: Identifiable, Equatable, Sendable {
     }
 }
 
-/// How a checklist section's summary reads: muted while items are to do, else the worst news.
-public enum ChecklistSummaryTone: Equatable, Sendable {
-    case muted, pass, warning, fail
-}
-
 /// A checklist section and its items, in checklist order.
 public struct ChecklistSectionRows: Identifiable, Equatable, Sendable {
     public var section: ChecklistSection
@@ -60,41 +55,25 @@ public struct ChecklistSectionRows: Identifiable, Equatable, Sendable {
 
     /// Items not answered yet.
     public var toDo: [ChecklistItemRow] { items.filter { $0.verdict == nil } }
-    var leaking: Int { items.filter { $0.verdict == .leaking }.count }
-    var attention: Int { items.filter { $0.verdict == .attention }.count }
 
-    /// The header's summary: "3 of 9 to do", "All clear", "1 leaking · 1 attention"; on the
-    /// service checklist "All done" or "2 need attention".
-    public var summary: String {
-        let toDo = toDo.count
-        if toDo > 0 { return "\(toDo) of \(items.count) to do" }
-        if section == .service {
-            return attention > 0 ? "\(attention) need\(attention == 1 ? "s" : "") attention" : "All done"
-        }
-        if leaking > 0 || attention > 0 {
-            return [leaking > 0 ? "\(leaking) leaking" : nil, attention > 0 ? "\(attention) attention" : nil]
-                .compactMap { $0 }.joined(separator: " · ")
-        }
-        return "All clear"
+    /// The header's summary (`checklistSectionSummary`): "3 of 9 to do", "All clear", "1 leaking ·
+    /// 1 attention"; on the service checklist "All done" or "2 need attention".
+    public var header: ChecklistSectionSummary {
+        checklistSectionSummary(
+            items.map { $0.result.map { ChecklistAnswer(status: $0.status, outcome: $0.outcome) } },
+            service: section == .service)
     }
 
-    /// Green means all clear; attention alone is the warning color (spec decision 10).
-    public var summaryTone: ChecklistSummaryTone {
-        if !toDo.isEmpty { return .muted }
-        if leaking > 0 { return .fail }
-        return attention > 0 ? .warning : .pass
-    }
-
+    public var summary: String { header.text }
+    /// Green means all clear; attention is the warning color (spec decision 10).
+    public var summaryTone: ChecklistSummaryTone { header.tone }
     /// Open while it has items to do.
-    public var startsOpen: Bool { !toDo.isEmpty }
+    public var startsOpen: Bool { header.open }
 
-    /// The action under the items while any are to do.
+    /// The action under the items while any are to do (`markRemainingLabel`).
     public var markRemainingTitle: String? {
         let rest = toDo
-        guard !rest.isEmpty else { return nil }
-        if rest.allSatisfy({ $0.type.answer == .yesNo }) { return "Answer \(rest.count) Remaining No" }
-        if rest.allSatisfy({ $0.type.answer == .done }) { return "Mark \(rest.count) Remaining Done" }
-        return "Mark \(rest.count) Remaining Not Leaking"
+        return rest.isEmpty ? nil : markRemainingLabel(rest.map(\.type.answer))
     }
 }
 

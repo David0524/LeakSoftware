@@ -3,6 +3,15 @@ import { basics } from "./cases/basics";
 import { inspection } from "./cases/inspection";
 import { media } from "./cases/media";
 import { pricing } from "./cases/pricing";
+import { routing } from "./cases/routing";
+import { schedule } from "./cases/schedule";
 
 /** One fixture file per entry: apps/ios/Tests/Fixtures/<name>.json. */
-export const modules: Record<string, ModuleCases> = { basics, inspection, media, pricing };
+export const modules: Record<string, ModuleCases> = {
+  basics,
+  inspection,
+  media,
+  pricing,
+  routing,
+  schedule,
+};

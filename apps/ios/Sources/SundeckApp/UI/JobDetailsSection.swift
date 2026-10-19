@@ -54,6 +54,8 @@
                     }
                 }
                 onSite
+                if JobScheduleGroup.shows(job) { JobScheduleGroup(job: job) }
+                if isManagerRole(company?.role) { JobTimeline(jobId: job.id) }
                 if jobCanCancel(job.status, type: job.type) {
                     Button("Cancel Job", role: .destructive) { confirmCancel = true }
                         .buttonStyle(.danger)

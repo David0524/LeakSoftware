@@ -6,6 +6,7 @@ import {
   calculateChemistry,
   discountAllowed,
   doseSummary,
+  gettingStarted,
   dryMeasure,
   fluidAmount,
   gallonMeasure,
@@ -32,6 +33,7 @@ import {
   type QuoteLine,
   type Readings,
   type Services,
+  type ShopProgress,
   type TipPackage,
 } from "@leakbook/core";
 import { rule, type ModuleCases } from "../case";
@@ -441,5 +443,52 @@ export const pricing: ModuleCases = {
   tipFor: rule(
     (o: Parameters<typeof tipFor>[0]) => tipFor(o),
     tipCases as [Parameters<typeof tipFor>[0]][],
+  ),
+  gettingStarted: rule(
+    (s: Services, p: ShopProgress) => gettingStarted(s, p),
+    (["pool", "leak", "both"] as Services[]).flatMap((s): [Services, ShopProgress][] => [
+      [
+        s,
+        {
+          people: 1,
+          openInvites: 0,
+          hasLogo: false,
+          paymentsReady: false,
+          customers: 0,
+          visitPlans: 0,
+          leakJobs: 0,
+          reportsSent: 0,
+          invoicesSent: 0,
+        },
+      ],
+      [
+        s,
+        {
+          people: 1,
+          openInvites: 2,
+          hasLogo: true,
+          paymentsReady: true,
+          customers: 4,
+          visitPlans: 0,
+          leakJobs: 1,
+          reportsSent: 0,
+          invoicesSent: 3,
+        },
+      ],
+      [
+        s,
+        {
+          people: 3,
+          openInvites: 0,
+          hasLogo: false,
+          paymentsReady: false,
+          customers: 0,
+          visitPlans: 2,
+          leakJobs: 0,
+          reportsSent: 1,
+          invoicesSent: 0,
+        },
+      ],
+    ]),
   ),
 };

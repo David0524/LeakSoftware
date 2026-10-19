@@ -194,6 +194,10 @@
                 helpRow("System Status") { browser = .site("status") }
                 ActionRow("Show Tips Again") {
                     app.walkthrough.reset()
+                    Task {
+                        try? await app.client.auth.update(
+                            user: UserAttributes(data: ["getting_started_hidden": .bool(false)]))
+                    }
                     showWelcome()
                 }
                 .surfaceRow()

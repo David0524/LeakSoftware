@@ -12,7 +12,7 @@ import Testing
             "quoteShareText", "INVOICE_STATUS_LABELS", "invoiceTotals", "invoiceBalance", "invoiceShareText",
             "CHLORINE_PRODUCTS", "ACID_PRODUCTS", "targets", "fluidAmount", "gallonMeasure", "dryMeasure",
             "weightAmount", "saturationIndex", "calculateChemistry", "doseSummary", "launchCards", "seenTips",
-            "tipFor",
+            "tipFor", "gettingStarted",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -78,6 +78,20 @@ import Testing
             let o = try c.arg(0, as: TipOptions.self)
             return tipFor(
                 platform: o.platform, screen: o.screen, role: o.role, services: o.services, seen: o.seen, pkg: o.pkg)
+        }
+        checkRule(module, "gettingStarted") { c in gettingStarted(try c.arg(0), try c.arg(1, as: Progress.self).value) }
+    }
+
+    /// gettingStarted's progress object.
+    struct Progress: Decodable {
+        let people, openInvites, customers, visitPlans, leakJobs, reportsSent, invoicesSent: Int
+        let hasLogo, paymentsReady: Bool
+
+        var value: ShopProgress {
+            ShopProgress(
+                people: people, openInvites: openInvites, hasLogo: hasLogo, paymentsReady: paymentsReady,
+                customers: customers, visitPlans: visitPlans, leakJobs: leakJobs, reportsSent: reportsSent,
+                invoicesSent: invoicesSent)
         }
     }
 }

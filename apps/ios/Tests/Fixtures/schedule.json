@@ -1,0 +1,5143 @@
+{
+  "isDateString": [
+    {
+      "args": [
+        "2026-10-20"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "2026-02-31"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "2026-13-01"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "2026-1-5"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "20261020"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "2026-10-20T00"
+      ],
+      "result": false
+    }
+  ],
+  "addDays": [
+    {
+      "args": [
+        "2026-10-31",
+        1
+      ],
+      "result": "2026-11-01"
+    },
+    {
+      "args": [
+        "2026-03-07",
+        1
+      ],
+      "result": "2026-03-08"
+    },
+    {
+      "args": [
+        "2026-11-01",
+        -1
+      ],
+      "result": "2026-10-31"
+    },
+    {
+      "args": [
+        "2024-02-28",
+        1
+      ],
+      "result": "2024-02-29"
+    },
+    {
+      "args": [
+        "2026-01-01",
+        -1
+      ],
+      "result": "2025-12-31"
+    },
+    {
+      "args": [
+        "2026-10-20",
+        0
+      ],
+      "result": "2026-10-20"
+    },
+    {
+      "args": [
+        "2026-10-20",
+        400
+      ],
+      "result": "2027-11-24"
+    },
+    {
+      "args": [
+        "2026-02-31",
+        0
+      ],
+      "result": "2026-03-03"
+    },
+    {
+      "args": [
+        "nope",
+        1
+      ],
+      "throws": "Invalid time value"
+    }
+  ],
+  "addMonths": [
+    {
+      "args": [
+        "2026-01-31",
+        1
+      ],
+      "result": "2026-02-28"
+    },
+    {
+      "args": [
+        "2024-01-31",
+        1
+      ],
+      "result": "2024-02-29"
+    },
+    {
+      "args": [
+        "2026-12-15",
+        1
+      ],
+      "result": "2027-01-15"
+    },
+    {
+      "args": [
+        "2026-01-15",
+        -1
+      ],
+      "result": "2025-12-15"
+    },
+    {
+      "args": [
+        "2026-03-31",
+        -1
+      ],
+      "result": "2026-02-28"
+    },
+    {
+      "args": [
+        "2026-10-20",
+        0
+      ],
+      "result": "2026-10-20"
+    },
+    {
+      "args": [
+        "2026-10-20",
+        27
+      ],
+      "result": "2029-01-20"
+    },
+    {
+      "args": [
+        "2026-10-20",
+        -27
+      ],
+      "result": "2024-07-20"
+    },
+    {
+      "args": [
+        "nope",
+        1
+      ],
+      "throws": "Invalid time value"
+    }
+  ],
+  "monthGrid": [
+    {
+      "args": [
+        "2026-10-18"
+      ],
+      "result": [
+        "2026-09-28",
+        "2026-09-29",
+        "2026-09-30",
+        "2026-10-01",
+        "2026-10-02",
+        "2026-10-03",
+        "2026-10-04",
+        "2026-10-05",
+        "2026-10-06",
+        "2026-10-07",
+        "2026-10-08",
+        "2026-10-09",
+        "2026-10-10",
+        "2026-10-11",
+        "2026-10-12",
+        "2026-10-13",
+        "2026-10-14",
+        "2026-10-15",
+        "2026-10-16",
+        "2026-10-17",
+        "2026-10-18",
+        "2026-10-19",
+        "2026-10-20",
+        "2026-10-21",
+        "2026-10-22",
+        "2026-10-23",
+        "2026-10-24",
+        "2026-10-25",
+        "2026-10-26",
+        "2026-10-27",
+        "2026-10-28",
+        "2026-10-29",
+        "2026-10-30",
+        "2026-10-31",
+        "2026-11-01"
+      ]
+    },
+    {
+      "args": [
+        "2026-02-10"
+      ],
+      "result": [
+        "2026-01-26",
+        "2026-01-27",
+        "2026-01-28",
+        "2026-01-29",
+        "2026-01-30",
+        "2026-01-31",
+        "2026-02-01",
+        "2026-02-02",
+        "2026-02-03",
+        "2026-02-04",
+        "2026-02-05",
+        "2026-02-06",
+        "2026-02-07",
+        "2026-02-08",
+        "2026-02-09",
+        "2026-02-10",
+        "2026-02-11",
+        "2026-02-12",
+        "2026-02-13",
+        "2026-02-14",
+        "2026-02-15",
+        "2026-02-16",
+        "2026-02-17",
+        "2026-02-18",
+        "2026-02-19",
+        "2026-02-20",
+        "2026-02-21",
+        "2026-02-22",
+        "2026-02-23",
+        "2026-02-24",
+        "2026-02-25",
+        "2026-02-26",
+        "2026-02-27",
+        "2026-02-28",
+        "2026-03-01"
+      ]
+    },
+    {
+      "args": [
+        "2027-02-01"
+      ],
+      "result": [
+        "2027-02-01",
+        "2027-02-02",
+        "2027-02-03",
+        "2027-02-04",
+        "2027-02-05",
+        "2027-02-06",
+        "2027-02-07",
+        "2027-02-08",
+        "2027-02-09",
+        "2027-02-10",
+        "2027-02-11",
+        "2027-02-12",
+        "2027-02-13",
+        "2027-02-14",
+        "2027-02-15",
+        "2027-02-16",
+        "2027-02-17",
+        "2027-02-18",
+        "2027-02-19",
+        "2027-02-20",
+        "2027-02-21",
+        "2027-02-22",
+        "2027-02-23",
+        "2027-02-24",
+        "2027-02-25",
+        "2027-02-26",
+        "2027-02-27",
+        "2027-02-28"
+      ]
+    },
+    {
+      "args": [
+        "2026-06-30"
+      ],
+      "result": [
+        "2026-06-01",
+        "2026-06-02",
+        "2026-06-03",
+        "2026-06-04",
+        "2026-06-05",
+        "2026-06-06",
+        "2026-06-07",
+        "2026-06-08",
+        "2026-06-09",
+        "2026-06-10",
+        "2026-06-11",
+        "2026-06-12",
+        "2026-06-13",
+        "2026-06-14",
+        "2026-06-15",
+        "2026-06-16",
+        "2026-06-17",
+        "2026-06-18",
+        "2026-06-19",
+        "2026-06-20",
+        "2026-06-21",
+        "2026-06-22",
+        "2026-06-23",
+        "2026-06-24",
+        "2026-06-25",
+        "2026-06-26",
+        "2026-06-27",
+        "2026-06-28",
+        "2026-06-29",
+        "2026-06-30",
+        "2026-07-01",
+        "2026-07-02",
+        "2026-07-03",
+        "2026-07-04",
+        "2026-07-05"
+      ]
+    }
+  ],
+  "scheduleDays": [
+    {
+      "args": [
+        "day",
+        "2026-10-18"
+      ],
+      "result": [
+        "2026-10-18"
+      ]
+    },
+    {
+      "args": [
+        "week",
+        "2026-10-18"
+      ],
+      "result": [
+        "2026-10-12",
+        "2026-10-13",
+        "2026-10-14",
+        "2026-10-15",
+        "2026-10-16",
+        "2026-10-17",
+        "2026-10-18"
+      ]
+    },
+    {
+      "args": [
+        "week",
+        "2026-10-19"
+      ],
+      "result": [
+        "2026-10-19",
+        "2026-10-20",
+        "2026-10-21",
+        "2026-10-22",
+        "2026-10-23",
+        "2026-10-24",
+        "2026-10-25"
+      ]
+    },
+    {
+      "args": [
+        "week",
+        "2026-12-31"
+      ],
+      "result": [
+        "2026-12-28",
+        "2026-12-29",
+        "2026-12-30",
+        "2026-12-31",
+        "2027-01-01",
+        "2027-01-02",
+        "2027-01-03"
+      ]
+    },
+    {
+      "args": [
+        "month",
+        "2026-11-15"
+      ],
+      "result": [
+        "2026-10-26",
+        "2026-10-27",
+        "2026-10-28",
+        "2026-10-29",
+        "2026-10-30",
+        "2026-10-31",
+        "2026-11-01",
+        "2026-11-02",
+        "2026-11-03",
+        "2026-11-04",
+        "2026-11-05",
+        "2026-11-06",
+        "2026-11-07",
+        "2026-11-08",
+        "2026-11-09",
+        "2026-11-10",
+        "2026-11-11",
+        "2026-11-12",
+        "2026-11-13",
+        "2026-11-14",
+        "2026-11-15",
+        "2026-11-16",
+        "2026-11-17",
+        "2026-11-18",
+        "2026-11-19",
+        "2026-11-20",
+        "2026-11-21",
+        "2026-11-22",
+        "2026-11-23",
+        "2026-11-24",
+        "2026-11-25",
+        "2026-11-26",
+        "2026-11-27",
+        "2026-11-28",
+        "2026-11-29",
+        "2026-11-30",
+        "2026-12-01",
+        "2026-12-02",
+        "2026-12-03",
+        "2026-12-04",
+        "2026-12-05",
+        "2026-12-06"
+      ]
+    }
+  ],
+  "formatDay": [
+    {
+      "args": [
+        "2026-10-18"
+      ],
+      "result": "Sun, Oct 18"
+    },
+    {
+      "args": [
+        "2026-10-18",
+        "long"
+      ],
+      "result": "Sunday, October 18"
+    },
+    {
+      "args": [
+        "2026-05-06",
+        "short"
+      ],
+      "result": "Wed, May 6"
+    },
+    {
+      "args": [
+        "2026-09-03",
+        "long"
+      ],
+      "result": "Thursday, September 3"
+    },
+    {
+      "args": [
+        "2026-02-31"
+      ],
+      "result": "Tue, Mar 3"
+    },
+    {
+      "args": [
+        "nope"
+      ],
+      "throws": "Invalid time value"
+    }
+  ],
+  "formatTime": [
+    {
+      "args": [
+        "2026-10-12T16:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "9:00 AM"
+    },
+    {
+      "args": [
+        "2026-10-12T07:05:00Z",
+        "America/Phoenix"
+      ],
+      "result": "12:05 AM"
+    },
+    {
+      "args": [
+        "2026-10-12T19:00:00Z",
+        "America/Phoenix"
+      ],
+      "result": "12:00 PM"
+    },
+    {
+      "args": [
+        "2026-11-01T05:30:00Z",
+        "America/New_York"
+      ],
+      "result": "1:30 AM"
+    },
+    {
+      "args": [
+        "2026-11-01T06:30:00Z",
+        "America/New_York"
+      ],
+      "result": "1:30 AM"
+    },
+    {
+      "args": [
+        "2026-10-12T16:00:00Z",
+        "Mars/Olympus"
+      ],
+      "throws": "Invalid time zone specified: Mars/Olympus"
+    },
+    {
+      "args": [
+        "later",
+        "UTC"
+      ],
+      "throws": "Invalid time value"
+    }
+  ],
+  "planDay": [
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        "t1",
+        "2026-10-19",
+        [
+          {
+            "id": "j1",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "scheduled_end": "2026-10-21T17:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.6152,
+              "longitude": -111.8315
+            }
+          },
+          {
+            "id": "j2",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T18:00:00Z",
+            "scheduled_end": "2026-10-21T19:30:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.4252,
+              "longitude": -111.8315
+            }
+          },
+          {
+            "id": "j3",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T20:00:00Z",
+            "scheduled_end": "2026-10-21T21:00:00Z",
+            "route_order": 3,
+            "arrival_fixed": true,
+            "property": {
+              "latitude": 33.4152,
+              "longitude": -111.6315
+            }
+          },
+          {
+            "id": "j4",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T22:00:00Z",
+            "scheduled_end": "2026-10-21T23:00:00Z",
+            "route_order": 4,
+            "arrival_fixed": false,
+            "property": null
+          }
+        ]
+      ],
+      "result": {
+        "updates": [],
+        "error": "Past days can’t be planned."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        "t1",
+        "2026-10-21",
+        []
+      ],
+      "result": {
+        "updates": [],
+        "error": "Nothing scheduled for this tech that day."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        "t1",
+        "2026-10-21",
+        [
+          {
+            "id": "j1",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "scheduled_end": "2026-10-21T17:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.6152,
+              "longitude": -111.8315
+            }
+          },
+          {
+            "id": "j2",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T18:00:00Z",
+            "scheduled_end": "2026-10-21T19:30:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.4252,
+              "longitude": -111.8315
+            }
+          },
+          {
+            "id": "j3",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T20:00:00Z",
+            "scheduled_end": "2026-10-21T21:00:00Z",
+            "route_order": 3,
+            "arrival_fixed": true,
+            "property": {
+              "latitude": 33.4152,
+              "longitude": -111.6315
+            }
+          },
+          {
+            "id": "j4",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T22:00:00Z",
+            "scheduled_end": "2026-10-21T23:00:00Z",
+            "route_order": 4,
+            "arrival_fixed": false,
+            "property": null
+          }
+        ]
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "j2",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T15:05:00.000Z",
+            "scheduled_end": "2026-10-21T16:35:00.000Z"
+          },
+          {
+            "id": "j1",
+            "route_order": 2,
+            "scheduled_start": "2026-10-21T17:08:00.000Z",
+            "scheduled_end": "2026-10-21T18:08:00.000Z"
+          },
+          {
+            "id": "j3",
+            "route_order": 3
+          },
+          {
+            "id": "j4",
+            "route_order": 4,
+            "scheduled_start": "2026-10-21T21:00:00.000Z",
+            "scheduled_end": "2026-10-21T22:00:00.000Z"
+          }
+        ],
+        "message": "Planned: 1 hr 49 min of driving, 18 min less than before, back at the shop by 3:30 PM. Note: some pools have no location, so driving to them isn’t counted."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 700
+        },
+        "t1",
+        "2026-10-20",
+        [
+          {
+            "id": "t1",
+            "status": "in_progress",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-20T15:00:00Z",
+            "scheduled_end": "2026-10-20T16:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.4252,
+              "longitude": -111.8315
+            }
+          },
+          {
+            "id": "t2",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-20T17:00:00Z",
+            "scheduled_end": "2026-10-20T19:00:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.6152,
+              "longitude": -111.8315
+            }
+          },
+          {
+            "id": "t3",
+            "status": "scheduled",
+            "assigned_user_id": "u2",
+            "second_tech_id": "t1",
+            "scheduled_start": "2026-10-20T20:00:00Z",
+            "scheduled_end": "2026-10-20T21:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.45,
+              "longitude": -112.07
+            }
+          }
+        ]
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "t1",
+            "route_order": 1
+          },
+          {
+            "id": "t2",
+            "route_order": 3,
+            "scheduled_start": "2026-10-20T21:41:00.000Z",
+            "scheduled_end": "2026-10-20T23:41:00.000Z"
+          }
+        ],
+        "message": "Planned: 1 hr 54 min of driving, back at the shop by 5:15 PM. Note: runs 15 min past the end of the day; a fixed time can’t be met (5 min late)."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "10:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": null,
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        "t1",
+        "2026-10-21",
+        [
+          {
+            "id": "j1",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "scheduled_end": "2026-10-21T17:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.6152,
+              "longitude": -111.8315
+            }
+          },
+          {
+            "id": "j2",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T18:00:00Z",
+            "scheduled_end": "2026-10-21T19:30:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.4252,
+              "longitude": -111.8315
+            }
+          }
+        ]
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "j1",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T15:00:00.000Z",
+            "scheduled_end": "2026-10-21T16:00:00.000Z"
+          },
+          {
+            "id": "j2",
+            "route_order": 2,
+            "scheduled_start": "2026-10-21T16:33:00.000Z",
+            "scheduled_end": "2026-10-21T18:03:00.000Z"
+          }
+        ],
+        "message": "Planned: 33 min of driving, back at the shop by 11:03 AM. Note: runs 1 hr 3 min past the end of the day; the shop has no location (Settings › Scheduling)."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        "t1",
+        "2026-10-21",
+        [
+          {
+            "id": "a",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T15:00:00Z",
+            "scheduled_end": "2026-10-21T22:00:00Z",
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.6152,
+              "longitude": -111.8315
+            }
+          },
+          {
+            "id": "b",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": true,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          }
+        ]
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "b",
+            "route_order": 1
+          },
+          {
+            "id": "a",
+            "route_order": 2,
+            "scheduled_start": "2026-10-21T19:00:00.000Z",
+            "scheduled_end": "2026-10-22T02:00:00.000Z"
+          }
+        ],
+        "message": "Planned: 1 hr 52 min of driving, back at the shop by 7:34 PM. Note: runs 2 hr 34 min past the end of the day."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/New_York",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-31",
+          "nowMin": 600
+        },
+        "t1",
+        "2026-11-01",
+        [
+          {
+            "id": "n1",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-11-01T14:00:00Z",
+            "scheduled_end": "2026-11-01T15:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.4252,
+              "longitude": -111.8315
+            }
+          },
+          {
+            "id": "n2",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-11-01T13:00:00Z",
+            "scheduled_end": "2026-11-01T14:00:00Z",
+            "route_order": 2,
+            "arrival_fixed": true,
+            "property": {
+              "latitude": 33.4152,
+              "longitude": -111.6315
+            }
+          }
+        ]
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "n2",
+            "route_order": 1
+          },
+          {
+            "id": "n1",
+            "route_order": 2,
+            "scheduled_start": "2026-11-01T15:00:00.000Z",
+            "scheduled_end": "2026-11-01T16:00:00.000Z"
+          }
+        ],
+        "message": "Planned: 1 hr 5 min of driving, back at the shop by 11:05 AM. Note: a fixed time can’t be met (30 min late)."
+      }
+    }
+  ],
+  "renumberDay": [
+    {
+      "args": [
+        "t1",
+        [],
+        "x"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "t1",
+        [
+          {
+            "id": "j1",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "scheduled_end": "2026-10-21T17:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.6152,
+              "longitude": -111.8315
+            }
+          },
+          {
+            "id": "j2",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T18:00:00Z",
+            "scheduled_end": "2026-10-21T19:30:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.4252,
+              "longitude": -111.8315
+            }
+          },
+          {
+            "id": "j3",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T20:00:00Z",
+            "scheduled_end": "2026-10-21T21:00:00Z",
+            "route_order": 3,
+            "arrival_fixed": true,
+            "property": {
+              "latitude": 33.4152,
+              "longitude": -111.6315
+            }
+          },
+          {
+            "id": "j4",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T22:00:00Z",
+            "scheduled_end": "2026-10-21T23:00:00Z",
+            "route_order": 4,
+            "arrival_fixed": false,
+            "property": null
+          }
+        ],
+        "j2"
+      ],
+      "result": [
+        {
+          "id": "j3",
+          "route_order": 2
+        },
+        {
+          "id": "j4",
+          "route_order": 3
+        }
+      ]
+    },
+    {
+      "args": [
+        "t1",
+        [
+          {
+            "id": "j1",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "scheduled_end": "2026-10-21T17:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.6152,
+              "longitude": -111.8315
+            }
+          },
+          {
+            "id": "j2",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T18:00:00Z",
+            "scheduled_end": "2026-10-21T19:30:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.4252,
+              "longitude": -111.8315
+            }
+          },
+          {
+            "id": "j3",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T20:00:00Z",
+            "scheduled_end": "2026-10-21T21:00:00Z",
+            "route_order": 3,
+            "arrival_fixed": true,
+            "property": {
+              "latitude": 33.4152,
+              "longitude": -111.6315
+            }
+          },
+          {
+            "id": "j4",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T22:00:00Z",
+            "scheduled_end": "2026-10-21T23:00:00Z",
+            "route_order": 4,
+            "arrival_fixed": false,
+            "property": null
+          }
+        ],
+        "j4"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "t1",
+        [
+          {
+            "id": "t1",
+            "status": "in_progress",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-20T15:00:00Z",
+            "scheduled_end": "2026-10-20T16:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.4252,
+              "longitude": -111.8315
+            }
+          },
+          {
+            "id": "t2",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-20T17:00:00Z",
+            "scheduled_end": "2026-10-20T19:00:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.6152,
+              "longitude": -111.8315
+            }
+          },
+          {
+            "id": "t3",
+            "status": "scheduled",
+            "assigned_user_id": "u2",
+            "second_tech_id": "t1",
+            "scheduled_start": "2026-10-20T20:00:00Z",
+            "scheduled_end": "2026-10-20T21:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.45,
+              "longitude": -112.07
+            }
+          }
+        ],
+        "t1"
+      ],
+      "result": [
+        {
+          "id": "t2",
+          "route_order": 1
+        }
+      ]
+    },
+    {
+      "args": [
+        "u2",
+        [
+          {
+            "id": "t1",
+            "status": "in_progress",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-20T15:00:00Z",
+            "scheduled_end": "2026-10-20T16:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.4252,
+              "longitude": -111.8315
+            }
+          },
+          {
+            "id": "t2",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-20T17:00:00Z",
+            "scheduled_end": "2026-10-20T19:00:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.6152,
+              "longitude": -111.8315
+            }
+          },
+          {
+            "id": "t3",
+            "status": "scheduled",
+            "assigned_user_id": "u2",
+            "second_tech_id": "t1",
+            "scheduled_start": "2026-10-20T20:00:00Z",
+            "scheduled_end": "2026-10-20T21:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.45,
+              "longitude": -112.07
+            }
+          }
+        ],
+        "zz"
+      ],
+      "result": []
+    }
+  ],
+  "moveJobChange": [
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "t1",
+          "date": "2026-10-21",
+          "index": 0,
+          "targetDay": [],
+          "fromDay": [],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "x",
+            "status": "canceled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": null
+          }
+        }
+      ],
+      "result": {
+        "updates": [],
+        "error": "This job was canceled, so it stays off the schedule."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "t1",
+          "date": null,
+          "index": 0,
+          "targetDay": [],
+          "fromDay": [],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "x",
+            "status": "in_progress",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": null
+          }
+        }
+      ],
+      "result": {
+        "updates": [],
+        "error": "This job has started, so it stays on the schedule. Move it to another day instead."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "t1",
+          "date": "2026-10-19",
+          "index": 0,
+          "targetDay": [],
+          "fromDay": [],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "w1",
+            "status": "unscheduled",
+            "assigned_user_id": null,
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [],
+        "error": "Pick today or a later day."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "u2",
+          "date": "2026-10-21",
+          "index": 0,
+          "targetDay": [],
+          "fromDay": [],
+          "seesAll": false,
+          "userId": "t1",
+          "job": {
+            "id": "w1",
+            "status": "unscheduled",
+            "assigned_user_id": null,
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [],
+        "error": "You can schedule only your own jobs. Ask an owner to move it to someone else."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "t1",
+          "date": "2026-10-21",
+          "index": 0,
+          "targetDay": [],
+          "fromDay": [],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "x",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": "t1",
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": null
+          }
+        }
+      ],
+      "result": {
+        "updates": [],
+        "error": "This tech is already the second tech on this job."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": null,
+          "date": null,
+          "index": 0,
+          "targetDay": [],
+          "fromDay": [
+            {
+              "id": "j1",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:00:00Z",
+              "scheduled_end": "2026-10-21T17:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.6152,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T18:00:00Z",
+              "scheduled_end": "2026-10-21T19:30:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j3",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T20:00:00Z",
+              "scheduled_end": "2026-10-21T21:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": true,
+              "property": {
+                "latitude": 33.4152,
+                "longitude": -111.6315
+              }
+            },
+            {
+              "id": "j4",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T22:00:00Z",
+              "scheduled_end": "2026-10-21T23:00:00Z",
+              "route_order": 4,
+              "arrival_fixed": false,
+              "property": null
+            }
+          ],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "j1",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "scheduled_end": "2026-10-21T17:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.6152,
+              "longitude": -111.8315
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "j1",
+            "route_order": null,
+            "status": "unscheduled",
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "arrival_fixed": false
+          },
+          {
+            "id": "j2",
+            "route_order": 1
+          },
+          {
+            "id": "j3",
+            "route_order": 2
+          },
+          {
+            "id": "j4",
+            "route_order": 3
+          }
+        ],
+        "message": "Taken off the schedule."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": null,
+          "date": "2026-10-23",
+          "index": 0,
+          "targetDay": [],
+          "fromDay": [
+            {
+              "id": "j1",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:00:00Z",
+              "scheduled_end": "2026-10-21T17:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.6152,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T18:00:00Z",
+              "scheduled_end": "2026-10-21T19:30:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j3",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T20:00:00Z",
+              "scheduled_end": "2026-10-21T21:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": true,
+              "property": {
+                "latitude": 33.4152,
+                "longitude": -111.6315
+              }
+            },
+            {
+              "id": "j4",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T22:00:00Z",
+              "scheduled_end": "2026-10-21T23:00:00Z",
+              "route_order": 4,
+              "arrival_fixed": false,
+              "property": null
+            }
+          ],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "j2",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T18:00:00Z",
+            "scheduled_end": "2026-10-21T19:30:00Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.4252,
+              "longitude": -111.8315
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "j2",
+            "route_order": null,
+            "assigned_user_id": null,
+            "status": "scheduled",
+            "scheduled_start": "2026-10-23T18:00:00.000Z",
+            "scheduled_end": "2026-10-23T19:30:00.000Z"
+          },
+          {
+            "id": "j3",
+            "route_order": 2
+          },
+          {
+            "id": "j4",
+            "route_order": 3
+          }
+        ],
+        "message": "No tech yet, so it’s in Needs a Time, still booked for 11:00 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": null,
+          "date": "2026-10-23",
+          "index": 0,
+          "targetDay": [],
+          "fromDay": [],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "w1",
+            "status": "unscheduled",
+            "assigned_user_id": null,
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "w1",
+            "route_order": null,
+            "assigned_user_id": null,
+            "status": "scheduled",
+            "scheduled_start": "2026-10-23T15:00:00.000Z",
+            "scheduled_end": "2026-10-23T17:30:00.000Z"
+          }
+        ],
+        "message": "No tech yet, so it’s in Needs a Time, still booked for 8:00 AM."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": null,
+          "date": null,
+          "index": 0,
+          "targetDay": [],
+          "fromDay": [],
+          "seesAll": false,
+          "userId": "u2",
+          "job": {
+            "id": "j4",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T22:00:00Z",
+            "scheduled_end": "2026-10-21T23:00:00Z",
+            "route_order": 4,
+            "arrival_fixed": false,
+            "property": null
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "j4",
+            "route_order": null,
+            "status": "unscheduled",
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "arrival_fixed": false
+          }
+        ],
+        "message": "Taken off the schedule."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "t1",
+          "date": "2026-10-21",
+          "index": 0,
+          "targetDay": [
+            {
+              "id": "j1",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:00:00Z",
+              "scheduled_end": "2026-10-21T17:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.6152,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T18:00:00Z",
+              "scheduled_end": "2026-10-21T19:30:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j3",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T20:00:00Z",
+              "scheduled_end": "2026-10-21T21:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": true,
+              "property": {
+                "latitude": 33.4152,
+                "longitude": -111.6315
+              }
+            },
+            {
+              "id": "j4",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T22:00:00Z",
+              "scheduled_end": "2026-10-21T23:00:00Z",
+              "route_order": 4,
+              "arrival_fixed": false,
+              "property": null
+            }
+          ],
+          "fromDay": [],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "w1",
+            "status": "unscheduled",
+            "assigned_user_id": null,
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "w1",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T15:48:00.000Z",
+            "scheduled_end": "2026-10-21T18:18:00.000Z",
+            "assigned_user_id": "t1",
+            "status": "scheduled"
+          },
+          {
+            "id": "j1",
+            "route_order": 2,
+            "scheduled_start": "2026-10-21T18:48:00.000Z",
+            "scheduled_end": "2026-10-21T19:48:00.000Z"
+          },
+          {
+            "id": "j2",
+            "route_order": 3,
+            "scheduled_start": "2026-10-21T20:21:00.000Z",
+            "scheduled_end": "2026-10-21T21:51:00.000Z"
+          },
+          {
+            "id": "j3",
+            "route_order": 4
+          },
+          {
+            "id": "j4",
+            "route_order": 5,
+            "scheduled_start": "2026-10-21T23:21:00.000Z",
+            "scheduled_end": "2026-10-22T00:21:00.000Z"
+          }
+        ],
+        "message": "Moved to 8:48 AM. Note: the day runs 51 min late; a fixed time after it can’t be met."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "t1",
+          "date": "2026-10-21",
+          "index": 99,
+          "targetDay": [
+            {
+              "id": "j1",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:00:00Z",
+              "scheduled_end": "2026-10-21T17:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.6152,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T18:00:00Z",
+              "scheduled_end": "2026-10-21T19:30:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j3",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T20:00:00Z",
+              "scheduled_end": "2026-10-21T21:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": true,
+              "property": {
+                "latitude": 33.4152,
+                "longitude": -111.6315
+              }
+            },
+            {
+              "id": "j4",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T22:00:00Z",
+              "scheduled_end": "2026-10-21T23:00:00Z",
+              "route_order": 4,
+              "arrival_fixed": false,
+              "property": null
+            }
+          ],
+          "fromDay": [],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "w1",
+            "status": "unscheduled",
+            "assigned_user_id": null,
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "w1",
+            "route_order": 5,
+            "scheduled_start": "2026-10-22T00:00:00.000Z",
+            "scheduled_end": "2026-10-22T02:30:00.000Z",
+            "assigned_user_id": "t1",
+            "status": "scheduled"
+          },
+          {
+            "id": "j1",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T16:00:00.000Z",
+            "scheduled_end": "2026-10-21T17:00:00.000Z"
+          },
+          {
+            "id": "j2",
+            "route_order": 2,
+            "scheduled_start": "2026-10-21T18:00:00.000Z",
+            "scheduled_end": "2026-10-21T19:30:00.000Z"
+          },
+          {
+            "id": "j3",
+            "route_order": 3
+          },
+          {
+            "id": "j4",
+            "route_order": 4,
+            "scheduled_start": "2026-10-21T22:00:00.000Z",
+            "scheduled_end": "2026-10-21T23:00:00.000Z"
+          }
+        ],
+        "message": "Moved to 5:00 PM. Note: the day runs 3 hr 18 min late."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "t1",
+          "date": "2026-10-21",
+          "index": -3,
+          "targetDay": [
+            {
+              "id": "j1",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:00:00Z",
+              "scheduled_end": "2026-10-21T17:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.6152,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T18:00:00Z",
+              "scheduled_end": "2026-10-21T19:30:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j3",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T20:00:00Z",
+              "scheduled_end": "2026-10-21T21:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": true,
+              "property": {
+                "latitude": 33.4152,
+                "longitude": -111.6315
+              }
+            },
+            {
+              "id": "j4",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T22:00:00Z",
+              "scheduled_end": "2026-10-21T23:00:00Z",
+              "route_order": 4,
+              "arrival_fixed": false,
+              "property": null
+            }
+          ],
+          "fromDay": [],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "w1",
+            "status": "unscheduled",
+            "assigned_user_id": null,
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "w1",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T15:48:00.000Z",
+            "scheduled_end": "2026-10-21T18:18:00.000Z",
+            "assigned_user_id": "t1",
+            "status": "scheduled"
+          },
+          {
+            "id": "j1",
+            "route_order": 2,
+            "scheduled_start": "2026-10-21T18:48:00.000Z",
+            "scheduled_end": "2026-10-21T19:48:00.000Z"
+          },
+          {
+            "id": "j2",
+            "route_order": 3,
+            "scheduled_start": "2026-10-21T20:21:00.000Z",
+            "scheduled_end": "2026-10-21T21:51:00.000Z"
+          },
+          {
+            "id": "j3",
+            "route_order": 4
+          },
+          {
+            "id": "j4",
+            "route_order": 5,
+            "scheduled_start": "2026-10-21T23:21:00.000Z",
+            "scheduled_end": "2026-10-22T00:21:00.000Z"
+          }
+        ],
+        "message": "Moved to 8:48 AM. Note: the day runs 51 min late; a fixed time after it can’t be met."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "t1",
+          "date": "2026-10-21",
+          "index": 2,
+          "targetDay": [
+            {
+              "id": "j1",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:00:00Z",
+              "scheduled_end": "2026-10-21T17:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.6152,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T18:00:00Z",
+              "scheduled_end": "2026-10-21T19:30:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j3",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T20:00:00Z",
+              "scheduled_end": "2026-10-21T21:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": true,
+              "property": {
+                "latitude": 33.4152,
+                "longitude": -111.6315
+              }
+            },
+            {
+              "id": "j4",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T22:00:00Z",
+              "scheduled_end": "2026-10-21T23:00:00Z",
+              "route_order": 4,
+              "arrival_fixed": false,
+              "property": null
+            }
+          ],
+          "fromDay": [],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "w1",
+            "status": "unscheduled",
+            "assigned_user_id": null,
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "w1",
+            "route_order": 3,
+            "scheduled_start": "2026-10-21T20:17:00.000Z",
+            "scheduled_end": "2026-10-21T22:47:00.000Z",
+            "assigned_user_id": "t1",
+            "status": "scheduled"
+          },
+          {
+            "id": "j1",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T16:00:00.000Z",
+            "scheduled_end": "2026-10-21T17:00:00.000Z"
+          },
+          {
+            "id": "j2",
+            "route_order": 2,
+            "scheduled_start": "2026-10-21T18:00:00.000Z",
+            "scheduled_end": "2026-10-21T19:30:00.000Z"
+          },
+          {
+            "id": "j3",
+            "route_order": 4
+          },
+          {
+            "id": "j4",
+            "route_order": 5,
+            "scheduled_start": "2026-10-22T00:47:00.000Z",
+            "scheduled_end": "2026-10-22T01:47:00.000Z"
+          }
+        ],
+        "message": "Moved to 1:17 PM. Note: the day runs 2 hr 17 min late; a fixed time after it can’t be met."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "t1",
+          "date": "2026-10-21",
+          "index": 0,
+          "targetDay": [
+            {
+              "id": "j1",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:00:00Z",
+              "scheduled_end": "2026-10-21T17:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.6152,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T18:00:00Z",
+              "scheduled_end": "2026-10-21T19:30:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j3",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T20:00:00Z",
+              "scheduled_end": "2026-10-21T21:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": true,
+              "property": {
+                "latitude": 33.4152,
+                "longitude": -111.6315
+              }
+            },
+            {
+              "id": "j4",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T22:00:00Z",
+              "scheduled_end": "2026-10-21T23:00:00Z",
+              "route_order": 4,
+              "arrival_fixed": false,
+              "property": null
+            }
+          ],
+          "fromDay": [
+            {
+              "id": "j1",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:00:00Z",
+              "scheduled_end": "2026-10-21T17:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.6152,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T18:00:00Z",
+              "scheduled_end": "2026-10-21T19:30:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j3",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T20:00:00Z",
+              "scheduled_end": "2026-10-21T21:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": true,
+              "property": {
+                "latitude": 33.4152,
+                "longitude": -111.6315
+              }
+            },
+            {
+              "id": "j4",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T22:00:00Z",
+              "scheduled_end": "2026-10-21T23:00:00Z",
+              "route_order": 4,
+              "arrival_fixed": false,
+              "property": null
+            }
+          ],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "j3",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T20:00:00Z",
+            "scheduled_end": "2026-10-21T21:00:00Z",
+            "route_order": 3,
+            "arrival_fixed": true,
+            "property": {
+              "latitude": 33.4152,
+              "longitude": -111.6315
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "j3",
+            "route_order": 1,
+            "assigned_user_id": "t1",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-21T20:00:00.000Z",
+            "scheduled_end": "2026-10-21T21:00:00.000Z"
+          },
+          {
+            "id": "j1",
+            "route_order": 2,
+            "scheduled_start": "2026-10-21T21:41:00.000Z",
+            "scheduled_end": "2026-10-21T22:41:00.000Z"
+          },
+          {
+            "id": "j2",
+            "route_order": 3,
+            "scheduled_start": "2026-10-21T23:14:00.000Z",
+            "scheduled_end": "2026-10-22T00:44:00.000Z"
+          },
+          {
+            "id": "j4",
+            "route_order": 4,
+            "scheduled_start": "2026-10-22T00:44:00.000Z",
+            "scheduled_end": "2026-10-22T01:44:00.000Z"
+          }
+        ],
+        "message": "Moved to 1:00 PM. Note: the day runs 1 hr 49 min late."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "t1",
+          "date": "2026-10-21",
+          "index": 3,
+          "targetDay": [
+            {
+              "id": "j1",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:00:00Z",
+              "scheduled_end": "2026-10-21T17:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.6152,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T18:00:00Z",
+              "scheduled_end": "2026-10-21T19:30:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j3",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T20:00:00Z",
+              "scheduled_end": "2026-10-21T21:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": true,
+              "property": {
+                "latitude": 33.4152,
+                "longitude": -111.6315
+              }
+            },
+            {
+              "id": "j4",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T22:00:00Z",
+              "scheduled_end": "2026-10-21T23:00:00Z",
+              "route_order": 4,
+              "arrival_fixed": false,
+              "property": null
+            }
+          ],
+          "fromDay": [
+            {
+              "id": "j1",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:00:00Z",
+              "scheduled_end": "2026-10-21T17:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.6152,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T18:00:00Z",
+              "scheduled_end": "2026-10-21T19:30:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j3",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T20:00:00Z",
+              "scheduled_end": "2026-10-21T21:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": true,
+              "property": {
+                "latitude": 33.4152,
+                "longitude": -111.6315
+              }
+            },
+            {
+              "id": "j4",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T22:00:00Z",
+              "scheduled_end": "2026-10-21T23:00:00Z",
+              "route_order": 4,
+              "arrival_fixed": false,
+              "property": null
+            }
+          ],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "j1",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T16:00:00Z",
+            "scheduled_end": "2026-10-21T17:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.6152,
+              "longitude": -111.8315
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "j1",
+            "route_order": 4,
+            "scheduled_start": "2026-10-21T23:41:00.000Z",
+            "scheduled_end": "2026-10-22T00:41:00.000Z",
+            "assigned_user_id": "t1",
+            "status": "scheduled"
+          },
+          {
+            "id": "j2",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T18:00:00.000Z",
+            "scheduled_end": "2026-10-21T19:30:00.000Z"
+          },
+          {
+            "id": "j3",
+            "route_order": 2
+          },
+          {
+            "id": "j4",
+            "route_order": 3,
+            "scheduled_start": "2026-10-21T22:00:00.000Z",
+            "scheduled_end": "2026-10-21T23:00:00.000Z"
+          }
+        ],
+        "message": "Moved to 4:41 PM. Note: the day runs 1 hr 15 min late."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "u2",
+          "date": "2026-10-22",
+          "index": 0,
+          "targetDay": [],
+          "fromDay": [
+            {
+              "id": "j1",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:00:00Z",
+              "scheduled_end": "2026-10-21T17:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.6152,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T18:00:00Z",
+              "scheduled_end": "2026-10-21T19:30:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j3",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T20:00:00Z",
+              "scheduled_end": "2026-10-21T21:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": true,
+              "property": {
+                "latitude": 33.4152,
+                "longitude": -111.6315
+              }
+            },
+            {
+              "id": "j4",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T22:00:00Z",
+              "scheduled_end": "2026-10-21T23:00:00Z",
+              "route_order": 4,
+              "arrival_fixed": false,
+              "property": null
+            }
+          ],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "j3",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T20:00:00Z",
+            "scheduled_end": "2026-10-21T21:00:00Z",
+            "route_order": 3,
+            "arrival_fixed": true,
+            "property": {
+              "latitude": 33.4152,
+              "longitude": -111.6315
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "j3",
+            "route_order": 1,
+            "assigned_user_id": "u2",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-22T20:00:00.000Z",
+            "scheduled_end": "2026-10-22T21:00:00.000Z"
+          },
+          {
+            "id": "j4",
+            "route_order": 3
+          }
+        ],
+        "message": "Moved to 1:00 PM."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 900
+        },
+        {
+          "tech": "t1",
+          "date": "2026-10-20",
+          "index": 1,
+          "targetDay": [
+            {
+              "id": "t1",
+              "status": "in_progress",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-20T15:00:00Z",
+              "scheduled_end": "2026-10-20T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "t2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-20T17:00:00Z",
+              "scheduled_end": "2026-10-20T19:00:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.6152,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "t3",
+              "status": "scheduled",
+              "assigned_user_id": "u2",
+              "second_tech_id": "t1",
+              "scheduled_start": "2026-10-20T20:00:00Z",
+              "scheduled_end": "2026-10-20T21:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.45,
+                "longitude": -112.07
+              }
+            }
+          ],
+          "fromDay": [
+            {
+              "id": "t1",
+              "status": "in_progress",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-20T15:00:00Z",
+              "scheduled_end": "2026-10-20T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "t2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-20T17:00:00Z",
+              "scheduled_end": "2026-10-20T19:00:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.6152,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "t3",
+              "status": "scheduled",
+              "assigned_user_id": "u2",
+              "second_tech_id": "t1",
+              "scheduled_start": "2026-10-20T20:00:00Z",
+              "scheduled_end": "2026-10-20T21:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.45,
+                "longitude": -112.07
+              }
+            }
+          ],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "t1",
+            "status": "in_progress",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-20T15:00:00Z",
+            "scheduled_end": "2026-10-20T16:00:00Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.4252,
+              "longitude": -111.8315
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "t1",
+            "route_order": 2,
+            "scheduled_start": "2026-10-21T00:33:00.000Z",
+            "scheduled_end": "2026-10-21T01:33:00.000Z",
+            "assigned_user_id": "t1",
+            "status": "in_progress"
+          },
+          {
+            "id": "t2",
+            "route_order": 1,
+            "scheduled_start": "2026-10-20T22:00:00.000Z",
+            "scheduled_end": "2026-10-21T00:00:00.000Z"
+          }
+        ],
+        "message": "Moved to 5:33 PM. Note: the day runs 3 hr 41 min late; a fixed time after it can’t be met."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 600
+        },
+        {
+          "tech": "t1",
+          "date": "2026-10-20",
+          "index": 1,
+          "targetDay": [
+            {
+              "id": "t1",
+              "status": "in_progress",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-20T15:00:00Z",
+              "scheduled_end": "2026-10-20T16:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "t2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-20T17:00:00Z",
+              "scheduled_end": "2026-10-20T19:00:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.6152,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "t3",
+              "status": "scheduled",
+              "assigned_user_id": "u2",
+              "second_tech_id": "t1",
+              "scheduled_start": "2026-10-20T20:00:00Z",
+              "scheduled_end": "2026-10-20T21:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.45,
+                "longitude": -112.07
+              }
+            }
+          ],
+          "fromDay": [],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "w1",
+            "status": "unscheduled",
+            "assigned_user_id": null,
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "w1",
+            "route_order": 2,
+            "scheduled_start": "2026-10-20T17:00:00.000Z",
+            "scheduled_end": "2026-10-20T19:30:00.000Z",
+            "assigned_user_id": "t1",
+            "status": "scheduled"
+          },
+          {
+            "id": "t1",
+            "route_order": 1
+          },
+          {
+            "id": "t2",
+            "route_order": 3,
+            "scheduled_start": "2026-10-20T20:00:00.000Z",
+            "scheduled_end": "2026-10-20T22:00:00.000Z"
+          }
+        ],
+        "message": "Moved to 10:00 AM. Note: the day runs 15 min late; a fixed time after it can’t be met."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "t1",
+          "date": "2026-10-21",
+          "index": 0,
+          "targetDay": [
+            {
+              "id": "j1",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:00:00Z",
+              "scheduled_end": "2026-10-21T17:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.6152,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T18:00:00Z",
+              "scheduled_end": "2026-10-21T19:30:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j3",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T20:00:00Z",
+              "scheduled_end": "2026-10-21T21:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": true,
+              "property": {
+                "latitude": 33.4152,
+                "longitude": -111.6315
+              }
+            },
+            {
+              "id": "j4",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T22:00:00Z",
+              "scheduled_end": "2026-10-21T23:00:00Z",
+              "route_order": 4,
+              "arrival_fixed": false,
+              "property": null
+            }
+          ],
+          "fromDay": [],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "big",
+            "status": "unscheduled",
+            "assigned_user_id": null,
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T15:00:00Z",
+            "scheduled_end": "2026-10-22T00:00:00Z",
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.45,
+              "longitude": -112.07
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "big",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T15:34:00.000Z",
+            "scheduled_end": "2026-10-22T00:34:00.000Z",
+            "assigned_user_id": "t1",
+            "status": "scheduled"
+          },
+          {
+            "id": "j1",
+            "route_order": 2,
+            "scheduled_start": "2026-10-22T01:15:00.000Z",
+            "scheduled_end": "2026-10-22T02:15:00.000Z"
+          },
+          {
+            "id": "j2",
+            "route_order": 3,
+            "scheduled_start": "2026-10-22T02:48:00.000Z",
+            "scheduled_end": "2026-10-22T04:18:00.000Z"
+          },
+          {
+            "id": "j3",
+            "route_order": 4
+          },
+          {
+            "id": "j4",
+            "route_order": 5,
+            "scheduled_start": "2026-10-22T05:48:00.000Z",
+            "scheduled_end": "2026-10-22T06:48:00.000Z"
+          }
+        ],
+        "message": "Moved to 8:34 AM. Note: the day runs 7 hr 18 min late; a fixed time after it can’t be met."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "t1",
+          "date": "2026-10-21",
+          "index": 4,
+          "targetDay": [
+            {
+              "id": "j1",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T16:00:00Z",
+              "scheduled_end": "2026-10-21T17:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.6152,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T18:00:00Z",
+              "scheduled_end": "2026-10-21T19:30:00Z",
+              "route_order": 2,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "j3",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T20:00:00Z",
+              "scheduled_end": "2026-10-21T21:00:00Z",
+              "route_order": 3,
+              "arrival_fixed": true,
+              "property": {
+                "latitude": 33.4152,
+                "longitude": -111.6315
+              }
+            },
+            {
+              "id": "j4",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-10-21T22:00:00Z",
+              "scheduled_end": "2026-10-21T23:00:00Z",
+              "route_order": 4,
+              "arrival_fixed": false,
+              "property": null
+            }
+          ],
+          "fromDay": [],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "fx",
+            "status": "scheduled",
+            "assigned_user_id": "u2",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T15:30:00Z",
+            "scheduled_end": "2026-10-21T16:30:00Z",
+            "route_order": null,
+            "arrival_fixed": true,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "fx",
+            "route_order": 5,
+            "assigned_user_id": "t1",
+            "status": "scheduled",
+            "scheduled_start": "2026-10-21T15:30:00.000Z",
+            "scheduled_end": "2026-10-21T16:30:00.000Z"
+          },
+          {
+            "id": "j1",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T16:00:00.000Z",
+            "scheduled_end": "2026-10-21T17:00:00.000Z"
+          },
+          {
+            "id": "j2",
+            "route_order": 2,
+            "scheduled_start": "2026-10-21T18:00:00.000Z",
+            "scheduled_end": "2026-10-21T19:30:00.000Z"
+          },
+          {
+            "id": "j3",
+            "route_order": 3
+          },
+          {
+            "id": "j4",
+            "route_order": 4,
+            "scheduled_start": "2026-10-21T22:00:00.000Z",
+            "scheduled_end": "2026-10-21T23:00:00.000Z"
+          }
+        ],
+        "message": "Moved to 5:00 PM. Note: it can’t make its fixed time (8 hr 30 min late); the day runs 1 hr 48 min late."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/New_York",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-31",
+          "nowMin": 600
+        },
+        {
+          "tech": "t1",
+          "date": "2026-11-01",
+          "index": 1,
+          "targetDay": [
+            {
+              "id": "n1",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-11-01T14:00:00Z",
+              "scheduled_end": "2026-11-01T15:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "n2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-11-01T13:00:00Z",
+              "scheduled_end": "2026-11-01T14:00:00Z",
+              "route_order": 2,
+              "arrival_fixed": true,
+              "property": {
+                "latitude": 33.4152,
+                "longitude": -111.6315
+              }
+            }
+          ],
+          "fromDay": [],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "w1",
+            "status": "unscheduled",
+            "assigned_user_id": null,
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "w1",
+            "route_order": 2,
+            "scheduled_start": "2026-11-01T15:47:00.000Z",
+            "scheduled_end": "2026-11-01T18:17:00.000Z",
+            "assigned_user_id": "t1",
+            "status": "scheduled"
+          },
+          {
+            "id": "n1",
+            "route_order": 1,
+            "scheduled_start": "2026-11-01T14:00:00.000Z",
+            "scheduled_end": "2026-11-01T15:00:00.000Z"
+          },
+          {
+            "id": "n2",
+            "route_order": 3
+          }
+        ],
+        "message": "Moved to 10:47 AM. Note: a fixed time after it can’t be met."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/New_York",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-31",
+          "nowMin": 600
+        },
+        {
+          "tech": "t1",
+          "date": "2026-11-02",
+          "index": 0,
+          "targetDay": [],
+          "fromDay": [
+            {
+              "id": "n1",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-11-01T14:00:00Z",
+              "scheduled_end": "2026-11-01T15:00:00Z",
+              "route_order": 1,
+              "arrival_fixed": false,
+              "property": {
+                "latitude": 33.4252,
+                "longitude": -111.8315
+              }
+            },
+            {
+              "id": "n2",
+              "status": "scheduled",
+              "assigned_user_id": "t1",
+              "second_tech_id": null,
+              "scheduled_start": "2026-11-01T13:00:00Z",
+              "scheduled_end": "2026-11-01T14:00:00Z",
+              "route_order": 2,
+              "arrival_fixed": true,
+              "property": {
+                "latitude": 33.4152,
+                "longitude": -111.6315
+              }
+            }
+          ],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "n2",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-11-01T13:00:00Z",
+            "scheduled_end": "2026-11-01T14:00:00Z",
+            "route_order": 2,
+            "arrival_fixed": true,
+            "property": {
+              "latitude": 33.4152,
+              "longitude": -111.6315
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "n2",
+            "route_order": 1,
+            "assigned_user_id": "t1",
+            "status": "scheduled",
+            "scheduled_start": "2026-11-02T13:00:00.000Z",
+            "scheduled_end": "2026-11-02T14:00:00.000Z"
+          }
+        ],
+        "message": "Moved to 8:30 AM. Note: it can’t make its fixed time (30 min late)."
+      }
+    }
+  ],
+  "suggestionDates": [
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        }
+      ],
+      "result": [
+        "2026-10-20",
+        "2026-10-21",
+        "2026-10-22",
+        "2026-10-23",
+        "2026-10-26",
+        "2026-10-27",
+        "2026-10-28"
+      ]
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 961
+        }
+      ],
+      "result": [
+        "2026-10-21",
+        "2026-10-22",
+        "2026-10-23",
+        "2026-10-26",
+        "2026-10-27",
+        "2026-10-28",
+        "2026-10-29"
+      ]
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 960
+        }
+      ],
+      "result": [
+        "2026-10-20",
+        "2026-10-21",
+        "2026-10-22",
+        "2026-10-23",
+        "2026-10-26",
+        "2026-10-27",
+        "2026-10-28"
+      ]
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              6
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        }
+      ],
+      "result": [
+        "2026-10-24",
+        "2026-10-31",
+        "2026-11-07"
+      ]
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": []
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        }
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/New_York",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-31",
+          "nowMin": 600
+        }
+      ],
+      "result": [
+        "2026-10-31",
+        "2026-11-01",
+        "2026-11-02",
+        "2026-11-03",
+        "2026-11-04",
+        "2026-11-05",
+        "2026-11-06"
+      ]
+    }
+  ],
+  "suggestTimes": [
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "location": {
+            "lat": 33.7,
+            "lng": -112
+          },
+          "durationMin": 60
+        },
+        []
+      ],
+      "result": {
+        "suggestions": [],
+        "note": "No gaps in the next working days. Use Move… to pick a day."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "id": "w1",
+          "location": {
+            "lat": 33.7,
+            "lng": -112
+          },
+          "durationMin": 60
+        },
+        [
+          {
+            "techId": "t1",
+            "techName": "Tony",
+            "date": "2026-10-20",
+            "jobs": [
+              {
+                "id": "t1",
+                "status": "in_progress",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-10-20T15:00:00Z",
+                "scheduled_end": "2026-10-20T16:00:00Z",
+                "route_order": 1,
+                "arrival_fixed": false,
+                "property": {
+                  "latitude": 33.4252,
+                  "longitude": -111.8315
+                },
+                "label": "Customer t1"
+              },
+              {
+                "id": "t2",
+                "status": "scheduled",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-10-20T17:00:00Z",
+                "scheduled_end": "2026-10-20T19:00:00Z",
+                "route_order": 2,
+                "arrival_fixed": false,
+                "property": {
+                  "latitude": 33.6152,
+                  "longitude": -111.8315
+                },
+                "label": "Customer t2"
+              },
+              {
+                "id": "t3",
+                "status": "scheduled",
+                "assigned_user_id": "u2",
+                "second_tech_id": "t1",
+                "scheduled_start": "2026-10-20T20:00:00Z",
+                "scheduled_end": "2026-10-20T21:00:00Z",
+                "route_order": 1,
+                "arrival_fixed": false,
+                "property": {
+                  "latitude": 33.45,
+                  "longitude": -112.07
+                },
+                "label": "Customer t3"
+              }
+            ]
+          },
+          {
+            "techId": "u2",
+            "techName": "Sam",
+            "date": "2026-10-20",
+            "jobs": []
+          },
+          {
+            "techId": "t1",
+            "techName": "Tony",
+            "date": "2026-10-21",
+            "jobs": [
+              {
+                "id": "j1",
+                "status": "scheduled",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-10-21T16:00:00Z",
+                "scheduled_end": "2026-10-21T17:00:00Z",
+                "route_order": 1,
+                "arrival_fixed": false,
+                "property": {
+                  "latitude": 33.6152,
+                  "longitude": -111.8315
+                },
+                "label": "Customer j1"
+              },
+              {
+                "id": "j2",
+                "status": "scheduled",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-10-21T18:00:00Z",
+                "scheduled_end": "2026-10-21T19:30:00Z",
+                "route_order": 2,
+                "arrival_fixed": false,
+                "property": {
+                  "latitude": 33.4252,
+                  "longitude": -111.8315
+                },
+                "label": "Customer j2"
+              },
+              {
+                "id": "j3",
+                "status": "scheduled",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-10-21T20:00:00Z",
+                "scheduled_end": "2026-10-21T21:00:00Z",
+                "route_order": 3,
+                "arrival_fixed": true,
+                "property": {
+                  "latitude": 33.4152,
+                  "longitude": -111.6315
+                },
+                "label": "Customer j3"
+              },
+              {
+                "id": "j4",
+                "status": "scheduled",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-10-21T22:00:00Z",
+                "scheduled_end": "2026-10-21T23:00:00Z",
+                "route_order": 4,
+                "arrival_fixed": false,
+                "property": null,
+                "label": "Customer j4"
+              }
+            ]
+          },
+          {
+            "techId": "u2",
+            "techName": "Sam",
+            "date": "2026-10-21",
+            "jobs": []
+          }
+        ]
+      ],
+      "result": {
+        "suggestions": [
+          {
+            "date": "2026-10-20",
+            "techId": "t1",
+            "techName": "Tony",
+            "position": 3,
+            "startMin": 881,
+            "addedDriveMin": 55,
+            "driveInMin": 41,
+            "near": "after Customer t3",
+            "dayLabel": "Today",
+            "timeLabel": "2:41 PM"
+          },
+          {
+            "date": "2026-10-20",
+            "techId": "u2",
+            "techName": "Sam",
+            "position": 0,
+            "startMin": 528,
+            "addedDriveMin": 96,
+            "driveInMin": 48,
+            "near": "only job that day",
+            "dayLabel": "Today",
+            "timeLabel": "8:48 AM"
+          },
+          {
+            "date": "2026-10-21",
+            "techId": "u2",
+            "techName": "Sam",
+            "position": 0,
+            "startMin": 528,
+            "addedDriveMin": 96,
+            "driveInMin": 48,
+            "near": "only job that day",
+            "dayLabel": "Wed, Oct 21",
+            "timeLabel": "8:48 AM"
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "id": "j2",
+          "location": {
+            "lat": 33.4252,
+            "lng": -111.8315
+          },
+          "durationMin": 90
+        },
+        [
+          {
+            "techId": "t1",
+            "techName": "Tony",
+            "date": "2026-10-21",
+            "jobs": [
+              {
+                "id": "j1",
+                "status": "scheduled",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-10-21T16:00:00Z",
+                "scheduled_end": "2026-10-21T17:00:00Z",
+                "route_order": 1,
+                "arrival_fixed": false,
+                "property": {
+                  "latitude": 33.6152,
+                  "longitude": -111.8315
+                }
+              },
+              {
+                "id": "j2",
+                "status": "scheduled",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-10-21T18:00:00Z",
+                "scheduled_end": "2026-10-21T19:30:00Z",
+                "route_order": 2,
+                "arrival_fixed": false,
+                "property": {
+                  "latitude": 33.4252,
+                  "longitude": -111.8315
+                }
+              },
+              {
+                "id": "j3",
+                "status": "scheduled",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-10-21T20:00:00Z",
+                "scheduled_end": "2026-10-21T21:00:00Z",
+                "route_order": 3,
+                "arrival_fixed": true,
+                "property": {
+                  "latitude": 33.4152,
+                  "longitude": -111.6315
+                }
+              },
+              {
+                "id": "j4",
+                "status": "scheduled",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-10-21T22:00:00Z",
+                "scheduled_end": "2026-10-21T23:00:00Z",
+                "route_order": 4,
+                "arrival_fixed": false,
+                "property": null
+              }
+            ]
+          },
+          {
+            "techId": "t1",
+            "techName": "Tony",
+            "date": "2026-10-22",
+            "jobs": []
+          }
+        ],
+        null,
+        1
+      ],
+      "result": {
+        "suggestions": [
+          {
+            "date": "2026-10-22",
+            "techId": "t1",
+            "techName": "Tony",
+            "position": 0,
+            "startMin": 485,
+            "addedDriveMin": 10,
+            "driveInMin": 5,
+            "near": "only job that day",
+            "dayLabel": "Thu, Oct 22",
+            "timeLabel": "8:05 AM"
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "location": null,
+          "durationMin": 60
+        },
+        [
+          {
+            "techId": "t1",
+            "techName": "Tony",
+            "date": "2026-10-21",
+            "jobs": [
+              {
+                "id": "j1",
+                "status": "scheduled",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-10-21T16:00:00Z",
+                "scheduled_end": "2026-10-21T17:00:00Z",
+                "route_order": 1,
+                "arrival_fixed": false,
+                "property": {
+                  "latitude": 33.6152,
+                  "longitude": -111.8315
+                },
+                "label": "Customer j1"
+              },
+              {
+                "id": "j2",
+                "status": "scheduled",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-10-21T18:00:00Z",
+                "scheduled_end": "2026-10-21T19:30:00Z",
+                "route_order": 2,
+                "arrival_fixed": false,
+                "property": {
+                  "latitude": 33.4252,
+                  "longitude": -111.8315
+                },
+                "label": "Customer j2"
+              },
+              {
+                "id": "j3",
+                "status": "scheduled",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-10-21T20:00:00Z",
+                "scheduled_end": "2026-10-21T21:00:00Z",
+                "route_order": 3,
+                "arrival_fixed": true,
+                "property": {
+                  "latitude": 33.4152,
+                  "longitude": -111.6315
+                },
+                "label": "Customer j3"
+              },
+              {
+                "id": "j4",
+                "status": "scheduled",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-10-21T22:00:00Z",
+                "scheduled_end": "2026-10-21T23:00:00Z",
+                "route_order": 4,
+                "arrival_fixed": false,
+                "property": null,
+                "label": "Customer j4"
+              }
+            ]
+          }
+        ]
+      ],
+      "result": {
+        "suggestions": [
+          {
+            "date": "2026-10-21",
+            "techId": "t1",
+            "techName": "Tony",
+            "position": 3,
+            "startMin": 840,
+            "addedDriveMin": 0,
+            "driveInMin": 0,
+            "near": "after Customer j3",
+            "dayLabel": "Wed, Oct 21",
+            "timeLabel": "2:00 PM"
+          }
+        ],
+        "note": "This pool has no location yet, so these don’t count driving to it."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "10:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "location": {
+            "lat": 33.6152,
+            "lng": -111.8315
+          },
+          "durationMin": 120
+        },
+        [
+          {
+            "techId": "t1",
+            "techName": "Tony",
+            "date": "2026-10-21",
+            "jobs": [
+              {
+                "id": "j1",
+                "status": "scheduled",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-10-21T16:00:00Z",
+                "scheduled_end": "2026-10-21T17:00:00Z",
+                "route_order": 1,
+                "arrival_fixed": false,
+                "property": {
+                  "latitude": 33.6152,
+                  "longitude": -111.8315
+                },
+                "label": "Customer j1"
+              },
+              {
+                "id": "j2",
+                "status": "scheduled",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-10-21T18:00:00Z",
+                "scheduled_end": "2026-10-21T19:30:00Z",
+                "route_order": 2,
+                "arrival_fixed": false,
+                "property": {
+                  "latitude": 33.4252,
+                  "longitude": -111.8315
+                },
+                "label": "Customer j2"
+              }
+            ]
+          }
+        ]
+      ],
+      "result": {
+        "suggestions": [],
+        "note": "No gaps in the next working days. Use Move… to pick a day."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/New_York",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-31",
+          "nowMin": 600
+        },
+        {
+          "location": {
+            "lat": 33.45,
+            "lng": -112.07
+          },
+          "durationMin": 45
+        },
+        [
+          {
+            "techId": "t1",
+            "techName": "Tony",
+            "date": "2026-10-31",
+            "jobs": []
+          },
+          {
+            "techId": "t1",
+            "techName": "Tony",
+            "date": "2026-11-01",
+            "jobs": [
+              {
+                "id": "n1",
+                "status": "scheduled",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-11-01T14:00:00Z",
+                "scheduled_end": "2026-11-01T15:00:00Z",
+                "route_order": 1,
+                "arrival_fixed": false,
+                "property": {
+                  "latitude": 33.4252,
+                  "longitude": -111.8315
+                },
+                "label": "Customer n1"
+              },
+              {
+                "id": "n2",
+                "status": "scheduled",
+                "assigned_user_id": "t1",
+                "second_tech_id": null,
+                "scheduled_start": "2026-11-01T13:00:00Z",
+                "scheduled_end": "2026-11-01T14:00:00Z",
+                "route_order": 2,
+                "arrival_fixed": true,
+                "property": {
+                  "latitude": 33.4152,
+                  "longitude": -111.6315
+                },
+                "label": "Customer n2"
+              }
+            ]
+          }
+        ]
+      ],
+      "result": {
+        "suggestions": [
+          {
+            "date": "2026-11-01",
+            "techId": "t1",
+            "techName": "Tony",
+            "position": 2,
+            "startMin": 744,
+            "addedDriveMin": 58,
+            "driveInMin": 54,
+            "near": "after Customer n2",
+            "dayLabel": "Sun, Nov 1",
+            "timeLabel": "12:24 PM"
+          },
+          {
+            "date": "2026-10-31",
+            "techId": "t1",
+            "techName": "Tony",
+            "position": 0,
+            "startMin": 600,
+            "addedDriveMin": 68,
+            "driveInMin": 34,
+            "near": "only job that day",
+            "dayLabel": "Today",
+            "timeLabel": "10:00 AM"
+          }
+        ]
+      }
+    }
+  ],
+  "timeline": [
+    {
+      "args": [
+        [],
+        {}
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        [
+          {
+            "user_id": "u1",
+            "table_name": "job",
+            "row_id": "j1",
+            "field": "status",
+            "old_value": null,
+            "new_value": "scheduled",
+            "created_at": "2026-10-12T16:00:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "job",
+            "row_id": "j1",
+            "field": "number",
+            "old_value": null,
+            "new_value": 1042,
+            "created_at": "2026-10-12T16:00:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "job",
+            "row_id": "j1",
+            "field": "status",
+            "old_value": "scheduled",
+            "new_value": "in_progress",
+            "created_at": "2026-10-12T17:00:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "job",
+            "row_id": "j1",
+            "field": "status",
+            "old_value": "bogus",
+            "new_value": "weird",
+            "created_at": "2026-10-12T17:05:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "job",
+            "row_id": "j1",
+            "field": "assigned_user_id",
+            "old_value": "u1",
+            "new_value": "u2",
+            "created_at": "2026-10-12T17:06:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "job",
+            "row_id": "j1",
+            "field": "scheduled_start",
+            "old_value": "a",
+            "new_value": "b",
+            "created_at": "2026-10-12T17:07:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "job",
+            "row_id": "j1",
+            "field": "summary_notes",
+            "old_value": "",
+            "new_value": "x",
+            "created_at": "2026-10-12T17:08:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "job",
+            "row_id": "j1",
+            "field": "deleted_at",
+            "old_value": null,
+            "new_value": "2026-10-12T18:00:00Z",
+            "created_at": "2026-10-12T18:00:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "job",
+            "row_id": "j1",
+            "field": "updated_at",
+            "old_value": "a",
+            "new_value": "b",
+            "created_at": "2026-10-12T18:01:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "job",
+            "row_id": "j1",
+            "field": "sort_order",
+            "old_value": 1,
+            "new_value": 2,
+            "created_at": "2026-10-12T18:02:00Z"
+          }
+        ],
+        {}
+      ],
+      "result": [
+        {
+          "at": "2026-10-12T18:01:00Z",
+          "userId": "u1",
+          "text": "Updated job: updated at"
+        },
+        {
+          "at": "2026-10-12T18:00:00Z",
+          "userId": "u1",
+          "text": "Removed job"
+        },
+        {
+          "at": "2026-10-12T17:08:00Z",
+          "userId": "u1",
+          "text": "Job notes updated"
+        },
+        {
+          "at": "2026-10-12T17:07:00Z",
+          "userId": "u1",
+          "text": "Rescheduled"
+        },
+        {
+          "at": "2026-10-12T17:06:00Z",
+          "userId": "u1",
+          "text": "Reassigned"
+        },
+        {
+          "at": "2026-10-12T17:05:00Z",
+          "userId": "u1",
+          "text": "Status: weird"
+        },
+        {
+          "at": "2026-10-12T17:00:00Z",
+          "userId": "u1",
+          "text": "Status: Scheduled → In progress"
+        },
+        {
+          "at": "2026-10-12T16:00:00Z",
+          "userId": "u1",
+          "text": "Job created (Scheduled)"
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "user_id": "u1",
+            "table_name": "checklist_item_result",
+            "row_id": "c1",
+            "field": "status",
+            "old_value": null,
+            "new_value": "pending",
+            "created_at": "2026-10-12T16:00:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "checklist_item_result",
+            "row_id": "c1",
+            "field": "status",
+            "old_value": "pending",
+            "new_value": "inspected",
+            "created_at": "2026-10-12T16:01:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "checklist_item_result",
+            "row_id": "c1",
+            "field": "method",
+            "old_value": null,
+            "new_value": "Dye test",
+            "created_at": "2026-10-12T16:01:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "checklist_item_result",
+            "row_id": "c2",
+            "field": "status",
+            "old_value": "pending",
+            "new_value": "excluded",
+            "created_at": "2026-10-12T16:02:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "checklist_item_result",
+            "row_id": "c2",
+            "field": "exclusion_reason",
+            "old_value": null,
+            "new_value": "Covered by deck",
+            "created_at": "2026-10-12T16:02:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "checklist_item_result",
+            "row_id": "c3",
+            "field": "status",
+            "old_value": "inspected",
+            "new_value": "pending",
+            "created_at": "2026-10-12T16:03:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "checklist_item_result",
+            "row_id": "c3",
+            "field": "status",
+            "old_value": "pending",
+            "new_value": "inspected",
+            "created_at": "2026-10-12T16:04:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "job_component",
+            "row_id": "k1",
+            "field": "label",
+            "old_value": null,
+            "new_value": "Main drain",
+            "created_at": "2026-10-12T16:05:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "job_component",
+            "row_id": "k2",
+            "field": "label",
+            "old_value": null,
+            "new_value": "Return",
+            "created_at": "2026-10-12T16:05:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "job_component",
+            "row_id": "k2",
+            "field": "deleted_at",
+            "old_value": null,
+            "new_value": "2026-10-12T16:06:00Z",
+            "created_at": "2026-10-12T16:06:00Z"
+          }
+        ],
+        {
+          "checklist_item_result:c1": "Skimmer",
+          "job_component:k2": "Return 2",
+          "checklist_item_result:c3": ""
+        }
+      ],
+      "result": [
+        {
+          "at": "2026-10-12T16:06:00Z",
+          "userId": "u1",
+          "text": "Removed component “Return 2”"
+        },
+        {
+          "at": "2026-10-12T16:05:00Z",
+          "userId": "u1",
+          "text": "Added Main drain"
+        },
+        {
+          "at": "2026-10-12T16:05:00Z",
+          "userId": "u1",
+          "text": "Added Return 2"
+        },
+        {
+          "at": "2026-10-12T16:04:00Z",
+          "userId": "u1",
+          "text": " inspected"
+        },
+        {
+          "at": "2026-10-12T16:03:00Z",
+          "userId": "u1",
+          "text": " set back to to-do"
+        },
+        {
+          "at": "2026-10-12T16:02:00Z",
+          "userId": "u1",
+          "text": "Checklist item excluded: Covered by deck"
+        },
+        {
+          "at": "2026-10-12T16:01:00Z",
+          "userId": "u1",
+          "text": "Skimmer inspected (Dye test)"
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "user_id": "u1",
+            "table_name": "test_result",
+            "row_id": "t1",
+            "field": "outcome",
+            "old_value": null,
+            "new_value": "pass",
+            "created_at": "2026-10-12T16:00:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "test_result",
+            "row_id": "t1",
+            "field": "outcome",
+            "old_value": "pass",
+            "new_value": "fail",
+            "created_at": "2026-10-12T16:01:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "test_result",
+            "row_id": "t1",
+            "field": "data",
+            "old_value": {},
+            "new_value": {
+              "psi": 20
+            },
+            "created_at": "2026-10-12T16:02:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "test_result",
+            "row_id": "t2",
+            "field": "data",
+            "old_value": null,
+            "new_value": null,
+            "created_at": "2026-10-12T16:03:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "finding",
+            "row_id": "f1",
+            "field": "title",
+            "old_value": null,
+            "new_value": "Cracked skimmer",
+            "created_at": "2026-10-12T16:04:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "finding",
+            "row_id": "f1",
+            "field": "status",
+            "old_value": "open",
+            "new_value": "repaired",
+            "created_at": "2026-10-12T16:05:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "finding",
+            "row_id": "f2",
+            "field": "notes",
+            "old_value": "a",
+            "new_value": "b",
+            "created_at": "2026-10-12T16:06:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "media",
+            "row_id": "m1",
+            "field": "kind",
+            "old_value": null,
+            "new_value": "audio",
+            "created_at": "2026-10-12T16:07:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "media",
+            "row_id": "m1",
+            "field": "upload_state",
+            "old_value": "pending",
+            "new_value": "uploaded",
+            "created_at": "2026-10-12T16:08:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "media",
+            "row_id": "m1",
+            "field": "transcript",
+            "old_value": null,
+            "new_value": "hello",
+            "created_at": "2026-10-12T16:09:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "media",
+            "row_id": "m2",
+            "field": "markup",
+            "old_value": null,
+            "new_value": [
+              1,
+              2
+            ],
+            "created_at": "2026-10-12T16:10:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "media",
+            "row_id": "m2",
+            "field": "caption",
+            "old_value": "a",
+            "new_value": "b",
+            "created_at": "2026-10-12T16:11:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "media",
+            "row_id": "m3",
+            "field": "kind",
+            "old_value": null,
+            "new_value": "scan",
+            "created_at": "2026-10-12T16:12:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "media",
+            "row_id": "m3",
+            "field": "width",
+            "old_value": 1,
+            "new_value": 2,
+            "created_at": "2026-10-12T16:13:00Z"
+          },
+          {
+            "user_id": null,
+            "table_name": "customer",
+            "row_id": "x1",
+            "field": "name",
+            "old_value": null,
+            "new_value": "Riley",
+            "created_at": "2026-10-12T16:14:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "customer",
+            "row_id": "x1",
+            "field": "phone",
+            "old_value": "1",
+            "new_value": "2",
+            "created_at": "2026-10-12T16:15:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "pool_visit",
+            "row_id": "p1",
+            "field": "chlorine_level",
+            "old_value": 1,
+            "new_value": 2,
+            "created_at": "2026-10-12T16:16:00Z"
+          },
+          {
+            "user_id": "u1",
+            "table_name": "property",
+            "row_id": "p2",
+            "field": null,
+            "old_value": null,
+            "new_value": null,
+            "created_at": "2026-10-12T16:17:00Z"
+          }
+        ],
+        {
+          "test_result:t1": "Pressure test",
+          "finding:f2": "Leak at light",
+          "media:m2": "photo"
+        }
+      ],
+      "result": [
+        {
+          "at": "2026-10-12T16:16:00Z",
+          "userId": "u1",
+          "text": "Updated pool visit: chlorine level"
+        },
+        {
+          "at": "2026-10-12T16:15:00Z",
+          "userId": "u1",
+          "text": "Updated customer: phone"
+        },
+        {
+          "at": "2026-10-12T16:14:00Z",
+          "userId": null,
+          "text": "Added customer"
+        },
+        {
+          "at": "2026-10-12T16:13:00Z",
+          "userId": "u1",
+          "text": "Updated capture: width"
+        },
+        {
+          "at": "2026-10-12T16:12:00Z",
+          "userId": "u1",
+          "text": "Added a capture"
+        },
+        {
+          "at": "2026-10-12T16:11:00Z",
+          "userId": "u1",
+          "text": "Captioned a photo"
+        },
+        {
+          "at": "2026-10-12T16:10:00Z",
+          "userId": "u1",
+          "text": "Added a photo"
+        },
+        {
+          "at": "2026-10-12T16:09:00Z",
+          "userId": "u1",
+          "text": "Added a capture"
+        },
+        {
+          "at": "2026-10-12T16:07:00Z",
+          "userId": "u1",
+          "text": "Added a voice note"
+        },
+        {
+          "at": "2026-10-12T16:06:00Z",
+          "userId": "u1",
+          "text": "Finding “Leak at light” edited"
+        },
+        {
+          "at": "2026-10-12T16:05:00Z",
+          "userId": "u1",
+          "text": "Finding “finding” marked repaired"
+        },
+        {
+          "at": "2026-10-12T16:04:00Z",
+          "userId": "u1",
+          "text": "Finding added: Cracked skimmer"
+        },
+        {
+          "at": "2026-10-12T16:03:00Z",
+          "userId": "u1",
+          "text": "Test recorded"
+        },
+        {
+          "at": "2026-10-12T16:02:00Z",
+          "userId": "u1",
+          "text": "Pressure test edited"
+        },
+        {
+          "at": "2026-10-12T16:01:00Z",
+          "userId": "u1",
+          "text": "Pressure test outcome changed to fail"
+        },
+        {
+          "at": "2026-10-12T16:00:00Z",
+          "userId": "u1",
+          "text": "Pressure test recorded: pass"
+        }
+      ]
+    }
+  ]
+}

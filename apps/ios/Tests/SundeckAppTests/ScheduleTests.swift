@@ -102,16 +102,17 @@ import Testing
         )
     }
 
-    @Test func daysAndMonths() {
-        #expect(addDays("2026-10-31", 1) == "2026-11-01")
+    @Test func daysAndMonths() throws {
+        // SundeckCore's date rules throw on a day that isn't one, as the TypeScript does.
+        #expect(try addDays("2026-10-31", 1) == "2026-11-01")
         #expect(weekday("2026-10-18") == 0)
-        #expect(weekStart("2026-10-18") == "2026-10-12")
-        #expect(addMonths("2026-01-31", 1) == "2026-02-28")
-        #expect(addMonths("2026-12-15", 1) == "2027-01-15")
-        #expect(addMonths("2026-01-15", -1) == "2025-12-15")
-        let grid = monthGrid("2026-10-18")
+        #expect(try weekStart("2026-10-18") == "2026-10-12")
+        #expect(try addMonths("2026-01-31", 1) == "2026-02-28")
+        #expect(try addMonths("2026-12-15", 1) == "2027-01-15")
+        #expect(try addMonths("2026-01-15", -1) == "2025-12-15")
+        let grid = try monthGrid("2026-10-18")
         #expect(grid.first == "2026-09-28" && grid.last == "2026-11-01" && grid.count == 35)
-        #expect(scheduleDays(.week, "2026-10-18").count == 7)
+        #expect(try scheduleDays(.week, "2026-10-18").count == 7)
         #expect(formatDay("2026-10-18", long: true) == "Sunday, October 18")
         #expect(formatDay("2026-10-18") == "Sun, Oct 18")
         #expect(formatMonth("2026-10-18") == "October 2026")

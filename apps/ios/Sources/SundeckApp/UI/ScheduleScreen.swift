@@ -218,9 +218,9 @@
 
         private func step(_ d: String, _ n: Int) -> String {
             switch view {
-            case .day: addDays(d, n)
-            case .week: addDays(d, 7 * n)
-            case .month: addMonths(d, n)
+            case .day: (try? addDays(d, n)) ?? d
+            case .week: (try? addDays(d, 7 * n)) ?? d
+            case .month: (try? addMonths(d, n)) ?? d
             }
         }
 
@@ -287,7 +287,7 @@
             jobs = scheduleJobs(store, companyId: company.id)
             self.date = date ?? ctx.today
             self.view = view
-            days = scheduleDays(view, self.date)
+            days = (try? scheduleDays(view, self.date)) ?? [self.date]
             loaded = loadRoutes(jobs, ctx: ctx, dates: days, team: team, drive: drive)
             let (ctx, days, loaded) = (ctx, days, loaded)
             techs = team.filter { t in
@@ -390,11 +390,11 @@
         @State private var drag: CGFloat = 0
 
         var body: some View {
-            let start = weekStart(date)
+            let start = (try? weekStart(date)) ?? date
             GeometryReader { geo in
                 HStack(spacing: 4) {
                     ForEach(0..<7, id: \.self) { i in
-                        let d = addDays(start, i)
+                        let d = (try? addDays(start, i)) ?? start
                         let chosen = d == date
                         Button {
                             pick(d)
@@ -429,9 +429,9 @@
                             let flick = value.predictedEndTranslation.width - w
                             withAnimation(.easeOut(duration: 0.2)) { drag = 0 }
                             if w < -geo.size.width / 4 || flick < -200 {
-                                pick(addDays(date, 7))
+                                pick((try? addDays(date, 7)) ?? date)
                             } else if w > geo.size.width / 4 || flick > 200 {
-                                pick(addDays(date, -7))
+                                pick((try? addDays(date, -7)) ?? date)
                             }
                         })
             }
