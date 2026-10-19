@@ -19,6 +19,7 @@ import {
   formatCents,
   formatSchedule,
   jobActionLabel,
+  parseGallons,
   jobFeeLabel,
   parseDollars,
   propertyLocation,
@@ -73,6 +74,7 @@ import {
 } from "../../../../../../ui/theme";
 import { ChecklistTab } from "../../../../../../features/inspection/ChecklistTab";
 import { DiagramPanel } from "../../../../../../features/inspection/DiagramPanel";
+import { ChemicalInline } from "../../../../../../features/chemicals/Calculator";
 import { VisitCleanings } from "../../../../../../features/maintenance/Cleanings";
 import { FindingsTab } from "../../../../../../features/inspection/FindingsTab";
 import { TestsTab } from "../../../../../../features/inspection/TestsTab";
@@ -247,17 +249,8 @@ export default function JobDetail() {
           {shown === "checklist" ? (
             <View style={styles.part}>
               {/* Chemical first, at the top of the checklist (owner, 2026-10-19), as the website. */}
-              {maintenance ? (
-                <Button
-                  title="Chemical"
-                  kind="secondary"
-                  onPress={() =>
-                    router.push({
-                      pathname: "/chemicals",
-                      params: property ? { property: property.id, job: job.id } : {},
-                    })
-                  }
-                />
+              {maintenance && property ? (
+                <ChemicalInline pool={property} jobId={job.id} name={customer?.name ?? null} />
               ) : null}
               {/* Its filter and salt cell cleanings (owner, 2026-10-19), as the website. */}
               {maintenance ? <VisitCleanings job={job} /> : null}
@@ -374,6 +367,7 @@ function Details({
   const [choice] = useDirectionsChoice();
   const [notes, setNotes] = useState<string | null>(null);
   const [fee, setFee] = useState<string | null>(null);
+  const [gallons, setGallons] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   // Notes save shortly after typing stops and when leaving the screen: leaving the field
   // often doesn't blur it on iPhone.
@@ -406,7 +400,7 @@ function Details({
   const detection = job.type === "detection";
   const questions = (company.settings as Partial<CompanySettings>).intake_questions ?? [];
   const answers = [
-    // When They Call on a repair (owner, 2026-10-19): what the customer needs.
+    // From the Customer on a repair (owner, 2026-10-19): what the customer needs.
     { q: { key: REPAIR_ITEM_KEY, label: REPAIR_ITEM_LABEL }, a: job.intake?.[REPAIR_ITEM_KEY] },
     ...questions.map((q) => ({ q, a: job.intake?.[q.key] })),
   ].filter(({ a }) => (Array.isArray(a) ? a.length > 0 : Boolean(a)));
@@ -423,6 +417,18 @@ function Details({
     if (cents === null && fee.trim()) return setFee(null);
     update({ fee_cents: cents });
     setFee(null);
+  }
+
+  // The pool's gallons (owner, 2026-10-19: "In job details you should be able to include pool
+  // size in gallons"), saved on the pool so the customer and Chemical see it. Blank clears.
+  const gallonsShown =
+    gallons ?? (property?.approx_gallons ? property.approx_gallons.toLocaleString("en-US") : "");
+  function saveGallons() {
+    if (gallons === null || !property) return;
+    const value = gallons ? parseGallons(gallons) : null;
+    if (value !== (property.approx_gallons ?? null))
+      services.sync.write("property", property.id, property.company_id, { approx_gallons: value });
+    setGallons(null);
   }
 
   return (
@@ -553,7 +559,7 @@ function Details({
       </Section>
 
       {answers.length > 0 ? (
-        <Section title={job.type === "repair" ? "When they called" : "When they booked"}>
+        <Section title="From the Customer">
           <Group>
             {answers.map(({ q, a }) => (
               <ListRow key={q.key}>
@@ -596,6 +602,34 @@ function Details({
               />
             </View>
           </ListRow>
+          {property ? (
+            <ListRow>
+              <View style={styles.feeRow}>
+                <T style={{ flex: 1 }}>Pool gallons</T>
+                <TextInput
+                  accessibilityLabel="Pool gallons"
+                  value={gallonsShown}
+                  onChangeText={(v) => {
+                    const digits = v.replace(/\D/g, "").slice(0, 7);
+                    setGallons(digits ? Number(digits).toLocaleString("en-US") : "");
+                  }}
+                  onBlur={saveGallons}
+                  keyboardType="number-pad"
+                  placeholder="20,000"
+                  placeholderTextColor={color.placeholder}
+                  style={[
+                    styles.feeInput,
+                    tabular,
+                    {
+                      color: color.text,
+                      borderColor: color.controlBorder,
+                      backgroundColor: color.surface,
+                    },
+                  ]}
+                />
+              </View>
+            </ListRow>
+          ) : null}
           {detection ? (
             <Toggle
               inList
@@ -643,6 +677,7 @@ function Details({
           kind="secondary"
           onPress={() => {
             saveFee();
+            saveGallons();
             flush.current();
             setSaved(true);
           }}

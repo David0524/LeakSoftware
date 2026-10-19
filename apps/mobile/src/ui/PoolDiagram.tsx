@@ -1,11 +1,13 @@
 import { useRef, useState } from "react";
 import { Pressable, StyleSheet, View, type GestureResponderEvent } from "react-native";
-import Svg, { Circle, Path, Rect, Text as SvgText } from "react-native-svg";
+import Svg, { Circle, G, Path, Rect, Text as SvgText } from "react-native-svg";
 import {
+  LANDMARK_SIZE,
   parseDiagramLayout,
   poolDiagram,
   type DiagramShape,
   type MarkupShape,
+  type PoolDiagram as Drawing,
 } from "@leakbook/core";
 import { DIAGRAM_MARKUP_SPACE, MarkupLayer } from "./MarkupLayer";
 import { color, font } from "./theme";
@@ -130,42 +132,7 @@ export function PoolDiagram({
             viewBox={`0 0 ${d.width} ${d.height}`}
             pointerEvents="none"
           >
-            <Path d={d.pool} fill={color.diagramWater} stroke={color.water} strokeWidth={2} />
-            {d.spa ? (
-              d.spa.square ? (
-                <Rect
-                  x={d.spa.cx - d.spa.r}
-                  y={d.spa.cy - d.spa.r}
-                  width={d.spa.r * 2}
-                  height={d.spa.r * 2}
-                  rx={4}
-                  fill={color.diagramWater}
-                  stroke={color.water}
-                  strokeWidth={2}
-                />
-              ) : (
-                <Circle
-                  cx={d.spa.cx}
-                  cy={d.spa.cy}
-                  r={d.spa.r}
-                  fill={color.diagramWater}
-                  stroke={color.water}
-                  strokeWidth={2}
-                />
-              )
-            ) : null}
-            {d.spa ? (
-              <SvgText
-                x={d.spa.cx}
-                y={d.spa.cy + 3}
-                fontSize={7}
-                fill={color.water}
-                textAnchor="middle"
-                fontFamily={font.displayBold}
-              >
-                SPA
-              </SvgText>
-            ) : null}
+            <DiagramShapes d={d} />
             {pins.map((p) => (
               <Pin key={p.id} pin={p} x={p.x * d.width} y={p.y * d.height} />
             ))}
@@ -181,6 +148,82 @@ export function PoolDiagram({
         </Pressable>
       ) : null}
     </View>
+  );
+}
+
+/**
+ * The pool, what was drawn on it, its landmarks, and the spa, as the website's DiagramShapes
+ * (apps/web/src/components/pool-diagram.tsx), in the diagram's 160 x 100 units.
+ */
+export function DiagramShapes({ d }: { d: Drawing }) {
+  return (
+    <>
+      {d.pool ? (
+        <Path d={d.pool} fill={color.diagramWater} stroke={color.water} strokeWidth={2} />
+      ) : null}
+      {/* Drawn with Draw, in the pool's outline (owner, 2026-10-19). */}
+      {d.drawing.map((path, i) => (
+        <Path
+          key={`draw-${i}`}
+          d={path}
+          fill="none"
+          stroke={color.water}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ))}
+      {d.landmarks.map((l, i) => (
+        <G
+          key={`landmark-${i}`}
+          transform={`translate(${l.cx - LANDMARK_SIZE / 2} ${l.cy - LANDMARK_SIZE / 2}) scale(${LANDMARK_SIZE / 24})`}
+        >
+          <Path
+            d={l.path}
+            fill="none"
+            stroke={color.textMuted}
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </G>
+      ))}
+      {d.spa ? (
+        d.spa.square ? (
+          <Rect
+            x={d.spa.cx - d.spa.r}
+            y={d.spa.cy - d.spa.r}
+            width={d.spa.r * 2}
+            height={d.spa.r * 2}
+            rx={4}
+            fill={color.diagramWater}
+            stroke={color.water}
+            strokeWidth={2}
+          />
+        ) : (
+          <Circle
+            cx={d.spa.cx}
+            cy={d.spa.cy}
+            r={d.spa.r}
+            fill={color.diagramWater}
+            stroke={color.water}
+            strokeWidth={2}
+          />
+        )
+      ) : null}
+      {d.spa ? (
+        <SvgText
+          x={d.spa.cx}
+          y={d.spa.cy + 3}
+          fontSize={7}
+          fill={color.water}
+          textAnchor="middle"
+          fontFamily={font.displayBold}
+        >
+          SPA
+        </SvgText>
+      ) : null}
+    </>
   );
 }
 

@@ -8,6 +8,7 @@ import { API_URL } from "../../../../../lib/config";
 import { useSession, useSyncStatus } from "../../../../../state/session";
 import { useWalkthrough } from "../../../../../state/walkthrough";
 import { showGettingStartedAgain } from "../../../../../features/today/GettingStarted";
+import { FeatureRequestRow } from "../../../../../features/more/FeatureRequest";
 import { useDirectionsChoice, type DirectionsChoice } from "../../../../../state/directions";
 import {
   Button,
@@ -209,16 +210,8 @@ export default function More() {
               onPress={() => open("/status")}
             />
           ) : null}
-          {/* The website saves requests through a form; the app emails them for now (owner list,
-              2026-10-19, item 9) until there is an endpoint the app can post to. */}
-          <ListRow
-            title="Request a Feature"
-            tone="link"
-            accessibilityRole="link"
-            onPress={() =>
-              void Linking.openURL(`mailto:${CONTACT_EMAIL}?subject=Feature%20request`)
-            }
-          />
+          {/* A text box, saved like the website's (owner, 2026-10-19). */}
+          <FeatureRequestRow />
           {/* Every tip comes back, starting with the welcome cards (walkthrough, 2026-10-16). */}
           <ListRow
             title="Show Tips Again"

@@ -10,6 +10,7 @@ import {
   validateNewJob,
   planComponents,
   parseDollars,
+  parseGallons,
   splitEmails,
   formatCents,
   REPAIR_ITEM_KEY,
@@ -152,7 +153,7 @@ function NewJobForm() {
     : hasSpa;
   const suggestedFee = (spaChosen ? detection[1] : detection[0]) ?? detection[0];
   const feeText = fee ?? (suggestedFee ? (suggestedFee.price_cents / 100).toFixed(2) : "");
-  // When They Call (owner, 2026-10-19), as the website: a repair is booked for a price book
+  // From the Customer (owner, 2026-10-19), as the website: a repair is booked for a price book
   // item, the ones the owner picked for it or every active one when none are picked yet.
   const live = priceBook
     .filter((i) => i.active && !i.deleted_at)
@@ -162,6 +163,43 @@ function NewJobForm() {
   const [repairItem, setRepairItem] = useState("");
   const [repairPrice, setRepairPrice] = useState("");
   const [repairNotes, setRepairNotes] = useState("");
+  // The pool's gallons (owner, 2026-10-19: it replaced "Size of the pool"), saved on the pool:
+  // an existing pool's fills in; blank keeps what the pool has.
+  const [gallonsTyped, setGallonsTyped] = useState<{ pool: string; text: string } | null>(null);
+  const knownGallons = propertyId
+    ? (properties.find((p) => p.id === propertyId)?.approx_gallons ?? null)
+    : null;
+  const gallonsText =
+    gallonsTyped && gallonsTyped.pool === (propertyId ?? "new")
+      ? gallonsTyped.text
+      : knownGallons
+        ? knownGallons.toLocaleString("en-US")
+        : "";
+  const [gallonsError, setGallonsError] = useState<string | undefined>();
+  const gallonsField = (
+    <Field
+      label="Gallons (optional)"
+      value={gallonsText}
+      onChangeText={(v) => {
+        const digits = v.replace(/\D/g, "").slice(0, 7);
+        setGallonsTyped({
+          pool: propertyId ?? "new",
+          text: digits ? Number(digits).toLocaleString("en-US") : "",
+        });
+      }}
+      keyboardType="number-pad"
+      placeholder="20,000"
+      error={gallonsError}
+      hint="Saved on the pool for the Chemical calculator."
+    />
+  );
+  /** The gallons to save on the pool, null to leave it, or false when they can't be read. */
+  function gallonsToSave(): number | null | false {
+    if (!gallonsText.trim()) return null;
+    const g = parseGallons(gallonsText);
+    setGallonsError(g === null ? "Enter the gallons as a number, like 20,000." : undefined);
+    return g === null ? false : g;
+  }
 
   const set = (k: keyof NewJobInput) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
   const selectedCustomer = customers.find((c) => c.id === customerId);
@@ -194,6 +232,7 @@ function NewJobForm() {
     repairItem ||
     repairPrice.trim() ||
     repairNotes.trim() ||
+    Boolean(gallonsTyped?.text) ||
     repeat !== "0" ||
     planForm.price.trim() ||
     planForm.notes.trim() ||
@@ -234,7 +273,8 @@ function NewJobForm() {
     );
     setPlanErrors(checked.errors ?? {});
     setPlanError(null);
-    if (Object.keys(e).length > 0 || !checked.values) return;
+    const gallons = gallonsToSave();
+    if (Object.keys(e).length > 0 || !checked.values || gallons === false) return;
     if (offline) {
       setPlanError(
         "You’re offline. Starting a plan needs a connection; try again once you’re back online.",
@@ -272,6 +312,17 @@ function NewJobForm() {
       if (error) throw new Error(error.message);
       // Bring the new customer, pool, plan, and its visits to the phone before opening them.
       await sync.syncNow();
+      // Gallons go on the pool, through sync (the server's plan function doesn't take them).
+      const newCustomer = (data as { customer: string }).customer;
+      const pool =
+        propertyId ??
+        sync
+          .list("property", company.id)
+          .find(
+            (p) => p.customer_id === newCustomer && p.address_line1 === input.addressLine1.trim(),
+          )?.id;
+      if (gallons && typeof pool === "string")
+        sync.write("property", pool, company.id, { approx_gallons: gallons });
       haptics.success();
       created.current = true;
       router.replace(`/customers/${(data as { customer: string }).customer}`);
@@ -305,7 +356,8 @@ function NewJobForm() {
     const badPrice =
       repair && Boolean(repairPrice.trim()) && (priceCents === null || priceCents < 0);
     setRepairPriceError(badPrice ? "Enter a price like 649." : undefined);
-    if (Object.keys(e).length > 0 || badFee || badPrice) return;
+    const gallons = gallonsToSave();
+    if (Object.keys(e).length > 0 || badFee || badPrice || gallons === false) return;
     const item = repair ? repairItems.find((i) => i.id === repairItem) : undefined;
 
     const records = newJobRecords(input, {
@@ -341,13 +393,16 @@ function NewJobForm() {
           ...records.property!,
           customer_id: cust,
           diagram_shape: shape,
+          ...(gallons ? { approx_gallons: gallons } : {}),
         });
+      if (propertyId && gallons && gallons !== knownGallons)
+        sync.write("property", propertyId, company.id, { approx_gallons: gallons });
       const job = sync.insert("job", company.id, {
         ...records.job,
         property_id: prop,
         bill_to_customer_id: cust,
         // Leak detection has a detection fee and booking questions; a repair its price and
-        // what they need (When They Call), as the website. Pool service visits have no
+        // what they need (From the Customer), as the website. Pool service visits have no
         // second tech.
         fee_cents: leak ? feeCents : repair ? priceCents : null,
         second_tech_id: maintenance || secondTech === "none" ? null : secondTech,
@@ -466,8 +521,9 @@ function NewJobForm() {
         )}
       </Section>
 
-      {questions.length > 0 && leak ? (
-        <Section title="Booking">
+      {leak ? (
+        <Section title="From the Customer">
+          {gallonsField}
           {questions.map((q) =>
             q.type === "multi" ? (
               <View key={q.key} style={{ gap: 4 }}>
@@ -520,7 +576,7 @@ function NewJobForm() {
       ) : null}
 
       {repair ? (
-        <Section title="When They Call">
+        <Section title="From the Customer">
           {repairItems.length ? (
             <Select
               label="What do they need?"
@@ -609,6 +665,7 @@ function NewJobForm() {
               onChange={setPoolType}
             />
             <Toggle label="Has a spa" value={hasSpa} onChange={setHasSpa} />
+            {leak ? null : gallonsField}
             {leak ? (
               <ShapePicker
                 value={shape}

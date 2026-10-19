@@ -1,6 +1,6 @@
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { View } from "react-native";
-import Svg, { Circle, Path, Rect, Text as SvgText } from "react-native-svg";
+import Svg, { Circle, Text as SvgText } from "react-native-svg";
 import {
   parseDiagramLayout,
   parseMarkup,
@@ -19,6 +19,7 @@ import { useSession } from "../../../../state/session";
 import { Notice, Screen } from "../../../../ui/components";
 import { haptics } from "../../../../ui/haptics";
 import { DIAGRAM_MARKUP_SPACE } from "../../../../ui/MarkupLayer";
+import { DiagramShapes } from "../../../../ui/PoolDiagram";
 import { color, font } from "../../../../ui/theme";
 
 /**
@@ -75,42 +76,7 @@ export default function DiagramMarkupScreen() {
         background={(w, h) => (
           <View style={{ width: w, height: h, backgroundColor: color.surface, borderRadius: 4 }}>
             <Svg width={w} height={h} viewBox={`0 0 ${d.width} ${d.height}`}>
-              <Path d={d.pool} fill={color.diagramWater} stroke={color.water} strokeWidth={2} />
-              {d.spa ? (
-                d.spa.square ? (
-                  <Rect
-                    x={d.spa.cx - d.spa.r}
-                    y={d.spa.cy - d.spa.r}
-                    width={d.spa.r * 2}
-                    height={d.spa.r * 2}
-                    rx={4}
-                    fill={color.diagramWater}
-                    stroke={color.water}
-                    strokeWidth={2}
-                  />
-                ) : (
-                  <Circle
-                    cx={d.spa.cx}
-                    cy={d.spa.cy}
-                    r={d.spa.r}
-                    fill={color.diagramWater}
-                    stroke={color.water}
-                    strokeWidth={2}
-                  />
-                )
-              ) : null}
-              {d.spa ? (
-                <SvgText
-                  x={d.spa.cx}
-                  y={d.spa.cy + 3}
-                  fontSize={7}
-                  fill={color.water}
-                  textAnchor="middle"
-                  fontFamily={font.displayBold}
-                >
-                  SPA
-                </SvgText>
-              ) : null}
+              <DiagramShapes d={d} />
               {pins.map(({ f }) => (
                 <Circle
                   key={f.id}

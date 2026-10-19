@@ -94,6 +94,10 @@ const SHAPES = {
   filter: {
     line: "M9 3h6a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3zM10 7v10M14 7v10",
   },
+  // A new cartridge: the filter with an arrow going in (replacing the filter).
+  newFilter: {
+    line: "M11.5 6h5a2.5 2.5 0 0 1 2.5 2.5v10a2.5 2.5 0 0 1-2.5 2.5h-5A2.5 2.5 0 0 1 9 18.5v-10A2.5 2.5 0 0 1 11.5 6zM12.5 10v7M15.5 10v7M3 4h6M6 1v6",
+  },
   saltCell: {
     line: "M6.5 8h11a4 4 0 0 1 0 8h-11a4 4 0 0 1 0-8zM13 9.5l-2.5 3h3L11 15",
   },

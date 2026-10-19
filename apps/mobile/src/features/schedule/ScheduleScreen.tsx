@@ -452,9 +452,8 @@ export function ScheduleScreen() {
         ) : null}
         {unlocated ? (
           <T variant="secondary" muted>
-            Pools marked “No map location” aren’t counted in drive times. Open the job and use Mark
-            Location Here at the pool
-            {manager ? ", or Find Pool Locations in Settings › Scheduling" : ""}.
+            Pools marked “No map location” aren’t counted in drive times: their address wasn’t found
+            on the map. Check the address on the customer’s pool.
           </T>
         ) : null}
 

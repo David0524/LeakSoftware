@@ -1,4 +1,7 @@
 import {
+  cleaningCountdown,
+  cleaningSummary,
+  filterAge,
   formatDay,
   maintenanceSettings,
   planRepeat,
@@ -8,8 +11,9 @@ import {
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useState } from "react";
-import { View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import type { ServicePlanRow } from "../../data/customers";
+import { useInspectionConfig } from "../../data/inspection";
 import { getServices } from "../../lib/services";
 import { useCompany } from "../../state/session";
 import { Button, Field, Group, ListRow, Section, T } from "../../ui/components";
@@ -17,7 +21,8 @@ import { confirmDestructive } from "../../ui/confirm";
 import { haptics } from "../../ui/haptics";
 import { ModalSheet } from "../../ui/ModalSheet";
 import { Select } from "../../ui/Select";
-import { space } from "../../ui/theme";
+import { color, face, MAX_TEXT_SCALE, space, type } from "../../ui/theme";
+import { CleaningIcon, cleaningType, usePlanCleanings } from "./Cleanings";
 import { DateField, TimeField } from "../schedule/DateField";
 import { checkPlan, firstVisitHint, type PlanErrors } from "./plan";
 import { PlanRepeat } from "./PlanRepeat";
@@ -52,6 +57,9 @@ export function MaintenancePlans({
   onNotice: (message: string | null) => void;
 }) {
   const [open, setOpen] = useState<Plan | "new" | null>(null);
+  const company = useCompany();
+  const config = useInspectionConfig(company.id);
+  const cleaningsByPlan = usePlanCleanings(company.id);
   const names = new Map(techs.map((t) => [t.id, t.name]));
   const done = (message: string) => {
     setOpen(null);
@@ -100,6 +108,31 @@ export function MaintenancePlans({
                 <T variant="secondary" muted>
                   {detail}
                 </T>
+                {(cleaningsByPlan.get(plan.id) ?? []).map((c) => {
+                  const { name, kind } = cleaningType(
+                    config.componentTypeById.get(c.component_type_id),
+                  );
+                  const due = cleaningCountdown(c.next_due, today);
+                  const age = kind === "filter_replace" ? filterAge(c.last_done_on, today) : null;
+                  return (
+                    <View key={c.id} style={styles.cleaning}>
+                      <View style={styles.cleaningIcon}>
+                        <CleaningIcon kind={kind} size={16} tone={color.textMuted} />
+                      </View>
+                      <Text
+                        style={[type.secondary, styles.cleaningText, { color: color.textMuted }]}
+                        maxFontSizeMultiplier={MAX_TEXT_SCALE}
+                      >
+                        {cleaningSummary(name, c)} ·{" "}
+                        <Text style={due.soon ? [face.semiBold, { color: color.warning }] : null}>
+                          {due.label}
+                        </Text>
+                        {due.days > 0 ? ` (${formatDay(c.next_due)})` : ""}
+                        {age ? ` · ${age}` : ""}
+                      </Text>
+                    </View>
+                  );
+                })}
                 {plan.notes ? (
                   <T variant="secondary" muted>
                     {plan.notes}
@@ -304,3 +337,9 @@ function PlanSheet({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  cleaning: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
+  cleaningIcon: { marginTop: 2 },
+  cleaningText: { flex: 1 },
+});
