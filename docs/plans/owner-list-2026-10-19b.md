@@ -91,3 +91,12 @@ Each item: what changes, the data, and the wording. Built in this order, one com
 - `diagram_layout` keeps its shape; `parseDiagramLayout` accepts `drawing`, `landmarks`, and
   `spa.r`, and drops anything else. Older app builds ignore the new keys.
 - New endpoint `POST /api/feature-requests`.
+
+## Status
+
+- **Website and core:** every item built and committed (commits `8bd3daf` to `e9427d1`).
+  Checked on a local build against the dev project: a visit's Checklist (the Chemical
+  dropdown with What to Add, Edit with Remove), and the Pool Shape sheet (ten tiles, Draw,
+  landmarks, the square spa resized, the Clear confirm). The price book switch is now "Show
+  when booking a repair" ("On the repair menu"), since When They Call was renamed.
+- **Apps:** see the commits prefixed "Swift:" and "Expo:".
