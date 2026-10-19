@@ -1,7 +1,14 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { JOB_SERVER_STATUSES, JOB_STATUS_TRANSITIONS, JOB_STATUSES, userTransitions } from "../src";
+import {
+  JOB_SERVER_STATUSES,
+  JOB_STATUS_TRANSITIONS,
+  JOB_STATUSES,
+  jobActionLabel,
+  jobFeeLabel,
+  userTransitions,
+} from "../src";
 
 const dir = join(import.meta.dirname, "../../../supabase/migrations");
 const migration = readFileSync(join(dir, "20261012000300_jobs.sql"), "utf8");
@@ -59,5 +66,27 @@ describe("job status machine", () => {
       "done",
     ]);
     expect(userTransitions("done", "maintenance")).toEqual(["in_progress"]);
+  });
+});
+
+describe("jobActionLabel", () => {
+  it("names each move the way the owner reads it", () => {
+    expect(jobActionLabel("scheduled", "unscheduled")).toBe("Unschedule");
+    expect(jobActionLabel("canceled", "unscheduled")).toBe("Reopen Job");
+    expect(jobActionLabel("done", "in_progress")).toBe("Reopen Visit");
+    expect(jobActionLabel("scheduled", "in_progress")).toBe("Start Job");
+    expect(jobActionLabel("in_progress", "scheduled")).toBe("Move Back to Scheduled");
+    expect(jobActionLabel("scheduled", "canceled")).toBe("Cancel Job");
+    expect(jobActionLabel("in_progress", "done")).toBe("Mark Done");
+    expect(jobActionLabel("in_progress", "report_sent")).toBe("Report sent");
+  });
+});
+
+describe("jobFeeLabel", () => {
+  it("is a detection fee only on leak detection", () => {
+    expect(jobFeeLabel("detection")).toBe("Detection fee");
+    expect(jobFeeLabel("repair")).toBe("Price");
+    expect(jobFeeLabel("maintenance")).toBe("Price");
+    expect(jobFeeLabel(null)).toBe("Price");
   });
 });

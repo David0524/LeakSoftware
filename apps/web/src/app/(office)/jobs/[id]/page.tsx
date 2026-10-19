@@ -30,6 +30,7 @@ import {
   type Media,
   seesAllJobs,
   dateFormat,
+  jobFeeLabel,
 } from "@leakbook/core";
 import { CustomerLinks } from "@/components/customer-links";
 import { DiagramPanel } from "@/components/diagram-work";
@@ -242,7 +243,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                       {job.secondTechName ? <Row label="With" value={job.secondTechName} /> : null}
                       {job.fee_cents != null ? (
                         <Row
-                          label="Detection fee"
+                          label={jobFeeLabel(job.type)}
                           value={<span className="tabular-nums">{formatCents(job.fee_cents)}</span>}
                         />
                       ) : null}
@@ -275,6 +276,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                     </h2>
                     <JobDetailsForm
                       jobId={job.id}
+                      jobType={job.type}
                       fee={job.fee_cents ?? null}
                       locationMarked={job.location_marked ?? false}
                       notes={job.summary_notes ?? ""}

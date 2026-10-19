@@ -90,6 +90,14 @@ export const offersPool = (settings: unknown) => companyServices(settings) !== "
 export type JobType = "detection" | "repair" | "maintenance";
 
 /**
+ * What the job's price is called (owner, 2026-10-19): a detection fee on leak detection, a
+ * price on repairs and visits.
+ */
+export function jobFeeLabel(type: JobType | string | null | undefined): string {
+  return type === "detection" ? "Detection fee" : "Price";
+}
+
+/**
  * The jobs New Job offers: the package's own (Leak Detection, Pool Service, or both), then
  * Repair, which every shop gets (owner, 2026-10-18).
  */

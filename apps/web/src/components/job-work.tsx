@@ -12,7 +12,8 @@ import {
 import {
   CHECKLIST_SECTION_LABELS,
   FINDING_STATUS_LABELS,
-  JOB_STATUS_LABELS,
+  jobActionLabel,
+  jobFeeLabel,
   calculate,
   currentVerdict,
   normalizeTestData,
@@ -87,14 +88,6 @@ function ErrorText({ error }: { error: string | null }) {
 // Status and job details
 // ---------------------------------------------------------------------------
 
-const ACTION_LABELS: Partial<Record<JobStatus, string>> = {
-  in_progress: "Start Job",
-  scheduled: "Move Back to Scheduled",
-  unscheduled: "Reopen Job",
-  canceled: "Cancel Job",
-  done: "Mark Done",
-};
-
 export function JobStatusActions({
   jobId,
   status,
@@ -136,7 +129,7 @@ export function JobStatusActions({
               run(changeJobStatus, { job: jobId, to });
             }}
           >
-            {ACTION_LABELS[to] ?? JOB_STATUS_LABELS[to]}
+            {jobActionLabel(status, to)}
           </Button>
         ))}
       </div>
@@ -154,23 +147,29 @@ const ROW_INPUT =
 /** On Site, as an iOS grouped form: label left and the control right, notes full width. */
 export function JobDetailsForm({
   jobId,
+  jobType,
   fee,
   locationMarked,
   notes,
 }: {
   jobId: string;
+  jobType: string;
   fee: number | null;
   locationMarked: boolean;
   notes: string;
 }) {
+  // Only leak detection marks a leak's location (owner, 2026-10-19: no leak checkbox on
+  // maintenance visits) and calls its price a detection fee.
+  const detection = jobType === "detection";
   return (
     <SettingsForm action={saveJobDetails} submit="Save">
       <input type="hidden" name="job" value={jobId} />
+      {detection ? <input type="hidden" name="detection" value="1" /> : null}
       <div>
         <ul className="grouped">
           <li className="flex min-h-11 items-center gap-3 px-4 py-1.5">
             <label htmlFor="job-fee" className="min-w-0 flex-1">
-              Detection fee
+              {jobFeeLabel(jobType)}
             </label>
             <span aria-hidden="true" className="text-text-muted">
               $
@@ -185,13 +184,15 @@ export function JobDetailsForm({
               className={cx(ROW_INPUT, "min-h-11 w-28 text-right tabular-nums")}
             />
           </li>
-          <li className="px-4">
-            <Checkbox
-              name="location_marked"
-              label="Leak location marked"
-              defaultChecked={locationMarked}
-            />
-          </li>
+          {detection ? (
+            <li className="px-4">
+              <Checkbox
+                name="location_marked"
+                label="Leak location marked"
+                defaultChecked={locationMarked}
+              />
+            </li>
+          ) : null}
           <li className="px-4 pt-2.5 pb-3">
             <label htmlFor="job-notes" className="block text-[0.9375rem] text-text-muted">
               Job notes
@@ -206,7 +207,7 @@ export function JobDetailsForm({
           </li>
         </ul>
         <p id="job-fee-note" className="mt-2 px-4 text-[0.8125rem] text-text-muted">
-          The detection fee is shown on the report.
+          {detection ? "The detection fee is shown on the report." : "Billed on the invoice."}
         </p>
         <div className="px-4">
           <FieldError name="fee" />

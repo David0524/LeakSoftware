@@ -46,7 +46,7 @@ function done(jobId: string, message = "Saved."): FormState {
 }
 
 // ---------------------------------------------------------------------------
-// Job status (Start Job, Move Back to Scheduled, Reopen Job, Cancel Job)
+// Job status (Start Job, Move Back to Scheduled, Unschedule, Reopen Job, Cancel Job)
 // ---------------------------------------------------------------------------
 
 export async function changeJobStatus(_: FormState, form: FormData): Promise<FormState> {
@@ -78,7 +78,10 @@ export async function changeJobStatus(_: FormState, form: FormData): Promise<For
   return done(jobId, "Updated.");
 }
 
-/** Detection fee, "Leak location marked", and the job notes, as on the phone's job screen. */
+/**
+ * The job's price, "Leak location marked" (leak detection only: the form leaves it out on
+ * other jobs, so it's kept as is), and the job notes, as on the phone's job screen.
+ */
 export async function saveJobDetails(_: FormState, form: FormData): Promise<FormState> {
   const { office, db } = await ctx();
   const jobId = text(form, "job");
@@ -89,7 +92,9 @@ export async function saveJobDetails(_: FormState, form: FormData): Promise<Form
     .from("job")
     .update({
       fee_cents: feeCents,
-      location_marked: form.get("location_marked") === "on",
+      ...(form.get("detection") === "1"
+        ? { location_marked: form.get("location_marked") === "on" }
+        : {}),
       summary_notes: text(form, "notes") || null,
     })
     .eq("id", jobId)
