@@ -9,6 +9,10 @@
         case settings
         /// A checklist item's screen: its answer, notes, tests and findings.
         case component(jobId: String, componentId: String)
+        /// A signature on the job; with a quote, the customer accepting it on site.
+        case signature(jobId: String, quoteId: String?)
+        /// The end of the visit: the customer reviews the work and signs off the report.
+        case review(jobId: String)
     }
 
     /// The editors that open as sheets over the job (S4).
@@ -41,6 +45,8 @@
                             SettingsView(showWelcome: { showWelcome = true }, showReauth: { showReauth = true })
                         case .component(let jobId, let componentId):
                             ComponentScreen(jobId: jobId, componentId: componentId)
+                        case .signature(let jobId, let quoteId): SignatureScreen(jobId: jobId, quoteId: quoteId)
+                        case .review(let jobId): ReviewScreen(jobId: jobId)
                         }
                     }
             }

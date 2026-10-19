@@ -20,6 +20,11 @@ public let unsignedCustomerAway = "Customer not present"
 public struct SignaturePurposeOption: Codable, Equatable, Sendable {
     public let value: SignaturePurpose
     public let label: String
+
+    public init(value: SignaturePurpose, label: String) {
+        self.value = value
+        self.label = label
+    }
 }
 
 /// The purposes the shop turned on in settings, in a fixed order. Quote acceptance is signed
