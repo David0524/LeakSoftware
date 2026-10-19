@@ -27,14 +27,14 @@
                         .opacity(recorder.isRecording ? 1 : 0.3)
                         .accessibilityHidden(true)
                     Text(formatDuration(recorder.durationMs))
-                        .font(.title3.weight(.semibold).monospacedDigit())
+                        .font(.role(.cardTitle)).monospacedDigit().foregroundStyle(Color.text)
                     Text(VoiceNoteRules.status(recording: recorder.isRecording))
-                        .font(.subheadline).foregroundStyle(Color.muted)
+                        .textRole(.secondary).foregroundStyle(Color.textMuted)
                     Spacer()
                 }
                 .accessibilityElement(children: .combine)
                 .frame(minHeight: minTarget)
-                Text(VoiceNoteRules.hint).font(.subheadline).foregroundStyle(Color.muted)
+                Text(VoiceNoteRules.hint).textRole(.secondary).foregroundStyle(Color.textMuted)
                 HStack(spacing: 12) {
                     Button("Discard") { discard() }
                         .buttonStyle(.secondary)

@@ -186,7 +186,8 @@ private struct Inspection {
         var form = TestForm(type: s.type("tt-pressure"), existing: nil, componentId: "jc1", component: component)
         #expect(form.values["line_name"] == "Return 3")
         #expect(form.componentId == "jc1")
-        #expect(form.discardTitle == "Discard this test?")
+        #expect(form.discardTitle == "Discard changes?")
+        #expect(form.sheetTitle == "Add Test" && form.submitTitle == "Add Test")
         #expect(!form.isDirty)
         form.values.merge(["start_psi": "20", "end_psi": "20", "duration_min": "15"]) { $1 }
         form.notes = "  Held fine  "
@@ -203,12 +204,30 @@ private struct Inspection {
         #expect(row["computed"]?["drop_psi"] == .number(0))
         #expect(row["performed_at"]?.string != nil)
 
-        let rows = testRows(s.insp, s.config)
-        #expect(
-            rows == [
-                TestRowItem(
-                    id: id, title: "Pressure test · Return 3", detail: "Held at 20 PSI in 15 min", outcome: .pass)
-            ])
+        // The row as the website lists it: name, item and time, the calculation, notes, outcome.
+        let rows = testRows(s.insp, s.config, now: Date(), timeZone: "America/Phoenix")
+        let test = try #require(rows.first)
+        #expect(rows.count == 1 && test.id == id && test.name == "Pressure test")
+        #expect(test.meta?.hasPrefix("Return 3 · ") == true)
+        #expect(test.summary == "Held at 20 PSI in 15 min")
+        #expect(test.fields.isEmpty)
+        #expect(test.notes == "Held fine")
+        #expect(test.outcome == .pass)
+    }
+
+    @Test func resultFollowsTheCalculationAndAnotherTestTypeClearsTheForm() throws {
+        let s = try Inspection()
+        var form = TestForm(type: s.type("tt-pressure"), existing: nil, componentId: "jc1", component: nil)
+        #expect(form.resultChoices == [nil, .pass, .fail, .inconclusive])
+        #expect(form.resultLabel(nil) == "Not decided")
+        form.values = ["line_name": "Return 1", "start_psi": "20", "end_psi": "12", "duration_min": "15"]
+        #expect(form.resultLabel(nil) == "Use the calculation (Fail)")
+        #expect(form.resultLabel(.inconclusive) == "Unclear")
+        form.chosenOutcome = .pass
+        form.changeType(s.type("tt-dye"))
+        #expect(form.type.id == "tt-dye" && form.values.isEmpty && form.chosenOutcome == nil)
+        #expect(form.componentId == "jc1")
+        #expect(form.isDirty)
     }
 
     @Test func anInvalidFormSavesNothing() throws {
@@ -227,14 +246,21 @@ private struct Inspection {
         let saved2 = try first.save(s.sync, companyId: "c1", jobId: "j1", existing: nil)
         let id = try #require(saved2)
         let performedAt = try s.store.get("test_result", id)?["performed_at"]
-        #expect(testRows(s.insp, s.config).first?.title == "Dye test · Skimmer")
-        #expect(testRows(s.insp, s.config).first?.detail == "No draw")
+        // A test without a calculator lists its recorded fields.
+        let listed = try #require(testRows(s.insp, s.config, now: Date(), timeZone: "America/Phoenix").first)
+        #expect(listed.name == "Dye test" && listed.summary == nil)
+        #expect(
+            listed.fields == [
+                .init(label: "Location", value: "Skimmer"), .init(label: "Result", value: "No draw"),
+            ])
 
         let existing = try #require(s.insp.tests.first)
         var form = TestForm(type: s.type("tt-dye"), existing: existing, componentId: nil, component: nil)
         #expect(form.values == ["location": "Skimmer", "observation": "No draw", "notes": ""])
         #expect(form.chosenOutcome == .pass)
-        #expect(form.discardTitle == "Discard your changes?")
+        #expect(form.discardTitle == "Discard changes?")
+        #expect(form.sheetTitle == "Edit Dye test" && form.submitTitle == "Save Test")
+        #expect(form.deleteTitle == "Delete this dye test?")
         form.values["observation"] = "Dye drawn in (leak)"
         form.chosenOutcome = .fail
         form.componentId = "jc1"
@@ -257,7 +283,7 @@ private struct Inspection {
         let id = try #require(saved3)
         try InspectionWrites.delete(s.sync, table: "test_result", id: id, companyId: "c1")
         #expect(s.insp.tests.isEmpty)
-        #expect(testRows(s.insp, s.config).isEmpty)
+        #expect(testRows(s.insp, s.config, now: Date(), timeZone: "America/Phoenix").isEmpty)
         #expect(try s.store.get("test_result", id)?["deleted_at"]?.string != nil)
     }
 }
@@ -279,15 +305,17 @@ private struct Inspection {
     @Test func aNewFindingSavesWithARoundedPin() throws {
         let s = try Inspection()
         var form = FindingForm(existing: nil, componentId: "jc1")
-        #expect(form.navigationTitle == "New Finding")
-        #expect(!form.showsStatus)
+        #expect(form.navigationTitle == "Add Finding" && form.submitTitle == "Add Finding")
+        // Status shows on a new finding too, as on the website.
+        #expect(form.showsStatus && form.status == .open)
         #expect(form.pinHint == "Tap where the leak is.")
+        #expect(form.pinStatus == "No pin yet.")
         form.title = "  Return 3 line break "
         form.severity = "major"
         form.location = " Deep end "
         form.place(x: 0.123456, y: 1.4)
         #expect(form.pin == DiagramPoint(x: 0.1235, y: 1))
-        #expect(form.pinHint == "Tap again to move the pin.")
+        #expect(form.pinStatus == "Pin placed.")
         let saved4 = try form.save(s.sync, companyId: "c1", jobId: "j1", existing: nil)
         let id = try #require(saved4)
         let row = try #require(try s.store.get("finding", id))
@@ -303,7 +331,8 @@ private struct Inspection {
         #expect(
             findingRows(s.insp, s.config) == [
                 FindingRowItem(
-                    id: id, number: 1, title: "Return 3 line break", subtitle: "Major · Return 3 · Deep end",
+                    id: id, number: 1, title: "Return 3 line break",
+                    subtitle: "Major · Return 3 · Open · Pinned on the diagram", location: "Deep end", notes: nil,
                     color: "#C62F2B")
             ])
         #expect(
@@ -312,7 +341,7 @@ private struct Inspection {
             ])
     }
 
-    @Test func aFindingWithoutAPinSaysNotPinned() throws {
+    @Test func aFindingWithoutAPinLeavesThePinOut() throws {
         let s = try Inspection()
         var form = FindingForm(existing: nil, componentId: nil)
         form.title = "Cracked skimmer throat"
@@ -322,12 +351,12 @@ private struct Inspection {
         let row = try #require(try s.store.get("finding", id))
         #expect(row["pin_x"] == .null)
         #expect(row["pin_y"] == .null)
-        #expect(findingRows(s.insp, s.config).first?.subtitle == "Minor · Not pinned")
+        #expect(findingRows(s.insp, s.config).first?.subtitle == "Minor · Open")
         #expect(findingPins(s.insp, s.config).isEmpty)
         #expect(pinSummary([]) == "No pins")
     }
 
-    @Test func statusIsEditedOnExistingFindingsOnlyAndOtherPinsAreGrey() throws {
+    @Test func theEditorShowsOnlyThisFindingsPinAndSavesItsStatus() throws {
         let s = try Inspection()
         var a = FindingForm(existing: nil, componentId: nil)
         a.title = "First"
@@ -345,18 +374,19 @@ private struct Inspection {
         let existing = try #require(s.insp.findings.first { $0.id == second })
         var form = FindingForm(existing: existing, componentId: nil)
         #expect(form.showsStatus)
-        #expect(form.navigationTitle == "Finding")
-        #expect(form.discardTitle == "Discard your changes?")
-        #expect(findingStatusChoices.map(\.label) == ["Open", "Monitor", "Quoted", "Repaired"])
-        let pins = editorPins(s.insp, s.config, form: form)
+        #expect(form.navigationTitle == "Edit Finding" && form.submitTitle == "Save Finding")
+        #expect(form.discardTitle == "Discard changes?")
+        #expect(form.deleteTitle == "Delete “Second”?")
+        #expect(findingStatusChoices.map(\.label) == ["Open", "Quoted", "Repaired", "Monitor"])
+        let pins = editorPins(s.config, form: form)
         #expect(
             pins == [
-                DiagramPin(id: first, point: DiagramPoint(x: 0.2, y: 0.3), tint: .other, label: ""),
                 DiagramPin(
-                    id: "this", point: DiagramPoint(x: 0.6, y: 0.5), tint: .severity("#C62F2B"), label: "!",
-                    active: true),
+                    id: "this", point: DiagramPoint(x: 0.6, y: 0.5), tint: .severity("#C62F2B"), label: "",
+                    active: true)
             ])
-        #expect(pinSummary(pins) == "Another finding’s pin, This finding’s pin")
+        #expect(pinSummary(pins) == "This finding’s pin")
+        #expect(pinSummary(findingPins(s.insp, s.config)) == "Pin 1, Pin 2")
         form.status = .repaired
         form.pin = nil
         #expect(form.isDirty)
@@ -396,6 +426,10 @@ private struct Inspection {
         try InspectionWrites.setDiagramShape(s.sync, propertyId: "p1", companyId: "c1", shape: cleared)
         #expect(try s.store.get("property", "p1")?["diagram_shape"] == .null)
         #expect(shapeAfterTap(current: .kidney, tapped: .oval) == .oval)
+        #expect(shapeNotPickedHint == "Pick one so the diagram matches the pool.")
+        // "Has a spa" saves at once too.
+        try InspectionWrites.setHasSpa(s.sync, propertyId: "p1", companyId: "c1", hasSpa: false)
+        #expect(try s.store.get("property", "p1")?["has_spa"] == false)
     }
 
     @Test func everyOutlineParses() {

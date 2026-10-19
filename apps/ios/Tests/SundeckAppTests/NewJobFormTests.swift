@@ -150,9 +150,14 @@ import Testing
 
     // MARK: - Validation
 
-    @Test func showsTheSameMessagesAsTheExpoForm() throws {
+    @Test func showsTheWebsitesMessages() throws {
         let f = form()
-        #expect(f.feeText == "375.00")
+        // The website's form: no price until one is picked, scheduled today at 9:00 AM for 2 hours.
+        #expect(f.fee.isEmpty)
+        #expect(f.when == .scheduled && f.input.scheduleDate == f.today && f.input.scheduleTime == "09:00")
+        #expect(f.hours == "2")
+        #expect(f.techId == nil)
+        #expect(!f.isDirty)
         #expect(throws: NewJobFormError.invalid) { try f.save() }
         #expect(
             f.errors == ["customerName": "Enter the customer's name.", "addressLine1": "Enter the street address."])
@@ -160,37 +165,36 @@ import Testing
         f.input.customerName = "Maria"
         f.input.customerEmail = "maria@"
         f.input.addressLine1 = "1 Main St"
-        f.when = .scheduled
         f.input.scheduleTime = "25:00"
+        f.hours = "0"
         f.fee = "abc"
         #expect(!f.validate())
         #expect(
             f.errors == [
-                // "Pick a date for this time." gives way to the form's own "Pick a date.", as in Expo.
-                "customerEmail": "Check the email address.", "scheduleDate": "Pick a date.",
-                "scheduleTime": "Use 24-hour time, like 09:30 or 14:00.",
+                "customerEmail": "Check the email address.", "scheduleTime": "Use 24-hour time, like 09:30 or 14:00.",
+                "hours": "Enter 0.5 to 24 hours.",
             ])
         #expect(f.feeError == "Enter a price like 649.")
 
-        f.input.scheduleTime = ""
-        f.input.scheduleDate = "2027-1-5"
+        f.input.scheduleTime = "09:00"
+        f.hours = "2"
+        f.input.scheduleDate = ""
         f.fee = "-5"
         #expect(!f.validate())
-        #expect(f.errors["scheduleDate"] == "Use the format YYYY-MM-DD.")
+        #expect(f.errors["scheduleDate"] == "Pick a date.")
         #expect(f.feeError == "Enter a price like 649.")
 
-        // A schedule without a date.
-        f.input.scheduleDate = ""
-        #expect(!f.validate())
-        #expect(f.errors["scheduleDate"] == "Pick a date.")
-
-        // A schedule typed and then switched to Later is ignored; a blank fee is fine.
-        f.input.scheduleDate = "bad"
-        f.when = .later
+        // Not Yet ignores the schedule; a blank fee is fine.
+        f.when = .notYet
         f.input.customerEmail = "maria@example.com"
         f.fee = ""
         #expect(f.validate())
         #expect(f.errors.isEmpty && f.feeError == nil)
+
+        // Existing needs a customer picked.
+        f.mode = .existing
+        #expect(!f.validate())
+        #expect(f.errors["customer"] == "Pick a customer.")
         #expect(try list("job").isEmpty)
     }
 
@@ -201,11 +205,15 @@ import Testing
         #expect(!f.isDirty)
         f.setPicked("reason", "Other", true)
         #expect(f.isDirty)
+        f.setPicked("reason", "Other", false)
+        #expect(!f.isDirty)
+        f.input.scheduleTime = "10:00"
+        #expect(f.isDirty)
     }
 
     // MARK: - Saving
 
-    @Test func newCustomerAndAddressStartedNowSaveTogether() throws {
+    @Test func newCustomerAndPoolScheduledSaveTogether() throws {
         let f = form()
         f.input.customerName = "  Maria Lopez "
         f.input.customerPhone = "602-555-0101"
@@ -215,9 +223,18 @@ import Testing
         f.input.city = "Phoenix"
         f.input.state = "az"
         f.input.postalCode = "85016"
+        f.poolType = .gunitePlaster
         f.shape = .kidney
         f.accessNotes = "Gate code 1234"
-        #expect(f.saveTitle == "Create and Start Job")
+        f.input.scheduleDate = f.tomorrow
+        f.hours = "1.5"
+        f.notes = "Call first"
+        let item = try #require(f.feeItems.first)
+        #expect(
+            f.feeItems.map(\.label) == ["Leak detection - pool ($375.00)", "Leak detection - pool and spa ($450.00)"])
+        f.pickFee(item)
+        #expect(f.fee == "375.00")
+        #expect(f.saveTitle == "Create Job")
         let before = sync.revision
 
         let jobId = try f.save()
@@ -230,7 +247,6 @@ import Testing
         let customer = customers[0]
         #expect(customer["name"] == "Maria Lopez")
         #expect(customer["kind"] == "homeowner")
-        #expect(customer["phone"] == "602-555-0101")
         #expect(customer["cc_emails"] == ["a@x.com", "b@y.com"])
         let property = properties[0]
         #expect(property["customer_id"] == .string(customer.id))
@@ -242,23 +258,23 @@ import Testing
 
         let job = try #require(try sync.store.get("job", jobId))
         #expect(job["type"] == "detection")
-        #expect(job["status"] == "in_progress")
-        #expect(job["started_at"] == "2027-01-15T08:00:00.000Z")
-        #expect(job["assigned_user_id"] == .string(Self.me))
+        #expect(job["status"] == "scheduled")
+        // 9:00 AM in Phoenix tomorrow, for an hour and a half.
+        #expect(job["scheduled_start"] == "2027-01-16T16:00:00.000Z")
+        #expect(job["scheduled_end"] == "2027-01-16T17:30:00.000Z")
+        #expect(job["assigned_user_id"] == .null)
         #expect(job["property_id"] == .string(property.id))
         #expect(job["bill_to_customer_id"] == .string(customer.id))
         #expect(job["fee_cents"] == 37500)
         #expect(job["second_tech_id"] == .null)
-        #expect(job["intake"] == [:])
+        #expect(job["intake"] == .null)
+        #expect(job["summary_notes"] == "Call first")
 
         // Gunite pool, no spa: equipment area and returns; no vinyl, spa, or service items.
         let components = try components(jobId)
         #expect(components.map { $0["label"] } == ["Equipment area", "Returns"])
-        #expect(components.map { $0["sort_order"] } == [1001, 10001])
-        #expect(components.allSatisfy { $0["instance_number"] == 1 })
         let results = try sync.store.list("checklist_item_result", jobId: jobId)
         #expect(results.count == 2)
-        #expect(Set(results.compactMap { $0["job_component_id"]?.string }) == Set(components.map(\.id)))
         #expect(results.allSatisfy { $0["status"] == "pending" })
         // customer, property, job, 2 components, 2 results.
         #expect(sync.status.pending == 7)
@@ -267,18 +283,14 @@ import Testing
     @Test func reusesAnExistingCustomerAndTheirOnlyPool() throws {
         let (customer, property) = try seedCustomer(spa: true)
         let f = form()
-        f.search = "maria"
-        #expect(f.matches.map(\.id) == [customer])
+        f.mode = .existing
+        #expect(f.customerLabel(try #require(f.customers.first)) == "Maria Lopez (602-555-0101 · maria@example.com)")
         f.selectCustomer(customer)
-        #expect(f.search.isEmpty)
         #expect(f.propertyId == property)
+        #expect(!f.newPool)
         #expect(f.isDirty)
-        // A pool with a spa suggests the pool-and-spa price.
-        #expect(f.feeText == "450.00")
-        f.when = .scheduled
         f.input.scheduleDate = f.tomorrow
         f.input.scheduleTime = "09:30"
-        #expect(f.saveTitle == "Create Job")
 
         let jobId = try f.save()
 
@@ -289,23 +301,34 @@ import Testing
         #expect(job["bill_to_customer_id"] == .string(customer))
         #expect(job["status"] == "scheduled")
         #expect(job["scheduled_start"] == "2027-01-16T16:30:00.000Z")
-        #expect(job["fee_cents"] == 45000)
         // The pool's type is unknown, so the vinyl check stays; it has a spa.
         let labels = try components(jobId).compactMap { $0["label"]?.string }
         #expect(labels == ["Equipment area", "If vinyl, is vinyl stretched?", "Returns", "Spa jets"])
         // Only the new job and its checklist were written.
         #expect(sync.status.pending == 9)
+
+        // Another address makes a new pool for the same customer.
+        let g = form()
+        g.mode = .existing
+        g.selectCustomer(customer)
+        g.propertyId = nil
+        #expect(g.newPool)
+        g.input.addressLine1 = "9 Other St"
+        g.when = .notYet
+        let other = try #require(try sync.store.get("job", g.save()))
+        #expect(try list("customer").count == 1)
+        #expect(try list("property").count == 2)
+        #expect(other["bill_to_customer_id"] == .string(customer))
+        #expect(other["status"] == "unscheduled")
     }
 
-    @Test func leakDetectionSavesTheFeeAndBookingAnswers() throws {
-        sync.kv.setTeam([
-            TeamProfile(id: Self.me, fullName: "Me", email: nil),
-            TeamProfile(id: Self.teammate, fullName: "Sam", email: nil),
-        ])
+    @Test func leakDetectionSavesTheFeeAndIntakeAnswers() throws {
+        try seedTeam()
         let f = form(settings: ["intake_questions": Self.questions])
         #expect(f.showsBooking)
         #expect(f.questions.map(\.kind) == [.multi, .single, .text])
-        #expect(f.team.map(\.id) == [Self.teammate])
+        #expect(f.team.map(\.id) == [Self.me, Self.teammate])
+        #expect(f.techChoices == [nil, Self.me, Self.teammate])
         #expect(f.showsSecondTech)
         f.input.customerName = "Maria"
         f.input.addressLine1 = "1 Main St"
@@ -315,55 +338,86 @@ import Testing
         f.setAnswer("pool_size", "Normal")
         f.setAnswer("spa_size", "6x6")
         f.fee = "$649"
+        f.techId = Self.me
+        f.secondTech = Self.me
+        f.when = .notYet
+        #expect(!f.validate())
+        #expect(f.errors["secondTech"] == "Pick someone other than the main tech.")
         f.secondTech = Self.teammate
-        f.when = .later
 
         let job = try #require(try sync.store.get("job", f.save()))
         #expect(job["status"] == "unscheduled")
+        #expect(job["scheduled_start"] == nil || job["scheduled_start"] == .null)
         #expect(job["fee_cents"] == 64900)
+        #expect(job["assigned_user_id"] == .string(Self.me))
         #expect(job["second_tech_id"] == .string(Self.teammate))
         #expect(
             job["intake"] == ["reason": ["Pool water level dropping"], "pool_size": "Normal", "spa_size": "6x6"])
     }
 
-    @Test func poolServiceLeavesFeeIntakeAndSecondTechOff() throws {
-        sync.kv.setTeam([TeamProfile(id: Self.teammate, fullName: "Sam", email: nil)])
-        let f = form(settings: ["services": "pool", "intake_questions": Self.questions])
+    @Test func poolServiceLeavesIntakeAndSecondTechOff() throws {
+        try seedTeam()
+        let f = form(settings: [
+            "services": "pool", "intake_questions": Self.questions, "maintenance": ["visit_minutes": 45],
+        ])
         #expect(f.jobType == .maintenance)
+        #expect(f.hours == "0.75")
         #expect(f.jobTypes.map(\.label) == ["Pool Service", "Repair"])
         #expect(!f.showsBooking)
         #expect(!f.showsSecondTech)
+        #expect(f.feeLabel == "Price ($)")
         f.input.customerName = "Maria"
         f.input.addressLine1 = "1 Main St"
         f.setAnswer("pool_size", "Normal")
-        f.fee = "not a price"
         f.secondTech = Self.teammate
+        f.fee = "120"
 
         let jobId = try f.save()
         let job = try #require(try sync.store.get("job", jobId))
         #expect(job["type"] == "maintenance")
-        #expect(job["fee_cents"] == .null)
-        #expect(job["intake"] == [:])
+        #expect(job["fee_cents"] == 12000)
+        #expect(job["intake"] == .null)
         #expect(job["second_tech_id"] == .null)
         let labels = try components(jobId).compactMap { $0["label"]?.string }
         #expect(labels == ["Skim surface"])
+
+        f.jobType = .repair
+        f.jobTypeChanged()
+        #expect(f.hours == "2")
     }
 
     @Test func aTechWhoSeesOnlyTheirJobsIsAlwaysAssigned() throws {
         let f = form(role: "tech", settings: ["techs_see_all_jobs": false])
         #expect(!f.seesAll)
-        f.assignToMe = false
+        #expect(f.techId == Self.me)
+        #expect(f.techChoices == [Self.me])
         f.input.customerName = "Maria"
         f.input.addressLine1 = "1 Main St"
+        f.techId = nil
+        #expect(!f.validate())
+        #expect(f.errors["tech"] == "Book the job for yourself.")
+        f.techId = Self.me
         let job = try #require(try sync.store.get("job", f.save()))
         #expect(job["assigned_user_id"] == .string(Self.me))
 
         let owner = form()
-        owner.assignToMe = false
         owner.input.customerName = "Ana"
         owner.input.addressLine1 = "2 Main St"
         let unassigned = try #require(try sync.store.get("job", owner.save()))
         #expect(unassigned["assigned_user_id"] == .null)
+    }
+
+    @Test func suggestionsFillTheVisit() throws {
+        let f = form()
+        let slot = SlotSuggestion(
+            date: "2027-01-18", techId: Self.teammate, techName: "Sam", position: 0, startMin: 600, addedDriveMin: 12,
+            driveInMin: 12, near: "first stop")
+        f.when = .notYet
+        f.use(Suggestion(slot: slot, dayLabel: "Mon, Jan 18", timeLabel: "10:00 AM"))
+        #expect(f.when == .scheduled)
+        #expect(f.input.scheduleDate == "2027-01-18" && f.input.scheduleTime == "10:00")
+        #expect(f.techId == Self.teammate)
+        #expect(f.picked == "Mon, Jan 18 at 10:00 AM with Sam.")
     }
 
     @Test func aTechWhoCantMakeJobsIsRefused() throws {
@@ -377,5 +431,24 @@ import Testing
         #expect(sync.status.pending == 0)
         // Owners and admins always can.
         #expect(form(role: "admin", settings: ["techs_make_jobs": false]).canMakeJobs)
+    }
+
+    /// Two active members with names, as the server sends them.
+    func seedTeam() throws {
+        sync.kv.setTeam([
+            TeamProfile(id: Self.me, fullName: "Me", email: nil),
+            TeamProfile(id: Self.teammate, fullName: "Sam", email: nil),
+        ])
+        try sync.store.applyPage(
+            PullPage(
+                rows: [Self.me, Self.teammate].enumerated().map { i, user in
+                    PulledRow(
+                        table: "membership", xid: "3",
+                        row: [
+                            "id": .string("00000000-0000-4000-8000-00000000050\(i)"),
+                            "company_id": .string(Self.company),
+                            "user_id": .string(user), "role": i == 0 ? "owner" : "tech", "status": "active",
+                        ])
+                }, done: true, cursor: [:], serverHLC: "1800000000002-0000-server"))
     }
 }

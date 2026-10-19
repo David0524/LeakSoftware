@@ -23,12 +23,29 @@ public struct WebAPI: Sendable {
 
     /// POSTs `body` as JSON with the person's sign-in, and returns the JSON reply.
     public func post(_ path: String, _ body: JSONValue = [:]) async throws -> JSONValue {
-        guard let token = await accessToken() else { throw Failure(description: "Sign in again to continue.") }
         var request = URLRequest(url: baseURL.appendingPathComponent(path))
         request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "authorization")
         request.setValue("application/json", forHTTPHeaderField: "content-type")
         request.httpBody = try JSONEncoder().encode(body)
+        return try await send(request)
+    }
+
+    /// GETs `path` with `query` parameters and the person's sign-in, and returns the JSON reply.
+    public func get(_ path: String, query: [String: String] = [:]) async throws -> JSONValue {
+        var url = baseURL.appendingPathComponent(path)
+        if !query.isEmpty, var parts = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+            parts.queryItems = query.sorted { $0.key < $1.key }.map { URLQueryItem(name: $0.key, value: $0.value) }
+            url = parts.url ?? url
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        return try await send(request)
+    }
+
+    private func send(_ prepared: URLRequest) async throws -> JSONValue {
+        guard let token = await accessToken() else { throw Failure(description: "Sign in again to continue.") }
+        var request = prepared
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "authorization")
         let data: Data
         let response: URLResponse
         do {
@@ -42,5 +59,50 @@ public struct WebAPI: Sendable {
             throw Failure(description: reply["error"]?.string ?? "The server said \(status).")
         }
         return reply
+    }
+}
+
+/// The weather at the shop for Today (GET /api/weather): the website's `Weather`.
+public struct Weather: Decodable, Equatable, Sendable {
+    /// clear, partly, cloudy, rain, storm, snow, fog, wind, dust.
+    public var kind: String
+    public var tempF: Int
+    /// "Mostly Clear"
+    public var conditions: String
+    public var isDaytime: Bool
+    /// Today's high while there's daytime left.
+    public var highF: Int?
+
+    public init(kind: String, tempF: Int, conditions: String, isDaytime: Bool, highF: Int?) {
+        self.kind = kind
+        self.tempF = tempF
+        self.conditions = conditions
+        self.isDaytime = isDaytime
+        self.highF = highF
+    }
+
+    /// From the reply's `weather` (nil when the service didn't answer).
+    public init?(_ reply: JSONValue?) {
+        guard let w = reply, let temp = w["tempF"]?.number, let conditions = w["conditions"]?.string else {
+            return nil
+        }
+        self.init(
+            kind: w["kind"]?.string ?? "cloudy", tempF: Int(temp.rounded()), conditions: conditions,
+            isDaytime: w["isDaytime"]?.bool ?? true, highF: w["highF"]?.number.map { Int($0.rounded()) })
+    }
+
+    /// "Weather: 76°F, Mostly Clear, high 85°"
+    public var accessibilityLabel: String {
+        "Weather: \(tempF)°F, \(conditions)\(highF.map { ", high \($0)°" } ?? "")"
+    }
+}
+
+extension WebAPI {
+    /// The weather for a 5-digit ZIP, or nil when unknown or offline (Today then leaves it out).
+    public func weather(zip: String?) async -> Weather? {
+        guard let zip = zip?.trimmingCharacters(in: .whitespaces), zip.wholeMatch(of: /\d{5}/) != nil else {
+            return nil
+        }
+        return Weather((try? await get("api/weather", query: ["zip": zip]))?["weather"])
     }
 }

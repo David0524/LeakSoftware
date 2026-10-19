@@ -279,3 +279,27 @@ public enum ReviewFinish {
         }
     }
 }
+
+/// A saved signature drawing, read back from its SVG (`signatureSvg`) to show on the Wrap-Up
+/// section: the view box and each stroke's path.
+public struct SignatureDrawing: Equatable, Sendable {
+    /// x, y, width, height.
+    public var viewBox: [Double]
+    /// Each stroke's `d`.
+    public var paths: [String]
+
+    /// The local copy of a signature drawn on this phone: media/signature-{id}.svg.
+    public static func localPath(_ signatureId: String) -> String {
+        "\(MediaFiles.folder)/signature-\(signatureId).svg"
+    }
+}
+
+/// Reads the view box and paths of a signature SVG; nil when it has neither.
+public func parseSignatureSVG(_ svg: String) -> SignatureDrawing? {
+    guard let box = svg.firstMatch(of: /viewBox="([^"]+)"/) else { return nil }
+    let numbers = box.1.split(whereSeparator: { $0 == " " || $0 == "," }).compactMap { Double($0) }
+    guard numbers.count == 4, numbers[2] > 0, numbers[3] > 0 else { return nil }
+    let paths = svg.matches(of: /<path[^>]*\sd="([^"]*)"/).map { String($0.1) }
+    guard !paths.isEmpty else { return nil }
+    return SignatureDrawing(viewBox: numbers, paths: paths)
+}

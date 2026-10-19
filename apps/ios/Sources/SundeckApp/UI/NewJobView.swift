@@ -3,342 +3,336 @@
     import SundeckSync
     import SwiftUI
 
-    /// New Job: a sheet with the customer, booking questions, pool address, and when. Port of
-    /// apps/mobile/src/app/(app)/jobs/new.tsx. The form saves everything in one transaction, offline.
+    /// The pushed New Job (spec 5.5, decision 3), made for the signed-in person's company.
+    struct NewJobRoute: View {
+        var back: String
+        @Environment(Session.self) private var session
+        @Environment(\.replaceRoute) private var replaceRoute
+        @State private var form: NewJobForm?
+
+        var body: some View {
+            Group {
+                if let form {
+                    NewJobView(form: form, back: back) { replaceRoute(.job($0)) }
+                }
+            }
+            .onAppear {
+                if form == nil, let company = session.company, let user = session.user {
+                    form = NewJobForm(sync: session.sync, company: company, userId: user.id)
+                }
+            }
+        }
+    }
+
+    /// New Job as the website's form (apps/web/src/components/new-job-form.tsx): Customer, Pool,
+    /// Visit, and When They Called (or Notes) as cards of outlined fields, then Create Job. Saves
+    /// everything in one transaction, offline. Leaving with entries asks first.
     struct NewJobView: View {
         @Bindable var form: NewJobForm
+        var back = "Jobs"
         var onCreated: (String) -> Void
 
         @Environment(\.dismiss) private var dismiss
+        @Environment(SyncService.self) private var sync
+        @Environment(AppEnvironment.self) private var app
         @State private var confirmingDiscard = false
         @State private var saveProblem: String?
         @State private var saved = 0
+        @State private var suggestions: (list: [Suggestion], note: String?)?
 
         var body: some View {
-            NavigationStack {
-                Group {
-                    if form.canMakeJobs {
-                        fields
-                    } else {
-                        // Owners can stop techs making jobs (owner setting, 2026-10-18).
-                        ScrollView {
-                            Notice(kind: .info, text: NewJobForm.notAllowedMessage).padding(16)
-                        }
+            ScreenScroll(spacing: 16) {
+                PageHeader(subtitle: form.subtitle)
+                if form.canMakeJobs {
+                    customerCard
+                    if form.newPool { poolCard }
+                    visitCard
+                    calledCard
+                    if !form.errors.isEmpty || form.feeError != nil {
+                        Notice(kind: .error, text: "Fix the highlighted fields.")
                     }
+                    Button(form.saveTitle, action: save).buttonStyle(.primary)
+                } else {
+                    // Owners can stop techs making jobs (owner setting, 2026-10-18).
+                    Notice(kind: .info, text: NewJobForm.notAllowedMessage)
                 }
-                .navigationTitle("New Job")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel", action: cancel)
-                            .confirmationDialog(
-                                "Discard this job?", isPresented: $confirmingDiscard, titleVisibility: .visible
-                            ) {
-                                Button("Discard", role: .destructive) { dismiss() }
-                                Button("Keep Editing", role: .cancel) {}
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .onChange(of: form.jobType) { form.jobTypeChanged() }
+            .navigationTitle("New Job")
+            .navigationBarBackButtonHidden(form.isDirty)
+            .toolbar {
+                if form.isDirty {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            confirmingDiscard = true
+                        } label: {
+                            HStack(spacing: 2) {
+                                Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold))
+                                Text(back)
                             }
+                        }
+                        .accessibilityLabel("Back to \(back)")
                     }
                 }
             }
-            // Anything typed? Then a swipe down doesn't close it by accident.
-            .interactiveDismissDisabled(form.isDirty)
+            .confirmationDialog("Discard this new job?", isPresented: $confirmingDiscard, titleVisibility: .visible) {
+                Button("Discard Job", role: .destructive) { dismiss() }
+                Button("Keep Editing", role: .cancel) {}
+            }
             .sensoryFeedback(.success, trigger: saved)
             .alert(
-                "Couldn't Save the Job",
+                "Couldn’t Save the Job",
                 isPresented: Binding(get: { saveProblem != nil }, set: { if !$0 { saveProblem = nil } })
             ) {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(saveProblem ?? "")
             }
-        }
-
-        // MARK: - The form
-
-        private var fields: some View {
-            Form {
-                if form.jobTypes.count > 1 {
-                    Section {
-                        Picker("Job", selection: $form.jobType) {
-                            ForEach(form.jobTypes, id: \.value) { Text($0.label).tag($0.value) }
-                        }
-                        .pickerStyle(.segmented)
-                        .frame(minHeight: minTarget)
-                        .listRowBackground(Color.clear)
-                        .listRowInsets(EdgeInsets())
-                    }
-                }
-                customerSections
-                if form.showsBooking { bookingSection }
-                addressSection
-                whenSection
+            .sheet(
+                isPresented: Binding(get: { suggestions != nil }, set: { if !$0 { suggestions = nil } })
+            ) {
+                suggestionsSheet
             }
-            .scrollDismissesKeyboard(.interactively)
-            .safeAreaInset(edge: .bottom) { saveBar }
         }
 
-        @ViewBuilder private var customerSections: some View {
-            if let customer = form.selectedCustomer {
-                Section("Customer") {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(customer["name"]?.string ?? "Customer").font(.body.weight(.semibold))
-                        if let phone = customer["phone"]?.string, !phone.isEmpty {
-                            Text(phone).font(.subheadline).foregroundStyle(.secondary)
-                        }
-                    }
-                    .frame(minHeight: minTarget, alignment: .leading)
-                    Button("Change Customer") { form.changeCustomer() }
-                        .frame(minHeight: minTarget)
-                }
-            } else {
+        // MARK: - Cards
+
+        private var customerCard: some View {
+            FormCard("Customer") {
                 if !form.customers.isEmpty {
-                    Section("Customer") {
-                        LabeledField("Find an existing customer") {
-                            TextField("Name, phone, or email", text: $form.search)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                        }
-                        ForEach(form.matches, id: \.id) { customer in
-                            Button {
-                                form.selectCustomer(customer.id)
-                            } label: {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(customer["name"]?.string ?? "Customer")
-                                        .font(.body.weight(.semibold)).foregroundStyle(.primary)
-                                    Text(contactLine(customer)).font(.subheadline).foregroundStyle(.secondary)
-                                }
-                                .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
-                                .contentShape(Rectangle())
-                            }
-                            .accessibilityHint("Picks this customer")
-                        }
+                    VStack(alignment: .leading, spacing: 4) {
+                        FieldLabel("Who is it for?")
+                        Segmented(
+                            selection: $form.mode, options: NewJobForm.Mode.allCases, label: \.label,
+                            title: "Who is it for?")
                     }
                 }
-                Section {
-                    LabeledField("Name", error: form.errors["customerName"]) {
-                        TextField("Name", text: $form.input.customerName)
-                            .textContentType(.name)
-                            .textInputAutocapitalization(.words)
+                if form.mode == .existing {
+                    VStack(alignment: .leading, spacing: 4) {
+                        SelectField(
+                            label: "Customer",
+                            selection: Binding(get: { form.customerId }, set: { form.selectCustomer($0) }),
+                            options: [nil] + form.customers.map { Optional($0.id) },
+                            optionLabel: { id in
+                                id.flatMap { id in form.customers.first { $0.id == id } }.map(form.customerLabel)
+                                    ?? "Choose…"
+                            })
+                        if let error = form.errors["customer"] { FieldHint(text: error, error: true) }
                     }
-                    LabeledField("Phone") {
-                        TextField("Phone", text: $form.input.customerPhone)
-                            .keyboardType(.phonePad)
-                            .textContentType(.telephoneNumber)
+                    if form.selectedCustomer != nil {
+                        SelectField(
+                            label: "Pool", selection: $form.propertyId,
+                            options: form.customerProperties.map { Optional($0.id) } + [nil],
+                            optionLabel: { id in
+                                id.flatMap { id in form.properties.first { $0.id == id } }.map { addressText($0) }
+                                    ?? "Another address…"
+                            })
                     }
-                    LabeledField("Email", error: form.errors["customerEmail"]) {
-                        emailField("Email", text: $form.input.customerEmail)
-                    }
-                    LabeledField("Other emails (optional)") {
-                        emailField("Other emails", text: $form.otherEmails)
-                    }
-                } header: {
-                    Text(form.customers.isEmpty ? "Customer" : "Or add a new customer")
-                } footer: {
-                    Text("Other emails get the report too. Separate them with spaces.")
+                } else {
+                    OutlinedField(label: "Name", text: $form.input.customerName, error: form.errors["customerName"])
+                        .textContentType(.name)
+                    OutlinedField(label: "Phone", text: $form.input.customerPhone, keyboard: .phonePad)
+                        .textContentType(.telephoneNumber)
+                    OutlinedField(
+                        label: "Email", text: $form.input.customerEmail, error: form.errors["customerEmail"],
+                        keyboard: .emailAddress
+                    )
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    OutlinedField(
+                        label: "Other emails (optional)", text: $form.otherEmails,
+                        hint: "They get reports too. Separate with spaces.", keyboard: .emailAddress
+                    )
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
                 }
             }
         }
 
-        private var bookingSection: some View {
-            Section {
-                ForEach(form.questions) { question in
-                    switch question.kind {
-                    case .multi:
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text(question.label).font(.subheadline).foregroundStyle(.secondary)
-                                .padding(.top, 8)
-                            ForEach(question.options, id: \.self) { option in
-                                Toggle(
-                                    option,
-                                    isOn: Binding(
-                                        get: { form.isPicked(question.key, option) },
-                                        set: { form.setPicked(question.key, option, $0) })
-                                )
-                                .frame(minHeight: minTarget)
+        private var poolCard: some View {
+            FormCard("Pool") {
+                OutlinedField(
+                    label: "Street address", text: $form.input.addressLine1, error: form.errors["addressLine1"]
+                )
+                .textContentType(.streetAddressLine1)
+                OutlinedField(label: "City", text: $form.input.city).textContentType(.addressCity)
+                HStack(alignment: .top, spacing: 16) {
+                    OutlinedField(label: "State", text: $form.input.state)
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                        .onChange(of: form.input.state) { _, v in
+                            if v.count > 2 { form.input.state = String(v.prefix(2)) }
+                        }
+                    OutlinedField(label: "ZIP", text: $form.input.postalCode, keyboard: .numberPad)
+                        .textContentType(.postalCode)
+                }
+                SelectField(
+                    label: "Pool type", selection: $form.poolType,
+                    options: [nil] + PoolType.allCases.map { Optional($0) },
+                    optionLabel: { $0?.label ?? "Not sure" })
+                SwitchRow("Has a spa", isOn: $form.hasSpa).padding(.horizontal, -16)
+                if !form.isMaintenance {
+                    ShapePicker(
+                        value: form.shape, label: "Pool shape (optional)",
+                        hint: "Leave it blank if you don’t know yet; it can be set on the job’s Findings."
+                    ) { form.shape = $0 }
+                }
+                OutlinedField(
+                    label: "Access notes (optional)", text: $form.accessNotes, hint: "Gate code, dog, where to park.",
+                    multiline: true)
+            }
+        }
+
+        private var visitCard: some View {
+            FormCard("Visit") {
+                if form.jobTypes.count > 1 {
+                    VStack(alignment: .leading, spacing: 4) {
+                        FieldLabel("Job")
+                        Segmented(
+                            selection: $form.jobType, options: form.jobTypes.map(\.value),
+                            label: { t in form.jobTypes.first { $0.value == t }?.label ?? "" }, title: "Job")
+                    }
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    FieldLabel("When")
+                    Segmented(selection: $form.when, options: NewJobForm.When.allCases, label: \.label, title: "When")
+                }
+                if form.when == .scheduled {
+                    if let property = form.selectedProperty, form.mode == .existing {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Button("Suggest Times") { suggest(property) }
+                                .buttonStyle(.quiet)
+                                .padding(.leading, -20)
+                            if let picked = form.picked {
+                                Text("Filled in: \(picked)").textRole(.secondary).foregroundStyle(Color.pass)
                             }
                         }
-                    case .single:
-                        Picker(
-                            question.label,
-                            selection: Binding(
-                                get: { form.answer(question.key) }, set: { form.setAnswer(question.key, $0) })
-                        ) {
-                            Text("Choose").tag("")
-                            ForEach(question.options, id: \.self) { Text($0).tag($0) }
-                        }
-                        .frame(minHeight: minTarget)
-                    case .text:
-                        LabeledField(question.label) {
-                            TextField(
-                                question.label,
+                    }
+                    scheduleRow
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    SelectField(
+                        label: "Tech", selection: $form.techId, options: form.techChoices, optionLabel: form.name)
+                    if let error = form.errors["tech"] { FieldHint(text: error, error: true) }
+                }
+                if form.showsSecondTech {
+                    VStack(alignment: .leading, spacing: 4) {
+                        SelectField(
+                            label: "Second tech (optional)", selection: $form.secondTech,
+                            options: [nil] + form.team.map { Optional($0.id) },
+                            optionLabel: { $0 == nil ? "None" : form.name($0) })
+                        if let error = form.errors["secondTech"] { FieldHint(text: error, error: true) }
+                    }
+                }
+                if form.isLeak && !form.feeItems.isEmpty {
+                    SelectField(
+                        label: "Detection price",
+                        selection: Binding(
+                            get: { form.feeItems.first { dollars($0.cents) == form.fee } },
+                            set: { if let item = $0 { form.pickFee(item) } }),
+                        options: [nil] + form.feeItems.map { Optional($0) },
+                        optionLabel: { $0?.label ?? "Pick from the price book…" })
+                }
+                OutlinedField(
+                    label: form.feeLabel, text: $form.fee, hint: form.feeHint, error: form.feeError,
+                    keyboard: .decimalPad)
+            }
+        }
+
+        /// Date, Start and Hours on one row.
+        private var scheduleRow: some View {
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 4) {
+                    FieldLabel("Date")
+                    DatePicker("Date", selection: dateBinding, displayedComponents: .date)
+                        .labelsHidden()
+                        .environment(\.timeZone, zone)
+                        .tint(Color.link)
+                    if let error = form.errors["scheduleDate"] { FieldHint(text: error, error: true) }
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    FieldLabel("Start")
+                    DatePicker("Start", selection: timeBinding, displayedComponents: .hourAndMinute)
+                        .labelsHidden()
+                        .environment(\.timeZone, zone)
+                        .tint(Color.link)
+                    if let error = form.errors["scheduleTime"] { FieldHint(text: error, error: true) }
+                }
+                OutlinedField(
+                    label: "Hours", text: $form.hours, error: form.errors["hours"], keyboard: .decimalPad, numeric: true
+                )
+                .frame(minWidth: 64)
+            }
+        }
+
+        @ViewBuilder private var calledCard: some View {
+            if form.showsBooking {
+                FormCard("When they called") {
+                    ForEach(form.questions) { question in
+                        switch question.kind {
+                        case .multi:
+                            VStack(alignment: .leading, spacing: 0) {
+                                FieldLabel(question.label)
+                                ForEach(question.options, id: \.self) { option in
+                                    SwitchRow(
+                                        option,
+                                        isOn: Binding(
+                                            get: { form.isPicked(question.key, option) },
+                                            set: { form.setPicked(question.key, option, $0) })
+                                    )
+                                    .padding(.horizontal, -16)
+                                }
+                            }
+                        case .single:
+                            SelectField(
+                                label: question.label,
+                                selection: Binding(
+                                    get: { form.answer(question.key) }, set: { form.setAnswer(question.key, $0) }),
+                                options: [""] + question.options, optionLabel: { $0.isEmpty ? "Not asked" : $0 })
+                        case .text:
+                            OutlinedField(
+                                label: question.label,
                                 text: Binding(
                                     get: { form.answer(question.key) }, set: { form.setAnswer(question.key, $0) }))
                         }
                     }
+                    OutlinedField(label: "Notes for the tech (optional)", text: $form.notes, multiline: true)
                 }
-                LabeledField("Detection fee ($)", error: form.feeError) {
-                    TextField("0.00", text: Binding(get: { form.feeText }, set: { form.fee = $0 }))
-                        .keyboardType(.decimalPad)
+            } else {
+                FormCard("Notes") {
+                    OutlinedField(label: "Notes for the tech (optional)", text: $form.notes, multiline: true)
                 }
-            } header: {
-                Text("Booking")
-            } footer: {
-                Text("The detection fee is shown on the report.")
             }
         }
 
-        private var addressSection: some View {
-            Section {
-                if !form.customerProperties.isEmpty {
-                    Picker("Address", selection: $form.propertyId) {
-                        ForEach(form.customerProperties, id: \.id) { property in
-                            Text(property["address_line1"]?.string ?? "Address").tag(Optional(property.id))
+        private var suggestionsSheet: some View {
+            NavigationStack {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        if let note = suggestions?.note {
+                            Text(note).textRole(.secondary).foregroundStyle(Color.textMuted)
                         }
-                        Text("New address").tag(String?.none)
-                    }
-                    .pickerStyle(.inline)
-                    .labelsHidden()
-                }
-                if let property = form.selectedProperty {
-                    Text(addressText(property))
-                        .font(.subheadline)
-                        .frame(minHeight: minTarget, alignment: .leading)
-                } else {
-                    newAddressFields
-                }
-            } header: {
-                Text("Pool address")
-            } footer: {
-                if form.selectedProperty == nil && form.isLeak {
-                    Text("Leave the pool shape blank if you don’t know yet; set it later on Findings.")
-                }
-            }
-        }
-
-        @ViewBuilder private var newAddressFields: some View {
-            LabeledField("Street address", error: form.errors["addressLine1"]) {
-                TextField("Street address", text: $form.input.addressLine1)
-                    .textContentType(.streetAddressLine1)
-                    .textInputAutocapitalization(.words)
-            }
-            HStack(alignment: .top, spacing: 12) {
-                LabeledField("City") {
-                    TextField("City", text: $form.input.city)
-                        .textContentType(.addressCity)
-                        .textInputAutocapitalization(.words)
-                }
-                .frame(maxWidth: .infinity)
-                Divider()
-                LabeledField("State") {
-                    TextField("AZ", text: $form.input.state)
-                        .textContentType(.addressState)
-                        .textInputAutocapitalization(.characters)
-                        .autocorrectionDisabled()
-                        .onChange(of: form.input.state) { _, value in
-                            if value.count > 2 { form.input.state = String(value.prefix(2)) }
+                        if let list = suggestions?.list, !list.isEmpty {
+                            SuggestionList(suggestions: list) { s in
+                                form.use(s)
+                                suggestions = nil
+                            }
                         }
-                }
-                .frame(width: 72)
-            }
-            LabeledField("ZIP") {
-                TextField("ZIP", text: $form.input.postalCode)
-                    .keyboardType(.numberPad)
-                    .textContentType(.postalCode)
-                    .onChange(of: form.input.postalCode) { _, value in
-                        if value.count > 10 { form.input.postalCode = String(value.prefix(10)) }
                     }
-            }
-            Picker("Pool type", selection: $form.poolType) {
-                ForEach(PoolType.allCases, id: \.self) { Text($0.label).tag($0) }
-            }
-            .frame(minHeight: minTarget)
-            Toggle("Has a spa", isOn: $form.hasSpa)
-                .frame(minHeight: minTarget)
-            if form.isLeak {
-                Picker("Pool shape (optional)", selection: $form.shape) {
-                    Text("Not set").tag(DiagramShape?.none)
-                    ForEach(DiagramShape.allCases, id: \.self) { Text($0.label).tag(Optional($0)) }
+                    .padding(16)
                 }
-                .frame(minHeight: minTarget)
-            }
-            LabeledField("Access notes") {
-                TextField("Gate code, dogs, where to park", text: $form.accessNotes, axis: .vertical)
-                    .lineLimit(2...5)
-            }
-        }
-
-        private var whenSection: some View {
-            Section("When") {
-                Picker("When", selection: $form.when) {
-                    ForEach(NewJobForm.When.allCases, id: \.self) { Text($0.label).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(minHeight: minTarget)
-                if form.when == .scheduled { scheduleFields }
-                // When techs see only their own jobs, a tech's new job is always theirs.
-                if form.seesAll {
-                    Toggle("Assign to me", isOn: $form.assignToMe)
-                        .frame(minHeight: minTarget)
-                }
-                if form.showsSecondTech {
-                    Picker("Second tech", selection: $form.secondTech) {
-                        Text("None").tag(String?.none)
-                        ForEach(form.team) { Text($0.displayName).tag(Optional($0.id)) }
-                    }
-                    .frame(minHeight: minTarget)
+                .background(Color.bg)
+                .navigationTitle("Suggested Times")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) { Button("Close") { suggestions = nil } }
                 }
             }
-        }
-
-        @ViewBuilder private var scheduleFields: some View {
-            Picker("Day", selection: quickDay) {
-                Text("Today").tag(form.today)
-                Text("Tomorrow").tag(form.tomorrow)
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(minHeight: minTarget)
-            VStack(alignment: .leading, spacing: 4) {
-                if let date = dayDate {
-                    DatePicker("Date", selection: dateBinding(date), displayedComponents: .date)
-                        .environment(\.timeZone, zone)
-                        .frame(minHeight: minTarget)
-                } else {
-                    HStack {
-                        Text("Date")
-                        Spacer()
-                        Button("Pick a Date") { form.input.scheduleDate = form.today }
-                            .frame(minHeight: minTarget)
-                    }
-                }
-                if let error = form.errors["scheduleDate"] { ErrorText(error) }
-            }
-            VStack(alignment: .leading, spacing: 4) {
-                DatePicker("Time", selection: timeBinding, displayedComponents: .hourAndMinute)
-                    .environment(\.timeZone, zone)
-                    .frame(minHeight: minTarget)
-                if let error = form.errors["scheduleTime"] { ErrorText(error) }
-            }
-        }
-
-        private var saveBar: some View {
-            VStack(spacing: 8) {
-                if !form.errors.isEmpty { Notice(kind: .error, text: "Fix the highlighted fields.") }
-                Button(form.saveTitle, action: save)
-                    .buttonStyle(.primary)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 8)
-            .background(.bar)
+            .sheetPresentation(detents: [.medium, .large])
         }
 
         // MARK: - Actions
-
-        private func cancel() {
-            if form.isDirty { confirmingDiscard = true } else { dismiss() }
-        }
 
         private func save() {
             do {
@@ -352,110 +346,67 @@
             }
         }
 
-        // MARK: - Helpers
-
-        private func emailField(_ title: String, text: Binding<String>) -> some View {
-            TextField(title, text: text)
-                .keyboardType(.emailAddress)
-                .textContentType(.emailAddress)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-        }
-
-        private func contactLine(_ customer: Row) -> String {
-            let parts = [customer["phone"]?.string, customer["email"]?.string].compactMap { $0 }.filter { !$0.isEmpty }
-            return parts.isEmpty ? "No contact details" : parts.joined(separator: " · ")
-        }
-
-        private func addressText(_ row: Row) -> String {
-            guard let property = try? JSONValue.object(row).decode(Property.self) else {
-                return row["address_line1"]?.string ?? ""
+        /// Suggest Times for the chosen pool, from the routes on this phone.
+        private func suggest(_ property: Row) {
+            let ctx = scheduleContext(sync.store, company: form.company, userId: form.userId)
+            let location: LatLng? = {
+                guard let lat = property["latitude"]?.number, let lng = property["longitude"]?.number else {
+                    return nil
+                }
+                return LatLng(lat: lat, lng: lng)
+            }()
+            let minutes = Double(form.hours).map { Int(($0 * 60).rounded()) } ?? ctx.settings.jobMinutes
+            let team = teamMembers(sync.store, kv: sync.kv, companyId: form.company.id, userId: form.userId)
+            do {
+                let found = try suggestTimes(
+                    location: location, durationMin: minutes, excluding: nil,
+                    jobs: scheduleJobs(sync.store, companyId: form.company.id), ctx: ctx, team: team,
+                    drive: DriveTimes())
+                suggestions = (found.suggestions, found.note)
+            } catch {
+                suggestions = ([], String(describing: error))
             }
-            return formatAddress(property)
         }
 
-        // Dates are stored as YYYY-MM-DD and HH:MM in the shop's time zone.
+        // MARK: - Dates (stored as YYYY-MM-DD and HH:MM in the shop's time zone)
+
+        private func dollars(_ cents: Cents) -> String { String(format: "%d.%02d", cents / 100, cents % 100) }
 
         private var zone: TimeZone { TimeZone(identifier: form.company.timeZone) ?? .current }
 
-        private var calendar: Calendar {
-            var calendar = Calendar(identifier: .gregorian)
-            calendar.timeZone = zone
-            return calendar
-        }
-
-        private var quickDay: Binding<String> {
+        private var dateBinding: Binding<Date> {
             Binding(
-                get: { [form.today, form.tomorrow].contains(form.input.scheduleDate) ? form.input.scheduleDate : "" },
-                set: { form.input.scheduleDate = $0 })
+                get: { zonedInstant(form.input.scheduleDate, 12 * 60, timeZone: form.company.timeZone) ?? Date() },
+                set: { form.input.scheduleDate = localDay($0, timeZone: form.company.timeZone) })
         }
 
-        /// The typed date, if it is one.
-        private var dayDate: Date? {
-            let parts = form.input.scheduleDate.split(separator: "-").compactMap { Int($0) }
-            guard parts.count == 3 else { return nil }
-            return calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12))
-        }
-
-        private func dateBinding(_ current: Date) -> Binding<Date> {
-            Binding(
-                get: { current },
-                set: { date in
-                    let c = calendar.dateComponents([.year, .month, .day], from: date)
-                    form.input.scheduleDate = String(
-                        format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
-                })
-        }
-
-        /// A blank time is 08:00, the time the job gets when none is set.
         private var timeBinding: Binding<Date> {
             Binding(
                 get: {
-                    let parts = form.input.scheduleTime.split(separator: ":").compactMap { Int($0) }
-                    let (hour, minute) = parts.count == 2 ? (parts[0], parts[1]) : (8, 0)
-                    let day = dayDate ?? Date()
-                    return calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day) ?? day
+                    zonedInstant(
+                        form.input.scheduleDate.isEmpty ? form.today : form.input.scheduleDate,
+                        clockToMinutes(form.input.scheduleTime.isEmpty ? "09:00" : form.input.scheduleTime),
+                        timeZone: form.company.timeZone) ?? Date()
                 },
-                set: { date in
-                    let c = calendar.dateComponents([.hour, .minute], from: date)
-                    form.input.scheduleTime = String(format: "%02d:%02d", c.hour ?? 8, c.minute ?? 0)
-                })
+                set: { form.input.scheduleTime = minutesToClock(localMinutes($0, timeZone: form.company.timeZone)) })
         }
     }
 
-    /// A field with its label above and its error below, at least a tap target tall.
-    private struct LabeledField<Content: View>: View {
-        var label: String
-        var error: String?
+    /// A section label over a card of outlined fields 16 apart (the website's form sections).
+    struct FormCard<Content: View>: View {
+        var title: String
         @ViewBuilder var content: Content
 
-        init(_ label: String, error: String? = nil, @ViewBuilder content: () -> Content) {
-            self.label = label
-            self.error = error
+        init(_ title: String, @ViewBuilder content: () -> Content) {
+            self.title = title
             self.content = content()
         }
 
         var body: some View {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(label).font(.subheadline).foregroundStyle(.secondary)
-                content.frame(minHeight: 28)
-                if let error { ErrorText(error) }
+            VStack(alignment: .leading, spacing: 8) {
+                SectionLabel(title)
+                VStack(alignment: .leading, spacing: 16) { content }.card()
             }
-            .padding(.vertical, 4)
-            .frame(minHeight: minTarget)
-            .accessibilityElement(children: .contain)
-        }
-    }
-
-    private struct ErrorText: View {
-        var text: String
-
-        init(_ text: String) { self.text = text }
-
-        var body: some View {
-            Label(text, systemImage: "exclamationmark.circle.fill")
-                .font(.subheadline)
-                .foregroundStyle(Color.fail)
         }
     }
 #endif

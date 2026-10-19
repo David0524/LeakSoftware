@@ -11,18 +11,20 @@
         var strokes: [SignatureStroke]
         var onChange: ([SignatureStroke]) -> Void
         @Binding var drawing: Bool
-        var height: CGFloat = 220
+        var height: CGFloat = 200
 
         @State private var live: SignatureStroke?
 
         var body: some View {
-            VStack(alignment: .trailing, spacing: 4) {
+            VStack(alignment: .leading, spacing: 4) {
                 box
-                Button("Clear") { onChange([]) }
-                    .font(.body.weight(.semibold))
-                    .buttonStyle(.borderless)
-                    .frame(minWidth: minTarget, minHeight: minTarget)
-                    .disabled(strokes.isEmpty)
+                HStack {
+                    Text("Use your finger.").textRole(.secondary).foregroundStyle(Color.textMuted)
+                    Spacer(minLength: 8)
+                    Button("Clear") { onChange([]) }
+                        .buttonStyle(.quiet)
+                        .disabled(strokes.isEmpty)
+                }
             }
         }
 
@@ -30,7 +32,7 @@
             Canvas { context, _ in
                 for stroke in strokes + (live.map { [$0] } ?? []) {
                     context.stroke(
-                        path(stroke), with: .color(.primary),
+                        path(stroke), with: .color(Color(white: 0.07)),
                         style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
                 }
             }
@@ -41,9 +43,12 @@
                 Rectangle().fill(Color.controlBorder).frame(height: 1)
                     .padding(.horizontal, 24).padding(.bottom, 48)
             }
-            .background(Color(Tokens.Role.surface))
+            // White like paper in both appearances, as the saved drawing is shown.
+            .background(Color.white)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.controlBorder, lineWidth: 1))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.controlBorder, lineWidth: 1)
+            )
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .local)

@@ -70,3 +70,170 @@ public func jobWhen(_ view: JobView, now: Date, timeZone: String) -> String {
     if view.status == .inProgress { return "In progress" }
     return (try? formatSchedule(view.job["scheduled_start"]?.string, now, timeZone)) ?? "Not scheduled"
 }
+
+// MARK: - Jobs (spec 5.2)
+
+/// The status filter pills on Jobs, in the website's order.
+public enum JobFilter: String, CaseIterable, Hashable, Sendable {
+    case open, unscheduled, scheduled, inProgress, followUp, paid, done, canceled, all
+
+    public var title: String {
+        switch self {
+        case .open: "Open"
+        case .unscheduled: "Unscheduled"
+        case .scheduled: "Scheduled"
+        case .inProgress: "In Progress"
+        case .followUp: "Waiting on Customer"
+        case .paid: "Paid"
+        case .done: "Done"
+        case .canceled: "Canceled"
+        case .all: "All"
+        }
+    }
+
+    /// The statuses it shows; nil for every job.
+    public var statuses: Set<JobStatus>? {
+        switch self {
+        case .open: [.unscheduled, .scheduled, .inProgress, .reportSent, .quoteSent, .quoteAccepted, .invoiced]
+        case .unscheduled: [.unscheduled]
+        case .scheduled: [.scheduled]
+        case .inProgress: [.inProgress]
+        case .followUp: [.reportSent, .quoteSent, .quoteAccepted, .invoiced]
+        case .paid: [.paid]
+        case .done: [.done]
+        case .canceled: [.canceled]
+        case .all: nil
+        }
+    }
+}
+
+/// "Leak detection", "Repair", "Maintenance" (JOB_TYPE_LABELS).
+public func jobTypeLabel(_ type: JobType) -> String {
+    switch type {
+    case .detection: "Leak detection"
+    case .repair: "Repair"
+    case .maintenance: "Maintenance"
+    }
+}
+
+/// One row of the Jobs list, as the website's phone list draws it.
+public struct JobListRow: Identifiable, Equatable, Sendable {
+    public var id: String
+    public var customer: String
+    /// "#1040 · Leak detection" (or "New job · …").
+    public var kind: String
+    public var address: String?
+    /// "Sun, Oct 11, 9:00 AM · Tony Tech", "Started · Tony Tech", "Not scheduled · Unassigned".
+    public var when: String
+    public var status: JobStatus
+}
+
+/// The Jobs list for a filter and search: deleted jobs left out, a limited tech's own jobs only,
+/// soonest scheduled first (jobs without a time last), then the newest number. The search matches
+/// the customer's name or the job number ("1040", "#1040").
+public func jobList(
+    _ views: [JobView], filter: JobFilter, search: String, now: Date, timeZone: String, userId: String,
+    seesAll: Bool, names: [String: String]
+) -> [JobListRow] {
+    let q = search.trimmingCharacters(in: .whitespaces)
+    let number = q.wholeMatch(of: /#?(\d+)/).flatMap { Int($0.1) }
+    let picked = views.filter { v in
+        guard v.job["deleted_at"]?.string == nil else { return false }
+        if let statuses = filter.statuses, !statuses.contains(v.status) { return false }
+        if !seesAll {
+            let mine = [v.job["assigned_user_id"]?.string, v.job["second_tech_id"]?.string].contains(userId)
+            if !mine { return false }
+        }
+        guard !q.isEmpty else { return true }
+        if let number, v.number == number { return true }
+        return v.customerName.localizedCaseInsensitiveContains(q)
+    }
+    let start = { (v: JobView) in parseInstant(v.job["scheduled_start"]?.string)?.timeIntervalSince1970 }
+    let sorted = picked.sorted { a, b in
+        switch (start(a), start(b)) {
+        case (let x?, let y?) where x != y: return x < y
+        case (.some, nil): return true
+        case (nil, .some): return false
+        default: return (a.number ?? .max) > (b.number ?? .max)
+        }
+    }
+    return sorted.map { v in
+        let tech = v.job["assigned_user_id"]?.string.map { names[$0] ?? "Teammate" } ?? "Unassigned"
+        let when =
+            v.status == .inProgress && v.job["started_at"]?.string != nil
+            ? "Started"
+            : (try? formatSchedule(v.job["scheduled_start"]?.string, now, timeZone)) ?? "Not scheduled"
+        let address = v.property.map { addressText($0) }.flatMap { $0.isEmpty ? nil : $0 }
+        return JobListRow(
+            id: v.id, customer: v.customerName,
+            kind: "\(v.number.map { "#\($0)" } ?? "New job") · \(jobTypeLabel(v.type))", address: address,
+            when: "\(when) · \(tech)", status: v.status)
+    }
+}
+
+// MARK: - Reports (spec 5.3)
+
+public enum ReportFilter: String, CaseIterable, Hashable, Sendable {
+    case all, sent, draft
+
+    public var title: String {
+        switch self {
+        case .all: "All"
+        case .sent: "Sent"
+        case .draft: "Drafts"
+        }
+    }
+
+    public var empty: String {
+        switch self {
+        case .all: "No reports yet. A job’s report is drafted from its Wrap-Up."
+        case .sent: "No reports sent yet."
+        case .draft: "No drafts."
+        }
+    }
+}
+
+public struct ReportListRow: Identifiable, Equatable, Sendable {
+    public var id: String
+    public var jobId: String
+    public var customer: String
+    /// "Job #1040" or "New job".
+    public var job: String
+    /// "Homeowner report · version 2 · 1423 Palm Ct"
+    public var detail: String
+    /// "Sent Oct 15, 2026" or "Draft".
+    public var value: String
+}
+
+/// Every job's current report, newest first (superseded versions left out).
+public func reportList(_ store: LocalStore, companyId: String, filter: ReportFilter, timeZone: String)
+    -> [ReportListRow]
+{
+    let views = Dictionary(
+        ((try? jobViews(store, companyId: companyId)) ?? []).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+    let templates = [
+        "homeowner": "Homeowner report", "partner": "Pool company report", "insurance": "Insurance report",
+    ]
+    let reports = ((try? store.list("report", companyId: companyId)) ?? []).filter { r in
+        let status = r["status"]?.string ?? "draft"
+        guard r["deleted_at"]?.string == nil, status != "superseded" else { return false }
+        return filter == .all || status == filter.rawValue
+    }
+    return
+        reports
+        .sorted { ($0["updated_at"]?.string ?? "") > ($1["updated_at"]?.string ?? "") }
+        .map { r in
+            let jobId = r["job_id"]?.string ?? ""
+            let view = views[jobId]
+            let version = r["version"]?.number.map { Int($0) } ?? 1
+            let detail = [
+                templates[r["template_key"]?.string ?? ""], version > 1 ? "version \(version)" : nil,
+                view?.property?["address_line1"]?.string,
+            ].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+            let sent = r["status"]?.string == "sent" ? r["sent_at"]?.string : nil
+            return ReportListRow(
+                id: r.id, jobId: jobId, customer: view?.customerName ?? "Customer",
+                job: view?.number.map { "Job #\($0)" } ?? "New job", detail: detail,
+                value: sent.map { "Sent \(formatShortDate($0, timeZone: timeZone))" } ?? "Draft")
+        }
+}

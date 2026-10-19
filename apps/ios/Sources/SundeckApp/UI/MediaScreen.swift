@@ -7,9 +7,11 @@
     import SwiftUI
     import UIKit
 
-    /// One capture: view it, mark it up (photos), play it (video, voice), see its record. A pushed
-    /// screen; open it with a plain NavigationLink, since the media section also sits inside editor
-    /// sheets. Port of apps/mobile/src/app/(app)/jobs/[id]/media/[mediaId].tsx.
+    /// The full-screen photo viewer (spec 6.5): black behind the photo (navy letterboxing video),
+    /// pinch to zoom with its markup over it, a bar with Done, "{Photo} · {attached to}" and Share,
+    /// and a panel with the caption, when it was taken, the transcript for a voice note, and Mark Up
+    /// and Delete. Swiping down closes it. Presented over the tab bar by `.mediaViewer(jobId:)`.
+    /// Port of apps/mobile/src/app/(app)/jobs/[id]/media/[mediaId].tsx.
     struct MediaScreen: View {
         var jobId: String
         var mediaId: String
@@ -29,6 +31,7 @@
         @State private var confirmDelete = false
         @State private var saveError: String?
         @State private var deletes = 0
+        @State private var pull: CGFloat = 0
         @FocusState private var captionFocused: Bool
 
         init(jobId: String, mediaId: String) {
@@ -37,22 +40,32 @@
         }
 
         var body: some View {
-            Group {
-                if let media {
-                    content(media)
-                } else if loaded {
-                    List {
-                        Notice(kind: .warning, text: "This capture isn’t on this phone.")
-                            .listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
+            VStack(spacing: 0) {
+                bar
+                ZStack {
+                    (media?.kind == .video ? Color.navy : Color.black)
+                    if let media {
+                        viewer(media)
+                    } else if loaded {
+                        Text("This capture isn’t on this phone.").textRole(.body).foregroundStyle(Color.white)
                     }
-                    .listStyle(.insetGrouped)
-                } else {
-                    // Must be a real view: SwiftUI doesn't run .task on an empty one.
-                    Color.clear
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .offset(y: pull)
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 24)
+                        .onChanged { value in
+                            if value.translation.height > 0, abs(value.translation.width) < value.translation.height {
+                                pull = value.translation.height
+                            }
+                        }
+                        .onEnded { value in
+                            if value.translation.height > 120 { close() } else { withAnimation { pull = 0 } }
+                        })
+                if let media { panel(media) }
             }
-            .navigationTitle(media?.kind.label ?? "Capture")
-            .navigationBarTitleDisplayMode(.inline)
+            .background(Color.black.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
             .task(id: sync.revision) { reload() }
             .task(id: attempt) { await resolveSource() }
             .onDisappear { flushCaption() }
@@ -65,7 +78,7 @@
             .confirmationDialog(
                 MediaDetail.deleteTitle(media?.kind ?? .photo), isPresented: $confirmDelete, titleVisibility: .visible
             ) {
-                Button("Delete", role: .destructive) { delete() }
+                Button(MediaDetail.deleteButton(media?.kind ?? .photo), role: .destructive) { delete() }
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text(MediaDetail.deleteMessage)
@@ -79,62 +92,88 @@
             }
         }
 
-        private func content(_ media: Media) -> some View {
-            List {
-                Section {
-                    viewer(media)
-                    if media.kind == .photo {
-                        Button(MediaDetail.markupButton(media)) { editing = true }
-                            .buttonStyle(.secondary)
-                            .disabled(source.url == nil)
+        /// Done, the title and Share, on the bar material over the photo.
+        private var bar: some View {
+            HStack(spacing: 8) {
+                Button("Done") { close() }
+                    .font(.role(.bodyEmphasis))
+                    .foregroundStyle(Color.link)
+                    .frame(minWidth: minTarget, minHeight: minTarget)
+                Spacer(minLength: 0)
+                Text(title)
+                    .textRole(.navTitle)
+                    .foregroundStyle(Color.text)
+                    .lineLimit(1)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 0)
+                Group {
+                    if let url = source.url {
+                        ShareLink(item: url) {
+                            Image(systemName: "square.and.arrow.up").font(.system(size: 20, weight: .medium))
+                                .frame(width: minTarget, height: minTarget)
+                        }
+                        .accessibilityLabel("Share")
+                    } else {
+                        Color.clear.frame(width: minTarget, height: minTarget)
                     }
                 }
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
-                .listRowSeparator(.hidden)
+                .foregroundStyle(Color.link)
+            }
+            .padding(.horizontal, 8)
+            .background(.bar)
+        }
 
-                if media.kind == .audio {
-                    Section("Transcript") {
-                        Text(MediaDetail.transcript(media))
-                            .font(MediaDetail.transcriptIsText(media) ? .body : .subheadline)
-                            .foregroundStyle(MediaDetail.transcriptIsText(media) ? Color.primary : Color.muted)
-                            .textSelection(.enabled)
-                    }
-                }
+        private var title: String {
+            guard let media else { return "Capture" }
+            return
+                "\(media.kind.label) · \(JobPhotos.attached(media, inspection ?? JobInspection(sync.store, jobId: media.jobId)))"
+        }
 
-                Section("Caption") {
-                    TextField("Caption", text: $caption, prompt: Text("What this shows"), axis: .vertical)
-                        .lineLimit(2...6)
+        /// The panel under the photo: caption, when, transcript, Mark Up and Delete.
+        private func panel(_ media: Media) -> some View {
+            let text = JobPhotos.card(
+                media, inspection ?? JobInspection(sync.store, jobId: media.jobId),
+                timeZone: session.company?.timeZone ?? TimeZone.current.identifier)
+            return ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        FieldLabel("Caption")
+                        TextField(
+                            "", text: $caption, prompt: Text("What this shows").foregroundStyle(Color.placeholder),
+                            axis: .vertical
+                        )
+                        .lineLimit(1...4)
                         .focused($captionFocused)
                         .accessibilityLabel("Caption")
+                        .fieldBox(focused: captionFocused)
                         .onChange(of: caption) { if captionFocused { captionEdited = true } }
                         .onChange(of: captionFocused) { _, focused in if !focused { flushCaption() } }
-                }
-
-                Section {
-                    ForEach(
-                        MediaDetail.rows(
-                            media, inspection ?? JobInspection(sync.store, jobId: media.jobId),
-                            timeZone: session.company?.timeZone ?? TimeZone.current.identifier),
-                        id: \.label
-                    ) { row in
-                        LabeledContent(row.label) {
-                            Text(row.value).multilineTextAlignment(.trailing)
+                    }
+                    Text([text.meta, MediaDetail.upload(media)].filter { !$0.isEmpty }.joined(separator: " · "))
+                        .textRole(.secondary).foregroundStyle(Color.textMuted)
+                    if media.kind == .audio {
+                        Text(MediaDetail.transcript(media))
+                            .textRole(MediaDetail.transcriptIsText(media) ? .body : .secondary)
+                            .foregroundStyle(MediaDetail.transcriptIsText(media) ? Color.text : Color.textMuted)
+                            .textSelection(.enabled)
+                    }
+                    HStack(spacing: 12) {
+                        if media.kind == .photo {
+                            Button(MediaDetail.markupButton(media)) { editing = true }
+                                .buttonStyle(.secondary)
+                                .disabled(source.url == nil)
                         }
-                        .frame(minHeight: minTarget)
-                        .accessibilityElement(children: .combine)
+                        Button("Delete") { confirmDelete = true }
+                            .buttonStyle(.danger)
+                            .accessibilityLabel(MediaDetail.deleteButton(media.kind))
                     }
                 }
-
-                Section {
-                    Button("Delete") { confirmDelete = true }
-                        .buttonStyle(.destructiveSecondary)
-                }
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
+                .padding(16)
             }
-            .listStyle(.insetGrouped)
             .scrollDismissesKeyboard(.interactively)
+            .frame(maxHeight: 280)
+            .fixedSize(horizontal: false, vertical: true)
+            .background(Color.bg)
         }
 
         @ViewBuilder
@@ -142,28 +181,21 @@
             switch source {
             case .loading:
                 VStack(spacing: 8) {
-                    ProgressView()
-                    Text(MediaDetail.loadingText(media.kind)).font(.subheadline).foregroundStyle(Color.muted)
+                    ProgressView().tint(Color.white)
+                    Text(MediaDetail.loadingText(media.kind)).textRole(.secondary).foregroundStyle(Color.white)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 32)
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous).fill(
-                        Color(.secondarySystemGroupedBackground)))
             case .unavailable:
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(MediaDetail.unavailableText(media.kind)).font(.body)
+                VStack(spacing: 12) {
+                    Text(MediaDetail.unavailableText(media.kind))
+                        .textRole(.body).foregroundStyle(Color.white).multilineTextAlignment(.center)
                     Button("Try Again") { attempt += 1 }.buttonStyle(.secondary)
                 }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous).fill(
-                        Color(.secondarySystemGroupedBackground)))
+                .padding(24)
             case .ready(let url):
                 switch media.kind {
                 case .photo: PhotoView(media: media, url: url)
                 case .video: VideoBox(media: media, url: url)
-                case .audio: AudioBox(url: url, durationMs: media.durationMs)
+                case .audio: AudioBox(url: url, durationMs: media.durationMs).padding(16)
                 }
             }
         }
@@ -180,25 +212,18 @@
             if case .ready = source {} else { Task { await resolveSource() } }
         }
 
-        /// The local file, else (once uploaded) a signed link to the stored copy. Port of useMediaSource.
         private func resolveSource() async {
             guard let media = media ?? MediaDetail.load(sync, mediaId) else { return }
-            switch MediaLocation(media, files: sync.media) {
-            case .local(let url):
-                source = .ready(url)
-            case .remote(let path):
-                source = .loading
-                if let signer, let url = try? await signer.url(path) {
-                    source = .ready(url)
-                } else {
-                    source = .unavailable
-                }
-            case .unavailable:
-                source = .unavailable
-            }
+            if case .remote = MediaLocation(media, files: sync.media) { source = .loading }
+            source = await resolveMediaSource(media, files: sync.media, signer: signer)
         }
 
         // MARK: - Writes
+
+        private func close() {
+            flushCaption()
+            dismiss()
+        }
 
         /// Caption saves when leaving the field and when leaving the screen.
         private func flushCaption() {
@@ -266,7 +291,7 @@
 
     // MARK: - Photo
 
-    /// The photo with its markup. Pinch to zoom; double-tap to go back to fit.
+    /// The photo fitted to the screen with its markup. Pinch to zoom; double-tap to go back to fit.
     private struct PhotoView: View {
         var media: Media
         var url: URL
@@ -278,7 +303,7 @@
         var body: some View {
             let shapes = parseMarkup(media.markup).shapes
             let ratio = MediaDetail.photoRatio(media)
-            Color(Tokens.Role.header)
+            Color.black
                 .aspectRatio(1 / ratio, contentMode: .fit)
                 .overlay {
                     ZStack {
@@ -288,7 +313,6 @@
                     .scaleEffect(zoom)
                     .offset(offset)
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .contentShape(Rectangle())
                 .gesture(
                     MagnifyGesture()
@@ -366,7 +390,7 @@
     }
 
     /// Plays a voice note (local file or signed link), even with the ringer switch on silent.
-    private struct AudioBox: View {
+    struct AudioBox: View {
         var url: URL
         var durationMs: Double?
         @State private var player: AVPlayer?
@@ -381,21 +405,20 @@
                 } label: {
                     Image(systemName: playing ? "pause.fill" : "play.fill")
                         .font(.title2)
-                        .foregroundStyle(Color(Tokens.Role.onHeader))
+                        .foregroundStyle(Color.link)
                         .frame(width: 52, height: 52)
-                        .background(Circle().fill(Color(Tokens.Role.header)))
+                        .background(Circle().fill(Color.iconTint))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(playing ? "Pause" : "Play")
                 Text("\(formatDuration(current * 1000)) / \(formatDuration(durationMs ?? length * 1000))")
-                    .font(.headline)
+                    .font(.role(.bodyEmphasis))
                     .monospacedDigit()
+                    .foregroundStyle(Color.text)
                 Spacer(minLength: 0)
             }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(.secondarySystemGroupedBackground))
-            )
+            .padding(12)
+            .background(RoundedRectangle(cornerRadius: CGFloat(Radius.block), style: .continuous).fill(Color.well))
             .task(id: playing) {
                 while playing, !Task.isCancelled, let player {
                     current = seconds(player.currentTime())

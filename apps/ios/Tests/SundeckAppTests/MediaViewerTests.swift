@@ -69,7 +69,8 @@ private func sha256(_ count: Int) throws -> String {
             ])
         #expect(MediaDetail.markupButton(photo) == "Mark Up")
         #expect(MediaDetail.photoRatio(photo) == 0.75)
-        #expect(MediaDetail.deleteTitle(photo.kind) == "Delete this photo?")
+        #expect(MediaDetail.deleteTitle(photo.kind) == "Remove this photo from the job?")
+        #expect(MediaDetail.deleteButton(photo.kind) == "Delete Photo")
     }
 
     @Test func aVideoShowsItsLengthAndTheTimeInTheCompanyZone() throws {
@@ -92,8 +93,9 @@ private func sha256(_ count: Int) throws -> String {
         let v = try Viewer()
         let note = try v.capture(.audio, mime: "audio/mp4", bytes: 500, durationMs: 65_000)
         #expect(MediaDetail.size(note) == "500 B · 1:05")
-        #expect(MediaDetail.deleteTitle(.audio) == "Delete this voice note?")
-        #expect(MediaDetail.deleteMessage == "It is removed from the job and its reports.")
+        #expect(MediaDetail.deleteTitle(.audio) == "Remove this voice note from the job?")
+        #expect(MediaDetail.deleteButton(.audio) == "Delete Voice Note")
+        #expect(MediaDetail.deleteMessage == "The original stays on file.")
         try v.store.applyPage(
             PullPage(
                 rows: [

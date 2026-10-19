@@ -195,9 +195,10 @@ public struct TextingServer {
 
     /// Texts from the company number. The text syncs back down with its delivery status.
     /// `pictures` are storage paths already uploaded.
+    /// `companyId` and `phone` text a number that isn't a customer yet.
     public func send(
-        conversationId: String? = nil, customerId: String? = nil, body: String,
-        pictures: [TextMessage.Picture] = [], jobId: String? = nil
+        conversationId: String? = nil, customerId: String? = nil, companyId: String? = nil, phone: String? = nil,
+        body: String, pictures: [TextMessage.Picture] = [], jobId: String? = nil
     ) async throws -> (id: String, conversationId: String) {
         var payload: [String: JSONValue] = [
             "body": .string(body),
@@ -206,6 +207,10 @@ public struct TextingServer {
         ]
         if let conversationId { payload["conversationId"] = .string(conversationId) }
         if let customerId { payload["customerId"] = .string(customerId) }
+        if let companyId, let phone {
+            payload["companyId"] = .string(companyId)
+            payload["phone"] = .string(phone)
+        }
         let reply = try await api.post("api/texts", .object(payload))
         await sync.syncNow()
         return (reply["id"]?.string ?? "", reply["conversationId"]?.string ?? conversationId ?? "")

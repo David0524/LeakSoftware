@@ -128,7 +128,7 @@ private struct ReportJob {
         ReportTabModel(
             store: store, companyId: "c1", settings: settings, job: job, online: online,
             webURL: URL(string: "https://sundeck.test")!, timeZone: TimeZone(identifier: "UTC")!,
-            locale: Locale(identifier: "en_US"))
+            locale: Locale(identifier: "en_US"), now: parseISODate("2026-10-20T12:00:00Z")!)
     }
 
     var server: ReportServer {
@@ -201,7 +201,12 @@ private func signature(_ id: String, _ name: String, purpose: String = "inspecti
         #expect(m.writeIsPrimary)
         #expect(m.showsReviewBeforeDraft)
         #expect(m.signatures.isEmpty)
-        #expect(ReportTabModel.noSignatures == "The customer signs at the end of the report: Review with Customer.")
+        #expect(
+            ReportTabModel.noSignatures
+                == "None yet. The customer signs at the end of the report: write the draft, then Review with Customer.")
+        #expect(m.templateName == "Homeowner report")
+        #expect(m.collapsedText == nil)
+        #expect(m.viewLatest == nil)
         #expect(m.problemsText == nil)
         #expect(m.finishTitle == nil)
         #expect(m.finishedTitle == nil)
@@ -236,10 +241,11 @@ private func signature(_ id: String, _ name: String, purpose: String = "inspecti
         #expect(!m.finishesWithSignature)
         #expect(
             m.finishNote
-                == "Hand the phone to the customer: they read the report and sign at the bottom. Signing locks this version."
+                == "Hand the phone to the customer: they read the report and sign at the bottom. Signing locks this version; changes after that go out as a new version."
         )
+        #expect(m.collapsedText == "Draft version 2 is ready to read, edit, and review with the customer.")
         #expect(ReportTabModel.sendWithoutSignature == "Send Without a Signature")
-        #expect(ReportTabModel.sendWithoutSignatureNote == "Sending locks this version.")
+        #expect(ReportTabModel.sendWithoutSignatureNote == "Sending saves your edits and locks this version.")
     }
 
     @Test func aSignatureNotYetOnAVersionTurnsTheButtonIntoFinishReport() throws {
@@ -255,7 +261,9 @@ private func signature(_ id: String, _ name: String, purpose: String = "inspecti
             m.finishNote
                 == "Signed by Pat Doe. Finish the report to lock this version with the signature.")
         #expect(m.signatures.map(\.name) == ["Pat Doe", "Lee Doe", "Old Signer"])
-        #expect(m.signatures[0].subtitle.hasPrefix("Inspection acknowledged · 10/19/26"))
+        // The website's schedule format, in the shop's time zone.
+        #expect(m.signatures[0].subtitle == "Inspection acknowledged · Mon, Oct 19, 2:05 PM")
+        #expect(m.signatures[0].role == nil)
         #expect(m.signatures[1].subtitle.hasPrefix("Quote accepted · "))
         #expect(m.signatures[0].removeTitle == "Remove Pat Doe’s signature?")
         #expect(m.signatures[0].removeLabel == "Remove signature of Pat Doe")
@@ -281,8 +289,13 @@ private func signature(_ id: String, _ name: String, purpose: String = "inspecti
         #expect(m.finished?.id == "r2")
         #expect(m.finishedTitle == "Version 2 is finished")
         #expect(!m.finishedEmailIsPrimary)
-        #expect(ReportTabModel.finishedNote == "Send it to the customer, or open the PDF.")
-        #expect(m.versions.map(\.label) == ["Version 2 · 10/18/26", "Version 1 · 10/17/26 · replaced"])
+        #expect(ReportTabModel.finishedNote == "Send it to the customer, or download the PDF.")
+        #expect(
+            m.versions.map(\.label) == [
+                "Version 2 · Oct 18, 2026, 3:00 PM", "Version 1 · Oct 17, 2026, 3:00 PM · replaced",
+            ])
+        #expect(m.viewLatest?.id == "r2")
+        #expect(m.versions[1].pdfURL?.absoluteString == "https://sundeck.test/r/tok1/pdf")
         #expect(m.versions.map(\.superseded) == [false, true])
         #expect(
             m.versions.map(\.url?.absoluteString) == ["https://sundeck.test/r/tok2", "https://sundeck.test/r/tok1"])

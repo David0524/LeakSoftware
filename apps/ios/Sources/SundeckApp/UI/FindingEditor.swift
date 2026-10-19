@@ -3,8 +3,10 @@
     import SundeckSync
     import SwiftUI
 
-    /// Record a leak: what, where, how serious, and a pin on the pool diagram. A sheet. Port of
-    /// apps/mobile/src/app/(app)/jobs/[id]/(edit)/finding/[findingId].tsx.
+    /// Add Finding / Edit Finding (spec 6.2), a sheet: What, Severity, Item, Where, Status, the
+    /// pool's shape and spa (saved at once), the pin on the diagram, Notes, photos, then Add
+    /// Finding / Save Finding; editing ends with Delete Finding. Port of FindingForm and
+    /// FindingsEditor's sheet in apps/web/src/components/job-work.tsx.
     struct FindingEditor: View {
         var jobId: String
         /// nil for a new finding.
@@ -25,9 +27,6 @@
         @State private var confirmDelete = false
         @State private var saveError: String?
         @State private var saves = 0
-        @FocusState private var focus: Field?
-
-        enum Field { case title, location, notes }
 
         var body: some View {
             NavigationStack {
@@ -35,31 +34,30 @@
                     if form != nil {
                         editor.mediaViewer(jobId: jobId)
                     } else if loaded {
-                        Form {
-                            Section { Notice(kind: .warning, text: "This finding isn’t on this phone.") }
-                                .listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
+                        ScrollView {
+                            Notice(kind: .warning, text: "This finding isn’t on this phone.").padding(16)
                         }
+                    } else {
+                        Color.clear
                     }
                 }
+                .background(Color.bg)
                 .navigationTitle(form?.navigationTitle ?? "Finding")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { cancel() } }
-                    if form != nil {
-                        ToolbarItem(placement: .confirmationAction) { Button("Save") { save() }.fontWeight(.semibold) }
-                    }
                 }
             }
-            .interactiveDismissDisabled(form?.isDirty ?? false)
+            .sheetPresentation(dirty: form?.isDirty ?? false)
             .task(id: sync.revision) { load() }
             .sensoryFeedback(.success, trigger: saves)
-            .confirmationDialog(form?.discardTitle ?? "", isPresented: $confirmDiscard, titleVisibility: .visible) {
-                Button("Discard", role: .destructive) { dismiss() }
-                Button("Keep Editing", role: .cancel) {}
+            .confirmationDialog(
+                form?.discardTitle ?? "Discard changes?", isPresented: $confirmDiscard, titleVisibility: .visible
+            ) {
+                Button("Discard Changes", role: .destructive) { dismiss() }
             }
-            .confirmationDialog("Delete this finding?", isPresented: $confirmDelete, titleVisibility: .visible) {
-                Button("Delete", role: .destructive) { delete() }
-                Button("Keep", role: .cancel) {}
+            .confirmationDialog(form?.deleteTitle ?? "", isPresented: $confirmDelete, titleVisibility: .visible) {
+                Button("Delete Finding", role: .destructive) { delete() }
             }
             .alert(
                 "Couldn’t Save", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })
@@ -78,132 +76,123 @@
 
         @ViewBuilder private var editor: some View {
             if let form, let insp, let config {
-                Form {
-                    Section {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("What did you find?").font(.subheadline.weight(.semibold))
-                            TextField("Return 3 line break", text: binding(\.title, ""), axis: .vertical)
-                                .textInputAutocapitalization(.sentences)
-                                .focused($focus, equals: .title)
-                                .submitLabel(.next)
-                                .onSubmit { focus = .location }
-                                .accessibilityLabel("What did you find?")
-                            if let message = form.errors["title"] {
-                                Text(message).font(.footnote).foregroundStyle(Color.fail)
-                            }
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        OutlinedField(
+                            label: "What", text: binding(\.title, ""), placeholder: "Crack at the skimmer throat",
+                            error: form.errors["title"])
+                        VStack(alignment: .leading, spacing: 4) {
+                            SelectField(
+                                label: "Severity", selection: binding(\.severity, ""),
+                                options: [""] + config.severities.map(\.key),
+                                optionLabel: { key in config.severityByKey[key]?.name ?? "Choose…" })
+                            if let error = form.errors["severity_key"] { FieldHint(text: error, error: true) }
                         }
-                        .padding(.vertical, 4)
-                    }
-
-                    Section {
-                        Picker("Severity", selection: binding(\.severity, "")) {
-                            ForEach(config.severities) { Text($0.name).tag($0.key) }
-                        }
-                        .pickerStyle(.segmented)
-                        .listRowBackground(Color.clear)
-                        .listRowInsets(EdgeInsets())
-                    } header: {
-                        Text("Severity")
-                    } footer: {
-                        if let message = form.errors["severity_key"] {
-                            Text(message).font(.footnote).foregroundStyle(Color.fail)
-                        }
-                    }
-
-                    Section {
-                        Picker(
-                            "Component",
+                        SelectField(
+                            label: "Item (optional)",
                             selection: Binding(
                                 get: { self.form?.componentId ?? "" },
-                                set: { self.form?.componentId = $0.isEmpty ? nil : $0 })
-                        ) {
-                            Text("None").tag("")
-                            ForEach(insp.components, id: \.id) { Text($0.label).tag($0.id) }
+                                set: { self.form?.componentId = $0.isEmpty ? nil : $0 }),
+                            options: [""] + insp.components.map(\.id),
+                            optionLabel: { id in insp.componentById[id]?.label ?? "None" })
+                        OutlinedField(
+                            label: "Where (optional)", text: binding(\.location, ""),
+                            placeholder: "Two feet left of the skimmer")
+                        VStack(alignment: .leading, spacing: 4) {
+                            FieldLabel("Status")
+                            Segmented(
+                                selection: binding(\.status, .open), options: findingStatusChoices, label: \.label,
+                                title: "Status", fillsWidth: true, segmentPadding: 8)
                         }
-                        .frame(minHeight: minTarget)
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Location").font(.subheadline.weight(.semibold))
-                            TextField(
-                                "Between pad and pool, 6 ft from the fitting", text: binding(\.location, ""),
-                                axis: .vertical
-                            )
-                            .focused($focus, equals: .location)
-                            .submitLabel(.done)
-                            .onSubmit { focus = nil }
-                            .accessibilityLabel("Location")
+                        if let property { pool(property) }
+                        pin(form, config)
+                        OutlinedField(label: "Notes (optional)", text: binding(\.notes, ""), multiline: true)
+                        // Photos for the finding (apps, S5); a new finding is saved first.
+                        if let savedId = form.existingId {
+                            MediaSection(target: MediaTarget(jobId: jobId, findingId: savedId))
+                        } else {
+                            FieldHint(text: "Save the finding first, then add photos.")
                         }
-                        .padding(.vertical, 4)
-                    }
-
-                    Section {
-                        Text(form.pinHint).font(.subheadline).foregroundStyle(Color.muted)
-                        if let property {
-                            PoolDiagram(
-                                shape: diagramShape(of: property), hasSpa: property["has_spa"]?.bool ?? false,
-                                pins: editorPins(insp, config, form: form)
-                            ) { x, y in
-                                self.form?.place(x: x, y: y)
+                        Button(form.submitTitle) { save() }
+                            .buttonStyle(.primary(fullWidth: true, size: .field))
+                        if !form.isNew {
+                            VStack(spacing: 16) {
+                                Hairline()
+                                Button(role: .destructive) {
+                                    confirmDelete = true
+                                } label: {
+                                    Text("Delete Finding")
+                                }
+                                .buttonStyle(.danger(fullWidth: true, size: .field))
                             }
-                        }
-                    } header: {
-                        HStack {
-                            Text("Pin on the diagram")
-                            Spacer()
-                            if form.pin != nil {
-                                Button("Clear Pin") { self.form?.pin = nil }
-                                    .font(.subheadline.weight(.semibold))
-                                    .textCase(nil)
-                                    .frame(minHeight: minTarget)
-                            }
+                            .padding(.top, 8)
                         }
                     }
-
-                    if form.showsStatus {
-                        Section("Status") {
-                            Picker("Status", selection: binding(\.status, .open)) {
-                                ForEach(findingStatusChoices, id: \.self) { Text($0.label).tag($0) }
-                            }
-                            .pickerStyle(.segmented)
-                            .listRowBackground(Color.clear)
-                            .listRowInsets(EdgeInsets())
-                        }
-                    }
-
-                    Section {
-                        TextField("Notes", text: binding(\.notes, ""), axis: .vertical)
-                            .lineLimit(3...8)
-                            .focused($focus, equals: .notes)
-                    }
-
-                    // A new finding says when photos can be added.
-                    if let savedId = form.existingId {
-                        MediaSection(target: MediaTarget(jobId: jobId, findingId: savedId))
-                    } else {
-                        Section {
-                            Text("Save the finding first, then add photos.")
-                                .font(.subheadline).foregroundStyle(Color.muted)
-                        }
-                    }
-
-                    if !form.errors.isEmpty {
-                        Section { Notice(kind: .error, text: "Fix the highlighted fields.") }
-                            .listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
-                    }
-
-                    Section {
-                        VStack(spacing: 12) {
-                            Button("Save Finding") { save() }.buttonStyle(.primary)
-                            if !form.isNew {
-                                Button("Delete Finding") { confirmDelete = true }.buttonStyle(.destructiveSecondary)
-                            }
-                        }
-                    }
-                    .listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
+                    .padding(.horizontal, CGFloat(Spacing.pageMargin))
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
                 }
+                .scrollDismissesKeyboard(.interactively)
+            }
+        }
+
+        /// The pool's shape and spa, saved as soon as they're tapped; the diagram redraws.
+        private func pool(_ property: Row) -> some View {
+            let shape = diagramShape(of: property)
+            return VStack(alignment: .leading, spacing: 8) {
+                ShapePicker(value: shape, hint: shape == nil ? shapeNotPickedHint : nil) { next in
+                    write { companyId in
+                        try InspectionWrites.setDiagramShape(
+                            sync, propertyId: property.id, companyId: companyId, shape: next)
+                    }
+                }
+                Toggle(
+                    isOn: Binding(
+                        get: { property["has_spa"]?.bool ?? false },
+                        set: { spa in
+                            write { companyId in
+                                try InspectionWrites.setHasSpa(
+                                    sync, propertyId: property.id, companyId: companyId, hasSpa: spa)
+                            }
+                        })
+                ) {
+                    Text("Has a spa").textRole(.body).foregroundStyle(Color.text)
+                }
+                .tint(Color.pass)
+                .frame(minHeight: minTarget)
+            }
+        }
+
+        /// "Pin on the diagram (optional)": tap where the leak is; "Pin placed." with Clear Pin.
+        private func pin(_ form: FindingForm, _ config: InspectionConfig) -> some View {
+            VStack(alignment: .leading, spacing: 4) {
+                FieldLabel("Pin on the diagram (optional)")
+                FieldHint(text: form.pinHint)
+                PoolDiagram(
+                    shape: diagramShape(of: property), hasSpa: property?["has_spa"]?.bool ?? false,
+                    pins: editorPins(config, form: form), outlined: true
+                ) { x, y in
+                    self.form?.place(x: x, y: y)
+                }
+                .frame(maxWidth: 448)
+                .padding(.top, 4)
+                HStack(spacing: 12) {
+                    Text(form.pinStatus).textRole(.secondary).foregroundStyle(Color.text)
+                    if form.pin != nil {
+                        Button("Clear Pin") { self.form?.pin = nil }.buttonStyle(.quiet)
+                    }
+                }
+                .frame(minHeight: minTarget)
+                .accessibilityElement(children: .contain)
             }
         }
 
         // MARK: Actions
+
+        private func write(_ body: (String) throws -> Void) {
+            guard let company = session.company else { return }
+            do { try body(company.id) } catch { saveError = String(describing: error) }
+        }
 
         private func load() {
             guard let company = session.company else { return }
@@ -224,7 +213,6 @@
 
         private func save() {
             guard var current = form, let company = session.company else { return }
-            focus = nil
             do {
                 let id = try current.save(sync, companyId: company.id, jobId: jobId, existing: existing)
                 form = current

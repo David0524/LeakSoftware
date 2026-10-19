@@ -3,19 +3,21 @@
     import SundeckSync
     import SwiftUI
 
-    /// The checklist in the shop's sections, one verdict per item (works offline). Port of
-    /// apps/mobile/src/features/inspection/ChecklistTab.tsx. Its body is list content (sections),
-    /// placed inside the job page's inset grouped List.
+    /// The job page's Checklist section (spec 5.4): the tally, the job's tip, one folding block per
+    /// checklist section with a verdict pill per item, and "Add an item". Works offline; every
+    /// write goes through the sync layer. Port of ChecklistEditor in apps/web/src/components/job-work.tsx.
     struct ChecklistTab: View {
         var job: JobView
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
+        @Environment(AppEnvironment.self) private var app
+        @Environment(\.openRoute) private var openRoute
+        @State private var adding = ""
         @State private var saveError: String?
 
         init(job: JobView) { self.job = job }
 
         // Worked out on every render: reading `sync.revision` re-renders after any write or pull.
-        // (No `.task` or dialog on the tab itself: modifiers on list content repeat per row.)
         var body: some View {
             let _ = sync.revision
             if let company = session.company {
@@ -23,48 +25,78 @@
                 let inspection = JobInspection(sync.store, jobId: job.id)
                 let model = ChecklistModel(
                     config: config, inspection: inspection, jobType: job.type, property: job.decodedProperty)
-                if model.isEmpty {
-                    Section {
-                        Text("No checklist yet for this job.").modifier(errorAlert)
-                        Button("Set Up Checklist") { setUp(config.componentTypes) }
-                            .buttonStyle(.primary)
+                VStack(alignment: .leading, spacing: 0) {
+                    SectionHeading("Checklist")
+                    Text(model.isEmpty ? "No checklist yet." : model.tallyText)
+                        .textRole(.body)
+                        .foregroundStyle(Color.textMuted)
+                        .padding(.bottom, 12)
+                    if let tip = app.walkthrough.tip(screen: "job", company: company, pkg: tipPackage) {
+                        TipRow(tip: tip) { app.walkthrough.dismiss(tip.id) }.padding(.bottom, 20)
                     }
-                } else {
-                    content(model, inspection)
+                    if model.isEmpty {
+                        Button("Set Up Checklist") { setUp(config.componentTypes) }.buttonStyle(.secondary)
+                    } else {
+                        let photos = photoCounts()
+                        VStack(spacing: 12) {
+                            ForEach(model.sections) { section in
+                                ChecklistGroup(
+                                    jobId: job.id, section: section, photos: photos,
+                                    choose: choose, saveWhere: saveWhere, remove: remove,
+                                    markRest: { markRest(section.items) })
+                            }
+                        }
+                        if !model.addOptions.isEmpty { addItem(model, inspection).padding(.top, 16) }
+                    }
+                    if job.type == .maintenance {
+                        // As the website: the calculator with this pool's size filled in.
+                        Button("Chemical Calculator") {
+                            openRoute(.more(.chemicals(gallons: job.property?["approx_gallons"]?.number)))
+                        }
+                        .buttonStyle(.secondary)
+                        .padding(.top, 16)
+                    }
+                }
+                .alert(
+                    "Couldn’t Save",
+                    isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })
+                ) {
+                    Button("OK") { saveError = nil }
+                } message: {
+                    Text(saveError ?? "")
                 }
             }
         }
 
-        private var errorAlert: ChecklistErrorAlert { ChecklistErrorAlert(message: $saveError) }
+        private var tipPackage: TipPackage? {
+            job.type == .maintenance ? .pool : job.type == .repair ? nil : .leak
+        }
 
-        @ViewBuilder private func content(_ model: ChecklistModel, _ inspection: JobInspection) -> some View {
-            Section {
-                Text(model.tallyText)
-                    .font(.subheadline)
-                    .foregroundStyle(Color.muted)
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                    .modifier(errorAlert)
-            }
-            ForEach(model.sections) { section in
-                Section(section.title) {
-                    ForEach(section.items) { item in
-                        ChecklistItemView(
-                            jobId: job.id, item: item,
-                            choose: { choose(item, $0) },
-                            addAnother: { addAnother(item.type, inspection) },
-                            saveWhere: { saveWhere(item, $0) },
-                            remove: { remove(item) })
+        /// Photos on each item, for "2 photos" on its line.
+        private func photoCounts() -> [String: Int] {
+            jobMedia(sync.store, MediaTarget(jobId: job.id))
+                .filter { $0.kind == .photo && $0.jobComponentId != nil }
+                .reduce(into: [:]) { counts, media in counts[media.jobComponentId ?? "", default: 0] += 1 }
+        }
+
+        /// A select of what can be added beside a secondary Add, disabled until something is chosen.
+        private func addItem(_ model: ChecklistModel, _ inspection: JobInspection) -> some View {
+            let options = model.addOptions
+            return VStack(alignment: .leading, spacing: 4) {
+                FieldLabel("Add an item")
+                HStack(spacing: 12) {
+                    SelectField(
+                        label: nil, selection: $adding, options: [""] + options.map(\.id),
+                        optionLabel: { id in options.first { $0.id == id }?.label ?? "Choose…" }
+                    )
+                    .accessibilityLabel("Add an item")
+                    Button("Add") {
+                        guard let option = options.first(where: { $0.id == adding }) else { return }
+                        addAnother(option.type, inspection)
+                        adding = ""
                     }
-                }
-            }
-            if !model.missing.isEmpty {
-                Section("Add an item") {
-                    ForEach(model.missing, id: \.id) { type in
-                        Button("+ \(type.name)") { addAnother(type, inspection) }
-                            .foregroundStyle(Color.brandPrimary)
-                            .frame(minHeight: minTarget)
-                    }
+                    .buttonStyle(.secondary)
+                    .disabled(adding.isEmpty)
                 }
             }
         }
@@ -90,6 +122,14 @@
                 try InspectionWrites.setVerdict(
                     sync, companyId: company.id, jobId: job.id, componentId: item.component.id, existing: item.result,
                     verdict: verdict, userId: session.user?.id)
+            }
+        }
+
+        private func markRest(_ items: [ChecklistItemRow]) {
+            guard let company = session.company else { return }
+            run {
+                try InspectionWrites.markRemaining(
+                    sync, companyId: company.id, jobId: job.id, items: items, userId: session.user?.id)
             }
         }
 
@@ -119,13 +159,95 @@
         }
     }
 
-    /// One checklist row: the name, "+ Add" and "More", the one-tap verdict (or a Done check),
-    /// and "Where" for Leaking or Attention, saved when the field loses focus.
+    /// One checklist section as a grouped block that folds away: a 56 tall header with a chevron,
+    /// the name and its summary; open, a row per item and "Mark N Remaining …".
+    private struct ChecklistGroup: View {
+        var jobId: String
+        var section: ChecklistSectionRows
+        var photos: [String: Int]
+        var choose: (ChecklistItemRow, Verdict?) -> Void
+        var saveWhere: (ChecklistItemRow, String) -> Void
+        var remove: (ChecklistItemRow) -> Void
+        var markRest: () -> Void
+        /// nil follows the items: open while any are to do.
+        @State private var folded: Bool?
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+        var body: some View {
+            let open = !(folded ?? !section.startsOpen)
+            VStack(spacing: 0) {
+                Button {
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { folded = open }
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color.textMuted)
+                            .rotationEffect(.degrees(open ? 90 : 0))
+                            .frame(width: 20)
+                            .accessibilityHidden(true)
+                        Text(section.title)
+                            .textRole(.bodyEmphasis)
+                            .foregroundStyle(Color.text)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Text(section.summary)
+                            .font(summaryFont)
+                            .monospacedDigit()
+                            .foregroundStyle(summaryColor)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    .padding(.horizontal, 16)
+                    .frame(minHeight: 56)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.row)
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityValue(open ? "Expanded" : "Collapsed")
+                .accessibilityHint(open ? "Folds the section" : "Shows the items")
+                if open {
+                    Hairline()
+                    ForEach(Array(section.items.enumerated()), id: \.element.id) { index, item in
+                        if index > 0 { Hairline().padding(.leading, 16) }
+                        ChecklistItemView(
+                            jobId: jobId, item: item, photos: photos[item.component.id] ?? 0,
+                            choose: { choose(item, $0) }, saveWhere: { saveWhere(item, $0) },
+                            remove: { remove(item) })
+                    }
+                    if let title = section.markRemainingTitle {
+                        Hairline()
+                        ActionRow(title, action: markRest)
+                    }
+                }
+            }
+            .background(Color.surface)
+            .clipShape(RoundedRectangle(cornerRadius: CGFloat(Radius.grouped), style: .continuous))
+        }
+
+        /// Barlow SemiBold 15.
+        private var summaryFont: Font {
+            TypeRole.sectionLabel.brandFont.map { Font.custom($0.rawValue, size: 15, relativeTo: .subheadline) }
+                ?? .subheadline.weight(.semibold)
+        }
+
+        private var summaryColor: Color {
+            switch section.summaryTone {
+            case .muted: .textMuted
+            case .pass: .pass
+            case .warning: .warning
+            case .fail: .fail
+            }
+        }
+    }
+
+    /// One item: its name (opening the item's screen) and its verdict pill, or for a maintenance
+    /// item a round check; "Where" under a Leaking or Attention item, saved when it loses focus.
     private struct ChecklistItemView: View {
         var jobId: String
         var item: ChecklistItemRow
+        var photos: Int
         var choose: (Verdict?) -> Void
-        var addAnother: () -> Void
         var saveWhere: (String) -> Void
         var remove: () -> Void
         @Environment(\.openRoute) private var openRoute
@@ -134,108 +256,163 @@
         @FocusState private var focused: Bool
 
         var body: some View {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 12) {
-                    if item.isCheck {
-                        Button {
-                            choose(item.isDone ? nil : .ok)
-                        } label: {
-                            Image(systemName: item.isDone ? "checkmark.circle.fill" : "circle")
-                                .font(.title2)
-                                .foregroundStyle(item.isDone ? Color.pass : Color.controlBorder)
-                                .frame(minWidth: minTarget, minHeight: minTarget)
-                        }
-                        .buttonStyle(.borderless)
-                        .accessibilityLabel(item.component.label)
-                        .accessibilityValue(item.isDone ? "Done" : "Not done")
-                        .accessibilityAddTraits(.isToggle)
-                    }
+            Group {
+                if item.isCheck { checkRow } else { verdictRow }
+            }
+            .confirmationDialog(
+                "Remove \(item.component.label) from the checklist?", isPresented: $confirmRemove,
+                titleVisibility: .visible
+            ) {
+                Button("Remove Item", role: .destructive, action: remove)
+            }
+        }
+
+        /// The name and its sub-line; tapping opens the item's screen (apps only).
+        private var name: some View {
+            Button {
+                openRoute(.component(jobId: jobId, componentId: item.component.id))
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(item.component.label)
-                        .font(.body.weight(.semibold))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .accessibilityAction(named: "Remove") { confirmRemove = true }
-                    if item.addsAnother {
-                        Button("+ Add", action: addAnother)
-                            .buttonStyle(.borderless)
-                            .font(.body.weight(.semibold))
-                            .foregroundStyle(Color.brandPrimary)
-                            .frame(minHeight: minTarget)
-                            .accessibilityLabel("Add another \(item.type.name.lowercased())")
+                        .font(.role(.bodyMedium))
+                        .foregroundStyle(item.isCheck && item.isDone ? Color.textMuted : Color.text)
+                        .multilineTextAlignment(.leading)
+                    if let line = item.subline(photos: photos) {
+                        Text(line).textRole(.footnote).foregroundStyle(Color.textMuted).lineLimit(1)
                     }
-                    Button("More") { openRoute(.component(jobId: jobId, componentId: item.component.id)) }
-                        .buttonStyle(.borderless)
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(Color.brandPrimary)
-                        .frame(minHeight: minTarget)
-                        .accessibilityLabel("\(item.component.label): photos, tests, and notes")
                 }
-                if !item.isCheck {
-                    Picker(
-                        item.component.label,
-                        selection: Binding(get: { item.verdict }, set: { if $0 != item.verdict { choose($0) } })
-                    ) {
-                        ForEach(item.options, id: \.value) { Text($0.label).tag(Optional($0.value)) }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(minHeight: minTarget)
+                .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Opens the item: method, notes, and photos")
+        }
+
+        private var verdictRow: some View {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 12) {
+                    name
+                    verdictMenu
                 }
-                if item.needsWhere {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Where").font(.subheadline).foregroundStyle(Color.muted)
-                        TextField(
-                            "Where",
-                            text: Binding(
-                                get: { draft ?? item.result?.locationText ?? "" }, set: { draft = $0 }),
-                            prompt: Text("Where on the line or fitting")
-                        )
-                        .focused($focused)
-                        .submitLabel(.done)
-                        .onSubmit { focused = false }
-                        .frame(minHeight: minTarget)
-                        .padding(.horizontal, 12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .stroke(Color.controlBorder, lineWidth: 1))
-                    }
+                if item.needsWhere && item.result != nil { whereField }
+                if let reason = item.exclusionText {
+                    Text(reason).textRole(.secondary).foregroundStyle(Color.textMuted)
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+        }
+
+        private var checkRow: some View {
+            HStack(spacing: 12) {
+                Button {
+                    choose(item.isDone ? nil : .ok)
+                } label: {
+                    RoundCheck(done: item.isDone)
+                        .frame(width: minTarget, height: minTarget)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(.leading, -10)
+                .accessibilityLabel(item.component.label)
+                .accessibilityValue(item.isDone ? "Done" : "Not done")
+                .accessibilityAddTraits(.isToggle)
+                name
+                if item.type.allowsMultiple {
+                    Button {
+                        confirmRemove = true
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Color.textMuted)
+                            .frame(width: minTarget, height: minTarget)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Remove \(item.component.label)")
+                }
+            }
+            .padding(.horizontal, 16)
             .padding(.vertical, 4)
+        }
+
+        /// The verdict pill: "To Do" on `fill`, else the verdict's status color; a menu of the
+        /// options, and Remove Item… for items that can repeat.
+        private var verdictMenu: some View {
+            Menu {
+                ForEach(item.options, id: \.value) { option in
+                    Button {
+                        if option.value != item.verdict { choose(option.value) }
+                    } label: {
+                        if option.value == item.verdict {
+                            Label(option.label, systemImage: "checkmark")
+                        } else {
+                            Text(option.label)
+                        }
+                    }
+                }
+                if item.type.allowsMultiple {
+                    Divider()
+                    Button("Remove Item…", role: .destructive) { confirmRemove = true }
+                }
+            } label: {
+                Text(item.verdictLabel)
+                    .font(.role(.secondary).weight(.semibold))
+                    .foregroundStyle(item.verdict == nil ? Color.text : Color.onStatus)
+                    .lineLimit(1)
+                    .fixedSize()
+                    .padding(.leading, 12)
+                    .padding(.trailing, 32)
+                    .frame(minHeight: minTarget)
+                    .background(Capsule().fill(pillColor))
+                    .overlay(alignment: .trailing) {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(item.verdict == nil ? Color.text : Color.onStatus)
+                            .padding(.trailing, 10)
+                    }
+                    .contentShape(Capsule())
+            }
+            .accessibilityLabel(item.component.label)
+            .accessibilityValue(item.verdictLabel)
+        }
+
+        private var pillColor: Color {
+            switch item.verdict {
+            case nil: .fill
+            case .ok: .pass
+            case .leaking: .fail
+            case .attention: .warning
+            case .na: .excluded
+            }
+        }
+
+        private var whereField: some View {
+            TextField(
+                "Where",
+                text: Binding(get: { draft ?? item.result?.locationText ?? "" }, set: { draft = $0 }),
+                prompt: Text("Where? Under the deck, at the throat…").foregroundStyle(Color.placeholder)
+            )
+            .textRole(.body)
+            .foregroundStyle(Color.text)
+            .focused($focused)
+            .submitLabel(.done)
+            .onSubmit { focused = false }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(minHeight: minTarget)
+            .background(RoundedRectangle(cornerRadius: CGFloat(Radius.field), style: .continuous).fill(Color.bg))
+            .overlay(
+                RoundedRectangle(cornerRadius: CGFloat(Radius.field), style: .continuous)
+                    .strokeBorder(focused ? Color.focus : Color.controlBorder, lineWidth: focused ? 2 : 1)
+            )
+            .padding(.bottom, 4)
+            .accessibilityLabel("Where: \(item.component.label)")
             .onChange(of: focused) { _, isFocused in
                 if !isFocused, let draft {
                     saveWhere(draft)
                     self.draft = nil
                 }
-            }
-            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                Button {
-                    confirmRemove = true
-                } label: {
-                    Label("Remove", systemImage: "trash")
-                }
-                .tint(.fail)
-            }
-            .confirmationDialog(
-                "Remove \(item.component.label)?", isPresented: $confirmRemove, titleVisibility: .visible
-            ) {
-                Button("Remove", role: .destructive, action: remove)
-                Button("Keep", role: .cancel) {}
-            } message: {
-                Text("Use this only if it was added by mistake.")
-            }
-        }
-    }
-
-    /// "Couldn’t Save" with the error, on one row of the tab.
-    private struct ChecklistErrorAlert: ViewModifier {
-        @Binding var message: String?
-
-        func body(content: Content) -> some View {
-            content.alert(
-                "Couldn’t Save", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })
-            ) {
-                Button("OK") { message = nil }
-            } message: {
-                Text(message ?? "")
             }
         }
     }

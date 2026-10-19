@@ -420,7 +420,7 @@
         var body: some View {
             if let message = syncBarMessage(sync.status) {
                 SyncBar(message: message) {
-                    if let open { open() } else { openRoute(.settings) }
+                    if let open { open() } else { openRoute(.sync) }
                 }
             }
         }

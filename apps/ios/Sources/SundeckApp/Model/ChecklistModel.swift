@@ -3,8 +3,8 @@ import Observation
 import SundeckCore
 import SundeckSync
 
-/// One item on the Checklist tab, with what its row shows. Port of ChecklistItem in
-/// apps/mobile/src/features/inspection/ChecklistTab.tsx.
+/// One item on the Checklist section, with what its row shows. Port of ChecklistItem in
+/// apps/web/src/components/job-work.tsx.
 public struct ChecklistItemRow: Identifiable, Equatable, Sendable {
     public var component: JobComponent
     public var type: ComponentType
@@ -20,6 +20,34 @@ public struct ChecklistItemRow: Identifiable, Equatable, Sendable {
     public var options: [VerdictOption] { verdictOptions(type.answer) }
     /// "Where" only for Leaking and Attention, never on yes/no items.
     public var needsWhere: Bool { needsWhereField(type, verdict) }
+
+    /// The verdict pill's word: "To Do", or the chosen option's label.
+    public var verdictLabel: String {
+        verdict.flatMap { v in options.first { $0.value == v }?.label } ?? "To Do"
+    }
+
+    /// The muted line under the name: "{n} photos" (apps only), then the method and notes on a
+    /// leak item, or a maintenance item's other answer ("Skipped") and notes.
+    public func subline(photos: Int) -> String? {
+        let first: String? =
+            isCheck
+            ? (verdict != nil && verdict != .ok ? verdictLabel : nil)
+            : result?.method
+        let parts = [photos > 0 ? (photos == 1 ? "1 photo" : "\(photos) photos") : nil, first, result?.notes]
+            .compactMap { $0 }.filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    /// Why an item was left out ("Covered by deck"), shown under its row.
+    public var exclusionText: String? {
+        guard result?.status == .excluded, let reason = result?.exclusionReason, !reason.isEmpty else { return nil }
+        return reason
+    }
+}
+
+/// How a checklist section's summary reads: muted while items are to do, else the worst news.
+public enum ChecklistSummaryTone: Equatable, Sendable {
+    case muted, pass, warning, fail
 }
 
 /// A checklist section and its items, in checklist order.
@@ -29,6 +57,54 @@ public struct ChecklistSectionRows: Identifiable, Equatable, Sendable {
 
     public var id: String { section.rawValue }
     public var title: String { section.label }
+
+    /// Items not answered yet.
+    public var toDo: [ChecklistItemRow] { items.filter { $0.verdict == nil } }
+    var leaking: Int { items.filter { $0.verdict == .leaking }.count }
+    var attention: Int { items.filter { $0.verdict == .attention }.count }
+
+    /// The header's summary: "3 of 9 to do", "All clear", "1 leaking · 1 attention"; on the
+    /// service checklist "All done" or "2 need attention".
+    public var summary: String {
+        let toDo = toDo.count
+        if toDo > 0 { return "\(toDo) of \(items.count) to do" }
+        if section == .service {
+            return attention > 0 ? "\(attention) need\(attention == 1 ? "s" : "") attention" : "All done"
+        }
+        if leaking > 0 || attention > 0 {
+            return [leaking > 0 ? "\(leaking) leaking" : nil, attention > 0 ? "\(attention) attention" : nil]
+                .compactMap { $0 }.joined(separator: " · ")
+        }
+        return "All clear"
+    }
+
+    /// Green means all clear; attention alone is the warning color (spec decision 10).
+    public var summaryTone: ChecklistSummaryTone {
+        if !toDo.isEmpty { return .muted }
+        if leaking > 0 { return .fail }
+        return attention > 0 ? .warning : .pass
+    }
+
+    /// Open while it has items to do.
+    public var startsOpen: Bool { !toDo.isEmpty }
+
+    /// The action under the items while any are to do.
+    public var markRemainingTitle: String? {
+        let rest = toDo
+        guard !rest.isEmpty else { return nil }
+        if rest.allSatisfy({ $0.type.answer == .yesNo }) { return "Answer \(rest.count) Remaining No" }
+        if rest.allSatisfy({ $0.type.answer == .done }) { return "Mark \(rest.count) Remaining Done" }
+        return "Mark \(rest.count) Remaining Not Leaking"
+    }
+}
+
+/// One choice in "Add an item": another of a type that repeats, or a type not on the list yet.
+public struct ChecklistAddOption: Identifiable, Equatable, Sendable {
+    public var type: ComponentType
+    /// "Another Return", or the type's name.
+    public var label: String
+
+    public var id: String { type.id }
 }
 
 /// "Where" shows for Leaking and Attention on items that aren't yes/no.
@@ -38,8 +114,9 @@ func needsWhereField(_ type: ComponentType, _ verdict: Verdict?) -> Bool {
 
 /// What the Checklist tab shows for one job, worked out from the shop's setup and the job's rows.
 public struct ChecklistModel: Equatable, Sendable {
-    /// Sections in this fixed order. "service" is the pool service checklist (maintenance visits).
-    public static let sectionOrder: [ChecklistSection] = [.service, .visual, .plumbing, .bondBeam, .other]
+    /// Sections in the website's order (`CHECKLIST_SECTION_LABELS`). "service" is the pool service
+    /// checklist (maintenance visits).
+    public static let sectionOrder: [ChecklistSection] = [.visual, .plumbing, .bondBeam, .other, .service]
 
     public var jobType: JobType
     /// No items yet: the tab offers Set Up Checklist.
@@ -80,13 +157,23 @@ public struct ChecklistModel: Equatable, Sendable {
         }
     }
 
-    /// The line over the sections, in maintenance or leak words.
+    /// "Add an item": another of each type on the list that repeats, then the missing types.
+    public var addOptions: [ChecklistAddOption] {
+        var seen = Set<String>()
+        let repeatable = sections.flatMap(\.items).map(\.type).filter {
+            $0.allowsMultiple && seen.insert($0.id).inserted
+        }
+        return repeatable.map { ChecklistAddOption(type: $0, label: "Another \($0.name)") }
+            + missing.map { ChecklistAddOption(type: $0, label: $0.name) }
+    }
+
+    /// The line under "Checklist", in maintenance or leak words.
     public var tallyText: String { Self.tallyText(tally, jobType: jobType) }
 
     public static func tallyText(_ t: ChecklistTally, jobType: JobType) -> String {
         jobType == .maintenance
             ? "\(t.pass) done · \(t.attention) need attention · \(t.notApplicable) skipped · \(t.pending) to do"
-            : "\(t.pass) pass · \(t.attention) attention · \(t.leaking) leaking · \(t.notApplicable) N/A · \(t.pending) to do"
+            : "\(t.pass) not leaking · \(t.attention) attention · \(t.leaking) leaking · \(t.notApplicable) not applicable · \(t.pending) to do"
     }
 
     /// The pool the default checklist is planned for: the job's property, or a pool without a
@@ -105,9 +192,31 @@ public struct ChecklistModel: Equatable, Sendable {
     }
 }
 
-/// The checklist tab's writes, on top of `InspectionWrites`.
+/// The checklist section's writes, on top of `InspectionWrites`.
 @MainActor
 extension InspectionWrites {
+    /// "Mark 4 Remaining Not Leaking": every item still to do answered OK, in one batch.
+    public static func markRemaining(
+        _ sync: SyncService, companyId: String, jobId: String, items: [ChecklistItemRow], userId: String?
+    ) throws {
+        let rest = items.filter { $0.verdict == nil }
+        guard !rest.isEmpty else { return }
+        var values = verdictValues(.ok, userId: userId)
+        values["location_text"] = .null
+        try sync.batch {
+            for item in rest {
+                if let result = item.result {
+                    try sync.store.write("checklist_item_result", id: result.id, companyId: companyId, values)
+                } else {
+                    var row = values
+                    row["job_id"] = .string(jobId)
+                    row["job_component_id"] = .string(item.component.id)
+                    try sync.store.insert("checklist_item_result", companyId: companyId, row)
+                }
+            }
+        }
+    }
+
     /// Saves an item's "where" when its field loses focus; does nothing when it didn't change.
     public static func saveWhere(
         _ sync: SyncService, companyId: String, jobId: String, componentId: String, result: ChecklistItemResult?,
@@ -120,8 +229,9 @@ extension InspectionWrites {
     }
 }
 
-/// The checklist item screen's form: Result, Where and Notes, saved only on Save. Port of
-/// apps/mobile/src/app/(app)/jobs/[id]/component/[componentId].tsx.
+/// The checklist item screen's form: Result, Where, Method, Exclusion reason and Notes, saved only
+/// on Save. Port of apps/mobile/src/app/(app)/jobs/[id]/component/[componentId].tsx, with what the
+/// website's row has no room for on a phone (spec 5.4).
 @MainActor @Observable
 public final class ComponentForm {
     public let companyId: String
@@ -134,6 +244,10 @@ public final class ComponentForm {
     public var verdict: Verdict?
     public var location: String
     public var notes: String
+    /// How it was checked (one of the type's methods), blank for none.
+    public var method: String
+    /// Why it was left out, when the answer is N/A; blank for none.
+    public var exclusionReason: String
 
     public init(
         companyId: String, jobId: String, component: JobComponent, type: ComponentType, result: ChecklistItemResult?
@@ -146,7 +260,19 @@ public final class ComponentForm {
         verdict = currentVerdict(status: result?.status, outcome: result?.outcome)
         location = result?.locationText ?? ""
         notes = result?.notes ?? ""
+        method = result?.method ?? ""
+        exclusionReason = result?.exclusionReason ?? ""
     }
+
+    /// The methods to choose from: blank first, then the type's, and the saved one if it's gone.
+    public var methodChoices: [String] {
+        var out = [""] + type.methods
+        if !method.isEmpty, !out.contains(method) { out.append(method) }
+        return out
+    }
+
+    /// Exclusion reasons only make sense for N/A.
+    public var asksExclusion: Bool { verdict == .na }
 
     public var options: [VerdictOption] { verdictOptions(type.answer) }
     public var needsWhere: Bool { needsWhereField(type, verdict) }
@@ -156,6 +282,8 @@ public final class ComponentForm {
         var values = verdictValues(verdict, userId: userId, now: now)
         values["location_text"] = needsWhere ? blankToNull(location) : .null
         values["notes"] = blankToNull(notes)
+        values["method"] = blankToNull(method)
+        values["exclusion_reason"] = asksExclusion ? blankToNull(exclusionReason) : .null
         return values
     }
 
@@ -164,4 +292,12 @@ public final class ComponentForm {
             sync, companyId: companyId, jobId: jobId, componentId: component.id, existing: result,
             values(userId: userId))
     }
+}
+
+/// The shop's exclusion reasons ("Covered by deck"), active ones in order (`exclusion_reason`).
+public func exclusionReasons(_ store: LocalStore, companyId: String) -> [String] {
+    ((try? store.list("exclusion_reason", companyId: companyId)) ?? [])
+        .filter { $0["active"]?.bool ?? true }
+        .sorted { ($0["sort_order"]?.number ?? 0) < ($1["sort_order"]?.number ?? 0) }
+        .compactMap { $0["label"]?.string }
 }

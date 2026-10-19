@@ -3,130 +3,34 @@
     import SundeckSync
     import SwiftUI
 
-    /// Account, sync, changes the server refused, tips, help, and signing out. Port of
-    /// apps/mobile/src/app/(app)/settings.tsx (Messages, the Chemical Calculator and the mobile
-    /// number come with S8).
+    /// More › Sync (spec 6.6, apps only): when the phone last synced, what's waiting, Sync Now,
+    /// the changes the server refused (each can be discarded), and this phone. The sync bar opens
+    /// it too (its `Route.settings`); the account, help and signing out moved to More.
     struct SettingsView: View {
         var showWelcome: () -> Void
         var showReauth: () -> Void
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
-        @Environment(AppEnvironment.self) private var app
-        @Environment(\.openURL) private var openURL
         @State private var problems: [OutboxProblem] = []
         @State private var syncing = false
-        @State private var confirmSignOut = false
-        @State private var confirmDelete = false
-        @State private var deleting = false
-        @State private var alert: (title: String, message: String)?
+        @State private var discarding: OutboxProblem?
 
         var body: some View {
-            List {
-                account
-                syncSection
-                if !problems.isEmpty { problemsSection }
-                Section {
-                    AppearanceRow().listRowInsets(EdgeInsets())
-                } header: {
-                    SectionLabel("On this device")
-                }
-                Section("Tools") {
-                    Button("Show Tips Again") {
-                        app.walkthrough.reset()
-                        showWelcome()
-                    }
-                    .frame(minHeight: minTarget)
-                }
-                Section("Help") {
-                    link("Status and Support", "status")
-                    link("Privacy Policy", "privacy")
-                    link("Terms of Service", "terms")
-                }
-                Section {
-                    Button("Sign Out", role: .destructive) { confirmSignOut = true }
-                        .frame(minHeight: minTarget)
-                    Button(role: .destructive) {
-                        confirmDelete = true
-                    } label: {
-                        HStack {
-                            Text("Delete My Account")
-                            if deleting {
-                                Spacer()
-                                ProgressView()
-                            }
-                        }
-                    }
-                    .frame(minHeight: minTarget)
-                    .disabled(deleting)
-                }
-            }
-            .listStyle(.insetGrouped)
-            .navigationTitle("Settings")
-            .task(id: sync.revision) { problems = (try? sync.store.problems()) ?? [] }
-            .confirmationDialog("Sign out?", isPresented: $confirmSignOut, titleVisibility: .visible) {
-                Button("Sign Out", role: .destructive) { Task { await session.signOut() } }
-                Button("Stay Signed In", role: .cancel) {}
-            } message: {
-                Text(signOutMessage)
-            }
-            .confirmationDialog("Delete your account?", isPresented: $confirmDelete, titleVisibility: .visible) {
-                Button("Delete Account", role: .destructive) { Task { await deleteAccount() } }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text(
-                    "This removes your sign-in and the work on this phone. Jobs, reports, and invoices stay with the shop. If you’re the shop’s only owner, the shop’s data is deleted too, within 30 days."
-                )
-            }
-            .alert(alert?.title ?? "", isPresented: .constant(alert != nil)) {
-                Button("OK") { alert = nil }
-            } message: {
-                Text(alert?.message ?? "")
-            }
-        }
-
-        @ViewBuilder private var account: some View {
-            Section("Account") {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(session.user?.email ?? "")
-                    Text("\(session.company?.name ?? "") · \(roleLabel(session.company?.role))")
-                        .font(.subheadline).foregroundStyle(Color.muted)
-                }
-                .frame(minHeight: minTarget, alignment: .leading)
-                link("Two-Step Sign-In", "more/two-step")
-                LabeledContent(
-                    "Local data",
-                    value: (try? sync.store.database.cipherVersion()) != nil ? "Encrypted" : "Not encrypted")
-                LabeledContent("Device ID") {
-                    Text(sync.store.deviceId).font(.footnote.monospaced()).textSelection(.enabled)
-                }
-                LabeledContent(
-                    "App version",
-                    value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev")
-                if session.companies.count > 1 {
-                    Picker(
-                        "Company",
-                        selection: Binding(
-                            get: { session.company?.id ?? "" }, set: { session.setActiveCompany($0) })
-                    ) {
-                        ForEach(session.companies, id: \.id) { Text($0.name).tag($0.id) }
-                    }
-                }
-            }
-        }
-
-        @ViewBuilder private var syncSection: some View {
             let status = sync.status
-            Section {
-                LabeledContent(
-                    "Last synced",
-                    value: status.lastSyncedAt.map { $0.formatted(date: .abbreviated, time: .shortened) } ?? "Never")
-                LabeledContent("Waiting to sync", value: "\(status.pending)")
-                LabeledContent("Waiting to upload", value: "\(status.uploadsWaiting)")
+            ScreenScroll {
+                Grouped(footer: footer(status)) {
+                    ListRow(
+                        "Last synced",
+                        value: status.lastSyncedAt.map { $0.formatted(date: .abbreviated, time: .shortened) } ?? "Never"
+                    )
+                    ListRow("Waiting to sync", value: "\(status.pending)")
+                    ListRow("Waiting to upload", value: "\(status.uploadsWaiting)")
+                }
                 if status.phase == .signedOut {
                     Notice(
                         kind: .warning,
                         text: "Your sign-in expired. Sign in again to keep syncing; nothing on this phone is lost.")
-                    Button("Sign In Again", action: showReauth).buttonStyle(.secondary)
+                    Button("Sign In Again", action: showReauth).buttonStyle(.primary)
                 } else {
                     Button {
                         Task {
@@ -135,86 +39,80 @@
                             syncing = false
                         }
                     } label: {
-                        if syncing { ProgressView() } else { Text("Sync Now") }
+                        BusyButtonLabel("Sync Now", busy: syncing, busyTitle: "Syncing…")
                     }
-                    .buttonStyle(.secondary)
+                    .buttonStyle(.primary)
                     .disabled(syncing)
                 }
-            } header: {
-                Text("Sync")
-            } footer: {
-                if status.phase == .offline {
-                    Text("This phone is offline. Changes are saved here and sync later.")
-                } else if let error = status.error {
-                    Text("Last error: \(error)")
-                } else if let error = status.lastUploadError {
-                    Text("Last upload error: \(error)")
-                }
-            }
-        }
-
-        private var problemsSection: some View {
-            Section("Changes that could not be saved") {
-                ForEach(problems, id: \.seq) { problem in
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("\(problem.table): \(problem.fields.joined(separator: ", "))").font(
-                            .body.weight(.semibold))
-                        Text(problem.error).font(.subheadline).foregroundStyle(Color.muted)
-                        Button("Discard This Change") { try? sync.discardProblem(problem.seq) }
-                            .buttonStyle(.destructiveSecondary)
+                if !problems.isEmpty {
+                    Grouped(label: "Changes that could not be saved") {
+                        ForEach(problems, id: \.seq) { problem in
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(problemTitle(problem)).textRole(.bodyEmphasis).foregroundStyle(Color.text)
+                                Text(problem.error).textRole(.secondary).foregroundStyle(Color.textMuted)
+                                Button("Discard This Change", role: .destructive) { discarding = problem }
+                                    .buttonStyle(.danger)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
-                    .padding(.vertical, 4)
+                }
+                Grouped(label: "This phone") {
+                    ListRow("Device ID") {
+                        Text(sync.store.deviceId)
+                            .font(.footnote.monospaced())
+                            .foregroundStyle(Color.textMuted)
+                            .textSelection(.enabled)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                    ListRow("Local data", value: localData)
                 }
             }
+            .refreshable { await sync.syncNow() }
+            .navigationTitle("Sync")
+            .navigationBarTitleDisplayMode(.large)
+            .task(id: sync.revision) { problems = (try? sync.store.problems()) ?? [] }
+            .confirmationDialog(
+                "Discard this change?",
+                isPresented: Binding(get: { discarding != nil }, set: { if !$0 { discarding = nil } }),
+                titleVisibility: .visible, presenting: discarding
+            ) { problem in
+                Button("Discard This Change", role: .destructive) { try? sync.discardProblem(problem.seq) }
+            } message: { _ in
+                Text("The office never got it. This can’t be undone.")
+            }
+            .sensoryFeedback(.success, trigger: sync.status.lastSyncedAt)
         }
 
-        private func link(_ title: String, _ path: String) -> some View {
-            Button {
-                openURL(AppConfig.webURL.appendingPathComponent(path))
-            } label: {
-                HStack {
-                    Text(title).foregroundStyle(.primary)
-                    Spacer()
-                    Image(systemName: "arrow.up.right.square").foregroundStyle(Color.muted)
-                }
-                .frame(minHeight: minTarget)
-            }
+        private func footer(_ status: SyncStatus) -> String? {
+            if status.phase == .offline { return "This phone is offline. Changes are saved here and sync later." }
+            if let error = status.error { return "Last error: \(error)" }
+            if let error = status.lastUploadError { return "Last upload error: \(error)" }
+            return nil
         }
 
-        /// Warns about changes and files that haven't reached the office.
-        private var signOutMessage: String {
-            let changes = sync.status.pending + sync.status.problems
-            let files = sync.status.uploadsWaiting
-            guard changes + files > 0 else {
-                return "Your work is saved to the office. Signing out removes it from this phone."
+        /// The database's size on this phone, and whether it's encrypted.
+        private var localData: String {
+            let encrypted = (try? sync.store.database.cipherVersion()) != nil ? "Encrypted" : "Not encrypted"
+            guard
+                let folder = try? FileManager.default.url(
+                    for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+            else { return encrypted }
+            let bytes = ["", "-wal"].compactMap { suffix in
+                (try? FileManager.default.attributesOfItem(
+                    atPath: folder.appendingPathComponent("sundeck.db\(suffix)").path))?[.size] as? Int64
             }
-            let parts = [
-                changes > 0 ? (changes == 1 ? "1 change" : "\(changes) changes") : nil,
-                files > 0 ? (files == 1 ? "1 photo or recording" : "\(files) photos or recordings") : nil,
-            ].compactMap { $0 }.joined(separator: " and ")
-            return "\(parts) haven’t reached the office yet. Signing out deletes them from this phone."
-        }
-
-        private func deleteAccount() async {
-            deleting = true
-            defer { deleting = false }
-            let client = app.client
-            let api = WebAPI(baseURL: AppConfig.webURL) { try? await client.auth.session.accessToken }
-            do {
-                let reply = try await api.post("api/account/delete")
-                if reply["status"]?.string == "deleted" {
-                    await session.signOut()
-                } else {
-                    alert = ("Request Sent", reply["message"]?.string ?? "We’ll email you when it’s done.")
-                }
-            } catch {
-                alert = ("Couldn’t Delete", String(describing: error))
-            }
+            .reduce(0, +)
+            return bytes > 0 ? "\(byteSize(bytes)) · \(encrypted)" : encrypted
         }
     }
 
-    /// The three welcome cards for the shop's package, then straight to work. Port of
-    /// apps/mobile/src/app/(app)/welcome.tsx.
+    /// The three welcome cards for the shop's package, then straight to work (app-only first
+    /// launch). Port of apps/mobile/src/app/(app)/welcome.tsx, in the website's look: soft cards
+    /// on the grouped gray, Barlow titles, one primary button.
     struct WelcomeView: View {
         @Environment(Session.self) private var session
         @Environment(AppEnvironment.self) private var app
@@ -229,15 +127,24 @@
                         ForEach(Array(cards.enumerated()), id: \.offset) { index, card in
                             VStack(spacing: 20) {
                                 Image(systemName: symbol(card.icon))
-                                    .font(.system(size: 44))
-                                    .foregroundStyle(Color.brandPrimary)
+                                    .font(.system(size: 40, weight: .medium))
+                                    .foregroundStyle(Color.link)
                                     .frame(width: 96, height: 96)
-                                    .background(Circle().fill(Color.brandPrimary.opacity(0.12)))
-                                Text(card.title).font(.title2.weight(.bold)).multilineTextAlignment(.center)
-                                Text(card.message).font(.body).foregroundStyle(Color.muted)
+                                    .background(Circle().fill(Color.iconTint))
+                                    .accessibilityHidden(true)
+                                Text(card.title)
+                                    .textRole(.sectionHeading)
+                                    .foregroundStyle(Color.text)
+                                    .multilineTextAlignment(.center)
+                                Text(card.message)
+                                    .textRole(.body)
+                                    .foregroundStyle(Color.textMuted)
                                     .multilineTextAlignment(.center)
                             }
-                            .padding(.horizontal, 32)
+                            .padding(.vertical, 32)
+                            .padding(.horizontal, 8)
+                            .card()
+                            .padding(.horizontal, CGFloat(Spacing.pageMargin))
                             .accessibilityElement(children: .combine)
                             .accessibilityLabel("\(card.title). \(card.message) Card \(index + 1) of \(cards.count).")
                             .tag(index)
@@ -248,16 +155,18 @@
                     Button(page >= cards.count - 1 ? "Get Started" : "Continue") {
                         if page >= cards.count - 1 { dismiss() } else { withAnimation { page += 1 } }
                     }
-                    .buttonStyle(.primary)
-                    .padding(.horizontal, 24)
+                    .buttonStyle(.primary(fullWidth: true, size: .field))
+                    .padding(.horizontal, CGFloat(Spacing.pageMargin))
                     .padding(.bottom, 16)
                 }
+                .background(Color.bg)
                 .navigationTitle("Welcome")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Skip") { dismiss() } }
                 }
             }
+            .sheetPresentation()
             // Opening it counts as seen, however it's closed.
             .onAppear { app.walkthrough.finishLaunch() }
         }
@@ -266,7 +175,7 @@
             switch icon {
             case .calendar: "calendar"
             case .checklist: "checklist"
-            case .chemistry: "drop.fill"
+            case .chemistry: "drop"
             case .search: "magnifyingglass"
             case .report: "doc.text"
             case .offline: "wifi.slash"

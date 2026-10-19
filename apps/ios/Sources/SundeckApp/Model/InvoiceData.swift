@@ -47,6 +47,8 @@ public struct InvoiceRecord: Decodable, Equatable, Sendable, Identifiable {
 public struct PaymentRecord: Decodable, Equatable, Sendable, Identifiable {
     public var id: String
     public var invoiceId: String?
+    /// A quote's deposit (no invoice yet).
+    public var quoteId: String?
     public var amountCents: Cents
     public var method: String
     public var status: String
@@ -55,6 +57,7 @@ public struct PaymentRecord: Decodable, Equatable, Sendable, Identifiable {
     enum CodingKeys: String, CodingKey {
         case id, method, status
         case invoiceId = "invoice_id"
+        case quoteId = "quote_id"
         case amountCents = "amount_cents"
         case paidAt = "paid_at"
     }

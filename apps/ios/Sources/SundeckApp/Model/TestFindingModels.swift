@@ -2,10 +2,10 @@ import Foundation
 import SundeckCore
 import SundeckSync
 
-// Tests and findings on a job: the editors' form state, what the tabs list, the pool diagram's
-// pins and outline. Ports of apps/mobile/src/features/inspection/{TestsTab,FindingsTab}.tsx,
-// apps/mobile/src/app/(app)/jobs/[id]/(edit)/{test/[testId],finding/[findingId]}.tsx and
-// apps/mobile/src/ui/{PoolDiagram,ShapePicker}.tsx. SwiftUI-free so it's tested on Linux.
+// Tests and findings on a job: the editors' form state, what the Findings section lists, the pool
+// diagram's pins and outline. Ports of TestsEditor, FindingsEditor and their sheets in
+// apps/web/src/components/job-work.tsx, and apps/web/src/components/{pool-diagram,shape-picker}.tsx
+// (spec 5.4, 6.1, 6.2, 3.18). SwiftUI-free so it's tested on Linux.
 
 // MARK: - Outcomes
 
@@ -35,7 +35,7 @@ func testValueText(_ value: TestValue) -> String? {
 
 /// The Add/Edit Test form: values typed as text, the component, the chosen outcome and notes.
 public struct TestForm: Equatable, Sendable {
-    public let type: TestType
+    public private(set) var type: TestType
     public let existingId: String?
     public var componentId: String?
     public var values: [String: String]
@@ -46,6 +46,7 @@ public struct TestForm: Equatable, Sendable {
     private let initial: Snapshot
 
     private struct Snapshot: Equatable, Sendable {
+        var typeId: String
         var componentId: String?
         var values: [String: String]
         var chosenOutcome: Outcome?
@@ -64,14 +65,25 @@ public struct TestForm: Equatable, Sendable {
         self.values = values
         chosenOutcome = existing?.outcome
         notes = existing?.notes ?? ""
-        initial = Snapshot(componentId: self.componentId, values: values, chosenOutcome: chosenOutcome, notes: notes)
+        initial = Snapshot(
+            typeId: type.id, componentId: self.componentId, values: values, chosenOutcome: chosenOutcome, notes: notes)
+    }
+
+    /// A new test's "Test" select: another type clears what was typed (as on the website).
+    public mutating func changeType(_ newType: TestType) {
+        guard isNew, newType.id != type.id else { return }
+        type = newType
+        values = [:]
+        chosenOutcome = nil
+        errors = [:]
     }
 
     public var isNew: Bool { existingId == nil }
 
     /// Anything changed since the sheet opened: Cancel asks first, and a swipe can't close it.
     public var isDirty: Bool {
-        Snapshot(componentId: componentId, values: values, chosenOutcome: chosenOutcome, notes: notes) != initial
+        Snapshot(typeId: type.id, componentId: componentId, values: values, chosenOutcome: chosenOutcome, notes: notes)
+            != initial
     }
 
     var data: TestData { values.mapValues { TestValue.string($0) } }
@@ -91,7 +103,24 @@ public struct TestForm: Equatable, Sendable {
         return chosenOutcome != suggested
     }
 
-    public var discardTitle: String { isNew ? "Discard this test?" : "Discard your changes?" }
+    /// Cancel with changes asks this (spec 3.15).
+    public var discardTitle: String { "Discard changes?" }
+
+    /// The sheet's title: "Add Test", or "Edit Pressure Test" with the type's name.
+    public var sheetTitle: String { isNew ? "Add Test" : "Edit \(type.name)" }
+    /// The sheet's main button.
+    public var submitTitle: String { isNew ? "Add Test" : "Save Test" }
+    /// "Delete this pressure test?"
+    public var deleteTitle: String { "Delete this \(type.name.lowercased())?" }
+
+    /// The "Result" choices: nil follows the calculation, then the type's results.
+    public var resultChoices: [Outcome?] { [nil] + type.resultOptions.map { Optional($0) } }
+
+    /// A result choice's words: "Use the calculation (Fail)" or "Not decided" for nil.
+    public func resultLabel(_ choice: Outcome?) -> String {
+        if let choice { return choice.label }
+        return calculation.suggested.map { "Use the calculation (\($0.label))" } ?? "Not decided"
+    }
 
     /// The form's fields in runs: a long-text field gets its own block, the fields between share one.
     public var groups: [[TestField]] {
@@ -151,8 +180,8 @@ public struct DiagramPoint: Equatable, Sendable {
     }
 }
 
-/// The Status segments, in the Expo app's order.
-public let findingStatusChoices: [FindingStatus] = [.open, .monitor, .quoted, .repaired]
+/// The Status segments, in the website's order (`FINDING_STATUS_LABELS`).
+public let findingStatusChoices: [FindingStatus] = [.open, .quoted, .repaired, .monitor]
 
 /// The Add/Edit Finding form.
 public struct FindingForm: Equatable, Sendable {
@@ -200,11 +229,16 @@ public struct FindingForm: Equatable, Sendable {
 
     public var isNew: Bool { existingId == nil }
     public var isDirty: Bool { snapshot != initial }
-    /// Status is set on existing findings only; a new one is open.
-    public var showsStatus: Bool { !isNew }
-    public var navigationTitle: String { isNew ? "New Finding" : "Finding" }
-    public var discardTitle: String { isNew ? "Discard this finding?" : "Discard your changes?" }
-    public var pinHint: String { pin == nil ? "Tap where the leak is." : "Tap again to move the pin." }
+    /// Status shows on every finding, new ones too (as on the website); a new one starts open.
+    public var showsStatus: Bool { true }
+    public var navigationTitle: String { isNew ? "Add Finding" : "Edit Finding" }
+    public var submitTitle: String { isNew ? "Add Finding" : "Save Finding" }
+    public var discardTitle: String { "Discard changes?" }
+    /// "Delete “Skimmer seam leak”?"
+    public var deleteTitle: String { "Delete “\(title)”?" }
+    public var pinHint: String { "Tap where the leak is." }
+    /// Under the diagram: "Pin placed." (with Clear Pin) or "No pin yet."
+    public var pinStatus: String { pin == nil ? "No pin yet." : "Pin placed." }
 
     /// A tap on the diagram, as fractions of its size (rounded to 4 decimals, clamped).
     public mutating func place(x: Double, y: Double) {
@@ -231,54 +265,76 @@ public struct FindingForm: Equatable, Sendable {
 
 // MARK: - Tabs
 
-/// One row on the Tests tab.
+/// One row of the Findings section's Tests list, as the website shows it.
 public struct TestRowItem: Identifiable, Equatable, Sendable {
+    public struct FieldLine: Equatable, Sendable {
+        public var label: String
+        public var value: String
+    }
+
     public var id: String
-    /// "Pressure test · Return 1".
-    public var title: String
-    /// The calculator's summary, else the observation.
-    public var detail: String?
+    /// The test type's name ("Pressure test").
+    public var name: String
+    /// "Skimmer · Today 9:40 AM": the item and when it was done, either left out when missing.
+    public var meta: String?
+    /// The calculator's summary ("Dropped 8 PSI in 15 min").
+    public var summary: String?
+    /// Each recorded field of a test without a calculator ("Result: No draw").
+    public var fields: [FieldLine]
+    public var notes: String?
     public var outcome: Outcome?
 }
 
-/// The Tests tab's rows, in the order the tests were done.
-public func testRows(_ insp: JobInspection, _ config: InspectionConfig) -> [TestRowItem] {
+/// The Tests list, in the order the tests were done.
+public func testRows(_ insp: JobInspection, _ config: InspectionConfig, now: Date, timeZone: String) -> [TestRowItem] {
     insp.tests.map { test in
         let type = config.testTypeById[test.testTypeId]
         let component = test.jobComponentId.flatMap { insp.componentById[$0] }
-        // JavaScript's `a ?? b`: only a missing or null value falls through.
-        let named = [test.data["line_name"], test.data["location"]].compactMap { $0 }.first { $0 != .null }
-        let place = named.flatMap(testValueText) ?? component?.label ?? ""
-        let summary = type.flatMap { calculate($0, test.data).summary }
-        let detail = summary ?? test.data["observation"].flatMap(testValueText)
+        let when = test.performedAt.flatMap { try? formatSchedule($0, now, timeZone) }
+        let meta = [component?.label, when].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+        let fields: [TestRowItem.FieldLine] =
+            type.map { type in
+                guard type.calculator == nil else { return [] }
+                return type.fieldSchema.fields.compactMap { field in
+                    guard let value = test.data[field.key].flatMap(testValueText), !value.isEmpty else { return nil }
+                    return TestRowItem.FieldLine(label: field.label, value: value)
+                }
+            } ?? []
         return TestRowItem(
-            id: test.id, title: (type?.name ?? "Test") + (place.isEmpty ? "" : " · \(place)"),
-            detail: detail?.isEmpty == true ? nil : detail, outcome: test.outcome)
+            id: test.id, name: type?.name ?? "Test", meta: meta.isEmpty ? nil : meta,
+            summary: type.flatMap { calculate($0, test.data).summary }, fields: fields,
+            notes: test.notes.flatMap { $0.isEmpty ? nil : $0 }, outcome: test.outcome)
     }
 }
 
-/// One numbered row on the Findings tab.
+/// One numbered row of the Findings list.
 public struct FindingRowItem: Identifiable, Equatable, Sendable {
     public var id: String
     public var number: Int
     public var title: String
-    /// "Major · Return 3 · Deep end · Not pinned", parts left out when blank.
+    /// "Major · Return 3 · Open · Pinned on the diagram", parts left out when blank.
     public var subtitle: String
+    /// Where it is ("Skimmer throat").
+    public var location: String?
+    public var notes: String?
     /// The severity's hex color; nil draws it in the fail color.
     public var color: String?
 }
 
-/// The Findings tab's rows, numbered in the order they were made.
+/// The Findings list, numbered in the order they were made.
 public func findingRows(_ insp: JobInspection, _ config: InspectionConfig) -> [FindingRowItem] {
     insp.findings.enumerated().map { i, finding in
         let severity = config.severityByKey[finding.severityKey]
         let component = finding.jobComponentId.flatMap { insp.componentById[$0] }
         let parts: [String?] = [
-            severity?.name, component?.label, finding.locationText, finding.pinX == nil ? "Not pinned" : nil,
+            severity?.name ?? finding.severityKey, component?.label, finding.status.label,
+            finding.pinX != nil ? "Pinned on the diagram" : nil,
         ]
         return FindingRowItem(
             id: finding.id, number: i + 1, title: finding.title,
             subtitle: parts.compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "),
+            location: finding.locationText.flatMap { $0.isEmpty ? nil : $0 },
+            notes: finding.notes.flatMap { $0.isEmpty ? nil : $0 },
             color: severity?.color.flatMap { $0.isEmpty ? nil : $0 })
     }
 }
@@ -311,29 +367,27 @@ public func findingPins(_ insp: JobInspection, _ config: InspectionConfig) -> [D
     }
 }
 
-/// The editor's pins: other findings grey and unlabelled, this one in its severity's color with "!".
-public func editorPins(_ insp: JobInspection, _ config: InspectionConfig, form: FindingForm) -> [DiagramPin] {
-    var pins: [DiagramPin] = insp.findings.compactMap { finding in
-        guard finding.id != form.existingId, let x = finding.pinX, let y = finding.pinY else { return nil }
-        return DiagramPin(id: finding.id, point: DiagramPoint(x: x, y: y), tint: .other, label: "")
-    }
-    if let pin = form.pin {
-        pins.append(
+/// The editor's pin: this finding's alone, in the chosen severity's color, unlabelled (as the
+/// website's pin picker draws it).
+public func editorPins(_ config: InspectionConfig, form: FindingForm) -> [DiagramPin] {
+    form.pin.map {
+        [
             DiagramPin(
-                id: "this", point: pin, tint: .severity(config.severityByKey[form.severity]?.color), label: "!",
-                active: true))
-    }
-    return pins
+                id: editorPinId, point: $0, tint: .severity(config.severityByKey[form.severity]?.color), label: "",
+                active: true)
+        ]
+    } ?? []
 }
 
-/// What VoiceOver reads for the diagram's pins: "Pin 1, Pin 2", or "No pins". In the editor, "!"
-/// is this finding and unlabelled pins are other findings.
+/// The id of the pin being placed in the editor.
+public let editorPinId = "this"
+
+/// What VoiceOver reads for the diagram's pins: "Pin 1, Pin 2", or "No pins"; in the editor,
+/// "This finding’s pin".
 public func pinSummary(_ pins: [DiagramPin]) -> String {
     pins.isEmpty
         ? "No pins"
-        : pins.map {
-            $0.label == "!" ? "This finding’s pin" : $0.label.isEmpty ? "Another finding’s pin" : "Pin \($0.label)"
-        }.joined(separator: ", ")
+        : pins.map { $0.id == editorPinId ? "This finding’s pin" : "Pin \($0.label)" }.joined(separator: ", ")
 }
 
 /// A severity's `#RRGGBB` (or `#RGB`) as red, green and blue from 0 to 1; nil when it isn't one.
@@ -355,7 +409,7 @@ public func diagramShape(of property: Row?) -> DiagramShape? {
 }
 
 /// The shape picker's hint while no shape is picked.
-public let shapeNotPickedHint = "Not picked yet. Pick one so the diagram matches the pool."
+public let shapeNotPickedHint = "Pick one so the diagram matches the pool."
 
 /// Tapping a shape picks it; tapping the picked one clears it.
 public func shapeAfterTap(current: DiagramShape?, tapped: DiagramShape) -> DiagramShape? {
@@ -465,4 +519,14 @@ public func parseSVGPath(_ d: String) -> [PathCommand] {
         }
     }
     return out
+}
+
+// MARK: - The pool, from the finding sheet
+
+@MainActor
+extension InspectionWrites {
+    /// The finding sheet's "Has a spa" switch: saved at once, and the diagram redraws.
+    public static func setHasSpa(_ sync: SyncService, propertyId: String, companyId: String, hasSpa: Bool) throws {
+        try sync.write("property", id: propertyId, companyId: companyId, ["has_spa": .bool(hasSpa)])
+    }
 }

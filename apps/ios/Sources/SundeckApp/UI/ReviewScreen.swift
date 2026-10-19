@@ -29,11 +29,7 @@
         var body: some View {
             Group {
                 if missing {
-                    List {
-                        Notice(kind: .warning, text: "This job isn’t on this phone.")
-                            .listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
-                    }
-                    .listStyle(.insetGrouped)
+                    ScreenScroll { Notice(kind: .warning, text: "This job isn’t on this phone.") }
                 } else if let summary, let form {
                     content(summary, form)
                 } else {
@@ -43,6 +39,7 @@
             }
             .navigationTitle("Review and Sign")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .tabBar)
             .task(id: sync.revision) { load() }
         }
 
@@ -52,111 +49,112 @@
 
         // The page scrolls, but holds still while a finger is on the pad.
         private func content(_ summary: ReviewSummary, _ form: SignatureForm) -> some View {
-            List {
-                Section {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(summary.companyName).font(.subheadline).foregroundStyle(Color.muted)
-                        Text(summary.title).font(.title2.weight(.bold))
-                        Text(summary.customerText).font(.headline)
-                        if !summary.address.isEmpty {
-                            Text(summary.address).font(.subheadline)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    Text(ReviewSummary.intro).textRole(.secondary).foregroundStyle(Color.textMuted)
+                    VStack(alignment: .leading, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(summary.companyName).textRole(.secondary).foregroundStyle(Color.textMuted)
+                            Text(summary.title).textRole(.sectionHeading).foregroundStyle(Color.text)
+                            Text(summary.customerText).textRole(.bodyEmphasis).foregroundStyle(Color.text)
+                            if !summary.address.isEmpty {
+                                Text(summary.address).textRole(.secondary).foregroundStyle(Color.text)
+                            }
+                            Text(Date.now.formatted(date: .abbreviated, time: .omitted))
+                                .textRole(.secondary).foregroundStyle(Color.textMuted)
                         }
-                        Text(Date.now.formatted(date: .numeric, time: .omitted))
-                            .font(.subheadline).foregroundStyle(Color.muted)
-                    }
-                    .padding(.vertical, 4)
-                } header: {
-                    Text(ReviewSummary.intro).font(.subheadline).foregroundStyle(Color.muted).textCase(nil)
-                }
-
-                if summary.sections.isEmpty {
-                    Section { Notice(kind: .info, text: ReviewSummary.summaryLater) }
-                        .listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
-                } else {
-                    ForEach(summary.sections, id: \.key) { section in
-                        Section {
-                            Text(section.text)
-                        } header: {
-                            Text(section.title).font(.headline).foregroundStyle(.primary).textCase(nil)
-                        }
-                    }
-                }
-
-                Section {
-                    Text(summary.tallyText)
-                    if let pending = summary.pendingText {
-                        Text(pending).font(.subheadline).foregroundStyle(Color.muted)
-                    }
-                } header: {
-                    heading("Checklist")
-                }
-
-                if !summary.findings.isEmpty {
-                    Section {
-                        ForEach(summary.findings) { line in
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(line.title).font(.body.weight(.semibold))
-                                if !line.detail.isEmpty {
-                                    Text(line.detail).font(.subheadline).foregroundStyle(Color.muted)
+                        if summary.sections.isEmpty {
+                            Notice(kind: .info, text: ReviewSummary.summaryLater)
+                        } else {
+                            ForEach(summary.sections, id: \.key) { section in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    SubHeading(section.title)
+                                    Text(section.text).textRole(.body).foregroundStyle(Color.text)
                                 }
                             }
-                            .accessibilityElement(children: .combine)
                         }
-                    } header: {
-                        heading("Findings")
-                    }
-                }
-
-                if !summary.tests.isEmpty {
-                    Section {
-                        ForEach(summary.tests) { test in
-                            HStack {
-                                Text(test.name)
-                                Spacer()
-                                OutcomeChip(outcome: test.outcome)
+                        VStack(alignment: .leading, spacing: 4) {
+                            SubHeading("Checklist")
+                            Text(summary.tallyText).textRole(.body).foregroundStyle(Color.text)
+                            if let pending = summary.pendingText {
+                                Text(pending).textRole(.secondary).foregroundStyle(Color.textMuted)
                             }
-                            .frame(minHeight: minTarget)
-                            .accessibilityElement(children: .combine)
                         }
-                    } header: {
-                        heading("Tests")
+                        if !summary.findings.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                SubHeading("Findings")
+                                ForEach(summary.findings) { line in
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(line.title).textRole(.bodyEmphasis).foregroundStyle(Color.text)
+                                        if !line.detail.isEmpty {
+                                            Text(line.detail).textRole(.secondary).foregroundStyle(Color.textMuted)
+                                        }
+                                    }
+                                    .accessibilityElement(children: .combine)
+                                }
+                            }
+                        }
+                        if !summary.tests.isEmpty {
+                            VStack(alignment: .leading, spacing: 4) {
+                                SubHeading("Tests")
+                                ForEach(summary.tests) { test in
+                                    HStack {
+                                        Text(test.name).textRole(.body).foregroundStyle(Color.text)
+                                        Spacer()
+                                        OutcomeChip(outcome: test.outcome)
+                                    }
+                                    .frame(minHeight: minTarget)
+                                    .accessibilityElement(children: .combine)
+                                }
+                            }
+                        }
                     }
-                }
+                    .card()
 
-                signOff(summary, form)
+                    signOff(summary, form)
+                }
+                .padding(.horizontal, CGFloat(Spacing.pageMargin))
+                .padding(.vertical, 16)
             }
-            .listStyle(.insetGrouped)
+            .background(Color.bg)
             .scrollDisabled(drawing)
             .scrollDismissesKeyboard(.interactively)
         }
 
-        private func heading(_ text: String) -> some View {
-            Text(text).font(.headline).foregroundStyle(.primary).textCase(nil)
-        }
-
         @ViewBuilder private func signOff(_ summary: ReviewSummary, _ form: SignatureForm) -> some View {
             if let pending = summary.pendingNotice {
-                Section { Notice(kind: .warning, text: pending) }
-                    .listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
+                Notice(kind: .warning, text: pending)
             } else if summary.showsSignOff {
-                Section {
-                    if form.showsPicker {
-                        Picker(form.pickerLabel, selection: binding(\.purpose, nil)) {
-                            ForEach(form.purposes, id: \.value) { Text($0.label).tag(Optional($0.value)) }
+                VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        if let purpose = form.purpose,
+                            let label = form.purposes.first(where: { $0.value == purpose })?.label
+                        {
+                            Text(label).font(.role(.secondary).weight(.semibold)).foregroundStyle(Color.textMuted)
                         }
-                        .frame(minHeight: minTarget)
+                        Text("Please Sign").textRole(.largeTitle).foregroundStyle(Color.text)
+                            .accessibilityAddTraits(.isHeader)
                     }
-                    if let purpose = form.purpose {
-                        Text(summary.statement(purpose)).font(.title3).padding(.vertical, 4)
+                    if form.showsPicker {
+                        VStack(alignment: .leading, spacing: 4) {
+                            FieldLabel(form.pickerLabel)
+                            Segmented(
+                                selection: binding(\.purpose, nil), options: form.purposes.map { Optional($0.value) },
+                                label: { value in form.purposes.first { $0.value == value }?.label ?? "" },
+                                title: form.pickerLabel, fillsWidth: true)
+                        }
                     }
-                } header: {
-                    Text("Please Sign").font(.title2.weight(.bold)).foregroundStyle(.primary).textCase(nil)
-                }
-                // The customer types here, so iPhone doesn't offer the tech's own name.
-                Section {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(form.nameLabel).font(.subheadline.weight(.semibold))
-                        TextField("", text: binding(\.nameText, ""))
+                    VStack(alignment: .leading, spacing: 16) {
+                        if let purpose = form.purpose {
+                            Text(summary.statement(purpose)).font(.system(size: 19)).foregroundStyle(Color.text)
+                        }
+                        // The customer types here, so iPhone doesn't offer the tech's own name.
+                        VStack(alignment: .leading, spacing: 4) {
+                            FieldLabel(form.nameLabel)
+                            TextField(
+                                "", text: binding(\.nameText, ""),
+                                prompt: Text("Full name").foregroundStyle(Color.placeholder)
+                            )
                             .textInputAutocapitalization(.words)
                             .autocorrectionDisabled()
                             .textContentType(nil)
@@ -164,55 +162,51 @@
                             .submitLabel(.next)
                             .onSubmit { focus = .role }
                             .accessibilityLabel(form.nameLabel)
-                    }
-                    .padding(.vertical, 4)
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Role (optional)").font(.subheadline.weight(.semibold))
-                        TextField(SignatureForm.rolePlaceholder, text: binding(\.role, ""))
+                            .fieldBox(focused: focus == .name)
+                        }
+                        VStack(alignment: .leading, spacing: 4) {
+                            FieldLabel("Role (optional)")
+                            TextField(
+                                "", text: binding(\.role, ""),
+                                prompt: Text(SignatureForm.rolePlaceholder).foregroundStyle(Color.placeholder)
+                            )
                             .textInputAutocapitalization(.sentences)
                             .textContentType(nil)
                             .focused($focus, equals: .role)
                             .submitLabel(.done)
                             .onSubmit { focus = nil }
                             .accessibilityLabel("Role (optional)")
+                            .fieldBox(focused: focus == .role)
+                        }
                     }
-                    .padding(.vertical, 4)
-                }
-                Section {
+                    .card()
                     SignaturePad(strokes: form.strokes, onChange: { self.form?.draw($0) }, drawing: $drawing)
-                        .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 4, trailing: 12))
                 }
             }
 
-            if let error = form.error {
-                Section { Notice(kind: .error, text: error) }
-                    .listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
-            }
+            if let error = form.error { Notice(kind: .error, text: error) }
 
             if summary.showsButtons {
-                Section {
-                    VStack(spacing: 12) {
-                        Button {
-                            finish(customerAway: false)
-                        } label: {
-                            if busy == .sign { ProgressView().tint(Color.onPrimary) } else { Text(summary.signTitle) }
-                        }
-                        .buttonStyle(.primary)
-                        if summary.showsCustomerNotHere {
-                            Text(ReviewSummary.awayNote)
-                                .font(.subheadline).foregroundStyle(Color.muted)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            Button {
-                                finish(customerAway: true)
-                            } label: {
-                                if busy == .away { ProgressView() } else { Text("Customer Not Here") }
-                            }
-                            .buttonStyle(.secondary)
-                        }
+                VStack(alignment: .leading, spacing: 12) {
+                    Button {
+                        finish(customerAway: false)
+                    } label: {
+                        BusyButtonLabel(summary.signTitle, busy: busy == .sign, busyTitle: "Saving…")
                     }
-                    .disabled(busy != nil)
+                    .buttonStyle(.primary(fullWidth: true, size: .field))
+                    if summary.showsCustomerNotHere {
+                        Hairline().padding(.top, 4)
+                        Text(ReviewSummary.awayNote).textRole(.secondary).foregroundStyle(Color.textMuted)
+                        Button {
+                            finish(customerAway: true)
+                        } label: {
+                            BusyButtonLabel("Customer Not Here", busy: busy == .away, busyTitle: "Finishing…")
+                        }
+                        .buttonStyle(.quiet)
+                        .padding(.leading, -20)
+                    }
                 }
-                .listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
+                .disabled(busy != nil)
             }
         }
 

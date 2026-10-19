@@ -1,17 +1,17 @@
 #if os(iOS)
     import SundeckCore
     import SundeckSync
-    import SundeckTokens
     import SwiftUI
 
-    /// The pool diagram with every finding's pin, the shape picker, the numbered findings and
-    /// Add Finding. List content (sections) for the job page's List. Port of
-    /// apps/mobile/src/features/inspection/FindingsTab.tsx.
+    /// "Findings" in the job's Findings section (spec 5.4): the pool diagram with every pin, a
+    /// numbered grouped row per finding (swipe left to delete), then Add Finding. Tapping a row
+    /// opens its Edit sheet; the pool's shape is set in that sheet. Port of FindingsEditor in
+    /// apps/web/src/components/job-work.tsx.
     struct FindingsTab: View {
         var job: JobView
         @Environment(SyncService.self) private var sync
         @Environment(\.openEditor) private var openEditor
-        @State private var deleting: String?
+        @State private var deleting: FindingRowItem?
         @State private var saveError: String?
 
         private var companyId: String { job.job["company_id"]?.string ?? "" }
@@ -20,57 +20,46 @@
             let _ = sync.revision  // reload after any write or pull
             let config = InspectionConfig(sync.store, companyId: companyId)
             let insp = JobInspection(sync.store, jobId: job.id)
-            // The property as it is now (the shape picker writes it).
+            // The property as it is now (the finding sheet's shape picker writes it).
             let property = job.property.flatMap { (try? sync.store.get("property", $0.id)) ?? $0 }
-            let shape = diagramShape(of: property)
             let rows = findingRows(insp, config)
-            if let property {
-                Section {
-                    PoolDiagram(
-                        shape: shape, hasSpa: property["has_spa"]?.bool ?? false, pins: findingPins(insp, config))
-                    ShapePicker(value: shape, hint: shape == nil ? shapeNotPickedHint : nil) { newShape in
-                        do {
-                            try InspectionWrites.setDiagramShape(
-                                sync, propertyId: property.id, companyId: companyId, shape: newShape)
-                        } catch {
-                            saveError = String(describing: error)
+            VStack(alignment: .leading, spacing: 12) {
+                SectionHeading("Findings")
+                VStack(alignment: .leading, spacing: 16) {
+                    if rows.isEmpty {
+                        Text("No findings recorded.").textRole(.body).foregroundStyle(Color.textMuted)
+                    } else {
+                        VStack(spacing: 20) {
+                            if let property {
+                                PoolDiagram(
+                                    shape: diagramShape(of: property), hasSpa: property["has_spa"]?.bool ?? false,
+                                    pins: findingPins(insp, config))
+                            }
+                            Grouped(separatorInset: 60) {
+                                ForEach(rows) { row in
+                                    SwipeDeleteRow(name: row.title, delete: { deleting = row }) {
+                                        Button {
+                                            openEditor(.finding(jobId: job.id, findingId: row.id, componentId: nil))
+                                        } label: {
+                                            FindingRow(row: row)
+                                        }
+                                        .buttonStyle(.row)
+                                        .accessibilityLabel("Edit \(row.title)")
+                                    }
+                                }
+                            }
                         }
                     }
-                }
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
-            }
-            Section {
-                if rows.isEmpty {
-                    Text("No findings yet. Add one for each leak you find.")
-                        .font(.subheadline).foregroundStyle(Color.muted)
-                } else {
-                    ForEach(rows) { row in
-                        Button {
-                            openEditor(.finding(jobId: job.id, findingId: row.id, componentId: nil))
-                        } label: {
-                            FindingRow(row: row)
-                        }
-                        .swipeActions {
-                            Button("Delete", role: .destructive) { deleting = row.id }
-                        }
-                    }
+                    Button("Add Finding") { openEditor(.finding(jobId: job.id, findingId: nil, componentId: nil)) }
+                        .buttonStyle(.secondary)
                 }
             }
-            Section {
-                Button("Add Finding") { openEditor(.finding(jobId: job.id, findingId: nil, componentId: nil)) }
-                    .buttonStyle(.primary)
-            }
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets())
             .confirmationDialog(
-                "Delete this finding?",
+                deleting.map { "Delete “\($0.title)”?" } ?? "",
                 isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
-                titleVisibility: .visible
-            ) {
-                Button("Delete", role: .destructive) { delete() }
-                Button("Keep", role: .cancel) { deleting = nil }
+                titleVisibility: .visible, presenting: deleting
+            ) { row in
+                Button("Delete Finding", role: .destructive) { delete(row.id) }
             }
             .alert(
                 "Couldn’t Save", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })
@@ -81,8 +70,7 @@
             }
         }
 
-        private func delete() {
-            guard let id = deleting else { return }
+        private func delete(_ id: String) {
             deleting = nil
             do {
                 try InspectionWrites.delete(sync, table: "finding", id: id, companyId: companyId)
@@ -92,32 +80,41 @@
         }
     }
 
-    /// The number badge in the severity's color, the title and the details line.
+    /// The number in a 28 circle of the severity's color, the title, "Major · Return 3 · Open ·
+    /// Pinned on the diagram", where it is, the notes, and a chevron.
     private struct FindingRow: View {
         var row: FindingRowItem
         @ScaledMetric(relativeTo: .body) private var badge: CGFloat = 28
 
         var body: some View {
             HStack(spacing: 12) {
-                Text("\(row.number)")
-                    .font(.body.weight(.bold))
-                    .foregroundStyle(Color(Tokens.Role.onHeader))
-                    .frame(width: badge, height: badge)
-                    .background(Circle().fill(severityColor(row.color)))
-                    .accessibilityLabel("Finding \(row.number)")
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(row.title).font(.body).foregroundStyle(.primary)
-                    if !row.subtitle.isEmpty {
-                        Text(row.subtitle).font(.subheadline).foregroundStyle(Color.muted)
+                HStack(alignment: .top, spacing: 12) {
+                    Text("\(row.number)")
+                        .font(.system(size: 15, weight: .bold))
+                        .monospacedDigit()
+                        .foregroundStyle(Color.onHeader)
+                        .frame(width: badge, height: badge)
+                        .background(Circle().fill(severityColor(row.color)))
+                        .accessibilityLabel("Finding \(row.number)")
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(row.title).textRole(.bodyEmphasis).foregroundStyle(Color.text)
+                        if !row.subtitle.isEmpty {
+                            Text(row.subtitle).textRole(.secondary).foregroundStyle(Color.textMuted)
+                        }
+                        if let location = row.location {
+                            Text(location).textRole(.body).foregroundStyle(Color.text).padding(.top, 2)
+                        }
+                        if let notes = row.notes {
+                            Text(notes).textRole(.secondary).foregroundStyle(Color.text).padding(.top, 2)
+                        }
                     }
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .multilineTextAlignment(.leading)
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(Color(Tokens.Role.placeholder))
-                    .accessibilityHidden(true)
+                Chevron()
             }
+            .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+            .padding(.vertical, 12)
             .frame(minHeight: minTarget)
             .contentShape(Rectangle())
             .accessibilityElement(children: .combine)

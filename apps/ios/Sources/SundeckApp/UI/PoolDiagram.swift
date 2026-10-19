@@ -3,9 +3,6 @@
     import SundeckTokens
     import SwiftUI
 
-    /// The diagram's water outline color (the brand's water blue, as the Expo app draws it).
-    private let waterStroke = Color(uiColor: Tokens.Brand.water.uiColor)
-
     /// An SVG path from the core's pool diagram (a 160×100 box), scaled to fill the rect.
     struct DiagramOutline: Shape {
         var commands: [PathCommand]
@@ -47,19 +44,25 @@
         return Color(red: rgb.red, green: rgb.green, blue: rgb.blue)
     }
 
-    /// Top-down pool with numbered finding pins. With `onPlace`, tapping drops a pin; positions
-    /// are fractions (0…1) of the diagram, the same on every screen size and on reports. Port of
-    /// apps/mobile/src/ui/PoolDiagram.tsx.
+    /// Top-down pool with numbered finding pins (spec 3.18): the pool filled `diagramWater` with a
+    /// 2 pt `water` outline, the spa as a circle labeled "SPA", pins in the severity's color on a
+    /// `surface` ring. With `onPlace`, tapping drops a pin; positions are fractions (0…1) of the
+    /// diagram, the same on every screen size and on reports. Port of
+    /// apps/web/src/components/pool-diagram.tsx.
     struct PoolDiagram: View {
         var shape: DiagramShape?
         var hasSpa: Bool
         var pins: [DiagramPin]
+        /// The finding sheet's pin picker draws a 1 pt `controlBorder` outline; the Findings
+        /// section's diagram is a plain white block.
+        var outlined = false
         var onPlace: ((Double, Double) -> Void)?
 
         private var diagram: SundeckCore.PoolDiagram { poolDiagram(shape, hasSpa) }
 
         var body: some View {
             let d = diagram
+            let corner = RoundedRectangle(cornerRadius: CGFloat(Radius.grouped), style: .continuous)
             Color.clear
                 .aspectRatio(d.width / d.height, contentMode: .fit)
                 .overlay {
@@ -75,41 +78,43 @@
                             .allowsHitTesting(onPlace != nil)
                     }
                 }
-                .background(Color(Tokens.Role.surface))
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(
-                        Color(Tokens.Role.border), lineWidth: 1)
-                )
+                .background(Color.surface)
+                .clipShape(corner)
+                .overlay {
+                    if outlined { corner.strokeBorder(Color.controlBorder, lineWidth: 1) }
+                }
                 .accessibilityElement(children: .ignore)
                 .modifier(DiagramAccessibility(pins: pins, onPlace: onPlace))
+        }
+
+        /// Barlow Bold at a size in the diagram's units, for "SPA" and the pin numbers.
+        private func display(_ size: CGFloat) -> Font {
+            TypeRole.sectionHeading.brandFont.map { Font.custom($0.rawValue, fixedSize: size) }
+                ?? .system(size: size, weight: .bold)
         }
 
         private func drawing(_ d: SundeckCore.PoolDiagram, size: CGSize) -> some View {
             let scale = size.width / d.width
             return ZStack(alignment: .topLeading) {
                 let outline = DiagramOutline(d.pool)
-                outline.fill(Color(Tokens.Role.diagramWater))
-                outline.stroke(waterStroke, lineWidth: 2 * scale)
+                outline.fill(Color.diagramWater)
+                outline.stroke(Color.water, lineWidth: 2 * scale)
                 if let spa = d.spa {
                     let rect = CGRect(
                         x: (spa.cx - spa.r) * scale, y: (spa.cy - spa.r) * scale, width: 2 * spa.r * scale,
                         height: 2 * spa.r * scale)
-                    Circle().fill(Color(Tokens.Role.diagramWater)).frame(width: rect.width, height: rect.height)
-                        .overlay(Circle().stroke(waterStroke, lineWidth: 2 * scale))
-                        .overlay(
-                            Text("SPA").font(.system(size: 7 * scale, weight: .bold)).foregroundStyle(waterStroke)
-                        )
+                    Circle().fill(Color.diagramWater).frame(width: rect.width, height: rect.height)
+                        .overlay(Circle().stroke(Color.water, lineWidth: 2 * scale))
+                        .overlay(Text("SPA").font(display(7 * scale)).foregroundStyle(Color.water))
                         .position(x: rect.midX, y: rect.midY)
                 }
                 ForEach(pins) { pin in
-                    let r = (pin.active ? 7.0 : 6.0) * scale
                     ZStack {
-                        Circle().fill(Color(Tokens.Role.surface)).frame(
-                            width: 2 * r + 3 * scale, height: 2 * r + 3 * scale)
-                        Circle().fill(pin.tint.color).frame(width: 2 * r, height: 2 * r)
-                        Text(pin.label).font(.system(size: 7 * scale, weight: .bold))
-                            .foregroundStyle(Color(Tokens.Role.onHeader))
+                        Circle().fill(Color.surface).frame(width: 15 * scale, height: 15 * scale)
+                        Circle().fill(pin.tint.color).frame(width: 12 * scale, height: 12 * scale)
+                        if !pin.label.isEmpty {
+                            Text(pin.label).font(display(7 * scale)).foregroundStyle(Color.onHeader)
+                        }
                     }
                     .position(x: pin.point.x * size.width, y: pin.point.y * size.height)
                 }
@@ -143,8 +148,9 @@
         }
     }
 
-    /// The pool's shape as five small drawings to tap. The shape can stay blank; tapping the
-    /// picked shape again clears it. Port of apps/mobile/src/ui/ShapePicker.tsx.
+    /// The pool's shape as five small drawings to tap (spec 3.18): centered 64 wide tiles on `fill`,
+    /// the name under each, a 2 pt `link` ring on the chosen one. The shape can stay blank; tapping
+    /// the picked shape again clears it. Port of apps/web/src/components/shape-picker.tsx.
     struct ShapePicker: View {
         var value: DiagramShape?
         var label = "Pool shape"
@@ -154,14 +160,15 @@
 
         var body: some View {
             VStack(alignment: .leading, spacing: 4) {
-                Text(label).font(.subheadline.weight(.semibold))
-                if let hint { Text(hint).font(.subheadline).foregroundStyle(Color.muted) }
+                FieldLabel(label)
+                if let hint { FieldHint(text: hint) }
                 ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 8) { tiles }
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
+                    HStack(spacing: 6) { tiles }
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 64, maximum: 96), spacing: 6)], spacing: 6) {
                         tiles
                     }
                 }
+                .frame(maxWidth: .infinity)
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel(label)
             }
@@ -170,34 +177,31 @@
         @ViewBuilder private var tiles: some View {
             ForEach(DiagramShape.allCases, id: \.self) { shape in
                 let on = value == shape
+                let tile = RoundedRectangle(cornerRadius: CGFloat(Radius.block), style: .continuous)
                 Button {
                     onChange(shapeAfterTap(current: value, tapped: shape))
                 } label: {
-                    VStack(spacing: 2) {
+                    VStack(spacing: 4) {
                         let outline = DiagramOutline(poolDiagram(shape, false).pool)
                         ZStack {
-                            outline.fill(Color(Tokens.Role.diagramWater))
-                            outline.stroke(waterStroke, lineWidth: 1.5)
+                            outline.fill(Color.diagramWater)
+                            outline.stroke(Color.water, lineWidth: 1.5)
                         }
                         .aspectRatio(1.6, contentMode: .fit)
-                        .frame(height: 30)
                         Text(shape.label)
-                            .font(.caption)
+                            .font(.role(.footnote).weight(on ? .semibold : .medium))
                             .lineLimit(1)
-                            .fixedSize()
-                            .foregroundStyle(on ? Color(Tokens.Role.link) : .primary)
+                            .minimumScaleFactor(0.8)
+                            .foregroundStyle(on ? Color.link : Color.text)
                     }
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .padding(.vertical, 4)
-                    .padding(.horizontal, 2)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color(Tokens.Role.surface))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .stroke(on ? Color(Tokens.Role.link) : .clear, lineWidth: 2)
-                    )
-                    .contentShape(Rectangle())
+                    .padding(.horizontal, 4)
+                    .padding(.top, 6)
+                    .padding(.bottom, 4)
+                    .frame(width: 64)
+                    .frame(minHeight: 64)
+                    .background(tile.fill(on ? Color.tinted : Color.fill))
+                    .overlay { if on { tile.strokeBorder(Color.link, lineWidth: 2) } }
+                    .contentShape(tile)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(shape.label)

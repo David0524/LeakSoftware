@@ -1,16 +1,18 @@
 #if os(iOS)
     import SundeckCore
     import SundeckSync
-    import SundeckTokens
     import SwiftUI
 
-    /// The job's tests, and a button per test type to add one. List content (sections) for the
-    /// job page's List. Port of apps/mobile/src/features/inspection/TestsTab.tsx.
+    /// "Tests" in the job's Findings section (spec 5.4): a grouped row per test (name, item and
+    /// time, the calculation, the recorded fields, notes, the outcome chip), swipe left to delete,
+    /// then Add Test. Tapping a row opens its Edit sheet. Port of TestsEditor in
+    /// apps/web/src/components/job-work.tsx.
     struct TestsTab: View {
         var job: JobView
+        @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
         @Environment(\.openEditor) private var openEditor
-        @State private var deleting: String?
+        @State private var deleting: TestRowItem?
         @State private var saveError: String?
 
         private var companyId: String { job.job["company_id"]?.string ?? "" }
@@ -18,45 +20,43 @@
         var body: some View {
             let _ = sync.revision  // reload after any write or pull
             let config = InspectionConfig(sync.store, companyId: companyId)
-            let rows = testRows(JobInspection(sync.store, jobId: job.id), config)
-            if !rows.isEmpty {
-                Section {
-                    ForEach(rows) { row in
-                        Button {
-                            openEditor(.test(jobId: job.id, testId: row.id, typeId: nil, componentId: nil))
-                        } label: {
-                            TestRow(row: row)
+            let rows = testRows(
+                JobInspection(sync.store, jobId: job.id), config, now: Date(),
+                timeZone: session.company?.timeZone ?? "America/Phoenix")
+            VStack(alignment: .leading, spacing: 12) {
+                SectionHeading("Tests")
+                VStack(alignment: .leading, spacing: 16) {
+                    if rows.isEmpty {
+                        Text("No tests recorded.").textRole(.body).foregroundStyle(Color.textMuted)
+                    } else {
+                        Grouped {
+                            ForEach(rows) { row in
+                                SwipeDeleteRow(name: row.name, delete: { deleting = row }) {
+                                    Button {
+                                        openEditor(.test(jobId: job.id, testId: row.id, typeId: nil, componentId: nil))
+                                    } label: {
+                                        TestRow(row: row)
+                                    }
+                                    .buttonStyle(.row)
+                                    .accessibilityLabel("Edit \(row.name)")
+                                }
+                            }
                         }
-                        .swipeActions {
-                            Button("Delete", role: .destructive) { deleting = row.id }
+                    }
+                    if !config.testTypes.isEmpty {
+                        Button("Add Test") {
+                            openEditor(.test(jobId: job.id, testId: nil, typeId: nil, componentId: nil))
                         }
+                        .buttonStyle(.secondary)
                     }
                 }
             }
-            Section {
-                if rows.isEmpty {
-                    Text("No tests recorded yet. Pick one to add.")
-                        .font(.subheadline).foregroundStyle(Color.muted)
-                }
-                ForEach(config.testTypes, id: \.id) { type in
-                    Button("+ \(type.name)") {
-                        openEditor(.test(jobId: job.id, testId: nil, typeId: type.id, componentId: nil))
-                    }
-                    .buttonStyle(.secondary)
-                }
-            } header: {
-                if !rows.isEmpty { Text("Add a test") }
-            }
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
             .confirmationDialog(
-                "Delete this test?",
+                deleting.map { "Delete this \($0.name.lowercased())?" } ?? "",
                 isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
-                titleVisibility: .visible
-            ) {
-                Button("Delete", role: .destructive) { delete() }
-                Button("Keep", role: .cancel) { deleting = nil }
+                titleVisibility: .visible, presenting: deleting
+            ) { row in
+                Button("Delete Test", role: .destructive) { delete(row.id) }
             }
             .alert(
                 "Couldn’t Save", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })
@@ -67,8 +67,7 @@
             }
         }
 
-        private func delete() {
-            guard let id = deleting else { return }
+        private func delete(_ id: String) {
             deleting = nil
             do {
                 try InspectionWrites.delete(sync, table: "test_result", id: id, companyId: companyId)
@@ -78,26 +77,37 @@
         }
     }
 
-    /// "Pressure test · Return 1", its result line, and the outcome chip.
+    /// The test's name, "Skimmer · Today 9:40 AM", its calculation, fields and notes; the outcome
+    /// chip and a chevron on the right.
     private struct TestRow: View {
         var row: TestRowItem
 
         var body: some View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(row.title).font(.body.weight(.semibold)).foregroundStyle(.primary)
-                    if let detail = row.detail {
-                        Text(detail).font(.subheadline).foregroundStyle(Color.muted)
+                    Text(row.name).textRole(.bodyEmphasis).foregroundStyle(Color.text)
+                    if let meta = row.meta {
+                        Text(meta).textRole(.secondary).foregroundStyle(Color.textMuted)
+                    }
+                    if let summary = row.summary {
+                        Text(summary).textRole(.bodyMedium).foregroundStyle(Color.text).padding(.top, 2)
+                    }
+                    ForEach(row.fields, id: \.label) { field in
+                        (Text("\(field.label): ").foregroundStyle(Color.textMuted)
+                            + Text(field.value).foregroundStyle(Color.text))
+                            .textRole(.secondary)
+                    }
+                    if let notes = row.notes {
+                        Text(notes).textRole(.secondary).foregroundStyle(Color.text).padding(.top, 2)
                     }
                 }
                 .multilineTextAlignment(.leading)
-                Spacer(minLength: 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 OutcomeChip(outcome: row.outcome)
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(Color(Tokens.Role.placeholder))
-                    .accessibilityHidden(true)
+                Chevron()
             }
+            .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+            .padding(.vertical, 12)
             .frame(minHeight: minTarget)
             .contentShape(Rectangle())
         }

@@ -112,9 +112,11 @@ public enum MediaDetail {
         parseMarkup(media.markup).shapes.isEmpty ? "Mark Up" : "Edit Markup"
     }
 
-    /// Title of the delete confirmation (features/media/remove.ts).
-    public static func deleteTitle(_ kind: MediaKind) -> String { "Delete this \(kindName(kind))?" }
-    public static let deleteMessage = "It is removed from the job and its reports."
+    /// The delete confirmation, as the website asks it (spec 3.15): "Remove this photo from the
+    /// job?", "The original stays on file.", Delete Photo.
+    public static func deleteTitle(_ kind: MediaKind) -> String { "Remove this \(kindName(kind)) from the job?" }
+    public static let deleteMessage = "The original stays on file."
+    public static func deleteButton(_ kind: MediaKind) -> String { "Delete \(kind.label)" }
 
     /// Shown while a capture that isn't on this phone downloads, or when it can't be reached.
     public static func loadingText(_ kind: MediaKind) -> String { "Loading the \(kindName(kind))…" }
@@ -268,5 +270,92 @@ extension MediaWrites {
         guard MediaDetail.captionChanged(media, text) else { return false }
         try setCaption(sync, media, text)
         return true
+    }
+}
+
+// MARK: - The job's Photos section
+
+/// What a capture can be attached to from the Photos section's "Attach to" (spec 5.4 Photos):
+/// the whole job, a finding, a checklist item or a test.
+public struct CaptureTargetOption: Equatable, Sendable, Identifiable {
+    public var target: MediaTarget
+    /// "Whole job", "Finding: Skimmer seam leak", "Skimmer", "Test: Pressure test"
+    public var label: String
+
+    public var id: String { label + (target.findingId ?? target.componentId ?? target.testResultId ?? "") }
+}
+
+/// One capture's card in the Photos section, as the website shows it.
+public struct MediaCardText: Equatable, Sendable {
+    /// "Photo · Skimmer", with " · 0:42" for recordings.
+    public var heading: String
+    public var caption: String?
+    /// A voice note's words, in quotes.
+    public var transcript: String?
+    /// "9:40 AM · location recorded"
+    public var meta: String
+    /// When the file isn't on this phone or uploaded yet: "Photo still uploading from the phone".
+    public var stillUploading: String
+    public var markupButton: String?
+}
+
+public enum JobPhotos {
+    public static let empty = "No photos or recordings yet."
+
+    /// "Attach to": Whole job first, then each finding, each checklist item and each test.
+    public static func targets(_ inspection: JobInspection, _ config: InspectionConfig, jobId: String)
+        -> [CaptureTargetOption]
+    {
+        var options = [CaptureTargetOption(target: MediaTarget(jobId: jobId), label: "Whole job")]
+        options += inspection.findings.map {
+            CaptureTargetOption(target: MediaTarget(jobId: jobId, findingId: $0.id), label: "Finding: \($0.title)")
+        }
+        options += inspection.components.map {
+            CaptureTargetOption(target: MediaTarget(jobId: jobId, componentId: $0.id), label: $0.label)
+        }
+        options += inspection.tests.map {
+            CaptureTargetOption(
+                target: MediaTarget(jobId: jobId, testResultId: $0.id),
+                label: "Test: \(config.testTypeById[$0.testTypeId]?.name ?? "Test")")
+        }
+        return options
+    }
+
+    /// The "Attach to" choice shows only when there's something besides the whole job.
+    public static func showsTargets(_ options: [CaptureTargetOption]) -> Bool { options.count > 1 }
+
+    /// What it's attached to, in the website's words: the finding, the item, "Test" or "Job".
+    public static func attached(_ media: Media, _ inspection: JobInspection) -> String {
+        if let id = media.findingId, let f = inspection.findings.first(where: { $0.id == id }), !f.title.isEmpty {
+            return f.title
+        }
+        if let id = media.jobComponentId, let label = inspection.componentById[id]?.label, !label.isEmpty {
+            return label
+        }
+        return media.testResultId != nil ? "Test" : "Job"
+    }
+
+    public static func card(_ media: Media, _ inspection: JobInspection, timeZone: String, now: Date = Date())
+        -> MediaCardText
+    {
+        var heading = "\(media.kind.label) · \(attached(media, inspection))"
+        if let ms = media.durationMs, ms > 0 { heading += " · \(formatDuration(ms))" }
+        let caption = media.caption.flatMap { $0.isEmpty ? nil : $0 }
+        let transcript =
+            media.kind == .audio && media.transcriptStatus == .done && !(media.transcript ?? "").isEmpty
+            ? "“\(media.transcript ?? "")”" : nil
+        var meta = media.capturedAt.flatMap { try? formatSchedule($0, now, timeZone) } ?? ""
+        if media.latitude != nil { meta += meta.isEmpty ? "Location recorded" : " · location recorded" }
+        return MediaCardText(
+            heading: heading, caption: caption, transcript: transcript, meta: meta,
+            stillUploading: "\(media.kind.label) still uploading from the phone",
+            markupButton: media.kind == .photo ? MediaDetail.markupButton(media) : nil)
+    }
+
+    /// The status line under the capture tiles: "Uploading voice note…", then "Voice note added."
+    public static func saving(_ kind: MediaKind) -> String { "Saving \(MediaDetail.kindName(kind))…" }
+    public static func added(_ kind: MediaKind) -> String {
+        let name = MediaDetail.kindName(kind)
+        return name.prefix(1).uppercased() + name.dropFirst() + " added."
     }
 }

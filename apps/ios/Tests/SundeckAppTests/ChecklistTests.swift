@@ -214,26 +214,29 @@ import Testing
         let counts: JSONValue = ["pass": 3, "attention": 1, "leaking": 2, "notApplicable": 4, "pending": 5]
         let t = try counts.decode(ChecklistTally.self)
         #expect(
-            ChecklistModel.tallyText(t, jobType: .detection) == "3 pass · 1 attention · 2 leaking · 4 N/A · 5 to do")
-        #expect(ChecklistModel.tallyText(t, jobType: .repair) == "3 pass · 1 attention · 2 leaking · 4 N/A · 5 to do")
+            ChecklistModel.tallyText(t, jobType: .detection)
+                == "3 not leaking · 1 attention · 2 leaking · 4 not applicable · 5 to do")
+        #expect(
+            ChecklistModel.tallyText(t, jobType: .repair)
+                == "3 not leaking · 1 attention · 2 leaking · 4 not applicable · 5 to do")
         #expect(
             ChecklistModel.tallyText(t, jobType: .maintenance) == "3 done · 1 need attention · 4 skipped · 5 to do")
     }
 
     @Test func sectionsComeInTheFixedOrderWithItemsByType() throws {
         try setUp(property: try property(spa: true))
-        // A service item added by hand still lists first.
+        // Sections come in the website's order; a service item added by hand lists last.
         let skim = try #require(config.componentTypes.first { $0.key == "svc_skim" })
         try InspectionWrites.addComponent(
             sync, companyId: Self.company, jobId: Self.job, type: skim, existing: inspection.components)
         let m = model(property: try property(spa: true))
-        #expect(m.sections.map(\.section) == [.service, .visual, .plumbing, .bondBeam])
-        #expect(m.sections.map(\.title) == ["Service", "Visual Leak Inspection", "Plumbing Static Test", "Bond Beam"])
+        #expect(m.sections.map(\.section) == [.visual, .plumbing, .bondBeam, .service])
+        #expect(m.sections.map(\.title) == ["Visual Leak Inspection", "Plumbing Static Test", "Bond Beam", "Service"])
         let plumbing = try #require(m.sections.first { $0.section == .plumbing })
         #expect(plumbing.items.map(\.component.label) == ["Returns 1", "Returns 2", "Spa jets"])
         // "+ Add" only on the last of a type that repeats.
         #expect(plumbing.items.map(\.addsAnother) == [false, true, false])
-        #expect(m.tallyText == "0 pass · 0 attention · 0 leaking · 0 N/A · 7 to do")
+        #expect(m.tallyText == "0 not leaking · 0 attention · 0 leaking · 0 not applicable · 7 to do")
     }
 
     @Test func addAnItemListsMissingTypesForThisJobAndPool() throws {
@@ -333,5 +336,120 @@ import Testing
         try form.save(sync, userId: Self.me)
         let r = try result("Equipment area")
         #expect(r["status"] == "excluded" && r["job_id"] == .string(Self.job))
+    }
+
+    // MARK: - Section blocks (the website's checklist)
+
+    func tap(_ label: String, _ verdict: Verdict?) throws {
+        let item = try row(label)
+        try InspectionWrites.setVerdict(
+            sync, companyId: Self.company, jobId: Self.job, componentId: item.component.id, existing: item.result,
+            verdict: verdict, userId: Self.me)
+    }
+
+    func section(_ s: ChecklistSection) throws -> ChecklistSectionRows {
+        try #require(model(property: nil).sections.first { $0.section == s })
+    }
+
+    @Test func sectionSummariesSayWhatIsLeftOrTheWorstNews() throws {
+        try setUp(property: try property())
+        var plumbing = try section(.plumbing)
+        #expect(plumbing.summary == "2 of 2 to do" && plumbing.summaryTone == .muted && plumbing.startsOpen)
+        #expect(plumbing.markRemainingTitle == "Mark 2 Remaining Not Leaking")
+        try tap("Returns 1", .ok)
+        try tap("Returns 2", .ok)
+        plumbing = try section(.plumbing)
+        #expect(plumbing.summary == "All clear" && plumbing.summaryTone == .pass && !plumbing.startsOpen)
+        #expect(plumbing.markRemainingTitle == nil)
+        // Attention alone is the warning color (spec decision 10), leaking wins.
+        try tap("Returns 1", .attention)
+        #expect(try section(.plumbing).summary == "1 attention")
+        #expect(try section(.plumbing).summaryTone == .warning)
+        try tap("Returns 2", .leaking)
+        #expect(try section(.plumbing).summary == "1 leaking · 1 attention")
+        #expect(try section(.plumbing).summaryTone == .fail)
+        // Yes/no items are answered No.
+        #expect(try section(.visual).markRemainingTitle == "Mark 2 Remaining Not Leaking")
+        try tap("Equipment area", .ok)
+        #expect(try section(.visual).markRemainingTitle == "Answer 1 Remaining No")
+    }
+
+    @Test func theServiceChecklistSaysAllDoneOrNeedsAttention() throws {
+        try setUp(.maintenance, property: try property())
+        func service() throws -> ChecklistSectionRows {
+            try #require(model(.maintenance, property: nil).sections.first)
+        }
+        #expect(try service().markRemainingTitle == "Mark 1 Remaining Done")
+        let skim = try #require(try service().items.first)
+        try InspectionWrites.setVerdict(
+            sync, companyId: Self.company, jobId: Self.job, componentId: skim.component.id, existing: skim.result,
+            verdict: .ok, userId: Self.me)
+        #expect(try service().summary == "All done")
+        let done = try #require(try service().items.first)
+        try InspectionWrites.setVerdict(
+            sync, companyId: Self.company, jobId: Self.job, componentId: done.component.id, existing: done.result,
+            verdict: .attention, userId: Self.me)
+        #expect(try service().summary == "1 needs attention")
+        #expect(try service().summaryTone == .warning)
+        #expect(try #require(try service().items.first).subline(photos: 0) == "Needs Attention")
+    }
+
+    @Test func markRemainingAnswersEveryItemLeftInOneBatch() throws {
+        try setUp(property: try property())
+        try tap("Returns 1", .leaking)
+        let plumbing = try section(.plumbing)
+        let before = sync.revision
+        try InspectionWrites.markRemaining(
+            sync, companyId: Self.company, jobId: Self.job, items: plumbing.items, userId: Self.me)
+        #expect(sync.revision == before + 1)
+        #expect(try result("Returns 1")["outcome"] == "leaking")
+        let r = try result("Returns 2")
+        #expect(r["status"] == "inspected" && r["outcome"] == "ok" && r["inspected_by"] == .string(Self.me))
+        #expect(try section(.plumbing).toDo.isEmpty)
+    }
+
+    @Test func addOptionsOfferAnotherOfRepeatingTypesThenMissingOnes() throws {
+        try setUp(property: try property(spa: false, poolType: "gunite_plaster"))
+        let options = model(property: try property(spa: true)).addOptions
+        #expect(options.map(\.label) == ["Another Returns", "If vinyl, is vinyl stretched?", "Spa jets"])
+    }
+
+    @Test func theItemLineShowsPhotosMethodAndNotesAndTheVerdictPillItsWord() throws {
+        try setUp(property: try property())
+        let item = try row("Returns 1")
+        #expect(item.verdictLabel == "To Do")
+        #expect(item.subline(photos: 0) == nil)
+        try InspectionWrites.saveChecklistResult(
+            sync, companyId: Self.company, jobId: Self.job, componentId: item.component.id, existing: item.result,
+            ["method": "Visual", "notes": "Dye test clean"])
+        try tap("Returns 1", .na)
+        try InspectionWrites.saveChecklistResult(
+            sync, companyId: Self.company, jobId: Self.job, componentId: item.component.id,
+            existing: try row("Returns 1").result, ["exclusion_reason": "Covered by deck"])
+        let after = try row("Returns 1")
+        #expect(after.verdictLabel == "N/A")
+        #expect(after.subline(photos: 2) == "2 photos · Visual · Dye test clean")
+        #expect(after.subline(photos: 1) == "1 photo · Visual · Dye test clean")
+        #expect(after.exclusionText == "Covered by deck")
+    }
+
+    @Test func theItemScreenSavesMethodAndAnExclusionReasonOnlyForNA() throws {
+        try setUp(property: try property())
+        let item = try row("Returns 1")
+        let form = ComponentForm(
+            companyId: Self.company, jobId: Self.job, component: item.component, type: item.type, result: item.result)
+        #expect(form.methodChoices == ["", "Visual"])
+        form.verdict = .na
+        #expect(form.asksExclusion)
+        form.method = "Visual"
+        form.exclusionReason = "Covered by deck"
+        try form.save(sync, userId: Self.me)
+        var r = try result("Returns 1")
+        #expect(r["method"] == "Visual" && r["exclusion_reason"] == "Covered by deck")
+        form.result = try row("Returns 1").result
+        form.verdict = .ok
+        try form.save(sync, userId: Self.me)
+        r = try result("Returns 1")
+        #expect(r["exclusion_reason"] == .null && r["method"] == "Visual")
     }
 }

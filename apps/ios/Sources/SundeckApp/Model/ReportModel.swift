@@ -23,8 +23,12 @@ public struct ReportTemplateOption: Equatable, Sendable, Identifiable {
 public struct SignatureRow: Equatable, Sendable, Identifiable {
     public var id: String
     public var name: String
-    /// "Inspection acknowledged · 10/19/26, 2:05 PM"
+    /// "Homeowner", shown muted after the name; nil when not given.
+    public var role: String?
+    /// "Inspection acknowledged · Sun, Oct 11, 9:00 AM" (the website's schedule format).
     public var subtitle: String
+    /// The drawing in storage, and its copy on this phone while it waits to upload.
+    public var imagePath: String?
     public var removeLabel: String { "Remove signature of \(name)" }
     public var removeTitle: String { "Remove \(name)’s signature?" }
 }
@@ -38,6 +42,8 @@ public struct VersionRow: Equatable, Sendable, Identifiable {
     public var superseded: Bool
     /// The customer's page for this version, when it has a link.
     public var url: URL?
+    /// Its PDF, when it has a link.
+    public var pdfURL: URL? { url?.appendingPathComponent("pdf") }
     public var viewLabel: String { "View version \(version)" }
 }
 
@@ -45,13 +51,17 @@ public struct VersionRow: Equatable, Sendable, Identifiable {
 public struct ReportTabModel: Equatable, Sendable {
     public static let offlineNotice =
         "This app isn’t connected to the Sundeck Pro server, so reports can’t be written here. Use the office website."
-    public static let noSignatures = "The customer signs at the end of the report: Review with Customer."
+    public static let noSignatures =
+        "None yet. The customer signs at the end of the report: write the draft, then Review with Customer."
+    public static let intro =
+        "Write Draft fills in the report from this job’s checklist, tests, and findings. Read and edit it before sending."
     public static let signWorkAuthorization = "Sign Work Authorization"
     public static let reviewWithCustomer = "Review with Customer"
     public static let finishReport = "Finish Report"
     public static let sendWithoutSignature = "Send Without a Signature"
-    public static let sendWithoutSignatureNote = "Sending locks this version."
-    public static let finishedNote = "Send it to the customer, or open the PDF."
+    public static let sendWithoutSignatureNote = "Sending saves your edits and locks this version."
+    public static let finishedNote = "Send it to the customer, or download the PDF."
+    public static let textedLabel = "Message to text the customer"
     public static let otherEmailsHint = "They get the report too. Separate with spaces."
 
     public var templates: [ReportTemplateOption]
@@ -71,6 +81,8 @@ public struct ReportTabModel: Equatable, Sendable {
     /// Signed on this phone but not yet part of a finished version (signed offline).
     public var waitingSigners: [String]
     public var versions: [VersionRow]
+    /// The card's title: the template's name ("Homeowner report").
+    public var templateName: String
     public var customerEmail: String
     public var customerOtherEmails: String
     public var hasCustomer: Bool
@@ -78,7 +90,7 @@ public struct ReportTabModel: Equatable, Sendable {
     public init(
         store: LocalStore, companyId: String, settings: JSONValue?, job: JobView,
         template: ReportRecord.Template = .homeowner, online: Bool = true, webURL: URL? = AppConfig.webURL,
-        timeZone: TimeZone = .current, locale: Locale = .current
+        timeZone: TimeZone = .current, locale: Locale = .current, now: Date = Date()
     ) {
         struct TemplateRow: Decodable {
             let key: String
@@ -101,9 +113,11 @@ public struct ReportTabModel: Equatable, Sendable {
         let signatureRecords = jobSignatures(store, jobId: job.id)
         signatures = signatureRecords.map { s in
             let purpose = SignaturePurpose(rawValue: s.purpose)?.label ?? s.purpose
+            let when = (try? formatSchedule(s.signedAt, now, timeZone.identifier)) ?? s.signedAt
+            let role = s.signerRole?.trimmingCharacters(in: .whitespacesAndNewlines)
             return SignatureRow(
-                id: s.id, name: s.signerName,
-                subtitle: "\(purpose) · \(reportDateText(s.signedAt, time: true, timeZone, locale))")
+                id: s.id, name: s.signerName, role: role?.isEmpty == false ? role : nil,
+                subtitle: "\(purpose) · \(when)", imagePath: s.imagePath)
         }
         ownSheet = enabledSignaturePurposes(settings).contains { $0.value == .workAuthorization }
 
@@ -113,9 +127,10 @@ public struct ReportTabModel: Equatable, Sendable {
         finished = sent.first { $0.status == .sent }
         waitingSigners = signatureRecords.filter { $0.reportId == nil && $0.purpose != "quote_acceptance" }
             .map(\.signerName)
+        templateName = byKey[template.rawValue]?.name ?? "Homeowner report"
         versions = sent.map { r in
             var label = "Version \(r.version)"
-            if let at = r.sentAt { label += " · " + reportDateText(at, time: false, timeZone, locale) }
+            if let at = r.sentAt { label += " · " + mediumDate(at, timeZone: timeZone.identifier, time: true) }
             if r.status == .superseded { label += " · replaced" }
             return VersionRow(
                 id: r.id, version: r.version, label: label, superseded: r.status == .superseded,
@@ -147,9 +162,18 @@ public struct ReportTabModel: Equatable, Sendable {
     public var finishTitle: String? { draft.map { "Finish version \($0.version)" } }
     /// Someone signed on this phone: Finish Report locks the version with the signature.
     public var finishesWithSignature: Bool { !waitingSigners.isEmpty }
+    /// The draft folded away: "Draft version 2 is ready to read, edit, and review with the customer."
+    public var collapsedText: String? {
+        guard hasDraftText, let draft else { return nil }
+        return "Draft version \(draft.version) is ready to read, edit, and review with the customer."
+    }
+
+    /// The title row's link to the newest finished version ("View version 2").
+    public var viewLatest: VersionRow? { versions.first { !$0.superseded && $0.url != nil } }
+
     public var finishNote: String {
         waitingSigners.isEmpty
-            ? "Hand the phone to the customer: they read the report and sign at the bottom. Signing locks this version."
+            ? "Hand the phone to the customer: they read the report and sign at the bottom. Signing locks this version; changes after that go out as a new version."
             : "Signed by \(waitingSigners.joined(separator: ", ")). Finish the report to lock this version with the signature."
     }
 
@@ -203,6 +227,8 @@ public final class ReportFlow {
     public var otherEmails: String?
     /// A text message with the report link, for the share sheet.
     public var share: String?
+    /// The last text message sent, shown with Copy Message after the share sheet closes.
+    public var texted: String?
     /// A local write that failed.
     public var saveError: String?
 
@@ -288,6 +314,7 @@ public final class ReportFlow {
 
     /// The share sheet closed after a text: the report went out.
     public func shareFinished() {
+        texted = share
         share = nil
         message = "Report sent."
     }
