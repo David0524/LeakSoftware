@@ -1,54 +1,31 @@
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { createRef, useMemo, useState, type RefObject } from "react";
-import type { TextInput } from "react-native";
+import { useMemo, useState } from "react";
+import { StyleSheet, View } from "react-native";
 import {
   calculate,
   normalizeTestData,
   validateTestData,
   type Outcome,
   type TestData,
-  type TestType,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useInspectionConfig, useJobInspection } from "../../../../../../data/inspection";
 import { useCompany, useSession } from "../../../../../../state/session";
 import { MediaSection } from "../../../../../../features/media/MediaSection";
-import {
-  Button,
-  Card,
-  FieldGroup,
-  FieldRow,
-  HeaderButton,
-  Notice,
-  PickerRow,
-  Screen,
-  T,
-  Segmented,
-} from "../../../../../../ui/components";
+import { Button, Field, HeaderButton, Notice, Screen, T } from "../../../../../../ui/components";
 import { confirmDestructive } from "../../../../../../ui/confirm";
-import { OUTCOME_STYLE } from "../../../../../../features/inspection/OutcomeChip";
+import { OUTCOME_LABELS } from "../../../../../../features/inspection/OutcomeChip";
 import { confirmDeleteTest } from "../../../../../../features/inspection/remove";
 import { haptics } from "../../../../../../ui/haptics";
+import { Select } from "../../../../../../ui/Select";
 import { useSheetLock } from "../../../../../../ui/sheet";
-import { ios } from "../../../../../../ui/theme";
-
-type SchemaField = TestType["field_schema"]["fields"][number];
+import { color, space } from "../../../../../../ui/theme";
 
 /**
- * The form's fields in runs: a long-text field gets its own block (on iPhone, under its label
- * as a header); the fields between share one.
+ * Add Test / Edit {Test name} (spec 6.1): the test type (adding only), the item, the type's
+ * fields, the live calculation, the result, notes, photos, then Add Test or Save Test; editing
+ * ends with Delete Test. Cancel asks first when anything changed.
  */
-function runs(fields: SchemaField[]): SchemaField[][] {
-  const out: SchemaField[][] = [];
-  for (const f of fields) {
-    const last = out[out.length - 1];
-    if (f.type === "textarea" || !last || last[0]!.type === "textarea") out.push([f]);
-    else last.push(f);
-  }
-  return out;
-}
-
-/** Record or edit one test. The form comes from the test type's field schema. */
 export default function TestScreen() {
   const params = useLocalSearchParams<{
     id: string;
@@ -63,92 +40,91 @@ export default function TestScreen() {
   const insp = useJobInspection(company.id, jobId);
   const existing =
     params.testId === "new" ? undefined : insp.tests.find((t) => t.id === params.testId);
-  const type = config.testTypeById.get(existing?.test_type_id ?? params.type ?? "");
+  const [typeId, setTypeId] = useState<string | null>(
+    existing?.test_type_id ?? params.type ?? config.testTypes[0]?.id ?? null,
+  );
+  const type = config.testTypeById.get(existing?.test_type_id ?? typeId ?? "");
 
-  const [componentId, setComponentId] = useState<string | null>(
-    existing?.job_component_id ?? params.component ?? null,
+  const [componentId, setComponentId] = useState<string>(
+    existing?.job_component_id ?? params.component ?? "",
   );
   const [values, setValues] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
     for (const [k, v] of Object.entries(existing?.data ?? {})) init[k] = v == null ? "" : String(v);
-    // A pressure test started from a component names the line after it.
+    // A pressure test started from an item names the line after it.
     const comp = params.component ? insp.componentById.get(params.component) : undefined;
     if (!existing && comp) init.line_name = comp.label;
     return init;
   });
-  const [chosenOutcome, setChosenOutcome] = useState<Outcome | null>(existing?.outcome ?? null);
+  // "" is "Use the calculation" (or "Not decided" when there is none).
+  const [result, setResult] = useState<"" | Outcome>(existing?.outcome ?? "");
   const [notes, setNotes] = useState(existing?.notes ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Anything changed since the sheet opened? Then Cancel asks first, and on iPhone a swipe down
-  // doesn't close the sheet by accident (as in New Job).
-  const [initial] = useState(() => JSON.stringify({ componentId, values, chosenOutcome, notes }));
-  const dirty = JSON.stringify({ componentId, values, chosenOutcome, notes }) !== initial;
+  const snapshot = () => JSON.stringify({ typeId, componentId, values, result, notes });
+  const [initial] = useState(snapshot);
+  const dirty = snapshot() !== initial;
   useSheetLock(dirty);
 
-  const calc = useMemo(() => (type ? calculate(type, values as TestData) : null), [type, values]);
-
-  // Return moves from one typed field to the next, as in iOS forms.
-  const [inputs] = useState(() => new Map<string, RefObject<TextInput | null>>());
-  const inputRef = (key: string) => {
-    let r = inputs.get(key);
-    if (!r) inputs.set(key, (r = createRef<TextInput>()));
-    return r;
-  };
-
-  if (!type || (params.testId !== "new" && !existing)) {
-    return (
-      <Screen>
-        <Notice tone="warning">This test isn’t on this phone.</Notice>
-      </Screen>
-    );
-  }
-  const testType = type;
-  const outcome = chosenOutcome ?? calc?.suggested ?? null;
-
-  // Typed fields, in order, for moving on with Return.
-  const typed = testType.field_schema.fields.filter((f) => f.type !== "select");
-  const nextOf = (key: string) => {
-    const i = typed.findIndex((f) => f.key === key);
-    const n = typed[i + 1];
-    return n ? inputRef(n.key) : undefined;
-  };
-  const component = (
-    <PickerRow
-      key="component"
-      label="Component"
-      options={[
-        { value: "", label: "None" },
-        ...insp.components.map((c) => ({ value: c.id, label: c.label })),
-      ]}
-      value={componentId ?? ""}
-      onChange={(v) => setComponentId(v || null)}
-    />
+  const calc = useMemo(
+    () => (type ? calculate(type, normalizeTestData(type.field_schema, values)) : null),
+    [type, values],
   );
-  const groups = runs(testType.field_schema.fields);
-  const startsAlone = groups[0]?.[0]?.type === "textarea";
 
   function cancel() {
     if (!dirty) return router.back();
     confirmDestructive({
-      title: existing ? "Discard your changes?" : "Discard this test?",
-      confirm: "Discard",
+      title: "Discard changes?",
+      confirm: "Discard Changes",
       cancel: "Keep Editing",
       onConfirm: () => router.back(),
     });
   }
 
+  const title = existing ? `Edit ${type?.name ?? "Test"}` : "Add Test";
+  const bar = (
+    <Stack.Screen
+      options={{
+        title,
+        headerBackVisible: false,
+        headerLeft: () => <HeaderButton title="Cancel" onPress={cancel} />,
+        headerRight: undefined,
+      }}
+    />
+  );
+
+  if ((params.testId !== "new" && !existing) || (existing && !type)) {
+    return (
+      <Screen>
+        {bar}
+        <Notice tone="warning">This test isn’t on this phone.</Notice>
+      </Screen>
+    );
+  }
+  if (!existing && config.testTypes.length === 0) {
+    return (
+      <Screen>
+        {bar}
+        <Notice tone="warning">
+          No test types are set up. Add them in Settings on the website.
+        </Notice>
+      </Screen>
+    );
+  }
+
   function save() {
-    const e = validateTestData(testType.field_schema, values as TestData);
+    if (!type) return setErrors({ type: "Choose a test." });
+    const e = validateTestData(type.field_schema, values as TestData);
     setErrors(e);
     if (Object.keys(e).length > 0) return;
-    const data = normalizeTestData(testType.field_schema, values as TestData);
+    const data = normalizeTestData(type.field_schema, values as TestData);
+    const computed = calculate(type, data);
     const record: Record<string, JsonValue> = {
-      job_component_id: componentId,
-      schema_version: testType.schema_version,
+      job_component_id: componentId || null,
+      schema_version: type.schema_version,
       data,
-      computed: calculate(testType, data).computed,
-      outcome,
+      computed: computed.computed,
+      outcome: result || computed.suggested || null,
       notes: notes.trim() || null,
     };
     if (existing) {
@@ -157,7 +133,7 @@ export default function TestScreen() {
       services.sync.insert("test_result", company.id, {
         ...record,
         job_id: jobId,
-        test_type_id: testType.id,
+        test_type_id: type.id,
         performed_at: new Date().toISOString(),
       });
     }
@@ -165,103 +141,119 @@ export default function TestScreen() {
     router.back();
   }
 
-  function remove() {
-    confirmDeleteTest(services.sync, company.id, existing!.id, () => router.back());
-  }
+  const fields = type?.field_schema.fields ?? [];
 
   return (
     <Screen>
-      <Stack.Screen
-        options={{
-          title: testType.name,
-          // iPhone sheet: Cancel and Save in the bar. Android keeps its back arrow.
-          ...(ios
-            ? {
-                headerLeft: () => <HeaderButton title="Cancel" onPress={cancel} />,
-                headerRight: () => <HeaderButton title="Save" strong onPress={save} />,
-              }
-            : null),
-        }}
-      />
-      {startsAlone || groups.length === 0 ? <FieldGroup>{component}</FieldGroup> : null}
-      {groups.map((run, gi) =>
-        run[0]!.type === "textarea" ? (
-          <FieldGroup key={run[0]!.key} title={run[0]!.label}>
-            <FieldRow
-              ref={inputRef(run[0]!.key)}
-              label={run[0]!.label}
-              value={values[run[0]!.key] ?? ""}
-              onChangeText={(v) => setValues((s) => ({ ...s, [run[0]!.key]: v }))}
-              multiline
-              error={errors[run[0]!.key]}
+      {bar}
+      <View style={styles.form}>
+        {existing ? null : (
+          <Select
+            label="Test"
+            options={config.testTypes.map((t) => ({ value: t.id, label: t.name }))}
+            value={typeId}
+            onChange={(v) => {
+              setTypeId(v);
+              setValues({});
+              setResult("");
+            }}
+            error={errors.type}
+          />
+        )}
+        <Select
+          label="Item (optional)"
+          options={[
+            { value: "", label: "Whole job" },
+            ...insp.components.map((c) => ({ value: c.id, label: c.label })),
+          ]}
+          value={componentId}
+          onChange={setComponentId}
+        />
+        {fields.map((f) => {
+          const label = f.unit ? `${f.label} (${f.unit})` : f.label;
+          const set = (v: string) => setValues((s) => ({ ...s, [f.key]: v }));
+          if (f.type === "select")
+            return (
+              <Select
+                key={f.key}
+                label={label}
+                options={[
+                  { value: "", label: "Choose…" },
+                  ...(f.options ?? []).map((o) => ({ value: o, label: o })),
+                ]}
+                value={values[f.key] ?? ""}
+                onChange={set}
+                error={errors[f.key]}
+              />
+            );
+          return (
+            <Field
+              key={f.key}
+              label={label}
+              value={values[f.key] ?? ""}
+              onChangeText={set}
+              multiline={f.type === "textarea"}
+              keyboardType={f.type === "number" ? "decimal-pad" : "default"}
+              autoCapitalize={f.type === "number" ? "none" : "sentences"}
+              error={errors[f.key]}
             />
-          </FieldGroup>
-        ) : (
-          <FieldGroup key={run[0]!.key} labelWidth={150}>
-            {gi === 0 ? component : null}
-            {run.map((f) =>
-              f.type === "select" ? (
-                <PickerRow
-                  key={f.key}
-                  label={f.label}
-                  options={(f.options ?? []).map((o) => ({ value: o, label: o }))}
-                  value={values[f.key] || null}
-                  onChange={(v) => setValues((s) => ({ ...s, [f.key]: v }))}
-                  error={errors[f.key]}
-                />
-              ) : (
-                <FieldRow
-                  key={f.key}
-                  ref={inputRef(f.key)}
-                  next={nextOf(f.key)}
-                  label={f.unit ? `${f.label} (${f.unit})` : f.label}
-                  value={values[f.key] ?? ""}
-                  onChangeText={(v) => setValues((s) => ({ ...s, [f.key]: v }))}
-                  keyboardType={f.type === "number" ? "decimal-pad" : "default"}
-                  autoCapitalize={f.type === "number" ? "none" : "sentences"}
-                  error={errors[f.key]}
-                />
-              ),
-            )}
-          </FieldGroup>
-        ),
-      )}
-
-      {calc?.summary ? (
-        <Card>
-          <T variant="label">Result</T>
-          <T variant="heading">{calc.summary}</T>
-          {calc.suggested ? (
-            <T variant="muted">Suggested: {OUTCOME_STYLE[calc.suggested].label.toLowerCase()}</T>
-          ) : null}
-        </Card>
-      ) : null}
-
-      <Segmented
-        grouped
-        label="Outcome"
-        options={testType.result_options.map((o) => ({
-          value: o,
-          label: OUTCOME_STYLE[o].label[0] + OUTCOME_STYLE[o].label.slice(1).toLowerCase(),
-        }))}
-        value={outcome}
-        onChange={setChosenOutcome}
-      />
-      {chosenOutcome && calc?.suggested && chosenOutcome !== calc.suggested ? (
-        <Notice tone="warning">You changed the suggested outcome. Add a note saying why.</Notice>
-      ) : null}
-      <FieldGroup>
-        <FieldRow label="Notes" value={notes} onChangeText={setNotes} multiline />
-      </FieldGroup>
-      <MediaSection
-        target={{ jobId, testResultId: existing?.id }}
-        disabledReason={existing ? undefined : "Save the test first, then add photos."}
-      />
-      {Object.keys(errors).length > 0 ? (
-        <Notice tone="error">Fix the highlighted fields.</Notice>
-      ) : null}
-      <Button title="Save Test" onPress={save} />
-      {existing ? <Button title="Delete Test" kind="danger" onPress={remove} /> : null}
+          );
+        })}
+        {calc?.summary ? (
+          <View accessibilityLiveRegion="polite">
+            <T variant="bodyEmphasis">{calc.summary}</T>
+          </View>
+        ) : null}
+        <Select
+          label="Result"
+          options={[
+            {
+              value: "" as const,
+              label: calc?.suggested
+                ? `Use the calculation (${OUTCOME_LABELS[calc.suggested]})`
+                : "Not decided",
+            },
+            ...(type?.result_options ?? (["pass", "fail", "inconclusive"] as Outcome[])).map(
+              (o) => ({ value: o, label: OUTCOME_LABELS[o] }),
+            ),
+          ]}
+          value={result}
+          onChange={setResult}
+        />
+        <Field label="Notes (optional)" value={notes} onChangeText={setNotes} multiline />
+        <MediaSection
+          title="Photos"
+          target={{ jobId, testResultId: existing?.id }}
+          disabledReason={existing ? undefined : "Add the test first, then its photos."}
+        />
+        {Object.keys(errors).length > 0 ? (
+          <Notice tone="error">Fix the highlighted fields.</Notice>
+        ) : null}
+        <Button title={existing ? "Save Test" : "Add Test"} wide onPress={save} />
+        {existing && type ? (
+          <View style={[styles.delete, { borderTopColor: color.separator }]}>
+            <Button
+              title="Delete Test"
+              kind="danger"
+              wide
+              onPress={() =>
+                confirmDeleteTest(services.sync, company.id, existing.id, type.name, () =>
+                  router.back(),
+                )
+              }
+            />
+          </View>
+        ) : null}
+      </View>
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  form: { gap: space["4"] },
+  delete: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: space["4"],
+    marginTop: space["2"],
+  },
+});

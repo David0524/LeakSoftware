@@ -62,6 +62,16 @@ const SHAPES = {
     line: "M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z",
     circles: [[12, 13, 3.5]],
   },
+  // The Photos section's capture tiles (apps/web/src/components/media-work.tsx).
+  cameraTile: {
+    line: "M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+  },
+  video: {
+    line: "M3 7h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM16 11l6-3v8l-6-3",
+  },
+  mic: { line: "M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3" },
+  share: { line: "M12 3v12M8 7l4-4 4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" },
+  updown: { line: "M8 9l4-4 4 4M8 15l4 4 4-4" },
   plus: { line: "M12 5v14M5 12h14" },
   compose: { line: "M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" },
   back: { line: "M15 4l-8 8 8 8" },

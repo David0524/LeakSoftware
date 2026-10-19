@@ -1,16 +1,8 @@
 import { router } from "expo-router";
 import { Alert, View } from "react-native";
 import { useSession, useSyncStatus } from "../../../../../state/session";
-import {
-  Button,
-  Card,
-  Group,
-  ListRow,
-  Notice,
-  Screen,
-  Section,
-  T,
-} from "../../../../../ui/components";
+import { confirmDestructive } from "../../../../../ui/confirm";
+import { Button, Group, ListRow, Notice, Screen, Section, T } from "../../../../../ui/components";
 import { syncSummary } from "../../../../../ui/SyncBar";
 import { space } from "../../../../../ui/theme";
 
@@ -32,7 +24,7 @@ export default function Sync() {
         </Notice>
       ) : null}
       <Section
-        title="This phone"
+        title=""
         footer={
           status.phase === "offline"
             ? "This phone is offline. Changes are saved here and sync later."
@@ -43,11 +35,6 @@ export default function Sync() {
           <ListRow title="Last synced" detail={last} />
           <ListRow title="Waiting to sync" detail={String(status.pending)} />
           <ListRow title="Waiting to upload" detail={String(status.uploads.waiting)} />
-          <ListRow
-            title="Local data"
-            detail={encrypted ? "Encrypted" : "Not encrypted (Expo Go preview)"}
-          />
-          <ListRow title="Device ID" subtitle={sync.store.deviceId} />
         </Group>
       </Section>
       {status.error ? <T muted>Last error: {status.error}</T> : null}
@@ -56,8 +43,7 @@ export default function Sync() {
         <Button title="Sign In Again" onPress={() => router.push("/reauth")} />
       ) : (
         <Button
-          title="Sync Now"
-          kind="secondary"
+          title={status.phase === "syncing" ? "Syncing…" : "Sync Now"}
           onPress={() => {
             sync.retryUploads();
             void sync
@@ -66,14 +52,14 @@ export default function Sync() {
                 Alert.alert("Couldn’t sync", e instanceof Error ? e.message : String(e)),
               );
           }}
-          loading={status.phase === "syncing"}
+          disabled={status.phase === "syncing"}
         />
       )}
       {status.problems.length > 0 ? (
         <Section title="Changes that could not be saved">
-          <View style={{ gap: space["3"] }}>
+          <Group>
             {status.problems.map((p) => (
-              <Card key={p.seq}>
+              <View key={p.seq} style={{ padding: space["4"], gap: space["2"] }}>
                 <T variant="bodyEmphasis">
                   {p.table.replace(/_/g, " ")}: {p.fields.join(", ")}
                 </T>
@@ -83,13 +69,29 @@ export default function Sync() {
                 <Button
                   title="Discard This Change"
                   kind="danger"
-                  onPress={() => sync.discardProblem(p.seq)}
+                  onPress={() =>
+                    confirmDestructive({
+                      title: "Discard this change?",
+                      message: "It stays as the office has it.",
+                      confirm: "Discard Change",
+                      onConfirm: () => sync.discardProblem(p.seq),
+                    })
+                  }
                 />
-              </Card>
+              </View>
             ))}
-          </View>
+          </Group>
         </Section>
       ) : null}
+      <Section title="This phone">
+        <Group>
+          <ListRow title="Device ID" subtitle={sync.store.deviceId} />
+          <ListRow
+            title="Local data"
+            detail={encrypted ? "Encrypted" : "Not encrypted (Expo Go preview)"}
+          />
+        </Group>
+      </Section>
     </Screen>
   );
 }

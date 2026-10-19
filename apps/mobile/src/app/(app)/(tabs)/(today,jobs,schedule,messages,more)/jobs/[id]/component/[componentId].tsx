@@ -15,8 +15,7 @@ import {
   ListRow,
   Notice,
   Screen,
-  Section,
-  Segmented,
+  T,
 } from "../../../../../../../ui/components";
 import { OutcomeChip } from "../../../../../../../features/inspection/OutcomeChip";
 import {
@@ -25,6 +24,7 @@ import {
   confirmRemoveComponent,
 } from "../../../../../../../features/inspection/remove";
 import { haptics } from "../../../../../../../ui/haptics";
+import { Select } from "../../../../../../../ui/Select";
 import {
   currentVerdict,
   verdictOptions,
@@ -33,7 +33,13 @@ import {
 } from "../../../../../../../features/inspection/verdict";
 import { space } from "../../../../../../../ui/theme";
 
-/** One checklist item: its verdict and where, notes, photos, tests, and findings. */
+const TO_DO = "todo";
+
+/**
+ * A checklist item (apps only, spec 5.4): what the website's checklist row has no room for on
+ * a phone. Its result and where, the method, the reason it was skipped, notes, photos and voice
+ * notes, and the tests and findings on it. Each change saves at once, offline.
+ */
 export default function ComponentScreen() {
   const { id: jobId, componentId } = useLocalSearchParams<{ id: string; componentId: string }>();
   const company = useCompany();
@@ -43,118 +49,160 @@ export default function ComponentScreen() {
   const component = insp.componentById.get(componentId);
   const result = insp.resultByComponent.get(componentId);
   const type = component ? config.componentTypeById.get(component.component_type_id) : undefined;
-
-  const [verdict, setVerdict] = useState<Verdict | null>(currentVerdict(result));
-  const [where, setWhere] = useState(result?.location_text ?? "");
-  const [notes, setNotes] = useState(result?.notes ?? "");
+  const [where, setWhere] = useState<string | null>(null);
+  const [notes, setNotes] = useState<string | null>(null);
 
   if (!component || !type) {
     return (
-      <Screen>
+      <Screen title="Item">
         <Notice tone="warning">This item isn’t on this phone.</Notice>
       </Screen>
     );
   }
   const comp = component;
+  const verdict = currentVerdict(result);
   const tests = insp.tests.filter((t) => t.job_component_id === componentId);
   const findings = insp.findings.filter((f) => f.job_component_id === componentId);
   const needsWhere = type.answer !== "yes_no" && (verdict === "leaking" || verdict === "attention");
+  const save = (values: Parameters<typeof saveChecklistResult>[5]) =>
+    saveChecklistResult(services.sync, company.id, jobId, componentId, result, values);
 
-  function save() {
-    saveChecklistResult(services.sync, company.id, jobId, componentId, result, {
-      ...verdictValues(verdict, user?.id ?? null),
-      location_text: needsWhere ? where.trim() || null : null,
-      notes: notes.trim() || null,
+  function choose(v: Verdict | null) {
+    haptics.selection();
+    save({
+      ...verdictValues(v, user?.id ?? null),
+      ...(v === null || v === "ok" || v === "na" ? { location_text: null } : {}),
+      ...(v === "na" ? {} : { exclusion_reason: null }),
     });
-    haptics.success();
-    router.back();
-  }
-
-  function remove() {
-    confirmRemoveComponent(services.sync, company.id, comp, result, () => router.back());
   }
 
   return (
     <Screen title={comp.label}>
-      <Segmented
-        label="Result"
-        options={verdictOptions(type)}
-        value={verdict}
-        onChange={setVerdict}
-      />
-      {needsWhere ? (
+      <View style={styles.form}>
+        <Select
+          label="Result"
+          options={[
+            { value: TO_DO, label: "To Do" },
+            ...verdictOptions(type).map((o) => ({ value: o.value as string, label: o.label })),
+          ]}
+          value={verdict ?? TO_DO}
+          onChange={(v) => choose(v === TO_DO ? null : (v as Verdict))}
+        />
+        {needsWhere ? (
+          <Field
+            label="Where"
+            value={where ?? result?.location_text ?? ""}
+            onChangeText={setWhere}
+            onBlur={() => {
+              if (where !== null && where.trim() !== (result?.location_text ?? ""))
+                save({ location_text: where.trim() || null });
+              setWhere(null);
+            }}
+            placeholder="Where? Under the deck, at the throat…"
+          />
+        ) : null}
+        {verdict === "na" && config.exclusionReasons.length ? (
+          <Select
+            label="Why it was skipped (optional)"
+            options={[
+              { value: "", label: "No reason given" },
+              ...config.exclusionReasons.map((r) => ({ value: r.label, label: r.label })),
+            ]}
+            value={result?.exclusion_reason ?? ""}
+            onChange={(v) => save({ exclusion_reason: v || null })}
+          />
+        ) : null}
+        {type.methods.length ? (
+          <Select
+            label="Method (optional)"
+            options={[
+              { value: "", label: "Not recorded" },
+              ...type.methods.map((m) => ({ value: m, label: m })),
+            ]}
+            value={result?.method ?? ""}
+            onChange={(v) => save({ method: v || null })}
+          />
+        ) : null}
         <Field
-          label="Where"
-          value={where}
-          onChangeText={setWhere}
-          placeholder="Where on the line or fitting"
+          label="Notes (optional)"
+          value={notes ?? result?.notes ?? ""}
+          onChangeText={setNotes}
+          onBlur={() => {
+            if (notes !== null && notes.trim() !== (result?.notes ?? ""))
+              save({ notes: notes.trim() || null });
+            setNotes(null);
+          }}
+          multiline
+          placeholder="What you saw"
         />
-      ) : null}
+      </View>
 
-      <Field
-        label="Notes"
-        value={notes}
-        onChangeText={setNotes}
-        multiline
-        placeholder="What you saw"
-      />
-      <Button title="Save" onPress={save} />
+      <MediaSection title="Photos and Recordings" target={{ jobId, componentId }} />
 
-      <MediaSection target={{ jobId, componentId }} />
-
-      <Section title="Tests on this item">
-        {tests.length > 0 ? (
-          <Group>
-            {tests.map((t) => (
-              <ListRow
-                key={t.id}
-                title={config.testTypeById.get(t.test_type_id)?.name ?? "Test"}
-                trailing={<OutcomeChip outcome={t.outcome} />}
-                onPress={() => router.push(`/jobs/${jobId}/test/${t.id}`)}
-                onDelete={() => confirmDeleteTest(services.sync, company.id, t.id)}
-              />
-            ))}
-          </Group>
-        ) : null}
-        <View style={styles.wrap}>
-          {config.testTypes.map((tt) => (
+      {type.answer === "done" ? null : (
+        <View style={styles.part}>
+          <T variant="sectionLabel">Tests on this item</T>
+          {tests.length > 0 ? (
+            <Group>
+              {tests.map((t) => {
+                const name = config.testTypeById.get(t.test_type_id)?.name ?? "Test";
+                return (
+                  <ListRow
+                    key={t.id}
+                    title={name}
+                    trailing={<OutcomeChip outcome={t.outcome} />}
+                    onPress={() => router.push(`/jobs/${jobId}/test/${t.id}`)}
+                    onDelete={() => confirmDeleteTest(services.sync, company.id, t.id, name)}
+                  />
+                );
+              })}
+            </Group>
+          ) : null}
+          {config.testTypes.length ? (
             <Button
-              key={tt.id}
-              title={`+ ${tt.name}`}
+              title="Add Test"
               kind="secondary"
-              onPress={() =>
-                router.push(`/jobs/${jobId}/test/new?type=${tt.id}&component=${componentId}`)
-              }
+              onPress={() => router.push(`/jobs/${jobId}/test/new?component=${componentId}`)}
             />
-          ))}
+          ) : null}
         </View>
-      </Section>
+      )}
 
-      <Section title="Findings on this item">
-        {findings.length > 0 ? (
-          <Group>
-            {findings.map((f) => (
-              <ListRow
-                key={f.id}
-                title={f.title}
-                onPress={() => router.push(`/jobs/${jobId}/finding/${f.id}`)}
-                onDelete={() => confirmDeleteFinding(services.sync, company.id, f.id)}
-              />
-            ))}
-          </Group>
-        ) : null}
-        <Button
-          title="+ Finding Here"
-          kind="secondary"
-          onPress={() => router.push(`/jobs/${jobId}/finding/new?component=${componentId}`)}
-        />
-      </Section>
+      {type.answer === "done" ? null : (
+        <View style={styles.part}>
+          <T variant="sectionLabel">Findings on this item</T>
+          {findings.length > 0 ? (
+            <Group>
+              {findings.map((f) => (
+                <ListRow
+                  key={f.id}
+                  title={f.title}
+                  onPress={() => router.push(`/jobs/${jobId}/finding/${f.id}`)}
+                  onDelete={() => confirmDeleteFinding(services.sync, company.id, f.id, f.title)}
+                />
+              ))}
+            </Group>
+          ) : null}
+          <Button
+            title="Add Finding"
+            kind="secondary"
+            onPress={() => router.push(`/jobs/${jobId}/finding/new?component=${componentId}`)}
+          />
+        </View>
+      )}
 
-      <Button title={`Remove ${comp.label}`} kind="danger" onPress={remove} />
+      <Button
+        title="Remove Item"
+        kind="danger"
+        onPress={() =>
+          confirmRemoveComponent(services.sync, company.id, comp, result, () => router.back())
+        }
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { flexDirection: "row", flexWrap: "wrap", gap: space["2"] },
+  form: { gap: space["4"] },
+  part: { gap: space["2"] },
 });

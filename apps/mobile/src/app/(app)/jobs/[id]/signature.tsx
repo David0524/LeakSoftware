@@ -1,10 +1,12 @@
-import { router, useLocalSearchParams } from "expo-router";
-import { useRef, useState } from "react";
-import type { TextInput } from "react-native";
+import { router, Stack, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
+import { StyleSheet, View } from "react-native";
 import {
   MIN_INK,
   enabledSignaturePurposes,
+  formatAddress,
   inkLength,
+  signatureStatement,
   signatureStoragePath,
   signatureSvg,
   uuidv7,
@@ -19,22 +21,25 @@ import { currentPosition, storeSignatureSvg } from "../../../../lib/media";
 import { useCompany, useSession } from "../../../../state/session";
 import {
   Button,
-  FieldGroup,
-  FieldRow,
+  Card,
+  Field,
+  HeaderButton,
   Notice,
-  PickerRow,
-  Row,
   Screen,
-  Section,
+  Segmented,
   T,
 } from "../../../../ui/components";
 import { haptics } from "../../../../ui/haptics";
-import { SignaturePad } from "../../../../ui/SignaturePad";
-import { ios, space } from "../../../../ui/theme";
+import { PadBlock } from "../../../../features/report/PadBlock";
+import { face, space } from "../../../../ui/theme";
 
-/** Capture a customer's signature on the job. Works offline; the drawing uploads later. */
+/**
+ * A signature on its own (spec 6.7): the work authorization, signed before the work, or a quote
+ * accepted on site (?quote={id}). The tech hands the phone over: the statement in a card, the
+ * customer's name already filled in, the pad, then Sign. Works offline; the drawing uploads
+ * later.
+ */
 export default function SignatureScreen() {
-  // ?quote={id}: the customer accepts that quote on site.
   const { id, quote: quoteId } = useLocalSearchParams<{ id: string; quote?: string }>();
   const company = useCompany();
   const { services } = useSession();
@@ -52,11 +57,21 @@ export default function SignatureScreen() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [drawing, setDrawing] = useState(false);
-  const roleRef = useRef<TextInput>(null);
+
+  const bar = (
+    <Stack.Screen
+      options={{
+        title: company.name,
+        headerBackVisible: false,
+        headerLeft: () => <HeaderButton title="Cancel" onPress={() => router.back()} />,
+      }}
+    />
+  );
 
   if (!job) {
     return (
       <Screen>
+        {bar}
         <Notice tone="warning">This job isn’t on this phone.</Notice>
       </Screen>
     );
@@ -64,17 +79,19 @@ export default function SignatureScreen() {
   if (purposes.length === 0) {
     return (
       <Screen>
+        {bar}
         <Notice tone="warning">Signatures are turned off in your company settings.</Notice>
       </Screen>
     );
   }
 
   const signer = (name ?? customer?.name ?? "").trim();
+  const address = property ? formatAddress(property) : null;
 
   async function save() {
     if (!purpose) return setError("Choose what this signature is for.");
-    if (!signer) return setError("Enter the signer’s name.");
-    if (inkLength(strokes) < MIN_INK) return setError("Ask them to sign in the box.");
+    if (!signer) return setError("Enter your name.");
+    if (inkLength(strokes) < MIN_INK) return setError("Sign in the box with your finger.");
     setSaving(true);
     try {
       const sigId = uuidv7();
@@ -105,69 +122,63 @@ export default function SignatureScreen() {
     }
   }
 
-  // The page scrolls (Save must stay reachable on small phones and with the keyboard up), but
+  // The page scrolls (Sign must stay reachable on small phones and with the keyboard up), but
   // holds still while a finger is on the pad, so a drag draws instead of moving the page.
   return (
     <Screen scrollEnabled={!drawing}>
-      {purposes.length > 1 ? null : (
-        <T variant="strong" style={ios && { paddingHorizontal: space["4"] }}>
-          {purposes[0]!.label}
-        </T>
-      )}
-      {/* The signer is the customer, so iPhone doesn't offer to fill in the tech's own name. */}
-      <FieldGroup labelWidth={130}>
+      {bar}
+      <View style={styles.form}>
+        <View>
+          <T variant="secondary" muted style={face.semiBold}>
+            {purposes.find((p) => p.value === purpose)?.label ?? "Signature"}
+          </T>
+          <T variant="largeTitle">Please Sign</T>
+        </View>
         {purposes.length > 1 ? (
-          <PickerRow
-            label="Signature for"
-            options={purposes}
-            value={purpose}
-            onChange={setPurpose}
-          />
+          <Segmented label="Signing for" options={purposes} value={purpose} onChange={setPurpose} />
         ) : null}
-        <FieldRow
-          label="Signer’s name"
-          layout="stacked"
+        {purpose ? (
+          <Card>
+            <T style={styles.statement}>{signatureStatement(purpose, company.name, address)}</T>
+          </Card>
+        ) : null}
+        {/* The signer is the customer, so the phone doesn't offer the tech's own name. */}
+        <Field
+          label="Your name"
           value={name ?? customer?.name ?? ""}
           onChangeText={setName}
           autoCapitalize="words"
           autoCorrect={false}
           autoComplete="off"
           textContentType="none"
-          next={roleRef}
         />
-        <FieldRow
-          ref={roleRef}
+        <Field
           label="Role (optional)"
-          layout="stacked"
           value={role}
           onChangeText={setRole}
           placeholder="Homeowner, property manager…"
-          autoCapitalize="sentences"
           autoComplete="off"
           textContentType="none"
-          returnKeyType="done"
         />
-      </FieldGroup>
-      <Section title="Signature" grouped>
-        <SignaturePad
+        <PadBlock
           strokes={strokes}
-          onDrawing={setDrawing}
-          onChange={(s) => {
-            setStrokes(s);
-            setError(null);
-          }}
+          setStrokes={setStrokes}
+          setDrawing={setDrawing}
+          onInk={() => setError(null)}
         />
-        <Row style={{ justifyContent: "flex-end" }}>
-          <Button
-            title="Clear"
-            kind="quiet"
-            onPress={() => setStrokes([])}
-            disabled={strokes.length === 0}
-          />
-        </Row>
-      </Section>
-      {error ? <Notice tone="error">{error}</Notice> : null}
-      <Button title="Save Signature" onPress={() => void save()} loading={saving} />
+        {error ? <Notice tone="error">{error}</Notice> : null}
+        <Button
+          title={saving ? "Saving…" : "Sign"}
+          wide
+          disabled={saving}
+          onPress={() => void save()}
+        />
+      </View>
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  form: { gap: space["4"] },
+  statement: { fontSize: 19, lineHeight: 28 },
+});

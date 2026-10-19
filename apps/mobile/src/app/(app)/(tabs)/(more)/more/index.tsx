@@ -7,6 +7,7 @@ import { call } from "../../../../../data/reports";
 import { API_URL } from "../../../../../lib/config";
 import { useSession, useSyncStatus } from "../../../../../state/session";
 import { useWalkthrough } from "../../../../../state/walkthrough";
+import { showGettingStartedAgain } from "../../../../../features/today/GettingStarted";
 import { useDirectionsChoice, type DirectionsChoice } from "../../../../../state/directions";
 import {
   Button,
@@ -209,6 +210,7 @@ export default function More() {
             tone="link"
             onPress={() => {
               walkthrough.reset();
+              showGettingStartedAgain();
               router.push("/welcome");
             }}
           />

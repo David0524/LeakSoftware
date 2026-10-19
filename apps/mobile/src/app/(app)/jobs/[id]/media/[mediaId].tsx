@@ -1,4 +1,3 @@
-import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEffect, useRef, useState } from "react";
@@ -9,7 +8,9 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
+  Text,
   View,
   type GestureResponderEvent,
 } from "react-native";
@@ -17,8 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   MARKUP_COLORS,
   MEDIA_KIND_LABELS,
-  formatBytes,
-  formatDuration,
+  formatSchedule,
   parseMarkup,
   shapeAtTap,
   shapeFromDrag,
@@ -29,45 +29,45 @@ import {
   type Media,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
-import { useJobInspection } from "../../../../../data/inspection";
 import { useRow } from "../../../../../data/hooks";
 import { useMediaSource, type MediaSourceState } from "../../../../../data/media";
 import { useCompany, useSession } from "../../../../../state/session";
-import {
-  Button,
-  Card,
-  Field,
-  Group,
-  HeaderButton,
-  ListRow,
-  Notice,
-  Row,
-  Segmented,
-  T,
-} from "../../../../../ui/components";
+import { Button, Field, Segmented, T } from "../../../../../ui/components";
 import { confirmDestructive } from "../../../../../ui/confirm";
+import { AudioRow, useAttachedTo } from "../../../../../features/media/MediaSection";
 import { confirmDeleteMedia } from "../../../../../features/media/remove";
-import { Icon } from "../../../../../ui/Icon";
+import { Glass } from "../../../../../ui/Glass";
+import { haptics } from "../../../../../ui/haptics";
 import { MarkupLayer } from "../../../../../ui/MarkupLayer";
-import { solidBar, translucentBar } from "../../../../../ui/navigation";
 import { useSheetLock } from "../../../../../ui/sheet";
-import { color, markupColor, space } from "../../../../../ui/theme";
+import { color, face, ios, markupColor, minTap, shape, space, type } from "../../../../../ui/theme";
+import { WebIcon } from "../../../../../ui/WebIcon";
 
 type Tool = "arrow" | "circle" | "text";
 
 const COLOR_NAMES: Record<MarkupColor, string> = { red: "Red", yellow: "Yellow", white: "White" };
 
-/** One capture: view it, mark it up (photos), play it (video, voice), see its record. */
+/**
+ * The photo viewer (spec 6.5): full screen over the tab bar on black, the photo fitted with
+ * pinch to zoom and its markup over it; Done, the title and Share in a bar over it; caption,
+ * when and where, the transcript, Mark Up and Delete in a panel under it. `?markup=1` opens
+ * the markup editor straight away (Mark Up on the Photos section's card).
+ */
 export default function MediaScreen() {
-  const { mediaId } = useLocalSearchParams<{ id: string; mediaId: string }>();
+  const { mediaId, markup: startInMarkup } = useLocalSearchParams<{
+    id: string;
+    mediaId: string;
+    markup?: string;
+  }>();
   const company = useCompany();
   const { services } = useSession();
   const media = useRow<Media>("media", mediaId);
-  const insp = useJobInspection(company.id, media?.job_id ?? "");
+  const attached = useAttachedTo(media);
   const source = useMediaSource(media);
   const uri = source.uri;
-
-  const [editing, setEditing] = useState(false);
+  const insets = useSafeAreaInsets();
+  const direct = startInMarkup === "1";
+  const [editing, setEditing] = useState(direct);
 
   // Caption saves when leaving the field and when leaving the screen.
   const [caption, setCaption] = useState<string | null>(null);
@@ -80,146 +80,208 @@ export default function MediaScreen() {
   });
   useEffect(() => () => flushCaption.current(), []);
 
+  const hidden = <Stack.Screen options={{ headerShown: false, gestureEnabled: !editing }} />;
+
   if (!media) {
     return (
-      <ScrollView style={styles.screen} contentInsetAdjustmentBehavior="automatic">
-        <View style={styles.content}>
-          <Notice tone="warning">This capture isn’t on this phone.</Notice>
+      <View style={[styles.screen, { paddingTop: insets.top }]}>
+        {hidden}
+        <TopBar title="Photo" onDone={() => router.back()} />
+        <View style={styles.center}>
+          <Text style={[type.body, { color: color.paper }]}>This capture isn’t on this phone.</Text>
         </View>
-      </ScrollView>
+      </View>
     );
   }
-  const saved = parseMarkup(media.markup).shapes;
-  const kindName = MEDIA_KIND_LABELS[media.kind].toLowerCase();
   const capture = media;
+  const kind = MEDIA_KIND_LABELS[media.kind];
+  const saved = parseMarkup(media.markup).shapes;
 
-  function saveMarkup(shapes: MarkupShape[]) {
-    const markup: Markup | null = shapes.length > 0 ? { version: 1, shapes } : null;
-    services.sync.write("media", media!.id, company.id, {
-      markup: markup as unknown as JsonValue,
-    });
-    setEditing(false);
+  function closeEditor() {
+    if (direct) router.back();
+    else setEditing(false);
   }
 
-  if (editing && media.kind === "photo" && uri) {
+  function saveMarkup(shapes: MarkupShape[], newCaption: string) {
+    const markup: Markup | null = shapes.length > 0 ? { version: 1, shapes } : null;
+    const values: Record<string, JsonValue> = { markup: markup as unknown as JsonValue };
+    if (newCaption.trim() !== (capture.caption ?? "")) values.caption = newCaption.trim() || null;
+    services.sync.write("media", capture.id, company.id, values);
+    setCaption(null);
+    haptics.success();
+    closeEditor();
+  }
+
+  if (editing && media.kind === "photo") {
     return (
-      <MarkupEditor
-        media={media}
-        uri={uri}
-        saved={saved}
-        onCancel={() => setEditing(false)}
-        onSave={saveMarkup}
-      />
+      <>
+        {hidden}
+        {uri ? (
+          <MarkupEditor
+            media={media}
+            uri={uri}
+            saved={saved}
+            onCancel={closeEditor}
+            onSave={saveMarkup}
+          />
+        ) : (
+          <View style={[styles.screen, { paddingTop: insets.top }]}>
+            <TopBar title="Mark Up" onDone={closeEditor} doneLabel="Cancel" />
+            <SourceState state={source.state} kind={kind} onRetry={source.retry} />
+          </View>
+        )}
+      </>
     );
   }
 
-  function remove() {
-    confirmDeleteMedia(services.sync, company.id, capture, () => router.back());
-  }
-
-  const attachedTo =
-    (media.finding_id && insp.findings.find((f) => f.id === media.finding_id)?.title) ||
-    (media.job_component_id && insp.componentById.get(media.job_component_id)?.label) ||
-    (media.test_result_id ? "A test" : null) ||
-    "The job";
+  const meta = [
+    media.captured_at ? formatSchedule(media.captured_at, new Date(), company.timezone) : null,
+    media.latitude != null ? "location recorded" : null,
+    media.upload_state === "pending" ? "waiting to upload" : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <KeyboardAvoidingView
-      style={styles.screen}
+      style={[styles.screen, media.kind === "video" && { backgroundColor: color.navy }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <Stack.Screen
-        options={{
-          ...translucentBar,
-          title: MEDIA_KIND_LABELS[media.kind],
-          headerLeft: undefined,
-          headerRight: undefined,
-          headerBackVisible: true,
-          gestureEnabled: true,
-        }}
-      />
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        // iPhone: starts below the translucent bar and scrolls under it.
-        contentInsetAdjustmentBehavior="automatic"
-      >
+      {hidden}
+      <View style={styles.stage}>
         {source.state !== "ready" ? (
-          <SourceState state={source.state} kind={kindName} onRetry={source.retry} />
+          <SourceState state={source.state} kind={kind} onRetry={source.retry} />
         ) : media.kind === "photo" ? (
           <PhotoView media={media} uri={uri!} shapes={saved} />
         ) : media.kind === "video" ? (
-          <VideoBox uri={uri!} media={media} />
+          <VideoBox uri={uri!} />
         ) : (
-          <AudioBox uri={uri!} durationMs={media.duration_ms} />
+          <View style={[styles.center, { paddingHorizontal: space["4"] }]}>
+            <WebIcon name="mic" size={64} color={color.paper} strokeWidth={1.4} />
+          </View>
         )}
-
-        {media.kind === "photo" ? (
-          <Button
-            title={saved.length > 0 ? "Edit Markup" : "Mark Up"}
-            kind="secondary"
-            onPress={() => setEditing(true)}
-            disabled={!uri}
+        <View style={[styles.topBar, { paddingTop: insets.top }]} pointerEvents="box-none">
+          <TopBar
+            title={`${kind} · ${attached}`}
+            onDone={() => router.back()}
+            onShare={
+              uri && ios
+                ? () =>
+                    void Share.share({
+                      url: uri,
+                      message: capture.caption ?? undefined,
+                    })
+                : undefined
+            }
           />
-        ) : null}
-
-        <>
-          {media.kind === "audio" ? <Transcript media={media} /> : null}
+        </View>
+      </View>
+      <View
+        style={[
+          styles.panel,
+          { backgroundColor: color.bg, paddingBottom: Math.max(insets.bottom, space["4"]) },
+        ]}
+      >
+        <ScrollView
+          contentContainerStyle={styles.panelContent}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+        >
+          {media.kind === "audio" && uri ? (
+            <AudioRow uri={uri} durationMs={media.duration_ms} />
+          ) : null}
           <Field
             label="Caption"
             value={caption ?? media.caption ?? ""}
             onChangeText={setCaption}
             onBlur={() => flushCaption.current()}
             placeholder="What this shows"
-            multiline
           />
-          <Group>
-            <Detail label="Attached to" value={attachedTo} />
-            <Detail
-              label="Captured"
-              value={media.captured_at ? new Date(media.captured_at).toLocaleString() : "Unknown"}
-            />
-            <Detail
-              label="Location"
-              value={
-                media.latitude != null && media.longitude != null
-                  ? `${media.latitude.toFixed(5)}, ${media.longitude.toFixed(5)}`
-                  : "Not recorded"
+          {meta ? (
+            <T variant="secondary" muted>
+              {meta}
+            </T>
+          ) : null}
+          {media.kind === "audio" ? <Transcript media={media} /> : null}
+          <View style={styles.actions}>
+            {media.kind === "photo" ? (
+              <Button
+                title={saved.length ? "Edit Markup" : "Mark Up"}
+                kind="secondary"
+                disabled={!uri}
+                onPress={() => setEditing(true)}
+              />
+            ) : null}
+            <Button
+              title="Delete"
+              kind="danger"
+              onPress={() =>
+                confirmDeleteMedia(services.sync, company.id, capture, () => router.back())
               }
             />
-            <Detail
-              label="Size"
-              value={[
-                formatBytes(media.size_bytes),
-                media.width && media.height ? `${media.width} × ${media.height}` : null,
-                media.duration_ms ? formatDuration(media.duration_ms) : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            />
-            <Detail
-              label="Upload"
-              value={
-                media.upload_state === "uploaded"
-                  ? "Uploaded"
-                  : "Waiting to upload (saved on this phone)"
-              }
-            />
-            <Detail
-              label="Fingerprint"
-              value={media.sha256 ? `SHA-256 ${media.sha256.slice(0, 16)}…` : "None"}
-            />
-          </Group>
-          <Button title="Delete" kind="danger" onPress={remove} />
-        </>
-      </ScrollView>
+          </View>
+        </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }
 
-/** One line of the capture's record, as a label and value row. */
-function Detail({ label, value }: { label: string; value: string }) {
-  return <ListRow title={label} detail={value} />;
+/** The bar over the photo: Done at the left, the title, Share at the right. */
+function TopBar({
+  title,
+  onDone,
+  onShare,
+  doneLabel = "Done",
+}: {
+  title: string;
+  onDone: () => void;
+  onShare?: () => void;
+  doneLabel?: string;
+}) {
+  return (
+    <Glass variant="bar">
+      <View style={styles.bar}>
+        <View style={styles.barSide}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onDone}
+            hitSlop={4}
+            style={({ pressed }) => [styles.barButton, pressed && { opacity: 0.5 }]}
+          >
+            <Text
+              style={[type.body, face.semiBold, { color: color.link }]}
+              maxFontSizeMultiplier={1.6}
+            >
+              {doneLabel}
+            </Text>
+          </Pressable>
+        </View>
+        <Text
+          style={[type.navTitle, styles.barTitle, { color: color.text }]}
+          numberOfLines={1}
+          maxFontSizeMultiplier={1.6}
+          accessibilityRole="header"
+        >
+          {title}
+        </Text>
+        <View style={[styles.barSide, { alignItems: "flex-end" }]}>
+          {onShare ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Share"
+              onPress={onShare}
+              style={({ pressed }) => [
+                styles.barIcon,
+                pressed && { backgroundColor: color.iconTint },
+              ]}
+            >
+              <WebIcon name="share" size={22} color={color.link} />
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
+    </Glass>
+  );
 }
 
 function SourceState({
@@ -231,48 +293,60 @@ function SourceState({
   kind: string;
   onRetry: () => void;
 }) {
-  if (state === "loading") {
-    return (
-      <Card style={styles.sourceState}>
-        <ActivityIndicator color={color.navy} />
-        <T variant="muted">Loading the {kind}…</T>
-      </Card>
-    );
-  }
   return (
-    <Card>
-      <T variant="body">
-        This {kind} isn’t on this phone. It downloads when you have a connection.
-      </T>
-      <Button title="Try Again" kind="secondary" onPress={onRetry} />
-    </Card>
+    <View style={[styles.center, { gap: space["3"], paddingHorizontal: space["5"] }]}>
+      {state === "loading" ? (
+        <>
+          <ActivityIndicator color={color.paper} />
+          <Text
+            style={[type.body, { color: color.paper }]}
+          >{`Loading the ${kind.toLowerCase()}…`}</Text>
+        </>
+      ) : (
+        <>
+          <Text style={[type.body, { color: color.paper, textAlign: "center" }]}>
+            {`This ${kind.toLowerCase()} isn’t on this phone. It downloads when you have a connection.`}
+          </Text>
+          <Button title="Try Again" kind="secondary" onPress={onRetry} />
+        </>
+      )}
+    </View>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Photo with markup and drawing
-// ---------------------------------------------------------------------------
-
-/** The photo with its markup. Pinch to zoom. */
+/** The photo fitted to the screen with its markup. Pinch to zoom (iPhone). */
 function PhotoView({ media, uri, shapes }: { media: Media; uri: string; shapes: MarkupShape[] }) {
-  const [width, setWidth] = useState(0);
+  const [area, setArea] = useState({ width: 0, height: 0 });
   const ratio = media.width && media.height ? media.height / media.width : 0.75;
+  const width = Math.min(area.width, area.height / ratio);
   const height = width * ratio;
   return (
-    <View style={styles.photoFrame} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
-      {width > 0 ? (
+    <View
+      style={StyleSheet.absoluteFill}
+      onLayout={(e) =>
+        setArea({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })
+      }
+    >
+      {area.width > 0 ? (
         <ScrollView
-          style={{ width, height }}
-          contentContainerStyle={{ width, height }}
+          style={StyleSheet.absoluteFill}
+          contentContainerStyle={{
+            width: area.width,
+            height: area.height,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
           maximumZoomScale={4}
           minimumZoomScale={1}
           centerContent
           showsHorizontalScrollIndicator={false}
           showsVerticalScrollIndicator={false}
-          accessibilityLabel={shapes.length > 0 ? "Photo with markup" : "Photo"}
+          accessibilityLabel={media.caption ?? (shapes.length > 0 ? "Photo with markup" : "Photo")}
         >
-          <Image source={{ uri }} style={{ width, height }} resizeMode="contain" />
-          <MarkupLayer shapes={shapes} width={width} height={height} scale={width / 400} />
+          <View style={{ width, height }}>
+            <Image source={{ uri }} style={{ width, height }} resizeMode="contain" />
+            <MarkupLayer shapes={shapes} width={width} height={height} scale={width / 400} />
+          </View>
         </ScrollView>
       ) : null}
     </View>
@@ -280,8 +354,8 @@ function PhotoView({ media, uri, shapes }: { media: Media; uri: string; shapes: 
 }
 
 /**
- * Full-screen markup editor. Cancel and Save sit in the header, the tools in a bar at the
- * bottom, and the photo is fitted between them so everything is reachable at any shape.
+ * Mark Up (spec 6.5), full screen: Cancel, the title and Save in the bar; the photo on navy;
+ * under it the tool, the label for text, the color, Undo and Clear All, and the caption.
  */
 function MarkupEditor({
   media,
@@ -294,7 +368,7 @@ function MarkupEditor({
   uri: string;
   saved: MarkupShape[];
   onCancel: () => void;
-  onSave: (shapes: MarkupShape[]) => void;
+  onSave: (shapes: MarkupShape[], caption: string) => void;
 }) {
   const insets = useSafeAreaInsets();
   // Drawing drags on the photo; inside a sheet they must not pull the sheet down.
@@ -302,8 +376,10 @@ function MarkupEditor({
   // Every change is a new entry, so Undo also brings back a Clear All.
   const [history, setHistory] = useState<MarkupShape[][]>([saved]);
   const draft = history[history.length - 1]!;
-  const dirty = history.length > 1;
   const push = (next: MarkupShape[]) => setHistory((h) => [...h, next]);
+  const [caption, setCaption] = useState(media.caption ?? "");
+  const dirty = history.length > 1 || caption !== (media.caption ?? "");
+  const [saving, setSaving] = useState(false);
 
   const [tool, setTool] = useState<Tool>("arrow");
   const [ink, setInk] = useState<MarkupColor>("red");
@@ -328,25 +404,25 @@ function MarkupEditor({
   function release(e: GestureResponderEvent) {
     setLive(null);
     if (tool === "text") {
-      const shape = textShape(ink, startPoint(), label);
-      if (shape) {
-        push([...draft, shape]);
+      const s = textShape(ink, startPoint(), label);
+      if (s) {
+        push([...draft, s]);
         setLabelError(undefined);
       } else setLabelError("Type the label first.");
       return;
     }
     // A drag draws to size; a tap places a default-sized shape.
-    const shape =
+    const s =
       shapeFromDrag(tool, ink, startPoint(), endPoint(e)) ??
       shapeAtTap(tool, ink, startPoint(), 1 / ratio);
-    push([...draft, shape]);
+    push([...draft, s]);
   }
 
   function cancel() {
     if (!dirty) return onCancel();
     confirmDestructive({
-      title: "Discard markup changes?",
-      confirm: "Discard",
+      title: "Discard changes?",
+      confirm: "Discard Changes",
       cancel: "Keep Editing",
       onConfirm: onCancel,
     });
@@ -354,24 +430,61 @@ function MarkupEditor({
 
   return (
     <KeyboardAvoidingView
-      style={styles.editor}
+      style={[styles.editor, { backgroundColor: color.bg }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <Stack.Screen
-        options={{
-          // The editor doesn't scroll: a solid bar, so the photo never sits under it.
-          ...solidBar,
-          title: "Mark Up",
-          headerBackVisible: false,
-          gestureEnabled: false,
-          headerLeft: () => <HeaderButton title="Cancel" onPress={cancel} />,
-          headerRight: () => <HeaderButton title="Save" strong onPress={() => onSave(draft)} />,
-        }}
-      />
+      <View style={{ paddingTop: insets.top, backgroundColor: color.bg }}>
+        <View
+          style={[
+            styles.bar,
+            { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color.separator },
+          ]}
+        >
+          <View style={styles.barSide}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={cancel}
+              style={({ pressed }) => [styles.barButton, pressed && { opacity: 0.5 }]}
+            >
+              <Text style={[type.body, { color: color.link }]} maxFontSizeMultiplier={1.6}>
+                Cancel
+              </Text>
+            </Pressable>
+          </View>
+          <Text
+            style={[type.navTitle, styles.barTitle, { color: color.text }]}
+            accessibilityRole="header"
+            maxFontSizeMultiplier={1.6}
+          >
+            Mark Up
+          </Text>
+          <View style={[styles.barSide, { alignItems: "flex-end" }]}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={saving}
+              onPress={() => {
+                setSaving(true);
+                onSave(draft, caption);
+              }}
+              style={({ pressed }) => [styles.barButton, pressed && { opacity: 0.5 }]}
+            >
+              <Text
+                style={[type.body, face.semiBold, { color: color.link }]}
+                maxFontSizeMultiplier={1.6}
+              >
+                {saving ? "Saving…" : "Save"}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
       <View
-        style={styles.canvasArea}
+        style={[styles.canvasArea, { backgroundColor: color.navy }]}
         onLayout={(e) =>
-          setArea({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })
+          setArea({
+            width: e.nativeEvent.layout.width - space["4"],
+            height: e.nativeEvent.layout.height - space["4"],
+          })
         }
       >
         {width > 0 ? (
@@ -402,8 +515,17 @@ function MarkupEditor({
         ) : null}
       </View>
 
-      <View style={[styles.toolbar, { paddingBottom: Math.max(insets.bottom, space["3"]) }]}>
+      <ScrollView
+        style={styles.tools}
+        contentContainerStyle={[
+          styles.toolsContent,
+          { paddingBottom: Math.max(insets.bottom, space["4"]) },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
         <Segmented
+          label="Tool"
+          fill={false}
           options={[
             { value: "arrow", label: "Arrow" },
             { value: "circle", label: "Circle" },
@@ -426,35 +548,40 @@ function MarkupEditor({
             hint="Then tap the photo where it goes."
           />
         ) : (
-          <T variant="muted">
-            Tap to place {tool === "arrow" ? "an arrow" : "a circle"}, or drag to draw one.
-          </T>
+          <T
+            muted
+          >{`Tap to place ${tool === "arrow" ? "an arrow" : "a circle"}, or drag to draw one.`}</T>
         )}
-        <Row style={{ gap: space["2"] }}>
-          {MARKUP_COLORS.map((c) => (
-            <Pressable
-              key={c}
-              accessibilityRole="radio"
-              accessibilityLabel={COLOR_NAMES[c]}
-              accessibilityState={{ selected: ink === c }}
-              onPress={() => setInk(c)}
-              style={styles.swatchHit}
-            >
-              <View
-                style={[
-                  styles.swatch,
-                  { backgroundColor: markupColor[c] },
-                  ink === c && styles.swatchOn,
-                ]}
-              />
-            </Pressable>
-          ))}
+        <View style={styles.colorRow}>
+          <View style={styles.colors} accessibilityRole="radiogroup" accessibilityLabel="Color">
+            {MARKUP_COLORS.map((c) => (
+              <Pressable
+                key={c}
+                accessibilityRole="radio"
+                accessibilityLabel={COLOR_NAMES[c]}
+                accessibilityState={{ checked: ink === c }}
+                onPress={() => setInk(c)}
+                style={styles.swatchHit}
+              >
+                <View
+                  style={[
+                    styles.swatch,
+                    { backgroundColor: markupColor[c], borderColor: color.controlBorder },
+                    ink === c && {
+                      borderColor: color.text,
+                      boxShadow: `0px 0px 0px 2px ${color.bg}, 0px 0px 0px 4px ${color.text}`,
+                    },
+                  ]}
+                />
+              </Pressable>
+            ))}
+          </View>
           <View style={{ flex: 1 }} />
           <Button
             title="Undo"
             kind="quiet"
             onPress={() => setHistory((h) => (h.length > 1 ? h.slice(0, -1) : h))}
-            disabled={!dirty}
+            disabled={history.length < 2}
           />
           <Button
             title="Clear All"
@@ -462,68 +589,31 @@ function MarkupEditor({
             onPress={() => push([])}
             disabled={draft.length === 0}
           />
-        </Row>
-      </View>
+        </View>
+        <Field label="Caption (optional)" value={caption} onChangeText={setCaption} />
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Video and voice playback
-// ---------------------------------------------------------------------------
-
-function VideoBox({ uri, media }: { uri: string; media: Media }) {
+function VideoBox({ uri }: { uri: string }) {
   const player = useVideoPlayer(uri);
-  const ratio = media.width && media.height ? media.width / media.height : 16 / 9;
   return (
     <VideoView
       player={player}
-      style={[styles.video, { aspectRatio: ratio }]}
+      style={StyleSheet.absoluteFill}
       nativeControls
       contentFit="contain"
     />
   );
 }
 
-function AudioBox({ uri, durationMs }: { uri: string; durationMs: number | null }) {
-  const player = useAudioPlayer(uri);
-  const status = useAudioPlayerStatus(player);
-  // Voice notes play even with the ringer switch on silent.
-  useEffect(() => {
-    void setAudioModeAsync({ playsInSilentMode: true, allowsRecording: false });
-  }, []);
-  const playing = status.playing;
-  return (
-    <Card>
-      <Row style={{ gap: space["3"] }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={playing ? "Pause" : "Play"}
-          onPress={() => {
-            if (playing) player.pause();
-            else {
-              if (status.didJustFinish || status.currentTime >= status.duration - 0.05)
-                void player.seekTo(0);
-              player.play();
-            }
-          }}
-          style={styles.play}
-        >
-          <Icon name={playing ? "pause" : "play"} size={28} color={color.onHeader} />
-        </Pressable>
-        <T variant="heading" style={{ fontVariant: ["tabular-nums"] }}>
-          {formatDuration(status.currentTime * 1000)} /{" "}
-          {formatDuration(durationMs ?? status.duration * 1000)}
-        </T>
-      </Row>
-    </Card>
-  );
-}
-
 function Transcript({ media }: { media: Media }) {
   const text =
     media.transcript_status === "done"
-      ? media.transcript || "(No speech heard.)"
+      ? media.transcript
+        ? `“${media.transcript}”`
+        : "(No speech heard.)"
       : media.transcript_status === "pending"
         ? "Transcribing…"
         : media.transcript_status === "failed"
@@ -532,44 +622,51 @@ function Transcript({ media }: { media: Media }) {
             ? "Not transcribed yet."
             : "Transcribed after the recording uploads.";
   return (
-    <Card>
-      <T variant="label">Transcript</T>
-      <T variant={media.transcript_status === "done" ? "body" : "muted"}>{text}</T>
-    </Card>
+    <T
+      variant="secondary"
+      muted={media.transcript_status !== "done"}
+      style={media.transcript_status === "done" ? { fontStyle: "italic" } : undefined}
+    >
+      {text}
+    </T>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: color.bg },
-  content: { padding: space["4"], gap: space["4"], paddingBottom: space["7"] },
-  photoFrame: { width: "100%", backgroundColor: color.navy, borderRadius: 10, overflow: "hidden" },
-  sourceState: { alignItems: "center", paddingVertical: space["6"] },
-  editor: { flex: 1, backgroundColor: color.navy },
-  canvasArea: { flex: 1, alignItems: "center", justifyContent: "center" },
-  toolbar: {
-    backgroundColor: color.surface,
-    paddingHorizontal: space["4"],
-    paddingTop: space["3"],
-    gap: space["2"],
-    borderTopWidth: 1,
-    borderTopColor: color.border,
+  // The viewer's black: the navy token's darkest use, or black for photos (spec 6.5).
+  screen: { flex: 1, backgroundColor: "black" },
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  stage: { flex: 1 },
+  topBar: { position: "absolute", left: 0, right: 0, top: 0 },
+  bar: {
+    height: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: space["2"],
   },
-  swatchHit: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
-  swatch: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: color.controlBorder,
-  },
-  swatchOn: { borderWidth: 3, borderColor: color.navy, width: 38, height: 38, borderRadius: 19 },
-  video: { width: "100%", backgroundColor: "black", borderRadius: 10 },
-  play: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: color.navy,
+  barSide: { flex: 1, flexDirection: "row" },
+  barTitle: { maxWidth: "55%", textAlign: "center" },
+  barButton: { minHeight: minTap, justifyContent: "center", paddingHorizontal: space["2"] },
+  barIcon: {
+    width: minTap,
+    height: minTap,
+    borderRadius: minTap / 2,
     alignItems: "center",
     justifyContent: "center",
   },
+  panel: {
+    borderTopLeftRadius: shape.sheet,
+    borderTopRightRadius: shape.sheet,
+    maxHeight: "45%",
+  },
+  panelContent: { padding: space["4"], gap: space["3"] },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: space["3"] },
+  editor: { flex: 1 },
+  canvasArea: { flex: 1, alignItems: "center", justifyContent: "center", padding: space["2"] },
+  tools: { flexGrow: 0, maxHeight: "48%" },
+  toolsContent: { padding: space["4"], gap: space["4"] },
+  colorRow: { flexDirection: "row", alignItems: "center", gap: space["2"], flexWrap: "wrap" },
+  colors: { flexDirection: "row", gap: space["2"] },
+  swatchHit: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  swatch: { width: 32, height: 32, borderRadius: 16, borderWidth: 2 },
 });

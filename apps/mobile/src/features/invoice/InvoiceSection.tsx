@@ -1,233 +1,577 @@
 import { useState } from "react";
-import { Share, type ViewStyle } from "react-native";
+import { Share, StyleSheet, Text, View } from "react-native";
 import {
   INVOICE_STATUS_LABELS,
   formatCents,
   invoiceBalance,
   invoiceShareText,
   invoiceTotals,
+  isManagerRole,
   lineTotal,
+  parseDollars,
   type Customer,
   type Job,
 } from "@leakbook/core";
-import { createJobInvoice, sendJobInvoice, useJobInvoices } from "../../data/invoices";
+import {
+  createJobInvoice,
+  sendJobInvoice,
+  useJobInvoices,
+  type JobInvoice,
+} from "../../data/invoices";
 import { reportsOnline } from "../../data/reports";
 import { API_URL } from "../../lib/config";
-import { useCompany } from "../../state/session";
-import {
-  AmountRow,
-  Block,
-  Button,
-  Card,
-  FieldGroup,
-  FieldRow,
-  Group,
-  Notice,
-  Pill,
-  Row,
-  Section,
-  T,
-} from "../../ui/components";
-import { INVOICE_STATUS_COLOR, ios, space } from "../../ui/theme";
-
-/** Send by Email and Send by Text share one row (Android). */
-const halfButton: ViewStyle = { flex: 1, paddingHorizontal: space["2"] };
-
-/** On iPhone, text outside grouped blocks lines up with the rows' text. */
-const inset = ios ? { paddingHorizontal: space["4"] } : null;
+import { getServices } from "../../lib/services";
+import { useCompany, useSession } from "../../state/session";
+import { Button, Card, Empty, Field, Notice, T, Toggle } from "../../ui/components";
+import { confirmDestructive } from "../../ui/confirm";
+import { haptics } from "../../ui/haptics";
+import { color, face, MAX_TEXT_SCALE, space, tabular } from "../../ui/theme";
+import { Divider } from "../report/ReportTab";
+import { LinkRow } from "../quote/QuoteTab";
 
 const INVOICEABLE = ["in_progress", "report_sent", "quote_sent", "quote_accepted", "invoiced"];
 
-/** Invoice the job once the work is done: the server builds it, the tech sends it (M9). */
+const METHOD: Record<string, string> = {
+  card: "Card",
+  ach: "Bank",
+  other: "Recorded by the office",
+};
+const PAYMENT_STATUS: Record<string, string> = {
+  pending: "processing",
+  succeeded: "received",
+  failed: "failed",
+  refunded: "refunded",
+};
+
+const dollars = (cents: number) => (cents / 100).toFixed(2);
+
+type Message = { tone: "success" | "error"; text: string } | null;
+
+/**
+ * Invoice (spec 5.4 Wrap-Up), as on the website: Create Invoice once the job has started (the
+ * server builds it from the fee or the accepted quote); a draft's lines, Add a Line, Details
+ * and Send; a sent invoice's payments, customer link, Record Payment and Void Invoice for
+ * managers. Lines and details are saved through the sync layer; creating, sending, payments
+ * and void are the server's.
+ */
 export function InvoiceSection({ job, customer }: { job: Job; customer: Customer | undefined }) {
   const company = useCompany();
   const invoices = useJobInvoices(company.id, job.id);
-  const invoice = invoices.find((i) => i.status !== "void");
-  const [to, setTo] = useState<string | null>(null);
-  const [busy, setBusy] = useState<"create" | "email" | "text" | "share" | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const email = (to ?? customer?.email ?? "").trim();
+  const current = invoices.find((i) => i.status !== "void");
+  const voided = invoices.filter((i) => i.status === "void");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<Message>(null);
 
-  if (!invoice && !INVOICEABLE.includes(job.status)) return null;
-
-  async function run(kind: "create" | "email" | "text" | "share") {
-    setBusy(kind);
-    setError(null);
+  async function create() {
+    setBusy(true);
     setMessage(null);
     try {
-      if (kind === "create") {
-        await createJobInvoice(job.id);
-        setMessage("Invoice ready. Check it, then send it.");
-      } else if (kind === "share") {
-        if (invoice?.token && API_URL)
-          await Share.share({
-            message: invoiceShareText(company.name, `${API_URL}/i/${invoice.token}`),
-          });
-      } else {
-        if (kind === "email" && !/^\S+@\S+\.\S+$/.test(email))
-          throw new Error("Enter the customer’s email.");
-        const r = await sendJobInvoice(
-          invoice!.id,
-          kind === "email" ? "email" : "sms_device",
-          kind === "email" ? email : (customer?.phone ?? null),
-        );
-        if (kind === "text") {
-          await Share.share({ message: r.message });
-          setMessage("Invoice sent.");
-        } else {
-          setMessage(`Sent to ${email}.`);
-        }
-      }
+      await createJobInvoice(job.id);
+      setMessage({ tone: "success", text: "Invoice drafted. Check it, then send it." });
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setMessage({ tone: "error", text: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <View style={styles.stack}>
+      {current ? (
+        <InvoiceCard invoice={current} customer={customer} />
+      ) : job.type === "maintenance" ? (
+        <Empty>
+          {job.billed_invoice_id
+            ? "This visit is on the customer’s monthly invoice. Find it on the Invoices page."
+            : "Finished visits are billed once a month, one invoice per customer, from the Invoices page."}
+        </Empty>
+      ) : INVOICEABLE.includes(job.status) ? (
+        <Card style={styles.stack}>
+          <T muted>
+            {job.type === "repair"
+              ? "Copies the accepted quote and credits the deposit already paid. You can change it before sending."
+              : job.fee_cents
+                ? `Bills the detection fee of ${formatCents(job.fee_cents)}. You can add lines before sending.`
+                : "Starts an empty invoice. Add the lines before sending."}
+          </T>
+          <Button
+            title={busy ? "Creating…" : "Create Invoice"}
+            kind="secondary"
+            disabled={busy || !reportsOnline}
+            onPress={() => void create()}
+          />
+          {!reportsOnline ? <Notice>Invoices need the Sundeck Pro server.</Notice> : null}
+          {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
+        </Card>
+      ) : (
+        <Empty>Start the job before invoicing it.</Empty>
+      )}
+      {voided.length ? (
+        <T variant="secondary" muted>
+          {`Voided: ${voided.map((i) => `#${i.number ?? ""} (${formatCents(i.total_cents)})`).join(", ")}`}
+        </T>
+      ) : null}
+    </View>
+  );
+}
+
+function InvoiceCard({ invoice, customer }: { invoice: JobInvoice; customer?: Customer }) {
+  const company = useCompany();
+  const { services, membership } = useSession();
+  const manager = isManagerRole(membership?.role);
+  const rate = company.settings.tax_rate_bps ?? 0;
+  const draft = invoice.status === "draft";
+  const totals = draft ? invoiceTotals(invoice.lines, invoice.discount_cents, rate) : invoice;
+  const balance = invoiceBalance(invoice);
+  const hasPayments = invoice.payments.some(
+    (p) => p.status === "succeeded" || p.status === "pending",
+  );
+  const link = invoice.token && API_URL ? `${API_URL}/i/${invoice.token}` : null;
+
+  function removeLine(id: string) {
+    services.sync.write("invoice_line_item", id, company.id, {
+      deleted_at: new Date().toISOString(),
+    });
+  }
+
+  return (
+    <Card style={styles.card}>
+      <View style={styles.titleRow}>
+        <T variant="cardTitle" style={{ flexShrink: 1 }}>
+          {`Invoice${invoice.number ? ` #${invoice.number}` : ""} · ${INVOICE_STATUS_LABELS[invoice.status]}`}
+        </T>
+        <Text style={[styles.total, { color: color.text }]} maxFontSizeMultiplier={MAX_TEXT_SCALE}>
+          {formatCents(totals.total_cents)}
+        </Text>
+      </View>
+
+      <View>
+        {invoice.lines.map((l, i) => (
+          <View key={l.id}>
+            {i > 0 ? <Divider /> : null}
+            <View style={styles.line}>
+              <T style={{ flex: 1 }}>
+                {`${l.description}${l.quantity !== 1 ? ` × ${l.quantity}` : ""}`}
+                {l.kind === "item" && !l.taxable && rate > 0 ? (
+                  <T variant="secondary" muted>
+                    {" · no tax"}
+                  </T>
+                ) : null}
+              </T>
+              <T style={tabular}>{formatCents(lineTotal(l))}</T>
+              {draft && l.kind === "item" ? (
+                <Button
+                  title="Remove"
+                  kind="quiet"
+                  small
+                  onPress={() =>
+                    confirmDestructive({
+                      title: `Remove “${l.description}” from the invoice?`,
+                      confirm: "Remove Line",
+                      onConfirm: () => removeLine(l.id),
+                    })
+                  }
+                />
+              ) : null}
+            </View>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.totals}>
+        <Divider />
+        <Amount label="Subtotal" value={formatCents(totals.subtotal_cents)} />
+        {totals.discount_cents > 0 ? (
+          <Amount label="Discount" value={`−${formatCents(totals.discount_cents)}`} />
+        ) : null}
+        {totals.tax_cents > 0 ? <Amount label="Tax" value={formatCents(totals.tax_cents)} /> : null}
+        {totals.credit_cents > 0 ? (
+          <Amount label="Deposit paid" value={`−${formatCents(totals.credit_cents)}`} />
+        ) : null}
+        <Amount label="Total" value={formatCents(totals.total_cents)} strong />
+        {!draft ? (
+          <>
+            <Amount label="Paid" value={formatCents(invoice.amount_paid_cents)} />
+            <Amount label="Balance due" value={formatCents(balance)} strong />
+          </>
+        ) : null}
+      </View>
+
+      {draft ? (
+        <DraftParts invoice={invoice} customer={customer} />
+      ) : (
+        <View style={styles.stack}>
+          {invoice.payments.length ? (
+            <View style={{ gap: 4 }}>
+              {invoice.payments.map((p) => (
+                <T key={p.id} variant="secondary">
+                  {`${formatCents(p.amount_cents)} · ${METHOD[p.method] ?? p.method} · ${PAYMENT_STATUS[p.status] ?? p.status}${
+                    p.paid_at
+                      ? ` · ${new Date(p.paid_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+                      : ""
+                  }`}
+                </T>
+              ))}
+            </View>
+          ) : null}
+          {link && invoice.status !== "void" ? (
+            <LinkRow url={link} message={invoiceShareText(company.name, link)} />
+          ) : null}
+          {manager && balance > 0 && invoice.status !== "void" ? (
+            <RecordPayment invoice={invoice} balance={balance} />
+          ) : null}
+          {manager && !hasPayments && invoice.status !== "void" ? (
+            <VoidButton
+              invoiceId={invoice.id}
+              title="Void Invoice"
+              question="Void this invoice? The customer's link will show it as void."
+            />
+          ) : null}
+        </View>
+      )}
+    </Card>
+  );
+}
+
+function Amount({
+  label,
+  value,
+  strong = false,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+}) {
+  return (
+    <View style={styles.amount}>
+      <T variant="secondary" style={strong && face.bold}>
+        {label}
+      </T>
+      <T variant="secondary" style={[tabular, strong && face.bold]}>
+        {value}
+      </T>
+    </View>
+  );
+}
+
+/** A draft: Add a Line, Details, Send, then Delete Draft. */
+function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Customer }) {
+  const company = useCompany();
+  const { services } = useSession();
+  const sync = services.sync;
+  const [line, setLine] = useState({ description: "", quantity: "1", price: "", taxable: true });
+  const [lineErrors, setLineErrors] = useState<Record<string, string>>({});
+  const [discount, setDiscount] = useState(
+    invoice.discount_cents ? dollars(invoice.discount_cents) : "",
+  );
+  const [due, setDue] = useState(invoice.due_date ?? "");
+  const [notes, setNotes] = useState(invoice.notes ?? "");
+  const [detailsMessage, setDetailsMessage] = useState<Message>(null);
+  const [to, setTo] = useState<string | null>(null);
+  const email = (to ?? customer?.email ?? "").trim();
+  const [busy, setBusy] = useState<"email" | "link" | null>(null);
+  const [sendMessage, setSendMessage] = useState<Message>(null);
+
+  function addLine() {
+    const quantity = Number(line.quantity.replace(",", ".") || "1");
+    const price = parseDollars(line.price);
+    const errors: Record<string, string> = {};
+    if (!line.description.trim()) errors.description = "Describe the work.";
+    if (!(quantity > 0) || Math.round(quantity * 100) !== quantity * 100)
+      errors.quantity = "Enter a quantity like 1 or 2.5.";
+    if (price === null || price < 0) errors.price = "Enter a price like 125.";
+    setLineErrors(errors);
+    if (Object.keys(errors).length) return;
+    sync.insert("invoice_line_item", company.id, {
+      invoice_id: invoice.id,
+      kind: "item",
+      description: line.description.trim(),
+      quantity,
+      unit_price_cents: price,
+      taxable: line.taxable,
+      sort_order: invoice.lines.filter((l) => l.kind === "item").length + 1,
+    });
+    setLine({ description: "", quantity: "1", price: "", taxable: true });
+    haptics.success();
+  }
+
+  function saveDetails() {
+    const cents = discount.trim() ? parseDollars(discount) : 0;
+    if (cents === null || cents < 0)
+      return setDetailsMessage({
+        tone: "error",
+        text: "Enter an amount like 50, or leave it empty.",
+      });
+    if (due.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(due.trim()))
+      return setDetailsMessage({ tone: "error", text: "Enter the due date like 2026-11-01." });
+    sync.write("invoice", invoice.id, company.id, {
+      discount_cents: cents,
+      due_date: due.trim() || null,
+      notes: notes.trim() || null,
+    });
+    setDetailsMessage({ tone: "success", text: "Saved." });
+    haptics.success();
+  }
+
+  async function send(channel: "email" | "link") {
+    setBusy(channel);
+    setSendMessage(null);
+    try {
+      if (channel === "email" && !/^\S+@\S+\.\S+$/.test(email))
+        throw new Error("Enter the customer’s email.");
+      const r = await sendJobInvoice(
+        invoice.id,
+        channel === "email" ? "email" : "sms_device",
+        channel === "email" ? email : (customer?.phone ?? null),
+      );
+      if (channel === "link") {
+        await Share.share({ message: r.message });
+        setSendMessage({
+          tone: "success",
+          text: "Invoice sent. Share the link with the customer.",
+        });
+      } else setSendMessage({ tone: "success", text: `Sent to ${email}.` });
+    } catch (e) {
+      setSendMessage({ tone: "error", text: e instanceof Error ? e.message : String(e) });
     } finally {
       setBusy(null);
     }
   }
 
-  if (!invoice) {
-    return (
-      <Section title="Invoice" grouped>
-        <Card>
-          <T variant="muted">
-            {job.type === "repair"
-              ? "Copies the accepted quote and credits the deposit already paid."
-              : job.fee_cents
-                ? `Bills the detection fee of ${formatCents(job.fee_cents)}.`
-                : "No detection fee is set. The office can add lines before sending."}
-          </T>
-          <Button
-            title="Create Invoice"
-            kind="secondary"
-            loading={busy === "create"}
-            disabled={busy !== null || !reportsOnline}
-            onPress={() => void run("create")}
-          />
-          {!reportsOnline ? <Notice>Invoices need the Sundeck Pro server.</Notice> : null}
-          {error ? <Notice tone="error">{error}</Notice> : null}
-        </Card>
-      </Section>
-    );
-  }
-
-  const rate = company.settings.tax_rate_bps ?? 0;
-  const draft = invoice.status === "draft";
-  const totals = draft ? invoiceTotals(invoice.lines, invoice.discount_cents, rate) : invoice;
-  const balance = invoiceBalance(invoice);
-
-  const heading = (
-    <Row style={[{ justifyContent: "space-between" }, inset]}>
-      <T variant="heading" style={{ flexShrink: 1 }}>{`#${invoice.number ?? ""}`}</T>
-      <Pill
-        label={INVOICE_STATUS_LABELS[invoice.status]}
-        color={INVOICE_STATUS_COLOR[invoice.status]}
-      />
-    </Row>
-  );
-  const taxNote =
-    totals.tax_cents > 0 ? `Includes ${formatCents(totals.tax_cents)} tax` : undefined;
-  const lineLabel = (l: (typeof invoice.lines)[number]) =>
-    `${l.description}${l.quantity !== 1 ? ` × ${l.quantity}` : ""}`;
-  const sendButtons = [
-    <Button
-      key="email"
-      title="Send by Email"
-      style={ios ? undefined : halfButton}
-      loading={busy === "email"}
-      disabled={busy !== null || !reportsOnline}
-      onPress={() => void run("email")}
-    />,
-    <Button
-      key="text"
-      title="Send by Text"
-      kind="secondary"
-      style={ios ? undefined : halfButton}
-      loading={busy === "text"}
-      disabled={busy !== null || !reportsOnline}
-      onPress={() => void run("text")}
-    />,
-  ];
-
   return (
-    <Section title="Invoice" grouped>
-      {ios ? (
-        // iPhone: number and status, then lines and the total as a grouped list.
-        <>
-          {heading}
-          <Group>
-            {invoice.lines.map((l) => (
-              <AmountRow key={l.id} label={lineLabel(l)} value={formatCents(lineTotal(l))} />
-            ))}
-            <AmountRow label="Total" value={formatCents(totals.total_cents)} strong />
-            {!draft ? (
-              <AmountRow
-                label={invoice.status === "paid" ? "Paid in full" : "Balance due"}
-                value={invoice.status === "paid" ? undefined : formatCents(balance)}
-                strong
-              />
-            ) : null}
-          </Group>
-          {taxNote ? (
-            <T variant="muted" style={inset}>
-              {taxNote}
-            </T>
-          ) : null}
-        </>
-      ) : (
-        <Card>
-          <Row style={{ justifyContent: "space-between" }}>
-            {heading}
-            <T variant="strong">{formatCents(totals.total_cents)}</T>
-          </Row>
-          {invoice.lines.map((l) => (
-            <Row key={l.id} style={{ justifyContent: "space-between" }}>
-              <T variant="small" style={{ flex: 1 }}>
-                {lineLabel(l)}
-              </T>
-              <T variant="small">{formatCents(lineTotal(l))}</T>
-            </Row>
-          ))}
-          {taxNote ? <T variant="muted">{taxNote}</T> : null}
-          {!draft ? (
-            <T variant="strong">
-              {invoice.status === "paid" ? "Paid in full" : `Balance due ${formatCents(balance)}`}
-            </T>
-          ) : null}
-        </Card>
-      )}
-
-      {draft ? (
-        <Block note="Sending locks the invoice. To change lines, use the office view before sending.">
-          {/* The customer's address, so iPhone doesn't offer to fill in the tech's own. */}
-          <FieldGroup>
-            <FieldRow
-              label="Customer email"
-              layout="stacked"
-              value={to ?? customer?.email ?? ""}
-              onChangeText={setTo}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              spellCheck={false}
-              autoComplete="off"
-              textContentType="none"
-              returnKeyType="done"
-            />
-          </FieldGroup>
-          {ios ? sendButtons : <Row style={{ gap: space["2"] }}>{sendButtons}</Row>}
-        </Block>
-      ) : invoice.token && invoice.status !== "paid" ? (
-        <Button
-          title="Share Payment Link"
-          kind="secondary"
-          loading={busy === "share"}
-          disabled={busy !== null}
-          onPress={() => void run("share")}
+    <View style={styles.parts}>
+      <View style={styles.stack}>
+        <T variant="subHeading">Add a Line</T>
+        <Field
+          label="Description"
+          value={line.description}
+          onChangeText={(v) => setLine((l) => ({ ...l, description: v }))}
+          error={lineErrors.description}
         />
-      ) : null}
-      {message ? <Notice>{message}</Notice> : null}
-      {error ? <Notice tone="error">{error}</Notice> : null}
-    </Section>
+        <View style={styles.pair}>
+          <View style={{ flex: 1 }}>
+            <Field
+              label="Quantity"
+              keyboardType="decimal-pad"
+              value={line.quantity}
+              onChangeText={(v) => setLine((l) => ({ ...l, quantity: v }))}
+              error={lineErrors.quantity}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Field
+              label="Price ($)"
+              keyboardType="decimal-pad"
+              value={line.price}
+              onChangeText={(v) => setLine((l) => ({ ...l, price: v }))}
+              error={lineErrors.price}
+            />
+          </View>
+        </View>
+        <Toggle
+          label="Taxable"
+          value={line.taxable}
+          onChange={(v) => setLine((l) => ({ ...l, taxable: v }))}
+        />
+        <Button title="Add Line" kind="secondary" onPress={addLine} />
+      </View>
+
+      <View style={styles.stack}>
+        <T variant="subHeading">Details</T>
+        <View style={styles.pair}>
+          <View style={{ flex: 1 }}>
+            <Field
+              label="Discount ($)"
+              keyboardType="decimal-pad"
+              value={discount}
+              onChangeText={setDiscount}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Field
+              label="Due date"
+              value={due}
+              onChangeText={setDue}
+              placeholder="2026-11-01"
+              keyboardType="numbers-and-punctuation"
+              hint="Empty: due on receipt."
+            />
+          </View>
+        </View>
+        <Field label="Note to the customer" value={notes} onChangeText={setNotes} multiline />
+        <View style={styles.row}>
+          <Button title="Save" kind="secondary" onPress={saveDetails} />
+          {detailsMessage ? (
+            <T
+              variant="secondary"
+              style={{ color: detailsMessage.tone === "error" ? color.fail : color.pass }}
+            >
+              {detailsMessage.text}
+            </T>
+          ) : null}
+        </View>
+      </View>
+
+      <View style={styles.stack}>
+        <T variant="subHeading">Send</T>
+        <Field
+          label="Customer email"
+          value={to ?? customer?.email ?? ""}
+          onChangeText={setTo}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
+          autoComplete="off"
+          textContentType="none"
+          hint="Their other emails get it too."
+        />
+        <View style={styles.row}>
+          <Button
+            title={busy === "email" ? "Sending…" : "Send by Email"}
+            disabled={busy !== null || !reportsOnline}
+            onPress={() => void send("email")}
+          />
+          <Button
+            title="Send Without Email"
+            kind="secondary"
+            disabled={busy !== null || !reportsOnline}
+            onPress={() => void send("link")}
+          />
+        </View>
+        <T variant="secondary" muted>
+          Sending locks the invoice and gives you a link for the customer.
+        </T>
+        {sendMessage ? <Notice tone={sendMessage.tone}>{sendMessage.text}</Notice> : null}
+      </View>
+
+      <VoidButton
+        invoiceId={invoice.id}
+        title="Delete Draft"
+        question="Delete this draft invoice?"
+      />
+    </View>
   );
 }
+
+/** Managers: a check, cash, or anything paid outside Sundeck Pro. */
+function RecordPayment({ invoice, balance }: { invoice: JobInvoice; balance: number }) {
+  const [amount, setAmount] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<Message>(null);
+
+  async function record() {
+    const cents = parseDollars(amount ?? dollars(balance));
+    if (cents === null || cents <= 0)
+      return setMessage({ tone: "error", text: "Enter an amount like 649." });
+    setBusy(true);
+    setMessage(null);
+    try {
+      const { supabase, sync } = getServices();
+      const { data, error } = await supabase.rpc("record_invoice_payment", {
+        target_invoice: invoice.id,
+        amount: cents,
+      });
+      if (error) throw new Error(error.message);
+      await sync.syncNow();
+      setAmount(null);
+      setMessage({
+        tone: "success",
+        text:
+          (data as { status?: string } | null)?.status === "paid"
+            ? "Paid in full."
+            : "Payment recorded.",
+      });
+      haptics.success();
+    } catch (e) {
+      setMessage({ tone: "error", text: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <View style={styles.stack}>
+      <Field
+        label="Amount received ($)"
+        keyboardType="decimal-pad"
+        value={amount ?? dollars(balance)}
+        onChangeText={setAmount}
+        hint="A check, cash, or anything paid outside Sundeck Pro."
+      />
+      <Button
+        title={busy ? "Saving…" : "Record Payment"}
+        kind="secondary"
+        disabled={busy}
+        onPress={() => void record()}
+      />
+      {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
+    </View>
+  );
+}
+
+/** Void Invoice (sent) or Delete Draft: the server voids it, after asking. */
+function VoidButton({
+  invoiceId,
+  title,
+  question,
+}: {
+  invoiceId: string;
+  title: string;
+  question: string;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <View style={styles.stack}>
+      <Button
+        title={title}
+        kind="danger"
+        disabled={busy}
+        onPress={() =>
+          confirmDestructive({
+            title: question,
+            confirm: title,
+            onConfirm: () => {
+              setBusy(true);
+              setError(null);
+              const { supabase, sync } = getServices();
+              void Promise.resolve(supabase.rpc("void_invoice", { target_invoice: invoiceId }))
+                .then(async ({ error: e }) => {
+                  if (e) throw new Error(e.message);
+                  await sync.syncNow();
+                })
+                .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
+                .finally(() => setBusy(false));
+            },
+          })
+        }
+      />
+      {error ? <Notice tone="error">{error}</Notice> : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  stack: { gap: space["3"] },
+  card: { gap: space["3"] },
+  parts: { gap: space["6"], marginTop: space["2"] },
+  titleRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    columnGap: space["3"],
+  },
+  total: { ...face.semiBold, fontSize: 20, lineHeight: 28, fontVariant: ["tabular-nums"] },
+  line: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space["2"],
+    paddingVertical: space["2"],
+  },
+  totals: { gap: 4 },
+  amount: { flexDirection: "row", justifyContent: "space-between", gap: space["4"] },
+  pair: { flexDirection: "row", gap: space["3"] },
+  row: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space["3"] },
+});

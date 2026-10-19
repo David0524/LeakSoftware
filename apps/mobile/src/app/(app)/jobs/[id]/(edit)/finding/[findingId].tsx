@@ -1,7 +1,14 @@
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { useRef, useState } from "react";
-import type { TextInput } from "react-native";
-import { validateFinding, type FindingStatus, type Job, type Property } from "@leakbook/core";
+import { useState } from "react";
+import { StyleSheet, View } from "react-native";
+import {
+  FINDING_STATUS_LABELS,
+  validateFinding,
+  type DiagramShape,
+  type FindingStatus,
+  type Job,
+  type Property,
+} from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useRow } from "../../../../../../data/hooks";
 import { useInspectionConfig, useJobInspection } from "../../../../../../data/inspection";
@@ -9,24 +16,30 @@ import { useCompany, useSession } from "../../../../../../state/session";
 import { MediaSection } from "../../../../../../features/media/MediaSection";
 import {
   Button,
-  FieldGroup,
-  FieldRow,
+  Field,
   HeaderButton,
   Notice,
-  PickerRow,
   Screen,
-  Section,
-  T,
   Segmented,
+  T,
+  Toggle,
 } from "../../../../../../ui/components";
 import { confirmDestructive } from "../../../../../../ui/confirm";
 import { confirmDeleteFinding } from "../../../../../../features/inspection/remove";
 import { haptics } from "../../../../../../ui/haptics";
 import { PoolDiagram } from "../../../../../../ui/PoolDiagram";
+import { Select } from "../../../../../../ui/Select";
+import { ShapePicker } from "../../../../../../ui/ShapePicker";
 import { useSheetLock } from "../../../../../../ui/sheet";
-import { color, ios, space } from "../../../../../../ui/theme";
+import { color, space } from "../../../../../../ui/theme";
 
-/** Record a leak: what, where, how serious, and a pin on the pool diagram. */
+const STATUSES = Object.keys(FINDING_STATUS_LABELS) as FindingStatus[];
+
+/**
+ * Add Finding / Edit Finding (spec 6.2): what, severity, item, where, status, the pool's
+ * shape and spa (saved at once), the pin on the diagram, notes, photos, then Add Finding or
+ * Save Finding; editing ends with Delete Finding.
+ */
 export default function FindingScreen() {
   const params = useLocalSearchParams<{ id: string; findingId: string; component?: string }>();
   const jobId = params.id;
@@ -40,8 +53,8 @@ export default function FindingScreen() {
     params.findingId === "new" ? undefined : insp.findings.find((f) => f.id === params.findingId);
 
   const [title, setTitle] = useState(existing?.title ?? "");
-  const [componentId, setComponentId] = useState<string | null>(
-    existing?.job_component_id ?? params.component ?? null,
+  const [componentId, setComponentId] = useState<string>(
+    existing?.job_component_id ?? params.component ?? "",
   );
   const [severity, setSeverity] = useState(existing?.severity_key ?? "");
   const [location, setLocation] = useState(existing?.location_text ?? "");
@@ -53,19 +66,40 @@ export default function FindingScreen() {
   const [status, setStatus] = useState<FindingStatus>(existing?.status ?? "open");
   const [notes, setNotes] = useState(existing?.notes ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const locationRef = useRef<TextInput>(null);
 
-  // Anything changed since the sheet opened? Then Cancel asks first, and on iPhone a swipe down
-  // doesn't close the sheet by accident (as in New Job).
+  // Anything changed since the sheet opened? Then Cancel asks first, and a swipe down doesn't
+  // close the sheet by accident. The pool's shape and spa save at once, so they don't count.
   const snapshot = () =>
     JSON.stringify({ title, componentId, severity, location, pin, status, notes });
   const [initial] = useState(snapshot);
   const dirty = snapshot() !== initial;
   useSheetLock(dirty);
 
+  function cancel() {
+    if (!dirty) return router.back();
+    confirmDestructive({
+      title: "Discard changes?",
+      confirm: "Discard Changes",
+      cancel: "Keep Editing",
+      onConfirm: () => router.back(),
+    });
+  }
+
+  const bar = (
+    <Stack.Screen
+      options={{
+        title: existing ? "Edit Finding" : "Add Finding",
+        headerBackVisible: false,
+        headerLeft: () => <HeaderButton title="Cancel" onPress={cancel} />,
+        headerRight: undefined,
+      }}
+    />
+  );
+
   if (params.findingId !== "new" && !existing) {
     return (
       <Screen>
+        {bar}
         <Notice tone="warning">This finding isn’t on this phone.</Notice>
       </Screen>
     );
@@ -77,7 +111,7 @@ export default function FindingScreen() {
     if (Object.keys(e).length > 0) return;
     const values: Record<string, JsonValue> = {
       title: title.trim(),
-      job_component_id: componentId,
+      job_component_id: componentId || null,
       severity_key: severity,
       location_text: location.trim() || null,
       pin_x: pin?.x ?? null,
@@ -91,145 +125,126 @@ export default function FindingScreen() {
     router.back();
   }
 
-  function cancel() {
-    if (!dirty) return router.back();
-    confirmDestructive({
-      title: existing ? "Discard your changes?" : "Discard this finding?",
-      confirm: "Discard",
-      cancel: "Keep Editing",
-      onConfirm: () => router.back(),
-    });
-  }
-
-  function remove() {
-    confirmDeleteFinding(services.sync, company.id, existing!.id, () => router.back());
-  }
-
+  const shape = (property?.diagram_shape as DiagramShape | null | undefined) ?? null;
+  const setPool = (values: Record<string, JsonValue>) => {
+    if (property) services.sync.write("property", property.id, property.company_id, values);
+  };
   const sevColor = config.severityByKey.get(severity)?.color ?? color.fail;
-  const others = insp.findings.filter(
-    (f) => f.id !== existing?.id && f.pin_x != null && f.pin_y != null,
-  );
 
   return (
     <Screen>
-      <Stack.Screen
-        options={{
-          title: existing ? "Finding" : "New Finding",
-          // iPhone sheet: Cancel and Save in the bar. Android keeps its back arrow.
-          ...(ios
-            ? {
-                headerLeft: () => <HeaderButton title="Cancel" onPress={cancel} />,
-                headerRight: () => <HeaderButton title="Save" strong onPress={save} />,
-              }
-            : null),
-        }}
-      />
-      <FieldGroup>
-        <FieldRow
-          label="What did you find?"
-          layout="stacked"
+      {bar}
+      <View style={styles.form}>
+        <Field
+          label="What"
           value={title}
           onChangeText={setTitle}
           error={errors.title}
-          placeholder="Return 3 line break"
+          placeholder="Crack at the skimmer throat"
           autoCapitalize="sentences"
-          next={locationRef}
         />
-      </FieldGroup>
-      <Segmented
-        grouped
-        label="Severity"
-        options={config.severities.map((s) => ({ value: s.key, label: s.name }))}
-        value={severity || null}
-        onChange={setSeverity}
-      />
-      {errors.severity_key ? (
-        <T
-          variant="small"
-          style={[{ color: color.fail }, ios && { paddingHorizontal: space["4"] }]}
-        >
-          {errors.severity_key}
-        </T>
-      ) : null}
-      <FieldGroup>
-        <PickerRow
-          label="Component"
+        <Select
+          label="Severity"
+          options={[
+            { value: "", label: "Choose…" },
+            ...config.severities.map((s) => ({ value: s.key, label: s.name })),
+          ]}
+          value={severity}
+          onChange={setSeverity}
+          error={errors.severity_key}
+        />
+        <Select
+          label="Item (optional)"
           options={[
             { value: "", label: "None" },
             ...insp.components.map((c) => ({ value: c.id, label: c.label })),
           ]}
-          value={componentId ?? ""}
-          onChange={(v) => setComponentId(v || null)}
+          value={componentId}
+          onChange={setComponentId}
         />
-        <FieldRow
-          ref={locationRef}
-          label="Location"
-          layout="stacked"
-          wrap
+        <Field
+          label="Where (optional)"
           value={location}
           onChangeText={setLocation}
-          placeholder="Between pad and pool, 6 ft from the fitting"
-          returnKeyType="done"
+          placeholder="Two feet left of the skimmer"
         />
-      </FieldGroup>
-
-      <Section
-        grouped
-        title="Pin on the diagram"
-        action={
-          pin ? <Button title="Clear Pin" kind="quiet" onPress={() => setPin(null)} /> : undefined
-        }
-      >
-        <T variant="muted" style={ios && { paddingHorizontal: space["4"] }}>
-          {pin ? "Tap again to move the pin." : "Tap where the leak is."}
-        </T>
-        {property ? (
-          <PoolDiagram
-            shape={property.diagram_shape}
-            hasSpa={property.has_spa}
-            onPlace={(x, y) => setPin({ x, y })}
-            pins={[
-              ...others.map((f) => ({
-                id: f.id,
-                x: Number(f.pin_x),
-                y: Number(f.pin_y),
-                color: color.excluded,
-                label: "",
-              })),
-              ...(pin
-                ? [{ id: "this", x: pin.x, y: pin.y, color: sevColor, label: "!", active: true }]
-                : []),
-            ]}
-          />
-        ) : null}
-      </Section>
-
-      {existing ? (
         <Segmented
-          grouped
           label="Status"
-          options={[
-            { value: "open", label: "Open" },
-            { value: "monitor", label: "Monitor" },
-            { value: "quoted", label: "Quoted" },
-            { value: "repaired", label: "Repaired" },
-          ]}
+          fill={false}
+          options={STATUSES.map((s) => ({ value: s, label: FINDING_STATUS_LABELS[s] }))}
           value={status}
           onChange={setStatus}
         />
-      ) : null}
-      <FieldGroup>
-        <FieldRow label="Notes" value={notes} onChangeText={setNotes} multiline />
-      </FieldGroup>
-      <MediaSection
-        target={{ jobId, findingId: existing?.id }}
-        disabledReason={existing ? undefined : "Save the finding first, then add photos."}
-      />
-      {Object.keys(errors).length > 0 ? (
-        <Notice tone="error">Fix the highlighted fields.</Notice>
-      ) : null}
-      <Button title="Save Finding" onPress={save} />
-      {existing ? <Button title="Delete Finding" kind="danger" onPress={remove} /> : null}
+        {property ? (
+          <View style={{ gap: space["2"] }}>
+            <ShapePicker
+              value={shape}
+              hint={shape ? undefined : "Pick one so the diagram matches the pool."}
+              onChange={(next) => setPool({ diagram_shape: next })}
+            />
+            <Toggle
+              label="Has a spa"
+              value={property.has_spa}
+              onChange={(v) => setPool({ has_spa: v })}
+            />
+          </View>
+        ) : null}
+        {property ? (
+          <View style={{ gap: space["2"] }}>
+            <View>
+              <T variant="bodyMedium">Pin on the diagram (optional)</T>
+              <T variant="secondary" muted>
+                Tap where the leak is.
+              </T>
+            </View>
+            <PoolDiagram
+              shape={shape}
+              hasSpa={property.has_spa}
+              outlined
+              onPlace={(x, y) => setPin({ x, y })}
+              pins={pin ? [{ id: "this", x: pin.x, y: pin.y, color: sevColor, label: "" }] : []}
+            />
+            <View style={styles.pinRow} accessibilityLiveRegion="polite">
+              <T variant="secondary">{pin ? "Pin placed." : "No pin yet."}</T>
+              {pin ? <Button title="Clear Pin" kind="quiet" onPress={() => setPin(null)} /> : null}
+            </View>
+          </View>
+        ) : null}
+        <Field label="Notes (optional)" value={notes} onChangeText={setNotes} multiline />
+        <MediaSection
+          title="Photos"
+          target={{ jobId, findingId: existing?.id }}
+          disabledReason={existing ? undefined : "Add the finding first, then its photos."}
+        />
+        {Object.keys(errors).length > 0 ? (
+          <Notice tone="error">Fix the highlighted fields.</Notice>
+        ) : null}
+        <Button title={existing ? "Save Finding" : "Add Finding"} wide onPress={save} />
+        {existing ? (
+          <View style={[styles.delete, { borderTopColor: color.separator }]}>
+            <Button
+              title="Delete Finding"
+              kind="danger"
+              wide
+              onPress={() =>
+                confirmDeleteFinding(services.sync, company.id, existing.id, existing.title, () =>
+                  router.back(),
+                )
+              }
+            />
+          </View>
+        ) : null}
+      </View>
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  form: { gap: space["4"] },
+  pinRow: { flexDirection: "row", alignItems: "center", gap: space["3"], minHeight: 44 },
+  delete: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: space["4"],
+    marginTop: space["2"],
+  },
+});

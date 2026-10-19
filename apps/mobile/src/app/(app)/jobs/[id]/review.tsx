@@ -1,6 +1,6 @@
-import { router, useLocalSearchParams } from "expo-router";
-import { useRef, useState } from "react";
-import { View, type TextInput } from "react-native";
+import { router, Stack, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
+import { StyleSheet, View } from "react-native";
 import {
   MIN_INK,
   checklistTally,
@@ -26,16 +26,16 @@ import { useCompany, useSession } from "../../../../state/session";
 import {
   Button,
   Card,
-  FieldGroup,
-  FieldRow,
+  Field,
+  HeaderButton,
   Notice,
-  PickerRow,
   Row,
   Screen,
+  Segmented,
   T,
 } from "../../../../ui/components";
-import { SignaturePad } from "../../../../ui/SignaturePad";
-import { color } from "../../../../ui/theme";
+import { PadBlock } from "../../../../features/report/PadBlock";
+import { color, face, space } from "../../../../ui/theme";
 
 /**
  * Review with Customer (owner request, 2026-10-13): the customer reads the report on the
@@ -62,11 +62,21 @@ export default function ReviewScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"sign" | "away" | null>(null);
   const [drawing, setDrawing] = useState(false);
-  const roleRef = useRef<TextInput>(null);
+
+  const bar = (
+    <Stack.Screen
+      options={{
+        title: "Review and Sign",
+        headerBackVisible: false,
+        headerLeft: () => <HeaderButton title="Cancel" onPress={() => router.back()} />,
+      }}
+    />
+  );
 
   if (!job) {
     return (
       <Screen>
+        {bar}
         <Notice tone="warning">This job isn’t on this phone.</Notice>
       </Screen>
     );
@@ -132,19 +142,28 @@ export default function ReviewScreen() {
   // The page scrolls, but holds still while a finger is on the pad.
   return (
     <Screen scrollEnabled={!drawing}>
-      <T variant="muted">Please read your report. Sign at the bottom to confirm the visit.</T>
+      {bar}
+      <T muted>Please read your report. Sign at the bottom to confirm the visit.</T>
       <Card>
-        <T variant="muted">{company.name}</T>
-        <T variant="title">{maintenance ? "Service Report" : "Leak Detection Report"}</T>
-        <T variant="strong">{customer?.name ?? "Customer"}</T>
-        {address ? <T variant="small">{address}</T> : null}
-        <T variant="muted">{new Date().toLocaleDateString()}</T>
+        <T variant="secondary" muted style={face.semiBold}>
+          {company.name}
+        </T>
+        <T variant="sectionHeading">{maintenance ? "Service Report" : "Leak Detection Report"}</T>
+        <T variant="bodyEmphasis">{customer?.name ?? "Customer"}</T>
+        {address ? <T variant="secondary">{address}</T> : null}
+        <T variant="secondary" muted>
+          {new Date().toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
+        </T>
       </Card>
 
       {sections.length ? (
         sections.map((s) => (
           <Card key={s.key}>
-            <T variant="heading">{s.title}</T>
+            <T variant="cardTitle">{s.title}</T>
             <T>{s.text}</T>
           </Card>
         ))
@@ -156,18 +175,18 @@ export default function ReviewScreen() {
       )}
 
       <Card>
-        <T variant="heading">Checklist</T>
+        <T variant="cardTitle">Checklist</T>
         <T>
           {maintenance
             ? `${tally.pass} done · ${tally.attention} need attention · ${tally.notApplicable} skipped`
             : `${tally.pass} not leaking · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} not applicable`}
         </T>
-        {tally.pending ? <T variant="muted">{`${tally.pending} still to do`}</T> : null}
+        {tally.pending ? <T variant="secondary" muted>{`${tally.pending} still to do`}</T> : null}
       </Card>
 
       {findings.length ? (
         <Card>
-          <T variant="heading">Findings</T>
+          <T variant="cardTitle">Findings</T>
           {findings.map((f, i) => {
             const sev = config.severityByKey.get(f.severity_key);
             const comp = f.job_component_id
@@ -175,8 +194,8 @@ export default function ReviewScreen() {
               : undefined;
             return (
               <View key={f.id} style={{ gap: 2 }}>
-                <T variant="strong">{`${i + 1}. ${f.title}`}</T>
-                <T variant="muted">
+                <T variant="bodyEmphasis">{`${i + 1}. ${f.title}`}</T>
+                <T variant="secondary" muted>
                   {[sev?.name, comp?.label, f.location_text].filter(Boolean).join(" · ")}
                 </T>
               </View>
@@ -187,7 +206,7 @@ export default function ReviewScreen() {
 
       {insp.tests.length ? (
         <Card>
-          <T variant="heading">Tests</T>
+          <T variant="cardTitle">Tests</T>
           {insp.tests.map((t) => (
             <Row key={t.id} style={{ justifyContent: "space-between" }}>
               <T style={{ flex: 1 }}>{config.testTypeById.get(t.test_type_id)?.name ?? "Test"}</T>
@@ -197,92 +216,79 @@ export default function ReviewScreen() {
         </Card>
       ) : null}
 
-      <View style={{ gap: 12, borderTopWidth: 2, borderTopColor: color.text, paddingTop: 16 }}>
+      <View style={[styles.sign, { borderTopColor: color.separator }]}>
         {tally.pending ? (
           <Notice tone="warning">
             {`${tally.pending} checklist ${tally.pending === 1 ? "item is" : "items are"} still to do. Finish the checklist, then come back to sign.`}
           </Notice>
         ) : purposes.length ? (
           <>
-            <T variant="title">Please Sign</T>
+            <T variant="largeTitle">Please Sign</T>
             {purposes.length > 1 ? (
-              <FieldGroup>
-                <PickerRow
-                  label="Signing for"
-                  options={purposes}
-                  value={purpose}
-                  onChange={setPurpose}
-                />
-              </FieldGroup>
+              <Segmented
+                label="Signing for"
+                options={purposes}
+                value={purpose}
+                onChange={setPurpose}
+              />
             ) : null}
             {purpose ? (
-              <T style={{ fontSize: 19, lineHeight: 26 }}>
-                {signatureStatement(purpose, company.name, address || null)}
-              </T>
+              <Card>
+                <T style={styles.statement}>
+                  {signatureStatement(purpose, company.name, address || null)}
+                </T>
+              </Card>
             ) : null}
-            {/* The customer types here, so iPhone doesn't offer the tech's own name. */}
-            <FieldGroup>
-              <FieldRow
-                label="Your name"
-                layout="stacked"
-                value={name ?? customer?.name ?? ""}
-                onChangeText={setName}
-                autoCapitalize="words"
-                autoCorrect={false}
-                autoComplete="off"
-                textContentType="none"
-                next={roleRef}
-              />
-              <FieldRow
-                ref={roleRef}
-                label="Role (optional)"
-                layout="stacked"
-                value={role}
-                onChangeText={setRole}
-                placeholder="Homeowner, property manager…"
-                autoCapitalize="sentences"
-                autoComplete="off"
-                textContentType="none"
-                returnKeyType="done"
-              />
-            </FieldGroup>
-            <SignaturePad
-              strokes={strokes}
-              onDrawing={setDrawing}
-              onChange={(s) => {
-                setStrokes(s);
-                setError(null);
-              }}
+            {/* The customer types here, so the phone doesn't offer the tech's own name. */}
+            <Field
+              label="Your name"
+              value={name ?? customer?.name ?? ""}
+              onChangeText={setName}
+              autoCapitalize="words"
+              autoCorrect={false}
+              autoComplete="off"
+              textContentType="none"
             />
-            <Row style={{ justifyContent: "flex-end" }}>
-              <Button
-                title="Clear"
-                kind="quiet"
-                onPress={() => setStrokes([])}
-                disabled={strokes.length === 0}
-              />
-            </Row>
+            <Field
+              label="Role (optional)"
+              value={role}
+              onChangeText={setRole}
+              placeholder="Homeowner, property manager…"
+              autoComplete="off"
+              textContentType="none"
+            />
+            <PadBlock
+              strokes={strokes}
+              setStrokes={setStrokes}
+              setDrawing={setDrawing}
+              onInk={() => setError(null)}
+            />
           </>
         ) : null}
         {error ? <Notice tone="error">{error}</Notice> : null}
         {tally.pending ? null : (
           <>
             <Button
-              title={purposes.length ? "Sign" : "Finish Report"}
-              loading={busy === "sign"}
+              title={
+                busy === "sign"
+                  ? "Finishing…"
+                  : purposes.length
+                    ? "Sign and Finish"
+                    : "Finish Report"
+              }
+              wide
               disabled={busy !== null}
               onPress={() => void finish(false)}
             />
             {purposes.length ? (
               <>
-                <T variant="muted">
+                <T variant="secondary" muted>
                   For the tech: nobody here to sign? Finish the report without a signature. It will
                   say the customer wasn’t present.
                 </T>
                 <Button
-                  title="Customer Not Here"
+                  title={busy === "away" ? "Finishing…" : "Customer Not Here"}
                   kind="quiet"
-                  loading={busy === "away"}
                   disabled={busy !== null}
                   onPress={() => void finish(true)}
                 />
@@ -294,3 +300,8 @@ export default function ReviewScreen() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  statement: { fontSize: 19, lineHeight: 28 },
+  sign: { gap: space["4"], borderTopWidth: StyleSheet.hairlineWidth, paddingTop: space["5"] },
+});

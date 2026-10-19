@@ -23,11 +23,17 @@ export function PoolDiagram({
   hasSpa,
   pins,
   onPlace,
+  title = "Pool diagram",
+  outlined = false,
 }: {
   shape: DiagramShape | null | undefined;
   hasSpa: boolean;
   pins: DiagramPin[];
   onPlace?: (x: number, y: number) => void;
+  /** What a screen reader calls it ("Pool diagram with 2 finding pins"). */
+  title?: string;
+  /** The finding sheet's pin picker: a 1 pt outline, at most 448 wide (spec 6.2). */
+  outlined?: boolean;
 }) {
   const d = poolDiagram(shape, hasSpa);
   const [width, setWidth] = useState(0);
@@ -50,10 +56,14 @@ export function PoolDiagram({
 
   return (
     <View
-      style={styles.frame}
+      style={[
+        styles.frame,
+        { backgroundColor: color.surface },
+        outlined && { borderWidth: 1, borderColor: color.controlBorder, maxWidth: 448 },
+      ]}
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
       accessible={!onPlace}
-      accessibilityLabel={onPlace ? undefined : "Pool diagram"}
+      accessibilityLabel={onPlace ? undefined : title}
       accessibilityValue={onPlace ? undefined : { text: pinSummary }}
     >
       {width > 0 ? (
@@ -117,7 +127,7 @@ function Pin({ pin, x, y }: { pin: DiagramPin; x: number; y: number }) {
         x={x}
         y={y + 2.6}
         fontSize={7}
-        fill={color.onHeader}
+        fill={color.paper}
         textAnchor="middle"
         fontFamily={font.displayBold}
       >
@@ -128,12 +138,6 @@ function Pin({ pin, x, y }: { pin: DiagramPin; x: number; y: number }) {
 }
 
 const styles = StyleSheet.create({
-  frame: {
-    width: "100%",
-    backgroundColor: color.surface,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: color.border,
-    overflow: "hidden",
-  },
+  // A plain white panel on the grouped gray (spec 3.18), no outline.
+  frame: { width: "100%", borderRadius: 12, overflow: "hidden" },
 });

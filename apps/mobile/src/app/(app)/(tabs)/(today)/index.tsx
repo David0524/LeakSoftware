@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Linking, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import {
   LOCK_LABELS,
@@ -7,12 +7,12 @@ import {
   dayDirections,
   daySummary,
   durationLabel,
-  estimateDriveMinutes,
   formatAddress,
   formatDay,
   formatTime,
   isManagerRole,
   localDate,
+  onMyWayVia,
   localMinutes,
   minutesLabel,
   propertyLocation,
@@ -20,6 +20,12 @@ import {
   workDay,
 } from "@leakbook/core";
 import { inRouteOrderViews, jobLock, useJobViews, type JobView } from "../../../../data/jobs";
+import { useDriveTimes, useTeam } from "../../../../data/schedule";
+import { useLine } from "../../../../data/texting";
+import { useWeather } from "../../../../data/weather";
+import { GettingStarted } from "../../../../features/today/GettingStarted";
+import { OnMyWay } from "../../../../features/today/OnMyWay";
+import { WeatherBadge } from "../../../../features/today/WeatherBadge";
 import { useCompany, useSession } from "../../../../state/session";
 import { useWalkthrough } from "../../../../state/walkthrough";
 import { mapsAppFor, openDirections, useDirectionsChoice } from "../../../../state/directions";
@@ -91,37 +97,40 @@ export default function Today() {
     [jobs, tz, today],
   );
 
-  // Whose day (managers): me first, then teammates with stops today, by name.
+  // Whose day (managers): active techs and anyone with stops today, "Me" first (the website's
+  // order: the team by name).
   const team = services.sync.team();
+  const members = useTeam(company.id);
   const people = useMemo(() => {
-    const ids = new Set<string>();
+    const busy = new Set<string>();
     for (const j of dayJobs) {
-      if (j.assigned_user_id) ids.add(j.assigned_user_id);
-      if (j.second_tech_id) ids.add(j.second_tech_id);
+      if (j.assigned_user_id) busy.add(j.assigned_user_id);
+      if (j.second_tech_id) busy.add(j.second_tech_id);
     }
-    ids.delete(me);
-    const name = (id: string) => {
-      const p = team.find((t) => t.id === id);
-      return p?.full_name ?? p?.email ?? "Teammate";
-    };
-    return [
-      { value: me, label: "Me" },
-      ...[...ids]
-        .map((id) => ({ value: id, label: name(id) }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
-    ];
-  }, [dayJobs, me, team]);
+    const list = members.filter(
+      (m) => m.user_id !== me && (m.status === "active" || busy.has(m.user_id)),
+    );
+    return [{ value: me, label: "Me" }, ...list.map((m) => ({ value: m.user_id, label: m.name }))];
+  }, [dayJobs, me, members]);
   const shownTech = people.some((p) => p.value === techId) ? techId : me;
   const mine = shownTech === me;
   const techName = people.find((p) => p.value === shownTech)?.label ?? "Teammate";
+  const meProfile = team.find((t) => t.id === me);
+  const myName = meProfile?.full_name || meProfile?.email || "your tech";
 
   const settings = routingSettings(company.settings);
   const depot = propertyLocation(
     company as { latitude?: number | null; longitude?: number | null },
   );
+  const line = useLine(company.id);
+  const weather = useWeather((company as { postal_code?: string | null }).postal_code);
   const stops = inRouteOrderViews(
     dayJobs.filter((j) => j.assigned_user_id === shownTech || j.second_tech_id === shownTech),
   );
+  const { drive } = useDriveTimes(company.id, [
+    depot,
+    ...stops.map((j) => propertyLocation(j.property)),
+  ]);
   const summary = daySummary(
     stops.map((j) => ({
       id: j.id,
@@ -131,7 +140,7 @@ export default function Today() {
     })),
     depot,
     workDay(settings),
-    estimateDriveMinutes,
+    drive,
   );
   const next = stops.find(open);
   const depotAddress = formatAddress(company as unknown as Parameters<typeof formatAddress>[0]);
@@ -156,7 +165,12 @@ export default function Today() {
   return (
     <Screen
       title={mine ? "Today" : `Today · ${techName}`}
-      subtitle={formatDay(today, "long")}
+      subtitle={
+        <View style={styles.subtitle}>
+          <T muted>{formatDay(today, "long")}</T>
+          {weather ? <WeatherBadge weather={weather} /> : null}
+        </View>
+      }
       headerRight={
         canAdd
           ? () => (
@@ -179,6 +193,7 @@ export default function Today() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
     >
       <SyncBar onPress={() => router.push("/more/sync")} />
+      {manager ? <GettingStarted company={company} /> : null}
       <ScreenTip screen="today" />
       {manager && people.length > 1 ? (
         <FilterPills label="Whose day" options={people} value={shownTech} onChange={setTechId} />
@@ -216,6 +231,24 @@ export default function Today() {
                 n={i + 1}
                 next={j.id === next?.id}
                 timeZone={tz}
+                onMyWay={
+                  mine ? (
+                    <OnMyWay
+                      phone={j.customer?.phone ?? null}
+                      customer={j.customer?.name ?? null}
+                      customerId={j.customer?.id ?? null}
+                      tech={myName}
+                      shop={company.name}
+                      driveMin={summary.legs[i] ?? 0}
+                      windowMin={settings.windowMin}
+                      timeZone={tz}
+                      via={onMyWayVia(company.settings)}
+                      lineActive={line?.status === "active"}
+                      isManager={manager}
+                      jobId={j.id}
+                    />
+                  ) : null
+                }
                 onDirections={() =>
                   openDirections(
                     {
@@ -257,11 +290,13 @@ function Stop({
   next,
   timeZone,
   onDirections,
+  onMyWay,
 }: {
   job: JobView;
   n: number;
   next: boolean;
   timeZone: string;
+  onMyWay: ReactNode;
   onDirections: () => void;
 }) {
   const done = !open(job);
@@ -299,13 +334,16 @@ function Stop({
             {LOCK_LABELS[lock]}
           </T>
         ) : null}
-        {!done && phone ? (
+        {!done && (phone || onMyWay) ? (
           <View style={styles.actions}>
-            <RoundButton
-              icon="phone"
-              label={`Call ${name}, ${phone}`}
-              onPress={() => void Linking.openURL(`tel:${phone}`)}
-            />
+            {phone ? (
+              <RoundButton
+                icon="phone"
+                label={`Call ${name}, ${phone}`}
+                onPress={() => void Linking.openURL(`tel:${phone}`)}
+              />
+            ) : null}
+            {onMyWay}
           </View>
         ) : null}
       </View>
@@ -344,6 +382,13 @@ function Stop({
 
 const styles = StyleSheet.create({
   center: { textAlign: "center" },
+  subtitle: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    columnGap: space["3"],
+    rowGap: space["1"],
+  },
   route: { gap: 0 },
   stopWrap: { gap: space["1"], marginBottom: space["1"] },
   leg: {

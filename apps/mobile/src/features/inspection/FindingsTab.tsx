@@ -1,92 +1,107 @@
 import { router } from "expo-router";
-import { StyleSheet, View } from "react-native";
-import { type DiagramShape, type Job, type Property } from "@leakbook/core";
+import { StyleSheet, Text, View } from "react-native";
+import { FINDING_STATUS_LABELS, type Job, type Property } from "@leakbook/core";
 import { useInspectionConfig, useJobInspection } from "../../data/inspection";
 import { useSession } from "../../state/session";
 import { Button, Group, ListRow, T } from "../../ui/components";
 import { PoolDiagram } from "../../ui/PoolDiagram";
-import { ShapePicker } from "../../ui/ShapePicker";
-import { color, font, space } from "../../ui/theme";
+import { color, face, space } from "../../ui/theme";
 import { confirmDeleteFinding } from "./remove";
 
+/** The finding's number circle. */
+const NUM = 28;
+
+/**
+ * Findings, as on the website (spec 5.4): the pool diagram with the numbered pins, then a row
+ * per finding with its severity circle; tap to edit, swipe left to delete; then Add Finding.
+ * The pool's shape is picked in the finding sheet, next to the pin.
+ */
 export function FindingsTab({ job, property }: { job: Job; property?: Property }) {
   const { services } = useSession();
   const config = useInspectionConfig(job.company_id);
   const insp = useJobInspection(job.company_id, job.id);
   const ordered = [...insp.findings].sort((a, b) => a.id.localeCompare(b.id));
-  const shape = (property?.diagram_shape as DiagramShape | null | undefined) ?? null;
 
   return (
-    <View style={{ gap: space["3"] }}>
-      {property ? (
-        <>
-          <PoolDiagram
-            shape={property.diagram_shape}
-            hasSpa={property.has_spa}
-            pins={ordered
-              .filter((f) => f.pin_x != null && f.pin_y != null)
-              .map((f) => ({
-                id: f.id,
-                x: Number(f.pin_x),
-                y: Number(f.pin_y),
-                color: config.severityByKey.get(f.severity_key)?.color ?? color.fail,
-                label: String(ordered.indexOf(f) + 1),
-              }))}
-          />
-          <ShapePicker
-            value={shape}
-            hint={shape ? undefined : "Not picked yet. Pick one so the diagram matches the pool."}
-            onChange={(v) =>
-              services.sync.write("property", property.id, property.company_id, {
-                diagram_shape: v,
-              })
-            }
-          />
-        </>
-      ) : null}
+    <View style={{ gap: space["4"] }}>
       {ordered.length === 0 ? (
-        <T variant="muted">No findings yet. Add one for each leak you find.</T>
+        <T muted>No findings recorded.</T>
       ) : (
-        // Hairlines start after the number, where the text does.
-        <Group separatorInset={space["4"] + NUM + space["3"]}>
-          {ordered.map((f, i) => {
-            const sev = config.severityByKey.get(f.severity_key);
-            const comp = f.job_component_id
-              ? insp.componentById.get(f.job_component_id)
-              : undefined;
-            return (
-              <ListRow
-                key={f.id}
-                onPress={() => router.push(`/jobs/${job.id}/finding/${f.id}`)}
-                onDelete={() => confirmDeleteFinding(services.sync, job.company_id, f.id)}
-                leading={
-                  <View style={[styles.num, { backgroundColor: sev?.color ?? color.fail }]}>
-                    <T variant="strong" style={styles.numText}>
-                      {i + 1}
+        <View style={{ gap: space["5"] }}>
+          {property ? (
+            <PoolDiagram
+              shape={property.diagram_shape}
+              hasSpa={property.has_spa}
+              title={`Pool diagram with ${ordered.length} finding pins`}
+              pins={ordered
+                .map((f, i) => ({ f, n: i + 1 }))
+                .filter(({ f }) => f.pin_x != null && f.pin_y != null)
+                .map(({ f, n }) => ({
+                  id: f.id,
+                  x: Number(f.pin_x),
+                  y: Number(f.pin_y),
+                  color: config.severityByKey.get(f.severity_key)?.color ?? color.fail,
+                  label: String(n),
+                }))}
+            />
+          ) : null}
+          {/* Hairlines start after the number, where the text does (60). */}
+          <Group separatorInset={space["4"] + NUM + space["4"]}>
+            {ordered.map((f, i) => {
+              const sev = config.severityByKey.get(f.severity_key);
+              const comp = f.job_component_id
+                ? insp.componentById.get(f.job_component_id)
+                : undefined;
+              return (
+                <ListRow
+                  key={f.id}
+                  accessibilityLabel={`Edit ${f.title}`}
+                  onPress={() => router.push(`/jobs/${job.id}/finding/${f.id}`)}
+                  onDelete={() =>
+                    confirmDeleteFinding(services.sync, job.company_id, f.id, f.title)
+                  }
+                  leading={
+                    <View style={[styles.num, { backgroundColor: sev?.color ?? color.fail }]}>
+                      <Text
+                        style={[styles.numText, { color: color.paper }]}
+                        maxFontSizeMultiplier={1.4}
+                      >
+                        {i + 1}
+                      </Text>
+                    </View>
+                  }
+                >
+                  <T variant="bodyEmphasis">{f.title}</T>
+                  <T variant="secondary" muted>
+                    {[
+                      sev?.name ?? f.severity_key,
+                      comp?.label,
+                      FINDING_STATUS_LABELS[f.status],
+                      f.pin_x != null ? "Pinned on the diagram" : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </T>
+                  {f.location_text ? <T style={{ marginTop: 4 }}>{f.location_text}</T> : null}
+                  {f.notes ? (
+                    <T variant="secondary" style={{ marginTop: 4 }}>
+                      {f.notes}
                     </T>
-                  </View>
-                }
-                title={f.title}
-                subtitle={[
-                  sev?.name,
-                  comp?.label,
-                  f.location_text,
-                  f.pin_x == null ? "Not pinned" : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              />
-            );
-          })}
-        </Group>
+                  ) : null}
+                </ListRow>
+              );
+            })}
+          </Group>
+        </View>
       )}
-      <Button title="Add Finding" onPress={() => router.push(`/jobs/${job.id}/finding/new`)} />
+      <Button
+        title="Add Finding"
+        kind="secondary"
+        onPress={() => router.push(`/jobs/${job.id}/finding/new`)}
+      />
     </View>
   );
 }
-
-/** The finding's number badge. */
-const NUM = 28;
 
 const styles = StyleSheet.create({
   num: {
@@ -95,6 +110,7 @@ const styles = StyleSheet.create({
     borderRadius: NUM / 2,
     alignItems: "center",
     justifyContent: "center",
+    alignSelf: "flex-start",
   },
-  numText: { fontFamily: font.displayBold, color: color.onHeader },
+  numText: { ...face.bold, fontSize: 15, lineHeight: 20 },
 });

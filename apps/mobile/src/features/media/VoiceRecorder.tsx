@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { Alert, Linking, StyleSheet, View } from "react-native";
 import { MEDIA_LIMITS, formatDuration } from "@leakbook/core";
 import { VOICE_MIME } from "../../lib/media";
-import { Button, Card, Row, T } from "../../ui/components";
+import { Button, Row, T } from "../../ui/components";
 import { color, space } from "../../ui/theme";
 import { confirmDestructive } from "../../ui/confirm";
 import type { CapturedFile } from "../../lib/media";
@@ -119,38 +119,40 @@ export function VoiceRecorder({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.durationMillis, state.isRecording]);
 
+  // In the capture card, in place of the tiles (as on the website): the time, then Stop and
+  // Save, then Discard.
   return (
-    <Card style={styles.card}>
-      <Row>
-        <View style={[styles.dot, { opacity: state.isRecording ? 1 : 0.3 }]} />
-        <T variant="heading" style={styles.time}>
-          {formatDuration(state.durationMillis)}
-        </T>
-        <T variant="muted">{state.isRecording ? "Recording" : "Starting…"}</T>
-      </Row>
-      <T variant="muted">Up to {MEDIA_LIMITS.voiceMaxSeconds / 60} minutes. Works offline.</T>
-      <Row style={{ gap: space["3"] }}>
-        <Button
-          title="Discard"
-          kind="secondary"
-          onPress={discard}
-          disabled={saving}
-          style={{ flex: 1 }}
+    <View style={styles.wrap}>
+      <Row style={{ gap: space["2"] }}>
+        <View
+          style={[
+            styles.dot,
+            { backgroundColor: color.fail, opacity: state.isRecording ? 1 : 0.3 },
+          ]}
         />
+        <T variant="bodyEmphasis" style={styles.time}>
+          {state.isRecording ? `Recording ${formatDuration(state.durationMillis)}` : "Starting…"}
+        </T>
+      </Row>
+      <Row style={{ gap: space["3"], flexWrap: "wrap" }}>
         <Button
           title="Stop and Save"
+          kind="secondary"
           onPress={() => void stop(true)}
           loading={saving}
           disabled={!state.isRecording}
-          style={{ flex: 1 }}
         />
+        <Button title="Discard" kind="quiet" onPress={discard} disabled={saving} />
       </Row>
-    </Card>
+      <T variant="secondary" muted>
+        Up to {MEDIA_LIMITS.voiceMaxSeconds / 60} minutes. Works offline.
+      </T>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderColor: color.fail, borderWidth: 2 },
-  dot: { width: 14, height: 14, borderRadius: 7, backgroundColor: color.fail },
+  wrap: { gap: space["2"] },
+  dot: { width: 12, height: 12, borderRadius: 6 },
   time: { fontVariant: ["tabular-nums"] },
 });

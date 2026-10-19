@@ -1,28 +1,16 @@
-import { StyleSheet, View } from "react-native";
 import type { Outcome } from "@leakbook/core";
-import { T } from "../../ui/components";
-import { color, face, radius } from "../../ui/theme";
+import { Pill } from "../../ui/components";
+import { color } from "../../ui/theme";
 
-export const OUTCOME_STYLE: Record<Outcome, { label: string; bg: string }> = {
-  pass: { label: "Pass", bg: color.pass },
-  fail: { label: "Fail", bg: color.fail },
-  inconclusive: { label: "Unclear", bg: color.warning },
+export const OUTCOME_LABELS: Record<Outcome, string> = {
+  pass: "Pass",
+  fail: "Fail",
+  inconclusive: "Unclear",
 };
 
+/** A test's outcome as a solid status chip (spec 3.6): Pass, Fail, Unclear. */
 export function OutcomeChip({ outcome }: { outcome?: Outcome | null }) {
   if (!outcome) return null;
-  const s = OUTCOME_STYLE[outcome];
-  return (
-    <View style={[styles.chip, { backgroundColor: s.bg }]}>
-      <T variant="small" style={styles.text}>
-        {s.label}
-      </T>
-    </View>
-  );
+  const bg = outcome === "pass" ? color.pass : outcome === "fail" ? color.fail : color.warning;
+  return <Pill label={OUTCOME_LABELS[outcome]} color={bg} />;
 }
-
-const styles = StyleSheet.create({
-  // A pill like every other status label (M11 review M9).
-  chip: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: radius.pill },
-  text: { ...face.semiBold, fontSize: 13, color: color.onHeader },
-});

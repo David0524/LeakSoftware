@@ -1,0 +1,528 @@
+import { router, useLocalSearchParams } from "expo-router";
+import {
+  JOB_TYPE_LABELS,
+  POOL_TYPE_LABELS,
+  formatAddress,
+  formatPhone,
+  formatSchedule,
+  isManagerRole,
+  offersLeak,
+  offersPool,
+  planSummary,
+  propertyLocation,
+  splitEmails,
+  type PoolType,
+  type Property,
+} from "@leakbook/core";
+import type { JsonValue } from "@leakbook/sync";
+import { useState } from "react";
+import { Alert, Linking, StyleSheet, Text, View } from "react-native";
+import { KIND_LABELS, useCustomerData } from "../../../../../data/customers";
+import { useTeam } from "../../../../../data/schedule";
+import { useLine } from "../../../../../data/texting";
+import { getServices } from "../../../../../lib/services";
+import { openDirections, useDirectionsChoice } from "../../../../../state/directions";
+import { useCompany, useSession } from "../../../../../state/session";
+import {
+  Button,
+  FieldGroup,
+  FieldRow,
+  Group,
+  ListRow,
+  Notice,
+  RoundButton,
+  Screen,
+  Section,
+  StatusChip,
+  T,
+  Toggle,
+} from "../../../../../ui/components";
+import { confirmDestructive } from "../../../../../ui/confirm";
+import { haptics } from "../../../../../ui/haptics";
+import { ModalSheet } from "../../../../../ui/ModalSheet";
+import { Select } from "../../../../../ui/Select";
+import { color, face, MAX_TEXT_SCALE, space, type } from "../../../../../ui/theme";
+
+/**
+ * A customer (spec 5.9; the website's customers/[id]): call, text, and email up top, the
+ * contact details as grouped rows, each pool with its jobs, and each group's details edited in
+ * a sheet. Edits save through the sync layer.
+ */
+export default function CustomerPage() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const company = useCompany();
+  const { membership } = useSession();
+  const manager = isManagerRole(membership?.role);
+  const { customers, properties, plans, jobs } = useCustomerData(company.id);
+  const team = useTeam(company.id);
+  const line = useLine(company.id);
+  const [choice] = useDirectionsChoice();
+  const [editing, setEditing] = useState<"contact" | Property | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const customer = customers.find((c) => c.id === id && !c.deleted_at);
+
+  if (!customer) {
+    return (
+      <Screen title="Customer">
+        <T muted>This customer isn’t on this phone.</T>
+      </Screen>
+    );
+  }
+  const pools = properties.filter((p) => p.customer_id === customer.id && !p.deleted_at);
+  const techName = (uid: string | null | undefined) =>
+    uid ? team.find((t) => t.user_id === uid)?.name : undefined;
+  const cc = customer.cc_emails ?? [];
+  const now = new Date();
+  const subtitle = [KIND_LABELS[customer.kind], customer.company_name].filter(Boolean).join(" · ");
+
+  function remove() {
+    confirmDestructive({
+      title: `Delete ${customer!.name}?`,
+      message:
+        "Only possible when every job is paid or canceled; finished jobs, reports, and invoices are kept.",
+      confirm: "Delete Customer",
+      onConfirm: () =>
+        void (async () => {
+          const { supabase, sync } = getServices();
+          const { error } = await supabase.rpc("delete_customer", {
+            target_customer: customer!.id,
+          });
+          if (error) {
+            Alert.alert("Couldn’t Delete", error.message);
+            return;
+          }
+          await sync.syncNow();
+          router.back();
+        })(),
+    });
+  }
+
+  return (
+    <>
+      <Screen title={customer.name} subtitle={subtitle || undefined}>
+        {notice ? <Notice tone="success">{notice}</Notice> : null}
+        {customer.phone || customer.email ? (
+          <View style={styles.contact}>
+            {customer.phone ? (
+              <RoundButton
+                icon="phone"
+                label={`Call ${customer.name}, ${customer.phone}`}
+                onPress={() => void Linking.openURL(`tel:${customer.phone}`)}
+              />
+            ) : null}
+            {customer.phone ? (
+              <RoundButton
+                icon="message"
+                label={`Text ${customer.name}`}
+                onPress={() =>
+                  line?.status === "active"
+                    ? router.push(`/messages/new?customer=${customer.id}`)
+                    : void Linking.openURL(`sms:${customer.phone!.replace(/[^\d+]/g, "")}`)
+                }
+              />
+            ) : null}
+            {customer.email ? (
+              <RoundButton
+                icon="mail"
+                label={`Email ${customer.name}, ${customer.email}`}
+                onPress={() => void Linking.openURL(`mailto:${customer.email}`)}
+              />
+            ) : null}
+            <T variant="secondary" muted numberOfLines={1} style={{ flex: 1 }}>
+              {customer.phone ? formatPhone(customer.phone) : customer.email}
+            </T>
+          </View>
+        ) : null}
+
+        <Section title="Contact">
+          <Group>
+            <ListRow title="Phone" detail={customer.phone ? formatPhone(customer.phone) : "None"} />
+            <ListRow title="Email" detail={customer.email ?? "None"} />
+            {cc.length ? <ListRow title="Other emails" subtitle={cc.join(", ")} /> : null}
+            <ListRow
+              title="Reminder and review emails"
+              detail={customer.marketing_opt_out ? "Off" : "On"}
+            />
+            {customer.notes ? <ListRow title="Notes" subtitle={customer.notes} /> : null}
+            <ListRow
+              title="Edit Contact Details"
+              tone="link"
+              onPress={() => {
+                setNotice(null);
+                setEditing("contact");
+              }}
+            />
+          </Group>
+        </Section>
+
+        {pools.length === 0 ? <T muted>No pools.</T> : null}
+        {pools.map((p, i) => {
+          const address = formatAddress(p);
+          const visits = jobs
+            .filter((j) => j.property_id === p.id && j.type !== "maintenance" && !j.deleted_at)
+            .sort((a, b) =>
+              (b.scheduled_start ?? b.created_at ?? "").localeCompare(
+                a.scheduled_start ?? a.created_at ?? "",
+              ),
+            );
+          const poolPlans = plans.filter((plan) => plan.property_id === p.id && !plan.deleted_at);
+          return (
+            <View key={p.id} style={{ gap: space["6"] }}>
+              <Section title={pools.length > 1 ? `Pool ${i + 1}` : "Pool"}>
+                <Group>
+                  <ListRow
+                    onPress={() => {
+                      setNotice(null);
+                      setEditing(p);
+                    }}
+                    chevron={false}
+                    accessibilityLabel={`${address}, Edit Pool Details`}
+                    trailing={<T style={{ color: color.link }}>Edit</T>}
+                  >
+                    <T variant="bodyEmphasis">{address}</T>
+                    <T variant="secondary" muted>
+                      {[
+                        p.pool_type ? POOL_TYPE_LABELS[p.pool_type as PoolType] : null,
+                        p.has_spa ? "Pool and spa" : "Pool",
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </T>
+                  </ListRow>
+                  {p.access_notes ? (
+                    <ListRow title="Access notes" subtitle={p.access_notes} />
+                  ) : null}
+                  <ListRow
+                    title="Get Directions"
+                    tone="link"
+                    onPress={() =>
+                      openDirections({ address, location: propertyLocation(p) }, choice)
+                    }
+                  />
+                </Group>
+              </Section>
+              {offersPool(company.settings) ? (
+                <Section
+                  title="Visit plans"
+                  footer={manager ? "Change visit plans on the website." : undefined}
+                >
+                  <Group>
+                    {poolPlans.length === 0 ? (
+                      <ListRow>
+                        <T muted>No visit plan</T>
+                      </ListRow>
+                    ) : (
+                      poolPlans.map((plan) => (
+                        <ListRow
+                          key={plan.id}
+                          title={planSummary({
+                            ...plan,
+                            weekdays: plan.weekdays ?? [],
+                            monthly: plan.monthly ?? false,
+                          })}
+                          subtitle={[
+                            techName(plan.assigned_user_id) ?? "Needs a tech",
+                            plan.paused ? "Paused" : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        />
+                      ))
+                    )}
+                  </Group>
+                </Section>
+              ) : null}
+              <Section
+                title={offersLeak(company.settings) ? "Leak detection and repairs" : "Repairs"}
+              >
+                <Group>
+                  {visits.length === 0 ? (
+                    <ListRow>
+                      <T muted>No visits yet</T>
+                    </ListRow>
+                  ) : (
+                    visits.map((j) => (
+                      <ListRow
+                        key={j.id}
+                        onPress={() => router.push(`/jobs/${j.id}`)}
+                        trailing={<StatusChip status={j.status} style={{ alignSelf: "center" }} />}
+                      >
+                        <Text
+                          style={[type.body, { color: color.text }]}
+                          maxFontSizeMultiplier={MAX_TEXT_SCALE}
+                        >
+                          <Text style={face.semiBold}>
+                            {j.number ? `Job #${j.number}` : "New job"}
+                          </Text>
+                          <Text style={{ color: color.textMuted }}>
+                            {" "}
+                            · {JOB_TYPE_LABELS[j.type]}
+                          </Text>
+                        </Text>
+                        <T variant="secondary" muted>
+                          {formatSchedule(
+                            j.scheduled_start ?? j.started_at ?? null,
+                            now,
+                            company.timezone,
+                          )}
+                          {techName(j.assigned_user_id) ? ` · ${techName(j.assigned_user_id)}` : ""}
+                        </T>
+                      </ListRow>
+                    ))
+                  )}
+                </Group>
+              </Section>
+            </View>
+          );
+        })}
+
+        {manager ? (
+          <View style={{ gap: space["2"] }}>
+            <Button title="Delete Customer" kind="danger" wide onPress={remove} />
+            <T variant="footnote" muted style={{ paddingHorizontal: space["4"] }}>
+              Removes {customer.name} and their pools from Sundeck Pro. Only possible when every job
+              is paid or canceled; finished jobs, reports, and invoices are kept.
+            </T>
+          </View>
+        ) : null}
+      </Screen>
+
+      <ModalSheet
+        visible={editing === "contact"}
+        onClose={() => setEditing(null)}
+        title="Contact Details"
+      >
+        {editing === "contact" ? (
+          <ContactForm
+            customer={customer}
+            onSaved={() => {
+              setEditing(null);
+              setNotice("Saved.");
+            }}
+          />
+        ) : null}
+      </ModalSheet>
+      <ModalSheet
+        visible={editing != null && editing !== "contact"}
+        onClose={() => setEditing(null)}
+        title="Pool Details"
+      >
+        {editing && editing !== "contact" ? (
+          <PoolForm
+            pool={editing}
+            onSaved={() => {
+              setEditing(null);
+              setNotice("Saved.");
+            }}
+          />
+        ) : null}
+      </ModalSheet>
+    </>
+  );
+}
+
+type CustomerFields = ReturnType<typeof useCustomerData>["customers"][number];
+
+function ContactForm({ customer, onSaved }: { customer: CustomerFields; onSaved: () => void }) {
+  const company = useCompany();
+  const [f, setF] = useState({
+    name: customer.name,
+    kind: customer.kind as string,
+    company_name: customer.company_name ?? "",
+    phone: customer.phone ?? "",
+    email: customer.email ?? "",
+    cc: (customer.cc_emails ?? []).join(" "),
+    notes: customer.notes ?? "",
+    optOut: Boolean(customer.marketing_opt_out),
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const set = (k: keyof typeof f) => (v: string) => setF({ ...f, [k]: v });
+
+  function save() {
+    const e: Record<string, string> = {};
+    if (!f.name.trim()) e.name = "Enter the customer’s name.";
+    if (f.email.trim() && !/^\S+@\S+\.\S+$/.test(f.email.trim()))
+      e.email = "Enter an email like name@example.com.";
+    const cc = splitEmails(f.cc);
+    if (f.cc.split(/[\s,;]+/).filter(Boolean).length !== cc.length)
+      e.cc = "One of these isn’t an email address.";
+    setErrors(e);
+    if (Object.keys(e).length) return;
+    getServices().sync.write("customer", customer.id, company.id, {
+      name: f.name.trim(),
+      kind: f.kind,
+      company_name: f.company_name.trim() || null,
+      phone: f.phone.trim() || null,
+      email: f.email.trim() || null,
+      cc_emails: cc,
+      notes: f.notes.trim() || null,
+      marketing_opt_out: f.optOut,
+    } as Record<string, JsonValue>);
+    haptics.success();
+    onSaved();
+  }
+
+  return (
+    <>
+      <FieldGroup labelWidth={104}>
+        <FieldRow label="Name" value={f.name} onChangeText={set("name")} error={errors.name} />
+        <FieldRow
+          label="Company"
+          value={f.company_name}
+          onChangeText={set("company_name")}
+          placeholder="Optional"
+        />
+        <FieldRow
+          label="Phone"
+          value={f.phone}
+          onChangeText={set("phone")}
+          keyboardType="phone-pad"
+        />
+        <FieldRow
+          label="Email"
+          value={f.email}
+          onChangeText={set("email")}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          error={errors.email}
+        />
+      </FieldGroup>
+      <Select
+        label="Type"
+        value={f.kind}
+        onChange={set("kind")}
+        options={Object.entries(KIND_LABELS).map(([value, label]) => ({ value, label }))}
+      />
+      <FieldGroup footer="They get reports too. Separate with spaces.">
+        <FieldRow
+          label="Other emails"
+          layout="stacked"
+          value={f.cc}
+          onChangeText={set("cc")}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          error={errors.cc}
+        />
+      </FieldGroup>
+      <FieldGroup>
+        <FieldRow label="Notes" value={f.notes} onChangeText={set("notes")} multiline />
+        <Toggle
+          inList
+          label="No reminder or review emails"
+          value={f.optOut}
+          onChange={(v) => setF({ ...f, optOut: v })}
+        />
+      </FieldGroup>
+      <Button title="Save" wide onPress={save} />
+    </>
+  );
+}
+
+function PoolForm({ pool, onSaved }: { pool: Property; onSaved: () => void }) {
+  const company = useCompany();
+  const [f, setF] = useState({
+    address_line1: pool.address_line1 ?? "",
+    address_line2: pool.address_line2 ?? "",
+    city: pool.city ?? "",
+    state: pool.state ?? "",
+    postal_code: pool.postal_code ?? "",
+    pool_type: (pool.pool_type ?? "") as string,
+    has_spa: Boolean(pool.has_spa),
+    access_notes: pool.access_notes ?? "",
+  });
+  const [error, setError] = useState<string | undefined>();
+  const set = (k: keyof typeof f) => (v: string) => setF({ ...f, [k]: v });
+
+  function save() {
+    if (!f.address_line1.trim()) {
+      setError("Enter the street address.");
+      return;
+    }
+    const address = {
+      address_line1: f.address_line1.trim(),
+      address_line2: f.address_line2.trim() || null,
+      city: f.city.trim() || null,
+      state: f.state.trim().toUpperCase() || null,
+      postal_code: f.postal_code.trim() || null,
+    };
+    // A new address drops the old map location: it belonged to the old address.
+    const moved = (Object.keys(address) as (keyof typeof address)[]).some(
+      (k) => (pool[k] ?? null) !== address[k],
+    );
+    getServices().sync.write("property", pool.id, company.id, {
+      ...address,
+      pool_type: f.pool_type || null,
+      has_spa: f.has_spa,
+      access_notes: f.access_notes.trim() || null,
+      ...(moved
+        ? { latitude: null, longitude: null, geocoded_address: null, location_source: null }
+        : {}),
+    });
+    haptics.success();
+    onSaved();
+  }
+
+  return (
+    <>
+      <FieldGroup labelWidth={104}>
+        <FieldRow
+          label="Street"
+          value={f.address_line1}
+          onChangeText={set("address_line1")}
+          error={error}
+        />
+        <FieldRow
+          label="Unit"
+          value={f.address_line2}
+          onChangeText={set("address_line2")}
+          placeholder="Optional"
+        />
+        <FieldRow label="City" value={f.city} onChangeText={set("city")} />
+        <FieldRow
+          label="State"
+          value={f.state}
+          onChangeText={set("state")}
+          maxLength={2}
+          autoCapitalize="characters"
+        />
+        <FieldRow
+          label="ZIP"
+          value={f.postal_code}
+          onChangeText={set("postal_code")}
+          keyboardType="number-pad"
+        />
+      </FieldGroup>
+      <Select
+        label="Pool type"
+        value={f.pool_type}
+        onChange={set("pool_type")}
+        options={[
+          { value: "", label: "Not sure" },
+          ...(Object.keys(POOL_TYPE_LABELS) as PoolType[]).map((k) => ({
+            value: k,
+            label: POOL_TYPE_LABELS[k],
+          })),
+        ]}
+      />
+      <FieldGroup footer="Gate code, dog, where to park.">
+        <Toggle
+          inList
+          label="Has a spa"
+          value={f.has_spa}
+          onChange={(v) => setF({ ...f, has_spa: v })}
+        />
+        <FieldRow
+          label="Access notes"
+          value={f.access_notes}
+          onChangeText={set("access_notes")}
+          multiline
+        />
+      </FieldGroup>
+      <Button title="Save" wide onPress={save} />
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  contact: { flexDirection: "row", alignItems: "center", gap: space["2"] },
+});

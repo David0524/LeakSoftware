@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { strokePath, type SignatureStroke } from "@leakbook/core";
-import { color, radius } from "./theme";
+import { color } from "./theme";
 
 /**
  * A box to sign in with a finger. Strokes are kept as points so the saved signature is a
@@ -12,7 +12,7 @@ export function SignaturePad({
   strokes,
   onChange,
   onDrawing,
-  height = 220,
+  height = 200,
 }: {
   strokes: SignatureStroke[];
   onChange: (strokes: SignatureStroke[]) => void;
@@ -28,7 +28,10 @@ export function SignaturePad({
 
   return (
     <View
-      style={[styles.pad, { height }]}
+      style={[
+        styles.pad,
+        { height, backgroundColor: color.paper, borderColor: color.controlBorder },
+      ]}
       onStartShouldSetResponder={() => true}
       onMoveShouldSetResponder={() => true}
       onResponderTerminationRequest={() => false}
@@ -61,13 +64,14 @@ export function SignaturePad({
       accessible
       accessibilityLabel="Signature box. Sign with your finger."
     >
-      <View pointerEvents="none" style={styles.line} />
+      <View pointerEvents="none" style={[styles.line, { backgroundColor: color.controlBorder }]} />
       <Svg pointerEvents="none" style={StyleSheet.absoluteFill}>
         {[...strokes, ...(live ? [live] : [])].map((s, i) => (
           <Path
             key={i}
             d={strokePath(s)}
-            stroke={color.text}
+            // Ink on the white pad stays dark in dark mode too.
+            stroke={color.navy}
             strokeWidth={3}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -80,19 +84,13 @@ export function SignaturePad({
 }
 
 const styles = StyleSheet.create({
-  pad: {
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.controlBorder,
-    borderRadius: radius.md,
-    overflow: "hidden",
-  },
+  // A white block, radius 12, a 1 pt outline (spec 6.7).
+  pad: { borderWidth: 1, borderRadius: 12, overflow: "hidden" },
   line: {
     position: "absolute",
     left: 24,
     right: 24,
     bottom: 48,
     height: 1,
-    backgroundColor: color.controlBorder,
   },
 });

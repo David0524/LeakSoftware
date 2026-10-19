@@ -70,7 +70,7 @@ import { TestsTab } from "../../../../../../features/inspection/TestsTab";
 import { MediaSection } from "../../../../../../features/media/MediaSection";
 import { InvoiceSection } from "../../../../../../features/invoice/InvoiceSection";
 import { QuoteTab } from "../../../../../../features/quote/QuoteTab";
-import { ReportTab } from "../../../../../../features/report/ReportTab";
+import { ReportTab, Signatures } from "../../../../../../features/report/ReportTab";
 
 /** The status actions under the job's header (spec 5.4). Cancel sits at the end of Details. */
 const ACTION_LABELS: Partial<Record<JobStatus, string>> = {
@@ -239,13 +239,13 @@ export default function JobDetail() {
             <View style={styles.part}>
               <View style={styles.heading}>
                 <T variant="sectionHeading">Checklist</T>
-                {insp.components.length > 0 ? (
-                  <T muted>
-                    {maintenance
+                <T muted>
+                  {insp.components.length === 0
+                    ? "No checklist yet."
+                    : maintenance
                       ? `${tally.pass} done · ${tally.attention} need attention · ${tally.notApplicable} skipped · ${tally.pending} to do`
                       : `${tally.pass} not leaking · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} not applicable · ${tally.pending} to do`}
-                  </T>
-                ) : null}
+                </T>
               </View>
               {job.type === "repair" ? null : (
                 <ScreenTip screen="job" pkg={maintenance ? "pool" : "leak"} />
@@ -271,7 +271,7 @@ export default function JobDetail() {
             </View>
           ) : null}
           {shown === "findings" ? (
-            <>
+            <View style={styles.parts}>
               <View style={styles.part}>
                 <T variant="sectionHeading">Tests</T>
                 <TestsTab job={job} />
@@ -280,19 +280,37 @@ export default function JobDetail() {
                 <T variant="sectionHeading">Findings</T>
                 <FindingsTab job={job} property={property} />
               </View>
-            </>
+            </View>
           ) : null}
           {shown === "photos" ? (
             <View style={styles.part}>
               <T variant="sectionHeading">Photos and Recordings</T>
-              <MediaSection target={{ jobId: job.id }} title="" />
+              <MediaSection
+                target={{ jobId: job.id }}
+                layout="cards"
+                targets={[
+                  ...[...insp.findings]
+                    .sort((a, b) => a.id.localeCompare(b.id))
+                    .map((f) => ({ value: `finding:${f.id}`, label: `Finding: ${f.title}` })),
+                  ...insp.components.map((c) => ({ value: `component:${c.id}`, label: c.label })),
+                ]}
+              />
             </View>
           ) : null}
           {shown === "wrapup" ? (
-            <>
+            <View style={styles.parts}>
               <View style={styles.part}>
                 <T variant="sectionHeading">Report and Sign-Off</T>
+                <T variant="secondary" muted>
+                  Write Draft fills in the report from this job’s checklist, tests, and findings.
+                  Read and edit it before sending.
+                </T>
+                {job.type === "detection" ? <ScreenTip screen="report" pkg="leak" /> : null}
                 <ReportTab job={job} customer={customer} />
+              </View>
+              <View style={styles.part}>
+                <T variant="sectionHeading">Signatures</T>
+                <Signatures job={job} />
               </View>
               {job.type === "detection" || maintenance ? (
                 <View style={styles.part}>
@@ -301,9 +319,10 @@ export default function JobDetail() {
                 </View>
               ) : null}
               <View style={styles.part}>
+                <T variant="sectionHeading">Invoice</T>
                 <InvoiceSection job={job} customer={customer} />
               </View>
-            </>
+            </View>
           ) : null}
         </View>
       </Animated.ScrollView>
@@ -635,6 +654,8 @@ const styles = StyleSheet.create({
   },
   content: { gap: space["5"], marginTop: space["2"] },
   part: { gap: space["3"] },
+  // Parts of a section are 32 apart (spec 3.5).
+  parts: { gap: space["6"] },
   heading: { gap: space["1"] },
   pinned: { position: "absolute", left: 0, right: 0 },
   pinnedBar: { paddingHorizontal: gutter, paddingVertical: space["2"] },

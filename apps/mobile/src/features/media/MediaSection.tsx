@@ -1,20 +1,30 @@
+import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Linking,
   Pressable,
   StyleSheet,
+  Text,
   View,
   useWindowDimensions,
 } from "react-native";
-import { MEDIA_KIND_LABELS, formatDuration, parseMarkup, type Media } from "@leakbook/core";
 import {
-  saveCapture,
+  MEDIA_KIND_LABELS,
+  formatDuration,
+  formatSchedule,
+  parseMarkup,
+  type Media,
+} from "@leakbook/core";
+import { useJobInspection } from "../../data/inspection";
+import {
   prepareLocation,
+  saveCapture,
   useJobMedia,
-  useMediaUri,
+  useMediaSource,
   type MediaTarget,
 } from "../../data/media";
 import {
@@ -26,57 +36,88 @@ import {
   type CapturedFile,
 } from "../../lib/media";
 import { useCompany, useSession } from "../../state/session";
-import { Button, Row, Section, T } from "../../ui/components";
-import { chooseAction } from "../../ui/confirm";
+import { Button, Card, Empty, T } from "../../ui/components";
 import { Icon } from "../../ui/Icon";
 import { MarkupLayer } from "../../ui/MarkupLayer";
+import { Select, useMenu } from "../../ui/Select";
 import { useInSheet } from "../../ui/sheet";
-import { color, face, radius, space } from "../../ui/theme";
+import { color, face, MAX_TEXT_SCALE, shape, space, tabular } from "../../ui/theme";
+import { WebIcon, type WebIconName } from "../../ui/WebIcon";
 import { confirmDeleteMedia } from "./remove";
 import { VoiceRecorder } from "./VoiceRecorder";
 
+/** What a capture is attached to, in words ("Finding title", "Skimmer 1", "Test", "Job"). */
+export function useAttachedTo(media: Media | undefined): string {
+  const company = useCompany();
+  const insp = useJobInspection(company.id, media?.job_id ?? "");
+  if (!media) return "Job";
+  return (
+    (media.finding_id && insp.findings.find((f) => f.id === media.finding_id)?.title) ||
+    (media.job_component_id && insp.componentById.get(media.job_component_id)?.label) ||
+    (media.test_result_id ? "Test" : "Job")
+  );
+}
+
+type Status = { text: string; tone: "muted" | "pass" | "fail" } | null;
+
 /**
- * Photos, videos, and voice notes for a job or one part of it, with capture buttons.
- * Everything is saved on the phone first and uploads in the background.
+ * Photos, videos, and voice notes (spec 5.4 Photos): the capture card (Attach to, then the
+ * Add Photo, Add Video and Voice Note tiles and a status line), then the captures. `layout`
+ * "cards" is the job's Photos section (a card per capture, newest first); "grid" is the small
+ * version inside the Test and Finding sheets and the checklist item, thumbnails in rows of
+ * four. Everything is saved on the phone first and uploads in the background.
  */
 export function MediaSection({
   target,
-  title = "Photos and Notes",
+  title,
   disabledReason,
+  targets,
+  layout = "grid",
 }: {
   target: MediaTarget;
+  /** A section label over the grid ("Photos"). */
   title?: string;
-  /** Shown instead of the buttons when captures cannot be attached yet. */
+  /** Shown instead of the tiles when captures cannot be attached yet. */
   disabledReason?: string;
+  /** "finding:<id>" or "component:<id>" with a label, for "Attach to" (job Photos only). */
+  targets?: { value: string; label: string }[];
+  layout?: "cards" | "grid";
 }) {
   const company = useCompany();
   const media = useJobMedia(company.id, target.jobId, target);
+  const [attachTo, setAttachTo] = useState("");
   const [busy, setBusy] = useState<"photo" | "video" | null>(null);
   const [recording, setRecording] = useState(false);
-  // At large text sizes the three buttons stack instead of squeezing their labels.
-  const stack = useWindowDimensions().fontScale >= 1.3;
-  // Four thumbnails per row, sized from the grid's measured width.
-  const [gridWidth, setGridWidth] = useState(0);
-  const thumbSize =
-    gridWidth > 0 ? Math.floor((gridWidth - GAP * (PER_ROW - 1)) / PER_ROW) : FALLBACK_THUMB;
+  const [status, setStatus] = useState<Status>(null);
+  const menu = useMenu();
+
+  /** Where a new capture goes: the section's target, or the "Attach to" choice. */
+  function captureTarget(): MediaTarget {
+    const [kind, id] = attachTo.split(":");
+    if (kind === "finding") return { jobId: target.jobId, findingId: id };
+    if (kind === "component") return { jobId: target.jobId, componentId: id };
+    return target;
+  }
 
   async function save(
     file: CapturedFile,
     position: Promise<{ latitude: number; longitude: number } | null>,
+    added: string,
   ) {
     try {
-      await saveCapture(company.id, target, file, position);
+      await saveCapture(company.id, captureTarget(), file, position);
+      setStatus({ text: added, tone: "pass" });
     } catch (e) {
-      Alert.alert("Couldn’t save", e instanceof Error ? e.message : String(e));
+      setStatus({ text: e instanceof Error ? e.message : String(e), tone: "fail" });
     }
   }
 
   /** Photo and Video ask: take a new one, or choose one already on the phone. */
   function choose(kind: "photo" | "video") {
     const noun = kind === "photo" ? "Photo" : "Video";
-    chooseAction({
+    menu.open({
       title: `Add ${noun}`,
-      actions: [
+      items: [
         { label: `Take ${noun}`, onPress: () => void capture(kind, "camera") },
         { label: "Choose from Library", onPress: () => void capture(kind, "library") },
       ],
@@ -85,17 +126,19 @@ export function MediaSection({
 
   async function capture(kind: "photo" | "video", source: "camera" | "library") {
     setBusy(kind);
+    setStatus(null);
+    const added = kind === "photo" ? "Photo added." : "Video added.";
     try {
       if (source === "library") {
         // Taken earlier, maybe elsewhere: where the phone is now isn't where it was taken.
         const file = await chooseFromLibrary(kind);
-        if (file) await save(file, Promise.resolve(null));
+        if (file) await save(file, Promise.resolve(null), added);
         return;
       }
       await askLocationOnce();
       const position = currentPosition();
       const file = await captureWithCamera(kind);
-      if (file) await save(file, position);
+      if (file) await save(file, position, added);
     } catch (e) {
       const title = kind === "photo" ? "Couldn’t take the photo" : "Couldn’t record the video";
       const message = e instanceof Error ? e.message : String(e);
@@ -104,76 +147,337 @@ export function MediaSection({
           { text: "Cancel", style: "cancel" },
           { text: "Open Settings", onPress: () => void Linking.openSettings() },
         ]);
-      } else Alert.alert(title, message);
+      } else setStatus({ text: message, tone: "fail" });
     } finally {
       setBusy(null);
     }
   }
 
-  return (
-    <Section title={title}>
+  const captureCard = (
+    <Card padding={space["4"]} style={{ gap: space["3"] }}>
       {disabledReason ? (
-        <T variant="muted">{disabledReason}</T>
-      ) : recording ? (
-        <VoiceRecorder
-          onSaved={(file) => save(file, prepareLocation())}
-          onClose={() => setRecording(false)}
-        />
+        <T muted>{disabledReason}</T>
       ) : (
-        <Row style={[styles.buttons, stack && { flexDirection: "column", alignItems: "stretch" }]}>
-          <Button
-            title="Photo"
-            kind="secondary"
-            onPress={() => choose("photo")}
-            loading={busy === "photo"}
-            disabled={busy !== null}
-            style={stack ? undefined : styles.button}
-          />
-          <Button
-            title="Video"
-            kind="secondary"
-            onPress={() => choose("video")}
-            loading={busy === "video"}
-            disabled={busy !== null}
-            style={stack ? undefined : styles.button}
-          />
-          <Button
-            title="Voice Note"
-            kind="secondary"
-            onPress={() => setRecording(true)}
-            disabled={busy !== null}
-            style={stack ? undefined : styles.button}
-          />
-        </Row>
+        <>
+          {targets?.length ? (
+            <Select
+              label="Attach to"
+              options={[{ value: "", label: "Whole job" }, ...targets]}
+              value={attachTo}
+              onChange={setAttachTo}
+            />
+          ) : null}
+          {recording ? (
+            <VoiceRecorder
+              onSaved={(file) => save(file, prepareLocation(), "Voice note added.")}
+              onClose={() => setRecording(false)}
+            />
+          ) : (
+            <View style={styles.tiles}>
+              <Tile
+                icon="cameraTile"
+                label="Add Photo"
+                busy={busy === "photo"}
+                disabled={busy !== null}
+                onPress={() => choose("photo")}
+              />
+              <Tile
+                icon="video"
+                label="Add Video"
+                busy={busy === "video"}
+                disabled={busy !== null}
+                onPress={() => choose("video")}
+              />
+              <Tile
+                icon="mic"
+                label="Voice Note"
+                accessibilityLabel="Record Voice Note"
+                disabled={busy !== null}
+                onPress={() => {
+                  setStatus(null);
+                  setRecording(true);
+                }}
+              />
+            </View>
+          )}
+          {status ? (
+            <View accessibilityLiveRegion="polite">
+              <T
+                variant="secondary"
+                muted={status.tone === "muted"}
+                style={
+                  status.tone === "pass"
+                    ? { color: color.pass }
+                    : status.tone === "fail"
+                      ? { color: color.fail }
+                      : undefined
+                }
+              >
+                {status.text}
+              </T>
+            </View>
+          ) : null}
+        </>
       )}
-      {media.length > 0 ? (
-        <View style={styles.grid} onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}>
-          {media.map((m) => (
-            <Thumb key={m.id} media={m} size={thumbSize} />
-          ))}
+      {menu.element}
+    </Card>
+  );
+
+  if (layout === "cards")
+    return (
+      <View style={{ gap: space["4"] }}>
+        {captureCard}
+        {media.length === 0 ? (
+          <Empty>No photos or recordings yet.</Empty>
+        ) : (
+          media.map((m) => <MediaCard key={m.id} media={m} />)
+        )}
+      </View>
+    );
+
+  return (
+    <View style={{ gap: space["2"] }}>
+      {title ? <T variant="sectionLabel">{title}</T> : null}
+      {captureCard}
+      {media.length > 0 ? <Thumbs media={media} /> : null}
+    </View>
+  );
+}
+
+/** A capture tile: 56 tall, radius 16, link-tinted, the icon over the label. */
+function Tile({
+  icon,
+  label,
+  onPress,
+  busy = false,
+  disabled = false,
+  accessibilityLabel,
+}: {
+  icon: WebIconName;
+  label: string;
+  onPress: () => void;
+  busy?: boolean;
+  disabled?: boolean;
+  accessibilityLabel?: string;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ disabled, busy }}
+      disabled={disabled}
+      onPress={onPress}
+      android_ripple={{ color: color.ripple }}
+      style={({ pressed }) => [
+        styles.tile,
+        { backgroundColor: pressed ? color.tintedPressed : color.iconTint },
+        disabled && !busy && { opacity: 0.5 },
+      ]}
+    >
+      {busy ? (
+        <ActivityIndicator size="small" color={color.link} />
+      ) : (
+        <WebIcon name={icon} size={24} color={color.link} />
+      )}
+      <Text
+        style={[styles.tileText, { color: color.link }]}
+        numberOfLines={2}
+        maxFontSizeMultiplier={1.6}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+/** One capture as a card (spec 5.4): the photo, video or voice note, its details, actions. */
+function MediaCard({ media }: { media: Media }) {
+  const company = useCompany();
+  const { services } = useSession();
+  const source = useMediaSource(media);
+  const attached = useAttachedTo(media);
+  const kind = MEDIA_KIND_LABELS[media.kind];
+  const shapes = parseMarkup(media.markup).shapes;
+  const open = (markup = false) =>
+    router.push(`/jobs/${media.job_id}/media/${media.id}${markup ? "?markup=1" : ""}`);
+  const when = media.captured_at
+    ? formatSchedule(media.captured_at, new Date(), company.timezone)
+    : "";
+  const meta = [
+    when,
+    media.latitude != null ? "location recorded" : null,
+    media.upload_state === "pending" ? "waiting to upload" : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <Card padding={0} style={styles.mediaCard}>
+      {source.state !== "ready" ? (
+        <Pressable
+          onPress={() => open()}
+          accessibilityRole="button"
+          accessibilityLabel={`Open ${kind.toLowerCase()}`}
+          style={[styles.missing, { backgroundColor: color.bg }]}
+        >
+          {source.state === "loading" ? (
+            <ActivityIndicator color={color.textMuted} />
+          ) : (
+            <T muted style={{ textAlign: "center" }}>
+              {media.upload_state === "pending"
+                ? `${kind} still uploading from the phone`
+                : `${kind} downloads when you have a connection`}
+            </T>
+          )}
+        </Pressable>
+      ) : media.kind === "photo" ? (
+        <CardPhoto media={media} uri={source.uri!} shapes={shapes} onPress={() => open()} />
+      ) : media.kind === "video" ? (
+        <Pressable
+          onPress={() => open()}
+          accessibilityRole="button"
+          accessibilityLabel={`Play video${media.duration_ms ? `, ${formatDuration(media.duration_ms)}` : ""}`}
+          style={[styles.video, { backgroundColor: color.navy }]}
+        >
+          <View style={[styles.playBig, { backgroundColor: color.scrim }]}>
+            <Icon name="play" size={28} color={color.paper} />
+          </View>
+        </Pressable>
+      ) : (
+        <AudioRow uri={source.uri!} durationMs={media.duration_ms} />
+      )}
+      <View style={styles.cardBody}>
+        <T variant="secondary" style={face.medium}>
+          {`${kind} · ${attached}${media.duration_ms ? ` · ${formatDuration(media.duration_ms)}` : ""}`}
+        </T>
+        {media.caption ? <T variant="secondary">{media.caption}</T> : null}
+        {media.kind === "audio" && media.transcript ? (
+          <T variant="secondary" style={{ fontStyle: "italic", marginTop: 4 }}>
+            {`“${media.transcript}”`}
+          </T>
+        ) : null}
+        {meta ? (
+          <T variant="secondary" muted>
+            {meta}
+          </T>
+        ) : null}
+        <View style={styles.cardActions}>
+          {media.kind === "photo" ? (
+            <Button
+              title={shapes.length ? "Edit Markup" : "Mark Up"}
+              kind="secondary"
+              disabled={source.state !== "ready"}
+              onPress={() => open(true)}
+            />
+          ) : null}
+          <Button
+            title="Delete"
+            kind="danger"
+            onPress={() => confirmDeleteMedia(services.sync, media.company_id, media)}
+          />
         </View>
+      </View>
+    </Card>
+  );
+}
+
+/** The photo at 4:3 (or its own shape), its markup drawn over it; tap for the viewer. */
+function CardPhoto({
+  media,
+  uri,
+  shapes,
+  onPress,
+}: {
+  media: Media;
+  uri: string;
+  shapes: ReturnType<typeof parseMarkup>["shapes"];
+  onPress: () => void;
+}) {
+  const [width, setWidth] = useState(0);
+  const ratio = media.width && media.height ? media.height / media.width : 0.75;
+  const height = width * ratio;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="imagebutton"
+      accessibilityLabel={media.caption ?? (shapes.length ? "Photo with markup" : "Photo")}
+      accessibilityHint="Opens the photo"
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+      style={{ width: "100%", aspectRatio: 1 / ratio, backgroundColor: color.navy }}
+    >
+      {width > 0 ? (
+        <>
+          <Image source={{ uri }} style={{ width, height }} resizeMode="cover" />
+          <MarkupLayer shapes={shapes} width={width} height={height} scale={width / 400} />
+        </>
       ) : null}
-    </Section>
+    </Pressable>
+  );
+}
+
+/** A voice note's player row: play or pause, and the time. */
+export function AudioRow({ uri, durationMs }: { uri: string; durationMs: number | null }) {
+  const player = useAudioPlayer(uri);
+  const status = useAudioPlayerStatus(player);
+  // Voice notes play even with the ringer switch on silent.
+  useEffect(() => {
+    void setAudioModeAsync({ playsInSilentMode: true, allowsRecording: false });
+  }, []);
+  const playing = status.playing;
+  return (
+    <View style={styles.audio}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={playing ? "Pause" : "Play"}
+        onPress={() => {
+          if (playing) player.pause();
+          else {
+            if (status.didJustFinish || status.currentTime >= status.duration - 0.05)
+              void player.seekTo(0);
+            player.play();
+          }
+        }}
+        style={({ pressed }) => [
+          styles.play,
+          { backgroundColor: pressed ? color.tintedPressed : color.iconTint },
+        ]}
+      >
+        <Icon name={playing ? "pause" : "play"} size={22} color={color.link} />
+      </Pressable>
+      <T style={tabular}>
+        {`${formatDuration(status.currentTime * 1000)} / ${formatDuration(durationMs ?? status.duration * 1000)}`}
+      </T>
+    </View>
   );
 }
 
 const PER_ROW = 4;
-const GAP = space["2"];
-/** Size before the grid is measured (one frame). */
-const FALLBACK_THUMB = 80;
+
+/** Small thumbnails for the sheets and the checklist item: four to a row. */
+function Thumbs({ media }: { media: Media[] }) {
+  const [width, setWidth] = useState(0);
+  const { fontScale } = useWindowDimensions();
+  const perRow = fontScale >= 1.6 ? 3 : PER_ROW;
+  const size = width > 0 ? Math.floor((width - space["2"] * (perRow - 1)) / perRow) : 0;
+  return (
+    <View style={styles.grid} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      {size > 0 ? media.map((m) => <Thumb key={m.id} media={m} size={size} />) : null}
+    </View>
+  );
+}
 
 function Thumb({ media, size }: { media: Media; size: number }) {
   const { services } = useSession();
   // Inside the Test or Finding sheet, the capture opens in the sheet's own stack.
   const inSheet = useInSheet();
-  const uri = useMediaUri(media);
+  const source = useMediaSource(media);
+  const uri = source.uri;
   const markup = parseMarkup(media.markup);
   const label = `${MEDIA_KIND_LABELS[media.kind]}${media.duration_ms ? `, ${formatDuration(media.duration_ms)}` : ""}${media.upload_state === "pending" ? ", waiting to upload" : ""}`;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      // The capture's screen has a Delete button; screen readers can also delete from here.
       accessibilityActions={[{ name: "delete", label: "Delete" }]}
       onAccessibilityAction={(e) => {
         if (e.nativeEvent.actionName === "delete")
@@ -184,7 +488,7 @@ function Thumb({ media, size }: { media: Media; size: number }) {
       }
       style={({ pressed }) => [
         styles.thumb,
-        { width: size, height: size },
+        { width: size, height: size, backgroundColor: color.navy },
         pressed && { opacity: 0.8 },
       ]}
     >
@@ -197,23 +501,24 @@ function Thumb({ media, size }: { media: Media; size: number }) {
         </>
       ) : (
         <View style={styles.placeholder}>
-          <Icon
-            name={
-              media.kind === "audio" ? "microphone" : media.kind === "video" ? "video" : "photo"
-            }
-            size={30}
-            color={color.onHeader}
+          <WebIcon
+            name={media.kind === "audio" ? "mic" : media.kind === "video" ? "video" : "cameraTile"}
+            size={26}
+            color={color.paper}
           />
           {media.duration_ms ? (
-            <T variant="small" style={styles.duration}>
+            <Text
+              style={[styles.duration, { color: color.paper }]}
+              maxFontSizeMultiplier={MAX_TEXT_SCALE}
+            >
               {formatDuration(media.duration_ms)}
-            </T>
+            </Text>
           ) : null}
         </View>
       )}
       {media.upload_state === "pending" ? (
-        <View style={styles.badge}>
-          <Icon name="upload" size={16} color={color.navy} />
+        <View style={[styles.badge, { backgroundColor: color.surface }]}>
+          <Icon name="upload" size={14} color={color.navy} />
         </View>
       ) : null}
     </Pressable>
@@ -252,22 +557,48 @@ function CoverMarkup({
 }
 
 const styles = StyleSheet.create({
-  buttons: { gap: space["2"] },
-  button: { flex: 1, paddingHorizontal: space["2"] },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: GAP },
-  thumb: {
-    borderRadius: radius.md,
+  tiles: { flexDirection: "row", gap: space["2"] },
+  tile: {
+    flex: 1,
+    minHeight: 56,
+    borderRadius: shape.block,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+    paddingHorizontal: space["1"],
+    paddingVertical: 6,
     overflow: "hidden",
-    backgroundColor: color.navy,
   },
+  tileText: { ...face.semiBold, fontSize: 15, lineHeight: 18, textAlign: "center" },
+  mediaCard: { overflow: "hidden", gap: 0 },
+  missing: {
+    width: "100%",
+    aspectRatio: 4 / 3,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: space["4"],
+  },
+  video: { width: "100%", aspectRatio: 16 / 9, alignItems: "center", justifyContent: "center" },
+  playBig: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardBody: { padding: space["3"], gap: 2 },
+  cardActions: { flexDirection: "row", flexWrap: "wrap", gap: space["3"], marginTop: space["2"] },
+  audio: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space["3"],
+    paddingHorizontal: space["3"],
+    paddingTop: space["3"],
+  },
+  play: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: space["2"] },
+  thumb: { borderRadius: 10, overflow: "hidden" },
   placeholder: { flex: 1, alignItems: "center", justifyContent: "center", gap: 4 },
-  duration: { color: color.onHeader, ...face.semiBold, fontVariant: ["tabular-nums"] },
-  badge: {
-    position: "absolute",
-    right: 4,
-    bottom: 4,
-    backgroundColor: color.surface,
-    borderRadius: 12,
-    padding: 3,
-  },
+  duration: { ...face.semiBold, fontSize: 13, fontVariant: ["tabular-nums"] },
+  badge: { position: "absolute", right: 4, bottom: 4, borderRadius: 12, padding: 3 },
 });

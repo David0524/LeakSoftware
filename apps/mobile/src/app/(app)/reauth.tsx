@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Button, FieldGroup, FieldRow, Notice, Screen, T } from "../../ui/components";
 import { useSession } from "../../state/session";
-import { ios, space } from "../../ui/theme";
+import { space } from "../../ui/theme";
 
 /** Restore an expired sign-in without touching local data. */
 export default function Reauth() {
@@ -25,20 +25,15 @@ export default function Reauth() {
 
   return (
     <Screen>
-      <T variant="muted" style={ios && { paddingHorizontal: space["4"] }}>
+      <T muted style={{ paddingHorizontal: space["4"], textAlign: "center" }}>
         Signed in as {user?.email}. Everything on this phone stays put.
       </T>
-      {error ? (
-        <Notice tone="error" tinted>
-          {error}
-        </Notice>
-      ) : null}
       <FieldGroup labelWidth={96}>
         <FieldRow
           label="Password"
           value={password}
           onChangeText={setPassword}
-          placeholder={ios ? "Required" : undefined}
+          placeholder="Required"
           secureTextEntry
           autoFocus
           autoCapitalize="none"
@@ -49,7 +44,8 @@ export default function Reauth() {
           onSubmitEditing={submit}
         />
       </FieldGroup>
-      <Button title="Sign In" onPress={submit} loading={busy} />
+      {error ? <Notice tone="error">{error}</Notice> : null}
+      <Button title={busy ? "Signing In…" : "Sign In"} wide onPress={submit} disabled={busy} />
     </Screen>
   );
 }

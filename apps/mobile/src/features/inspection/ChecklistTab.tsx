@@ -1,10 +1,11 @@
 import { router } from "expo-router";
-import { useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Animated, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import {
   CHECKLIST_SECTION_LABELS,
-  checklistTally,
+  checklistSectionSummary,
   componentApplies,
+  markRemainingLabel,
   type ChecklistSection,
   type ComponentType,
   type Job,
@@ -14,72 +15,103 @@ import {
 import {
   addComponent,
   createChecklist,
+  removeComponent,
   saveChecklistResult,
   useInspectionConfig,
   useJobInspection,
 } from "../../data/inspection";
+import { useJobMedia } from "../../data/media";
 import { useSession } from "../../state/session";
-import { Button, Card, Field, Group, Row, Segmented, T } from "../../ui/components";
-import { Icon } from "../../ui/Icon";
-import { SwipeToDelete } from "../../ui/SwipeRow";
-import { color, ios, space } from "../../ui/theme";
-import { confirmRemoveComponent } from "./remove";
+import { Button, Check, T } from "../../ui/components";
+import { confirmDestructive } from "../../ui/confirm";
+import { haptics } from "../../ui/haptics";
+import { Select, useMenu } from "../../ui/Select";
+import { color, face, font, MAX_TEXT_SCALE, minTap, shape, space, type } from "../../ui/theme";
+import { WebIcon } from "../../ui/WebIcon";
 import { currentVerdict, verdictOptions, verdictValues, type Verdict } from "./verdict";
 
-// "service" is the pool service checklist (maintenance visits); it was missing, so service
-// items didn't show on phones.
-const SECTIONS: ChecklistSection[] = ["service", "visual", "plumbing", "bond_beam", "other"];
+/** The website's section order (CHECKLIST_SECTION_LABELS). */
+const SECTIONS = Object.keys(CHECKLIST_SECTION_LABELS) as ChecklistSection[];
 
-/** The checklist in the shop's sections, one verdict per item (works offline). */
+const ADD_ANOTHER = "another:";
+
+/**
+ * The checklist as on the website (spec 5.4): one folding block per section with its summary,
+ * a verdict pill per item, "Where" under leaks, Mark Remaining, then Add an item. Tapping an
+ * item's name opens its own screen (method, notes, photos). Works offline.
+ */
 export function ChecklistTab({ job, property }: { job: Job; property?: Property }) {
   const { services } = useSession();
   const config = useInspectionConfig(job.company_id);
   const insp = useJobInspection(job.company_id, job.id);
-  const tally = checklistTally(insp.components, insp.results);
+  const media = useJobMedia(job.company_id, job.id);
+  const [adding, setAdding] = useState<string | null>(null);
+  const maintenance = job.type === "maintenance";
 
   if (insp.components.length === 0) {
     return (
-      <Card>
-        <T variant="body">No checklist yet for this job.</T>
-        <Button
-          title="Set Up Checklist"
-          onPress={() =>
-            createChecklist(
-              services.sync,
-              job.company_id,
-              job.id,
-              config.componentTypes,
-              {
-                has_pool: property?.has_pool ?? true,
-                has_spa: property?.has_spa ?? false,
-                pool_type: property?.pool_type ?? null,
-              },
-              job.type === "maintenance" ? "maintenance" : "detection",
-            )
-          }
-        />
-      </Card>
+      <Button
+        title="Set Up Checklist"
+        kind="secondary"
+        onPress={() =>
+          createChecklist(
+            services.sync,
+            job.company_id,
+            job.id,
+            config.componentTypes,
+            {
+              has_pool: property?.has_pool ?? true,
+              has_spa: property?.has_spa ?? false,
+              pool_type: property?.pool_type ?? null,
+            },
+            maintenance ? "maintenance" : "detection",
+          )
+        }
+      />
     );
   }
 
   const typeOf = (c: JobComponent) => config.componentTypeById.get(c.component_type_id);
-  const missing = config.componentTypes.filter(
+  const photos = new Map<string, number>();
+  for (const m of media)
+    if (m.job_component_id)
+      photos.set(m.job_component_id, (photos.get(m.job_component_id) ?? 0) + 1);
+
+  const present = new Set(insp.components.map((c) => c.component_type_id));
+  const addable = config.componentTypes.filter(
     (t) =>
-      !insp.components.some((c) => c.component_type_id === t.id) &&
-      (t.job_type ?? "detection") === (job.type === "maintenance" ? "maintenance" : "detection") &&
-      (!property || componentApplies(t, property)),
+      !present.has(t.id) &&
+      (t.job_type ?? "detection") === (maintenance ? "maintenance" : "detection") &&
+      (!property || componentApplies(t, { ...property, has_pool: true })),
   );
+  // Types that can repeat ("Another Return"), once each.
+  const repeatable = [
+    ...new Map(
+      insp.components
+        .map(typeOf)
+        .filter((t): t is ComponentType => Boolean(t?.allows_multiple))
+        .map((t) => [t.id, t]),
+    ).values(),
+  ];
+  const addOptions = [
+    ...repeatable.map((t) => ({ value: `${ADD_ANOTHER}${t.id}`, label: `Another ${t.name}` })),
+    ...addable.map((t) => ({ value: t.id, label: t.name })),
+  ];
+
+  function add() {
+    if (!adding) return;
+    const id = adding.startsWith(ADD_ANOTHER) ? adding.slice(ADD_ANOTHER.length) : adding;
+    const t = config.componentTypeById.get(id);
+    if (t) addComponent(services.sync, job.company_id, job.id, t, insp.components);
+    setAdding(null);
+    haptics.success();
+  }
 
   return (
-    <View style={{ gap: space["4"] }}>
-      <T variant="muted">
-        {job.type === "maintenance"
-          ? `${tally.pass} done · ${tally.attention} need attention · ${tally.notApplicable} skipped · ${tally.pending} to do`
-          : `${tally.pass} pass · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} N/A · ${tally.pending} to do`}
-      </T>
+    <View style={styles.list}>
       {SECTIONS.map((section) => {
         const items = insp.components
-          .filter((c) => (typeOf(c)?.section ?? "other") === section)
+          .filter((c) => (typeOf(c)?.section ?? "other") === section && typeOf(c))
           .sort(
             (a, b) =>
               (typeOf(a)?.sort_order ?? 0) - (typeOf(b)?.sort_order ?? 0) ||
@@ -87,190 +119,420 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
           );
         if (items.length === 0) return null;
         return (
-          <View key={section} style={{ gap: space["2"] }}>
-            <T variant="label" style={ios && { paddingHorizontal: space["4"] }}>
-              {CHECKLIST_SECTION_LABELS[section]}
-            </T>
-            {/* One inset grouped block per section, a hairline between items. */}
-            <Group>
-              {items.map((c, i) => {
-                const type = typeOf(c);
-                const last = items[i + 1]?.component_type_id !== c.component_type_id;
-                return type ? (
-                  <ChecklistItem
-                    key={c.id}
-                    job={job}
-                    component={c}
-                    type={type}
-                    // "+ Add" sits in the last item of a type that can repeat, not on its own row.
-                    onAddAnother={
-                      last && type.allows_multiple
-                        ? () =>
-                            addComponent(
-                              services.sync,
-                              job.company_id,
-                              job.id,
-                              type,
-                              insp.components,
-                            )
-                        : undefined
-                    }
-                  />
-                ) : null;
-              })}
-            </Group>
-          </View>
+          <ChecklistGroup
+            key={section}
+            job={job}
+            section={section}
+            items={items.map((c) => ({ component: c, type: typeOf(c)! }))}
+            photos={photos}
+          />
         );
       })}
-      {missing.length > 0 ? (
-        <View style={{ gap: space["2"] }}>
-          <T variant="label">Add an item</T>
-          <View style={styles.wrap}>
-            {missing.map((t) => (
-              <Button
-                key={t.id}
-                title={`+ ${t.name}`}
-                kind="secondary"
-                onPress={() =>
-                  addComponent(services.sync, job.company_id, job.id, t, insp.components)
-                }
-              />
-            ))}
-          </View>
+      {addOptions.length ? (
+        <View style={styles.addRow}>
+          <Select
+            label="Add an item"
+            options={addOptions}
+            value={adding}
+            onChange={setAdding}
+            style={{ flex: 1 }}
+          />
+          <Button
+            title="Add"
+            kind="secondary"
+            disabled={!adding}
+            onPress={add}
+            style={{ alignSelf: "flex-end" }}
+          />
         </View>
       ) : null}
     </View>
   );
 }
 
+/** One section as a grouped block that folds: open while it has items to do. */
+function ChecklistGroup({
+  job,
+  section,
+  items,
+  photos,
+}: {
+  job: Job;
+  section: ChecklistSection;
+  items: { component: JobComponent; type: ComponentType }[];
+  photos: Map<string, number>;
+}) {
+  const { services, user } = useSession();
+  const insp = useJobInspection(job.company_id, job.id);
+  const rows = items.map((i) => ({ ...i, result: insp.resultByComponent.get(i.component.id) }));
+  const summary = checklistSectionSummary(rows, section === "service");
+  const [open, setOpen] = useState(summary.open);
+  const [turn] = useState(() => new Animated.Value(summary.open ? 1 : 0));
+  useEffect(() => {
+    Animated.timing(turn, { toValue: open ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+  }, [open, turn]);
+  const title = CHECKLIST_SECTION_LABELS[section];
+  const toDo = rows.filter((r) => currentVerdict(r.result) === null);
+  const tone =
+    summary.tone === "pass"
+      ? color.pass
+      : summary.tone === "fail"
+        ? color.fail
+        : summary.tone === "warning"
+          ? color.warning
+          : color.textMuted;
+
+  function markRest() {
+    services.sync.batch(() => {
+      for (const r of toDo)
+        saveChecklistResult(
+          services.sync,
+          job.company_id,
+          job.id,
+          r.component.id,
+          r.result,
+          verdictValues("ok", user?.id ?? null),
+        );
+    });
+    haptics.success();
+  }
+
+  return (
+    <View style={[styles.group, { backgroundColor: color.surface }]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={`${title}, ${summary.text}`}
+        onPress={() => setOpen(!open)}
+        android_ripple={{ color: color.ripple }}
+        style={styles.groupHead}
+      >
+        <Animated.View
+          style={{
+            transform: [
+              { rotate: turn.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "90deg"] }) },
+            ],
+          }}
+        >
+          <WebIcon name="chevronRight" size={20} color={color.textMuted} strokeWidth={2.2} />
+        </Animated.View>
+        <T variant="bodyEmphasis" style={{ flex: 1 }}>
+          {title}
+        </T>
+        <Text style={[styles.summary, { color: tone }]} maxFontSizeMultiplier={MAX_TEXT_SCALE}>
+          {summary.text}
+        </Text>
+      </Pressable>
+      {open ? (
+        <>
+          {rows.map((r) => (
+            <View key={r.component.id}>
+              <Hairline inset={0} />
+              <ChecklistItem
+                job={job}
+                component={r.component}
+                type={r.type}
+                photos={photos.get(r.component.id) ?? 0}
+              />
+            </View>
+          ))}
+          {toDo.length > 0 ? (
+            <>
+              <Hairline inset={0} />
+              <Pressable
+                accessibilityRole="button"
+                onPress={markRest}
+                style={({ pressed }) => [styles.markRest, pressed && { opacity: 0.5 }]}
+              >
+                <T style={{ color: color.link }}>
+                  {markRemainingLabel(toDo.map((r) => r.type.answer))}
+                </T>
+              </Pressable>
+            </>
+          ) : null}
+        </>
+      ) : null}
+    </View>
+  );
+}
+
+function Hairline({ inset }: { inset: number }) {
+  return (
+    <View
+      style={{
+        height: StyleSheet.hairlineWidth,
+        marginLeft: inset,
+        backgroundColor: color.separator,
+      }}
+    />
+  );
+}
+
+/** One item: its name (opens the item's screen) and the verdict pill, or a check. */
 function ChecklistItem({
   job,
   component,
-  type,
-  onAddAnother,
+  type: itemType,
+  photos,
 }: {
   job: Job;
   component: JobComponent;
   type: ComponentType;
-  onAddAnother?: () => void;
+  photos: number;
 }) {
   const { services, user } = useSession();
   const insp = useJobInspection(job.company_id, job.id);
   const result = insp.resultByComponent.get(component.id);
   const verdict = currentVerdict(result);
-  const [where, setWhere] = useState<string | null>(null);
-  const needsWhere = type.answer !== "yes_no" && (verdict === "leaking" || verdict === "attention");
-
-  // Maintenance items are just done or not: a check, no choices (owner, 2026-10-18).
-  const check = type.answer === "done";
-  const done = verdict === "ok";
+  const options = verdictOptions(itemType);
+  const menu = useMenu();
+  const needsWhere =
+    itemType.answer !== "yes_no" && (verdict === "leaking" || verdict === "attention");
+  const check = itemType.answer === "done";
+  const open = () => router.push(`/jobs/${job.id}/component/${component.id}`);
 
   function choose(v: Verdict | null) {
+    haptics.selection();
     saveChecklistResult(services.sync, job.company_id, job.id, component.id, result, {
       ...verdictValues(v, user?.id ?? null),
       ...(v === null || v === "ok" || v === "na" ? { location_text: null } : {}),
     });
   }
+  function remove() {
+    confirmDestructive({
+      title: `Remove ${component.label} from the checklist?`,
+      confirm: "Remove Item",
+      onConfirm: () => removeComponent(services.sync, job.company_id, component, result),
+    });
+  }
 
-  // Swipe left to remove (as on the item's own screen, under More); screen readers get the
-  // same Remove as an action on the item's name.
-  const remove = () => confirmRemoveComponent(services.sync, job.company_id, component, result);
+  const photoText = photos ? `${photos} photo${photos === 1 ? "" : "s"}` : null;
 
-  return (
-    <SwipeToDelete label="Remove" onDelete={remove}>
-      <View style={styles.item}>
-        <Row style={{ justifyContent: "space-between", gap: space["4"] }}>
-          {check ? (
-            <Pressable
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: done }}
-              accessibilityLabel={component.label}
-              hitSlop={10}
-              onPress={() => choose(done ? null : "ok")}
-              style={[styles.check, done ? styles.checkOn : null]}
-            >
-              {done ? (
-                <Icon name="checkmark" size={16} color={color.onPrimary} weight="bold" />
-              ) : null}
-            </Pressable>
-          ) : null}
-          <View
-            style={{ flex: 1 }}
-            accessible
-            accessibilityLabel={component.label}
-            accessibilityActions={[{ name: "delete", label: "Remove" }]}
-            onAccessibilityAction={(e) => {
-              if (e.nativeEvent.actionName === "delete") remove();
-            }}
+  if (check) {
+    const done = verdict === "ok";
+    const other = verdict && !done ? options.find((o) => o.value === verdict)?.label : null;
+    const sub = [photoText, other, result?.notes].filter(Boolean).join(" · ");
+    return (
+      <View style={styles.checkRow}>
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: done }}
+          accessibilityLabel={component.label}
+          onPress={() => choose(done ? null : "ok")}
+          style={styles.checkHit}
+        >
+          <Check done={done} />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityHint="Opens the item: notes and photos"
+          onPress={open}
+          style={styles.name}
+        >
+          <Text
+            style={[styles.itemName, { color: done ? color.textMuted : color.text }]}
+            maxFontSizeMultiplier={MAX_TEXT_SCALE}
           >
-            <T variant="strong">{component.label}</T>
-          </View>
-          {onAddAnother ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Add another ${type.name.toLowerCase()}`}
-              hitSlop={LINK_SLOP}
-              onPress={onAddAnother}
-            >
-              <T variant="strong" style={{ color: color.link }}>
-                + Add
-              </T>
-            </Pressable>
+            {component.label}
+          </Text>
+          {sub ? (
+            <T variant="footnote" muted numberOfLines={1}>
+              {sub}
+            </T>
           ) : null}
+        </Pressable>
+        {itemType.allows_multiple ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${component.label}: photos, tests, and notes`}
-            hitSlop={LINK_SLOP}
-            onPress={() => router.push(`/jobs/${job.id}/component/${component.id}`)}
+            accessibilityLabel={`Remove ${component.label}`}
+            onPress={remove}
+            style={styles.removeX}
           >
-            <T variant="strong" style={{ color: color.link }}>
-              More
-            </T>
+            <WebIcon name="close" size={16} color={color.textMuted} strokeWidth={2.4} />
           </Pressable>
-        </Row>
-        {check ? null : (
-          <Segmented options={verdictOptions(type)} value={verdict} onChange={choose} />
-        )}
-        {needsWhere ? (
-          <Field
-            label="Where"
-            value={where ?? result?.location_text ?? ""}
-            onChangeText={setWhere}
-            onBlur={() => {
-              if (result && where !== null && where !== (result.location_text ?? ""))
-                saveChecklistResult(services.sync, job.company_id, job.id, component.id, result, {
-                  location_text: where.trim() || null,
-                });
-              setWhere(null);
-            }}
-            placeholder="Where on the line or fitting"
-          />
         ) : null}
       </View>
-    </SwipeToDelete>
+    );
+  }
+
+  const sub = [photoText, result?.method, result?.notes].filter(Boolean).join(" · ");
+  const chosen = verdict ? options.find((o) => o.value === verdict)?.label : null;
+  const pill =
+    verdict === "ok"
+      ? color.pass
+      : verdict === "leaking"
+        ? color.fail
+        : verdict === "attention"
+          ? color.warning
+          : verdict === "na"
+            ? color.excluded
+            : color.fill;
+
+  return (
+    <View style={styles.item}>
+      <View style={styles.itemRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityHint="Opens the item: method, notes, and photos"
+          onPress={open}
+          style={styles.name}
+        >
+          <Text
+            style={[styles.itemName, { color: color.text }]}
+            maxFontSizeMultiplier={MAX_TEXT_SCALE}
+          >
+            {component.label}
+          </Text>
+          {sub ? (
+            <T variant="footnote" muted numberOfLines={1}>
+              {sub}
+            </T>
+          ) : null}
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${component.label}, ${chosen ?? "To Do"}`}
+          accessibilityHint="Choose the result"
+          onPress={() =>
+            menu.open({
+              title: component.label,
+              items: [
+                ...options.map((o) => ({
+                  label: o.label,
+                  checked: o.value === verdict,
+                  onPress: () => {
+                    if (o.value !== verdict) choose(o.value);
+                  },
+                })),
+                ...(itemType.allows_multiple
+                  ? [{ label: "Remove Item…", destructive: true, onPress: remove }]
+                  : []),
+              ],
+            })
+          }
+          style={({ pressed }) => [
+            styles.pill,
+            { backgroundColor: pill },
+            pressed && { opacity: 0.8 },
+          ]}
+        >
+          <Text
+            style={[styles.pillText, { color: verdict ? color.onStatus : color.text }]}
+            maxFontSizeMultiplier={1.6}
+            numberOfLines={1}
+          >
+            {chosen ?? "To Do"}
+          </Text>
+          <View style={styles.pillChevron}>
+            <WebIcon
+              name="chevronDown"
+              size={16}
+              color={verdict ? color.onStatus : color.text}
+              strokeWidth={2.5}
+            />
+          </View>
+        </Pressable>
+      </View>
+      {needsWhere && result ? (
+        <WhereField
+          key={result.location_text ?? ""}
+          item={component.label}
+          value={result.location_text ?? ""}
+          onSave={(where) =>
+            saveChecklistResult(services.sync, job.company_id, job.id, component.id, result, {
+              location_text: where || null,
+            })
+          }
+        />
+      ) : null}
+      {result?.status === "excluded" && result.exclusion_reason ? (
+        <T variant="secondary" muted>
+          {result.exclusion_reason}
+        </T>
+      ) : null}
+      {menu.element}
+    </View>
   );
 }
 
-/** The text links are 22 pt tall; the slop makes them at least 46 pt to tap. */
-const LINK_SLOP = { top: 12, bottom: 12, left: 8, right: 8 };
+/** "Where?" under a Leaking or Attention item, saved when it loses focus. */
+function WhereField({
+  item,
+  value,
+  onSave,
+}: {
+  item: string;
+  value: string;
+  onSave: (where: string) => void;
+}) {
+  const [text, setText] = useState(value);
+  const [focused, setFocused] = useState(false);
+  return (
+    <TextInput
+      accessibilityLabel={`Where: ${item}`}
+      value={text}
+      onChangeText={setText}
+      onFocus={() => setFocused(true)}
+      onBlur={() => {
+        setFocused(false);
+        if (text.trim() !== value) onSave(text.trim());
+      }}
+      placeholder="Where? Under the deck, at the throat…"
+      placeholderTextColor={color.placeholder}
+      maxFontSizeMultiplier={MAX_TEXT_SCALE}
+      style={[
+        styles.where,
+        { backgroundColor: color.bg, borderColor: color.controlBorder, color: color.text },
+        focused && { borderColor: color.focus, borderWidth: 2 },
+      ]}
+    />
+  );
+}
 
 const styles = StyleSheet.create({
-  check: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: color.controlBorder,
+  list: { gap: space["3"] },
+  group: { borderRadius: shape.grouped, overflow: "hidden" },
+  groupHead: {
+    minHeight: 56,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-  },
-  checkOn: { backgroundColor: color.pass, borderColor: color.pass },
-  item: {
-    gap: space["2"],
+    gap: space["3"],
     paddingHorizontal: space["4"],
-    paddingVertical: space["3"],
-    // Solid, so the row covers the red Remove until it is swiped.
-    backgroundColor: color.surface,
   },
-  wrap: { flexDirection: "row", flexWrap: "wrap", gap: space["2"] },
+  summary: { fontFamily: font.displaySemiBold, fontSize: 15, lineHeight: 20 },
+  item: { paddingHorizontal: space["4"], paddingVertical: space["2"], gap: space["2"] },
+  itemRow: { flexDirection: "row", alignItems: "center", gap: space["3"], minHeight: minTap },
+  name: { flex: 1, minHeight: minTap, justifyContent: "center" },
+  itemName: { ...face.medium, fontSize: 17, lineHeight: 21 },
+  pill: {
+    minHeight: minTap,
+    borderRadius: shape.pill,
+    paddingLeft: space["3"],
+    paddingRight: 32,
+    justifyContent: "center",
+    maxWidth: 170,
+  },
+  pillText: { ...type.secondary, ...face.semiBold },
+  pillChevron: { position: "absolute", right: 10, top: 0, bottom: 0, justifyContent: "center" },
+  where: {
+    minHeight: minTap,
+    borderWidth: 1,
+    borderRadius: shape.field,
+    paddingHorizontal: space["3"],
+    paddingVertical: space["2"],
+    ...face.regular,
+    fontSize: 17,
+  },
+  checkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space["1"],
+    paddingLeft: space["2"],
+    paddingRight: space["1"],
+    paddingVertical: space["1"],
+  },
+  checkHit: { width: minTap, height: minTap, alignItems: "center", justifyContent: "center" },
+  removeX: { width: minTap, height: minTap, alignItems: "center", justifyContent: "center" },
+  markRest: { minHeight: minTap, justifyContent: "center", paddingHorizontal: space["4"] },
+  addRow: { flexDirection: "row", alignItems: "flex-end", gap: space["3"] },
 });

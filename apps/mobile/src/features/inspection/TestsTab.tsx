@@ -1,63 +1,94 @@
 import { router } from "expo-router";
 import { View } from "react-native";
-import { calculate, type Job } from "@leakbook/core";
+import { calculate, formatSchedule, type Job } from "@leakbook/core";
 import { useInspectionConfig, useJobInspection } from "../../data/inspection";
-import { useSession } from "../../state/session";
+import { useCompany, useSession } from "../../state/session";
 import { Button, Group, ListRow, T } from "../../ui/components";
 import { space } from "../../ui/theme";
 import { OutcomeChip } from "./OutcomeChip";
 import { confirmDeleteTest } from "./remove";
 
+/**
+ * Tests, as on the website (spec 5.4 Findings): a row per test with its item and time, the
+ * calculated summary, the recorded fields and notes, the outcome chip; tap to edit, swipe left
+ * to delete. Then Add Test, which opens the sheet with the test type to choose.
+ */
 export function TestsTab({ job }: { job: Job }) {
+  const company = useCompany();
   const { services } = useSession();
   const config = useInspectionConfig(job.company_id);
   const insp = useJobInspection(job.company_id, job.id);
+  const now = new Date();
 
   return (
-    <View style={{ gap: space["3"] }}>
-      {insp.tests.length === 0 ? null : (
+    <View style={{ gap: space["4"] }}>
+      {insp.tests.length === 0 ? (
+        <T muted>No tests recorded.</T>
+      ) : (
         <Group>
           {insp.tests.map((t) => {
             const type = config.testTypeById.get(t.test_type_id);
+            const name = type?.name ?? "Test";
             const component = t.job_component_id
               ? insp.componentById.get(t.job_component_id)
               : undefined;
-            const where = String(t.data.line_name ?? t.data.location ?? component?.label ?? "");
-            const summary = type ? calculate(type, t.data).summary : null;
+            const meta = [
+              component?.label,
+              t.performed_at ? formatSchedule(t.performed_at, now, company.timezone) : null,
+            ]
+              .filter(Boolean)
+              .join(" · ");
+            const calc = type ? calculate(type, t.data) : null;
+            const fields =
+              type && !type.calculator
+                ? type.field_schema.fields.filter(
+                    (f) => t.data[f.key] != null && t.data[f.key] !== "",
+                  )
+                : [];
             return (
               <ListRow
                 key={t.id}
+                accessibilityLabel={`Edit ${name}`}
                 onPress={() => router.push(`/jobs/${job.id}/test/${t.id}`)}
-                onDelete={() => confirmDeleteTest(services.sync, job.company_id, t.id)}
+                onDelete={() => confirmDeleteTest(services.sync, job.company_id, t.id, name)}
                 trailing={<OutcomeChip outcome={t.outcome} />}
               >
-                <T variant="strong">
-                  {type?.name ?? "Test"}
-                  {where ? ` · ${where}` : ""}
-                </T>
-                {(summary ?? t.data.observation) ? (
-                  <T variant="muted">{summary ?? String(t.data.observation)}</T>
+                <T variant="bodyEmphasis">{name}</T>
+                {meta ? (
+                  <T variant="secondary" muted>
+                    {meta}
+                  </T>
+                ) : null}
+                {calc?.summary ? (
+                  <T variant="bodyMedium" style={{ marginTop: 4 }}>
+                    {calc.summary}
+                  </T>
+                ) : null}
+                {fields.map((f) => (
+                  <T key={f.key} variant="secondary">
+                    <T variant="secondary" muted>
+                      {`${f.label}:`}
+                    </T>{" "}
+                    {String(t.data[f.key])}
+                  </T>
+                ))}
+                {t.notes ? (
+                  <T variant="secondary" style={{ marginTop: 4 }}>
+                    {t.notes}
+                  </T>
                 ) : null}
               </ListRow>
             );
           })}
         </Group>
       )}
-      {insp.tests.length === 0 ? (
-        <T variant="muted">No tests recorded yet. Pick one to add.</T>
-      ) : (
-        <T variant="label">Add a test</T>
-      )}
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space["2"] }}>
-        {config.testTypes.map((tt) => (
-          <Button
-            key={tt.id}
-            title={`+ ${tt.name}`}
-            kind="secondary"
-            onPress={() => router.push(`/jobs/${job.id}/test/new?type=${tt.id}`)}
-          />
-        ))}
-      </View>
+      {config.testTypes.length ? (
+        <Button
+          title="Add Test"
+          kind="secondary"
+          onPress={() => router.push(`/jobs/${job.id}/test/new`)}
+        />
+      ) : null}
     </View>
   );
 }

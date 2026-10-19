@@ -1,11 +1,13 @@
 import { router } from "expo-router";
 import { useRef, useState } from "react";
-import { View, type TextInput } from "react-native";
-import { Button, FieldGroup, FieldRow, Notice, Screen } from "../../ui/components";
+import { Linking, Text, type TextInput } from "react-native";
+import { AuthFrame } from "../../features/auth/AuthFrame";
+import { API_URL } from "../../lib/config";
 import { useSession } from "../../state/session";
-import { AuthTitle, BrandHeader } from "../../ui/BrandHeader";
-import { color, ios } from "../../ui/theme";
+import { Button, FieldGroup, FieldRow, Notice } from "../../ui/components";
+import { color, ios, MAX_TEXT_SCALE, type } from "../../ui/theme";
 
+/** Sign In (spec 5.13; the website's sign-in page). */
 export default function SignIn() {
   const { signIn } = useSession();
   const [email, setEmail] = useState("");
@@ -26,54 +28,68 @@ export default function SignIn() {
     if (err) setError(err);
   }
 
+  // A trial is started on the website on iPhone (no sign-ups for a paid service in the app,
+  // spec 8.4); Android creates the account here.
+  const trial = () =>
+    ios && API_URL ? void Linking.openURL(`${API_URL}/sign-up`) : router.push("/sign-up");
+
   return (
-    <View style={{ flex: 1, backgroundColor: color.bg }}>
-      {ios ? null : <BrandHeader />}
-      <Screen>
-        <AuthTitle title="Sign In" />
-        {error ? (
-          <Notice tone="error" tinted>
-            {error}
-          </Notice>
-        ) : null}
-        <FieldGroup labelWidth={96}>
-          <FieldRow
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            placeholder={ios ? "name@company.com" : undefined}
-            autoCapitalize="none"
-            autoCorrect={false}
-            spellCheck={false}
-            autoComplete="email"
-            keyboardType="email-address"
-            textContentType="username"
-            next={passwordRef}
-          />
-          <FieldRow
-            ref={passwordRef}
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            placeholder={ios ? "Required" : undefined}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="current-password"
-            textContentType="password"
-            returnKeyType="go"
-            onSubmitEditing={submit}
-          />
-        </FieldGroup>
-        <Button title="Sign In" wide onPress={submit} loading={busy} />
-        <Button title="Create an Account" kind="quiet" onPress={() => router.push("/sign-up")} />
-        {__DEV__ ? (
-          <Notice>
-            Demo accounts (dev only): tech@demo.leakbook.test or owner@demo.leakbook.test, password
-            leakbook-demo
-          </Notice>
-        ) : null}
-      </Screen>
-    </View>
+    <AuthFrame
+      title="Sign In"
+      intro={
+        <Text
+          style={[type.body, { color: color.textMuted, textAlign: "center" }]}
+          maxFontSizeMultiplier={MAX_TEXT_SCALE}
+        >
+          New to Sundeck Pro?{" "}
+          <Text
+            accessibilityRole="link"
+            onPress={trial}
+            style={{ color: color.link, textDecorationLine: "underline" }}
+          >
+            Start a free trial
+          </Text>
+          .
+        </Text>
+      }
+    >
+      <FieldGroup labelWidth={96}>
+        <FieldRow
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="name@example.com"
+          autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
+          autoComplete="email"
+          keyboardType="email-address"
+          textContentType="username"
+          next={passwordRef}
+        />
+        <FieldRow
+          ref={passwordRef}
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Required"
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="current-password"
+          textContentType="password"
+          returnKeyType="go"
+          onSubmitEditing={submit}
+        />
+      </FieldGroup>
+      {error ? <Notice tone="error">{error}</Notice> : null}
+      <Button title={busy ? "Signing In…" : "Sign In"} wide onPress={submit} disabled={busy} />
+      {__DEV__ ? (
+        <Notice>
+          Demo accounts (dev only): tech@demo.leakbook.test or owner@demo.leakbook.test, password
+          leakbook-demo
+        </Notice>
+      ) : null}
+    </AuthFrame>
   );
 }

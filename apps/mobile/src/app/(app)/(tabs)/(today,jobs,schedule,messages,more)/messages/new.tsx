@@ -1,61 +1,82 @@
 import { router, useLocalSearchParams } from "expo-router";
+import { formatPhone } from "@leakbook/core";
 import { useState } from "react";
-import { Alert, TextInput } from "react-native";
+import { Alert } from "react-native";
 import { useRow } from "../../../../../data/hooks";
-import { sendCompanyText } from "../../../../../data/texting";
-import { Button, Screen, T } from "../../../../../ui/components";
-import { color } from "../../../../../ui/theme";
+import { sendCompanyText, useLine } from "../../../../../data/texting";
+import { Composer } from "../../../../../features/messages/Composer";
+import { useCompany } from "../../../../../state/session";
+import { Field, Notice, Screen } from "../../../../../ui/components";
 
-/** The first text to a customer from the company number; then it's a conversation. */
+/**
+ * New Message (spec 5.7): the first text from the company number, to a customer (started from
+ * their page or a job) or to a number typed in. Sending opens the new conversation in its
+ * place.
+ */
 export default function NewMessage() {
-  const { customer: customerId, job } = useLocalSearchParams<{ customer: string; job?: string }>();
+  const { customer: customerId, job } = useLocalSearchParams<{ customer?: string; job?: string }>();
+  const company = useCompany();
+  const line = useLine(company.id);
   const customer = useRow<{ id: string; name: string; phone: string | null }>(
     "customer",
     customerId,
   );
-  const [body, setBody] = useState("");
-  const [sending, setSending] = useState(false);
+  const [to, setTo] = useState("");
+  const [error, setError] = useState<string | undefined>();
 
-  async function send() {
-    if (!body.trim()) return;
-    setSending(true);
+  async function send(body: string, picture: { uri: string; type: string } | null) {
+    if (!customer && to.replace(/\D/g, "").length < 10) {
+      setError("Enter a mobile number, like (480) 555-0188.");
+      return false;
+    }
+    setError(undefined);
     try {
-      const sent = await sendCompanyText({ customerId, body, jobId: job });
+      const sent = await sendCompanyText({
+        ...(customer ? { customerId: customer.id } : { phone: to, companyId: company.id }),
+        body,
+        jobId: job,
+        picture: picture ? { companyId: company.id, ...picture } : undefined,
+      });
       router.replace(`/messages/${sent.conversationId}`);
+      return true;
     } catch (e) {
-      Alert.alert("Not sent", e instanceof Error ? e.message : String(e));
-      setSending(false);
+      Alert.alert("Not Sent", e instanceof Error ? e.message : String(e));
+      return false;
     }
   }
 
   return (
-    <Screen title="New Message">
-      <T variant="muted">
-        To {customer?.name ?? "the customer"}
-        {customer?.phone ? `, ${customer.phone}` : ""}. From the company number.
-      </T>
-      <TextInput
-        value={body}
-        onChangeText={setBody}
-        placeholder="Text message"
-        placeholderTextColor={color.placeholder}
-        accessibilityLabel="Message"
-        multiline
-        autoFocus
-        maxLength={1600}
-        style={{
-          minHeight: 88,
-          padding: 12,
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: color.controlBorder,
-          backgroundColor: color.surface,
-          color: color.text,
-          fontSize: 17,
-          textAlignVertical: "top",
-        }}
-      />
-      <Button title="Send" onPress={() => void send()} loading={sending} />
+    <Screen
+      title="New Message"
+      subtitle={
+        customer
+          ? `To ${customer.name}${customer.phone ? `, ${formatPhone(customer.phone)}` : ""}`
+          : undefined
+      }
+    >
+      {customer ? null : (
+        <Field
+          label="To"
+          placeholder="Mobile number"
+          keyboardType="phone-pad"
+          textContentType="telephoneNumber"
+          autoComplete="tel"
+          value={to}
+          onChangeText={setTo}
+          error={error}
+          autoFocus
+        />
+      )}
+      {line?.status === "active" ? (
+        <Composer
+          pictures={line.pictures}
+          onSend={send}
+          docked={false}
+          autoFocus={Boolean(customer)}
+        />
+      ) : (
+        <Notice>Texting is off until the company number is working.</Notice>
+      )}
     </Screen>
   );
 }

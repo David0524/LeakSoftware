@@ -1,10 +1,9 @@
 import { router } from "expo-router";
 import { useRef, useState } from "react";
-import { View, type TextInput } from "react-native";
-import { Button, FieldGroup, FieldRow, Notice, Screen, T } from "../../ui/components";
+import { type TextInput } from "react-native";
+import { AuthFrame } from "../../features/auth/AuthFrame";
+import { Button, FieldGroup, FieldRow, Notice } from "../../ui/components";
 import { useSession } from "../../state/session";
-import { AuthTitle, BrandHeader } from "../../ui/BrandHeader";
-import { color, ios, space } from "../../ui/theme";
 
 export default function SignUp() {
   const { signUp } = useSession();
@@ -29,70 +28,66 @@ export default function SignUp() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: color.bg }}>
-      {ios ? null : <BrandHeader />}
-      <Screen>
-        <AuthTitle title="Create an Account" />
-        <T variant="muted" style={ios && { textAlign: "center", paddingHorizontal: space["4"] }}>
-          If your company already uses Sundeck Pro, ask the owner to invite this email, then sign up
-          here.
-        </T>
-        {error ? (
-          <Notice tone="error" tinted>
-            {error}
-          </Notice>
-        ) : null}
-        {confirm ? (
-          <Notice tinted={ios}>
-            Check your email and tap the link to confirm your account, then sign in.
-          </Notice>
-        ) : null}
-        <FieldGroup labelWidth={104}>
-          <FieldRow
-            label="Your name"
-            value={name}
-            onChangeText={setName}
-            placeholder={ios ? "Required" : undefined}
-            autoCapitalize="words"
-            autoCorrect={false}
-            autoComplete="name"
-            textContentType="name"
-            next={emailRef}
-          />
-          <FieldRow
-            ref={emailRef}
-            label="Email"
-            value={email}
-            onChangeText={setEmail}
-            placeholder={ios ? "name@company.com" : undefined}
-            autoCapitalize="none"
-            autoCorrect={false}
-            spellCheck={false}
-            autoComplete="email"
-            keyboardType="email-address"
-            textContentType="username"
-            next={passwordRef}
-          />
-          <FieldRow
-            ref={passwordRef}
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            placeholder={ios ? "Required" : undefined}
-            secureTextEntry
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="new-password"
-            textContentType="newPassword"
-            passwordRules="minlength: 10;"
-            returnKeyType="go"
-            onSubmitEditing={submit}
-            hint="At least 10 characters."
-          />
-        </FieldGroup>
-        <Button title="Create Account" onPress={submit} loading={busy} />
-        <Button title="I Already Have an Account" kind="quiet" onPress={() => router.back()} />
-      </Screen>
-    </View>
+    <AuthFrame
+      title="Create an Account"
+      intro="If your company already uses Sundeck Pro, ask the owner to invite this email, then sign up here."
+    >
+      {confirm ? (
+        <Notice tone="success">
+          Check your email and tap the link to confirm your account, then sign in.
+        </Notice>
+      ) : null}
+      <FieldGroup labelWidth={104}>
+        <FieldRow
+          label="Your name"
+          value={name}
+          onChangeText={setName}
+          placeholder="Required"
+          autoCapitalize="words"
+          autoCorrect={false}
+          autoComplete="name"
+          textContentType="name"
+          next={emailRef}
+        />
+        <FieldRow
+          ref={emailRef}
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="name@example.com"
+          autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
+          autoComplete="email"
+          keyboardType="email-address"
+          textContentType="username"
+          next={passwordRef}
+        />
+        <FieldRow
+          ref={passwordRef}
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Required"
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="new-password"
+          textContentType="newPassword"
+          passwordRules="minlength: 10;"
+          returnKeyType="go"
+          onSubmitEditing={submit}
+          hint="At least 10 characters."
+        />
+      </FieldGroup>
+      {error ? <Notice tone="error">{error}</Notice> : null}
+      <Button title={busy ? "Creating…" : "Create Account"} wide onPress={submit} disabled={busy} />
+      <Button
+        title="I Already Have an Account"
+        kind="quiet"
+        wide
+        onPress={() => (router.canGoBack() ? router.back() : router.replace("/sign-in"))}
+      />
+    </AuthFrame>
   );
 }

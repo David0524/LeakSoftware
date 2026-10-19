@@ -14,7 +14,7 @@ import { useCompany } from "../../state/session";
 import { useWalkthrough } from "../../state/walkthrough";
 import { Button, HeaderButton, T } from "../../ui/components";
 import { Icon } from "../../ui/Icon";
-import { color, space, tint } from "../../ui/theme";
+import { color, space } from "../../ui/theme";
 
 /**
  * The first time the app opens (walkthrough, 2026-10-16): three cards for what the shop does,
@@ -69,10 +69,10 @@ export default function Welcome() {
             accessible
             accessibilityLabel={`${c.title}. ${c.message} Card ${i + 1} of ${cards.length}.`}
           >
-            <View style={styles.badge}>
+            <View style={[styles.badge, { backgroundColor: color.iconTint }]}>
               <Icon name={c.icon} size={44} color={color.link} />
             </View>
-            <T variant="title" style={styles.center}>
+            <T variant="sectionHeading" style={styles.center}>
               {c.title}
             </T>
             <T variant="body" style={[styles.center, { color: color.textMuted }]}>
@@ -85,7 +85,7 @@ export default function Welcome() {
         {cards.map((c, i) => (
           <View
             key={c.title}
-            style={[styles.dot, { backgroundColor: i === page ? color.link : color.neutral200 }]}
+            style={[styles.dot, { backgroundColor: i === page ? color.link : color.fill }]}
           />
         ))}
       </View>
@@ -110,7 +110,6 @@ const styles = StyleSheet.create({
     borderRadius: 48,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: tint(color.link, 0.12),
     marginBottom: space["2"],
   },
   center: { textAlign: "center" },

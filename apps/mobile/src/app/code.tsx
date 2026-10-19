@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { View } from "react-native";
-import { Button, FieldGroup, FieldRow, Notice, Screen, T } from "../ui/components";
-import { AuthTitle, BrandHeader } from "../ui/BrandHeader";
+import { AuthFrame } from "../features/auth/AuthFrame";
+import { Button, FieldGroup, FieldRow, Notice } from "../ui/components";
 import { useSession, useSyncStatus } from "../state/session";
-import { color, ios } from "../ui/theme";
 
 /**
  * Two-step sign-in (owner, 2026-10-16): the code from the person's authenticator app, after
@@ -26,41 +24,33 @@ export default function Code() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: color.bg }}>
-      {ios ? null : <BrandHeader />}
-      <Screen>
-        <AuthTitle title="Enter Your Code" />
-        <T variant="muted" style={ios && { textAlign: "center" }}>
-          Open your authenticator app and enter the 6-digit code for Sundeck Pro.
-        </T>
-        {error ? (
-          <Notice tone="error" tinted>
-            {error}
-          </Notice>
-        ) : null}
-        <FieldGroup labelWidth={96}>
-          <FieldRow
-            label="Code"
-            value={code}
-            onChangeText={setCode}
-            placeholder={ios ? "123456" : undefined}
-            keyboardType="number-pad"
-            autoComplete="one-time-code"
-            textContentType="oneTimeCode"
-            maxLength={7}
-            returnKeyType="go"
-            onSubmitEditing={submit}
-          />
-        </FieldGroup>
-        <Button title="Continue" onPress={submit} loading={busy} />
-        {status.pending > 0 ? (
-          <Notice tone="warning">
-            This phone has {status.pending} change{status.pending === 1 ? "" : "s"} waiting to send.
-            Enter your code to send them; signing out would lose them.
-          </Notice>
-        ) : null}
-        <Button title="Sign Out" kind="quiet" onPress={() => void cancelCode()} />
-      </Screen>
-    </View>
+    <AuthFrame
+      title="Enter Your Code"
+      intro="Open your authenticator app and enter the 6-digit code for Sundeck Pro."
+    >
+      <FieldGroup labelWidth={96}>
+        <FieldRow
+          label="Code"
+          value={code}
+          onChangeText={setCode}
+          placeholder="123456"
+          keyboardType="number-pad"
+          autoComplete="one-time-code"
+          textContentType="oneTimeCode"
+          maxLength={7}
+          returnKeyType="go"
+          onSubmitEditing={submit}
+        />
+      </FieldGroup>
+      {error ? <Notice tone="error">{error}</Notice> : null}
+      <Button title={busy ? "Checking…" : "Continue"} wide onPress={submit} disabled={busy} />
+      {status.pending > 0 ? (
+        <Notice tone="warning">
+          This phone has {status.pending} change{status.pending === 1 ? "" : "s"} waiting to send.
+          Enter your code to send them; signing out would lose them.
+        </Notice>
+      ) : null}
+      <Button title="Sign Out" kind="quiet" wide onPress={() => void cancelCode()} />
+    </AuthFrame>
   );
 }

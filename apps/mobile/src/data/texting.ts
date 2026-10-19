@@ -105,6 +105,9 @@ export function setUnread(companyId: string, conversationId: string, unread: boo
 export async function sendCompanyText(input: {
   conversationId?: string;
   customerId?: string;
+  /** A new number (New Message's To field), with the shop it's from. */
+  phone?: string;
+  companyId?: string;
   body: string;
   picture?: { companyId: string; uri: string; type: string };
   jobId?: string;
@@ -125,6 +128,8 @@ export async function sendCompanyText(input: {
   const sent = await call<{ id: string; conversationId: string }>("/api/texts", {
     conversationId: input.conversationId,
     customerId: input.customerId,
+    phone: input.phone,
+    companyId: input.companyId,
     body: input.body,
     pictures,
     jobId: input.jobId ?? null,
