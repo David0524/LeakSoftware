@@ -37,9 +37,11 @@ test("customers text and call the company number, and the team answers", async (
   );
   test.setTimeout(180_000);
   const admin = adminClient()!;
-  // A made-up customer number (555-01xx is reserved for fiction), from 555-0150 up so it
-  // never lands in the demo shop's sample conversation with Sam Sample (555-0123).
-  const customer = `+148055501${50 + Math.floor(Math.random() * 50)}`;
+  // A made-up customer number (555-01xx is reserved for fiction) from 555-0157 to 555-0176,
+  // a block no seed or test uses. A sample customer's number (Sam Sample 555-0123, the demo
+  // routes 555-0150 to 555-0156) would show in the list by name, and the list check below
+  // looks for the number.
+  const customer = `+148055501${57 + Math.floor(Math.random() * 20)}`;
 
   // The owner takes a number.
   await signIn(page, OWNER, "/settings/phone");
