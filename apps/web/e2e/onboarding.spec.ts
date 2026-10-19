@@ -29,16 +29,16 @@ test("a new pool company sets up its shop and tries a visit", async ({ page }) =
   // The questions can be skipped; the usual three answers show.
   await page.getByRole("button", { name: "Skip" }).click();
   await expect(page.getByRole("heading", { name: /^Set up Blue Lagoon Pools/ })).toBeVisible();
-  await page.getByRole("radio", { name: "Cal-hypo 65%" }).click();
   await page.getByRole("button", { name: "Save and Continue" }).click();
 
   await expect(page.getByRole("heading", { name: "Try a visit" })).toBeVisible();
   const steps = page.getByTestId("demo-steps");
-  await expect(steps).toContainText("Cal-hypo 65%");
+  // No chlorine question anymore (owner, 2026-10-19): the sample doses liquid chlorine.
+  await expect(steps).toContainText("Liquid chlorine 12.5%");
   // Raise the chlorine to the target: chlorine drops off the list.
   for (let i = 0; i < 6; i++)
     await page.getByRole("button", { name: "Raise Free chlorine" }).click();
-  await expect(steps).not.toContainText("Cal-hypo");
+  await expect(steps).not.toContainText("Liquid chlorine");
   await page.getByRole("button", { name: "Finish Visit" }).click();
   await expect(page.getByTestId("onboarding-sample")).toContainText("Pool service");
   await page.getByRole("button", { name: "Keep Going" }).click();

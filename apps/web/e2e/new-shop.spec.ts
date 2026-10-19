@@ -84,7 +84,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   // A new owner on a computer lands on the Dashboard; onboarding doesn't come back.
   await page.waitForURL((url) => url.pathname === "/dashboard");
   await page.goto("/settings/billing");
-  await expect(page.getByText(/Free trial: (13|14) days left/)).toBeVisible();
+  await expect(page.getByText(/Free trial: (29|30) days left/)).toBeVisible();
 
   const owner = await signedInClient(OWNER.email, OWNER.password);
   const { data: membership } = await owner.from("membership").select("company_id").single();
