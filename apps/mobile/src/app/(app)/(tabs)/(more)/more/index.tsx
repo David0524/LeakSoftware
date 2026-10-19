@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { isManagerRole, offersPool } from "@leakbook/core";
 import { useState, useSyncExternalStore } from "react";
 import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, View } from "react-native";
+import { notificationSummary, useNotificationPrefs } from "../../../../../data/notificationPrefs";
 import { call } from "../../../../../data/reports";
 import { API_URL } from "../../../../../lib/config";
 import { useSession, useSyncStatus } from "../../../../../state/session";
@@ -50,6 +51,7 @@ export default function More() {
   const [directions, setDirections] = useDirectionsChoice();
   const team = services.sync.team();
   const me = team.find((t) => t.id === user?.id);
+  const { prefs: notificationPrefs } = useNotificationPrefs();
 
   function confirmSignOut() {
     const changes = status.pending + status.problems.length;
@@ -99,6 +101,14 @@ export default function More() {
             />
           ) : null}
           <ListRow title="My Mobile Number" onPress={() => router.push("/more/phone")} />
+          {API_URL ? (
+            <ListRow
+              title="Notifications"
+              subtitle="Texts, new jobs, quotes, payments, and reports"
+              detail={notificationSummary(notificationPrefs)}
+              onPress={() => router.push("/more/notifications")}
+            />
+          ) : null}
           {companies.length > 1 ? (
             <ListRow
               title="Company"

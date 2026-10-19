@@ -10,6 +10,8 @@ import {
 import { AppState } from "react-native";
 import type { Session, User } from "@supabase/supabase-js";
 import type { Company, Membership } from "@leakbook/core";
+import { endLiveStop } from "../lib/liveStop";
+import { unregisterPush } from "../lib/push";
 import { getServices, type Services } from "../lib/services";
 import { useRows, useSyncStatus } from "../data/hooks";
 
@@ -163,6 +165,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       return {};
     },
     signOut: async () => {
+      // This phone stops getting the person's notifications, and the current stop's goes.
+      await unregisterPush().catch(() => undefined);
+      await endLiveStop().catch(() => undefined);
       sync.clearLocalData();
       kv.remove(USER_KEY);
       setUser(null);

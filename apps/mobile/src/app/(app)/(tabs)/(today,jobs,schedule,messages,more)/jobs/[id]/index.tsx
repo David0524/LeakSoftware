@@ -36,6 +36,7 @@ import {
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useRow } from "../../../../../../data/hooks";
+import { liveStopStarted } from "../../../../../../lib/liveStop";
 import { useJobInspection } from "../../../../../../data/inspection";
 import { useConversations, useLine } from "../../../../../../data/texting";
 import { openDirections, useDirectionsChoice } from "../../../../../../state/directions";
@@ -161,6 +162,8 @@ export default function JobDetail() {
     const values: Record<string, JsonValue> = { status: to };
     if (to === "in_progress" && !job!.started_at) values.started_at = new Date().toISOString();
     update(values);
+    // Start Job: the current stop's ongoing notification moves to the pool.
+    if (to === "in_progress") liveStopStarted(job!.id);
   }
   const transitions = userTransitions(job.status, job.type).filter((to) => to !== "canceled");
 

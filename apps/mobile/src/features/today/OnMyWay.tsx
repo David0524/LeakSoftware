@@ -4,6 +4,7 @@ import { localMinutes, onMyWayText, type OnMyWayVia } from "@leakbook/core";
 import { sendCompanyText } from "../../data/texting";
 import { Button } from "../../ui/components";
 import { chooseAction } from "../../ui/confirm";
+import { startLiveStop } from "../../lib/liveStop";
 import { haptics } from "../../ui/haptics";
 
 /**
@@ -77,6 +78,8 @@ export function OnMyWay({
     haptics.light();
     const arriveMin = localMinutes(new Date().toISOString(), timeZone) + Math.max(5, driveMin);
     const text = onMyWayText({ customer, tech, shop, arriveMin, windowMin });
+    // The current stop's ongoing notification starts here (owner, 2026-10-19).
+    startLiveStop(jobId, arriveMin);
     if (phone && via === "messages" && !lineActive) {
       chooseAction({
         title: "On My Way goes out from your company number, which isn’t working yet.",
