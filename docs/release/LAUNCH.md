@@ -9,6 +9,7 @@ and can't be done from here.
 |---|---|
 | Apple Developer Program | **Approved 2026-10-19, as an individual (owner's name).** Before the public release, decide whether to convert it to the company (Apple Developer Support, with the company's D-U-N-S number); otherwise the store shows the owner's name as the seller. Next: register `com.sundeckpro.app`, create the App Store Connect app record, and an App Store Connect API key (App Manager) for TestFlight uploads; keep the key in GitHub and EAS secrets, never in the repo. |
 | Google Play Console | One-time $25. |
+| App Store Connect | App **Sundeck Pro**, Apple ID `6824555420`, team `C7HQJY52SV` (2026-10-19; in `apps/mobile/eas.json`). Upload key in GitHub secrets `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, `APPLE_TEAM_ID`. |
 | Bundle ID / package name | `com.sundeckpro.app` on iOS and Android (owner, 2026-10-18; link scheme `sundeckpro`). It can't change after the first upload. |
 | Domain, support mailbox | `sundeckpro.com` (bought 2026-10-18, Google Workspace for mail). Support is `support@sundeckpro.com` (`SUPPORT_EMAIL`); app email sends from `send.sundeckpro.com` (`EMAIL_FROM_DOMAIN`, Resend). |
 | Final privacy policy and terms | `/privacy` and `/terms` carry a plain-language draft marked as a draft. Replace with the final text. |
