@@ -135,8 +135,10 @@
 
         // MARK: - Parts
 
+        /// The arrows and the date button, then Day | Week | Month: one row, or two when they don't
+        /// fit (large text).
         private func controls(_ board: Board) -> some View {
-            HStack(spacing: 8) {
+            let arrows = HStack(spacing: 8) {
                 CircleButton(systemImage: "chevron.left", label: "Previous \(view.rawValue)") {
                     date = step(board.date, -1)
                 }
@@ -144,9 +146,19 @@
                 CircleButton(systemImage: "chevron.right", label: "Next \(view.rawValue)") {
                     date = step(board.date, 1)
                 }
-                Spacer(minLength: 0)
-                Segmented(
-                    selection: $view, options: ScheduleView.allCases, label: \.title, title: "View", segmentPadding: 12)
+            }
+            let views = Segmented(
+                selection: $view, options: ScheduleView.allCases, label: \.title, title: "View", segmentPadding: 12)
+            return ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
+                    arrows
+                    Spacer(minLength: 0)
+                    views
+                }
+                VStack(alignment: .leading, spacing: 12) {
+                    arrows
+                    views
+                }
             }
         }
 
@@ -400,10 +412,14 @@
                             pick(d)
                         } label: {
                             VStack(spacing: 0) {
+                                // Seven to a row: at large text sizes they shrink to fit rather than
+                                // cut off ("W…"); the full date is the accessibility label.
                                 Text(formatDay(d).prefix(3)).font(.role(.footnote).weight(.medium))
+                                    .lineLimit(1).minimumScaleFactor(0.5)
                                 Text("\(Int(d.suffix(2)) ?? 0)")
                                     .font(.custom(BrandFonts.Weight.bold.rawValue, size: 20, relativeTo: .title3))
                                     .monospacedDigit()
+                                    .lineLimit(1).minimumScaleFactor(0.5)
                             }
                             .foregroundStyle(chosen ? Color.bg : d == today ? Color.link : Color.text)
                             .frame(maxWidth: .infinity, minHeight: 56)
@@ -436,6 +452,10 @@
                         })
             }
             .frame(height: 56)
+            // Seven days fill the row, so the strip stops growing at the largest standard size;
+            // Large Content Viewer shows a day at full size, and each day's label is the full date.
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            .accessibilityShowsLargeContentViewer()
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Week")
         }
