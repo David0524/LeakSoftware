@@ -517,6 +517,90 @@
       "result": "both"
     }
   ],
+  "requiresFinishPhoto": [
+    {
+      "args": [
+        null
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "require_finish_photo"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        [
+          true
+        ]
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "require_finish_photo": true
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "require_finish_photo": false
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "require_finish_photo": "true"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "require_finish_photo": 1
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "require_finish_photo": null,
+          "services": "pool"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "services": "both",
+          "require_finish_photo": true
+        }
+      ],
+      "result": true
+    }
+  ],
+  "FINISH_PHOTO_MESSAGE": [
+    {
+      "args": [],
+      "result": "Take a photo of the pool before finishing this job."
+    }
+  ],
   "offersPool": [
     {
       "args": [

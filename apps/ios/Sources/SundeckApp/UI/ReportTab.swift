@@ -47,7 +47,9 @@
                 // SwiftUI never runs onAppear on an empty view, so loading shows a real view.
                 ProgressView()
                     .frame(maxWidth: .infinity, minHeight: minTarget)
-                    .onAppear { flow = ReportFlow(sync: sync, companyId: company.id, jobId: job.id) }
+                    .onAppear {
+                        flow = ReportFlow(sync: sync, companyId: company.id, jobId: job.id, settings: company.settings)
+                    }
             }
         }
     }
@@ -257,12 +259,15 @@
             } else {
                 Button(ReportTabModel.reviewWithCustomer) {
                     flow.saveEdits()
-                    openRoute(.review(jobId: job.id))
+                    // The sign-off finishes the report: the job needs its pool photo first.
+                    if flow.canReview() { openRoute(.review(jobId: job.id)) }
                 }
                 .buttonStyle(.primary)
                 .disabled(flow.busy != nil)
             }
-            if let error = flow.error, error.at == .finish { Notice(kind: .error, text: error.text) }
+            if let error = flow.error, error.at == .finish {
+                if flow.photoNeeded { FinishPhotoNotice(jobId: job.id) } else { Notice(kind: .error, text: error.text) }
+            }
             Button {
                 withAnimation { showUnsigned.toggle() }
             } label: {
@@ -281,7 +286,13 @@
             if showUnsigned {
                 Text(ReportTabModel.sendWithoutSignatureNote).textRole(.secondary).foregroundStyle(Color.textMuted)
                 sendControls(reportId: draft.id, primary: false)
-                if let error = flow.error, error.at == .send { Notice(kind: .error, text: error.text) }
+                if let error = flow.error, error.at == .send {
+                    if flow.photoNeeded {
+                        FinishPhotoNotice(jobId: job.id)
+                    } else {
+                        Notice(kind: .error, text: error.text)
+                    }
+                }
             }
         }
 

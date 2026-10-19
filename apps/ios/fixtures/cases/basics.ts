@@ -10,6 +10,8 @@ import {
   jobOnPhones,
   newJobTypes,
   offersPool,
+  requiresFinishPhoto,
+  FINISH_PHOTO_MESSAGE,
   parseDollars,
   roleLabel,
   seesAllJobs,
@@ -93,6 +95,23 @@ export const basics: ModuleCases = {
     (s: unknown) => companyServices(s),
     settings.map((s) => [s]),
   ),
+  // Only a real true turns it on (owner, 2026-10-19; default off).
+  requiresFinishPhoto: rule(
+    (s: unknown) => requiresFinishPhoto(s),
+    [
+      [null],
+      [{}],
+      ["require_finish_photo"],
+      [[true]],
+      [{ require_finish_photo: true }],
+      [{ require_finish_photo: false }],
+      [{ require_finish_photo: "true" }],
+      [{ require_finish_photo: 1 }],
+      [{ require_finish_photo: null, services: "pool" }],
+      [{ services: "both", require_finish_photo: true }],
+    ],
+  ),
+  FINISH_PHOTO_MESSAGE: rule(() => FINISH_PHOTO_MESSAGE, [[]]),
   offersPool: rule(
     (s: unknown) => offersPool(s),
     settings.map((s) => [s]),

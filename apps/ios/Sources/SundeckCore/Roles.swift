@@ -15,6 +15,14 @@ public func offersLeak(_ settings: JSONValue?) -> Bool { companyServices(setting
 /// Whether the shop does pool care (cleaning plans, the service checklist, monthly billing).
 public func offersPool(_ settings: JSONValue?) -> Bool { companyServices(settings) != .leak }
 
+/// Whether finishing a job needs a pool photo first (owner setting, 2026-10-19; default off).
+public func requiresFinishPhoto(_ settings: JSONValue?) -> Bool {
+    settings?["require_finish_photo"] == .bool(true)
+}
+
+/// What blocks Mark Done and finishing or sending a report until the job has a photo.
+public let finishPhotoMessage = "Take a photo of the pool before finishing this job."
+
 public enum JobType: String, Codable, CaseIterable, Sendable {
     case detection, repair, maintenance
 }

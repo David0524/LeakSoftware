@@ -184,7 +184,13 @@
                 }
             }
 
-            if let error = form.error { Notice(kind: .error, text: error) }
+            if let error = form.error {
+                if error == finishPhotoMessage {
+                    FinishPhotoNotice(jobId: jobId)
+                } else {
+                    Notice(kind: .error, text: error)
+                }
+            }
 
             if summary.showsButtons {
                 VStack(alignment: .leading, spacing: 12) {
@@ -237,7 +243,9 @@
             Task {
                 let result = await ReviewFinish.run(
                     &current, customerAway: customerAway, summary: summary, sync: sync, companyId: company.id,
-                    jobId: jobId, location: { await LocationLookup.shared.currentPosition() },
+                    jobId: jobId,
+                    photoBlock: finishPhotoBlock(sync.store, settings: company.settings, jobId: jobId),
+                    location: { await LocationLookup.shared.currentPosition() },
                     finish: { reportId, away in _ = try await server.finish(reportId: reportId, customerAway: away) })
                 form?.error = current.error
                 switch result {

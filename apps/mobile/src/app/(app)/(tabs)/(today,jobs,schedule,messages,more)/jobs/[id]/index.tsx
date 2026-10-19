@@ -52,6 +52,10 @@ import {
 import { BAR_HEIGHT, barState } from "../../../../../../ui/Bar";
 import { confirmDestructive } from "../../../../../../ui/confirm";
 import { Glass } from "../../../../../../ui/Glass";
+import {
+  FinishPhotoNotice,
+  useNeedsFinishPhoto,
+} from "../../../../../../features/media/FinishPhoto";
 import { SyncBar } from "../../../../../../ui/SyncBar";
 import { ScreenTip } from "../../../../../../ui/Tip";
 import {
@@ -106,6 +110,9 @@ export default function JobDetail() {
     () => (asked === "wrapup" ? "wrapup" : lastSection.get(id)) ?? "details",
   );
   const [switcherY, setSwitcherY] = useState<number | null>(null);
+  // Mark Done waits for a photo when the shop requires one (owner setting, 2026-10-19).
+  const needsPhoto = useNeedsFinishPhoto(id);
+  const [photoAsked, setPhotoAsked] = useState(false);
   const {
     header: titleBlock,
     ref: scroll,
@@ -147,6 +154,8 @@ export default function JobDetail() {
   const update = (values: Record<string, JsonValue>) =>
     services.sync.write("job", job.id, company.id, values);
   function changeStatus(to: JobStatus) {
+    if (to === "done" && needsPhoto) return setPhotoAsked(true);
+    setPhotoAsked(false);
     const values: Record<string, JsonValue> = { status: to };
     if (to === "in_progress" && !job!.started_at) values.started_at = new Date().toISOString();
     update(values);
@@ -209,6 +218,7 @@ export default function JobDetail() {
               ))}
             </View>
           ) : null}
+          {photoAsked && needsPhoto ? <FinishPhotoNotice jobId={job.id} /> : null}
         </View>
         <View
           style={[styles.switcher, !drawnChrome && { backgroundColor: color.bg }]}

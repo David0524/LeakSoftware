@@ -17,12 +17,17 @@
         @State private var toDo = 0
         @State private var saveError: String?
         @State private var changes = 0
+        /// Mark Done was stopped by the shop's photo rule: the notice with Take Photo shows.
+        @State private var photoNeeded = false
 
         /// `section` opens a given part (links from Reports and Invoices open Wrap-Up; screenshots);
         /// otherwise the part last shown on this job while the app runs, else Details.
-        init(jobId: String, section: JobPageSection? = nil) {
+        /// `photoNeeded` opens it as Mark Done leaves it when the shop's photo rule stops it
+        /// (screenshots).
+        init(jobId: String, section: JobPageSection? = nil, photoNeeded: Bool = false) {
             self.jobId = jobId
             _section = State(initialValue: section)
+            _photoNeeded = State(initialValue: photoNeeded)
         }
 
         var body: some View {
@@ -106,6 +111,7 @@
                         }
                     }
                 }
+                if photoNeeded && job.status != .done { FinishPhotoNotice(jobId: job.id) }
                 SyncBarRow()
             }
             .padding(.top, 4)
@@ -154,8 +160,14 @@
 
         private func changeStatus(_ to: JobStatus) {
             guard let company = session.company, let job else { return }
+            // A visit isn't Done until it has a pool photo, when the shop asks for one.
+            if to == .done, finishPhotoBlock(sync.store, settings: company.settings, jobId: jobId) != nil {
+                withAnimation { photoNeeded = true }
+                return
+            }
             do {
                 try sync.write("job", id: jobId, companyId: company.id, jobStatusValues(to, job: job.job))
+                photoNeeded = false
                 changes += 1
             } catch {
                 saveError = String(describing: error)

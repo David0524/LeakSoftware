@@ -30,6 +30,7 @@ import { Button, Card, Field, Notice, T } from "../../ui/components";
 import { confirmDestructive } from "../../ui/confirm";
 import { color, face, MAX_TEXT_SCALE, minTap, space } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
+import { FinishPhotoNotice, useNeedsFinishPhoto } from "../media/FinishPhoto";
 
 type Template = "homeowner" | "partner";
 
@@ -112,6 +113,10 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
   const [to, setTo] = useState<string | null>(null);
   const email = (to ?? customer?.email ?? "").trim();
   const [otherEmails, setOtherEmails] = useState<string | null>(null);
+  // Finishing a draft (Finish Report, or sending it) waits for a photo when the shop requires
+  // one (owner setting, 2026-10-19). A finished version is sent as is, as on the website.
+  const needsPhoto = useNeedsFinishPhoto(job.id);
+  const [photoAsked, setPhotoAsked] = useState<"finish" | "send" | null>(null);
 
   if (templateRow?.enabled === false) return null;
 
@@ -156,6 +161,11 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
     setBusy(kind);
     const sending = kind === "email" || kind === "text";
     (sending ? setSendStatus : setStatus)(null);
+    setPhotoAsked(null);
+    if (needsPhoto && (kind === "finish" || (sending && reportId === draft?.id))) {
+      setBusy(null);
+      return setPhotoAsked(sending ? "send" : "finish");
+    }
     try {
       if (kind === "draft") {
         const r = await writeReportDraft(job.id, template);
@@ -304,6 +314,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
         />
       ) : null}
       {status ? <Notice tone={status.tone}>{status.text}</Notice> : null}
+      {photoAsked === "finish" && needsPhoto ? <FinishPhotoNotice jobId={job.id} /> : null}
 
       {hasDraft && draft && open ? (
         <View style={styles.stack}>
@@ -394,6 +405,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
         </T>
       ) : null}
       {sendStatus && !finished ? <Notice tone={sendStatus.tone}>{sendStatus.text}</Notice> : null}
+      {photoAsked === "send" && needsPhoto ? <FinishPhotoNotice jobId={job.id} /> : null}
 
       {finished ? (
         <View style={styles.stack}>

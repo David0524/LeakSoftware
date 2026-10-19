@@ -236,10 +236,11 @@ public final class ReportFlow {
     public let companyId: String
     public let jobId: String
 
-    public init(sync: SyncService, companyId: String, jobId: String) {
+    public init(sync: SyncService, companyId: String, jobId: String, settings: JSONValue = .null) {
         self.sync = sync
         self.companyId = companyId
         self.jobId = jobId
+        self.settings = settings
     }
 
     /// The draft as the phone has it now (nil once it's sent or replaced).
@@ -312,6 +313,29 @@ public final class ReportFlow {
     /// Writing again replaces the draft's text, so the tab asks first when there's text to lose.
     public var writeNeedsConfirmation: Bool { draft?.finalSections != nil }
 
+    /// The shop's settings, for the photo rule.
+    public var settings: JSONValue = .null
+
+    /// Whether the last error was the photo rule's, so Take Photo shows beside it.
+    public var photoNeeded: Bool { error?.text == finishPhotoMessage }
+
+    /// Review with Customer: stopped when the job still needs its pool photo (the sign-off would
+    /// finish the report). Returns whether it may open.
+    public func canReview() -> Bool {
+        error = nil
+        if let block = finishPhotoBlock(sync.store, settings: settings, jobId: jobId) {
+            error = Failure(at: .finish, text: block)
+            return false
+        }
+        return true
+    }
+
+    private func checkFinishPhoto() throws {
+        if let block = finishPhotoBlock(sync.store, settings: settings, jobId: jobId) {
+            throw WebAPI.Failure(description: block)
+        }
+    }
+
     /// The share sheet closed after a text: the report went out.
     public func shareFinished() {
         texted = share
@@ -338,6 +362,7 @@ public final class ReportFlow {
             case .finish:
                 let id = reportId ?? draft?.id
                 saveEdits()
+                try checkFinishPhoto()
                 guard let id else { throw WebAPI.Failure(description: "There’s no draft to finish.") }
                 _ = try await server.finish(reportId: id, customerAway: false)
                 message = "Report finished. Send it to the customer below."
@@ -351,6 +376,10 @@ public final class ReportFlow {
                     throw WebAPI.Failure(description: "Enter the customer’s email.")
                 }
                 guard let id else { throw WebAPI.Failure(description: "There’s no report to send.") }
+                // Sending a draft finishes it first; a finished version goes out as it is.
+                if jobReports(sync.store, jobId: jobId).first(where: { $0.id == id })?.status == .draft {
+                    try checkFinishPhoto()
+                }
                 let sent = try await server.send(
                     reportId: id, channel: action == .email ? .email : .smsDevice,
                     to: action == .email ? email : customer?["phone"]?.string)

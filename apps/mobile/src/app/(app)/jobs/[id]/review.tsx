@@ -21,6 +21,7 @@ import { useRow } from "../../../../data/hooks";
 import { useInspectionConfig, useJobInspection } from "../../../../data/inspection";
 import { finishReportFromPhone, useJobReports } from "../../../../data/reports";
 import { OutcomeChip } from "../../../../features/inspection/OutcomeChip";
+import { FinishPhotoNotice, useNeedsFinishPhoto } from "../../../../features/media/FinishPhoto";
 import { currentPosition, storeSignatureSvg } from "../../../../lib/media";
 import { useCompany, useSession } from "../../../../state/session";
 import {
@@ -62,6 +63,9 @@ export default function ReviewScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"sign" | "away" | null>(null);
   const [drawing, setDrawing] = useState(false);
+  // Signing finishes the report, so it waits for a photo when the shop requires one (owner
+  // setting, 2026-10-19).
+  const needsPhoto = useNeedsFinishPhoto(id);
 
   const bar = (
     <Stack.Screen
@@ -91,6 +95,7 @@ export default function ReviewScreen() {
 
   async function finish(customerAway: boolean) {
     setError(null);
+    if (needsPhoto) return;
     if (!customerAway && purposes.length) {
       if (!purpose) return setError("Choose what this signature is for.");
       if (!signer) return setError("Enter your name.");
@@ -266,6 +271,7 @@ export default function ReviewScreen() {
           </>
         ) : null}
         {error ? <Notice tone="error">{error}</Notice> : null}
+        {!tally.pending && needsPhoto ? <FinishPhotoNotice jobId={job.id} /> : null}
         {tally.pending ? null : (
           <>
             <Button
@@ -277,7 +283,7 @@ export default function ReviewScreen() {
                     : "Finish Report"
               }
               wide
-              disabled={busy !== null}
+              disabled={busy !== null || needsPhoto}
               onPress={() => void finish(false)}
             />
             {purposes.length ? (
@@ -289,7 +295,7 @@ export default function ReviewScreen() {
                 <Button
                   title={busy === "away" ? "Finishing…" : "Customer Not Here"}
                   kind="quiet"
-                  disabled={busy !== null}
+                  disabled={busy !== null || needsPhoto}
                   onPress={() => void finish(true)}
                 />
               </>

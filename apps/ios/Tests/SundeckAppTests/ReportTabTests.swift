@@ -395,6 +395,45 @@ private func signature(_ id: String, _ name: String, purpose: String = "inspecti
 }
 
 @Suite @MainActor struct ReportTabServerTests {
+    /// With the shop's photo rule on (owner, 2026-10-19), Finish Report, Review with Customer and
+    /// sending a draft stop with the message (Take Photo shows beside it) until the job has a
+    /// photo; a finished version still goes out, as on the website.
+    @Test func finishingWaitsForAPoolPhotoWhenTheShopAsks() async throws {
+        let settings: JSONValue = ["require_finish_photo": true]
+        let s = try ReportJob(
+            settings: settings,
+            rows: [
+                report("r1", version: 1, status: "draft", sections: twoSections),
+                report("r0", version: 0, status: "sent", sections: twoSections),
+            ])
+        try await s.shell.session.signIn(email: "tech@shop.test", password: "right")
+        let f = ReportFlow(sync: s.sync, companyId: "c1", jobId: "j1", settings: settings)
+        await f.run(.finish, server: s.server)
+        #expect(f.error == ReportFlow.Failure(at: .finish, text: finishPhotoMessage) && f.photoNeeded)
+        f.to = "pat@home.test"
+        await f.run(.email, server: s.server)
+        #expect(f.error == ReportFlow.Failure(at: .send, text: finishPhotoMessage) && f.photoNeeded)
+        await f.run(.text, reportId: "r1", server: s.server)
+        #expect(f.error?.text == finishPhotoMessage)
+        #expect(!f.canReview() && f.error == ReportFlow.Failure(at: .finish, text: finishPhotoMessage))
+        #expect(StubServer.calls(s.host).isEmpty)
+
+        // A finished version isn't finished again: it sends as it is.
+        StubServer.set(
+            s.host, "/api/reports/r0/send", 200,
+            ["link": "https://sundeck.test/r/tok", "message": "Your report", "emailed": true])
+        await f.run(.email, reportId: "r0", server: s.server)
+        #expect(f.error == nil && f.message == "Sent to pat@home.test.")
+
+        // A photo taken offline lets it finish.
+        try s.sync.write("media", id: "m1", companyId: "c1", ["job_id": "j1", "kind": "photo"])
+        #expect(f.canReview() && f.error == nil && !f.photoNeeded)
+        StubServer.set(s.host, "/api/reports/r1/finish", 200, ["token": "tok"])
+        await f.run(.finish, server: s.server)
+        #expect(f.error?.text != finishPhotoMessage)
+        #expect(StubServer.calls(s.host).last?.path == "/api/reports/r1/finish")
+    }
+
     @Test func writingTheDraftSaysHowManyThingsToCheck() async throws {
         let s = try ReportJob()
         try await s.shell.session.signIn(email: "tech@shop.test", password: "right")

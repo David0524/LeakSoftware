@@ -243,15 +243,22 @@ public enum ReviewFinish {
         case stay
     }
 
+    /// With `photoBlock` (the job still needs its pool photo) nothing is saved and it stays.
     /// The signature is saved on the phone first, so it's kept without signal; then the report
     /// is finished when its draft exists. A signed report that can't be finished yet goes back
     /// (the Report tab offers Finish Report); Customer Not Here stays and says why.
     public static func run(
         _ form: inout SignatureForm, customerAway: Bool, summary: ReviewSummary, sync: SyncService,
-        companyId: String, jobId: String, location: () async -> Coordinate?,
+        companyId: String, jobId: String, photoBlock: String? = nil, location: () async -> Coordinate?,
         finish: (_ reportId: String, _ customerAway: Bool) async throws -> Void
     ) async -> Result {
         form.error = nil
+        // The shop's photo rule (`finishPhotoBlock`): stop before the customer signs, so the
+        // signature isn't saved twice once the photo is taken.
+        if let photoBlock {
+            form.error = photoBlock
+            return .stay
+        }
         if !customerAway && !summary.purposes.isEmpty {
             guard form.validate() else { return .stay }
         }

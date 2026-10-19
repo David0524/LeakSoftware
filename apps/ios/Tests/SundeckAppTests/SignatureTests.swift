@@ -443,3 +443,38 @@ private final class FinishCalls {
         #expect(try calls.calls.map(\.1) == [false] && b.signatures().isEmpty)
     }
 }
+
+/// "Require a pool photo to finish a job" at the sign-off (owner, 2026-10-19).
+@Suite @MainActor struct ReviewFinishPhotoTests {
+    @Test func theSignOffStopsBeforeSavingUntilTheJobHasAPhoto() async throws {
+        let b = try SignatureBench()
+        try b.seedInspection(allDone: true)
+        try b.seedDraft()
+        let calls = FinishCalls()
+        let settings: JSONValue = ["require_finish_photo": true]
+        var form = SignatureForm(.review, settings: nil, customerName: "Dana Whitfield")
+        form.draw(scribble)
+        let summary = try b.summary()
+        let block = finishPhotoBlock(b.store, settings: settings, jobId: "j1")
+        #expect(block == "Take a photo of the pool before finishing this job.")
+        for away in [false, true] {
+            let result = await ReviewFinish.run(
+                &form, customerAway: away, summary: summary, sync: b.sync, companyId: "c1", jobId: "j1",
+                photoBlock: block, location: { nil }, finish: calls.finish)
+            #expect(result == .stay)
+            #expect(form.error == finishPhotoMessage)
+        }
+        // Nothing saved or sent: the customer signs once, after the photo.
+        #expect(try b.signatures().isEmpty && calls.calls.isEmpty)
+
+        // A photo taken on this phone (still waiting to upload) clears it.
+        try b.sync.write("media", id: "m1", companyId: "c1", ["job_id": "j1", "kind": "photo"])
+        #expect(finishPhotoBlock(b.store, settings: settings, jobId: "j1") == nil)
+        let result = await ReviewFinish.run(
+            &form, customerAway: false, summary: summary, sync: b.sync, companyId: "c1", jobId: "j1",
+            photoBlock: finishPhotoBlock(b.store, settings: settings, jobId: "j1"), location: { nil },
+            finish: calls.finish)
+        #expect(result == .back && calls.calls.map(\.0) == ["rep1"])
+        #expect(try b.signatures().count == 1)
+    }
+}
