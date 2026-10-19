@@ -33,26 +33,49 @@ public final class Database: @unchecked Sendable {
         guard key.allSatisfy(\.isHexDigit), !key.isEmpty else {
             throw DatabaseError(code: SQLITE_MISUSE, message: "The database key must be hex.")
         }
-        let flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX
-        let rc = sqlite3_open_v2(path, &handle, flags, nil)
-        guard rc == SQLITE_OK else {
-            let error = DatabaseError(code: rc, message: String(cString: sqlite3_errstr(rc)))
-            sqlite3_close(handle)
-            handle = nil
-            throw error
+        // One database is keyed at a time, and a key that SQLCipher refuses is retried after
+        // a fresh open: its crypto library sets itself up on first use, and the first keys a
+        // process sets can fail ("PRAGMA key requires a key of one or more characters", seen in
+        // CI). A wrong key isn't refused here; it fails on the first read below, and is never
+        // retried.
+        Self.keying.lock()
+        defer { Self.keying.unlock() }
+        var attempt = 0
+        while true {
+            attempt += 1
+            try open(path)
+            do {
+                // The key must be the first statement. Hex only, so it is safe to inline.
+                try execute("PRAGMA key = '\(key)'")
+            } catch {
+                sqlite3_close(handle)
+                handle = nil
+                if attempt < Self.keyAttempts {
+                    usleep(useconds_t(20_000 * attempt))
+                    continue
+                }
+                throw error
+            }
+            break
         }
         do {
-            // One database is keyed at a time: SQLCipher sets up its crypto on first use, and
-            // two threads opening keyed databases at once (parallel tests) could fail with
-            // "PRAGMA key requires a key".
-            Self.keying.lock()
-            defer { Self.keying.unlock() }
-            // The key must be the first statement. Hex only, so it is safe to inline.
-            try execute("PRAGMA key = '\(key)'")
             // Fails here when the key doesn't match the file.
             _ = try query("SELECT count(*) FROM sqlite_master")
             _ = try query("PRAGMA journal_mode = WAL")
         } catch {
+            sqlite3_close(handle)
+            handle = nil
+            throw error
+        }
+    }
+
+    private static let keyAttempts = 5
+
+    private func open(_ path: String) throws {
+        let flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX
+        let rc = sqlite3_open_v2(path, &handle, flags, nil)
+        guard rc == SQLITE_OK else {
+            let error = DatabaseError(code: rc, message: String(cString: sqlite3_errstr(rc)))
             sqlite3_close(handle)
             handle = nil
             throw error
