@@ -65,12 +65,18 @@
     /// Asking iOS for notifications and the push token.
     @MainActor
     enum NotificationPermission {
+        /// iOS's notification center exists only in the real app: inside a test bundle (the
+        /// simulator screenshots) `UNUserNotificationCenter.current()` throws, so there it's off.
+        static var available: Bool { Bundle.main.bundleURL.pathExtension == "app" }
+
         static func status() async -> UNAuthorizationStatus {
-            await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+            guard available else { return .denied }
+            return await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
         }
 
         /// iOS's own prompt, then a token when allowed.
         static func request() async {
+            guard available else { return }
             let granted =
                 (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]))
                 ?? false

@@ -217,7 +217,9 @@ struct FieldWorkIntegrationTests {
         #expect(office.tests.count == 8)
         #expect(office.tests.filter { $0.outcome == .fail }.count == 3)  // Returns 3 pressure, bucket, Returns 3 dye
         #expect(office.tests.first { $0.id == failing }?.computed["drop_psi"] == .number(8))
-        #expect(office.findings.map { [$0.pinX, $0.pinY] } == [[0.4214, 0.18], [0.81, 0.66]])
+        // Both findings are made in the same millisecond, so their UUIDv7 order is either way.
+        let pins = office.findings.map { [$0.pinX ?? -1, $0.pinY ?? -1] }.sorted { $0[0] < $1[0] }
+        #expect(pins == [[0.4214, 0.18], [0.81, 0.66]])
         #expect(try b.sync.store.get("property", property.id)?["diagram_shape"] == "kidney")
     }
 

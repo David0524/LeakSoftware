@@ -36,7 +36,7 @@
 
         /// On My Way for a stop: a new activity for it, arriving at `eta` (a time of day).
         func start(jobId: String, eta: String?) {
-            guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+            guard Self.available, ActivityAuthorizationInfo().areActivitiesEnabled else { return }
             let next = LiveStopTarget(jobId: jobId, eta: eta)
             guard let state = input(next) else { return }
             lingering?.cancel()
@@ -51,9 +51,13 @@
             }
         }
 
+        /// ActivityKit, like notifications, exists only in the real app, not a test bundle.
+        static var available: Bool { NotificationPermission.available }
+
         /// After any change on the phone: the running activity shows its stop as it is now. A stop
         /// that's done stays a minute, then the activity ends (unless On My Way starts the next).
         func refresh() {
+            guard Self.available else { return }
             guard let target, let running, running.jobId == target.jobId else { return }
             guard let state = input(target) else {
                 end()
@@ -75,6 +79,7 @@
 
         /// Ends every activity now (sign out).
         func end() {
+            guard Self.available else { return }
             lingering?.cancel()
             target = nil
             Task { await Self.end(except: nil) }
