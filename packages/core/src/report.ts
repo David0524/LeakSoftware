@@ -671,6 +671,8 @@ export const REPORT_BLOCKS: Record<"homeowner" | "partner", string[]> = {
     "diagram",
     "next_steps",
     "coverage",
+    // Every test, pass or fail (owner, 2026-10-19: "We want to show off all the work we did").
+    "tests",
     "photos",
     "signature",
     "footer",
@@ -687,3 +689,14 @@ export const REPORT_BLOCKS: Record<"homeowner" | "partner", string[]> = {
     "footer",
   ],
 };
+
+/** A test's outcome as the report shows it: Pass, Fail, Unclear, or Recorded. */
+export function testOutcomeLabel(outcome: string | null | undefined): {
+  label: string;
+  tone: VerdictTone;
+} {
+  if (outcome === "pass") return { label: "Pass", tone: "pass" };
+  if (outcome === "fail") return { label: "Fail", tone: "leaking" };
+  if (outcome === "inconclusive") return { label: "Unclear", tone: "attention" };
+  return { label: "Recorded", tone: "pending" };
+}

@@ -66,3 +66,40 @@ Status key: **Website done** means built, checked, and committed on `claude/cool
 - **Apps:** add Submit under the readings on the Chemical screen when it was opened for a pool.
   Write a `chemical_reading` row through the sync layer (row + outbox, UUIDv7 id) so it works
   offline. Show the pool's log below the calculator, with Remove (sets `deleted_at`).
+
+## 7. Require a pool photo before a tech finishes a job
+
+- **Website done.** Settings › Team › What techs can do: **Require a pool photo to finish a
+  job** (owners; off by default). Stored as `company.settings.require_finish_photo`. When on, a
+  maintenance visit can't be marked Done, and a report can't be finished or sent (Send, or
+  Review with Customer's sign-off), until the job has at least one photo (`media.kind =
+  'photo'`, not deleted; a photo still uploading counts). The message is "Take a photo of the
+  pool before finishing this job." Core: `requiresFinishPhoto(settings)`,
+  `FINISH_PHOTO_MESSAGE`. Server check: `requireFinishPhoto()` in
+  `apps/web/src/server/reports.ts`, used by the phone report API too.
+- **Apps:** check the same before **Mark Done** on a visit and before finishing/sending a
+  report, using the local photos (rows in the outbox count). Show the message and offer Take
+  Photo. It is a client check on purpose: a database trigger would reject an offline status
+  change that syncs before its photo row.
+
+## 8. Every test, pass or fail, on the finished report
+
+- **Website done.** The homeowner report now has a **Tests we ran** block (after What we
+  checked, before Photos) listing every test: test, where, the reading summary, and a
+  Pass / Fail / Unclear / Recorded pill. Hidden when the job had no tests. It is in the web
+  report, its PDF, and the customer link. Core: `REPORT_BLOCKS.homeowner` includes `"tests"`;
+  `testOutcomeLabel(outcome)` gives the label and color tone.
+- **Apps:** the Swift Report tab and any in-app report preview should show the same block in
+  the same place, from `report.data_snapshot.tests`.
+
+## 9. Request a Feature
+
+- **Website done.** **Request a Feature** in More › Help (phones) and in the account menu
+  (wider screens) opens a sheet with one box and Send Request. It saves to
+  `public.feature_request` (server only, like `signup_lead`;
+  `20261012005500_feature_requests.sql`) and emails office@sundeckpro.com with the person,
+  shop, and page (reply-to is the person). Staff read the list at `/admin/requests` (two-step
+  sign-in, like Leads). Action: `apps/web/src/app/actions/feature-requests.ts`.
+- **Apps:** add a Request a Feature row in Settings › Help. Simplest parity: a small website
+  API endpoint the apps can POST to with the bearer token (not built yet; ask before adding),
+  or open `mailto:office@sundeckpro.com?subject=Feature%20request` for now.

@@ -23,6 +23,7 @@ import {
   type Verdict,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
+import { requireFinishPhoto } from "@/server/reports";
 import { createClient } from "@/lib/supabase/server";
 import type { FormState } from "./auth";
 
@@ -61,6 +62,13 @@ export async function changeJobStatus(_: FormState, form: FormData): Promise<For
   if (!job) return { error: "Job not found." };
   if (!userTransitions(job.status as JobStatus, job.type as string).includes(to))
     return { error: "The job can't move to that status now." };
+  if (to === "done") {
+    try {
+      await requireFinishPhoto(db, jobId);
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : String(e) };
+    }
+  }
   const values: Record<string, string> = { status: to };
   if (to === "in_progress" && !job.started_at) values.started_at = new Date().toISOString();
   const { error } = await db.from("job").update(values).eq("id", jobId);

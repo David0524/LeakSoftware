@@ -294,6 +294,7 @@ export async function saveJobVisibility(_: FormState, form: FormData): Promise<F
     ...((company?.settings ?? {}) as Record<string, unknown>),
     techs_see_all_jobs: choice === "all",
     techs_make_jobs: checked(form, "techs_make_jobs"),
+    require_finish_photo: checked(form, "require_finish_photo"),
   };
   const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
   if (error) return failed(error);

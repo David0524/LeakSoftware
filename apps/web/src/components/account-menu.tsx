@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { signOut, switchCompany } from "@/app/actions/auth";
+import { FeatureRequest } from "./feature-request";
 import { ThemeToggle } from "./theme-toggle";
 import { CONTACT_EMAIL } from "@/lib/site";
 import { cx } from "./ui";
@@ -38,7 +39,9 @@ export function AccountMenu({
   useEffect(() => {
     if (!open) return;
     const away = (e: PointerEvent) => {
-      if (!box.current?.contains(e.target as Node)) setOpenOn(null);
+      // A sheet opened from the menu (Request a Feature) sits outside it: keep the menu.
+      const inSheet = (e.target as Element).closest?.('[role="dialog"]');
+      if (!box.current?.contains(e.target as Node) && !inSheet) setOpenOn(null);
     };
     const escape = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpenOn(null);
@@ -123,6 +126,7 @@ export function AccountMenu({
             Contact Us
             <span className="text-[0.8125rem] text-text-muted">{CONTACT_EMAIL}</span>
           </a>
+          <FeatureRequest className="px-4 text-text hover:bg-text/[0.05]" />
           <div className="border-t-[0.5px] border-separator" />
           <form action={signOut}>
             <button type="submit" className={row}>

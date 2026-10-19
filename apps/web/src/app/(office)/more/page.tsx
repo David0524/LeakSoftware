@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { signOut } from "@/app/actions/auth";
 import { showTipsAgain } from "@/app/actions/walkthrough";
 import { DeleteAccount } from "@/components/delete-account";
+import { FeatureRequest } from "@/components/feature-request";
 import { MapsChoice } from "@/components/maps-choice";
 import { AppearanceChoice } from "@/components/theme-toggle";
 import { Grouped, PageHeader, Row } from "@/components/ui";
@@ -89,6 +90,9 @@ export default async function MorePage() {
               </a>
             </li>
           ))}
+          <li>
+            <FeatureRequest />
+          </li>
           <li>
             {/* Every screen's tip, and Getting Started, come back (owner, 2026-10-16). */}
             <form action={showTipsAgain}>

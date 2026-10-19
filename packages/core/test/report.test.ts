@@ -372,3 +372,14 @@ describe("reportChecklist", () => {
     expect(reportChecklist(SNAPSHOT)).toBeNull();
   });
 });
+
+describe("tests on the homeowner report (owner, 2026-10-19)", () => {
+  it("lists every test, pass or fail", async () => {
+    const { REPORT_BLOCKS, testOutcomeLabel } = await import("../src/report");
+    expect(REPORT_BLOCKS.homeowner).toContain("tests");
+    expect(testOutcomeLabel("pass")).toEqual({ label: "Pass", tone: "pass" });
+    expect(testOutcomeLabel("fail")).toEqual({ label: "Fail", tone: "leaking" });
+    expect(testOutcomeLabel("inconclusive").label).toBe("Unclear");
+    expect(testOutcomeLabel(null).label).toBe("Recorded");
+  });
+});

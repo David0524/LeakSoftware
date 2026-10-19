@@ -8,6 +8,7 @@ import {
   reportChecklist,
   snapshotTally,
   testSummary,
+  testOutcomeLabel,
   textOnBrand,
   type FinalSection,
   type PoolType,
@@ -325,45 +326,48 @@ export function ReportView(p: ReportViewProps) {
           <Paragraphs text={section("next_steps")!.text} />
         </Block>
       ) : null,
-    tests: () => (
-      <Block title={section("tests")?.title ?? "Test results"}>
-        {section("tests")?.text ? <Paragraphs text={section("tests")!.text} /> : null}
-        {s.tests.length ? (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-[0.9375rem]">
-              <thead>
-                <tr className="border-b" style={{ borderColor: NEUTRAL["300"] }}>
-                  <th className="py-1 pr-3 font-semibold">Test</th>
-                  <th className="py-1 pr-3 font-semibold">Where</th>
-                  <th className="py-1 pr-3 font-semibold">Result</th>
-                  <th className="py-1 font-semibold">Outcome</th>
-                </tr>
-              </thead>
-              <tbody>
-                {s.tests.map((t) => (
-                  <tr
-                    key={t.id}
-                    className="border-b break-inside-avoid"
-                    style={{ borderColor: NEUTRAL["200"] }}
-                  >
-                    <td className="py-1 pr-3">{t.type_name}</td>
-                    <td className="py-1 pr-3">
-                      {t.component_id ? labelOf.get(t.component_id) : ""}
-                    </td>
-                    <td className="py-1 pr-3">
-                      {testSummary(t) ?? Object.values(t.data).filter(Boolean).join(", ")}
-                    </td>
-                    <td className="py-1 capitalize">
-                      {t.outcome === "inconclusive" ? "Unclear" : t.outcome}
-                    </td>
+    tests: () =>
+      s.tests.length || section("tests")?.text ? (
+        <Block title={section("tests")?.title ?? "Tests we ran"}>
+          {section("tests")?.text ? <Paragraphs text={section("tests")!.text} /> : null}
+          {s.tests.length ? (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full text-left text-[0.9375rem]">
+                <thead>
+                  <tr className="border-b" style={{ borderColor: NEUTRAL["300"] }}>
+                    <th className="py-1 pr-3 font-semibold">Test</th>
+                    <th className="py-1 pr-3 font-semibold">Where</th>
+                    <th className="py-1 pr-3 font-semibold">Result</th>
+                    <th className="py-1 font-semibold">Outcome</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
-      </Block>
-    ),
+                </thead>
+                <tbody>
+                  {s.tests.map((t) => (
+                    <tr
+                      key={t.id}
+                      className="border-b break-inside-avoid"
+                      style={{ borderColor: NEUTRAL["200"] }}
+                    >
+                      <td className="py-1 pr-3">{t.type_name}</td>
+                      <td className="py-1 pr-3">
+                        {t.component_id ? labelOf.get(t.component_id) : ""}
+                      </td>
+                      <td className="py-1 pr-3">
+                        {testSummary(t) ?? Object.values(t.data).filter(Boolean).join(", ")}
+                      </td>
+                      <td className="py-1">
+                        <Badge tone={testOutcomeLabel(t.outcome).tone}>
+                          {testOutcomeLabel(t.outcome).label}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </Block>
+      ) : null,
     coverage: () =>
       checklist ? (
         <Block title="What we checked">

@@ -81,3 +81,12 @@ describe("custom test fields", () => {
     expect(parseFieldLines("Pick: One /").errors[0]).toMatch(/two choices/);
   });
 });
+
+describe("requiresFinishPhoto (owner, 2026-10-19)", () => {
+  it("is off unless the shop turns it on", async () => {
+    const { requiresFinishPhoto } = await import("../src/models");
+    expect(requiresFinishPhoto({})).toBe(false);
+    expect(requiresFinishPhoto(null)).toBe(false);
+    expect(requiresFinishPhoto({ require_finish_photo: true })).toBe(true);
+  });
+});

@@ -30,7 +30,16 @@ export interface CompanySettings {
   services?: Services;
   /** Where On My Way texts go out from (owner, 2026-10-16). Default: Sundeck Pro Messages. */
   on_my_way?: OnMyWayVia;
+  /** A photo is needed before a tech finishes a job (owner setting, 2026-10-19). */
+  require_finish_photo?: boolean;
 }
+
+/** Whether finishing a job needs a pool photo first (default off). */
+export function requiresFinishPhoto(settings: unknown): boolean {
+  return (settings as Partial<CompanySettings> | null)?.require_finish_photo === true;
+}
+
+export const FINISH_PHOTO_MESSAGE = "Take a photo of the pool before finishing this job.";
 
 /**
  * On My Way texts: from the company number into Sundeck Pro's shared Messages (the default), or
