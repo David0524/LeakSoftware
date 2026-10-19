@@ -62,6 +62,8 @@ export async function submitReadings(_: FormState, form: FormData): Promise<Form
       .is("approx_gallons", null);
   revalidatePath("/chemicals");
   revalidatePath("/customers", "layout");
+  // From the visit's Checklist: its Chemical line shows the new readings.
+  if (job) revalidatePath(`/jobs/${job}`);
   return { message: "Submitted." };
 }
 

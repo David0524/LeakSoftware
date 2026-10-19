@@ -184,9 +184,15 @@ export interface ChemicalPool {
 export function ChemCalculator({
   initialGallons,
   pool,
+  inline = false,
 }: {
   initialGallons?: number | null;
   pool?: ChemicalPool | null;
+  /**
+   * Inside the visit's Checklist (owner, 2026-10-19: "it should be a dropdown rather than its
+   * own page"): one column, What to Add right under the readings, then Submit.
+   */
+  inline?: boolean;
 }) {
   const [submitted, submit, submitting] = useActionState(submitReadings, {});
   const [gallonsText, setGallonsText] = useState(
@@ -237,6 +243,142 @@ export function ChemCalculator({
   const anyGoal = Object.values(goalLevels).some((v) => v !== null);
   const ready = result.statuses.length > 0 && gallons > 0;
   const line = doseSummary(result, ready);
+
+  if (inline) {
+    return (
+      <div className="space-y-4">
+        <NumField
+          label="Gallons"
+          inputMode="numeric"
+          value={gallonsText}
+          onChange={(e) => setGallonsText(withCommas(e.target.value))}
+          placeholder="20,000"
+          unit="gal"
+          className="max-w-xs"
+        />
+        {/* Each reading next to the level to aim for. Aim For shows the recommended level
+              until the tech types their own. */}
+        <div
+          role="group"
+          aria-label="Readings and levels to aim for"
+          className="grid grid-cols-[minmax(0,1fr)_minmax(0,5rem)_minmax(0,5rem)] items-center gap-x-2 gap-y-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,6.5rem)_minmax(0,6.5rem)] sm:gap-x-3"
+        >
+          <span />
+          <span className="text-right text-[0.8125rem] font-semibold text-text-muted uppercase">
+            Reading
+          </span>
+          <span className="text-right text-[0.8125rem] font-semibold text-text-muted uppercase">
+            Aim For
+          </span>
+          {READINGS.map((r) => {
+            const key = r.key as ReadingKey;
+            const target = recommended[key]?.target;
+            return (
+              <div key={r.key} className="contents">
+                <span className="min-w-0 font-medium">
+                  {r.label}
+                  {r.hint ? (
+                    <span className="text-[0.9375rem] font-normal text-text-muted"> {r.hint}</span>
+                  ) : null}
+                </span>
+                <CellInput
+                  label={`${r.label} reading`}
+                  inputMode="decimal"
+                  value={values[r.key] ?? ""}
+                  onChange={(e) => setValues({ ...values, [r.key]: e.target.value })}
+                />
+                {target != null ? (
+                  <CellInput
+                    label={`${r.label}: aim for (recommended ${target})`}
+                    inputMode="decimal"
+                    placeholder={String(target)}
+                    value={goals[r.key] ?? ""}
+                    onChange={(e) => saveGoals({ ...goals, [r.key]: e.target.value })}
+                  />
+                ) : (
+                  <span />
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-[0.9375rem] text-text-muted">
+          Aim For starts at the recommended level. Type your own to dose to it.
+          {anyGoal ? (
+            <>
+              {" "}
+              <button
+                type="button"
+                onClick={() => saveGoals({})}
+                className="min-h-11 font-semibold text-link"
+              >
+                Use Recommended
+              </button>
+            </>
+          ) : null}
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+          <Select
+            label="Chlorine"
+            value={chlorine}
+            onChange={(e) => setChlorine(e.target.value as ChlorineProduct)}
+            options={Object.entries(CHLORINE_PRODUCTS).map(([value, label]) => ({
+              value,
+              label,
+            }))}
+          />
+          <Select
+            label="Acid"
+            value={acid}
+            onChange={(e) => setAcid(e.target.value as AcidProduct)}
+            options={Object.entries(ACID_PRODUCTS).map(([value, label]) => ({ value, label }))}
+          />
+        </div>
+        <section
+            aria-labelledby="dose-inline-title"
+            className="space-y-3 border-t-[0.5px] border-separator pt-4"
+          >
+          <h3 id="dose-inline-title" className="font-display text-lg font-bold">
+            What to Add
+          </h3>
+          {ready ? (
+            <Doses result={result} />
+          ) : (
+            <p className="text-text-muted">Add the gallons and a reading.</p>
+          )}
+        </section>
+        {/* Submit: the left side goes into this pool's weekly log (owner, 2026-10-19). */}
+        {pool ? (
+          <form action={submit} className="space-y-3 border-t-[0.5px] border-separator pt-4">
+            <input type="hidden" name="property" value={pool.propertyId} />
+            <input type="hidden" name="job" value={pool.jobId ?? ""} />
+            <input type="hidden" name="gallons" value={gallonsText} />
+            <input type="hidden" name="chlorine" value={chlorine} />
+            <input type="hidden" name="acid" value={acid} />
+            {READINGS.map((r) => (
+              <input key={r.key} type="hidden" name={r.key} value={values[r.key] ?? ""} />
+            ))}
+            <Button
+              type="submit"
+              disabled={submitting || result.statuses.length === 0}
+              className="w-full sm:w-auto sm:px-8"
+            >
+              {submitting ? "Submitting…" : "Submit"}
+            </Button>
+            <p className="text-[0.9375rem] text-text-muted">
+              Saves these readings to {pool.name}’s chemical log.
+            </p>
+            {submitted.error ? <Notice tone="error">{submitted.error}</Notice> : null}
+            {submitted.message ? <Notice tone="success">{submitted.message}</Notice> : null}
+          </form>
+        ) : (
+          <p className="border-t-[0.5px] border-separator pt-4 text-[0.9375rem] text-text-muted">
+            To save readings to a pool’s log, open Chemical from a visit or the customer’s pool.
+          </p>
+        )}
+      </div>
+    );
+  }
 
   return (
     // Readings fill the page. What to Add is a bar docked at the bottom that opens a sheet

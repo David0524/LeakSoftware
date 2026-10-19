@@ -32,6 +32,7 @@ import {
   seesAllJobs,
   dateFormat,
   jobFeeLabel,
+  readingSummary,
 } from "@leakbook/core";
 import { CustomerLinks } from "@/components/customer-links";
 import { DiagramPanel } from "@/components/diagram-work";
@@ -58,11 +59,11 @@ import {
   Row,
   StatusBadge,
   iconButtonClass,
-  ButtonLink,
 } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import {
   auditFor,
+  getChemicalReadings,
   getCompany,
   getInvoices,
   getJob,
@@ -84,6 +85,7 @@ import { QuotePanel } from "@/components/quote-panel";
 import { RemoveSignature } from "@/components/remove-signature";
 import { ReportPanel } from "@/components/report-panel";
 import { AddressLink } from "@/components/open-in-maps";
+import { ChemicalDropdown } from "@/components/chem-dropdown";
 import { JobSchedule } from "@/components/schedule-form";
 import { emailConfigured } from "@/server/email";
 
@@ -313,14 +315,10 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
             content: (
               <section aria-labelledby="checklist">
                 {/* Chemical first, at the top of the checklist (owner, 2026-10-19). */}
-                {job.type === "maintenance" ? (
-                  <ButtonLink
-                    href={chemicalsHref(job.property, job.id)}
-                    kind="secondary"
-                    className="mb-4"
-                  >
-                    Chemical
-                  </ButtonLink>
+                {job.type === "maintenance" && job.property ? (
+                  <Suspense fallback={null}>
+                    <Chemical detail={detail} tz={tz} />
+                  </Suspense>
                 ) : null}
                 {job.type === "maintenance" && job.service_plan_id ? (
                   <Suspense fallback={null}>
@@ -1049,12 +1047,26 @@ async function Timeline({ detail, tz }: { detail: JobDetail; tz: string }) {
   );
 }
 
-/** Chemical for this visit's pool: its gallons fill in and Submit saves to its log. */
-function chemicalsHref(pool: { id: string } | null | undefined, jobId: string) {
-  const q = new URLSearchParams();
-  if (pool) q.set("property", pool.id);
-  q.set("job", jobId);
-  return `/chemicals?${q}`;
+/** Chemical for this visit's pool, opened in place: its gallons fill in, Submit saves to its log. */
+async function Chemical({ detail, tz }: { detail: JobDetail; tz: string }) {
+  const office = await getOffice();
+  const property = detail.job.property!;
+  const [latest] = await getChemicalReadings(office, property.id, 1).catch(() => []);
+  return (
+    <ChemicalDropdown
+      pool={{
+        propertyId: property.id,
+        jobId: detail.job.id,
+        name: detail.job.customer?.name ?? "this pool",
+      }}
+      initialGallons={property.approx_gallons ?? null}
+      last={
+        latest
+          ? `Last: ${readingSummary(latest)} · ${formatSchedule(latest.recorded_at, new Date(), tz)}`
+          : null
+      }
+    />
+  );
 }
 
 /**
