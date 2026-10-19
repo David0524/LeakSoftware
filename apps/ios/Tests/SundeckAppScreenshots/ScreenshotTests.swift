@@ -564,16 +564,22 @@
         @Test func job() async throws {
             let env = try sampleEnvironment()
             let id = try #require(env.session.sync.store.list("job").first { $0["number"] == 1042 }?.id)
-            // A customer link that was opened, so Details shows Customer links.
-            try env.session.sync.store.insert(
-                "share_link", companyId: "c1",
-                [
-                    "job_id": .string(id), "report_id": "r-shot", "token": "tok-shot", "view_count": 2,
-                    "created_at": .string(isoTimestamp(milliseconds: Date().timeIntervalSince1970 * 1000 - 86_400_000)),
-                    "last_viewed_at": .string(isoTimestamp(milliseconds: Date().timeIntervalSince1970 * 1000)),
-                    "expires_at": .string(
-                        isoTimestamp(milliseconds: (Date().timeIntervalSince1970 + 180 * 86400) * 1000)),
-                ])
+            // A customer link that was opened, so Details shows Customer links. The server makes
+            // links, so it arrives as a sync would bring it.
+            let now = Date().timeIntervalSince1970 * 1000
+            try env.session.sync.store.applyPage(
+                PullPage(
+                    rows: [
+                        PulledRow(
+                            table: "share_link", xid: "9",
+                            row: [
+                                "id": "sl-shot", "company_id": "c1", "job_id": .string(id), "report_id": "r-shot",
+                                "token": "tok-shot", "view_count": 2,
+                                "created_at": .string(isoTimestamp(milliseconds: now - 86_400_000)),
+                                "last_viewed_at": .string(isoTimestamp(milliseconds: now)),
+                                "expires_at": .string(isoTimestamp(milliseconds: now + 180 * 86_400_000)),
+                            ])
+                    ], done: true, cursor: [:], serverHLC: "1760000000009-0000-srv"))
             try await snapshot("04-job", height: 2200, NavigationStack { JobScreen(jobId: id) }.app(env))
             try await snapshot(
                 "04-job-dark", dark: true, height: 2200, NavigationStack { JobScreen(jobId: id) }.app(env))
