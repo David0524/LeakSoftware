@@ -128,7 +128,7 @@ public final class NewJobForm {
     public var secondTech: String?
     /// Notes for the tech ("What they said" on a repair).
     public var notes = ""
-    /// When They Call on a repair: the price book item they need, or nil for none picked.
+    /// From the Customer on a repair: the price book item they need, or nil for none picked.
     public private(set) var repairItemId: String?
     /// "Tue, Oct 20 at 9:00 AM with Tony Tech." after a suggestion fills the visit fields.
     public private(set) var picked: String?
@@ -143,6 +143,11 @@ public final class NewJobForm {
     /// The plan's fields to fix: weekdays, startsOn, time, minutes, endsOn.
     public private(set) var planErrors: [String: String] = [:]
     public private(set) var feeError: String?
+    /// "Enter the gallons as a number, like 20,000."
+    public private(set) var gallonsError: String?
+    /// Gallons as typed, per pool picked (the website keys the field by the pool, so picking
+    /// another pool starts from that pool's gallons).
+    private var gallonsTyped: [String: String] = [:]
 
     public convenience init(sync: SyncService, company: CompanyContext, userId: String) {
         self.init(sync: sync, company: company, userId: userId, now: { Date() })
@@ -183,8 +188,43 @@ public final class NewJobForm {
     /// A plan that repeats rather than one visit: Start Plan, which needs a connection.
     public var isPlan: Bool { showsRepeat && repeatChoice != nil }
     public var questions: [BookingQuestion] { BookingQuestion.list(company.settings) }
-    /// "When they called": leak detection with intake questions set up (else a Notes card).
-    public var showsBooking: Bool { isLeak && !questions.isEmpty }
+    /// From the Customer on leak detection: Gallons and the booking questions (else a Notes card).
+    public var showsBooking: Bool { isLeak }
+
+    /// The title over what the customer said: a repair's and leak detection's (owner, 2026-10-19).
+    public static let fromCustomerTitle = "From the Customer"
+
+    // Gallons (owner, 2026-10-19: replaces "Size of the pool"), saved on the pool.
+
+    /// Leak detection asks in From the Customer; other jobs in a new pool's card.
+    public var gallonsInBooking: Bool { isLeak }
+    public var gallonsInPool: Bool { !isLeak && newPool }
+    public static let gallonsLabel = "Gallons (optional)"
+    public static let gallonsHint = "Saved on the pool for the Chemical calculator."
+
+    private var gallonsKey: String { newPool ? "new" : propertyId ?? "new" }
+    /// The picked pool's gallons, on leak detection (a new pool has none yet).
+    private var knownGallons: Int? {
+        guard isLeak, !newPool else { return nil }
+        return selectedProperty?["approx_gallons"]?.number.map { Int($0) }
+    }
+
+    /// "20,000": digits only, grouped as typed.
+    public var gallons: String {
+        get { gallonsTyped[gallonsKey] ?? knownGallons.map { gallonsInput(String($0)) } ?? "" }
+        set { gallonsTyped[gallonsKey] = gallonsInput(newValue) }
+    }
+
+    /// The gallons to save on the pool, when the field shows and has one.
+    private var gallonsValue: Int? {
+        guard gallonsInBooking || gallonsInPool else { return nil }
+        let text = trim(gallons)
+        return text.isEmpty ? nil : parseGallons(text)
+    }
+
+    private var badGallons: Bool {
+        (gallonsInBooking || gallonsInPool) && !trim(gallons).isEmpty && parseGallons(trim(gallons)) == nil
+    }
     /// The subtitle under the large title.
     public var subtitle: String {
         company.services == .pool
@@ -247,8 +287,8 @@ public final class NewJobForm {
             }
     }
 
-    /// When They Call (owner, 2026-10-19): the price book items the owner picked for booking a
-    /// repair (Show in When They Call), or every active item when none are picked yet.
+    /// From the Customer (owner, 2026-10-19): the price book items the owner picked for booking a
+    /// repair (Show when booking a repair), or every active item when none are picked yet.
     public var repairItems: [FeeItem] {
         let live = rows("price_book_item")
             .filter { $0["active"]?.bool == true && ($0["deleted_at"]?.string ?? "").isEmpty }
@@ -266,7 +306,7 @@ public final class NewJobForm {
         }
     }
 
-    /// When They Call shows on a repair.
+    /// From the Customer shows the repair menu on a repair.
     public var showsRepairCall: Bool { jobType == .repair }
     public var repairItem: FeeItem? { repairItemId.flatMap { id in repairItems.first { $0.id == id } } }
 
@@ -293,7 +333,7 @@ public final class NewJobForm {
             input.state, input.postalCode, accessNotes, otherEmails, fee, notes,
         ]
         return customerId != nil || shape != nil || !answers.isEmpty || repairItemId != nil
-            || typed.contains { !trim($0).isEmpty }
+            || typed.contains { !trim($0).isEmpty } || gallonsTyped.values.contains { !$0.isEmpty }
             || input.scheduleDate != today || input.scheduleTime != "09:00" || repeatChoice != nil
     }
 
@@ -372,7 +412,8 @@ public final class NewJobForm {
         }
         errors = e
         feeError = badFee ? "Enter a price like 649." : nil
-        return e.isEmpty && planErrors.isEmpty && !badFee
+        gallonsError = badGallons ? "Enter the gallons as a number, like 20,000." : nil
+        return e.isEmpty && planErrors.isEmpty && !badFee && !badGallons
     }
 
     /// Starts a maintenance plan, with a new customer and pool if needed, in one step on the
@@ -424,6 +465,12 @@ public final class NewJobForm {
         guard let customer = reply["customer"]?.string ?? checked.customerId else {
             throw NewJobFormError.server("The plan started, but the customer couldn’t be opened. Pull to refresh.")
         }
+        // The new pool's gallons (create_service_plan doesn't take them): saved through the sync
+        // layer, an update to the pool the server just made, as the website does after the call.
+        if let gallons = gallonsValue, let property = reply["property"]?.string {
+            try? sync.write(
+                "property", id: property, companyId: company.id, ["approx_gallons": .number(Double(gallons))])
+        }
         return customer
     }
 
@@ -464,7 +511,8 @@ public final class NewJobForm {
         let ccEmails = splitEmails(otherEmails)
         let notes = trim(self.notes)
         let leak = isLeak
-        // When They Call: the item's name, kept with the job (website `intake.repair_item`).
+        // From the Customer: the item's name, kept with the job (website `intake.repair_item`).
+        let gallons = gallonsValue
         let repairName = jobType == .repair ? repairItem?.name : nil
         let end: String? = records.job.scheduledStart.flatMap(parseInstant).flatMap { start in
             hoursValue.map { isoString(start.addingTimeInterval($0 * 3600)) }
@@ -475,10 +523,14 @@ public final class NewJobForm {
             let customer =
                 try customerId
                 ?? store.insert("customer", companyId: companyId, customerRow(records.customer, ccEmails))
-            let property =
-                try propertyId
-                ?? store.insert(
-                    "property", companyId: companyId, propertyRow(records.property, customer: customer, shape))
+            var newProperty = propertyRow(records.property, customer: customer, shape)
+            if let gallons { newProperty["approx_gallons"] = .number(Double(gallons)) }
+            let property = try propertyId ?? store.insert("property", companyId: companyId, newProperty)
+            // Gallons typed for an existing pool are saved on it; blank keeps what it has.
+            if let propertyId, let gallons, existingProperty?["approx_gallons"]?.number != Double(gallons) {
+                try store.write(
+                    "property", id: propertyId, companyId: companyId, ["approx_gallons": .number(Double(gallons))])
+            }
             var job = jobRow(records.job)
             job["property_id"] = .string(property)
             job["bill_to_customer_id"] = .string(customer)
@@ -607,4 +659,14 @@ private func jobRow(_ j: NewJobValues) -> Row {
     if let startedAt = j.startedAt { row["started_at"] = .string(startedAt) }
     if let scheduledStart = j.scheduledStart { row["scheduled_start"] = .string(scheduledStart) }
     return row
+}
+
+/// Gallons as they're typed: digits only (7 at most), grouped like "20,000" (website GallonsField).
+public func gallonsInput(_ typed: String) -> String {
+    let digits = String(typed.filter(\.isASCII).filter(\.isNumber).prefix(7))
+    guard let n = Int(digits) else { return "" }
+    let f = NumberFormatter()
+    f.locale = Locale(identifier: "en_US")
+    f.numberStyle = .decimal
+    return f.string(from: NSNumber(value: n)) ?? digits
 }

@@ -118,8 +118,11 @@ public struct JobDetails: Equatable, Sendable {
     /// The On Site footer: "The detection fee is shown on the report." or "Billed on the invoice."
     public var feeFooter: String
     public var intake: [IntakeAnswer]
-    /// "When they called" on a repair, else "When they booked".
+    /// "From the Customer" (owner, 2026-10-19), on every job.
     public var intakeTitle: String
+    /// The job's pool, whose gallons On Site edits (owner, 2026-10-19), and them as "20,000".
+    public var poolId: String?
+    public var poolGallons: String
 
     public init(job: JobView, team: [TeamProfile], settings: JSONValue) {
         customerId = job.customer?.id
@@ -143,11 +146,13 @@ public struct JobDetails: Equatable, Sendable {
         marksLeakLocation = job.type == .detection
         feeFooter = marksLeakLocation ? "The detection fee is shown on the report." : "Billed on the invoice."
         intake = intakeAnswers(settings: settings, intake: job.job["intake"])
-        // When They Call on a repair (owner, 2026-10-19): what the customer needs, first.
+        // From the Customer on a repair (owner, 2026-10-19): what the customer needs, first.
         if let need = job.job["intake"]?[repairItemKey]?.string, !need.isEmpty {
             intake.insert(IntakeAnswer(question: repairItemLabel, answer: need), at: 0)
         }
-        intakeTitle = job.type == .repair ? "When they called" : "When they booked"
+        intakeTitle = "From the Customer"
+        poolId = job.property?.id
+        poolGallons = job.property?["approx_gallons"]?.number.map { gallonsInput(String(Int($0))) } ?? ""
     }
 
     /// The contact row's first line: the phone, else the email.
@@ -226,4 +231,12 @@ func parseServerDate(_ text: String) -> Date? {
         if let date = pg.date(from: text) { return date }
     }
     return nil
+}
+
+/// What On Site's Pool gallons writes on the pool: the number, or null when blank; nil when it
+/// isn't a number ("Enter the gallons as a number, like 20,000.").
+public func poolGallonsValue(_ typed: String) -> JSONValue? {
+    let text = typed.trimmingCharacters(in: .whitespaces)
+    if text.isEmpty { return .null }
+    return parseGallons(text).map { .number(Double($0)) }
 }

@@ -4,7 +4,7 @@
     import SwiftUI
 
     /// The job page's Details section (spec 5.4), in the website's order and words: Customer,
-    /// Messages, Customer links, Pool, Assigned to, When they booked, On site, then Cancel Job.
+    /// Messages, Customer links, Pool, Assigned to, From the Customer, On site, then Cancel Job.
     /// Port of the "details" part of apps/web/src/app/(office)/jobs/[id]/page.tsx.
     struct JobDetailsSection: View {
         var job: JobView
@@ -14,6 +14,8 @@
         @Environment(\.openURL) private var openURL
         @Environment(\.openRoute) private var openRoute
         @State private var fee = ""
+        @State private var gallons = ""
+        @State private var gallonsError: String?
         @State private var notes = ""
         @State private var loaded: String?
         @State private var confirmCancel = false
@@ -26,7 +28,7 @@
         @FocusState private var focus: Field?
         @Environment(\.dynamicTypeSize) private var typeSize
 
-        enum Field { case fee, notes }
+        enum Field { case fee, gallons, notes }
 
         var body: some View {
             let _ = sync.revision
@@ -61,14 +63,20 @@
                         .padding(.top, 8)
                 }
             }
-            .task(id: job.id) { load() }
+            .task(id: job.id) {
+                load()
+                loadGallons()
+            }
             .onChange(of: job.job["fee_cents"]) { _, _ in if focus != .fee { load(fee: true, notes: false) } }
+            .onChange(of: job.property?["approx_gallons"]) { _, _ in if focus != .gallons { loadGallons() } }
             .onChange(of: focus) { old, _ in
                 if old == .fee { saveFee() }
+                if old == .gallons { saveGallons() }
                 if old == .notes { saveNotes() }
             }
             .onDisappear {
                 saveFee()
+                saveGallons()
                 saveNotes()
             }
             .sensoryFeedback(.success, trigger: saves)
@@ -278,6 +286,36 @@
                     }
                     .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
                     .padding(.vertical, 6)
+                    if details.poolId != nil {
+                        // The pool's gallons (owner, 2026-10-19), saved on the pool; blank clears.
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 12) {
+                                Text("Pool gallons")
+                                    .textRole(.body)
+                                    .foregroundStyle(Color.text)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                TextField(
+                                    "", text: $gallons, prompt: Text("20,000").foregroundStyle(Color.placeholder)
+                                )
+                                .keyboardType(.numberPad)
+                                .multilineTextAlignment(.trailing)
+                                .monospacedDigit()
+                                .focused($focus, equals: .gallons)
+                                .fieldBox(error: gallonsError != nil, focused: focus == .gallons)
+                                .frame(width: 112)
+                                .accessibilityLabel("Pool gallons")
+                                .onChange(of: gallons) { _, typed in
+                                    let shown = gallonsInput(typed)
+                                    if shown != typed { gallons = shown }
+                                }
+                            }
+                            if let gallonsError {
+                                Text(gallonsError).textRole(.secondary).foregroundStyle(Color.fail)
+                            }
+                        }
+                        .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                        .padding(.vertical, 6)
+                    }
                     if details.marksLeakLocation {
                         SwitchRow(
                             "Leak location marked",
@@ -304,6 +342,7 @@
                 Button("Save") {
                     focus = nil
                     saveFee()
+                    saveGallons()
                     saveNotes()
                     saves += 1
                 }
@@ -336,6 +375,28 @@
             let text = fee.trimmingCharacters(in: .whitespaces)
             let cents: JSONValue = text.isEmpty ? .null : parseDollars(text).map { .number(Double($0)) } ?? .null
             if cents != (job.job["fee_cents"] ?? .null) { save(["fee_cents": cents]) }
+        }
+
+        private func loadGallons() {
+            gallons = job.property?["approx_gallons"]?.number.map { gallonsInput(String(Int($0))) } ?? ""
+            gallonsError = nil
+        }
+
+        /// Pool gallons: saved on the pool through the sync layer when it changed.
+        private func saveGallons() {
+            guard let company = session.company, let pool = job.property else { return }
+            guard let value = poolGallonsValue(gallons) else {
+                gallonsError = "Enter the gallons as a number, like 20,000."
+                return
+            }
+            gallonsError = nil
+            if value != (pool["approx_gallons"] ?? .null) {
+                do {
+                    try sync.write("property", id: pool.id, companyId: company.id, ["approx_gallons": value])
+                } catch {
+                    saveError = String(describing: error)
+                }
+            }
         }
 
         private func saveNotes() {

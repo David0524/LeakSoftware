@@ -452,7 +452,7 @@ import Testing
                 }, done: true, cursor: [:], serverHLC: "1800000000002-0000-server"))
     }
 
-    /// When They Call on a repair (owner, 2026-10-19): the price book items the owner picked,
+    /// From the Customer on a repair (owner, 2026-10-19): the price book items the owner picked,
     /// or every active one; picking fills the Price; the name is saved in `intake.repair_item`.
     @Test func whenTheyCallPicksWhatTheyNeedAndSavesIt() throws {
         let (customer, _) = try seedCustomer(spa: false)
@@ -504,11 +504,58 @@ import Testing
         #expect(job["fee_cents"] == 47500)
         #expect(job["summary_notes"] == "Motor hums but won't start")
         #expect(try sync.store.pendingCount() > pending)
-        // The job page shows it under "When they called".
+        // The job page shows it under "From the Customer".
         let view = try #require(try jobViews(sync.store, companyId: Self.company).first { $0.id == job.id })
         let details = JobDetails(job: view, team: [], settings: .null)
-        #expect(details.intakeTitle == "When they called")
+        #expect(details.intakeTitle == "From the Customer")
         #expect(details.intake.first == IntakeAnswer(question: "What they need", answer: "Pump motor"))
+    }
+
+    /// Gallons (owner, 2026-10-19: replaces "Size of the pool"): in From the Customer on leak
+    /// detection, prefilled from the picked pool and saved on it; other jobs ask in a new pool's
+    /// card.
+    @Test func gallonsAreAskedAndSavedOnThePool() throws {
+        try seedTeam()
+        let (customer, property) = try seedCustomer(spa: false)
+        try sync.write("property", id: property, companyId: Self.company, ["approx_gallons": 18000])
+        let f = form()
+        #expect(f.showsBooking && f.gallonsInBooking && !f.gallonsInPool)
+        #expect(NewJobForm.fromCustomerTitle == "From the Customer")
+        #expect(NewJobForm.gallonsLabel == "Gallons (optional)")
+        #expect(f.gallons == "")
+        f.mode = .existing
+        f.selectCustomer(customer)
+        #expect(f.gallons == "18,000")
+        f.gallons = "21000x"
+        #expect(f.gallons == "21,000")
+        f.gallons = "abc"
+        #expect(f.gallons == "")
+        f.gallons = "22500"
+        f.input.scheduleDate = f.tomorrow
+        _ = try f.save()
+        #expect(try sync.store.get("property", property)?["approx_gallons"] == 22500)
+
+        // A repair on a new pool: Gallons in the Pool card, saved with the new pool.
+        let r = form()
+        r.jobType = .repair
+        #expect(!r.gallonsInBooking && r.gallonsInPool)
+        r.input.customerName = "Sam"
+        r.input.addressLine1 = "2 Oak St"
+        r.gallons = "15000"
+        r.when = .notYet
+        let job = try #require(try sync.store.get("job", r.save()))
+        let pool = try #require(try sync.store.get("property", job["property_id"]?.string ?? ""))
+        #expect(pool["approx_gallons"] == 15000)
+
+        // A repair on an existing pool doesn't ask.
+        let e = form()
+        e.jobType = .repair
+        e.mode = .existing
+        e.selectCustomer(customer)
+        #expect(!e.gallonsInBooking && !e.gallonsInPool)
+
+        #expect(gallonsInput("1234567890") == "1,234,567" && gallonsInput("0") == "0" && gallonsInput("") == "")
+        #expect(poolGallonsValue("") == .null && poolGallonsValue("20,000") == 20000 && poolGallonsValue("lots") == nil)
     }
 
     /// `on_repair_call` reads from synced rows; missing is false.

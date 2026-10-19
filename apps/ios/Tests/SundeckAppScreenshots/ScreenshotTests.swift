@@ -833,7 +833,7 @@
                     }
                 }
                 .app(env))
-            // When They Call on a repair (owner, 2026-10-19): two items picked for the menu, one
+            // From the Customer on a repair (owner, 2026-10-19): two items picked for the menu, one
             // chosen (its price filled in) and what the customer said.
             let store = env.session.sync.store
             try store.applyPage(
@@ -856,7 +856,7 @@
             try await snapshot(
                 "08-new-job-repair", height: 2600,
                 NavigationStack { NewJobView(form: repair, back: "Jobs") { _ in } }.app(env))
-            // The job page: "When they called" · What they need.
+            // The job page: "From the Customer" · What they need.
             let sam = try #require(try store.list("job").first { $0["type"] == "repair" })
             try store.write(
                 "job", id: sam.id, companyId: "c1", ["intake": [repairItemKey: "Pump motor"], "fee_cents": 45000])

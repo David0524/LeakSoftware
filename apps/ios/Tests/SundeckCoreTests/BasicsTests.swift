@@ -12,6 +12,7 @@ import Testing
             "formatPhone", "companyServices", "offersPool", "newJobTypes", "seesAllJobs", "canMakeJobs", "roleLabel",
             "isManagerRole", "splitEmails", "POOL_TYPE_LABELS", "jobOnPhones", "requiresFinishPhoto",
             "FINISH_PHOTO_MESSAGE", "REPAIR_ITEM_KEY", "REPAIR_ITEM_LABEL", "jobActionLabel", "jobFeeLabel",
+            "parseGallons",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -56,6 +57,7 @@ import Testing
         checkRule(module, "REPAIR_ITEM_KEY") { _ in repairItemKey }
         checkRule(module, "REPAIR_ITEM_LABEL") { _ in repairItemLabel }
         checkRule(module, "newJobTypes") { c in newJobTypes(try c.arg(0)) }
+        checkRule(module, "parseGallons") { c in parseGallons(try c.arg(0)) }
         checkRule(module, "seesAllJobs") { c in seesAllJobs(try c.arg(0, as: String?.self), try c.arg(1)) }
         checkRule(module, "canMakeJobs") { c in canMakeJobs(try c.arg(0, as: String?.self), try c.arg(1)) }
         checkRule(module, "roleLabel") { c in roleLabel(try c.arg(0, as: String?.self)) }

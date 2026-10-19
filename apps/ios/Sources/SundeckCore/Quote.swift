@@ -171,7 +171,7 @@ public struct PriceBookItem: Codable, Equatable, Sendable {
     public var sortOrder: Int
     public var active: Bool
     public var deletedAt: String?
-    /// Shown in New Job's When They Call menu (owner, 2026-10-19). Missing (older rows, older
+    /// Shown in New Job's repair menu (From the Customer) (owner, 2026-10-19). Missing (older rows, older
     /// servers) reads as false.
     public var onRepairCall = false
 

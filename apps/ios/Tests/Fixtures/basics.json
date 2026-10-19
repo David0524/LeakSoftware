@@ -1061,6 +1061,122 @@
       "result": "Mark Done"
     }
   ],
+  "parseGallons": [
+    {
+      "args": [
+        "20,000"
+      ],
+      "result": 20000
+    },
+    {
+      "args": [
+        "20000"
+      ],
+      "result": 20000
+    },
+    {
+      "args": [
+        "20k"
+      ],
+      "result": 20000
+    },
+    {
+      "args": [
+        "20K"
+      ],
+      "result": 20000
+    },
+    {
+      "args": [
+        "18.5k"
+      ],
+      "result": 18500
+    },
+    {
+      "args": [
+        "18500 gallons"
+      ],
+      "result": 18500
+    },
+    {
+      "args": [
+        "1 gal"
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        " 12 000 "
+      ],
+      "result": 12000
+    },
+    {
+      "args": [
+        "0"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "-5"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "abc"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "5000000"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "4999999"
+      ],
+      "result": 4999999
+    },
+    {
+      "args": [
+        "12.4"
+      ],
+      "result": 12
+    },
+    {
+      "args": [
+        "12.5"
+      ],
+      "result": 13
+    },
+    {
+      "args": [
+        "1,2,3"
+      ],
+      "result": 123
+    },
+    {
+      "args": [
+        "20kk"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "Gallons 300"
+      ],
+      "result": 300
+    }
+  ],
   "jobFeeLabel": [
     {
       "args": [

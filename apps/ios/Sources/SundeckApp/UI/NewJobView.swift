@@ -27,7 +27,7 @@
     }
 
     /// New Job as the website's form (apps/web/src/components/new-job-form.tsx): Customer, Pool,
-    /// Visit, and When They Called (or Notes) as cards of outlined fields, then Create Job. Saves
+    /// Visit, and From the Customer (or Notes) as cards of outlined fields, then Create Job. Saves
     /// everything in one transaction, offline. Leaving with entries asks first. Owners and admins
     /// of pool shops can instead start a plan that repeats (Start Plan), which needs a
     /// connection: the server makes its visits, then the customer's page opens.
@@ -195,6 +195,7 @@
                     options: [nil] + PoolType.allCases.map { Optional($0) },
                     optionLabel: { $0?.label ?? "Not sure" })
                 SwitchRow("Has a spa", isOn: $form.hasSpa).padding(.horizontal, -16)
+                if form.gallonsInPool { gallonsField }
                 if !form.isMaintenance {
                     ShapePicker(
                         value: form.shape, label: "Pool shape (optional)",
@@ -334,8 +335,8 @@
 
         @ViewBuilder private var calledCard: some View {
             if form.showsRepairCall {
-                // When They Call on a repair (owner, 2026-10-19): what they need fills the Price.
-                FormCard("When They Call") {
+                // From the Customer on a repair (owner, 2026-10-19): what they need fills the Price.
+                FormCard(NewJobForm.fromCustomerTitle) {
                     if !form.repairItems.isEmpty {
                         SelectField(
                             label: "What do they need?",
@@ -348,7 +349,8 @@
                         multiline: true)
                 }
             } else if form.showsBooking {
-                FormCard("When they called") {
+                FormCard(NewJobForm.fromCustomerTitle) {
+                    gallonsField
                     ForEach(form.questions) { question in
                         switch question.kind {
                         case .multi:
@@ -384,6 +386,14 @@
                     OutlinedField(label: "Notes for the tech (optional)", text: $form.notes, multiline: true)
                 }
             }
+        }
+
+        /// Gallons (optional), saved on the pool (owner, 2026-10-19: it replaced "Size of the pool").
+        private var gallonsField: some View {
+            OutlinedField(
+                label: NewJobForm.gallonsLabel,
+                text: Binding(get: { form.gallons }, set: { form.gallons = $0 }),
+                placeholder: "20,000", hint: NewJobForm.gallonsHint, error: form.gallonsError, keyboard: .numberPad)
         }
 
         private var suggestionsSheet: some View {
