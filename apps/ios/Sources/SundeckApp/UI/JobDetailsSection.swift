@@ -26,6 +26,7 @@
         @State private var turnedOff: Set<String> = []
         @State private var linkError: String?
         @FocusState private var focus: Field?
+        @Environment(\.dynamicTypeSize) private var typeSize
 
         enum Field { case fee, notes }
 
@@ -112,7 +113,13 @@
                     ListRow("No customer")
                 }
                 if let line = details.contactLine {
-                    HStack(spacing: 12) {
+                    // Side by side; stacked at accessibility text sizes, where the number would
+                    // break across lines beside the buttons.
+                    let layout =
+                        typeSize.isAccessibilitySize
+                        ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+                        : AnyLayout(HStackLayout(spacing: 12))
+                    layout {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(line).textRole(.body).foregroundStyle(Color.text)
                             if let email = details.contactDetail {

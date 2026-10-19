@@ -83,8 +83,20 @@
         var badge: (Value) -> Int = { _ in 0 }
         @Namespace private var thumb
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
+        @Environment(\.dynamicTypeSize) private var typeSize
 
         var body: some View {
+            // At accessibility text sizes five equal columns cut every label short ("Det…"), so
+            // the segments keep their full labels and the row scrolls sideways.
+            if typeSize.isAccessibilitySize {
+                ScrollView(.horizontal, showsIndicators: false) { track(fill: false).padding(.top, 8) }
+                    .padding(.top, -8)
+            } else {
+                track(fill: true)
+            }
+        }
+
+        private func track(fill: Bool) -> some View {
             HStack(spacing: 2) {
                 ForEach(options, id: \.self) { option in
                     let chosen = option == selection
@@ -96,9 +108,9 @@
                             .font(.role(.footnote).weight(chosen ? .semibold : .medium))
                             .foregroundStyle(Color.text)
                             .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                            .padding(.horizontal, 4)
-                            .frame(maxWidth: .infinity, minHeight: minTarget)
+                            .minimumScaleFactor(fill ? 0.8 : 1)
+                            .padding(.horizontal, fill ? 4 : 16)
+                            .frame(maxWidth: fill ? .infinity : nil, minHeight: minTarget)
                             .background {
                                 if chosen { SegmentThumb().matchedGeometryEffect(id: "thumb", in: thumb) }
                             }

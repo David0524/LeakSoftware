@@ -287,12 +287,20 @@
             for row in arrange(bounds.width, subviews) {
                 var x = bounds.minX
                 for index in row.items {
-                    let size = subviews[index].sizeThatFits(.unspecified)
+                    let size = Self.size(subviews[index], within: bounds.width)
                     subviews[index].place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
                     x += size.width + spacing
                 }
                 y += row.height + spacing
             }
+        }
+
+        /// Its natural size, or, when that's wider than the row (a long button at a large text
+        /// size), the row's width so it wraps instead of running off the screen.
+        private static func size(_ subview: LayoutSubview, within width: CGFloat) -> CGSize {
+            let ideal = subview.sizeThatFits(.unspecified)
+            guard width.isFinite, ideal.width > width else { return ideal }
+            return subview.sizeThatFits(ProposedViewSize(width: width, height: nil))
         }
 
         private func arrange(_ width: CGFloat, _ subviews: Subviews) -> [(
@@ -301,7 +309,7 @@
             var rows: [(items: [Int], width: CGFloat, height: CGFloat)] = []
             var current: (items: [Int], width: CGFloat, height: CGFloat) = ([], 0, 0)
             for index in subviews.indices {
-                let size = subviews[index].sizeThatFits(.unspecified)
+                let size = Self.size(subviews[index], within: width)
                 let needed = current.items.isEmpty ? size.width : current.width + spacing + size.width
                 if needed > width && !current.items.isEmpty {
                     rows.append(current)
