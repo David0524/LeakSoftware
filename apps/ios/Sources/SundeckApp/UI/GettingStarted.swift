@@ -14,7 +14,6 @@
         @Environment(AppEnvironment.self) private var app
         @Environment(\.openRoute) private var openRoute
         @Environment(\.openTab) private var openTab
-        @State private var steps: [StartStep] = []
         /// Invites and the Stripe account aren't on the phone: asked when there's a signal.
         @State private var server = ServerProgress()
 
@@ -24,18 +23,19 @@
         }
 
         var body: some View {
-            Group {
-                if !app.walkthrough.gettingStartedHidden, !steps.isEmpty, steps.contains(where: { !$0.done }) {
-                    card
-                } else {
-                    Color.clear.frame(height: 0)
+            let _ = sync.revision
+            let steps = gettingStarted(
+                company.services,
+                shopProgress(sync.store, company: company, invites: server.invites, payments: server.payments))
+            VStack(spacing: 0) {
+                if !app.walkthrough.gettingStartedHidden, steps.contains(where: { !$0.done }) {
+                    card(steps)
                 }
             }
-            .task(id: "\(sync.revision)|\(server.invites)|\(server.payments)") { reload() }
             .task(id: company.id) { await loadServer() }
         }
 
-        private var card: some View {
+        private func card(_ steps: [StartStep]) -> some View {
             let done = steps.filter(\.done).count
             return VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top, spacing: 12) {
@@ -53,19 +53,17 @@
                         .accessibilityLabel("Hide Getting Started")
                 }
                 .padding(.horizontal, 20)
-                GeometryReader { geo in
-                    Capsule().fill(Color.fill)
-                        .overlay(alignment: .leading) {
-                            Capsule().fill(Color.pass)
-                                .frame(width: geo.size.width * CGFloat(done) / CGFloat(max(steps.count, 1)))
-                        }
-                }
-                .frame(height: 6)
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .accessibilityElement()
-                .accessibilityLabel("Getting Started progress")
-                .accessibilityValue("\(done) of \(steps.count)")
+                Capsule().fill(Color.fill)
+                    .overlay(alignment: .leading) {
+                        Capsule().fill(Color.pass)
+                            .scaleEffect(x: CGFloat(done) / CGFloat(max(steps.count, 1)), anchor: .leading)
+                    }
+                    .frame(height: 6)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .accessibilityElement()
+                    .accessibilityLabel("Getting Started progress")
+                    .accessibilityValue("\(done) of \(steps.count)")
                 VStack(spacing: 0) {
                     ForEach(Array(steps.enumerated()), id: \.element.id) { i, step in
                         if i > 0 { Divider().overlay(Color.separator) }
@@ -122,12 +120,6 @@
             Task {
                 try? await app.client.auth.update(user: UserAttributes(data: ["getting_started_hidden": .bool(true)]))
             }
-        }
-
-        private func reload() {
-            steps = gettingStarted(
-                company.services,
-                shopProgress(sync.store, company: company, invites: server.invites, payments: server.payments))
         }
 
         private func loadServer() async {
