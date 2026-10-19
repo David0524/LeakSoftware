@@ -26,26 +26,28 @@ const base: LiveStopInput = {
   next: { customer: "Jones", time: "10:30 AM" },
 };
 
-const stops: LiveStopInput[] = (["ahead", "driving", "on_site", "done"] as const).flatMap((phase) => [
-  { ...base, phase },
-  { ...base, phase, eta: null },
-  { ...base, phase, eta: "" },
-  { ...base, phase, eta: "12:05 pm" },
-  { ...base, phase, eta: "14:05" },
-  { ...base, phase, address: null },
-  { ...base, phase, address: "" },
-  { ...base, phase, next: null },
-  { ...base, phase, next: { customer: "Lee", time: null } },
-  { ...base, phase, next: { customer: "Lee", time: "" } },
-  { ...base, phase, checklistDone: 0, checklistTotal: 0 },
-  { ...base, phase, stop: 1, stops: 1 },
-  { ...base, phase, stop: 7, stops: 7, next: null },
-  { ...base, phase, stop: 9, stops: 7 },
-  { ...base, phase, stop: 0, stops: 0 },
-  { ...base, phase, scheduled: "9:00 AM" },
-  { ...base, phase, scheduled: "" },
-  { ...base, phase, scheduled: "1:15 pm" },
-]);
+const stops: LiveStopInput[] = (["ahead", "driving", "on_site", "done"] as const).flatMap(
+  (phase) => [
+    { ...base, phase },
+    { ...base, phase, eta: null },
+    { ...base, phase, eta: "" },
+    { ...base, phase, eta: "12:05 pm" },
+    { ...base, phase, eta: "14:05" },
+    { ...base, phase, address: null },
+    { ...base, phase, address: "" },
+    { ...base, phase, next: null },
+    { ...base, phase, next: { customer: "Lee", time: null } },
+    { ...base, phase, next: { customer: "Lee", time: "" } },
+    { ...base, phase, checklistDone: 0, checklistTotal: 0 },
+    { ...base, phase, stop: 1, stops: 1 },
+    { ...base, phase, stop: 7, stops: 7, next: null },
+    { ...base, phase, stop: 9, stops: 7 },
+    { ...base, phase, stop: 0, stops: 0 },
+    { ...base, phase, scheduled: "9:00 AM" },
+    { ...base, phase, scheduled: "" },
+    { ...base, phase, scheduled: "1:15 pm" },
+  ],
+);
 
 // notifications.ts: the push texts and the Live Activity.
 export const notifications: ModuleCases = {
