@@ -56,11 +56,21 @@
                 let kv = try KeyValue(db)
                 let client = ServerCheck.makeClient()
                 let auth = SupabaseAuthBackend(client)
+                let media = try MediaFiles.documents()
+                let uploader = TusUploader(
+                    supabaseUrl: AppConfig.supabaseURL.absoluteString, apiKey: AppConfig.supabasePublishableKey,
+                    accessToken: { try? await client.auth.session.accessToken }, files: media.source)
                 let sync = SyncService(
-                    store: store, kv: kv, transport: SupabaseTransport(SupabaseRPC(client)), auth: auth)
+                    store: store, kv: kv, transport: SupabaseTransport(SupabaseRPC(client)), auth: auth,
+                    uploader: uploader, media: media)
                 let environment = AppEnvironment(
                     client: client, session: Session(sync: sync, auth: auth), walkthrough: Walkthrough(kv))
                 sync.afterSync = { [weak environment] in await environment?.afterSync() }
+                sync.voiceNoteUploaded = { [weak sync] id in
+                    // Ask the server to transcribe it. Best effort: offline, the office can retry.
+                    let api = WebAPI(baseURL: AppConfig.webURL) { try? await client.auth.session.accessToken }
+                    if (try? await api.post("api/media/\(id)/transcribe")) != nil { sync?.syncSoon(0) }
+                }
                 environment.watchNetwork()
                 return environment
             }

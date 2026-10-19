@@ -11,7 +11,13 @@ is still the shipping app and keeps getting fixes.
 - `xtool.yml` and `Info.plist`: bundle ID `com.sundeckpro.app`, display name, icon (from
   `brand/logo/png/icon-1024.png`, generated; never edit it here).
 - Tests use Swift Testing. `LiveServerTests` signs in to the dev project as the demo tech and
-  runs only with `SUNDECK_LIVE=1`.
+  runs only with `SUNDECK_LIVE=1`. So does `LiveMediaTests`, BUILD_PLAN M5's test through the
+  Swift app (30 photos and 2 videos offline, a kill mid-upload, no duplicates): about 16 MB in
+  the dev project's storage per run, which can't be deleted, so run it when uploads change
+  (`NODE_USE_ENV_PROXY=1 SUNDECK_LIVE=1 swift test --filter LiveMediaTests`).
+- Captured files live in Documents/media/{id}.{ext}, stored relative to Documents (the
+  container path changes on app updates). The file never changes after capture; markup and
+  captions are row columns.
 
 ## Commands
 

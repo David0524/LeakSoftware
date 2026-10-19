@@ -24,7 +24,8 @@ public enum TranscriptStatus: String, Codable, CaseIterable, Sendable {
     case none, pending, done, failed
 }
 
-/// A synced `media` row. `markup` is kept as stored JSON; read it with `parseMarkup`.
+/// A synced `media` row. `markup` is kept as stored JSON; read it with `parseMarkup`. A capture
+/// saved offline has no `created_at` or `transcript_status` until the server fills them in.
 public struct Media: Codable, Equatable, Sendable {
     public var id: String
     public var companyId: String
@@ -48,7 +49,7 @@ public struct Media: Codable, Equatable, Sendable {
     public var caption: String?
     public var transcript: String?
     public var transcriptStatus: TranscriptStatus
-    public var createdAt: String
+    public var createdAt: String?
 
     enum CodingKeys: String, CodingKey {
         case id, kind, sha256, width, height, latitude, longitude, markup, caption, transcript
@@ -65,6 +66,35 @@ public struct Media: Codable, Equatable, Sendable {
         case capturedAt = "captured_at"
         case transcriptStatus = "transcript_status"
         case createdAt = "created_at"
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        companyId = try c.decode(String.self, forKey: .companyId)
+        jobId = try c.decode(String.self, forKey: .jobId)
+        findingId = try c.decodeIfPresent(String.self, forKey: .findingId)
+        jobComponentId = try c.decodeIfPresent(String.self, forKey: .jobComponentId)
+        testResultId = try c.decodeIfPresent(String.self, forKey: .testResultId)
+        kind = try c.decode(MediaKind.self, forKey: .kind)
+        storagePath = try c.decodeIfPresent(String.self, forKey: .storagePath)
+        // Not yet uploaded, or a state from a newer server: treat as waiting.
+        uploadState = (try? c.decodeIfPresent(MediaUploadState.self, forKey: .uploadState)) ?? .pending
+        mimeType = try c.decodeIfPresent(String.self, forKey: .mimeType)
+        sizeBytes = try c.decodeIfPresent(Int.self, forKey: .sizeBytes)
+        sha256 = try c.decodeIfPresent(String.self, forKey: .sha256)
+        width = try c.decodeIfPresent(Double.self, forKey: .width)
+        height = try c.decodeIfPresent(Double.self, forKey: .height)
+        durationMs = try c.decodeIfPresent(Double.self, forKey: .durationMs)
+        capturedAt = try c.decodeIfPresent(String.self, forKey: .capturedAt)
+        latitude = try c.decodeIfPresent(Double.self, forKey: .latitude)
+        longitude = try c.decodeIfPresent(Double.self, forKey: .longitude)
+        markup = try c.decodeIfPresent(JSONValue.self, forKey: .markup)
+        caption = try c.decodeIfPresent(String.self, forKey: .caption)
+        transcript = try c.decodeIfPresent(String.self, forKey: .transcript)
+        transcriptStatus =
+            (try? c.decodeIfPresent(TranscriptStatus.self, forKey: .transcriptStatus)) ?? TranscriptStatus.none
+        createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt)
     }
 }
 

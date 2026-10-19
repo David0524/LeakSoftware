@@ -18,6 +18,8 @@ let package = Package(
         .package(url: "https://github.com/skiptools/swift-sqlcipher", exact: "1.13.0"),
         .package(url: "https://github.com/supabase/supabase-swift", exact: "2.55.4"),
         .package(url: "https://github.com/getsentry/sentry-cocoa", exact: "9.30.2"),
+        // SHA-256 of captures on the phone and on Linux (already used by supabase-swift).
+        .package(url: "https://github.com/apple/swift-crypto", exact: "4.5.2"),
         // Tests only: the sync integration tests reach Postgres directly, like packages/sync's.
         .package(url: "https://github.com/vapor/postgres-nio", exact: "1.33.1"),
         .package(url: "https://github.com/apple/swift-log", exact: "1.16.1"),
@@ -49,6 +51,7 @@ let package = Package(
                 "SundeckSync",
                 "SundeckTokens",
                 .product(name: "Supabase", package: "supabase-swift"),
+                .product(name: "Crypto", package: "swift-crypto"),
                 .product(name: "Sentry", package: "sentry-cocoa", condition: .when(platforms: [.iOS])),
             ]
         ),
@@ -75,6 +78,7 @@ let package = Package(
             name: "SundeckAppTests",
             dependencies: [
                 "SundeckApp", "SundeckStorage", "SundeckSync", .product(name: "Supabase", package: "supabase-swift"),
+                .product(name: "Crypto", package: "swift-crypto"),
             ]
         ),
     ]

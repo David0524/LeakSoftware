@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import SundeckCore
+import SundeckStorage
 import SundeckSync
 
 /// Where syncing stands. Port of SyncPhase in apps/mobile/src/lib/sync-service.ts.
@@ -39,6 +40,10 @@ public final class SyncService {
 
     @ObservationIgnored private let transport: any SyncTransport
     @ObservationIgnored private let engine: SyncEngine
+    /// Captured files waiting to upload (nil when the app has no uploader, as in some tests).
+    @ObservationIgnored private let uploads: UploadQueue?
+    /// Where captures are kept; emptied on sign-out.
+    @ObservationIgnored public let media: MediaFiles?
     @ObservationIgnored private let auth: any AuthBackend
     @ObservationIgnored private let now: @Sendable () -> Date
     @ObservationIgnored private var started = false
@@ -47,17 +52,21 @@ public final class SyncService {
     @ObservationIgnored private var soon: Task<Void, Never>?
     /// Runs after each successful sync (teammates' names).
     @ObservationIgnored public var afterSync: (@MainActor () async -> Void)?
+    /// Runs for each voice note whose file just uploaded (asks the server for a transcript).
+    @ObservationIgnored public var voiceNoteUploaded: (@MainActor (String) async -> Void)?
 
     public init(
         store: LocalStore, kv: KeyValue, transport: any SyncTransport, auth: any AuthBackend,
-        now: @escaping @Sendable () -> Date = { Date() }
+        uploader: (any Uploader)? = nil, media: MediaFiles? = nil, now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.store = store
         self.kv = kv
         self.transport = transport
         self.auth = auth
         self.now = now
+        self.media = media
         engine = SyncEngine(store: store, transport: transport, now: now)
+        uploads = uploader.map { UploadQueue(store: store, uploader: $0) }
         status.lastSyncedAt = kv.get(KVKey.lastSyncedAt).flatMap(Double.init).map { Date(timeIntervalSince1970: $0) }
         status.initialSyncDone = kv.get(KVKey.initialSyncDone) == "1"
         refreshCounts()
@@ -99,6 +108,7 @@ public final class SyncService {
         if !online {
             status.phase = .offline
         } else if !wasOnline, started {
+            try? uploads?.retryNow()
             syncSoon(0)
         }
     }
@@ -150,6 +160,32 @@ public final class SyncService {
         }
         if summary.pulled > 0 || summary.pushed > 0 { revision += 1 }
         refreshCounts()
+        if summary.error == nil { await runUploads() }
+    }
+
+    /// Uploads due files; then sends the "uploaded" marks and asks for transcripts.
+    private func runUploads() async {
+        guard let uploads, ((try? uploads.waitingCount()) ?? 0) > 0 else { return }
+        let result: UploadSummary
+        do {
+            result = try await uploads.process()
+        } catch {
+            refreshCounts()
+            return
+        }
+        refreshCounts()
+        guard result.uploaded > 0 else { return }
+        revision += 1
+        if started { syncSoon(0) }  // send the "uploaded" marks
+        for id in result.uploadedIds where (try? store.get("media", id))??["kind"] == "audio" {
+            await voiceNoteUploaded?(id)
+        }
+    }
+
+    /// Retries waiting uploads now (Settings button).
+    public func retryUploads() {
+        try? uploads?.retryNow()
+        syncSoon(0)
     }
 
     /// Errors that mean the phone couldn't reach the server.
@@ -182,6 +218,18 @@ public final class SyncService {
         return result
     }
 
+    /// Saves a capture: the media row and its upload ticket in one transaction, so a file is never
+    /// queued without its row or the other way around.
+    public func addMedia(_ id: String, companyId: String, _ values: Row, file: UploadJob) throws {
+        try guarded {
+            try store.database.transaction {
+                try store.write("media", id: id, companyId: companyId, values)
+                try uploads?.enqueue(file)
+            }
+        }
+        changed()
+    }
+
     /// Drops a change the server refused; the server's value comes back on the next sync.
     public func discardProblem(_ seq: Int) throws {
         try store.discardProblem(seq)
@@ -192,6 +240,7 @@ public final class SyncService {
     public func clearLocalData() {
         stop()
         try? store.clearAll()
+        media?.deleteAll()
         for key in KVKey.signOutClears { kv.remove(key) }
         status = SyncStatus()
         status.phase = .signedOut
@@ -218,7 +267,21 @@ public final class SyncService {
     private func refreshCounts() {
         status.pending = (try? store.pendingCount()) ?? 0
         status.problems = (try? store.problems().count) ?? 0
-        let waiting = try? store.database.query("select count(*) as n from upload_queue").first?["n"]
-        if case .integer(let n)? = waiting { status.uploadsWaiting = Int(n) } else { status.uploadsWaiting = 0 }
+        // Waiting files, whether all are photos (the bar then says "photos"), and the last error.
+        let rows =
+            (try? store.database.query(
+                """
+                select json_extract(r.data, '$.kind') as kind, q.last_error
+                from upload_queue q left join sync_records r on r.table_name = 'media' and r.id = q.media_id
+                order by q.rowid
+                """)) ?? []
+        status.uploadsWaiting = rows.count
+        status.uploadsAllPhotos = rows.allSatisfy { sqlText($0["kind"]) == "photo" }
+        status.lastUploadError = rows.lazy.compactMap { sqlText($0["last_error"]) }.first
     }
+}
+
+private func sqlText(_ value: SQLValue?) -> String? {
+    if case .text(let text)? = value { return text }
+    return nil
 }
