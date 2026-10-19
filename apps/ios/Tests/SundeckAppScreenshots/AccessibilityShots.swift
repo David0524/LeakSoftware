@@ -11,6 +11,18 @@
     // (AX2), where labels must wrap rather than clip and controls stay reachable. Looked at from
     // CI's screenshots alongside the default size.
     @Suite(.serialized) @MainActor struct AccessibilityShots {
+        /// Today on its own and its Getting Started card on its own (Today inside the tab view
+        /// rendered blank in CI; these show which part).
+        @Test func todayParts() async throws {
+            let env = try sampleEnvironment()
+            try seedRoute(env.session.sync.store)
+            env.session.reloadCompanies()
+            try await snapshot("66-today-alone", height: 1500, NavigationStack { TodayScreen() }.app(env))
+            let company = try #require(env.session.company)
+            try await snapshot(
+                "67-getting-started", ScrollView { GettingStartedCard(company: company).padding(16) }.app(env))
+        }
+
         @Test func largeText() async throws {
             let env = try sampleEnvironment()
             try seedRoute(env.session.sync.store)
