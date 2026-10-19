@@ -1,4 +1,5 @@
 import {
+  LANDMARK_SIZE,
   parseDiagramLayout,
   poolDiagram,
   type DiagramShape,
@@ -19,7 +20,33 @@ export interface Pin {
 export function DiagramShapes({ d }: { d: Drawing }) {
   return (
     <>
-      <path d={d.pool} className="fill-diagram-water stroke-water" strokeWidth={2} />
+      {d.pool ? (
+        <path d={d.pool} className="fill-diagram-water stroke-water" strokeWidth={2} />
+      ) : null}
+      {/* Drawn with Draw, in the pool's outline (owner, 2026-10-19). */}
+      {d.drawing.map((path, i) => (
+        <path
+          key={`draw-${i}`}
+          d={path}
+          fill="none"
+          className="stroke-water"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ))}
+      {d.landmarks.map((l, i) => (
+        <path
+          key={`landmark-${i}`}
+          d={l.path}
+          transform={`translate(${l.cx - LANDMARK_SIZE / 2} ${l.cy - LANDMARK_SIZE / 2}) scale(${LANDMARK_SIZE / 24})`}
+          fill="none"
+          className="stroke-text-muted"
+          strokeWidth={1.8}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ))}
       {d.spa ? (
         <>
           {d.spa.square ? (

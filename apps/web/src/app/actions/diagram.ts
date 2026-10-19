@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { DIAGRAM_SHAPES, parseDiagramLayout, parseMarkup } from "@leakbook/core";
+import { isDiagramShape, parseDiagramLayout, parseMarkup } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -19,8 +19,7 @@ export async function savePoolDiagram(input: {
   layout: unknown;
 }): Promise<Result> {
   const office = await getOffice();
-  if (input.shape && !DIAGRAM_SHAPES.some((s) => s.key === input.shape))
-    return { ok: false, error: "Pick a shape." };
+  if (input.shape && !isDiagramShape(input.shape)) return { ok: false, error: "Pick a shape." };
   const layout = parseDiagramLayout(input.layout);
   const { error } = await (
     await createClient()

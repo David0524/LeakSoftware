@@ -508,7 +508,16 @@ export function validateFinding(f: {
 }
 
 export type DiagramShape =
-  "rectangle" | "oval" | "kidney" | "l_shape" | "freeform" | "roman" | "grecian" | "figure_eight";
+  | "rectangle"
+  | "oval"
+  | "kidney"
+  | "l_shape"
+  | "freeform"
+  | "roman"
+  | "grecian"
+  | "figure_eight"
+  /** Drawn by hand: no preset outline (Clear, owner 2026-10-19). */
+  | "custom";
 
 export type SpaSize = "small" | "medium" | "large";
 export type SpaShape = "round" | "square";
@@ -520,28 +529,108 @@ export type SpaShape = "round" | "square";
  */
 export interface DiagramLayout {
   mirror?: boolean;
-  spa?: { x: number; y: number; size?: SpaSize; shape?: SpaShape };
+  /**
+   * The spa's center (0..1), its shape, and its radius `r` in diagram units (pinched on the
+   * diagram, owner 2026-10-19). `size` is the nearest preset, for app builds that predate `r`.
+   */
+  spa?: { x: number; y: number; size?: SpaSize; shape?: SpaShape; r?: number };
+  /** Lines, circles, and freehand strokes drawn on the diagram (Draw), 0..1 of it. */
+  drawing?: DrawnShape[];
+  /** Trees, rocks, a waterfall, and so on, placed around the pool (Landmarks). */
+  landmarks?: Landmark[];
 }
+
+/** One thing drawn with Draw, in the pool's outline (owner, 2026-10-19). */
+export type DrawnShape =
+  | { type: "line"; x1: number; y1: number; x2: number; y2: number }
+  | { type: "circle"; cx: number; cy: number; rx: number; ry: number }
+  | { type: "pen"; points: [number, number][] };
+
+export type LandmarkKind = "tree" | "rock" | "waterfall" | "steps" | "equipment" | "house";
+
+export interface Landmark {
+  kind: LandmarkKind;
+  x: number;
+  y: number;
+}
+
+/**
+ * The Landmarks tile's icons (owner, 2026-10-19: "icons for landmarks... kept clean"): one
+ * outlined drawing each, in a 24 x 24 box, using only absolute M, L, H, V, Q, C, and Z so
+ * every platform draws them from the same path.
+ */
+export const LANDMARKS: { key: LandmarkKind; label: string; path: string }[] = [
+  {
+    key: "tree",
+    label: "Tree",
+    path: "M12 3 C15.3 3 18 5.7 18 9 C18 12.3 15.3 15 12 15 C8.7 15 6 12.3 6 9 C6 5.7 8.7 3 12 3 Z M12 15 V21 M9 21 H15",
+  },
+  {
+    key: "rock",
+    label: "Rock",
+    path: "M3 18 L6 11 L10 7 L15 8 L20 13 L21 18 Z M10 7 L12 12 L20 13",
+  },
+  {
+    key: "waterfall",
+    label: "Waterfall",
+    path: "M3 6 H21 M7 6 V17 M12 6 V19 M17 6 V17 M4 21 Q12 17 20 21",
+  },
+  { key: "steps", label: "Steps", path: "M5 4 H19 V20 H5 Z M5 9.3 H19 M5 14.7 H19" },
+  {
+    key: "equipment",
+    label: "Equipment",
+    path: "M3 15 H21 V20 H3 Z M6 15 V8 H13 V15 M13 10 H18 V15 M8.5 11.5 H10.5",
+  },
+  {
+    key: "house",
+    label: "House",
+    path: "M3 11 L12 4 L21 11 M5.5 9 V20 H18.5 V9 M10 20 V14 H14 V20",
+  },
+];
+
+/** At most this many drawn shapes and landmarks on one pool. */
+export const DRAWING_MAX = 40;
+export const LANDMARKS_MAX = 30;
+/** A landmark's drawn size, in diagram units (of 160 x 100). */
+export const LANDMARK_SIZE = 14;
+/** How small and large a spa can be pinched, as a radius in diagram units. */
+export const SPA_R_MIN = 7;
+export const SPA_R_MAX = 28;
 
 export interface PoolDiagram {
   width: number;
   height: number;
-  /** SVG path for the pool outline, in the diagram's coordinates. */
+  /** SVG path for the pool outline, in the diagram's coordinates; empty for a drawn pool. */
   pool: string;
   /** The spa: a circle of radius r, or with `square`, a rounded square r from its center. */
   spa: { cx: number; cy: number; r: number; square: boolean } | null;
+  /** Each drawn shape as an SVG path, stroked like the pool's outline. */
+  drawing: string[];
+  /**
+   * Landmarks: each icon's path (LANDMARKS) drawn in a LANDMARK_SIZE box centered on cx, cy,
+   * i.e. translate(cx - 7, cy - 7) scale(14 / 24).
+   */
+  landmarks: { kind: LandmarkKind; cx: number; cy: number; path: string }[];
 }
 
+/**
+ * The preset shapes on the Pool Shape tiles. Freeform left the tiles (owner, 2026-10-19: Draw
+ * covers it); pools already set to it still draw it.
+ */
 export const DIAGRAM_SHAPES: { key: DiagramShape; label: string }[] = [
   { key: "rectangle", label: "Rectangle" },
   { key: "oval", label: "Oval" },
   { key: "kidney", label: "Kidney" },
   { key: "l_shape", label: "L-shape" },
-  { key: "freeform", label: "Freeform" },
   { key: "roman", label: "Roman" },
   { key: "grecian", label: "Grecian" },
   { key: "figure_eight", label: "Figure 8" },
 ];
+
+/** Every shape a pool can be saved with: the tiles, plus Freeform (older pools) and a drawn one. */
+export function isDiagramShape(v: unknown): v is DiagramShape {
+  return v === "freeform" || v === "custom" || DIAGRAM_SHAPES.some((s) => s.key === v);
+}
 
 export const SPA_SIZES: { key: SpaSize; label: string; r: number }[] = [
   { key: "small", label: "Small", r: 10 },
@@ -568,6 +657,7 @@ const POOL_PATHS: Record<DiagramShape, string> = {
     "M16 18 H104 C120 18 132 32 132 50 C132 68 120 82 104 82 H16 Q10 82 10 76 V24 Q10 18 16 18 Z",
   // Rectangle with the corners cut.
   grecian: "M26 18 H114 L130 34 V66 L114 82 H26 L10 66 V34 Z",
+  custom: "",
   figure_eight:
     "M40 16 C58 16 64 28 70 34 C76 28 82 16 100 16 C120 16 132 32 132 50 C132 68 120 84 100 84 C82 84 76 72 70 66 C64 72 58 84 40 84 C20 84 8 68 8 50 C8 32 20 16 40 16 Z",
 };
@@ -602,6 +692,35 @@ export function mirrorPath(path: string): string {
 
 const isUnitNumber = (v: unknown): v is number => typeof v === "number" && v >= 0 && v <= 1;
 
+const isUnitPair = (p: unknown): p is [number, number] =>
+  Array.isArray(p) && p.length === 2 && isUnitNumber(p[0]) && isUnitNumber(p[1]);
+
+function drawnShape(v: unknown): DrawnShape | null {
+  if (!v || typeof v !== "object") return null;
+  const o = v as Record<string, unknown>;
+  if (o.type === "line" && [o.x1, o.y1, o.x2, o.y2].every(isUnitNumber))
+    return {
+      type: "line",
+      x1: o.x1 as number,
+      y1: o.y1 as number,
+      x2: o.x2 as number,
+      y2: o.y2 as number,
+    };
+  if (o.type === "circle" && [o.cx, o.cy, o.rx, o.ry].every(isUnitNumber))
+    return {
+      type: "circle",
+      cx: o.cx as number,
+      cy: o.cy as number,
+      rx: o.rx as number,
+      ry: o.ry as number,
+    };
+  if (o.type === "pen" && Array.isArray(o.points)) {
+    const points = o.points.filter(isUnitPair).slice(0, 400);
+    return points.length >= 2 ? { type: "pen", points } : null;
+  }
+  return null;
+}
+
 /** Read a layout from a synced row. Anything unrecognized is dropped, never thrown. */
 export function parseDiagramLayout(value: unknown): DiagramLayout {
   if (!value || typeof value !== "object") return {};
@@ -613,9 +732,113 @@ export function parseDiagramLayout(value: unknown): DiagramLayout {
     layout.spa = { x: spa.x, y: spa.y };
     if (SPA_SIZES.some((z) => z.key === spa.size)) layout.spa.size = spa.size as SpaSize;
     if (SPA_SHAPES.some((z) => z.key === spa.shape)) layout.spa.shape = spa.shape as SpaShape;
+    if (typeof spa.r === "number" && spa.r >= SPA_R_MIN && spa.r <= SPA_R_MAX) layout.spa.r = spa.r;
+  }
+  if (Array.isArray(o.drawing)) {
+    const drawing = o.drawing
+      .map(drawnShape)
+      .filter((d): d is DrawnShape => !!d)
+      .slice(0, DRAWING_MAX);
+    if (drawing.length) layout.drawing = drawing;
+  }
+  if (Array.isArray(o.landmarks)) {
+    const landmarks = o.landmarks
+      .filter(
+        (l): l is Landmark =>
+          !!l &&
+          typeof l === "object" &&
+          LANDMARKS.some((k) => k.key === (l as Landmark).kind) &&
+          isUnitNumber((l as Landmark).x) &&
+          isUnitNumber((l as Landmark).y),
+      )
+      .map((l) => ({ kind: l.kind, x: l.x, y: l.y }))
+      .slice(0, LANDMARKS_MAX);
+    if (landmarks.length) layout.landmarks = landmarks;
   }
   return layout;
 }
+
+/** The nearest preset for a pinched spa radius, written beside `r` for older app builds. */
+export function spaSizeFor(r: number): SpaSize {
+  return SPA_SIZES.reduce((best, z) => (Math.abs(z.r - r) < Math.abs(best.r - r) ? z : best)).key;
+}
+
+/** A spa radius kept within what can be pinched, to a tenth. */
+export function clampSpaR(r: number): number {
+  return Math.round(Math.min(SPA_R_MAX, Math.max(SPA_R_MIN, r)) * 10) / 10;
+}
+
+const tenth = (n: number) => String(Math.round(n * 10) / 10);
+
+/** A drawn shape as an SVG path in the 160 x 100 diagram (circles as four curves, no arcs). */
+export function drawnPath(d: DrawnShape): string {
+  const W = DIAGRAM_WIDTH;
+  const H = DIAGRAM_HEIGHT;
+  if (d.type === "line")
+    return `M${tenth(d.x1 * W)} ${tenth(d.y1 * H)} L${tenth(d.x2 * W)} ${tenth(d.y2 * H)}`;
+  if (d.type === "pen")
+    return d.points.map(([x, y], i) => `${i ? "L" : "M"}${tenth(x * W)} ${tenth(y * H)}`).join(" ");
+  const cx = d.cx * W;
+  const cy = d.cy * H;
+  const rx = d.rx * W;
+  const ry = d.ry * H;
+  const k = 0.5523;
+  return [
+    `M${tenth(cx)} ${tenth(cy - ry)}`,
+    `C${tenth(cx + k * rx)} ${tenth(cy - ry)} ${tenth(cx + rx)} ${tenth(cy - k * ry)} ${tenth(cx + rx)} ${tenth(cy)}`,
+    `C${tenth(cx + rx)} ${tenth(cy + k * ry)} ${tenth(cx + k * rx)} ${tenth(cy + ry)} ${tenth(cx)} ${tenth(cy + ry)}`,
+    `C${tenth(cx - k * rx)} ${tenth(cy + ry)} ${tenth(cx - rx)} ${tenth(cy + k * ry)} ${tenth(cx - rx)} ${tenth(cy)}`,
+    `C${tenth(cx - rx)} ${tenth(cy - k * ry)} ${tenth(cx - k * rx)} ${tenth(cy - ry)} ${tenth(cx)} ${tenth(cy - ry)} Z`,
+  ].join(" ");
+}
+
+/**
+ * A drag on the diagram as a drawn shape (Draw's Line, Circle, and Freeform), points 0..1.
+ * A line or circle from where the drag started to where it ended (the circle fills the box
+ * between them); a freehand stroke from every point, thinned to at most 400. Null when too
+ * small to see.
+ */
+export function drawnShapeFrom(
+  tool: "line" | "circle" | "pen",
+  points: { x: number; y: number }[],
+): DrawnShape | null {
+  const c = (n: number) => Math.round(Math.min(1, Math.max(0, n)) * 10_000) / 10_000;
+  const first = points[0];
+  const last = points[points.length - 1];
+  if (!first || !last) return null;
+  if (tool === "pen") {
+    const kept: [number, number][] = [];
+    for (const p of points) {
+      const q: [number, number] = [c(p.x), c(p.y)];
+      const prev = kept[kept.length - 1];
+      if (!prev || Math.hypot(q[0] - prev[0], q[1] - prev[1]) >= 0.004) kept.push(q);
+    }
+    if (kept.length < 2) return null;
+    const step = Math.ceil(kept.length / 400);
+    const thin = step > 1 ? kept.filter((_, i) => i % step === 0 || i === kept.length - 1) : kept;
+    return { type: "pen", points: thin.slice(0, 400) };
+  }
+  if (Math.hypot(last.x - first.x, last.y - first.y) < 0.02) return null;
+  if (tool === "line")
+    return { type: "line", x1: c(first.x), y1: c(first.y), x2: c(last.x), y2: c(last.y) };
+  return {
+    type: "circle",
+    cx: c((first.x + last.x) / 2),
+    cy: c((first.y + last.y) / 2),
+    rx: c(Math.abs(last.x - first.x) / 2),
+    ry: c(Math.abs(last.y - first.y) / 2),
+  };
+}
+
+/**
+ * Clear (owner, 2026-10-19: "Clear would empty everything in the diagram"): no outline, no
+ * spa, nothing drawn, no landmarks. What Save writes for a cleared pool.
+ */
+export const CLEARED_DIAGRAM: { shape: DiagramShape; hasSpa: boolean; layout: DiagramLayout } = {
+  shape: "custom",
+  hasSpa: false,
+  layout: {},
+};
 
 /**
  * Top-down diagram for a property. Pins are stored as 0..1 of width and height. Without a
@@ -629,11 +852,12 @@ export function poolDiagram(
   const path = POOL_PATHS[shape ?? "rectangle"] ?? POOL_PATHS.rectangle;
   const mirror = layout?.mirror === true;
   const placed = layout?.spa;
-  const r = SPA_SIZES.find((z) => z.key === (placed?.size ?? "medium"))!.r;
+  const r = placed?.r ?? SPA_SIZES.find((z) => z.key === (placed?.size ?? "medium"))!.r;
+  const half = LANDMARK_SIZE / 2;
   return {
     width: DIAGRAM_WIDTH,
     height: DIAGRAM_HEIGHT,
-    pool: mirror ? mirrorPath(path) : path,
+    pool: mirror && path ? mirrorPath(path) : path,
     spa: hasSpa
       ? {
           cx: placed ? placed.x * DIAGRAM_WIDTH : mirror ? DIAGRAM_WIDTH - 145 : 145,
@@ -642,5 +866,12 @@ export function poolDiagram(
           square: placed?.shape === "square",
         }
       : null,
+    drawing: (layout?.drawing ?? []).map(drawnPath),
+    landmarks: (layout?.landmarks ?? []).map((l) => ({
+      kind: l.kind,
+      cx: Math.min(DIAGRAM_WIDTH - half, Math.max(half, l.x * DIAGRAM_WIDTH)),
+      cy: Math.min(DIAGRAM_HEIGHT - half, Math.max(half, l.y * DIAGRAM_HEIGHT)),
+      path: LANDMARKS.find((k) => k.key === l.kind)!.path,
+    })),
   };
 }

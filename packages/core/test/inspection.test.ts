@@ -347,3 +347,150 @@ describe("removeItemConfirm", () => {
     );
   });
 });
+
+describe("pool diagram: draw, landmarks, the spa's size, clear", async () => {
+  const core = await import("../src");
+  it("has seven preset tiles: Freeform left for Draw, and still draws", () => {
+    expect(core.DIAGRAM_SHAPES.map((s) => s.key)).toEqual([
+      "rectangle",
+      "oval",
+      "kidney",
+      "l_shape",
+      "roman",
+      "grecian",
+      "figure_eight",
+    ]);
+    expect(core.poolDiagram("freeform", false).pool).toMatch(/^M24 22/);
+    expect(core.poolDiagram("custom", false).pool).toBe("");
+    expect(core.poolDiagram("custom", false, { mirror: true }).pool).toBe("");
+  });
+
+  it("reads drawn shapes and landmarks, and drops anything else", () => {
+    const layout = core.parseDiagramLayout({
+      drawing: [
+        { type: "line", x1: 0.1, y1: 0.2, x2: 0.5, y2: 0.2 },
+        { type: "circle", cx: 0.5, cy: 0.5, rx: 0.1, ry: 0.2 },
+        {
+          type: "pen",
+          points: [
+            [0, 0],
+            [0.5, 0.5],
+            [2, 2],
+          ],
+        },
+        { type: "pen", points: [[0.1, 0.1]] },
+        { type: "square", x: 0.1 },
+      ],
+      landmarks: [
+        { kind: "tree", x: 0.05, y: 0.9, extra: 1 },
+        { kind: "boat", x: 0.5, y: 0.5 },
+        { kind: "rock", x: 1.5, y: 0.5 },
+      ],
+      spa: { x: 0.8, y: 0.2, r: 20, shape: "square" },
+    });
+    expect(layout.drawing).toEqual([
+      { type: "line", x1: 0.1, y1: 0.2, x2: 0.5, y2: 0.2 },
+      { type: "circle", cx: 0.5, cy: 0.5, rx: 0.1, ry: 0.2 },
+      {
+        type: "pen",
+        points: [
+          [0, 0],
+          [0.5, 0.5],
+        ],
+      },
+    ]);
+    expect(layout.landmarks).toEqual([{ kind: "tree", x: 0.05, y: 0.9 }]);
+    expect(layout.spa).toEqual({ x: 0.8, y: 0.2, r: 20, shape: "square" });
+    expect(core.parseDiagramLayout({ spa: { x: 0.5, y: 0.5, r: 99 } }).spa).toEqual({
+      x: 0.5,
+      y: 0.5,
+    });
+  });
+
+  it("draws them: shapes as paths, landmarks in a 14-unit box kept inside", () => {
+    const d = core.poolDiagram("custom", true, {
+      spa: { x: 0.5, y: 0.5, r: 20 },
+      drawing: [
+        { type: "line", x1: 0, y1: 0, x2: 1, y2: 1 },
+        { type: "circle", cx: 0.5, cy: 0.5, rx: 0.25, ry: 0.1 },
+      ],
+      landmarks: [{ kind: "house", x: 0, y: 1 }],
+    });
+    expect(d.spa).toEqual({ cx: 80, cy: 50, r: 20, square: false });
+    expect(d.drawing[0]).toBe("M0 0 L160 100");
+    expect(d.drawing[1]).toBe(
+      "M80 40 C102.1 40 120 44.5 120 50 C120 55.5 102.1 60 80 60 C57.9 60 40 55.5 40 50 C40 44.5 57.9 40 80 40 Z",
+    );
+    expect(d.landmarks).toEqual([
+      { kind: "house", cx: 7, cy: 93, path: core.LANDMARKS.find((l) => l.key === "house")!.path },
+    ]);
+  });
+
+  it("landmark paths use only the commands every platform reads", () => {
+    for (const l of core.LANDMARKS) expect(l.path, l.key).toMatch(/^[MLHVQCZ0-9. -]+$/);
+    expect(core.LANDMARKS.map((l) => l.label)).toEqual([
+      "Tree",
+      "Rock",
+      "Waterfall",
+      "Steps",
+      "Equipment",
+      "House",
+    ]);
+  });
+
+  it("turns a drag into a line, circle, or stroke", () => {
+    const drag = [
+      { x: 0.1, y: 0.1 },
+      { x: 0.3, y: 0.2 },
+      { x: 0.5, y: 0.5 },
+    ];
+    expect(core.drawnShapeFrom("line", drag)).toEqual({
+      type: "line",
+      x1: 0.1,
+      y1: 0.1,
+      x2: 0.5,
+      y2: 0.5,
+    });
+    expect(core.drawnShapeFrom("circle", drag)).toEqual({
+      type: "circle",
+      cx: 0.3,
+      cy: 0.3,
+      rx: 0.2,
+      ry: 0.2,
+    });
+    expect(core.drawnShapeFrom("pen", drag)).toEqual({
+      type: "pen",
+      points: [
+        [0.1, 0.1],
+        [0.3, 0.2],
+        [0.5, 0.5],
+      ],
+    });
+    expect(
+      core.drawnShapeFrom("line", [
+        { x: 0.1, y: 0.1 },
+        { x: 0.105, y: 0.1 },
+      ]),
+    ).toBeNull();
+    expect(core.drawnShapeFrom("pen", [{ x: 2, y: -1 }])).toBeNull();
+  });
+
+  it("sizes a pinched spa, and names its nearest preset", () => {
+    expect(core.clampSpaR(3)).toBe(7);
+    expect(core.clampSpaR(40)).toBe(28);
+    expect(core.clampSpaR(12.345)).toBe(12.3);
+    expect(core.spaSizeFor(7)).toBe("small");
+    expect(core.spaSizeFor(14)).toBe("medium");
+    expect(core.spaSizeFor(25)).toBe("large");
+    expect(core.CLEARED_DIAGRAM).toEqual({ shape: "custom", hasSpa: false, layout: {} });
+  });
+});
+
+describe("isDiagramShape", () => {
+  it("takes the tiles, Freeform, and a drawn pool", async () => {
+    const { isDiagramShape } = await import("../src");
+    for (const k of ["rectangle", "figure_eight", "freeform", "custom"])
+      expect(isDiagramShape(k)).toBe(true);
+    for (const k of ["hexagon", "", null, 3]) expect(isDiagramShape(k)).toBe(false);
+  });
+});

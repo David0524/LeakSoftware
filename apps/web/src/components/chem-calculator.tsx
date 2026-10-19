@@ -335,9 +335,9 @@ export function ChemCalculator({
           />
         </div>
         <section
-            aria-labelledby="dose-inline-title"
-            className="space-y-3 border-t-[0.5px] border-separator pt-4"
-          >
+          aria-labelledby="dose-inline-title"
+          className="space-y-3 border-t-[0.5px] border-separator pt-4"
+        >
           <h3 id="dose-inline-title" className="font-display text-lg font-bold">
             What to Add
           </h3>

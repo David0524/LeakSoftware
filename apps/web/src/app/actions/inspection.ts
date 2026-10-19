@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import {
-  DIAGRAM_SHAPES,
+  isDiagramShape,
   calculate,
   nextInstance,
   normalizeTestData,
@@ -405,7 +405,7 @@ export async function setPoolShape(_: FormState, form: FormData): Promise<FormSt
   await getOffice();
   // Empty clears it (not known yet).
   const shape = String(form.get("shape") ?? "");
-  if (shape && !DIAGRAM_SHAPES.some((s) => s.key === shape)) return { error: "Pick a shape." };
+  if (shape && !isDiagramShape(shape)) return { error: "Pick a shape." };
   const { error } = await (
     await createClient()
   )
