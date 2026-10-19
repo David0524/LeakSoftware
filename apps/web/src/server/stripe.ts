@@ -488,7 +488,11 @@ export async function applyEvent(
         });
         outcome = "applied";
         if (status === "succeeded")
-          await notifyPaid(d, { table: "quote", id: s.metadata.quote_id, amountCents: payment.amount });
+          await notifyPaid(d, {
+            table: "quote",
+            id: s.metadata.quote_id,
+            amountCents: payment.amount,
+          });
       } else if (s.metadata?.kind === "invoice_payment" && s.metadata.invoice_id) {
         const r = await rpc<{ paid_now: boolean }>(d, "stripe_record_invoice_payment", {
           target_invoice: s.metadata.invoice_id,
