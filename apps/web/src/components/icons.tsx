@@ -53,6 +53,14 @@ export const VoicemailIcon = ({ className }: { className?: string }) => (
   </Icon>
 );
 
+/** A key: how to get in (a pool's access notes). */
+export const KeyIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <circle cx="8" cy="15" r="4" />
+    <path d="M11 12l8-8M16 7l2 2M14 9l2 2" />
+  </Icon>
+);
+
 /** A cartridge filter: a tall canister with pleats (owner, 2026-10-19: filter cleanings). */
 export const FilterIcon = ({ className }: { className?: string }) => (
   <Icon className={className}>

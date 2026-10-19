@@ -156,3 +156,22 @@ describe("cleanings due (owner, 2026-10-19)", () => {
     expect(cleaningMonthsLabel(12)).toBe("Yearly");
   });
 });
+
+describe("cleaningShortLabel", () => {
+  it("says only how far off it is", async () => {
+    const { cleaningCountdown, cleaningShortLabel, cleaningDueSpoken } =
+      await import("../src/maintenance");
+    const on = (due: string) => cleaningCountdown(due, "2026-10-19");
+    expect(cleaningShortLabel(on("2026-10-18"))).toBe("Overdue");
+    expect(cleaningShortLabel(on("2026-10-19"))).toBe("Today");
+    expect(cleaningShortLabel(on("2026-10-20"))).toBe("1 day");
+    expect(cleaningShortLabel(on("2026-10-22"))).toBe("3 days");
+    expect(cleaningShortLabel(on("2026-10-26"))).toBe("1 week");
+    expect(cleaningShortLabel(on("2026-11-16"))).toBe("4 weeks");
+    expect(cleaningDueSpoken("Clean filter", on("2026-10-22"))).toBe("Clean filter due in 3 days");
+    expect(cleaningDueSpoken("Clean salt cell", on("2026-10-19"))).toBe(
+      "Clean salt cell due today",
+    );
+    expect(cleaningDueSpoken("Clean filter", on("2026-10-01"))).toBe("Clean filter overdue");
+  });
+});

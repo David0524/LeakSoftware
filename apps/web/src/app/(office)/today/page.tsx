@@ -12,10 +12,12 @@ import {
   dayDirections,
   onMyWayVia,
   cleaningCountdown,
+  cleaningDueSpoken,
   cleaningKind,
+  cleaningShortLabel,
 } from "@leakbook/core";
 import { Suspense } from "react";
-import { CleaningIcon, PhoneIcon } from "@/components/icons";
+import { CleaningIcon, KeyIcon, PhoneIcon } from "@/components/icons";
 import { OnMyWay } from "@/components/on-my-way";
 import { WeatherBadge } from "@/components/weather-badge";
 import { AddressLink, OpenRouteInMaps } from "@/components/open-in-maps";
@@ -237,21 +239,34 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                           <AddressLink address={address} location={propertyLocation(j.property)} />
                         </p>
                         {dueAt(j).length ? (
-                          <ul className="mt-1 flex flex-wrap gap-1.5" aria-label="Cleanings due">
+                          // Just the icon and how soon (owner, 2026-10-19: "Don't make it too
+                          // wordy"); read aloud with the cleaning's name.
+                          <ul
+                            className="mt-1 flex flex-wrap gap-x-4 gap-y-1"
+                            aria-label="Cleanings due"
+                          >
                             {dueAt(j).map((c) => (
                               <li
                                 key={c.id}
-                                className="inline-flex min-h-8 items-center gap-1.5 rounded-full bg-status-warning/10 px-3 text-[0.9375rem] font-semibold"
+                                aria-label={cleaningDueSpoken(c.name, c.due)}
+                                className={cx(
+                                  "inline-flex items-center gap-1.5 text-[0.9375rem] font-medium",
+                                  c.due.days < 0 ? "text-status-fail" : "text-text-muted",
+                                )}
                               >
-                                <CleaningIcon kind={c.kind} className="size-4 shrink-0" />
-                                {c.name}: {c.due.label.toLowerCase()}
+                                <CleaningIcon kind={c.kind} className="size-[1.125rem] shrink-0" />
+                                <span aria-hidden="true">{cleaningShortLabel(c.due)}</span>
                               </li>
                             ))}
                           </ul>
                         ) : null}
                         {j.property?.access_notes ? (
-                          <p className="mt-1 line-clamp-2 rounded-lg bg-status-warning/10 px-2 py-1 text-[0.9375rem]">
-                            {j.property.access_notes}
+                          <p className="mt-1 flex items-start gap-1.5 text-[0.9375rem] text-text-muted">
+                            <KeyIcon className="mt-0.5 size-[1.125rem] shrink-0" />
+                            <span className="line-clamp-2 min-w-0">
+                              <span className="sr-only">Access: </span>
+                              {j.property.access_notes}
+                            </span>
                           </p>
                         ) : null}
                       </>

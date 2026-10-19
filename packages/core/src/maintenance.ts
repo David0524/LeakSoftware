@@ -250,6 +250,24 @@ export function cleaningCountdown(
 }
 
 /**
+ * The few words beside a cleaning's icon on Today (owner, 2026-10-19: "just the icon with
+ * 'today, 1 week, etc' next to it"): "Overdue", "Today", "3 days", "1 week".
+ */
+export function cleaningShortLabel(due: { days: number; weeks: number }): string {
+  if (due.days < 0) return "Overdue";
+  if (due.days === 0) return "Today";
+  if (due.days < 7) return `${due.days} ${due.days === 1 ? "day" : "days"}`;
+  return `${due.weeks} ${due.weeks === 1 ? "week" : "weeks"}`;
+}
+
+/** The same, read aloud with the cleaning's name: "Clean filter due in 3 days". */
+export function cleaningDueSpoken(name: string, due: { days: number; weeks: number }): string {
+  if (due.days < 0) return `${name} overdue`;
+  if (due.days === 0) return `${name} due today`;
+  return `${name} due in ${cleaningShortLabel(due)}`;
+}
+
+/**
  * The shop's usual cleaning frequency per checklist item key (Settings › Scheduling, owner
  * 2026-10-19), used for new plans: settings.maintenance.cleaning_months, e.g.
  * {"svc_filter_clean": 3, "svc_salt_clean": 6}. 3 months when not set.
