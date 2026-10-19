@@ -129,7 +129,7 @@
         var route: DayRoute?
         var mapsApp: MapsApp
         var lineActive: Bool
-        /// The cleanings on each stop's checklist, by job (owner, 2026-10-19).
+        /// The cleanings due soon at each stop, by job (owner, 2026-10-19).
         var cleanings: [String: [VisitCleaning]] = [:]
 
         init(
@@ -144,9 +144,18 @@
             let pick = wanted ?? userId
             techId = ctx.isManager && techs.contains { $0.id == pick } ? pick : userId
             route = loaded.routes[routeKey(techId, ctx.today)]
+            // Each stop's plan cleanings due within a week of its day (website `dueAt`); a
+            // plan whose cleanings aren't on this phone yet shows the visit's checklist ones.
             let config = InspectionConfig(store, companyId: company.id)
-            for job in route?.jobs ?? [] where job.type == .maintenance {
-                let found = visitCleanings(JobInspection(store, jobId: job.id), config, day: ctx.today)
+            let stops = (route?.jobs ?? []).filter { $0.type == .maintenance }
+            let plans = planCleanings(
+                store, companyId: company.id, planIds: Set(stops.compactMap(\.servicePlanId)))
+            for job in stops {
+                let day = job.planDate ?? ctx.today
+                let found =
+                    plans.contains { $0.planId == job.servicePlanId }
+                    ? stopCleanings(plans, planId: job.servicePlanId, visitDay: day)
+                    : visitCleanings(JobInspection(store, jobId: job.id), config, day: day)
                 if !found.isEmpty { cleanings[job.id] = found }
             }
             mapsApp = MapsApp(kv)

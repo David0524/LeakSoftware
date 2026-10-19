@@ -2024,6 +2024,375 @@
         }
       ],
       "result": "salt_cell"
+    },
+    {
+      "args": [
+        {
+          "key": "svc_filter_replace",
+          "name": "Replace filter"
+        }
+      ],
+      "result": "filter_replace"
+    },
+    {
+      "args": [
+        {
+          "key": null,
+          "name": "New filter (replace)"
+        }
+      ],
+      "result": "filter_replace"
+    },
+    {
+      "args": [
+        {
+          "key": "svc_x",
+          "name": "Replace salt cell filter"
+        }
+      ],
+      "result": "salt_cell"
+    },
+    {
+      "args": [
+        {
+          "key": "svc_replace",
+          "name": "Replace pump"
+        }
+      ],
+      "result": "other"
+    }
+  ],
+  "cleaningCadence": [
+    {
+      "args": [
+        1
+      ],
+      "result": "Every month"
+    },
+    {
+      "args": [
+        2
+      ],
+      "result": "Every 2 months"
+    },
+    {
+      "args": [
+        3
+      ],
+      "result": "Every 3 months"
+    },
+    {
+      "args": [
+        6
+      ],
+      "result": "Every 6 months"
+    },
+    {
+      "args": [
+        12
+      ],
+      "result": "Every year"
+    }
+  ],
+  "cleaningSummary": [
+    {
+      "args": [
+        "Clean filter",
+        {
+          "every_months": 3,
+          "price_cents": 4000
+        }
+      ],
+      "result": "Clean filter every 3 months · $40.00 each"
+    },
+    {
+      "args": [
+        "Clean salt cell",
+        {
+          "every_months": 6,
+          "price_cents": null
+        }
+      ],
+      "result": "Clean salt cell every 6 months"
+    },
+    {
+      "args": [
+        "Replace filter",
+        {
+          "every_months": 12,
+          "price_cents": 0
+        }
+      ],
+      "result": "Replace filter every year · $0.00 each"
+    },
+    {
+      "args": [
+        "Brush",
+        {
+          "every_months": 1,
+          "price_cents": 12345
+        }
+      ],
+      "result": "Brush every month · $123.45 each"
+    }
+  ],
+  "FILTER_REPLACE_KEY": [
+    {
+      "args": [],
+      "result": "svc_filter_replace"
+    }
+  ],
+  "cleaningDefaultMonths": [
+    {
+      "args": [
+        {},
+        "svc_filter_replace"
+      ],
+      "result": 12
+    },
+    {
+      "args": [
+        {},
+        "svc_filter_clean"
+      ],
+      "result": 3
+    },
+    {
+      "args": [
+        null,
+        null
+      ],
+      "result": 3
+    },
+    {
+      "args": [
+        {
+          "maintenance": {
+            "cleaning_months": {
+              "svc_filter_replace": 6
+            }
+          }
+        },
+        "svc_filter_replace"
+      ],
+      "result": 6
+    },
+    {
+      "args": [
+        {
+          "maintenance": {
+            "cleaning_months": {
+              "svc_filter_clean": 2
+            }
+          }
+        },
+        "svc_filter_clean"
+      ],
+      "result": 2
+    },
+    {
+      "args": [
+        {
+          "maintenance": {
+            "cleaning_months": {
+              "svc_filter_clean": "6"
+            }
+          }
+        },
+        "svc_filter_clean"
+      ],
+      "result": 6
+    },
+    {
+      "args": [
+        {
+          "maintenance": {
+            "cleaning_months": {
+              "svc_filter_clean": 4
+            }
+          }
+        },
+        "svc_filter_clean"
+      ],
+      "result": 3
+    },
+    {
+      "args": [
+        {
+          "maintenance": {
+            "cleaning_months": {
+              "svc_filter_replace": 4
+            }
+          }
+        },
+        "svc_filter_replace"
+      ],
+      "result": 12
+    },
+    {
+      "args": [
+        {
+          "maintenance": {
+            "cleaning_months": {
+              "svc_filter_clean": 1.5
+            }
+          }
+        },
+        "svc_filter_clean"
+      ],
+      "result": 3
+    },
+    {
+      "args": [
+        {
+          "maintenance": {
+            "cleaning_months": null
+          }
+        },
+        "svc_salt_clean"
+      ],
+      "result": 3
+    },
+    {
+      "args": [
+        {
+          "maintenance": {
+            "cleaning_months": {
+              "svc_salt_clean": 12
+            }
+          }
+        },
+        null
+      ],
+      "result": 3
+    }
+  ],
+  "filterAge": [
+    {
+      "args": [
+        null,
+        "2026-10-19"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "",
+        "2026-10-19"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "2026-10-20",
+        "2026-10-19"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "2026-10-19",
+        "2026-10-19"
+      ],
+      "result": "New filter"
+    },
+    {
+      "args": [
+        "2026-10-15",
+        "2026-10-19"
+      ],
+      "result": "New filter"
+    },
+    {
+      "args": [
+        "2026-10-12",
+        "2026-10-19"
+      ],
+      "result": "Filter 1 week old"
+    },
+    {
+      "args": [
+        "2026-09-28",
+        "2026-10-19"
+      ],
+      "result": "Filter 3 weeks old"
+    },
+    {
+      "args": [
+        "2026-09-20",
+        "2026-10-19"
+      ],
+      "result": "Filter 4 weeks old"
+    },
+    {
+      "args": [
+        "2026-09-19",
+        "2026-10-19"
+      ],
+      "result": "Filter 1 month old"
+    },
+    {
+      "args": [
+        "2026-09-18",
+        "2026-10-19"
+      ],
+      "result": "Filter 1 month old"
+    },
+    {
+      "args": [
+        "2026-02-19",
+        "2026-10-19"
+      ],
+      "result": "Filter 8 months old"
+    },
+    {
+      "args": [
+        "2025-10-20",
+        "2026-10-19"
+      ],
+      "result": "Filter 11 months old"
+    },
+    {
+      "args": [
+        "2024-10-19",
+        "2026-10-19"
+      ],
+      "result": "Filter 2 years old"
+    },
+    {
+      "args": [
+        "2024-08-01",
+        "2026-10-19"
+      ],
+      "result": "Filter 2 years old"
+    },
+    {
+      "args": [
+        "2016-03-31",
+        "2026-10-19"
+      ],
+      "result": "Filter 10 years old"
+    },
+    {
+      "args": [
+        "2026-01-31",
+        "2026-03-01"
+      ],
+      "result": "Filter 1 month old"
+    },
+    {
+      "args": [
+        "2028-02-29",
+        "2028-03-28"
+      ],
+      "result": "Filter 4 weeks old"
+    },
+    {
+      "args": [
+        "not a date",
+        "2026-10-19"
+      ],
+      "result": null
     }
   ],
   "cleaningCountdown": [

@@ -33,20 +33,21 @@
         }
     }
 
-    /// "Regular cleanings" under the Chemical button on a visit's checklist: each cleaning on
-    /// this visit's checklist, with its icon, "On this visit’s checklist" and "Today" (website
-    /// job page `Cleanings`). Hidden when there are none.
+    /// "Regular cleanings" under the Chemical button on a visit's checklist: each of the plan's
+    /// cleanings with its icon, "On this visit’s checklist" or "Every 3 months · next Mon, Nov
+    /// 30" (and a replace filter's age), and "Today" or the countdown (website job page
+    /// `Cleanings`). Hidden when there are none.
     struct VisitCleaningsBox: View {
-        var cleanings: [VisitCleaning]
+        var cleanings: [RegularCleaning]
 
         var body: some View {
             if !cleanings.isEmpty {
                 Grouped(label: CleaningText.title) {
                     ForEach(cleanings) { c in
-                        ListRow(c.name, detail: CleaningText.onVisit) {
-                            Text(CleaningText.today)
-                                .font(.role(.body).weight(c.due.soon ? .semibold : .regular))
-                                .foregroundStyle(c.due.soon ? Color.warning : Color.textMuted)
+                        ListRow(c.name, detail: c.detail) {
+                            Text(c.value)
+                                .font(.role(.body).weight(c.soon ? .semibold : .regular))
+                                .foregroundStyle(c.soon ? Color.warning : Color.textMuted)
                         }
                         .withLeading(CleaningIcon(kind: c.kind))
                     }

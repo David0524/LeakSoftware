@@ -274,6 +274,53 @@ public func firstVisitHint(_ repeats: PlanRepeat, long: Bool) -> String {
 /// How often a cleaning can repeat, in months (`CLEANING_MONTHS`).
 public let cleaningMonths = [1, 2, 3, 6, 12]
 
+/// "Every 3 months", "Every month", "Every year".
+public func cleaningCadence(_ months: Int) -> String {
+    months == 1 ? "Every month" : months == 12 ? "Every year" : "Every \(months) months"
+}
+
+/// "Clean filter every 3 months · $40.00 each"
+public func cleaningSummary(_ name: String, everyMonths: Int, priceCents: Cents?) -> String {
+    ["\(name) \(ECMA.lowercase(cleaningCadence(everyMonths)))", priceCents.map { "\(formatCents($0)) each" }]
+        .compactMap { $0 }.joined(separator: " · ")
+}
+
+/// The checklist item for putting a new filter in (owner, 2026-10-19).
+public let filterReplaceKey = "svc_filter_replace"
+
+/// The shop's usual cleaning frequency per checklist item key (Settings › Scheduling),
+/// `settings.maintenance.cleaning_months`. When not set: a year for replacing the filter, 3
+/// months for anything else.
+public func cleaningDefaultMonths(_ settings: JSONValue?, _ key: String?) -> Int {
+    let raw = settings?["maintenance"]?["cleaning_months"]
+    let months = key.map { ECMA.toNumber(raw?[$0]) } ?? .nan
+    if months.isFinite, months == months.rounded(), cleaningMonths.contains(Int(months)) { return Int(months) }
+    return key == filterReplaceKey ? 12 : 3
+}
+
+/// How old the pool's filter is, from when it was last replaced (plan_cleaning.last_done_on):
+/// "New filter" (this week), "Filter 3 weeks old", "Filter 8 months old", "Filter 2 years old".
+/// Nil when nobody has said, or the date is after `today`.
+public func filterAge(_ lastReplaced: String?, _ today: String) -> String? {
+    guard let lastReplaced, !lastReplaced.isEmpty else { return nil }
+    guard let now = ECMA.parseDate("\(today)T12:00:00Z"), let then = ECMA.parseDate("\(lastReplaced)T12:00:00Z")
+    else { return nil }
+    let days = Int(ECMA.round((now - then) / 86_400_000))
+    if days < 0 { return nil }
+    if days < 7 { return "New filter" }
+    // Whole calendar months: Feb 19 to Oct 19 is 8.
+    let a = lastReplaced.split(separator: "-").map { Int($0) ?? 0 }
+    let b = today.split(separator: "-").map { Int($0) ?? 0 }
+    guard a.count >= 3, b.count >= 3 else { return nil }
+    let months = (b[0] - a[0]) * 12 + (b[1] - a[1]) - (b[2] < a[2] ? 1 : 0)
+    if months < 1 {
+        let weeks = days / 7
+        return "Filter \(weeks) \(weeks == 1 ? "week" : "weeks") old"
+    }
+    if months < 24 { return "Filter \(months) \(months == 1 ? "month" : "months") old" }
+    return "Filter \(months / 12) years old"
+}
+
 /// A frequency choice's label: "Monthly", "3 Months", "Yearly".
 public func cleaningMonthsLabel(_ months: Int) -> String {
     months == 1 ? "Monthly" : months == 12 ? "Yearly" : "\(months) Months"
@@ -285,6 +332,8 @@ public let cleaningDueSoonDays = 7
 /// What a scheduled cleaning is, for its icon: the filter, the salt cell, or something else.
 public enum CleaningKind: String, Codable, Sendable {
     case filter
+    /// Replace filter (owner, 2026-10-19): separate from cleaning it, and tracks the filter's age.
+    case filterReplace = "filter_replace"
     case saltCell = "salt_cell"
     case other
 }
@@ -293,6 +342,7 @@ public enum CleaningKind: String, Codable, Sendable {
 public func cleaningKind(key: String?, name: String?) -> CleaningKind {
     let text = ECMA.lowercase("\(key ?? "") \(name ?? "")")
     if text.contains("salt") { return .saltCell }
+    if text.contains("filter") && text.contains("replace") { return .filterReplace }
     if text.contains("filter") { return .filter }
     return .other
 }

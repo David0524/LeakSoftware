@@ -253,6 +253,7 @@ public func customerDetail(
     guard let c = try? store.get("customer", customerId), c["deleted_at"]?.string == nil else { return nil }
     let jobs = ((try? store.list("job", companyId: companyId)) ?? [])
     let plans = (try? store.list("service_plan", companyId: companyId)) ?? []
+    let cleanings = planCleanings(store, companyId: companyId, planIds: Set(plans.map(\.id)))
     let today = (try? localDate(now, timeZone)) ?? ""
     let pools = ((try? store.list("property", companyId: companyId)) ?? [])
         .filter { $0["customer_id"]?.string == customerId }
@@ -290,7 +291,8 @@ public func customerDetail(
                 chemicalLine: latestChemicalLine(
                     store, companyId: companyId, propertyId: p.id, now: now, timeZone: timeZone),
                 jobs: poolJobs,
-                plans: customerPlans(plans, propertyId: p.id, jobs: jobs, names: names, today: today),
+                plans: customerPlans(
+                    plans, propertyId: p.id, jobs: jobs, names: names, today: today, cleanings: cleanings),
                 place: MapPlace(address: address, location: propertyLocation(decoded)))
         }
     return CustomerDetail(

@@ -104,9 +104,14 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
     public var address: String
     public var location: LatLng?
     public var accessNotes: String?
+    /// The maintenance plan a visit belongs to, and the plan's day for it (its cleanings).
+    public var servicePlanId: String?
+    public var planDate: String?
 
     public init(_ v: JobView) {
         let j = v.job
+        servicePlanId = j["service_plan_id"]?.string
+        planDate = j["plan_date"]?.string
         id = v.id
         number = v.number
         status = v.status

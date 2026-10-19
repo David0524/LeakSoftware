@@ -11,8 +11,19 @@ import Testing
             Fixtures.rules(module) == [
                 "maintenanceSettings", "planRepeat", "cadenceLabel", "planSummary", "upcomingVisitDates",
                 "CLEANING_MONTHS", "CLEANING_DUE_SOON_DAYS", "cleaningMonthsLabel", "cleaningKind",
-                "cleaningCountdown", "cleaningShortLabel", "cleaningDueSpoken",
+                "cleaningCountdown", "cleaningShortLabel", "cleaningDueSpoken", "cleaningCadence", "cleaningSummary",
+                "FILTER_REPLACE_KEY", "cleaningDefaultMonths", "filterAge",
             ])
+    }
+
+    struct SummaryCleaning: Decodable {
+        let everyMonths: Int
+        let priceCents: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case everyMonths = "every_months"
+            case priceCents = "price_cents"
+        }
     }
 
     struct Due: Decodable {
@@ -37,6 +48,16 @@ import Testing
             guard let countdown = cleaningCountdown(try c.arg(0), try c.arg(1)) else { throw NotRepresentable() }
             return countdown
         }
+        checkRule(module, "cleaningCadence") { c in cleaningCadence(try c.arg(0)) }
+        checkRule(module, "cleaningSummary") { c in
+            let cleaning = try c.arg(1, as: SummaryCleaning.self)
+            return cleaningSummary(try c.arg(0), everyMonths: cleaning.everyMonths, priceCents: cleaning.priceCents)
+        }
+        checkRule(module, "FILTER_REPLACE_KEY") { _ in filterReplaceKey }
+        checkRule(module, "cleaningDefaultMonths") { c in
+            cleaningDefaultMonths(try c.arg(0, as: JSONValue?.self), try c.arg(1, as: String?.self))
+        }
+        checkRule(module, "filterAge") { c in filterAge(try c.arg(0, as: String?.self), try c.arg(1)) }
         checkRule(module, "cleaningShortLabel") { c in
             let due = try c.arg(0, as: Due.self)
             return cleaningShortLabel(days: due.days, weeks: due.weeks)

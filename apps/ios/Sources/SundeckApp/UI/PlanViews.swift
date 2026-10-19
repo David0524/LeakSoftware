@@ -191,6 +191,19 @@
                 VStack(alignment: .leading, spacing: 2) {
                     Text(plan.summary).textRole(.bodyEmphasis).foregroundStyle(Color.text)
                     Text(plan.detail).textRole(.secondary).foregroundStyle(Color.textMuted)
+                    ForEach(plan.cleanings) { c in
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            CleaningIcon(kind: c.kind, size: 16).alignmentGuide(.firstTextBaseline) { $0[.bottom] - 3 }
+                            (Text("\(c.summary) · ")
+                                + Text(c.due).fontWeight(c.soon ? .semibold : nil)
+                                .foregroundColor(c.soon ? Color.warning : Color.textMuted)
+                                + Text(c.after))
+                                .textRole(.secondary)
+                                .foregroundStyle(Color.textMuted)
+                        }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(c.text)
+                    }
                     if let notes = plan.notes {
                         Text(notes).textRole(.secondary).foregroundStyle(Color.textMuted)
                     }

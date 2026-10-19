@@ -167,7 +167,16 @@
     @MainActor
     func seedCleanings(_ store: LocalStore) throws -> String? {
         let url = try #require(Bundle.module.url(forResource: "config", withExtension: "json"))
-        let config = try JSONDecoder().decode([String: [Row]].self, from: Data(contentsOf: url))
+        var config = try JSONDecoder().decode([String: [Row]].self, from: Data(contentsOf: url))
+        // Replace filter, which pool shops have from migration 20261012005800.
+        if !(config["component_type"] ?? []).contains(where: { $0["key"] == "svc_filter_replace" }) {
+            config["component_type", default: []].append([
+                "id": "5d3c1f0e-7a2b-4c8e-9f61-2b4e8a9c7d10", "key": "svc_filter_replace", "name": "Replace filter",
+                "active": true, "answer": "done", "methods": ["Service"], "section": "service",
+                "job_type": "maintenance", "applies_to": "both", "deleted_at": nil, "sort_order": 547,
+                "on_schedule": true, "default_count": 1, "allows_multiple": false, "applies_to_pool_type": nil,
+            ])
+        }
         let types = (config["component_type"] ?? []).map { row -> PulledRow in
             var r = row
             r["company_id"] = "c1"
@@ -175,10 +184,31 @@
         }
         try store.applyPage(PullPage(rows: types, done: true, cursor: [:], serverHLC: "1760000000006-0000-srv"))
         guard let visit = try store.list("job").first(where: { $0["number"] == 1102 }) else { return nil }
-        try store.write("job", id: visit.id, companyId: "c1", ["type": "maintenance"])
+        let today = try localDate(Date(), "America/Phoenix")
+        try store.write(
+            "job", id: visit.id, companyId: "c1",
+            ["type": "maintenance", "service_plan_id": "sp-shot", "plan_date": .string(today)])
         let byKey = Dictionary(
             (config["component_type"] ?? []).compactMap { r in r["key"]?.string.map { ($0, r) } },
             uniquingKeysWith: { a, _ in a })
+        // The plan's cleanings as the server syncs them (owner, 2026-10-19): the filter and salt
+        // cell due today, on this visit; and a filter replaced 8 months ago, due in 6 weeks.
+        let specs: [(key: String, months: Int, due: String, last: String?)] = [
+            ("svc_filter_clean", 3, today, nil), ("svc_salt_clean", 6, today, nil),
+            ("svc_filter_replace", 12, try addDays(today, 42), try addDays(today, -243)),
+        ]
+        let planRows: [PulledRow] = specs.compactMap { spec in
+            let (key, months, due, last) = spec
+            guard let type = byKey[key] else { return nil }
+            return PulledRow(
+                table: "plan_cleaning", xid: "7",
+                row: [
+                    "id": .string("pc-\(key)"), "company_id": "c1", "service_plan_id": "sp-shot",
+                    "component_type_id": type["id"] ?? .null, "every_months": .number(Double(months)),
+                    "next_due": .string(due), "last_done_on": last.map { .string($0) } ?? .null,
+                ])
+        }
+        try store.applyPage(PullPage(rows: planRows, done: true, cursor: [:], serverHLC: "1760000000007-0000-srv"))
         for (i, key) in ["svc_skim", "svc_filter_clean", "svc_salt_clean"].enumerated() {
             guard let type = byKey[key] else { continue }
             let component = try store.insert(

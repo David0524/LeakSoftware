@@ -101,12 +101,15 @@ public struct CustomerPlan: Identifiable, Equatable, Sendable {
     public var plan: ServicePlan
     public var summary: String
     public var detail: String
+    /// Its scheduled cleanings, each with its countdown (owner, 2026-10-19).
+    public var cleanings: [PlanCleaningLine] = []
     public var notes: String?
 }
 
 /// A pool's plans as the website lists them (MaintenancePlans), oldest first.
 func customerPlans(
-    _ plans: [Row], propertyId: String, jobs: [Row], names: [String: String], today: String
+    _ plans: [Row], propertyId: String, jobs: [Row], names: [String: String], today: String,
+    cleanings: [PlanCleaningRow] = []
 ) -> [CustomerPlan] {
     var done: [String: Int] = [:]
     for job in jobs where job["status"]?.string == "done" && job["deleted_at"]?.string == nil {
@@ -132,6 +135,7 @@ func customerPlans(
             let notes = plan.notes?.trimmingCharacters(in: .whitespacesAndNewlines)
             return CustomerPlan(
                 id: row.id, plan: plan, summary: planSummary(plan), detail: detail,
+                cleanings: cleanings.filter { $0.planId == row.id }.map { PlanCleaningLine($0, today: today) },
                 notes: notes?.isEmpty == false ? notes : nil)
         }
 }

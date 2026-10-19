@@ -46,8 +46,9 @@
                         }
                         .buttonStyle(.secondary)
                         .padding(.bottom, 16)
-                        // Filter and salt cell cleanings on this visit (owner, 2026-10-19).
-                        let cleanings = visitCleanings(inspection, config, day: today(company))
+                        // The plan's regular cleanings (owner, 2026-10-19).
+                        let cleanings = visitRegularCleanings(
+                            sync.store, companyId: company.id, job: job.job, inspection, config, day: today(company))
                         if !cleanings.isEmpty {
                             VisitCleaningsBox(cleanings: cleanings).padding(.bottom, 24)
                         }

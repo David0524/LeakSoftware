@@ -556,10 +556,113 @@ import Testing
             ).isEmpty)
     }
 
+    /// Plan cleanings sync to phones (owner, 2026-10-19): Today's pills, the visit's Regular
+    /// cleanings and the customer's Maintenance lines read them as the website does.
+    @Test func planCleaningsShowOnTodayTheVisitAndTheCustomer() throws {
+        let shell = try Shell()
+        try shell.seedCompany(userId: "u1")
+        func type(_ id: String, _ key: String, _ name: String, sort: Int) -> PulledRow {
+            PulledRow(
+                table: "component_type", xid: "1",
+                row: [
+                    "id": .string(id), "company_id": "c1", "key": .string(key), "name": .string(name),
+                    "section": "service", "answer": "done", "job_type": "maintenance", "applies_to": "both",
+                    "on_schedule": true, "allows_multiple": false, "default_count": 1, "methods": [],
+                    "sort_order": .number(Double(sort)), "active": true,
+                ])
+        }
+        func cleaning(
+            _ id: String, _ typeId: String, months: Int, due: String, last: JSONValue = .null,
+            price: JSONValue = .null
+        ) -> PulledRow {
+            PulledRow(
+                table: "plan_cleaning", xid: "1",
+                row: [
+                    "id": .string(id), "company_id": "c1", "service_plan_id": "sp1",
+                    "component_type_id": .string(typeId), "every_months": .number(Double(months)),
+                    "next_due": .string(due), "last_done_on": last, "price_cents": price,
+                ])
+        }
+        try shell.sync.store.applyPage(
+            PullPage(
+                rows: [
+                    type("t1", "svc_filter_clean", "Clean filter", sort: 540),
+                    type("t2", "svc_salt_clean", "Clean salt cell", sort: 545),
+                    type("t3", "svc_filter_replace", "Replace filter", sort: 547),
+                    cleaning("pc1", "t1", months: 3, due: "2026-10-19", price: 4000),
+                    cleaning("pc2", "t2", months: 6, due: "2026-10-23"),
+                    cleaning("pc3", "t3", months: 12, due: "2026-11-30", last: "2026-02-19"),
+                    PulledRow(
+                        table: "job", xid: "1",
+                        row: [
+                            "id": "v1", "company_id": "c1", "type": "maintenance", "status": "scheduled",
+                            "service_plan_id": "sp1", "plan_date": "2026-10-19",
+                        ]),
+                    PulledRow(
+                        table: "job_component", xid: "1",
+                        row: [
+                            "id": "jc1", "company_id": "c1", "job_id": "v1", "component_type_id": "t1",
+                            "instance_number": 1, "label": "Clean filter", "sort_order": 1, "plan_cleaning_id": "pc1",
+                        ]),
+                ], done: true, cursor: [:], serverHLC: "1800000000000-0000-server"))
+        let store = shell.sync.store
+        let rows = planCleanings(store, companyId: "c1", planIds: ["sp1"])
+        #expect(rows.map(\.name) == ["Clean filter", "Clean salt cell", "Replace filter"])
+        #expect(rows.map(\.kind) == [.filter, .saltCell, .filterReplace])
+
+        // Today: due within a week of the visit's day, just the icon and how soon.
+        let today = stopCleanings(rows, planId: "sp1", visitDay: "2026-10-19")
+        #expect(today.map(CleaningText.short) == ["Today", "4 days"])
+        #expect(today.map(CleaningText.spoken) == ["Clean filter due today", "Clean salt cell due in 4 days"])
+        #expect(stopCleanings(rows, planId: "other", visitDay: "2026-10-19").isEmpty)
+
+        // The visit's Regular cleanings: on this visit, or cadence and next; a replace filter's age.
+        let job = try #require(try store.get("job", "v1"))
+        let box = visitRegularCleanings(
+            store, companyId: "c1", job: job, JobInspection(store, jobId: "v1"),
+            InspectionConfig(store, companyId: "c1"), day: "2026-10-19")
+        #expect(
+            box.map(\.detail) == [
+                "On this visit’s checklist", "Every 6 months · next Fri, Oct 23",
+                "Every year · next Mon, Nov 30 · Filter 8 months old",
+            ])
+        #expect(box.map(\.value) == ["Today", "Due in 4 days", "In 6 weeks"])
+        #expect(box.map(\.soon) == [true, true, false])
+
+        // Customer › Maintenance: summary, countdown, the day, and the filter's age.
+        let lines = rows.map { PlanCleaningLine($0, today: "2026-10-19") }
+        #expect(
+            lines.map(\.text) == [
+                "Clean filter every 3 months · $40.00 each · Due today",
+                "Clean salt cell every 6 months · Due in 4 days (Fri, Oct 23)",
+                "Replace filter every year · In 6 weeks (Mon, Nov 30) · Filter 8 months old",
+            ])
+        #expect(lines.map(\.soon) == [true, true, false])
+        let plans = customerPlans(
+            [
+                [
+                    "id": "sp1", "property_id": "p1", "customer_id": "cu1", "starts_on": "2026-10-19",
+                    "interval_weeks": 1, "weekdays": nil, "monthly": false, "visit_time": nil, "duration_minutes": 30,
+                    "price_cents": nil, "ends_on": nil, "paused": false, "notes": nil,
+                ]
+            ], propertyId: "p1", jobs: [], names: [:], today: "2026-10-19", cleanings: rows)
+        #expect(plans.first?.cleanings.map(\.id) == ["pc1", "pc2", "pc3"])
+
+        // Before a plan's cleanings reach the phone, the checklist's stand in.
+        let bare = regularCleanings(
+            fromChecklist: [
+                VisitCleaning(
+                    id: "x", name: "Clean filter", kind: .filter,
+                    due: CleaningCountdown(days: 0, weeks: 0, soon: true, label: "Due today"))
+            ])
+        #expect(bare.map(\.detail) == ["On this visit’s checklist"] && bare.map(\.value) == ["Today"])
+    }
+
     @Test func theIconsDrawTheWebsitesPaths() {
         #expect(CleaningGlyph.of(.filter).rects == [[6, 3, 12, 18, 3]])
         #expect(CleaningGlyph.of(.saltCell).rects == [[2.5, 8, 19, 8, 4]])
-        for kind in [CleaningKind.filter, .saltCell, .other] {
+        #expect(CleaningGlyph.of(.filterReplace).rects == [[9, 6, 10, 15, 2.5]])
+        for kind in [CleaningKind.filter, .filterReplace, .saltCell, .other] {
             for d in CleaningGlyph.of(kind).paths {
                 let commands = svgCommands(d)
                 #expect(commands.count >= 4, "\(kind) \(d)")
