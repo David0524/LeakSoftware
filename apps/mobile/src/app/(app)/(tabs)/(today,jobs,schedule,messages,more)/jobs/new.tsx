@@ -42,6 +42,7 @@ import {
 } from "../../../../../ui/components";
 import { confirmDestructive } from "../../../../../ui/confirm";
 import { haptics } from "../../../../../ui/haptics";
+import { DateField, TimeField } from "../../../../../features/schedule/DateField";
 import { ShapePicker } from "../../../../../ui/ShapePicker";
 import { space } from "../../../../../ui/theme";
 
@@ -476,23 +477,20 @@ function NewJobForm() {
             />
             <View style={styles.cols}>
               <View style={{ flex: 1 }}>
-                <Field
+                <DateField
                   label="Date"
                   value={form.scheduleDate}
-                  onChangeText={set("scheduleDate")}
-                  placeholder="YYYY-MM-DD"
+                  onChange={set("scheduleDate")}
+                  today={today}
                   error={errors.scheduleDate}
-                  keyboardType="numbers-and-punctuation"
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Field
+                <TimeField
                   label="Time"
                   value={form.scheduleTime}
-                  onChangeText={set("scheduleTime")}
-                  placeholder="08:00"
+                  onChange={set("scheduleTime")}
                   error={errors.scheduleTime}
-                  keyboardType="numbers-and-punctuation"
                 />
               </View>
             </View>

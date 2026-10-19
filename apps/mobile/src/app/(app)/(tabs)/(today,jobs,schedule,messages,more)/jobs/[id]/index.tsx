@@ -67,6 +67,8 @@ import {
 import { ChecklistTab } from "../../../../../../features/inspection/ChecklistTab";
 import { FindingsTab } from "../../../../../../features/inspection/FindingsTab";
 import { TestsTab } from "../../../../../../features/inspection/TestsTab";
+import { JobSchedule, showsJobSchedule } from "../../../../../../features/job/JobSchedule";
+import { JobTimeline } from "../../../../../../features/job/Timeline";
 import { MediaSection } from "../../../../../../features/media/MediaSection";
 import { InvoiceSection } from "../../../../../../features/invoice/InvoiceSection";
 import { QuoteTab } from "../../../../../../features/quote/QuoteTab";
@@ -632,6 +634,9 @@ function Details({
         />
         {saved ? <T style={[face.semiBold, { color: color.pass }]}>Saved.</T> : null}
       </View>
+
+      {showsJobSchedule(job) ? <JobSchedule jobId={job.id} /> : null}
+      <JobTimeline jobId={job.id} />
 
       {onCancel ? (
         <View style={{ marginTop: space["2"] }}>

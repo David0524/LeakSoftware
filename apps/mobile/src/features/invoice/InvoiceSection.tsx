@@ -27,6 +27,7 @@ import { confirmDestructive } from "../../ui/confirm";
 import { haptics } from "../../ui/haptics";
 import { color, face, MAX_TEXT_SCALE, space, tabular } from "../../ui/theme";
 import { Divider } from "../report/ReportTab";
+import { DateField } from "../schedule/DateField";
 import { LinkRow } from "../quote/QuoteTab";
 
 const INVOICEABLE = ["in_progress", "report_sent", "quote_sent", "quote_accepted", "invoiced"];
@@ -388,13 +389,13 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
             />
           </View>
           <View style={{ flex: 1 }}>
-            <Field
+            <DateField
               label="Due date"
               value={due}
-              onChangeText={setDue}
-              placeholder="2026-11-01"
-              keyboardType="numbers-and-punctuation"
+              onChange={setDue}
+              placeholder="On receipt"
               hint="Empty: due on receipt."
+              clearLabel="Due on Receipt"
             />
           </View>
         </View>
