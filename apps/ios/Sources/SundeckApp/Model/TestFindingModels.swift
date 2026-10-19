@@ -408,6 +408,11 @@ public func diagramShape(of property: Row?) -> DiagramShape? {
     property?["diagram_shape"]?.string.flatMap(DiagramShape.init(rawValue:))
 }
 
+/// The property's diagram layout (mirror, the spa's place, size, and shape); empty when unset.
+public func diagramLayout(of property: Row?) -> DiagramLayout {
+    parseDiagramLayout(property?["diagram_layout"])
+}
+
 /// The shape picker's hint while no shape is picked.
 public let shapeNotPickedHint = "Pick one so the diagram matches the pool."
 

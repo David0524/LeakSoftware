@@ -69,6 +69,14 @@ public func syncRowDetail(_ status: SyncStatus, now: Date = Date()) -> String {
     return "All changes saved to the office · \(ago)"
 }
 
+/// More › Help's mail rows (website `CONTACT_EMAIL`, apps/web/src/lib/site.ts). Request a
+/// Feature opens a mail draft until the website has an endpoint the app can post to.
+public enum HelpMail {
+    public static let contactEmail = "office@sundeckpro.com"
+    public static let contactURL = URL(string: "mailto:\(contactEmail)")!
+    public static let featureRequestURL = URL(string: "mailto:\(contactEmail)?subject=Feature%20request")!
+}
+
 /// "Version 1.2.0 (34)".
 public func versionText(_ version: String?, _ build: String?) -> String {
     let v = version ?? "dev"

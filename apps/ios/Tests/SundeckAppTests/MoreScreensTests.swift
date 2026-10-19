@@ -88,6 +88,13 @@ import Testing
         #expect(signOutWarning(status) != nil)
         #expect(versionText("1.2.0", "34") == "Version 1.2.0 (34)")
     }
+
+    /// Help's Contact Us and Request a Feature (owner, 2026-10-19) write to the office address.
+    @Test func helpMailGoesToTheOffice() {
+        #expect(HelpMail.contactEmail == "office@sundeckpro.com")
+        #expect(HelpMail.contactURL.absoluteString == "mailto:office@sundeckpro.com")
+        #expect(HelpMail.featureRequestURL.absoluteString == "mailto:office@sundeckpro.com?subject=Feature%20request")
+    }
 }
 
 @Suite @MainActor struct CustomersAndInvoicesTests {

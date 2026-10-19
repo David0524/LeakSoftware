@@ -52,13 +52,15 @@
     struct PoolDiagram: View {
         var shape: DiagramShape?
         var hasSpa: Bool
+        /// property.diagram_layout: the mirror and the spa's place, size, and shape.
+        var layout = DiagramLayout()
         var pins: [DiagramPin]
         /// The finding sheet's pin picker draws a 1 pt `controlBorder` outline; the Findings
         /// section's diagram is a plain white block.
         var outlined = false
         var onPlace: ((Double, Double) -> Void)?
 
-        private var diagram: SundeckCore.PoolDiagram { poolDiagram(shape, hasSpa) }
+        private var diagram: SundeckCore.PoolDiagram { poolDiagram(shape, hasSpa, layout) }
 
         var body: some View {
             let d = diagram
@@ -103,8 +105,12 @@
                     let rect = CGRect(
                         x: (spa.cx - spa.r) * scale, y: (spa.cy - spa.r) * scale, width: 2 * spa.r * scale,
                         height: 2 * spa.r * scale)
-                    Circle().fill(Color.diagramWater).frame(width: rect.width, height: rect.height)
-                        .overlay(Circle().stroke(Color.water, lineWidth: 2 * scale))
+                    // A circle, or with `square`, a square with 4-unit corners (the website's rx 4).
+                    let spaShape =
+                        spa.square
+                        ? AnyShape(RoundedRectangle(cornerRadius: 4 * scale, style: .circular)) : AnyShape(Circle())
+                    spaShape.fill(Color.diagramWater).frame(width: rect.width, height: rect.height)
+                        .overlay(spaShape.stroke(Color.water, lineWidth: 2 * scale))
                         .overlay(Text("SPA").font(display(7 * scale)).foregroundStyle(Color.water))
                         .position(x: rect.midX, y: rect.midY)
                 }
@@ -148,7 +154,7 @@
         }
     }
 
-    /// The pool's shape as five small drawings to tap (spec 3.18): centered 64 wide tiles on `fill`,
+    /// The pool's shape as eight small drawings to tap (spec 3.18): centered 64 wide tiles on `fill`,
     /// the name under each, a 2 pt `link` ring on the chosen one. The shape can stay blank; tapping
     /// the picked shape again clears it. Port of apps/web/src/components/shape-picker.tsx.
     struct ShapePicker: View {

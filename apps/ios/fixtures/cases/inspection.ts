@@ -9,6 +9,10 @@ import {
   verdictOptions,
   verdictValues,
   DIAGRAM_SHAPES,
+  SPA_SHAPES,
+  SPA_SIZES,
+  mirrorPath,
+  parseDiagramLayout,
   calculate,
   checklistTally,
   componentApplies,
@@ -28,6 +32,7 @@ import {
   validateTestData,
   type ChecklistItemResult,
   type ComponentType,
+  type DiagramLayout,
   type DiagramShape,
   type Job,
   type JobComponent,
@@ -199,6 +204,8 @@ const POOL = { lat: 33.44962, lng: -111.94637 };
 export const inspection: ModuleCases = {
   CHECKLIST_SECTION_LABELS: rule(() => CHECKLIST_SECTION_LABELS, [[]]),
   DIAGRAM_SHAPES: rule(() => DIAGRAM_SHAPES, [[]]),
+  SPA_SIZES: rule(() => SPA_SIZES, [[]]),
+  SPA_SHAPES: rule(() => SPA_SHAPES, [[]]),
 
   componentApplies: rule(
     (t: ComponentType, p: Place) => componentApplies(t, p),
@@ -427,16 +434,78 @@ export const inspection: ModuleCases = {
 
   // An unknown shape (from an older or newer app) falls back to the rectangle.
   poolDiagram: rule(
-    (shape: DiagramShape | null, hasSpa: boolean) => poolDiagram(shape, hasSpa),
+    (shape: DiagramShape | null, hasSpa: boolean, layout?: DiagramLayout | null) =>
+      poolDiagram(shape, hasSpa, layout),
     [
       ["rectangle", false],
       ["oval", true],
       ["kidney", true],
       ["l_shape", false],
       ["freeform", false],
+      ["roman", true],
+      ["grecian", true],
+      ["figure_eight", true],
       [null, false],
       [null, true],
       ["triangle" as DiagramShape, true],
+      // Layouts: empty, mirrored (spa moves to the left), placed, sizes, square.
+      ["kidney", true, {}],
+      ["kidney", true, null],
+      ["kidney", true, { mirror: true }],
+      ["l_shape", false, { mirror: true }],
+      ["roman", true, { mirror: true }],
+      ["grecian", true, { mirror: true }],
+      ["figure_eight", true, { mirror: true }],
+      ["freeform", true, { mirror: true, spa: { x: 0.2, y: 0.8 } }],
+      ["rectangle", true, { spa: { x: 0.85, y: 0.2, size: "large", shape: "square" } }],
+      ["rectangle", true, { spa: { x: 0.5, y: 0.5, size: "small" } }],
+      ["oval", true, { spa: { x: 0, y: 1, size: "medium", shape: "round" } }],
+      ["oval", true, { spa: { x: 0.333, y: 0.1, shape: "square" } }],
+      // A placed spa without a spa on the property draws nothing.
+      ["oval", false, { mirror: true, spa: { x: 0.5, y: 0.5, size: "large" } }],
+    ],
+  ),
+
+  mirrorPath: rule(
+    (path: string) => mirrorPath(path),
+    [
+      ["M16 18 H124 Q130 18 130 24 V76 Q130 82 124 82 H16 Q10 82 10 76 V24 Q10 18 16 18 Z"],
+      ["M26 18 H114 L130 34 V66 L114 82 H26 L10 66 V34 Z"],
+      ["M1.5 2 L-3 .5 C1,2 3,4 5,6 V7 H8 Z"],
+      ["M0 0 L140 0 L70.25 -0.75 Z"],
+      ["12 13 M 1 2"],
+      ["M1.2.3 4- 5 L--6 7. Z"],
+      [""],
+      ["Z"],
+    ],
+  ),
+
+  // Anything unrecognized is dropped, never thrown.
+  parseDiagramLayout: rule(
+    (value: unknown) => parseDiagramLayout(value),
+    [
+      [null],
+      [{}],
+      ["mirror"],
+      [3],
+      [true],
+      [[{ mirror: true }]],
+      [{ mirror: true }],
+      [{ mirror: "true" }],
+      [{ mirror: false }],
+      [{ mirror: 1 }],
+      [{ spa: { x: 0.85, y: 0.2, size: "large", shape: "square" } }],
+      [{ mirror: true, spa: { x: 0, y: 1 } }],
+      [{ spa: { x: 0.5, y: 0.5, size: "huge", shape: "triangle" } }],
+      [{ spa: { x: 1.5, y: 0.5 } }],
+      [{ spa: { x: -0.1, y: 0.5 } }],
+      [{ spa: { x: "0.5", y: 0.5 } }],
+      [{ spa: { x: 0.5 } }],
+      [{ spa: null }],
+      [{ spa: "corner" }],
+      [{ spa: [0.5, 0.5] }],
+      [{ spa: { x: 0.5, y: 0.5, size: 13, shape: null } }],
+      [{ spa: { x: 0.5, y: 0.5, size: "Small" } }],
     ],
   ),
 

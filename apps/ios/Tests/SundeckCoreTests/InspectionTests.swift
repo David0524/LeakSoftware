@@ -14,6 +14,7 @@ import Testing
             "validateNewJob", "formatAddress", "newJobRecords", "localDate", "groupJobs", "formatSchedule",
             "propertyLocation", "nativeMapsUrl", "instanceLabel", "FINDING_STATUS_LABELS", "verdictLabel",
             "verdictOptions", "currentVerdict", "verdictValues", "checklistSectionSummary", "markRemainingLabel",
+            "SPA_SIZES", "SPA_SHAPES", "mirrorPath", "parseDiagramLayout",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -54,10 +55,22 @@ import Testing
         checkRule(module, "DIAGRAM_SHAPES") { _ in
             DiagramShape.allCases.map { ["key": $0.rawValue, "label": $0.label] }
         }
+        checkRule(module, "SPA_SIZES") { _ in
+            SpaSize.allCases.map {
+                JSONValue.object(["key": .string($0.rawValue), "label": .string($0.label), "r": .number($0.r)])
+            }
+        }
+        checkRule(module, "SPA_SHAPES") { _ in
+            SpaShape.allCases.map { ["key": $0.rawValue, "label": $0.label] }
+        }
         // A shape this app doesn't know reads as no shape: both draw the rectangle.
         checkRule(module, "poolDiagram") { c in
-            poolDiagram(try c.arg(0, as: String?.self).flatMap(DiagramShape.init(rawValue:)), try c.arg(1))
+            poolDiagram(
+                try c.arg(0, as: String?.self).flatMap(DiagramShape.init(rawValue:)), try c.arg(1),
+                try c.arg(2, as: DiagramLayout?.self))
         }
+        checkRule(module, "mirrorPath") { c in mirrorPath(try c.arg(0)) }
+        checkRule(module, "parseDiagramLayout") { c in parseDiagramLayout(try c.arg(0, as: JSONValue?.self)) }
     }
 
     /// New job details as the cases write them: "now" timing carries an ISO instant.

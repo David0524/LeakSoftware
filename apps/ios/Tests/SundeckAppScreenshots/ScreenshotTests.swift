@@ -602,6 +602,21 @@
             try await snapshot(
                 "11-findings-dark", dark: true, height: 1800,
                 NavigationStack { JobScreen(jobId: ids.job, section: .findings) }.app(env))
+            // The pool's layout (owner, 2026-10-19): a mirrored Figure 8 with a large square spa
+            // placed at the bottom right.
+            let store = env.session.sync.store
+            let propertyId = try #require(store.get("job", ids.job)?["property_id"]?.string)
+            try store.write(
+                "property", id: propertyId, companyId: "c1",
+                [
+                    "diagram_shape": "figure_eight",
+                    "diagram_layout": [
+                        "mirror": true, "spa": ["x": 0.85, "y": 0.75, "size": "large", "shape": "square"],
+                    ],
+                ])
+            try await snapshot(
+                "10-findings-layout", height: 1800,
+                NavigationStack { JobScreen(jobId: ids.job, section: .findings) }.app(env))
             try await snapshot(
                 "12-component", height: 2000,
                 NavigationStack { ComponentScreen(jobId: ids.job, componentId: ids.seam) }.app(env))
@@ -713,9 +728,9 @@
         @Test func more() async throws {
             let env = try sampleEnvironment()
             try await snapshot(
-                "43-more-owner", height: 1900, NavigationStack { MoreScreen(showWelcome: {}, showReauth: {}) }.app(env))
+                "43-more-owner", height: 2000, NavigationStack { MoreScreen(showWelcome: {}, showReauth: {}) }.app(env))
             try await snapshot(
-                "43-more-owner-dark", dark: true, height: 1900,
+                "43-more-owner-dark", dark: true, height: 2000,
                 NavigationStack { MoreScreen(showWelcome: {}, showReauth: {}) }.app(env))
             let tech = try sampleEnvironment()
             try tech.session.sync.store.applyPage(
@@ -729,7 +744,7 @@
                     ], done: true, cursor: [:], serverHLC: "1760000000009-0000-srv"))
             tech.session.reloadCompanies()
             try await snapshot(
-                "43-more-tech", height: 1900, NavigationStack { MoreScreen(showWelcome: {}, showReauth: {}) }.app(tech))
+                "43-more-tech", height: 2000, NavigationStack { MoreScreen(showWelcome: {}, showReauth: {}) }.app(tech))
             try await snapshot("48-sync", NavigationStack { SettingsView(showWelcome: {}, showReauth: {}) }.app(env))
         }
 

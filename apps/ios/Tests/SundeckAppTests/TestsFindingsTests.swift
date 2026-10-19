@@ -446,4 +446,42 @@ private struct Inspection {
         #expect(parseSVGPath("M70 15 C102 15 130 30 130 50") == [.move(70, 15), .cubic(102, 15, 130, 30, 130, 50)])
         #expect(parseSVGPath("m10 10 l5-5 h2 z") == [.move(10, 10), .line(15, 5), .line(17, 5), .close])
     }
+
+    /// Mirrored outlines (spaced tokens from `mirrorPath`) draw the same commands, flipped.
+    @Test func mirroredOutlinesParseFlipped() {
+        let layout = DiagramLayout(mirror: true)
+        for shape in DiagramShape.allCases {
+            let plain = parseSVGPath(poolDiagram(shape, false).pool)
+            let mirrored = parseSVGPath(poolDiagram(shape, false, layout).pool)
+            #expect(mirrored.count == plain.count)
+        }
+        #expect(
+            parseSVGPath(poolDiagram(.grecian, false, layout).pool).prefix(3) == [
+                .move(114, 18), .line(26, 18), .line(10, 34),
+            ])
+    }
+
+    /// The diagram reads property.diagram_layout; a missing or broken one draws the old diagram.
+    @Test func theDiagramReadsThePropertysLayout() {
+        #expect(diagramLayout(of: nil) == DiagramLayout())
+        #expect(diagramLayout(of: ["diagram_layout": .null]) == DiagramLayout())
+        #expect(diagramLayout(of: ["diagram_layout": .string("mirror")]) == DiagramLayout())
+        let row: Row = [
+            "diagram_layout": .object([
+                "mirror": .bool(true),
+                "spa": .object([
+                    "x": .number(0.2), "y": .number(0.8), "size": .string("large"), "shape": .string("square"),
+                ]),
+            ])
+        ]
+        let layout = diagramLayout(of: row)
+        #expect(layout == DiagramLayout(mirror: true, spa: .init(x: 0.2, y: 0.8, size: .large, shape: .square)))
+        let spa = poolDiagram(.oval, true, layout).spa
+        #expect(spa.map { [$0.cx, $0.cy, $0.r] } == [32, 80, 17])
+        #expect(spa?.square == true)
+        // Mirrored without a placed spa: top left instead of top right.
+        let corner = poolDiagram(.oval, true, DiagramLayout(mirror: true)).spa
+        #expect(corner.map { [$0.cx, $0.cy, $0.r] } == [15, 22, 13])
+        #expect(corner?.square == false)
+    }
 }

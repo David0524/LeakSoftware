@@ -200,6 +200,7 @@ export default function FindingScreen() {
             <PoolDiagram
               shape={shape}
               hasSpa={property.has_spa}
+              layout={property.diagram_layout}
               outlined
               onPlace={(x, y) => setPin({ x, y })}
               pins={pin ? [{ id: "this", x: pin.x, y: pin.y, color: sevColor, label: "" }] : []}

@@ -32,6 +32,7 @@ export function FindingsTab({ job, property }: { job: Job; property?: Property }
             <PoolDiagram
               shape={property.diagram_shape}
               hasSpa={property.has_spa}
+              layout={property.diagram_layout}
               title={`Pool diagram with ${ordered.length} finding pins`}
               pins={ordered
                 .map((f, i) => ({ f, n: i + 1 }))

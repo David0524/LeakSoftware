@@ -170,6 +170,7 @@
                 FieldHint(text: form.pinHint)
                 PoolDiagram(
                     shape: diagramShape(of: property), hasSpa: property?["has_spa"]?.bool ?? false,
+                    layout: diagramLayout(of: property),
                     pins: editorPins(config, form: form), outlined: true
                 ) { x, y in
                     self.form?.place(x: x, y: y)

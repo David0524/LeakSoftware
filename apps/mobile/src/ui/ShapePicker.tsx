@@ -5,7 +5,7 @@ import { T } from "./components";
 import { color, face, minTap, shape, space } from "./theme";
 
 /**
- * The pool's shape as five small drawings to tap (owner, 2026-10-14: a list of shape names
+ * The pool’s shape as small drawings (eight since 2026-10-19) to tap (owner, 2026-10-14: a list of shape names
  * was easy to miss), drawn as the website's tiles (spec 3.18): about 64 wide, radius 16, gray
  * fill; the chosen one tinted with a 2 pt link ring. Used on New Job and in the finding sheet.
  * The shape can stay blank; tapping the picked shape again clears it.

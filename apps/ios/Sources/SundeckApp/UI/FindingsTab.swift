@@ -33,6 +33,7 @@
                             if let property {
                                 PoolDiagram(
                                     shape: diagramShape(of: property), hasSpa: property["has_spa"]?.bool ?? false,
+                                    layout: diagramLayout(of: property),
                                     pins: findingPins(insp, config))
                             }
                             Grouped(separatorInset: 60) {

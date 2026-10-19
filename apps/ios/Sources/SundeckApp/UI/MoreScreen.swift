@@ -186,12 +186,13 @@
 
         private var help: some View {
             Section {
-                helpRow("Help and Support") {
-                    if let url = URL(string: "mailto:support@sundeckpro.com") { openURL(url) }
-                }
+                helpRow("Contact Us", detail: HelpMail.contactEmail) { openURL(HelpMail.contactURL) }
                 helpRow("Privacy Policy") { browser = .site("privacy") }
                 helpRow("Terms of Service") { browser = .site("terms") }
                 helpRow("System Status") { browser = .site("status") }
+                ActionRow("Request a Feature") { openURL(HelpMail.featureRequestURL) }
+                    .surfaceRow()
+                    .listRowInsets(EdgeInsets())
                 ActionRow("Show Tips Again") {
                     app.walkthrough.reset()
                     Task {
@@ -215,8 +216,8 @@
             }
         }
 
-        private func helpRow(_ title: String, action: @escaping () -> Void) -> some View {
-            Button(action: action) { ListRow(title, chevron: true) }
+        private func helpRow(_ title: String, detail: String? = nil, action: @escaping () -> Void) -> some View {
+            Button(action: action) { ListRow(title, detail: detail, chevron: true) }
                 .buttonStyle(.row)
                 .surfaceRow()
                 .listRowInsets(EdgeInsets())

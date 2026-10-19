@@ -25,6 +25,9 @@ import { confirmDestructive, chooseAction } from "../../../../../ui/confirm";
 import { syncSummary } from "../../../../../ui/SyncBar";
 import { appearance, color, space, type Scheme } from "../../../../../ui/theme";
 
+/** Sundeck Pro's contact address, as the website's CONTACT_EMAIL (owner, 2026-10-19). */
+const CONTACT_EMAIL = "office@sundeckpro.com";
+
 const DIRECTIONS: { value: DirectionsChoice; label: string }[] = [
   { value: "automatic", label: "Automatic" },
   { value: "apple", label: "Apple Maps" },
@@ -178,10 +181,12 @@ export default function More() {
 
       <Section title="Help">
         <Group>
+          {/* The website's Help group (owner, 2026-10-19): Contact Us replaces Help and Support. */}
           <ListRow
-            title="Help and Support"
+            title="Contact Us"
+            subtitle={CONTACT_EMAIL}
             accessibilityRole="link"
-            onPress={() => void Linking.openURL("mailto:support@sundeckpro.com")}
+            onPress={() => void Linking.openURL(`mailto:${CONTACT_EMAIL}`)}
           />
           {API_URL ? (
             <ListRow
@@ -204,6 +209,16 @@ export default function More() {
               onPress={() => open("/status")}
             />
           ) : null}
+          {/* The website saves requests through a form; the app emails them for now (owner list,
+              2026-10-19, item 9) until there is an endpoint the app can post to. */}
+          <ListRow
+            title="Request a Feature"
+            tone="link"
+            accessibilityRole="link"
+            onPress={() =>
+              void Linking.openURL(`mailto:${CONTACT_EMAIL}?subject=Feature%20request`)
+            }
+          />
           {/* Every tip comes back, starting with the welcome cards (walkthrough, 2026-10-16). */}
           <ListRow
             title="Show Tips Again"

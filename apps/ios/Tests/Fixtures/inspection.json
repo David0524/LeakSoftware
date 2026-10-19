@@ -34,6 +34,55 @@
         {
           "key": "freeform",
           "label": "Freeform"
+        },
+        {
+          "key": "roman",
+          "label": "Roman"
+        },
+        {
+          "key": "grecian",
+          "label": "Grecian"
+        },
+        {
+          "key": "figure_eight",
+          "label": "Figure 8"
+        }
+      ]
+    }
+  ],
+  "SPA_SIZES": [
+    {
+      "args": [],
+      "result": [
+        {
+          "key": "small",
+          "label": "Small",
+          "r": 10
+        },
+        {
+          "key": "medium",
+          "label": "Medium",
+          "r": 13
+        },
+        {
+          "key": "large",
+          "label": "Large",
+          "r": 17
+        }
+      ]
+    }
+  ],
+  "SPA_SHAPES": [
+    {
+      "args": [],
+      "result": [
+        {
+          "key": "round",
+          "label": "Round"
+        },
+        {
+          "key": "square",
+          "label": "Square"
         }
       ]
     }
@@ -5934,7 +5983,8 @@
         "spa": {
           "cx": 145,
           "cy": 22,
-          "r": 13
+          "r": 13,
+          "square": false
         }
       }
     },
@@ -5950,7 +6000,8 @@
         "spa": {
           "cx": 145,
           "cy": 22,
-          "r": 13
+          "r": 13,
+          "square": false
         }
       }
     },
@@ -5980,6 +6031,57 @@
     },
     {
       "args": [
+        "roman",
+        true
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M16 18 H104 C120 18 132 32 132 50 C132 68 120 82 104 82 H16 Q10 82 10 76 V24 Q10 18 16 18 Z",
+        "spa": {
+          "cx": 145,
+          "cy": 22,
+          "r": 13,
+          "square": false
+        }
+      }
+    },
+    {
+      "args": [
+        "grecian",
+        true
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M26 18 H114 L130 34 V66 L114 82 H26 L10 66 V34 Z",
+        "spa": {
+          "cx": 145,
+          "cy": 22,
+          "r": 13,
+          "square": false
+        }
+      }
+    },
+    {
+      "args": [
+        "figure_eight",
+        true
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M40 16 C58 16 64 28 70 34 C76 28 82 16 100 16 C120 16 132 32 132 50 C132 68 120 84 100 84 C82 84 76 72 70 66 C64 72 58 84 40 84 C20 84 8 68 8 50 C8 32 20 16 40 16 Z",
+        "spa": {
+          "cx": 145,
+          "cy": 22,
+          "r": 13,
+          "square": false
+        }
+      }
+    },
+    {
+      "args": [
         null,
         false
       ],
@@ -6002,7 +6104,8 @@
         "spa": {
           "cx": 145,
           "cy": 22,
-          "r": 13
+          "r": 13,
+          "square": false
         }
       }
     },
@@ -6018,7 +6121,568 @@
         "spa": {
           "cx": 145,
           "cy": 22,
-          "r": 13
+          "r": 13,
+          "square": false
+        }
+      }
+    },
+    {
+      "args": [
+        "kidney",
+        true,
+        {}
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M30 16 C56 12 70 30 84 28 C100 25 106 14 118 18 C134 24 132 48 126 62 C116 84 88 86 64 84 C38 82 12 78 10 54 C8 32 14 19 30 16 Z",
+        "spa": {
+          "cx": 145,
+          "cy": 22,
+          "r": 13,
+          "square": false
+        }
+      }
+    },
+    {
+      "args": [
+        "kidney",
+        true,
+        null
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M30 16 C56 12 70 30 84 28 C100 25 106 14 118 18 C134 24 132 48 126 62 C116 84 88 86 64 84 C38 82 12 78 10 54 C8 32 14 19 30 16 Z",
+        "spa": {
+          "cx": 145,
+          "cy": 22,
+          "r": 13,
+          "square": false
+        }
+      }
+    },
+    {
+      "args": [
+        "kidney",
+        true,
+        {
+          "mirror": true
+        }
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M 110 16 C 84 12 70 30 56 28 C 40 25 34 14 22 18 C 6 24 8 48 14 62 C 24 84 52 86 76 84 C 102 82 128 78 130 54 C 132 32 126 19 110 16 Z",
+        "spa": {
+          "cx": 15,
+          "cy": 22,
+          "r": 13,
+          "square": false
+        }
+      }
+    },
+    {
+      "args": [
+        "l_shape",
+        false,
+        {
+          "mirror": true
+        }
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M 126 14 H 66 Q 60 14 60 20 V 48 H 16 Q 10 48 10 54 V 80 Q 10 86 16 86 H 126 Q 132 86 132 80 V 20 Q 132 14 126 14 Z",
+        "spa": null
+      }
+    },
+    {
+      "args": [
+        "roman",
+        true,
+        {
+          "mirror": true
+        }
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M 124 18 H 36 C 20 18 8 32 8 50 C 8 68 20 82 36 82 H 124 Q 130 82 130 76 V 24 Q 130 18 124 18 Z",
+        "spa": {
+          "cx": 15,
+          "cy": 22,
+          "r": 13,
+          "square": false
+        }
+      }
+    },
+    {
+      "args": [
+        "grecian",
+        true,
+        {
+          "mirror": true
+        }
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M 114 18 H 26 L 10 34 V 66 L 26 82 H 114 L 130 66 V 34 Z",
+        "spa": {
+          "cx": 15,
+          "cy": 22,
+          "r": 13,
+          "square": false
+        }
+      }
+    },
+    {
+      "args": [
+        "figure_eight",
+        true,
+        {
+          "mirror": true
+        }
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M 100 16 C 82 16 76 28 70 34 C 64 28 58 16 40 16 C 20 16 8 32 8 50 C 8 68 20 84 40 84 C 58 84 64 72 70 66 C 76 72 82 84 100 84 C 120 84 132 68 132 50 C 132 32 120 16 100 16 Z",
+        "spa": {
+          "cx": 15,
+          "cy": 22,
+          "r": 13,
+          "square": false
+        }
+      }
+    },
+    {
+      "args": [
+        "freeform",
+        true,
+        {
+          "mirror": true,
+          "spa": {
+            "x": 0.2,
+            "y": 0.8
+          }
+        }
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M 116 22 C 94 8 70 26 48 16 C 26 8 8 26 12 46 C 16 62 6 74 24 82 C 44 90 64 76 84 84 C 106 92 130 80 128 60 C 126 44 134 34 116 22 Z",
+        "spa": {
+          "cx": 32,
+          "cy": 80,
+          "r": 13,
+          "square": false
+        }
+      }
+    },
+    {
+      "args": [
+        "rectangle",
+        true,
+        {
+          "spa": {
+            "x": 0.85,
+            "y": 0.2,
+            "size": "large",
+            "shape": "square"
+          }
+        }
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M16 18 H124 Q130 18 130 24 V76 Q130 82 124 82 H16 Q10 82 10 76 V24 Q10 18 16 18 Z",
+        "spa": {
+          "cx": 136,
+          "cy": 20,
+          "r": 17,
+          "square": true
+        }
+      }
+    },
+    {
+      "args": [
+        "rectangle",
+        true,
+        {
+          "spa": {
+            "x": 0.5,
+            "y": 0.5,
+            "size": "small"
+          }
+        }
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M16 18 H124 Q130 18 130 24 V76 Q130 82 124 82 H16 Q10 82 10 76 V24 Q10 18 16 18 Z",
+        "spa": {
+          "cx": 80,
+          "cy": 50,
+          "r": 10,
+          "square": false
+        }
+      }
+    },
+    {
+      "args": [
+        "oval",
+        true,
+        {
+          "spa": {
+            "x": 0,
+            "y": 1,
+            "size": "medium",
+            "shape": "round"
+          }
+        }
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M70 15 C102 15 130 30 130 50 C130 70 102 85 70 85 C38 85 10 70 10 50 C10 30 38 15 70 15 Z",
+        "spa": {
+          "cx": 0,
+          "cy": 100,
+          "r": 13,
+          "square": false
+        }
+      }
+    },
+    {
+      "args": [
+        "oval",
+        true,
+        {
+          "spa": {
+            "x": 0.333,
+            "y": 0.1,
+            "shape": "square"
+          }
+        }
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M70 15 C102 15 130 30 130 50 C130 70 102 85 70 85 C38 85 10 70 10 50 C10 30 38 15 70 15 Z",
+        "spa": {
+          "cx": 53.28,
+          "cy": 10,
+          "r": 13,
+          "square": true
+        }
+      }
+    },
+    {
+      "args": [
+        "oval",
+        false,
+        {
+          "mirror": true,
+          "spa": {
+            "x": 0.5,
+            "y": 0.5,
+            "size": "large"
+          }
+        }
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M 70 15 C 38 15 10 30 10 50 C 10 70 38 85 70 85 C 102 85 130 70 130 50 C 130 30 102 15 70 15 Z",
+        "spa": null
+      }
+    }
+  ],
+  "mirrorPath": [
+    {
+      "args": [
+        "M16 18 H124 Q130 18 130 24 V76 Q130 82 124 82 H16 Q10 82 10 76 V24 Q10 18 16 18 Z"
+      ],
+      "result": "M 124 18 H 16 Q 10 18 10 24 V 76 Q 10 82 16 82 H 124 Q 130 82 130 76 V 24 Q 130 18 124 18 Z"
+    },
+    {
+      "args": [
+        "M26 18 H114 L130 34 V66 L114 82 H26 L10 66 V34 Z"
+      ],
+      "result": "M 114 18 H 26 L 10 34 V 66 L 26 82 H 114 L 130 66 V 34 Z"
+    },
+    {
+      "args": [
+        "M1.5 2 L-3 .5 C1,2 3,4 5,6 V7 H8 Z"
+      ],
+      "result": "M 138.5 2 L 143 0.5 C 139 2 137 4 135 6 V 7 H 132 Z"
+    },
+    {
+      "args": [
+        "M0 0 L140 0 L70.25 -0.75 Z"
+      ],
+      "result": "M 140 0 L 0 0 L 69.75 -0.75 Z"
+    },
+    {
+      "args": [
+        "12 13 M 1 2"
+      ],
+      "result": "128 13 M 139 2"
+    },
+    {
+      "args": [
+        "M1.2.3 4- 5 L--6 7. Z"
+      ],
+      "result": "M 138.8 0.3 136 5 L 146 7 Z"
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        "Z"
+      ],
+      "result": "Z"
+    }
+  ],
+  "parseDiagramLayout": [
+    {
+      "args": [
+        null
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        "mirror"
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        3
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        true
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        [
+          {
+            "mirror": true
+          }
+        ]
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "mirror": true
+        }
+      ],
+      "result": {
+        "mirror": true
+      }
+    },
+    {
+      "args": [
+        {
+          "mirror": "true"
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "mirror": false
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "mirror": 1
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "spa": {
+            "x": 0.85,
+            "y": 0.2,
+            "size": "large",
+            "shape": "square"
+          }
+        }
+      ],
+      "result": {
+        "spa": {
+          "x": 0.85,
+          "y": 0.2,
+          "size": "large",
+          "shape": "square"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "mirror": true,
+          "spa": {
+            "x": 0,
+            "y": 1
+          }
+        }
+      ],
+      "result": {
+        "mirror": true,
+        "spa": {
+          "x": 0,
+          "y": 1
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "spa": {
+            "x": 0.5,
+            "y": 0.5,
+            "size": "huge",
+            "shape": "triangle"
+          }
+        }
+      ],
+      "result": {
+        "spa": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "spa": {
+            "x": 1.5,
+            "y": 0.5
+          }
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "spa": {
+            "x": -0.1,
+            "y": 0.5
+          }
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "spa": {
+            "x": "0.5",
+            "y": 0.5
+          }
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "spa": {
+            "x": 0.5
+          }
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "spa": null
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "spa": "corner"
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "spa": [
+            0.5,
+            0.5
+          ]
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "spa": {
+            "x": 0.5,
+            "y": 0.5,
+            "size": 13,
+            "shape": null
+          }
+        }
+      ],
+      "result": {
+        "spa": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "spa": {
+            "x": 0.5,
+            "y": 0.5,
+            "size": "Small"
+          }
+        }
+      ],
+      "result": {
+        "spa": {
+          "x": 0.5,
+          "y": 0.5
         }
       }
     }

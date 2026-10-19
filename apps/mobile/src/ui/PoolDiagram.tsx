@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, View, type GestureResponderEvent } from "react-native";
-import Svg, { Circle, Path, Text as SvgText } from "react-native-svg";
-import { poolDiagram, type DiagramShape } from "@leakbook/core";
+import Svg, { Circle, Path, Rect, Text as SvgText } from "react-native-svg";
+import { parseDiagramLayout, poolDiagram, type DiagramShape } from "@leakbook/core";
 import { color, font } from "./theme";
 
 export interface DiagramPin {
@@ -21,6 +21,7 @@ export interface DiagramPin {
 export function PoolDiagram({
   shape,
   hasSpa,
+  layout,
   pins,
   onPlace,
   title = "Pool diagram",
@@ -28,6 +29,8 @@ export function PoolDiagram({
 }: {
   shape: DiagramShape | null | undefined;
   hasSpa: boolean;
+  /** property.diagram_layout as synced: the mirror and the spa's place, size, and shape. */
+  layout?: unknown;
   pins: DiagramPin[];
   onPlace?: (x: number, y: number) => void;
   /** What a screen reader calls it ("Pool diagram with 2 finding pins"). */
@@ -35,7 +38,7 @@ export function PoolDiagram({
   /** The finding sheet's pin picker: a 1 pt outline, at most 448 wide (spec 6.2). */
   outlined?: boolean;
 }) {
-  const d = poolDiagram(shape, hasSpa);
+  const d = poolDiagram(shape, hasSpa, parseDiagramLayout(layout));
   const [width, setWidth] = useState(0);
   const height = (width * d.height) / d.width;
 
@@ -86,14 +89,27 @@ export function PoolDiagram({
           >
             <Path d={d.pool} fill={color.diagramWater} stroke={color.water} strokeWidth={2} />
             {d.spa ? (
-              <Circle
-                cx={d.spa.cx}
-                cy={d.spa.cy}
-                r={d.spa.r}
-                fill={color.diagramWater}
-                stroke={color.water}
-                strokeWidth={2}
-              />
+              d.spa.square ? (
+                <Rect
+                  x={d.spa.cx - d.spa.r}
+                  y={d.spa.cy - d.spa.r}
+                  width={d.spa.r * 2}
+                  height={d.spa.r * 2}
+                  rx={4}
+                  fill={color.diagramWater}
+                  stroke={color.water}
+                  strokeWidth={2}
+                />
+              ) : (
+                <Circle
+                  cx={d.spa.cx}
+                  cy={d.spa.cy}
+                  r={d.spa.r}
+                  fill={color.diagramWater}
+                  stroke={color.water}
+                  strokeWidth={2}
+                />
+              )
             ) : null}
             {d.spa ? (
               <SvgText
