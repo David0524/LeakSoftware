@@ -13,6 +13,7 @@
 
         init() {
             BrandFonts.register()
+            Chrome.install()
             if let dsn = AppConfig.sentryDSN {
                 SentrySDK.start { options in
                     options.dsn = dsn
@@ -32,7 +33,9 @@
                 case .failure(let error):
                     ContentUnavailableView(
                         "Sundeck Pro Couldn’t Start", systemImage: "exclamationmark.triangle",
-                        description: Text("This phone’s storage couldn’t be opened. \(error.localizedDescription)"))
+                        description: Text("This phone’s storage couldn’t be opened. \(error.localizedDescription)")
+                    )
+                    .preferredColorScheme(.light)
                 }
             }
         }
@@ -44,6 +47,8 @@
         let client: SupabaseClient
         let session: Session
         let walkthrough: Walkthrough
+        /// This phone's Light | Dark choice (Light until changed).
+        let appearance: AppearanceSetting
         /// Signed links to uploaded files, shared by every screen so links are reused.
         let signer: MediaURLSigner
         @ObservationIgnored private let monitor = NWPathMonitor()
@@ -52,6 +57,7 @@
             self.client = client
             self.session = session
             self.walkthrough = walkthrough
+            appearance = AppearanceSetting(session.sync.kv)
             signer = MediaURLSigner { path, seconds in
                 try await client.storage.from("media").createSignedURL(path: path, expiresIn: seconds)
             }
@@ -65,8 +71,15 @@
         static func make() -> Result<AppEnvironment, Error> {
             Result {
                 let db = try openDatabase()
-                let store = try LocalStore.open(db)
+                var store = try LocalStore.open(db)
                 let kv = try KeyValue(db)
+                // A phone updated from the Expo build: move its unsent work and data in first.
+                let documents = try FileManager.default.url(
+                    for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+                let moved = ExpoMigration.run(
+                    into: db, expoPath: ExpoMigration.expoPath(documents: documents),
+                    expoKey: ExpoMigration.expoKeyFromKeychain())
+                if case .moved = moved { store = try LocalStore.open(db) }  // reads the moved device id and clock
                 let client = ServerCheck.makeClient()
                 let auth = SupabaseAuthBackend(client)
                 let media = try MediaFiles.documents()
@@ -139,6 +152,7 @@
                 case .ready: MainView()
                 }
             }
+            .preferredColorScheme(app.appearance.choice.colorScheme)
             .task { await session.launch() }
             .onChange(of: scenePhase) { _, phase in
                 guard phase == .active else { return }

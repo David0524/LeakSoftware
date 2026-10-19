@@ -25,6 +25,11 @@
                 account
                 syncSection
                 if !problems.isEmpty { problemsSection }
+                Section {
+                    AppearanceRow().listRowInsets(EdgeInsets())
+                } header: {
+                    SectionLabel("On this device")
+                }
                 Section("Tools") {
                     Button("Show Tips Again") {
                         app.walkthrough.reset()

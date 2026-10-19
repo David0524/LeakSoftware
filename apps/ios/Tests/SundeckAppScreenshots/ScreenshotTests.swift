@@ -221,6 +221,8 @@
     func snapshot(
         _ name: String, dark: Bool = false, largeText: Bool = false, height: CGFloat? = nil, _ view: some View
     ) async throws {
+        // The app's bar and tab styles (set once at launch in the app).
+        Chrome.install()
         // Package tests run in a bare xctest host with no app scene. With a scene, draw the window on
         // screen; without one, lay the window out off screen and render its layers.
         let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
@@ -339,6 +341,11 @@
             try await snapshot(
                 "15-media-dark", dark: true,
                 NavigationStack { MediaScreen(jobId: ids.job, mediaId: photo) }.app(env))
+        }
+
+        @Test func designGallery() async throws {
+            try await snapshot("00-design-gallery", height: 5200, DesignGallery())
+            try await snapshot("00-design-gallery-dark", dark: true, height: 5200, DesignGallery())
         }
 
         @Test func settings() async throws {

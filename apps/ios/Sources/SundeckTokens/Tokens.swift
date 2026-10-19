@@ -20,6 +20,11 @@ public struct TokenColor: Equatable, Sendable {
 public struct TokenRole: Equatable, Sendable {
     public let light: TokenColor
     public let dark: TokenColor
+
+    public init(light: TokenColor, dark: TokenColor) {
+        self.light = light
+        self.dark = dark
+    }
 }
 
 /// Sundeck Pro's design tokens (brand/BRAND.md).

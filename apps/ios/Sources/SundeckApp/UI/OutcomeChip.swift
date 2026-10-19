@@ -12,12 +12,7 @@
 
         var body: some View {
             if let outcome {
-                Text(outcome.label)
-                    .font(.footnote.weight(.semibold))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 3)
-                    .foregroundStyle(Color(Tokens.Role.onStatus))
-                    .background(Capsule().fill(outcome.color))
+                Chip(text: outcome.label, tone: outcome.tone)
                     .accessibilityLabel("Outcome: \(outcome.label)")
             }
         }
@@ -25,12 +20,6 @@
 
     extension Outcome {
         /// The chip's fill: pass green, fail red, unclear amber.
-        var color: Color {
-            switch self {
-            case .pass: .pass
-            case .fail: .fail
-            case .inconclusive: .warning
-            }
-        }
+        var color: Color { tone.color }
     }
 #endif

@@ -6,6 +6,27 @@
     /// The app's sections, as the website's phone tab bar: Today, Jobs, Schedule, Messages, More.
     enum AppTab: String, Hashable, CaseIterable {
         case today, jobs, schedule, messages, more
+
+        var title: String {
+            switch self {
+            case .today: "Today"
+            case .jobs: "Jobs"
+            case .schedule: "Schedule"
+            case .messages: "Messages"
+            case .more: "More"
+            }
+        }
+
+        /// The website's drawing for the tab (spec 3.2).
+        var symbol: TabSymbol {
+            switch self {
+            case .today: .today
+            case .jobs: .jobs
+            case .schedule: .schedule
+            case .messages: .messages
+            case .more: .more
+            }
+        }
     }
 
     /// The signed-in app: a tab bar, each tab with its own navigation stack, and the sheets
@@ -19,24 +40,43 @@
         @State private var showWelcome = false
         @State private var showReauth = false
         @State private var editor: EditorSheet?
+        /// Unread conversations, the Messages tab's badge.
+        @State private var unread = 0
+        @Environment(SyncService.self) private var sync
 
         var body: some View {
             TabView(selection: $tab) {
-                Tab("Today", systemImage: "mappin.and.ellipse", value: AppTab.today) {
+                Tab(value: AppTab.today) {
                     stack(.today) { TodayView(newJob: { showNewJob = true }) }
+                } label: {
+                    tabLabel(.today)
                 }
-                Tab("Jobs", systemImage: "doc.text", value: AppTab.jobs) {
+                Tab(value: AppTab.jobs) {
                     stack(.jobs) { JobsView(newJob: { showNewJob = true }) }
+                } label: {
+                    tabLabel(.jobs)
                 }
-                Tab("Schedule", systemImage: "calendar", value: AppTab.schedule) {
+                Tab(value: AppTab.schedule) {
                     stack(.schedule) { ScheduleTab() }
+                } label: {
+                    tabLabel(.schedule)
                 }
-                Tab("Messages", systemImage: "message", value: AppTab.messages) {
+                Tab(value: AppTab.messages) {
                     stack(.messages) { MessagesTab() }
+                } label: {
+                    tabLabel(.messages)
                 }
-                Tab("More", systemImage: "ellipsis.circle", value: AppTab.more) {
+                .badge(badgeText(unread).map { Text($0) })
+                Tab(value: AppTab.more) {
                     stack(.more) { MoreView(showWelcome: { showWelcome = true }, showReauth: { showReauth = true }) }
+                } label: {
+                    tabLabel(.more)
                 }
+            }
+            .tint(Color.link)
+            .task(id: "\(sync.revision)|\(session.company?.id ?? "")") {
+                guard let company = session.company else { return }
+                unread = conversations(sync.store, companyId: company.id).filter(\.unread).count
             }
             .environment(\.openRoute) { paths[tab, default: []].append($0) }
             .environment(\.openEditor) { editor = $0 }
@@ -61,6 +101,18 @@
             .onAppear {
                 if !app.walkthrough.launchSeen { showWelcome = true }
             }
+        }
+
+        /// A tab's icon (filled when selected, as on the website) over its name.
+        private func tabLabel(_ item: AppTab) -> some View {
+            Label {
+                Text(item.title)
+            } icon: {
+                Image(uiImage: item.symbol.image(filled: tab == item))
+            }
+            .accessibilityLabel(
+                [item.title, item == .messages ? unreadAccessibilityText(unread) : nil].compactMap { $0 }
+                    .joined(separator: ", "))
         }
 
         /// A tab's navigation stack, with every screen a tab can push.
