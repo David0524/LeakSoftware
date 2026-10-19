@@ -105,20 +105,43 @@
 
     @MainActor
     func snapshot(_ name: String, dark: Bool = false, largeText: Bool = false, _ view: some View) async throws {
-        let size = CGSize(width: 393, height: 852)  // iPhone 16 / 17 points
-        let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+        // A window draws only when it belongs to a scene on screen: use the test host's scene.
+        let scene = try #require(
+            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
+            "The simulator's test host has no window scene to draw in")
+        let window = UIWindow(windowScene: scene)
+        window.frame = scene.coordinateSpace.bounds
         window.overrideUserInterfaceStyle = dark ? .dark : .light
         let content = view.environment(\.dynamicTypeSize, largeText ? .accessibility2 : .large)
         window.rootViewController = UIHostingController(rootView: content)
         window.makeKeyAndVisible()
-        try await Task.sleep(for: .milliseconds(800))
+        try await Task.sleep(for: .milliseconds(1200))
         let image = UIGraphicsImageRenderer(bounds: window.bounds).image { _ in
             window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
         }
         window.isHidden = true
+        let png = try #require(image.pngData())
+        // A blank picture means nothing was drawn: fail rather than save it.
+        #expect(!isBlank(image), "\(name) rendered blank")
         guard let folder = ProcessInfo.processInfo.environment["SCREENSHOT_DIR"], !folder.isEmpty else { return }
         try FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
-        try image.pngData()?.write(to: URL(fileURLWithPath: folder).appendingPathComponent("\(name).png"))
+        try png.write(to: URL(fileURLWithPath: folder).appendingPathComponent("\(name).png"))
+    }
+
+    /// Whether every sampled pixel has the same color.
+    @MainActor
+    func isBlank(_ image: UIImage) -> Bool {
+        guard let cg = image.cgImage, let data = cg.dataProvider?.data, let bytes = CFDataGetBytePtr(data) else {
+            return true
+        }
+        let step = max(1, CFDataGetLength(data) / 4096) & ~3
+        var first: (UInt8, UInt8, UInt8)?
+        for offset in stride(from: 0, to: CFDataGetLength(data) - 3, by: max(step, 4)) {
+            let pixel = (bytes[offset], bytes[offset + 1], bytes[offset + 2])
+            if let first, first != pixel { return false }
+            first = first ?? pixel
+        }
+        return true
     }
 
     extension View {
