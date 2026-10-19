@@ -13,7 +13,7 @@ export async function clientFromRequest(request: Request): Promise<SupabaseClien
 /** The phone's signed-in user and a client acting as them, or null. */
 export async function bearerSession(
   request: Request,
-): Promise<{ db: SupabaseClient; userId: string } | null> {
+): Promise<{ db: SupabaseClient; userId: string; email: string } | null> {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) return null;
   const options = { auth: { persistSession: false, autoRefreshToken: false } };
@@ -27,7 +27,7 @@ export async function bearerSession(
     ...options,
     global: { headers: { authorization: `Bearer ${token}` } },
   });
-  return { db, userId: data.user.id };
+  return { db, userId: data.user.id, email: data.user.email ?? "" };
 }
 
 export function jsonError(message: string, status: number) {
