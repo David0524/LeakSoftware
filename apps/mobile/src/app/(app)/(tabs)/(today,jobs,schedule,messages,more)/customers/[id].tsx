@@ -6,9 +6,9 @@ import {
   formatPhone,
   formatSchedule,
   isManagerRole,
+  localDate,
   offersLeak,
   offersPool,
-  planSummary,
   propertyLocation,
   splitEmails,
   type PoolType,
@@ -18,6 +18,7 @@ import type { JsonValue } from "@leakbook/sync";
 import { useState } from "react";
 import { Alert, Linking, StyleSheet, Text, View } from "react-native";
 import { KIND_LABELS, useCustomerData } from "../../../../../data/customers";
+import { MaintenancePlans } from "../../../../../features/maintenance/MaintenancePlans";
 import { useTeam } from "../../../../../data/schedule";
 import { useLine } from "../../../../../data/texting";
 import { getServices } from "../../../../../lib/services";
@@ -73,6 +74,14 @@ export default function CustomerPage() {
     uid ? team.find((t) => t.user_id === uid)?.name : undefined;
   const cc = customer.cc_emails ?? [];
   const now = new Date();
+  const today = localDate(now, company.timezone);
+  const techs = team
+    .filter((t) => t.status === "active")
+    .map((t) => ({ id: t.user_id, name: t.name }));
+  const doneCounts: Record<string, number> = {};
+  for (const j of jobs)
+    if (j.service_plan_id && j.status === "done" && !j.deleted_at)
+      doneCounts[j.service_plan_id] = (doneCounts[j.service_plan_id] ?? 0) + 1;
   const subtitle = [KIND_LABELS[customer.kind], customer.company_name].filter(Boolean).join(" · ");
 
   function remove() {
@@ -202,35 +211,16 @@ export default function CustomerPage() {
                 </Group>
               </Section>
               {offersPool(company.settings) ? (
-                <Section
-                  title="Visit plans"
-                  footer={manager ? "Change visit plans on the website." : undefined}
-                >
-                  <Group>
-                    {poolPlans.length === 0 ? (
-                      <ListRow>
-                        <T muted>No visit plan</T>
-                      </ListRow>
-                    ) : (
-                      poolPlans.map((plan) => (
-                        <ListRow
-                          key={plan.id}
-                          title={planSummary({
-                            ...plan,
-                            weekdays: plan.weekdays ?? [],
-                            monthly: plan.monthly ?? false,
-                          })}
-                          subtitle={[
-                            techName(plan.assigned_user_id) ?? "Needs a tech",
-                            plan.paused ? "Paused" : null,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        />
-                      ))
-                    )}
-                  </Group>
-                </Section>
+                <MaintenancePlans
+                  customerId={customer.id}
+                  propertyId={p.id}
+                  plans={poolPlans}
+                  techs={techs}
+                  today={today}
+                  doneCounts={doneCounts}
+                  canEdit={manager}
+                  onNotice={setNotice}
+                />
               ) : null}
               <Section
                 title={offersLeak(company.settings) ? "Leak detection and repairs" : "Repairs"}

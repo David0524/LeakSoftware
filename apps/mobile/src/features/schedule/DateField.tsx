@@ -78,8 +78,11 @@ export function DateField({
               value: toDate(valid ? value : today),
               mode: "date",
               minimumDate: min ? toDate(min) : undefined,
+              // Android's dialog empties the date with a third button.
+              neutralButton: clearLabel && valid ? { label: clearLabel } : undefined,
               onChange: (event, d) => {
-                if (event.type === "set" && d) onChange(fromDate(d));
+                if (event.type === "neutralButtonPressed") onChange("");
+                else if (event.type === "set" && d) onChange(fromDate(d));
               },
             });
           } else setOpen(true);
@@ -174,13 +177,18 @@ export function TimeField({
   value,
   onChange,
   placeholder = "Choose a time",
+  hint,
   error,
+  clearLabel,
 }: {
   label: string;
   value: string;
   onChange: (time: string) => void;
   placeholder?: string;
+  hint?: string;
   error?: string;
+  /** e.g. "No Set Time": a button that empties the time (an optional time). */
+  clearLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const valid = /^\d{1,2}:\d{2}$/.test(value);
@@ -200,6 +208,7 @@ export function TimeField({
         onChangeText={onChange}
         placeholder="09:00"
         error={error}
+        hint={hint}
       />
     );
   }
@@ -209,14 +218,16 @@ export function TimeField({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label}, ${valid ? shownTime(value) : placeholder}`}
-        accessibilityHint={error}
+        accessibilityHint={error ?? hint}
         onPress={() => {
           if (Platform.OS === "android") {
             DateTimePickerAndroid.open({
               value: asDate(),
               mode: "time",
+              neutralButton: clearLabel && valid ? { label: clearLabel } : undefined,
               onChange: (event, d) => {
-                if (event.type === "set" && d) onChange(fromTime(d));
+                if (event.type === "neutralButtonPressed") onChange("");
+                else if (event.type === "set" && d) onChange(fromTime(d));
               },
             });
           } else setOpen(true);
@@ -238,6 +249,10 @@ export function TimeField({
         <T variant="secondary" style={{ color: color.fail }}>
           {error}
         </T>
+      ) : hint ? (
+        <T variant="secondary" muted>
+          {hint}
+        </T>
       ) : null}
       <ModalSheet visible={open} onClose={() => setOpen(false)} title={label} cancel="Done">
         <DateTimePicker
@@ -249,6 +264,18 @@ export function TimeField({
             if (event.type === "set" && d) onChange(fromTime(d));
           }}
         />
+        {clearLabel && valid ? (
+          <View style={{ marginTop: space["4"], alignItems: "flex-start" }}>
+            <Button
+              title={clearLabel}
+              kind="secondary"
+              onPress={() => {
+                onChange("");
+                setOpen(false);
+              }}
+            />
+          </View>
+        ) : null}
       </ModalSheet>
     </View>
   );

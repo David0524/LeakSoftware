@@ -22,9 +22,21 @@ import {
   canMakeJobs,
   companyServices,
   newJobTypes,
+  isManagerRole,
+  maintenanceSettings,
   type JobType,
+  type PlanRepeat as Repeat,
 } from "@leakbook/core";
-import { useRows } from "../../../../../data/hooks";
+import { useRows, useSyncStatus } from "../../../../../data/hooks";
+import { useTeam } from "../../../../../data/schedule";
+import {
+  checkPlan,
+  firstVisitHint,
+  isNetworkError,
+  type PlanErrors,
+} from "../../../../../features/maintenance/plan";
+import { PlanRepeat } from "../../../../../features/maintenance/PlanRepeat";
+import { Select } from "../../../../../ui/Select";
 import { useCompany, useSession } from "../../../../../state/session";
 import {
   Button,
@@ -79,6 +91,27 @@ function NewJobForm() {
   const [jobType, setJobType] = useState<JobType>(offered === "pool" ? "maintenance" : "detection");
   const maintenance = jobType === "maintenance";
   const leak = jobType === "detection";
+  // Owners and admins can start a maintenance plan here: visits that repeat (website's New Job).
+  const canPlan = isManagerRole(membership?.role);
+  const [repeat, setRepeat] = useState<Repeat | "0">("0");
+  const plan = maintenance && canPlan && repeat !== "0";
+  const members = useTeam(company.id);
+  const offline = useSyncStatus().phase === "offline";
+  const [days, setDays] = useState<number[]>([]);
+  const [planForm, setPlanForm] = useState({
+    startsOn: "",
+    time: "",
+    minutes: String(maintenanceSettings(company.settings).visitMinutes),
+    endsOn: "",
+    tech: "",
+    price: "",
+    notes: "",
+  });
+  const [planErrors, setPlanErrors] = useState<PlanErrors>({});
+  const [starting, setStarting] = useState(false);
+  const [planError, setPlanError] = useState<string | null>(null);
+  const setPlan = (k: keyof typeof planForm) => (v: string) =>
+    setPlanForm((f) => ({ ...f, [k]: v }));
 
   const [customerId, setCustomerId] = useState<string | undefined>();
   const [search, setSearch] = useState("");
@@ -144,6 +177,9 @@ function NewJobForm() {
     otherEmails.trim() ||
     shape ||
     fee !== null ||
+    repeat !== "0" ||
+    planForm.price.trim() ||
+    planForm.notes.trim() ||
     Object.keys(answers).length > 0 ||
     Object.values(form).some((v) => v.trim()),
   );
@@ -159,6 +195,80 @@ function NewJobForm() {
       onConfirm: () => navigation.dispatch(data.action),
     });
   });
+
+  /**
+   * Start a maintenance plan (owners and admins), with a new customer and pool if needed, in
+   * one step on the server (create_service_plan): its visits are made there, so this needs a
+   * connection.
+   */
+  async function startPlan() {
+    const input: NewJobInput = {
+      ...form,
+      customerId,
+      propertyId,
+      scheduleDate: "",
+      scheduleTime: "",
+    };
+    const e = validateNewJob(input);
+    setErrors(e);
+    const checked = checkPlan(
+      { repeat: repeat as Repeat, days, ...planForm },
+      "End on or after the first visit.",
+    );
+    setPlanErrors(checked.errors ?? {});
+    setPlanError(null);
+    if (Object.keys(e).length > 0 || !checked.values) return;
+    if (offline) {
+      setPlanError(
+        "You’re offline. Starting a plan needs a connection; try again once you’re back online.",
+      );
+      return;
+    }
+    setStarting(true);
+    try {
+      const { supabase, sync } = services;
+      const { data, error } = await supabase.rpc("create_service_plan", {
+        target_company: company.id,
+        new_customer: customerId
+          ? null
+          : {
+              name: input.customerName.trim(),
+              phone: input.customerPhone.trim() || null,
+              email: input.customerEmail.trim() || null,
+              cc_emails: splitEmails(otherEmails),
+            },
+        existing_customer: customerId ?? null,
+        new_property: propertyId
+          ? null
+          : {
+              address_line1: input.addressLine1.trim(),
+              city: input.city.trim() || null,
+              state: input.state.trim().toUpperCase() || null,
+              postal_code: input.postalCode.trim() || null,
+              pool_type: poolType,
+              has_spa: hasSpa,
+              access_notes: accessNotes.trim() || null,
+            },
+        existing_property: propertyId ?? null,
+        plan: checked.values,
+      });
+      if (error) throw new Error(error.message);
+      // Bring the new customer, pool, plan, and its visits to the phone before opening them.
+      await sync.syncNow();
+      haptics.success();
+      created.current = true;
+      router.replace(`/customers/${(data as { customer: string }).customer}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setPlanError(
+        isNetworkError(message)
+          ? "You’re offline. Starting a plan needs a connection; try again once you’re back online."
+          : message,
+      );
+    } finally {
+      setStarting(false);
+    }
+  }
 
   function save() {
     const input: NewJobInput = {
@@ -244,7 +354,14 @@ function NewJobForm() {
   }
 
   return (
-    <Screen title="New Job" subtitle="Accepted quotes make their own repair jobs.">
+    <Screen
+      title="New Job"
+      subtitle={
+        offered === "pool"
+          ? "A pool service visit, a plan that repeats, or a repair. Accepted quotes make their own repair jobs."
+          : "Accepted quotes make their own repair jobs."
+      }
+    >
       <Segmented label="Job" value={jobType} onChange={setJobType} options={newJobTypes(offered)} />
       <Section title="Customer">
         {selectedCustomer ? (
@@ -452,52 +569,128 @@ function NewJobForm() {
       </Section>
 
       <Section title="When">
-        <Segmented
-          options={[
-            { value: "now", label: "Start Now" },
-            { value: "scheduled", label: "Schedule" },
-            { value: "later", label: "Later" },
-          ]}
-          value={when}
-          onChange={setWhen}
-        />
-        {when === "scheduled" ? (
-          <>
-            <Choice
-              options={[
-                { value: today, label: "Today" },
-                { value: tomorrow, label: "Tomorrow" },
-              ]}
-              value={
-                form.scheduleDate === today || form.scheduleDate === tomorrow
-                  ? form.scheduleDate
-                  : null
-              }
-              onChange={set("scheduleDate")}
-            />
-            <View style={styles.cols}>
-              <View style={{ flex: 1 }}>
-                <DateField
-                  label="Date"
-                  value={form.scheduleDate}
-                  onChange={set("scheduleDate")}
-                  today={today}
-                  error={errors.scheduleDate}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <TimeField
-                  label="Time"
-                  value={form.scheduleTime}
-                  onChange={set("scheduleTime")}
-                  error={errors.scheduleTime}
-                />
-              </View>
-            </View>
-          </>
+        {maintenance && canPlan ? (
+          <PlanRepeat
+            once
+            value={repeat}
+            onChange={setRepeat}
+            days={days}
+            onDaysChange={setDays}
+            error={planErrors.weekdays}
+          />
         ) : null}
+        {plan ? (
+          <>
+            <DateField
+              label="First visit"
+              value={planForm.startsOn}
+              onChange={setPlan("startsOn")}
+              today={today}
+              hint={firstVisitHint(repeat as Repeat, true)}
+              error={planErrors.startsOn}
+            />
+            <TimeField
+              label="Time (optional)"
+              value={planForm.time}
+              onChange={setPlan("time")}
+              placeholder="Any time"
+              hint="Blank: route planning picks it."
+              clearLabel="Any Time"
+              error={planErrors.time}
+            />
+            <Field
+              label="Visit length (minutes)"
+              value={planForm.minutes}
+              onChangeText={setPlan("minutes")}
+              keyboardType="number-pad"
+              error={planErrors.minutes}
+            />
+            <DateField
+              label="Last visit (optional)"
+              value={planForm.endsOn}
+              onChange={setPlan("endsOn")}
+              today={planForm.startsOn || today}
+              min={planForm.startsOn || undefined}
+              placeholder="No end date"
+              clearLabel="No End Date"
+              error={planErrors.endsOn}
+            />
+            <Select
+              label="Tech"
+              value={planForm.tech}
+              onChange={setPlan("tech")}
+              options={[
+                { value: "", label: "Nobody yet" },
+                ...members
+                  .filter((m) => m.status === "active")
+                  .map((m) => ({ value: m.user_id, label: m.name })),
+              ]}
+            />
+            <Field
+              label="Price per month ($)"
+              value={planForm.price}
+              onChangeText={setPlan("price")}
+              keyboardType="decimal-pad"
+              hint="Billed monthly with the customer's other visits."
+              error={planErrors.price}
+            />
+            <Field
+              label="Notes for the tech (optional)"
+              value={planForm.notes}
+              onChangeText={setPlan("notes")}
+              multiline
+            />
+          </>
+        ) : (
+          <>
+            <Segmented
+              options={[
+                { value: "now", label: "Start Now" },
+                { value: "scheduled", label: "Schedule" },
+                { value: "later", label: "Later" },
+              ]}
+              value={when}
+              onChange={setWhen}
+            />
+            {when === "scheduled" ? (
+              <>
+                <Choice
+                  options={[
+                    { value: today, label: "Today" },
+                    { value: tomorrow, label: "Tomorrow" },
+                  ]}
+                  value={
+                    form.scheduleDate === today || form.scheduleDate === tomorrow
+                      ? form.scheduleDate
+                      : null
+                  }
+                  onChange={set("scheduleDate")}
+                />
+                <View style={styles.cols}>
+                  <View style={{ flex: 1 }}>
+                    <DateField
+                      label="Date"
+                      value={form.scheduleDate}
+                      onChange={set("scheduleDate")}
+                      today={today}
+                      error={errors.scheduleDate}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <TimeField
+                      label="Time"
+                      value={form.scheduleTime}
+                      onChange={set("scheduleTime")}
+                      error={errors.scheduleTime}
+                    />
+                  </View>
+                </View>
+              </>
+            ) : null}
+          </>
+        )}
         {/* When techs see only their own jobs, a tech's new job is always theirs. */}
-        {seesAll ? (
+        {seesAll && !plan ? (
           <Toggle label="Assign to me" value={assignToMe} onChange={setAssignToMe} />
         ) : null}
         {team.length > 0 && !maintenance ? (
@@ -513,10 +706,26 @@ function NewJobForm() {
         ) : null}
       </Section>
 
-      {Object.keys(errors).length > 0 ? (
+      {Object.keys(errors).length > 0 || (plan && Object.keys(planErrors).length > 0) ? (
         <Notice tone="error">Fix the highlighted fields.</Notice>
       ) : null}
-      <Button title={when === "now" ? "Create and Start Job" : "Create Job"} onPress={save} />
+      {plan && planError ? <Notice tone="error">{planError}</Notice> : null}
+      {plan && offline && !planError ? (
+        <Notice tone="warning">
+          You’re offline. Starting a plan needs a connection, since the visits are made on the
+          server.
+        </Notice>
+      ) : null}
+      {plan ? (
+        <Button
+          title={starting ? "Starting…" : "Start Plan"}
+          loading={starting}
+          disabled={offline}
+          onPress={() => void startPlan()}
+        />
+      ) : (
+        <Button title={when === "now" ? "Create and Start Job" : "Create Job"} onPress={save} />
+      )}
     </Screen>
   );
 }

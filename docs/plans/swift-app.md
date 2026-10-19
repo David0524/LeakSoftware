@@ -271,8 +271,10 @@ whose day, Getting Started), Jobs and Reports, Schedule (day, week, month, Needs
 Route, Move, Suggested Times), New Job as a pushed screen, Messages (list, thread, new, calls),
 More (Customers, Invoices, Chemical Calculator, Settings, account). Route and schedule rules are
 ported to SundeckCore with fixtures from TypeScript. Checked by the simulator screenshots in CI
-against the website's at iPhone size. Still to do: the job's Schedule and Timeline groups on
-Details, editing visit plans, maintenance plans in New Job.
+against the website's at iPhone size. Also built: the job's Schedule and Timeline groups on
+Details, maintenance plans in New Job (Start Plan, through `create_service_plan`) and editing a
+customer's visit plans (synced `service_plan` writes). Regular cleanings (`plan_cleaning`) stay
+on the website, since that table isn't synced to phones.
 
 ### S9 Switch-over
 - The move from the Expo app's database, accessibility (Dynamic Type, VoiceOver, contrast),
@@ -285,7 +287,10 @@ Details, editing visit plans, maintenance plans in New Job.
 Built 2026-10-19: the move from the Expo database (`ExpoMigration.swift`): on first launch the
 Swift app opens the Expo app's encrypted SQLite file with its Keychain key, copies synced rows,
 the outbox, sync state, the upload queue and settings, checks the counts, and only then marks
-the move done; tested in `ExpoMigrationTests`. TestFlight waits for Apple Developer enrollment.
+the move done; tested in `ExpoMigrationTests`. `PerformanceTests` seeds 1,000 jobs and 10,000
+photos and times the Jobs list, a job's photos, a week of the schedule, Customers and the outbox
+(it found the Jobs list at 4 s, now 0.4 s in a debug build). Large-text screenshots of the main
+screens run in CI for the accessibility pass. TestFlight waits for Apple Developer enrollment.
 
 ## Risks
 
