@@ -601,6 +601,18 @@
       "result": "Take a photo of the pool before finishing this job."
     }
   ],
+  "REPAIR_ITEM_KEY": [
+    {
+      "args": [],
+      "result": "repair_item"
+    }
+  ],
+  "REPAIR_ITEM_LABEL": [
+    {
+      "args": [],
+      "result": "What they need"
+    }
+  ],
   "offersPool": [
     {
       "args": [

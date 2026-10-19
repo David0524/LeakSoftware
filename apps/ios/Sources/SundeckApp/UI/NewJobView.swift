@@ -333,7 +333,21 @@
         }
 
         @ViewBuilder private var calledCard: some View {
-            if form.showsBooking {
+            if form.showsRepairCall {
+                // When They Call on a repair (owner, 2026-10-19): what they need fills the Price.
+                FormCard("When They Call") {
+                    if !form.repairItems.isEmpty {
+                        SelectField(
+                            label: "What do they need?",
+                            selection: Binding(get: { form.repairItem }, set: { form.pickRepairItem($0) }),
+                            options: [nil] + form.repairItems.map { Optional($0) },
+                            optionLabel: { $0?.label ?? "Pick from the price book…" })
+                    }
+                    OutlinedField(
+                        label: "What they said (optional)", text: $form.notes, hint: "Shown to the tech with the job.",
+                        multiline: true)
+                }
+            } else if form.showsBooking {
                 FormCard("When they called") {
                     ForEach(form.questions) { question in
                         switch question.kind {

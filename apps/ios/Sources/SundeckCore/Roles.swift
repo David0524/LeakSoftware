@@ -23,6 +23,11 @@ public func requiresFinishPhoto(_ settings: JSONValue?) -> Bool {
 /// What blocks Mark Done and finishing or sending a report until the job has a photo.
 public let finishPhotoMessage = "Take a photo of the pool before finishing this job."
 
+/// `job.intake`'s key for the price book item a repair was booked for (When They Call).
+public let repairItemKey = "repair_item"
+/// How the job page names that answer.
+public let repairItemLabel = "What they need"
+
 public enum JobType: String, Codable, CaseIterable, Sendable {
     case detection, repair, maintenance
 }

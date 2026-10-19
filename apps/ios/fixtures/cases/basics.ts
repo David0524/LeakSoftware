@@ -11,6 +11,8 @@ import {
   newJobTypes,
   offersPool,
   requiresFinishPhoto,
+  REPAIR_ITEM_KEY,
+  REPAIR_ITEM_LABEL,
   FINISH_PHOTO_MESSAGE,
   parseDollars,
   roleLabel,
@@ -112,6 +114,8 @@ export const basics: ModuleCases = {
     ],
   ),
   FINISH_PHOTO_MESSAGE: rule(() => FINISH_PHOTO_MESSAGE, [[]]),
+  REPAIR_ITEM_KEY: rule(() => REPAIR_ITEM_KEY, [[]]),
+  REPAIR_ITEM_LABEL: rule(() => REPAIR_ITEM_LABEL, [[]]),
   offersPool: rule(
     (s: unknown) => offersPool(s),
     settings.map((s) => [s]),

@@ -11,7 +11,7 @@ import Testing
             "formatCents", "parseDollars", "uuidv7TimePrefix", "userTransitions", "JOB_STATUS_LABELS", "toE164",
             "formatPhone", "companyServices", "offersPool", "newJobTypes", "seesAllJobs", "canMakeJobs", "roleLabel",
             "isManagerRole", "splitEmails", "POOL_TYPE_LABELS", "jobOnPhones", "requiresFinishPhoto",
-            "FINISH_PHOTO_MESSAGE",
+            "FINISH_PHOTO_MESSAGE", "REPAIR_ITEM_KEY", "REPAIR_ITEM_LABEL",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -51,6 +51,8 @@ import Testing
         checkRule(module, "offersPool") { c in offersPool(try c.arg(0)) }
         checkRule(module, "requiresFinishPhoto") { c in requiresFinishPhoto(try c.arg(0, as: JSONValue?.self)) }
         checkRule(module, "FINISH_PHOTO_MESSAGE") { _ in finishPhotoMessage }
+        checkRule(module, "REPAIR_ITEM_KEY") { _ in repairItemKey }
+        checkRule(module, "REPAIR_ITEM_LABEL") { _ in repairItemLabel }
         checkRule(module, "newJobTypes") { c in newJobTypes(try c.arg(0)) }
         checkRule(module, "seesAllJobs") { c in seesAllJobs(try c.arg(0, as: String?.self), try c.arg(1)) }
         checkRule(module, "canMakeJobs") { c in canMakeJobs(try c.arg(0, as: String?.self), try c.arg(1)) }

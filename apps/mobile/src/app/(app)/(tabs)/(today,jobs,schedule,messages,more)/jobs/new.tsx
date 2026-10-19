@@ -11,6 +11,8 @@ import {
   planComponents,
   parseDollars,
   splitEmails,
+  formatCents,
+  REPAIR_ITEM_KEY,
   type ComponentType,
   type PriceBookItem,
   type Customer,
@@ -91,6 +93,7 @@ function NewJobForm() {
   const [jobType, setJobType] = useState<JobType>(offered === "pool" ? "maintenance" : "detection");
   const maintenance = jobType === "maintenance";
   const leak = jobType === "detection";
+  const repair = jobType === "repair";
   // Owners and admins can start a maintenance plan here: visits that repeat (website's New Job).
   const canPlan = isManagerRole(membership?.role);
   const [repeat, setRepeat] = useState<Repeat | "0">("0");
@@ -139,6 +142,7 @@ function NewJobForm() {
   const [secondTech, setSecondTech] = useState<string>("none");
   const [fee, setFee] = useState<string | null>(null);
   const [feeError, setFeeError] = useState<string | undefined>();
+  const [repairPriceError, setRepairPriceError] = useState<string | undefined>();
   // The detection fee starts from the price book (pool, or pool and spa).
   const detection = priceBook
     .filter((i) => i.active && i.category === "Detection")
@@ -148,6 +152,16 @@ function NewJobForm() {
     : hasSpa;
   const suggestedFee = (spaChosen ? detection[1] : detection[0]) ?? detection[0];
   const feeText = fee ?? (suggestedFee ? (suggestedFee.price_cents / 100).toFixed(2) : "");
+  // When They Call (owner, 2026-10-19), as the website: a repair is booked for a price book
+  // item, the ones the owner picked for it or every active one when none are picked yet.
+  const live = priceBook
+    .filter((i) => i.active && !i.deleted_at)
+    .sort((a, b) => a.sort_order - b.sort_order);
+  const picked = live.filter((i) => (i as { on_repair_call?: boolean }).on_repair_call);
+  const repairItems = picked.length ? picked : live;
+  const [repairItem, setRepairItem] = useState("");
+  const [repairPrice, setRepairPrice] = useState("");
+  const [repairNotes, setRepairNotes] = useState("");
 
   const set = (k: keyof NewJobInput) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
   const selectedCustomer = customers.find((c) => c.id === customerId);
@@ -177,6 +191,9 @@ function NewJobForm() {
     otherEmails.trim() ||
     shape ||
     fee !== null ||
+    repairItem ||
+    repairPrice.trim() ||
+    repairNotes.trim() ||
     repeat !== "0" ||
     planForm.price.trim() ||
     planForm.notes.trim() ||
@@ -284,7 +301,12 @@ function NewJobForm() {
     const feeCents = feeText.trim() ? parseDollars(feeText) : null;
     const badFee = leak && Boolean(feeText.trim()) && (feeCents === null || feeCents < 0);
     setFeeError(badFee ? "Enter a price like 649." : undefined);
-    if (Object.keys(e).length > 0 || badFee) return;
+    const priceCents = repairPrice.trim() ? parseDollars(repairPrice) : null;
+    const badPrice =
+      repair && Boolean(repairPrice.trim()) && (priceCents === null || priceCents < 0);
+    setRepairPriceError(badPrice ? "Enter a price like 649." : undefined);
+    if (Object.keys(e).length > 0 || badFee || badPrice) return;
+    const item = repair ? repairItems.find((i) => i.id === repairItem) : undefined;
 
     const records = newJobRecords(input, {
       poolType,
@@ -324,11 +346,13 @@ function NewJobForm() {
         ...records.job,
         property_id: prop,
         bill_to_customer_id: cust,
-        // Only leak detection has a detection fee and booking questions; a repair is priced
-        // on its invoice. Pool service visits have no second tech.
-        fee_cents: leak ? feeCents : null,
+        // Leak detection has a detection fee and booking questions; a repair its price and
+        // what they need (When They Call), as the website. Pool service visits have no
+        // second tech.
+        fee_cents: leak ? feeCents : repair ? priceCents : null,
         second_tech_id: maintenance || secondTech === "none" ? null : secondTech,
-        intake: leak ? answers : {},
+        intake: leak ? answers : item ? { [REPAIR_ITEM_KEY]: item.name } : {},
+        ...(repair && repairNotes.trim() ? { summary_notes: repairNotes.trim() } : {}),
       });
       // The checklist is ready the moment the job opens, even offline.
       const existingProperty = properties.find((p) => p.id === prop);
@@ -491,6 +515,42 @@ function NewJobForm() {
             keyboardType="decimal-pad"
             error={feeError}
             hint="Shown on the report."
+          />
+        </Section>
+      ) : null}
+
+      {repair ? (
+        <Section title="When They Call">
+          {repairItems.length ? (
+            <Select
+              label="What do they need?"
+              placeholder="Pick from the price book…"
+              options={repairItems.map((i) => ({
+                value: i.id,
+                label: `${i.name} (${formatCents(i.price_cents)})`,
+              }))}
+              value={repairItem || null}
+              onChange={(id) => {
+                setRepairItem(id);
+                const chosen = repairItems.find((i) => i.id === id);
+                if (chosen) setRepairPrice((chosen.price_cents / 100).toFixed(2));
+              }}
+            />
+          ) : null}
+          <Field
+            label="Price ($)"
+            value={repairPrice}
+            onChangeText={setRepairPrice}
+            keyboardType="decimal-pad"
+            error={repairPriceError}
+            hint="Billed on the invoice. Add parts there before sending."
+          />
+          <Field
+            label="What they said (optional)"
+            value={repairNotes}
+            onChangeText={setRepairNotes}
+            multiline
+            hint="Shown to the tech with the job."
           />
         </Section>
       ) : null}

@@ -48,7 +48,7 @@
                     if let fee = details.fee { ListRow("Detection fee", value: fee) }
                 }
                 if !details.intake.isEmpty {
-                    Grouped(label: "When they booked") {
+                    Grouped(label: details.intakeTitle) {
                         ForEach(Array(details.intake.enumerated()), id: \.offset) { _, answer in
                             StackedRow(caption: answer.question, value: answer.answer)
                         }

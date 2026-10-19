@@ -125,6 +125,8 @@ public struct JobDetails: Equatable, Sendable {
     /// "$649.00", when the job has a fee.
     public var fee: String?
     public var intake: [IntakeAnswer]
+    /// "When they called" on a repair, else "When they booked".
+    public var intakeTitle: String
 
     public init(job: JobView, team: [TeamProfile], settings: JSONValue) {
         customerId = job.customer?.id
@@ -148,6 +150,11 @@ public struct JobDetails: Equatable, Sendable {
         with = job.job["second_tech_id"]?.string.map { id in team.first { $0.id == id }?.displayName ?? "Teammate" }
         fee = job.job["fee_cents"]?.number.map { formatCents(Int($0)) }
         intake = intakeAnswers(settings: settings, intake: job.job["intake"])
+        // When They Call on a repair (owner, 2026-10-19): what the customer needs, first.
+        if let need = job.job["intake"]?[repairItemKey]?.string, !need.isEmpty {
+            intake.insert(IntakeAnswer(question: repairItemLabel, answer: need), at: 0)
+        }
+        intakeTitle = job.type == .repair ? "When they called" : "When they booked"
     }
 
     /// The contact row's first line: the phone, else the email.

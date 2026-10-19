@@ -24,6 +24,8 @@ import {
   toE164,
   userTransitions,
   type CompanySettings,
+  REPAIR_ITEM_KEY,
+  REPAIR_ITEM_LABEL,
   type Customer,
   type Job,
   type JobStatus,
@@ -407,9 +409,11 @@ function Details({
   const conversation = phone ? conversations.find((c) => c.phone === phone) : undefined;
   const address = property ? formatAddress(property) : "";
   const questions = (company.settings as Partial<CompanySettings>).intake_questions ?? [];
-  const answers = questions
-    .map((q) => ({ q, a: job.intake?.[q.key] }))
-    .filter(({ a }) => (Array.isArray(a) ? a.length > 0 : Boolean(a)));
+  const answers = [
+    // When They Call on a repair (owner, 2026-10-19): what the customer needs.
+    { q: { key: REPAIR_ITEM_KEY, label: REPAIR_ITEM_LABEL }, a: job.intake?.[REPAIR_ITEM_KEY] },
+    ...questions.map((q) => ({ q, a: job.intake?.[q.key] })),
+  ].filter(({ a }) => (Array.isArray(a) ? a.length > 0 : Boolean(a)));
   const textCustomer = () =>
     router.push(
       conversation
@@ -553,7 +557,7 @@ function Details({
       </Section>
 
       {answers.length > 0 ? (
-        <Section title="When they booked">
+        <Section title={job.type === "repair" ? "When they called" : "When they booked"}>
           <Group>
             {answers.map(({ q, a }) => (
               <ListRow key={q.key}>

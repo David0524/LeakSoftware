@@ -451,4 +451,83 @@ import Testing
                         ])
                 }, done: true, cursor: [:], serverHLC: "1800000000002-0000-server"))
     }
+
+    /// When They Call on a repair (owner, 2026-10-19): the price book items the owner picked,
+    /// or every active one; picking fills the Price; the name is saved in `intake.repair_item`.
+    @Test func whenTheyCallPicksWhatTheyNeedAndSavesIt() throws {
+        let (customer, _) = try seedCustomer(spa: false)
+        func item(_ n: Int, _ name: String, cents: Int, sort: Int, onCall: JSONValue, active: Bool = true) -> PulledRow
+        {
+            PulledRow(
+                table: "price_book_item", xid: "3",
+                row: [
+                    "id": .string("00000000-0000-4000-8000-00000000030\(n)"), "company_id": .string(Self.company),
+                    "deleted_at": nil, "name": .string(name), "category": "Repair", "unit": "each",
+                    "price_cents": .number(Double(cents)), "taxable": true, "sort_order": .number(Double(sort)),
+                    "active": .bool(active), "on_repair_call": onCall,
+                ])
+        }
+        let f = form()
+        f.jobType = .repair
+        #expect(f.showsRepairCall && !f.showsBooking)
+        // None picked yet: every active item, in order.
+        #expect(
+            f.repairItems.map(\.label) == [
+                "Leak detection - pool ($375.00)", "Leak detection - pool and spa ($450.00)",
+            ])
+        try sync.store.applyPage(
+            PullPage(
+                rows: [
+                    item(1, "Pump motor", cents: 45000, sort: 30, onCall: true),
+                    item(2, "Filter grids", cents: 12000, sort: 40, onCall: false),
+                    item(3, "Heater igniter", cents: 18500, sort: 35, onCall: true),
+                    item(4, "Old valve", cents: 9000, sort: 1, onCall: true, active: false),
+                ], done: true, cursor: [:], serverHLC: "1800000000003-0000-server"))
+        // Once the owner picks some: only those, active, in order.
+        #expect(f.repairItems.map(\.label) == ["Pump motor ($450.00)", "Heater igniter ($185.00)"])
+        let pump = try #require(f.repairItems.first)
+        f.pickRepairItem(pump)
+        #expect(f.repairItem == pump && f.fee == "450.00" && f.isDirty)
+        // "Pick from the price book…" keeps the price typed.
+        f.pickRepairItem(nil)
+        #expect(f.repairItem == nil && f.fee == "450.00")
+        f.pickRepairItem(pump)
+        f.fee = "475.00"
+        f.notes = "Motor hums but won't start"
+        f.mode = .existing
+        f.selectCustomer(customer)
+        f.input.scheduleDate = f.tomorrow
+        let pending = try sync.store.pendingCount()
+        let job = try #require(try sync.store.get("job", f.save()))
+        #expect(job["type"] == "repair")
+        #expect(job["intake"] == [repairItemKey: "Pump motor"])
+        #expect(job["fee_cents"] == 47500)
+        #expect(job["summary_notes"] == "Motor hums but won't start")
+        #expect(try sync.store.pendingCount() > pending)
+        // The job page shows it under "When they called".
+        let view = try #require(try jobViews(sync.store, companyId: Self.company).first { $0.id == job.id })
+        let details = JobDetails(job: view, team: [], settings: .null)
+        #expect(details.intakeTitle == "When they called")
+        #expect(details.intake.first == IntakeAnswer(question: "What they need", answer: "Pump motor"))
+    }
+
+    /// `on_repair_call` reads from synced rows; missing is false.
+    @Test func onRepairCallDecodes() throws {
+        func decode(_ extra: Row) throws -> PriceBookItem {
+            var row: Row = [
+                "id": "i", "company_id": "c", "name": "Pump motor", "unit": "each", "price_cents": 45000,
+                "taxable": true, "sort_order": 1, "active": true,
+            ]
+            row.merge(extra) { _, new in new }
+            return try JSONValue.object(row).decode(PriceBookItem.self)
+        }
+        #expect(try decode([:]).onRepairCall == false)
+        #expect(try decode(["on_repair_call": nil]).onRepairCall == false)
+        #expect(try decode(["on_repair_call": false]).onRepairCall == false)
+        #expect(try decode(["on_repair_call": true]).onRepairCall == true)
+        let back = try json(try decode(["on_repair_call": true]))
+        #expect(back["on_repair_call"] == true)
+        #expect(try json(try decode([:]))["on_repair_call"] == nil)
+    }
+
 }

@@ -171,6 +171,9 @@ public struct PriceBookItem: Codable, Equatable, Sendable {
     public var sortOrder: Int
     public var active: Bool
     public var deletedAt: String?
+    /// Shown in New Job's When They Call menu (owner, 2026-10-19). Missing (older rows, older
+    /// servers) reads as false.
+    public var onRepairCall = false
 
     enum CodingKeys: String, CodingKey {
         case id, name, description, category, unit, taxable, active
@@ -179,6 +182,44 @@ public struct PriceBookItem: Codable, Equatable, Sendable {
         case priceCents = "price_cents"
         case sortOrder = "sort_order"
         case deletedAt = "deleted_at"
+        case onRepairCall = "on_repair_call"
+    }
+}
+
+extension PriceBookItem {
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        companyId = try c.decode(String.self, forKey: .companyId)
+        name = try c.decode(String.self, forKey: .name)
+        description = try c.decodeIfPresent(String.self, forKey: .description)
+        category = try c.decodeIfPresent(String.self, forKey: .category)
+        componentTypeKey = try c.decodeIfPresent(String.self, forKey: .componentTypeKey)
+        unit = try c.decode(String.self, forKey: .unit)
+        priceCents = try c.decode(Cents.self, forKey: .priceCents)
+        taxable = try c.decode(Bool.self, forKey: .taxable)
+        sortOrder = try c.decode(Int.self, forKey: .sortOrder)
+        active = try c.decode(Bool.self, forKey: .active)
+        deletedAt = try c.decodeIfPresent(String.self, forKey: .deletedAt)
+        onRepairCall = try c.decodeIfPresent(Bool.self, forKey: .onRepairCall) ?? false
+    }
+
+    /// Written back as read: `on_repair_call` only when it's on, as rows without it have none.
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(companyId, forKey: .companyId)
+        try c.encode(name, forKey: .name)
+        try c.encodeIfPresent(description, forKey: .description)
+        try c.encodeIfPresent(category, forKey: .category)
+        try c.encodeIfPresent(componentTypeKey, forKey: .componentTypeKey)
+        try c.encode(unit, forKey: .unit)
+        try c.encode(priceCents, forKey: .priceCents)
+        try c.encode(taxable, forKey: .taxable)
+        try c.encode(sortOrder, forKey: .sortOrder)
+        try c.encode(active, forKey: .active)
+        try c.encodeIfPresent(deletedAt, forKey: .deletedAt)
+        if onRepairCall { try c.encode(true, forKey: .onRepairCall) }
     }
 }
 

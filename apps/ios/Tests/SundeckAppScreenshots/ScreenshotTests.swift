@@ -792,6 +792,36 @@
                     }
                 }
                 .app(env))
+            // When They Call on a repair (owner, 2026-10-19): two items picked for the menu, one
+            // chosen (its price filled in) and what the customer said.
+            let store = env.session.sync.store
+            try store.applyPage(
+                PullPage(
+                    rows: [("pb-pump", "Pump motor", 45000), ("pb-heater", "Heater igniter", 18500)].enumerated().map {
+                        i, p in
+                        PulledRow(
+                            table: "price_book_item", xid: "7",
+                            row: [
+                                "id": .string(p.0), "company_id": "c1", "name": .string(p.1), "category": "Repair",
+                                "unit": "each", "price_cents": .number(Double(p.2)), "taxable": true,
+                                "sort_order": .number(Double(i)), "active": true, "on_repair_call": true,
+                            ])
+                    }, done: true, cursor: [:], serverHLC: "1760000000007-0000-srv"))
+            let repair = NewJobForm(sync: env.session.sync, company: company, userId: "u1")
+            repair.jobType = .repair
+            repair.jobTypeChanged()
+            repair.pickRepairItem(repair.repairItems.first)
+            repair.notes = "Pump hums but won't start. Breaker trips after a minute."
+            try await snapshot(
+                "08-new-job-repair", height: 2600,
+                NavigationStack { NewJobView(form: repair, back: "Jobs") { _ in } }.app(env))
+            // The job page: "When they called" · What they need.
+            let sam = try #require(try store.list("job").first { $0["type"] == "repair" })
+            try store.write(
+                "job", id: sam.id, companyId: "c1", ["intake": [repairItemKey: "Pump motor"], "fee_cents": 45000])
+            try await snapshot(
+                "08-repair-job-called", height: 1800,
+                NavigationStack { JobScreen(jobId: sam.id, section: .details) }.app(env))
         }
 
         /// The job's Photos and Wrap-Up sections (spec 5.4) on the sample job: a marked-up photo,

@@ -126,8 +126,10 @@ public final class NewJobForm {
     public var techId: String?
     /// A teammate's user id, or nil for none.
     public var secondTech: String?
-    /// Notes for the tech.
+    /// Notes for the tech ("What they said" on a repair).
     public var notes = ""
+    /// When They Call on a repair: the price book item they need, or nil for none picked.
+    public private(set) var repairItemId: String?
     /// "Tue, Oct 20 at 9:00 AM with Tony Tech." after a suggestion fills the visit fields.
     public private(set) var picked: String?
     /// Maintenance for owners and admins: nil is Just once (a single visit), else a plan that
@@ -245,6 +247,35 @@ public final class NewJobForm {
             }
     }
 
+    /// When They Call (owner, 2026-10-19): the price book items the owner picked for booking a
+    /// repair (Show in When They Call), or every active item when none are picked yet.
+    public var repairItems: [FeeItem] {
+        let live = rows("price_book_item")
+            .filter { $0["active"]?.bool == true && ($0["deleted_at"]?.string ?? "").isEmpty }
+            .enumerated()
+            .sorted { a, b in
+                let (x, y) = (a.element["sort_order"]?.number ?? 0, b.element["sort_order"]?.number ?? 0)
+                return x == y ? a.offset < b.offset : x < y
+            }
+            .map(\.element)
+        let picked = live.filter { $0["on_repair_call"]?.bool == true }
+        return (picked.isEmpty ? live : picked).compactMap { row in
+            row["price_cents"]?.number.map {
+                FeeItem(id: row.id, name: row["name"]?.string ?? "Item", cents: Int($0))
+            }
+        }
+    }
+
+    /// When They Call shows on a repair.
+    public var showsRepairCall: Bool { jobType == .repair }
+    public var repairItem: FeeItem? { repairItemId.flatMap { id in repairItems.first { $0.id == id } } }
+
+    /// Picking what they need fills in the Price; "Pick from the price book…" keeps it.
+    public func pickRepairItem(_ item: FeeItem?) {
+        repairItemId = item?.id
+        if let item { fee = dollarsText(item.cents) }
+    }
+
     /// The price field's label and hint.
     public var feeLabel: String { isPlan ? "Price per month ($)" : isLeak ? "Detection fee ($)" : "Price ($)" }
     public var feeHint: String {
@@ -261,7 +292,8 @@ public final class NewJobForm {
             input.customerName, input.customerPhone, input.customerEmail, input.addressLine1, input.city,
             input.state, input.postalCode, accessNotes, otherEmails, fee, notes,
         ]
-        return customerId != nil || shape != nil || !answers.isEmpty || typed.contains { !trim($0).isEmpty }
+        return customerId != nil || shape != nil || !answers.isEmpty || repairItemId != nil
+            || typed.contains { !trim($0).isEmpty }
             || input.scheduleDate != today || input.scheduleTime != "09:00" || repeatChoice != nil
     }
 
@@ -432,6 +464,8 @@ public final class NewJobForm {
         let ccEmails = splitEmails(otherEmails)
         let notes = trim(self.notes)
         let leak = isLeak
+        // When They Call: the item's name, kept with the job (website `intake.repair_item`).
+        let repairName = jobType == .repair ? repairItem?.name : nil
         let end: String? = records.job.scheduledStart.flatMap(parseInstant).flatMap { start in
             hoursValue.map { isoString(start.addingTimeInterval($0 * 3600)) }
         }
@@ -452,7 +486,11 @@ public final class NewJobForm {
             job["fee_cents"] = feeCents.map { .number(Double($0)) } ?? .null
             job["second_tech_id"] = secondTech.map { .string($0) } ?? .null
             // Intake answers belong to leak detection.
-            job["intake"] = leak && !answers.isEmpty ? .object(answers) : .null
+            if let repairName {
+                job["intake"] = .object([repairItemKey: .string(repairName)])
+            } else {
+                job["intake"] = leak && !answers.isEmpty ? .object(answers) : .null
+            }
             job["summary_notes"] = notes.isEmpty ? .null : .string(notes)
             let jobId = try store.insert("job", companyId: companyId, job)
 
