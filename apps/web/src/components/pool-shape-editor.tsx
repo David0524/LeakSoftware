@@ -327,7 +327,7 @@ export function PoolShapeEditor({
             <TileArt>
               <path
                 d={LANDMARKS[0]!.path}
-                transform="translate(56 6) scale(2)"
+                transform="translate(37 7) scale(3.6)"
                 fill="none"
                 className="stroke-current"
                 strokeWidth={2.5}
@@ -508,7 +508,7 @@ export function PoolShapeEditor({
         </svg>
         <p id="drawing-hint" className="text-[0.9375rem] text-text-muted">
           {hasSpa
-            ? "Tap the spa to switch round and square. Drag it to move it; pinch or drag its corner to resize. Keys: arrows move, + and − resize, Enter switches."
+            ? "Tap the spa to make it round or square. Drag it to move it; pinch or drag its corner to resize."
             : "Turn on Has a spa to put a spa on the drawing."}
         </p>
         {selected !== null && landmarks[selected] ? (
