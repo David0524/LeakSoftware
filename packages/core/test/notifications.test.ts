@@ -108,3 +108,50 @@ describe("liveStopContent", () => {
     expect(liveStopContent({ ...base, phase: "driving", eta: null }).figure).toBe("On the way");
   });
 });
+
+describe("the workday's Live Activity", () => {
+  const base = {
+    customer: "Smith",
+    address: "123 Palm Ln",
+    stop: 1,
+    stops: 5,
+    eta: null,
+    scheduled: "9:00 AM",
+    checklistDone: 0,
+    checklistTotal: 9,
+    next: { customer: "Jones", time: "10:30 AM" },
+  };
+
+  it("shows the first stop ahead, with its time and no countdown", async () => {
+    const { liveStopContent } = await import("../src");
+    expect(liveStopContent({ ...base, phase: "ahead" })).toEqual({
+      headline: "Up next: Smith",
+      figure: "9:00 AM",
+      figureLabel: "Scheduled",
+      detail: "Stop 1 of 5 · 123 Palm Ln",
+      next: "Next: Jones at 10:30 AM",
+      progress: 0,
+      compact: "9:00",
+      spoken: "Up next: Smith at 9:00 AM. Stop 1 of 5.",
+    });
+    expect(liveStopContent({ ...base, phase: "ahead", scheduled: null }).figure).toBe("Today");
+  });
+
+  it("starts at the shop's working day, on its work days, while stops are left", async () => {
+    const { liveStopRuns } = await import("../src");
+    const settings = { routing: { day_start: "07:30", work_days: [1, 2, 3, 4, 5] } };
+    // 2026-10-19 is a Monday.
+    expect(liveStopRuns({ settings, date: "2026-10-19", nowMin: 7 * 60 + 29, stopsLeft: 3 })).toBe(
+      false,
+    );
+    expect(liveStopRuns({ settings, date: "2026-10-19", nowMin: 7 * 60 + 30, stopsLeft: 3 })).toBe(
+      true,
+    );
+    expect(liveStopRuns({ settings, date: "2026-10-19", nowMin: 15 * 60, stopsLeft: 0 })).toBe(
+      false,
+    );
+    expect(liveStopRuns({ settings, date: "2026-10-18", nowMin: 9 * 60, stopsLeft: 3 })).toBe(
+      false,
+    );
+  });
+});

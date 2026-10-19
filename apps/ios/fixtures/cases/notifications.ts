@@ -3,6 +3,7 @@ import {
   SHOP_KINDS,
   jobNotification,
   liveStopContent,
+  liveStopRuns,
   notificationOn,
   paymentNotification,
   quoteNotification,
@@ -25,7 +26,7 @@ const base: LiveStopInput = {
   next: { customer: "Jones", time: "10:30 AM" },
 };
 
-const stops: LiveStopInput[] = (["driving", "on_site", "done"] as const).flatMap((phase) => [
+const stops: LiveStopInput[] = (["ahead", "driving", "on_site", "done"] as const).flatMap((phase) => [
   { ...base, phase },
   { ...base, phase, eta: null },
   { ...base, phase, eta: "" },
@@ -41,6 +42,9 @@ const stops: LiveStopInput[] = (["driving", "on_site", "done"] as const).flatMap
   { ...base, phase, stop: 7, stops: 7, next: null },
   { ...base, phase, stop: 9, stops: 7 },
   { ...base, phase, stop: 0, stops: 0 },
+  { ...base, phase, scheduled: "9:00 AM" },
+  { ...base, phase, scheduled: "" },
+  { ...base, phase, scheduled: "1:15 pm" },
 ]);
 
 // notifications.ts: the push texts and the Live Activity.
@@ -104,5 +108,19 @@ export const notifications: ModuleCases = {
   liveStopContent: rule(
     (s: LiveStopInput) => liveStopContent(s),
     stops.map((s) => [s]),
+  ),
+  liveStopRuns: rule(
+    (settings: unknown, date: string, nowMin: number, stopsLeft: number) =>
+      liveStopRuns({ settings, date, nowMin, stopsLeft }),
+    [
+      [{}, "2026-10-19", 0, 3],
+      [{}, "2026-10-19", 9 * 60, 3],
+      [{}, "2026-10-18", 9 * 60, 3],
+      [{ routing: { day_start: "07:30", work_days: [1, 2, 3, 4, 5] } }, "2026-10-19", 449, 3],
+      [{ routing: { day_start: "07:30", work_days: [1, 2, 3, 4, 5] } }, "2026-10-19", 450, 3],
+      [{ routing: { day_start: "07:30", work_days: [1, 2, 3, 4, 5] } }, "2026-10-19", 900, 0],
+      [{ routing: { day_start: "07:30", work_days: [0, 6] } }, "2026-10-18", 600, 1],
+      [{ routing: { day_start: "bad" } }, "2026-10-19", 600, 1],
+    ],
   ),
 };

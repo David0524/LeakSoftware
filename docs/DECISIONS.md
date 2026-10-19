@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-19 (owner: "Live Activity should begin at the beginning of the workday")
+- **The Live Activity runs the tech's whole day:** it starts by itself at the start of the shop's working day (Settings › Scheduling, on its work days) while the tech has stops left today, showing the first stop as "Up next" with its scheduled time. On My Way, Start Job, and Mark Complete change it as before; after a stop is done it moves on to the next one, and it ends after the last. If the tech closes it, it stays closed until the next work day. Still no timers. On Android, the ongoing notification does the same (core `liveStopRuns`, phase `ahead`).
+
 ## 2026-10-19 (owner: "Continue to build Android, but I don't think we're going to launch with the Android app. At least not as of today. I just don't have time")
 - **The Android (Expo) app keeps getting every change** (the four-platform rule stands), but it isn't part of the launch for now: the launch is the website and the Swift iPhone app. Android-only setup the owner would have to do (an EAS project, the Firebase key for Android push, Google Play) waits until Android is back on the plan.
 

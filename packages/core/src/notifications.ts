@@ -4,6 +4,8 @@
  * pushes) and both apps (which show them and the Live Activity) say the same thing.
  */
 
+import { routingSettings, weekday, workDay } from "./route-plan";
+
 export type NotificationKind = "text" | "job" | "quote" | "payment" | "report";
 
 /** Each kind a person can turn off in More › Notifications or Settings › Notifications. */
@@ -77,10 +79,11 @@ export function reportNotification(customer: string): NotificationText {
 
 /**
  * What the Live Activity (iPhone) and the ongoing notification (Android) show. No timer or
- * stopwatch (owner, 2026-10-19): on the way, the arrival time of day; at the pool, the
- * checklist; done, the next stop.
+ * stopwatch (owner, 2026-10-19): before leaving, the stop's scheduled time ("ahead", from the
+ * start of the workday); on the way, the arrival time of day; at the pool, the checklist; done,
+ * the next stop.
  */
-export type LiveStopPhase = "driving" | "on_site" | "done";
+export type LiveStopPhase = "ahead" | "driving" | "on_site" | "done";
 
 export interface LiveStopInput {
   phase: LiveStopPhase;
@@ -90,6 +93,8 @@ export interface LiveStopInput {
   stops: number;
   /** Arrival, as a time of day ("9:42 AM"), when driving. */
   eta: string | null;
+  /** The stop's scheduled time of day ("9:00 AM"), shown before On My Way. */
+  scheduled?: string | null;
   checklistDone: number;
   checklistTotal: number;
   next: { customer: string; time: string | null } | null;
@@ -123,6 +128,19 @@ export function liveStopContent(s: LiveStopInput): LiveStopContent {
     s.stops > 0
       ? Math.min(1, Math.max(0, (doneStops + (s.phase === "on_site" ? 0.5 : 0)) / s.stops))
       : 0;
+  if (s.phase === "ahead") {
+    const at = s.scheduled ?? "";
+    return {
+      headline: `Up next: ${s.customer}`,
+      figure: at || "Today",
+      figureLabel: at ? "Scheduled" : "",
+      detail,
+      next,
+      progress,
+      compact: at.replace(/\s?[AP]M$/i, "") || "…",
+      spoken: `Up next: ${s.customer}${at ? ` at ${at}` : ""}. ${of}.`,
+    };
+  }
   if (s.phase === "driving") {
     const eta = s.eta ?? "";
     return {
@@ -159,4 +177,22 @@ export function liveStopContent(s: LiveStopInput): LiveStopContent {
     compact: "✓",
     spoken: `${s.customer} done. ${next ? `${next}.` : "That was the last stop today."}`,
   };
+}
+
+/**
+ * Whether the Live Activity runs now (owner, 2026-10-19: "Live Activity should begin at the
+ * beginning of the workday"): on one of the shop's work days, from the start of its working
+ * day (Settings › Scheduling), while any of the tech's stops today aren't done.
+ */
+export function liveStopRuns(input: {
+  /** company.settings */
+  settings: unknown;
+  /** The shop's local date ("2026-10-19") and minutes since its midnight. */
+  date: string;
+  nowMin: number;
+  stopsLeft: number;
+}): boolean {
+  const r = routingSettings(input.settings);
+  if (!r.workDays.includes(weekday(input.date))) return false;
+  return input.nowMin >= workDay(r).startMin && input.stopsLeft > 0;
 }

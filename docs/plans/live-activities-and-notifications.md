@@ -8,14 +8,19 @@ settings and sends the pushes, and the two apps show them.
 
 ## 1. The Live Activity: a tech's current stop
 
-One activity at a time, for the stop the tech is on, started by the app itself (no push needed
-to start it), so it works with no signal:
+One activity at a time, for the tech's day, started by the app itself (no push needed to
+start it), so it works with no signal. It begins at the start of the shop's working day
+(owner, 2026-10-19; Settings › Scheduling, on its work days, while the tech has stops left
+today) and walks through the route. There are no timers or stopwatches (owner, 2026-10-19).
 
 | Moment | What starts or changes it | Lock Screen | Dynamic Island (compact) |
 | --- | --- | --- | --- |
-| On My Way | Tapping On My Way (Today or the job) | **On the way to Smith** · 12 min · ETA 9:42 · Stop 3 of 7, with a progress bar along the drive | logo · 9:42 |
-| At the pool | Start Job, or arriving | **At Smith** · since 9:45 (a running timer) · Checklist 4 of 9 · Next: Jones at 10:30 | logo · 0:12 (timer) |
-| Done | Mark Complete / Complete Job | **Smith done** · Next: Jones · 18 min · then the activity ends after a minute (or moves to the next stop when On My Way is tapped) | logo · ✓ |
+| Up next | The start of the working day, or the stop before it done | **Up next: Smith** · 9:00 AM Scheduled · Stop 3 of 7 | logo · 9:00 |
+| On My Way | Tapping On My Way (Today or the job) | **On the way to Smith** · ETA 9:42 · Stop 3 of 7 | logo · 9:42 |
+| At the pool | Start Job | **At Smith** · Checklist 4 of 9 · Next: Jones at 10:30 | logo · 4/9 |
+| Done | Mark Complete / Complete Job | **Smith done** · Next: Jones, for a minute, then Up next for the following stop; after the last stop, the activity ends | logo · ✓ |
+
+If the tech closes it from the Lock Screen, it stays closed until the next work day.
 
 Design (Apple's Live Activity guidance): Sundeck Pro's mark at the top left on the brand
 navy, the customer's name in Barlow (the brand display face), one large figure (minutes away,
