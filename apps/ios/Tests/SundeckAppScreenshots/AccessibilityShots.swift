@@ -21,6 +21,10 @@
             let company = try #require(env.session.company)
             try await snapshot(
                 "67-getting-started", ScrollView { GettingStartedCard(company: company).padding(16) }.app(env))
+            // The tab view at phone height, then with Getting Started hidden.
+            try await snapshot("68-today-tabs-phone", MainView().app(env))
+            env.walkthrough.setGettingStartedHidden(true)
+            try await snapshot("69-today-tabs-no-card", height: 1500, MainView().app(env))
         }
 
         @Test func largeText() async throws {
