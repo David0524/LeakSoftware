@@ -228,7 +228,14 @@ Status key: **Website done** means built, checked, and committed on `claude/cool
   `servicesPriceLines(services, users)`.
 - **Apps:** the apps don't sell plans; nothing to do unless they show the shop's plan.
 
-## Deployed
+## Deployed and checked
 
-- Migrations `20261012005300` to `20261012005600` are applied to the dev project (after CI
-  run 238 passed). `20261012005700_repair_call_items.sql` follows once CI passes on it.
+- All five migrations (`20261012005300` to `20261012005700`) are applied to the dev project,
+  each after CI passed on its commit (runs 238 and 240).
+- Checked by hand on a local build against the dev project (demo owner): More (Contact Us,
+  Request a Feature), Payments (Card fee), a visit's Checklist (Chemical first, Regular
+  cleanings "In 1 week"), Chemical Submit and Remove (saved and removed on the dev project), the
+  Pool Shape sheet (8 shapes, mirror, spa), pen markup on the diagram, and the home page (Both
+  price, Contact Us).
+- Not checked live: payments with the card fee (no Stripe keys on the dev site; covered by
+  unit tests), and emails for feature requests (no Resend key yet).
