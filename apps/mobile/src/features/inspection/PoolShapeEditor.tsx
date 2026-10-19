@@ -32,7 +32,7 @@ import { color, face, minTap, shape as radii, space, type } from "../../ui/theme
 
 // The Pool Shape sheet (owner, 2026-10-19), as the website's PoolShapeEditor
 // (apps/web/src/components/pool-shape-editor.tsx): ten tiles in two rows of five (the seven
-// preset shapes, Landmarks, Draw, and Clear), Mirror and Has a spa, and the drawing itself,
+// preset shapes with Draw, Clear, and Landmarks), Mirror and Has a spa, and the drawing itself,
 // where the spa is moved (drag), reshaped (tap), and resized (pinch, or its corner handle).
 
 const W = 160;
@@ -329,11 +329,13 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
 
   const rows = [
     DIAGRAM_SHAPES.slice(0, 5).map((s) => ({ kind: "shape" as const, s })),
+    // Row 2 (owner, 2026-10-19): the creative tiles between Grecian and Figure 8.
     [
-      ...DIAGRAM_SHAPES.slice(5).map((s) => ({ kind: "shape" as const, s })),
-      { kind: "landmarks" as const },
+      ...DIAGRAM_SHAPES.slice(5, -1).map((s) => ({ kind: "shape" as const, s })),
       { kind: "draw" as const },
       { kind: "clear" as const },
+      { kind: "landmarks" as const },
+      ...DIAGRAM_SHAPES.slice(-1).map((s) => ({ kind: "shape" as const, s })),
     ],
   ];
 
@@ -581,25 +583,6 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
             }}
           />
         ) : null}
-        {spaNow ? (
-          // Buttons for the tap and the pinch, for switch control and anyone who'd rather tap.
-          <View style={styles.spaButtons}>
-            <Button
-              title={spaNow.shape === "square" ? "Make the Spa Round" : "Make the Spa Square"}
-              kind="quiet"
-              onPress={toggleSpaShape}
-            />
-            <Button title="Smaller" kind="quiet" onPress={() => setSpaR(spaNow.r - 2)} />
-            <Button title="Larger" kind="quiet" onPress={() => setSpaR(spaNow.r + 2)} />
-            {spa ? (
-              <Button
-                title="Put the Spa Back in the Corner"
-                kind="quiet"
-                onPress={() => setSpa(null)}
-              />
-            ) : null}
-          </View>
-        ) : null}
       </View>
 
       <Button title="Save Pool Shape" wide onPress={save} />
@@ -640,5 +623,4 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     userSelect: "none",
   },
-  spaButtons: { flexDirection: "row", flexWrap: "wrap", columnGap: space["2"] },
 });

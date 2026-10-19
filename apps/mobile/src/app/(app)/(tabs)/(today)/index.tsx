@@ -25,6 +25,7 @@ import { useLine } from "../../../../data/texting";
 import { useWeather } from "../../../../data/weather";
 import { GettingStarted } from "../../../../features/today/GettingStarted";
 import { CleaningsDue } from "../../../../features/maintenance/Cleanings";
+import { TodayComplete } from "../../../../features/job/CompleteJob";
 import { OnMyWay } from "../../../../features/today/OnMyWay";
 import { WeatherBadge } from "../../../../features/today/WeatherBadge";
 import { useCompany, useSession } from "../../../../state/session";
@@ -233,6 +234,7 @@ export default function Today() {
                 n={i + 1}
                 next={j.id === next?.id}
                 timeZone={tz}
+                mine={mine}
                 onMyWay={
                   mine ? (
                     <OnMyWay
@@ -293,11 +295,14 @@ function Stop({
   timeZone,
   onDirections,
   onMyWay,
+  mine,
 }: {
   job: JobView;
   n: number;
   next: boolean;
   timeZone: string;
+  /** On your own route: a visit can be completed from here. */
+  mine: boolean;
   onMyWay: ReactNode;
   onDirections: () => void;
 }) {
@@ -382,6 +387,10 @@ function Stop({
                 {job.property.access_notes}
               </Text>
             </View>
+          ) : null}
+          {/* Onto the next stop without opening the visit (owner, 2026-10-19). */}
+          {mine && job.type === "maintenance" ? (
+            <TodayComplete job={job} customer={job.customer?.name ?? "this stop"} />
           ) : null}
         </>
       )}

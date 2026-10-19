@@ -21,6 +21,7 @@ import {
   jobActionLabel,
   parseGallons,
   jobFeeLabel,
+  jobHasWrapUp,
   parseDollars,
   propertyLocation,
   toE164,
@@ -57,9 +58,10 @@ import { BAR_HEIGHT, barState } from "../../../../../../ui/Bar";
 import { confirmDestructive } from "../../../../../../ui/confirm";
 import { Glass } from "../../../../../../ui/Glass";
 import {
-  FinishPhotoNotice,
-  useNeedsFinishPhoto,
-} from "../../../../../../features/media/FinishPhoto";
+  ChecklistComplete,
+  CompleteBlockedNotice,
+  useCompleteJobBlocker,
+} from "../../../../../../features/job/CompleteJob";
 import { SyncBar } from "../../../../../../ui/SyncBar";
 import { ScreenTip } from "../../../../../../ui/Tip";
 import {
@@ -109,9 +111,9 @@ export default function JobDetail() {
     () => (asked === "wrapup" ? "wrapup" : lastSection.get(id)) ?? "details",
   );
   const [switcherY, setSwitcherY] = useState<number | null>(null);
-  // Mark Done waits for a photo when the shop requires one (owner setting, 2026-10-19).
-  const needsPhoto = useNeedsFinishPhoto(id);
-  const [photoAsked, setPhotoAsked] = useState(false);
+  // Complete Job waits for the checklist or a photo when the shop asks (owner, 2026-10-19).
+  const blocker = useCompleteJobBlocker({ id, company_id: company.id });
+  const [completeAsked, setCompleteAsked] = useState<"header" | "checklist" | null>(null);
   const {
     header: titleBlock,
     ref: scroll,
@@ -146,15 +148,16 @@ export default function JobDetail() {
     { value: "checklist", label: "Checklist", badge: tally.pending || undefined },
     ...(maintenance ? [] : [{ value: "findings" as const, label: "Findings" }]),
     { value: "photos", label: "Photos" },
-    { value: "wrapup", label: "Wrap-Up" },
+    // Visits end with Complete Job and are billed monthly: no Wrap-Up (owner, 2026-10-19).
+    ...(jobHasWrapUp(job.type) ? [{ value: "wrapup" as const, label: "Wrap-Up" }] : []),
   ];
   const shown = sections.some((s) => s.value === section) ? section : "details";
 
   const update = (values: Record<string, JsonValue>) =>
     services.sync.write("job", job.id, company.id, values);
-  function changeStatus(to: JobStatus) {
-    if (to === "done" && needsPhoto) return setPhotoAsked(true);
-    setPhotoAsked(false);
+  function changeStatus(to: JobStatus, from: "header" | "checklist" = "header") {
+    if (to === "done" && blocker) return setCompleteAsked(from);
+    setCompleteAsked(null);
     const values: Record<string, JsonValue> = { status: to };
     if (to === "in_progress" && !job!.started_at) values.started_at = new Date().toISOString();
     update(values);
@@ -217,7 +220,9 @@ export default function JobDetail() {
               ))}
             </View>
           ) : null}
-          {photoAsked && needsPhoto ? <FinishPhotoNotice jobId={job.id} /> : null}
+          {completeAsked === "header" && blocker ? (
+            <CompleteBlockedNotice jobId={job.id} message={blocker} />
+          ) : null}
         </View>
         <View
           style={[styles.switcher, !drawnChrome && { backgroundColor: color.bg }]}
@@ -268,6 +273,15 @@ export default function JobDetail() {
                 <ScreenTip screen="job" pkg={maintenance ? "pool" : "leak"} />
               )}
               <ChecklistTab job={job} property={property} />
+              {/* Complete Job ends a visit, right under its list (owner, 2026-10-19). */}
+              {maintenance && (job.status === "scheduled" || job.status === "in_progress") ? (
+                <ChecklistComplete
+                  jobId={job.id}
+                  blocker={blocker}
+                  asked={completeAsked === "checklist"}
+                  onPress={() => changeStatus("done", "checklist")}
+                />
+              ) : null}
             </View>
           ) : null}
           {shown === "findings" ? (
@@ -687,6 +701,14 @@ function Details({
 
       {showsJobSchedule(job) ? <JobSchedule jobId={job.id} /> : null}
       <JobTimeline jobId={job.id} />
+
+      {/* A visit has no Wrap-Up; the repairs it quotes are here (owner, 2026-10-19). */}
+      {jobHasWrapUp(job.type) ? null : (
+        <View style={{ gap: space["3"] }}>
+          <T variant="sectionHeading">Quotes</T>
+          <QuoteTab job={job} />
+        </View>
+      )}
 
       {onCancel ? (
         <View style={{ marginTop: space["2"] }}>

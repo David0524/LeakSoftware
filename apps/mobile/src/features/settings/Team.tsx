@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { Linking, View } from "react-native";
+import { Linking, StyleSheet, View } from "react-native";
 import {
   ROLE_LABELS,
   assignableRoles,
   canMakeJobs,
+  requiresFinishPhoto,
+  requiresFinishedChecklist,
   roleLabel,
   seesAllJobs,
   type Role,
@@ -77,6 +79,12 @@ function TeamPage() {
     } as never);
     haptics.success();
   }
+  function saveSetting(next: Record<string, boolean>) {
+    getServices().sync.write("company", company.id, company.id, {
+      settings: { ...settings, ...next },
+    } as never);
+    haptics.success();
+  }
 
   return (
     <>
@@ -115,6 +123,33 @@ function TeamPage() {
               <OwnerOnly />
             </View>
           )}
+        </Section>
+
+        {/* What Complete Job waits for (owner, 2026-10-19: "Owners/admins can decide whether
+            the tech needs to fill out the checklist/submit picture first"). */}
+        <Section title="Completing a job">
+          <Group>
+            <View style={styles.setting}>
+              <Toggle
+                label="Finish the checklist first"
+                value={requiresFinishedChecklist(settings)}
+                onChange={(v) => saveSetting({ require_checklist_to_finish: v })}
+              />
+              <T variant="secondary" muted>
+                On: Complete Job waits until every checklist item is answered.
+              </T>
+            </View>
+            <View style={styles.setting}>
+              <Toggle
+                label="Take a pool photo first"
+                value={requiresFinishPhoto(settings)}
+                onChange={(v) => saveSetting({ require_finish_photo: v })}
+              />
+              <T variant="secondary" muted>
+                On: Complete Job, and sending a report, wait until the job has a photo.
+              </T>
+            </View>
+          </Group>
         </Section>
 
         <Section
@@ -241,3 +276,7 @@ function MemberForm({
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  setting: { paddingHorizontal: space["4"], paddingBottom: space["3"] },
+});
