@@ -87,7 +87,7 @@ export function Hero() {
             See Pricing
           </ButtonLink>
         </div>
-        <p className="mt-3 text-[0.9375rem] text-text-muted">14 days free. Cancel any time.</p>
+        <p className="mt-3 text-[0.9375rem] text-text-muted">30 days free. Cancel any time.</p>
 
         <figure className="relative mt-14">
           <PoolBackdrop />

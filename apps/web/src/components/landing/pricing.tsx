@@ -145,7 +145,7 @@ export function Pricing() {
       </section>
       {pkg === "maintenance" ? <Compare users={users} /> : null}
       <p className="mt-6 text-center text-[0.9375rem] text-text-muted">
-        14 days free, then billed monthly; cancel any time. Customer payments go to your own Stripe
+        30 days free, then billed monthly; cancel any time. Customer payments go to your own Stripe
         account at Stripe’s usual fees.
       </p>
     </div>

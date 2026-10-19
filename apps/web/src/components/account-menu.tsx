@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { signOut, switchCompany } from "@/app/actions/auth";
 import { ThemeToggle } from "./theme-toggle";
+import { CONTACT_EMAIL } from "@/lib/site";
 import { cx } from "./ui";
 
 /** Up to two initials from a name, or the email's first letter. */
@@ -115,6 +116,13 @@ export function AccountMenu({
           <Link href="/more" className={row}>
             Account and Help
           </Link>
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
+            className={cx(row, "flex-col items-start justify-center")}
+          >
+            Contact Us
+            <span className="text-[0.8125rem] text-text-muted">{CONTACT_EMAIL}</span>
+          </a>
           <div className="border-t-[0.5px] border-separator" />
           <form action={signOut}>
             <button type="submit" className={row}>

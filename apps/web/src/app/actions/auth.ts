@@ -74,7 +74,7 @@ export async function sendSignInLink(_: FormState, form: FormData): Promise<Form
 }
 
 /**
- * New shops add a card for the 14-day trial (owner, 2026-10-16) when this server has Stripe
+ * New shops add a card for the 30-day trial (owner, 2026-10-16) when this server has Stripe
  * billing. Until the card is in, the shop is read-only.
  */
 async function requireCard(companyId: string) {

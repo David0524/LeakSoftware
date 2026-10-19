@@ -67,7 +67,7 @@ export function accessNotice(a: CompanyAccess, now: Date = new Date()): AccessNo
 export function billingSummary(a: CompanyAccess, now: Date = new Date()): string {
   const day = (iso: string) => dateFormat("en-US", { dateStyle: "long" }).format(new Date(iso));
   if (a.plan === "demo") return "Demo shop: no subscription needed.";
-  if (a.needs_card) return "Add a card to start your 14-day free trial.";
+  if (a.needs_card) return "Add a card to start your 30-day free trial.";
   if (a.locked) return "Read-only until the subscription is paid. Nothing has been deleted.";
   switch (a.status) {
     case "trialing":

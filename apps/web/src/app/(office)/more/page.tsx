@@ -10,7 +10,7 @@ import { getOffice } from "@/lib/auth";
 import { getCompany } from "@/lib/data";
 import { officeLinks } from "@/lib/nav";
 import { createClient } from "@/lib/supabase/server";
-import { SUPPORT_EMAIL } from "@/lib/site";
+import { CONTACT_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = { title: "More · Sundeck Pro" };
 
@@ -63,7 +63,7 @@ export default async function MorePage() {
         </Grouped>
         <Grouped title="Help">
           {[
-            { href: `mailto:${SUPPORT_EMAIL}`, label: "Help and Support" },
+            { href: `mailto:${CONTACT_EMAIL}`, label: "Contact Us", detail: CONTACT_EMAIL },
             { href: "/privacy", label: "Privacy Policy" },
             { href: "/terms", label: "Terms of Service" },
             { href: "/status", label: "System Status" },
@@ -74,7 +74,12 @@ export default async function MorePage() {
                 href={l.href}
                 className="flex min-h-11 items-center gap-3 px-4 py-2.5 hover:bg-text/[0.03] active:bg-text/[0.06]"
               >
-                <span className="min-w-0 flex-1">{l.label}</span>
+                <span className="min-w-0 flex-1">
+                  {l.label}
+                  {"detail" in l ? (
+                    <span className="block text-[0.9375rem] text-text-muted">{l.detail}</span>
+                  ) : null}
+                </span>
                 <span
                   aria-hidden="true"
                   className="shrink-0 text-xl leading-none text-text-muted/70"
