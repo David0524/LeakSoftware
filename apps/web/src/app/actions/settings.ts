@@ -320,6 +320,25 @@ export async function saveJobVisibility(_: FormState, form: FormData): Promise<F
     ...((company?.settings ?? {}) as Record<string, unknown>),
     techs_see_all_jobs: choice === "all",
     techs_make_jobs: checked(form, "techs_make_jobs"),
+  };
+  const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
+  if (error) return failed(error);
+  revalidatePath("/", "layout");
+  return { message: "Saved." };
+}
+
+/** Owners and admins: what Complete Job waits for (owner, 2026-10-19). */
+export async function saveCompleteJob(_: FormState, form: FormData): Promise<FormState> {
+  const office = await requireManager();
+  const supabase = await createClient();
+  const { data: company } = await supabase
+    .from("company")
+    .select("settings")
+    .eq("id", office.company.id)
+    .single();
+  const settings = {
+    ...((company?.settings ?? {}) as Record<string, unknown>),
+    require_checklist_to_finish: checked(form, "require_checklist_to_finish"),
     require_finish_photo: checked(form, "require_finish_photo"),
   };
   const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);

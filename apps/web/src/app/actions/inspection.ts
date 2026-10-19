@@ -24,7 +24,7 @@ import {
   parseGallons,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
-import { requireFinishPhoto } from "@/server/reports";
+import { requireCompletable } from "@/server/reports";
 import { createClient } from "@/lib/supabase/server";
 import type { FormState } from "./auth";
 
@@ -65,7 +65,7 @@ export async function changeJobStatus(_: FormState, form: FormData): Promise<For
     return { error: "The job can't move to that status now." };
   if (to === "done") {
     try {
-      await requireFinishPhoto(db, jobId);
+      await requireCompletable(db, jobId);
     } catch (e) {
       return { error: e instanceof Error ? e.message : String(e) };
     }
@@ -76,6 +76,7 @@ export async function changeJobStatus(_: FormState, form: FormData): Promise<For
   if (error) return { error: error.message };
   revalidatePath("/jobs");
   revalidatePath("/schedule");
+  revalidatePath("/today");
   return done(jobId, "Updated.");
 }
 

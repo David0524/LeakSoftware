@@ -32,6 +32,7 @@ import {
   seesAllJobs,
   dateFormat,
   jobFeeLabel,
+  jobHasWrapUp,
   readingSummary,
 } from "@leakbook/core";
 import { CustomerLinks } from "@/components/customer-links";
@@ -46,6 +47,7 @@ import {
   FindingsEditor,
   JobDetailsForm,
   JobStatusActions,
+  CompleteJob,
   SetUpChecklist,
   TestsEditor,
   type ChecklistRow,
@@ -302,6 +304,15 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                   </section>
                 ) : null}
 
+                {jobHasWrapUp(job.type) ? null : (
+                  <section className="mt-8 max-w-3xl" aria-labelledby="quotes">
+                    <h2 id="quotes" className="mb-3 font-display text-2xl font-bold">
+                      Quotes
+                    </h2>
+                    <Quotes detail={detail} />
+                  </section>
+                )}
+
                 <div className="mt-8">
                   <JobStatusActions jobId={job.id} status={job.status} jobType={job.type} cancel />
                 </div>
@@ -352,6 +363,11 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                 ) : (
                   <SetUpChecklist jobId={job.id} />
                 )}
+                {/* Complete Job ends a visit, right under its list (owner, 2026-10-19). */}
+                {job.type === "maintenance" &&
+                (job.status === "scheduled" || job.status === "in_progress") ? (
+                  <CompleteJob jobId={job.id} />
+                ) : null}
               </section>
             ),
           },
@@ -401,43 +417,49 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
               </section>
             ),
           },
-          {
-            id: "wrap-up",
-            label: "Wrap-Up",
-            content: (
-              <>
-                <section aria-labelledby="reports">
-                  <h2 id="reports" className="mb-3 font-display text-2xl font-bold">
-                    Report and Sign-Off
-                  </h2>
-                  <Reports detail={detail} />
-                </section>
+          // Maintenance visits end with Complete Job and are billed monthly: no Wrap-Up
+          // (owner, 2026-10-19). Their quotes are under Details.
+          ...(jobHasWrapUp(job.type)
+            ? [
+                {
+                  id: "wrap-up",
+                  label: "Wrap-Up",
+                  content: (
+                    <>
+                      <section aria-labelledby="reports">
+                        <h2 id="reports" className="mb-3 font-display text-2xl font-bold">
+                          Report and Sign-Off
+                        </h2>
+                        <Reports detail={detail} />
+                      </section>
 
-                <section className="mt-8" aria-labelledby="signatures">
-                  <h2 id="signatures" className="mb-3 font-display text-2xl font-bold">
-                    Signatures
-                  </h2>
-                  <Signatures detail={detail} tz={tz} />
-                </section>
+                      <section className="mt-8" aria-labelledby="signatures">
+                        <h2 id="signatures" className="mb-3 font-display text-2xl font-bold">
+                          Signatures
+                        </h2>
+                        <Signatures detail={detail} tz={tz} />
+                      </section>
 
-                {job.type === "detection" || job.type === "maintenance" ? (
-                  <section className="mt-8" aria-labelledby="quotes">
-                    <h2 id="quotes" className="mb-3 font-display text-2xl font-bold">
-                      Quotes
-                    </h2>
-                    <Quotes detail={detail} />
-                  </section>
-                ) : null}
+                      {job.type === "detection" || job.type === "maintenance" ? (
+                        <section className="mt-8" aria-labelledby="quotes">
+                          <h2 id="quotes" className="mb-3 font-display text-2xl font-bold">
+                            Quotes
+                          </h2>
+                          <Quotes detail={detail} />
+                        </section>
+                      ) : null}
 
-                <section className="mt-8" aria-labelledby="invoice">
-                  <h2 id="invoice" className="mb-3 font-display text-2xl font-bold">
-                    Invoice
-                  </h2>
-                  <Invoices detail={detail} />
-                </section>
-              </>
-            ),
-          },
+                      <section className="mt-8" aria-labelledby="invoice">
+                        <h2 id="invoice" className="mb-3 font-display text-2xl font-bold">
+                          Invoice
+                        </h2>
+                        <Invoices detail={detail} />
+                      </section>
+                    </>
+                  ),
+                },
+              ]
+            : []),
         ]}
       />
     </>

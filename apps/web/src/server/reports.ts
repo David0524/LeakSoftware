@@ -2,7 +2,9 @@ import "server-only";
 import { createClient as createSupabase, type SupabaseClient } from "@supabase/supabase-js";
 import {
   FINISH_PHOTO_MESSAGE,
+  completeJobBlocker,
   requiresFinishPhoto,
+  requiresFinishedChecklist,
   narrativeTemplate,
   reportShareText,
   toFinalSections,
@@ -151,6 +153,42 @@ export async function requireFinishPhoto(db: SupabaseClient, jobId: string): Pro
     .eq("kind", "photo")
     .is("deleted_at", null);
   if (!count) throw new Error(FINISH_PHOTO_MESSAGE);
+}
+
+/**
+ * Complete Job (owner, 2026-10-19): with the shop's "Finish the checklist first" on, every
+ * checklist item must be answered; then the photo rule as above.
+ */
+export async function requireCompletable(db: SupabaseClient, jobId: string): Promise<void> {
+  const { data: job } = await db
+    .from("job")
+    .select("company:company!job_company_id_fkey(settings)")
+    .eq("id", jobId)
+    .single();
+  const settings = (job?.company as unknown as { settings: unknown } | null)?.settings;
+  const [toDo, photos] = await Promise.all([
+    requiresFinishedChecklist(settings)
+      ? db
+          .from("checklist_item_result")
+          .select("id", { count: "exact", head: true })
+          .eq("job_id", jobId)
+          .eq("status", "pending")
+          .is("deleted_at", null)
+      : { count: 0 },
+    requiresFinishPhoto(settings)
+      ? db
+          .from("media")
+          .select("id", { count: "exact", head: true })
+          .eq("job_id", jobId)
+          .eq("kind", "photo")
+          .is("deleted_at", null)
+      : { count: 1 },
+  ]);
+  const blocker = completeJobBlocker(settings, {
+    checklistToDo: toDo.count ?? 0,
+    photos: photos.count ?? 0,
+  });
+  if (blocker) throw new Error(blocker);
 }
 
 /** The link of a report to send: a draft is finished first; a finished one is sent as is. */

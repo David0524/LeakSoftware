@@ -140,6 +140,28 @@ export function JobStatusActions({
   );
 }
 
+/**
+ * Complete Job at the end of a visit's Checklist (owner, 2026-10-19): one tap, from Scheduled
+ * or In progress. The server says what's missing when the shop asks for the checklist or a
+ * photo first.
+ */
+export function CompleteJob({ jobId }: { jobId: string }) {
+  const { pending, error, run } = useRun();
+  return (
+    <div className="mt-6 max-w-2xl space-y-2">
+      <Button
+        type="button"
+        className="w-full"
+        disabled={pending}
+        onClick={() => run(changeJobStatus, { job: jobId, to: "done" })}
+      >
+        {pending ? "Completing…" : "Complete Job"}
+      </Button>
+      <ErrorText error={error} />
+    </div>
+  );
+}
+
 // Inputs inside a grouped row. Outlined in color.controlBorder so they read in direct sun.
 const ROW_INPUT =
   "rounded-[10px] border border-control-border bg-surface px-3 text-text placeholder:text-placeholder " +

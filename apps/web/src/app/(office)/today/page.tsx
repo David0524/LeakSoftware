@@ -19,6 +19,7 @@ import {
 import { Suspense } from "react";
 import { CleaningIcon, KeyIcon, PhoneIcon } from "@/components/icons";
 import { OnMyWay } from "@/components/on-my-way";
+import { TodayComplete } from "@/components/today-complete";
 import { WeatherBadge } from "@/components/weather-badge";
 import { AddressLink, OpenRouteInMaps } from "@/components/open-in-maps";
 import { Empty, PageHeader, StatusBadge, cx, iconButtonClass, pillClass } from "@/components/ui";
@@ -268,6 +269,10 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                               {j.property.access_notes}
                             </span>
                           </p>
+                        ) : null}
+                        {/* Onto the next stop without opening the visit (owner, 2026-10-19). */}
+                        {mine && j.type === "maintenance" ? (
+                          <TodayComplete jobId={j.id} customer={j.customer?.name ?? "this stop"} />
                         ) : null}
                       </>
                     )}

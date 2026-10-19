@@ -1,23 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { saveJobVisibility } from "@/app/actions/settings";
+import { saveCompleteJob, saveJobVisibility } from "@/app/actions/settings";
 import { Segmented } from "./segmented";
 import { SSwitch, SettingsForm } from "./settings-forms";
 
 /**
  * Settings › Team: whether techs see every job and everyone's schedule, or only the jobs
- * they're on (as tech or second tech), whether they can make new jobs (owner, 2026-10-18), and
- * whether finishing a job needs a pool photo (owner, 2026-10-19). Owners always can.
+ * they're on (as tech or second tech), and whether they can make new jobs (owner, 2026-10-18).
+ * Owners always can.
  */
 export function JobVisibilityForm({
   seesAll,
   makesJobs,
-  finishPhoto,
 }: {
   seesAll: boolean;
   makesJobs: boolean;
-  finishPhoto: boolean;
 }) {
   const [value, setValue] = useState<"all" | "own">(seesAll ? "all" : "own");
   return (
@@ -43,11 +41,28 @@ export function JobVisibilityForm({
         defaultChecked={makesJobs}
         hint="Off: only owners and admins add jobs, on the website and in the app."
       />
+    </SettingsForm>
+  );
+}
+
+/**
+ * Settings › Team › Completing a job (owner, 2026-10-19: "Owners/admins can decide whether the
+ * tech needs to fill out the checklist/submit picture first"): what Complete Job waits for.
+ */
+export function CompleteJobForm({ checklist, photo }: { checklist: boolean; photo: boolean }) {
+  return (
+    <SettingsForm action={saveCompleteJob} full>
       <SSwitch
-        label="Require a pool photo to finish a job"
+        label="Finish the checklist first"
+        name="require_checklist_to_finish"
+        defaultChecked={checklist}
+        hint="On: Complete Job waits until every checklist item is answered."
+      />
+      <SSwitch
+        label="Take a pool photo first"
         name="require_finish_photo"
-        defaultChecked={finishPhoto}
-        hint="On: a visit can’t be marked Done, and a report can’t be sent, until the job has a photo."
+        defaultChecked={photo}
+        hint="On: Complete Job, and sending a report, wait until the job has a photo."
       />
     </SettingsForm>
   );

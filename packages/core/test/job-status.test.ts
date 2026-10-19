@@ -77,7 +77,8 @@ describe("jobActionLabel", () => {
     expect(jobActionLabel("scheduled", "in_progress")).toBe("Start Job");
     expect(jobActionLabel("in_progress", "scheduled")).toBe("Move Back to Scheduled");
     expect(jobActionLabel("scheduled", "canceled")).toBe("Cancel Job");
-    expect(jobActionLabel("in_progress", "done")).toBe("Mark Done");
+    expect(jobActionLabel("in_progress", "done")).toBe("Complete Job");
+    expect(jobActionLabel("scheduled", "done")).toBe("Complete Job");
     expect(jobActionLabel("in_progress", "report_sent")).toBe("Report sent");
   });
 });
@@ -88,5 +89,39 @@ describe("jobFeeLabel", () => {
     expect(jobFeeLabel("repair")).toBe("Price");
     expect(jobFeeLabel("maintenance")).toBe("Price");
     expect(jobFeeLabel(null)).toBe("Price");
+  });
+});
+
+describe("Complete Job", () => {
+  it("completes a visit from Scheduled or In progress; other jobs end with a report", async () => {
+    expect(userTransitions("scheduled", "maintenance")).toContain("done");
+    expect(userTransitions("scheduled", "detection")).not.toContain("done");
+  });
+
+  it("waits for the checklist, then the photo, when the shop asks", async () => {
+    const { completeJobBlocker, jobHasWrapUp } = await import("../src");
+    const job = { checklistToDo: 2, photos: 0 };
+    expect(completeJobBlocker({}, job)).toBeNull();
+    expect(completeJobBlocker({ require_checklist_to_finish: true }, job)).toBe(
+      "Finish the checklist before completing this job.",
+    );
+    expect(completeJobBlocker({ require_finish_photo: true }, job)).toBe(
+      "Take a photo of the pool before finishing this job.",
+    );
+    expect(
+      completeJobBlocker(
+        { require_checklist_to_finish: true, require_finish_photo: true },
+        { checklistToDo: 0, photos: 0 },
+      ),
+    ).toBe("Take a photo of the pool before finishing this job.");
+    expect(
+      completeJobBlocker(
+        { require_checklist_to_finish: true, require_finish_photo: true },
+        { checklistToDo: 0, photos: 1 },
+      ),
+    ).toBeNull();
+    expect(jobHasWrapUp("maintenance")).toBe(false);
+    expect(jobHasWrapUp("detection")).toBe(true);
+    expect(jobHasWrapUp("repair")).toBe(true);
   });
 });

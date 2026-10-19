@@ -33,6 +33,8 @@ export interface CompanySettings {
   on_my_way?: OnMyWayVia;
   /** A photo is needed before a tech finishes a job (owner setting, 2026-10-19). */
   require_finish_photo?: boolean;
+  /** Every checklist item answered before a job is completed (owners and admins, 2026-10-19). */
+  require_checklist_to_finish?: boolean;
 }
 
 /** Whether finishing a job needs a pool photo first (default off). */
@@ -41,6 +43,36 @@ export function requiresFinishPhoto(settings: unknown): boolean {
 }
 
 export const FINISH_PHOTO_MESSAGE = "Take a photo of the pool before finishing this job.";
+
+/** Whether completing a job needs every checklist item answered first (default off). */
+export function requiresFinishedChecklist(settings: unknown): boolean {
+  return (settings as Partial<CompanySettings> | null)?.require_checklist_to_finish === true;
+}
+
+export const FINISH_CHECKLIST_MESSAGE = "Finish the checklist before completing this job.";
+
+/**
+ * What stops Complete Job (owner, 2026-10-19: "Owners/admins can decide whether the tech needs
+ * to fill out the checklist/submit picture first"): the checklist first, then the photo. Null
+ * when the job can be completed.
+ */
+export function completeJobBlocker(
+  settings: unknown,
+  job: { checklistToDo: number; photos: number },
+): string | null {
+  if (requiresFinishedChecklist(settings) && job.checklistToDo > 0) return FINISH_CHECKLIST_MESSAGE;
+  if (requiresFinishPhoto(settings) && job.photos === 0) return FINISH_PHOTO_MESSAGE;
+  return null;
+}
+
+/**
+ * Whether the job page has a Wrap-Up section (report, signatures, quotes, invoice). Maintenance
+ * visits don't (owner, 2026-10-19: "For maintenance, get rid of the wrap up tab entirely"):
+ * they end with Complete Job, are billed monthly, and quote repairs from Details.
+ */
+export function jobHasWrapUp(type: JobType | string | null | undefined): boolean {
+  return type !== "maintenance";
+}
 
 /**
  * On My Way texts: from the company number into Sundeck Pro's shared Messages (the default), or

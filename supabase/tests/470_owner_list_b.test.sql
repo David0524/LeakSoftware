@@ -64,5 +64,10 @@ select throws_ok(format($$ update property set diagram_shape = 'hexagon' where i
   (select prop_a from ids)), '23514', null, 'an unknown shape is refused');
 reset role;
 
+-- Complete Job straight from Scheduled
+select ok(exists (select 1 from app.job_status_transition
+                  where from_status = 'scheduled' and to_status = 'done'),
+  'a scheduled visit can be completed');
+
 select * from finish();
 rollback;

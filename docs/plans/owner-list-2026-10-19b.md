@@ -92,6 +92,17 @@ Each item: what changes, the data, and the wording. Built in this order, one com
   `spa.r`, and drops anything else. Older app builds ignore the new keys.
 - New endpoint `POST /api/feature-requests`.
 
+## C. Third round (same day)
+
+1. **Pool Shape tile order and no spa text buttons** (see DECISIONS).
+2. **Complete Job** with owner and admin settings for the checklist and a photo first.
+3. **No Wrap-Up on maintenance visits**; their Quotes move to Details.
+4. **Complete Job on Today** for maintenance stops.
+
+Core: `jobActionLabel` (to done is Complete Job), `JOB_STATUS_TRANSITIONS.scheduled` gains
+`done`, `requiresFinishedChecklist`, `FINISH_CHECKLIST_MESSAGE`, `completeJobBlocker`,
+`jobHasWrapUp`.
+
 ## Status
 
 - **Website and core:** every item built and committed (commits `8bd3daf` to `e9427d1`).

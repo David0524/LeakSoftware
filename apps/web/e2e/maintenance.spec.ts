@@ -4,7 +4,7 @@ import { OWNER, RUN, signIn } from "./helpers";
 
 // Maintenance (owner request, 2026-10-13): an owner adds a weekly cleaning plan on the
 // customer's page; its 30-minute visits appear on the tech's route; the tech runs one (service
-// checklist, Mark Done); pausing the plan takes the upcoming visits off the schedule.
+// checklist, Complete Job); pausing the plan takes the upcoming visits off the schedule.
 
 /** Tomorrow in the demo shop's time zone (Phoenix), as YYYY-MM-DD. */
 function tomorrow(): string {
@@ -63,9 +63,12 @@ test("a weekly cleaning plan puts visits on the route, and a visit is marked don
   const stop = route.getByTestId("stop").filter({ hasText: name });
   await expect(stop).toContainText("Maintenance");
 
-  // 3. The visit: started, the service checklist done, then Mark Done.
+  // 3. The visit: started, the service checklist done, then Complete Job (in the header and
+  // under the checklist).
   await stop.getByRole("link").first().click();
   await expect(page.getByRole("link", { name: "Maintenance plan" })).toBeVisible();
+  // A visit has no Wrap-Up (owner, 2026-10-19).
+  await expect(page.getByText("Wrap-Up", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Start Job" }).click();
   await expect(page.getByText(/^0 done · 0 need attention · 0 skipped · 7 to do$/)).toBeVisible();
   // Each item is a check (owner, 2026-10-18: no menu); the box is hidden, so tap its row.
@@ -74,7 +77,8 @@ test("a weekly cleaning plan puts visits on the route, and a visit is marked don
   await expect(page.getByRole("checkbox").first()).toBeChecked();
   await page.getByRole("button", { name: /^Mark 6 Remaining Done$/ }).click();
   await expect(page.getByText(/^7 done · 0 need attention · 0 skipped · 0 to do$/)).toBeVisible();
-  await page.getByRole("button", { name: "Mark Done" }).click();
+  await expect(page.getByRole("button", { name: "Complete Job" })).toHaveCount(2);
+  await page.getByRole("button", { name: "Complete Job" }).last().click();
   await expect(page.getByText("Done", { exact: true }).first()).toBeVisible();
   await page.goto(`/customers/${job!.bill_to_customer_id}`);
   await expect(page.getByTestId("plan")).toContainText("1 done");

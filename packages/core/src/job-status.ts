@@ -20,7 +20,8 @@ export type JobStatus = (typeof JOB_STATUSES)[number];
 
 export const JOB_STATUS_TRANSITIONS: Record<JobStatus, readonly JobStatus[]> = {
   unscheduled: ["scheduled", "in_progress", "canceled"],
-  scheduled: ["unscheduled", "in_progress", "canceled"],
+  // Complete Job straight from Scheduled (owner, 2026-10-19), for a visit done in one go.
+  scheduled: ["unscheduled", "in_progress", "canceled", "done"],
   in_progress: ["scheduled", "report_sent", "invoiced", "canceled", "done"],
   report_sent: ["in_progress", "quote_sent", "invoiced", "canceled"],
   quote_sent: ["report_sent", "quote_accepted", "invoiced", "canceled"],
@@ -61,7 +62,7 @@ export function jobActionLabel(from: JobStatus, to: JobStatus): string {
   if (to === "in_progress") return from === "done" ? "Reopen Visit" : "Start Job";
   if (to === "scheduled") return "Move Back to Scheduled";
   if (to === "canceled") return "Cancel Job";
-  if (to === "done") return "Mark Done";
+  if (to === "done") return "Complete Job";
   return JOB_STATUS_LABELS[to];
 }
 

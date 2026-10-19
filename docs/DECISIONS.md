@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-19 (owner: Pool Shape order, Complete Job, no Wrap-Up on visits, Today)
+- **Pool Shape tiles:** row 1 Rectangle, Oval, Kidney, L-shape, Roman; row 2 Grecian, **Draw, Clear, Landmarks**, Figure 8. The spa has no text buttons: the Has a spa switch, then tap (round or square), drag, and pinch or the corner handle on the drawing. Keyboard and screen readers keep their (invisible) actions.
+- **Complete Job** replaces Mark Done, at the end of a visit's Checklist and in its header, and a visit can be completed straight from Scheduled (`scheduled → done`, migration `20261012005900`). **Settings › Team › Completing a job** (owners and admins): **Finish the checklist first** (`settings.require_checklist_to_finish`, new) and **Take a pool photo first** (`require_finish_photo`, moved out of the owner-only form). Both apply to whoever completes the job, checked by the apps and the website; the database doesn't enforce them, so an offline completion isn't refused when it syncs before its photo.
+- **Maintenance visits have no Wrap-Up.** What it held: the homeowner report and signatures (leak detection paperwork, unused on visits), the invoice (visits are billed monthly; that invoice is under Invoices and the customer), and Quotes, which visits do use for repairs found on site, so **Quotes moved to the end of a visit's Details**. Leak detection and repairs keep Wrap-Up.
+- **Today:** a maintenance stop on your own route has **Complete Job**, so a tech can move on to the next stop without opening the visit. If the shop wants the checklist or a photo first, it says so with Open Job. Leak detection and repair stops don't (they end with a report or invoice).
+
 ## 2026-10-19 (owner: "Evaluate the CI and tests you run. If some are no longer necessary, please cut them.")
 - **The iPhone (Xcode) job no longer re-runs the Swift tests.** They are the same package tests the Linux job runs (UI code is iOS-only and is compiled by the iPhone build and the simulator screenshots), and they took about 10 of the job's 25 minutes on every push.
 - **The checks job no longer builds the website.** The e2e job builds it (against Supabase) before Playwright, so the second build caught nothing new.
