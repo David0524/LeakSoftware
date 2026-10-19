@@ -353,6 +353,12 @@ import Testing
         #expect(pool.gallons == nil)
         #expect(ChemicalLogText.submitHint(pool) == "Saves these readings to Alicia Romero’s chemical log.")
         #expect(chemicalPool(store, ChemicalTarget(propertyId: "gone")) == nil)
+        // The visit's Chemical card, closed, before any readings (owner, 2026-10-19).
+        #expect(
+            ChemicalCardText.line(store, companyId: "c1", propertyId: "p", now: now, timeZone: "America/Phoenix")
+                == "Add today’s readings")
+        #expect(ChemicalCardText.title == "Chemical" && ChemicalCardText.whatToAdd == "What to Add")
+        #expect(ChemicalCardText.needsInput == "Add the gallons and a reading.")
 
         // No network: the row and its outbox entry are written locally.
         let id = try ChemicalLogWrites.submit(
@@ -388,6 +394,9 @@ import Testing
         let detail = try #require(
             customerDetail(store, companyId: "c1", customerId: "a", now: later, timeZone: "America/Phoenix"))
         #expect(detail.pools.first?.chemicalLine == "Last: Salt 3200 · 9:00 AM")
+        #expect(
+            ChemicalCardText.line(store, companyId: "c1", propertyId: "p", now: later, timeZone: "America/Phoenix")
+                == "Last: Salt 3200 · 9:00 AM")
 
         // Remove: deleted_at through sync, gone from the log.
         try ChemicalLogWrites.remove(s.sync, readingId: second)

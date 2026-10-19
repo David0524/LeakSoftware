@@ -635,6 +635,20 @@
             // Just the icon and how soon, muted; access notes a plain line with a key.
             try await snapshot("30-today-cleanings-large-text", largeText: true, height: 2400, MainView().app(env))
             // The visit's checklist in Edit: a cleaning's Remove says it goes on the next visit.
+            // Chemical opened in place on the visit's Checklist (owner, 2026-10-19).
+            let pool = try #require(try store.get("job", visit)?["property_id"]?.string)
+            try await snapshot(
+                "30-checklist-chemical-open", height: 2600,
+                ScrollView {
+                    ChemicalCard(target: ChemicalTarget(propertyId: pool, jobId: visit), open: true).padding(16)
+                }
+                .background(Color.bg).app(env))
+            try await snapshot(
+                "30-checklist-chemical-open-dark", dark: true, height: 2600,
+                ScrollView {
+                    ChemicalCard(target: ChemicalTarget(propertyId: pool, jobId: visit), open: true).padding(16)
+                }
+                .background(Color.bg).app(env))
             try await snapshot(
                 "30-checklist-cleanings-edit", height: 2400,
                 NavigationStack { JobScreen(jobId: visit, section: .checklist, checklistEditing: true) }.app(env))

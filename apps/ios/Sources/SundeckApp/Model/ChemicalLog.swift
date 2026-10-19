@@ -192,3 +192,22 @@ public func latestChemicalLine(
     let when = (try? formatSchedule(r.recordedAt, now, timeZone)) ?? ""
     return "Last: \(readingSummary(r.readings)) · \(when)"
 }
+
+/// Chemical on a visit's Checklist, opened in place (owner, 2026-10-19: "it should be a dropdown
+/// rather than its own page"). Website components/chem-dropdown.tsx.
+public enum ChemicalCardText {
+    public static let title = "Chemical"
+    /// Closed, before any readings were submitted for the pool.
+    public static let empty = "Add today’s readings"
+    public static let whatToAdd = "What to Add"
+    /// Open, before there's anything to work out.
+    public static let needsInput = "Add the gallons and a reading."
+
+    /// The closed card's line: "Last: FC 3 · pH 7.6 · Mon 8:15 AM", or "Add today’s readings".
+    public static func line(
+        _ store: LocalStore, companyId: String, propertyId: String, now: Date = Date(),
+        timeZone: String
+    ) -> String {
+        latestChemicalLine(store, companyId: companyId, propertyId: propertyId, now: now, timeZone: timeZone) ?? empty
+    }
+}

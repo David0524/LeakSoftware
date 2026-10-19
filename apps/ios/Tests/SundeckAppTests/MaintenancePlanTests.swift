@@ -105,6 +105,7 @@ extension NewJobFormTests {
         f.techId = Self.teammate
         f.fee = "180"
         f.notes = "Dog in the yard"
+        f.gallons = "18000"
         let rpc = PlanRPC(reply: .success(["plan": "p1", "customer": "c9", "property": "pr9"]))
 
         let customer = try await f.startPlan(rpc)
@@ -134,6 +135,22 @@ extension NewJobFormTests {
         #expect(try list("customer").isEmpty)
         #expect(try list("service_plan").isEmpty)
         #expect(sync.status.pending == 0)
+        // The gallons wait for the pool's row: no partial row before the sync brings it.
+        #expect(!f.savePlanGallons())
+        #expect(try sync.store.get("property", "pr9") == nil && sync.status.pending == 0)
+        try sync.store.applyPage(
+            PullPage(
+                rows: [
+                    PulledRow(
+                        table: "property", xid: "9",
+                        row: [
+                            "id": "pr9", "company_id": .string(Self.company), "customer_id": "c9",
+                            "address_line1": "1423 Palm Ct", "has_pool": true, "has_spa": true, "deleted_at": nil,
+                        ])
+                ], done: true, cursor: [:], serverHLC: "1800000000009-0000-server"))
+        #expect(f.savePlanGallons())
+        #expect(try sync.store.get("property", "pr9")?["approx_gallons"] == 18000)
+        #expect(!f.savePlanGallons())
     }
 
     @Test func startPlanForAnExistingPool() async throws {

@@ -11,7 +11,6 @@
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
         @Environment(AppEnvironment.self) private var app
-        @Environment(\.openRoute) private var openRoute
         @State private var adding = ""
         @State private var saveError: String?
         /// Edit, as in an iOS list: every item gets Remove (owner, 2026-10-19).
@@ -36,16 +35,13 @@
                 let model = ChecklistModel(
                     config: config, inspection: inspection, jobType: job.type, property: job.decodedProperty)
                 VStack(alignment: .leading, spacing: 0) {
-                    // Chemical first, above the checklist (owner, 2026-10-19): for this visit's
-                    // pool, so its gallons fill in and Submit saves to its log.
+                    // Chemical first, above the checklist, opened in place (owner, 2026-10-19): for
+                    // this visit's pool, so its gallons fill in and Submit saves to its log.
                     if job.type == .maintenance {
-                        Button("Chemical") {
-                            openRoute(
-                                .more(.chemicals(job.property.map { ChemicalTarget(propertyId: $0.id, jobId: job.id) }))
-                            )
+                        if let pool = job.property {
+                            ChemicalCard(target: ChemicalTarget(propertyId: pool.id, jobId: job.id))
+                                .padding(.bottom, 24)
                         }
-                        .buttonStyle(.secondary)
-                        .padding(.bottom, 16)
                         // The plan's regular cleanings (owner, 2026-10-19).
                         let cleanings = visitRegularCleanings(
                             sync.store, companyId: company.id, job: job.job, inspection, config, day: today(company))

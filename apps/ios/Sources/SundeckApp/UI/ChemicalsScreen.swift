@@ -146,9 +146,23 @@
         }
 
         private func readings(_ pool: ChemicalPool?) -> some View {
-            let recommended = form.recommended
-            return VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 16) {
                 CardTitle("Readings")
+                ChemicalReadingInputs(form: $form)
+                submit(pool)
+            }
+        }
+    }
+
+    /// Each reading beside the level to aim for, the Aim For note with Use Recommended, then
+    /// Chlorine and Acid: the Chemical screen's and the visit's Chemical card's (website
+    /// chem-calculator.tsx).
+    struct ChemicalReadingInputs: View {
+        @Binding var form: ChemicalForm
+
+        var body: some View {
+            let recommended = form.recommended
+            VStack(alignment: .leading, spacing: 16) {
                 Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 8) {
                     GridRow {
                         Color.clear.frame(height: 1)
@@ -186,7 +200,6 @@
                     label: "Chlorine", selection: $form.chlorine, options: ChlorineProduct.allCases,
                     optionLabel: \.label)
                 SelectField(label: "Acid", selection: $form.acid, options: AcidProduct.allCases, optionLabel: \.label)
-                submit(pool)
             }
         }
 

@@ -465,13 +465,46 @@ public final class NewJobForm {
         guard let customer = reply["customer"]?.string ?? checked.customerId else {
             throw NewJobFormError.server("The plan started, but the customer couldn’t be opened. Pull to refresh.")
         }
-        // The new pool's gallons (create_service_plan doesn't take them): saved through the sync
-        // layer, an update to the pool the server just made, as the website does after the call.
-        if let gallons = gallonsValue, let property = reply["property"]?.string {
-            try? sync.write(
-                "property", id: property, companyId: company.id, ["approx_gallons": .number(Double(gallons))])
+        // The pool's gallons (create_service_plan doesn't take them) go on once the sync after
+        // this brings the pool down: `savePlanGallons()`.
+        planGallons = gallonsValue.map {
+            PlanGallons(
+                property: reply["property"]?.string ?? checked.propertyId, customer: customer,
+                address: trim(checked.addressLine1), gallons: $0)
         }
         return customer
+    }
+
+    /// Gallons waiting for a started plan's pool to reach this phone.
+    struct PlanGallons {
+        var property: String?
+        var customer: String
+        var address: String
+        var gallons: Int
+    }
+    private var planGallons: PlanGallons?
+
+    /// After the sync that follows Start Plan: writes the gallons on the plan's pool through the
+    /// sync layer, once that pool's row is on this phone (never a partial row), as the Expo app
+    /// does. Returns whether they were saved.
+    @discardableResult
+    public func savePlanGallons() -> Bool {
+        guard let pending = planGallons else { return false }
+        let pools = properties
+        let pool =
+            pending.property.flatMap { id in pools.first { $0.id == id } }
+            ?? pools.first {
+                $0["customer_id"]?.string == pending.customer && $0["address_line1"]?.string == pending.address
+            }
+        guard let pool else { return false }
+        planGallons = nil
+        do {
+            try sync.write(
+                "property", id: pool.id, companyId: company.id, ["approx_gallons": .number(Double(pending.gallons))])
+            return true
+        } catch {
+            return false
+        }
     }
 
     /// The plan's fields with the form's own tech, price and notes.

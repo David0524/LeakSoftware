@@ -434,6 +434,8 @@
                 do {
                     let customer = try await form.startPlan(LenientRPC(client: app.client))
                     await sync.syncNow()
+                    // The new pool's gallons, now that its row is here.
+                    form.savePlanGallons()
                     saved += 1
                     onPlanStarted(customer)
                 } catch NewJobFormError.invalid {
