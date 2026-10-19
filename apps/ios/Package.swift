@@ -24,6 +24,7 @@ let package = Package(
     ],
     targets: [
         .target(name: "SundeckCore"),
+        .target(name: "SundeckTokens"),
         .target(
             name: "SundeckStorage",
             dependencies: [.product(name: "SQLCipher", package: "swift-sqlcipher")]
@@ -46,6 +47,7 @@ let package = Package(
                 "SundeckCore",
                 "SundeckStorage",
                 "SundeckSync",
+                "SundeckTokens",
                 .product(name: "Supabase", package: "supabase-swift"),
                 .product(name: "Sentry", package: "sentry-cocoa", condition: .when(platforms: [.iOS])),
             ]

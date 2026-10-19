@@ -60,7 +60,7 @@ func handle(_ command: JSONValue) async throws -> JSONValue {
         try device().transport.offline = command["value"]?.bool ?? false
         return [:]
     case "sync":
-        let s = await try device().engine.sync()
+        let s = try await device().engine.sync()
         return [
             "pushed": .number(Double(s.pushed)), "rejected": .number(Double(s.rejected)),
             "pulled": .number(Double(s.pulled)), "pending": .number(Double(s.pending)),

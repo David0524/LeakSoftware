@@ -74,7 +74,7 @@ import Testing
         try db.execute("CREATE TABLE note (body TEXT)")
         try db.transaction {
             try db.query("INSERT INTO note VALUES ('outer')")
-            try db.transaction { try db.query("INSERT INTO note VALUES ('inner')") }
+            _ = try db.transaction { try db.query("INSERT INTO note VALUES ('inner')") }
         }
         #expect(try db.query("SELECT count(*) AS n FROM note") == [["n": .integer(2)]])
     }
@@ -85,7 +85,7 @@ import Testing
         try db.execute("CREATE TABLE note (body TEXT)")
         #expect(throws: Stop.self) {
             try db.transaction {
-                try db.transaction { try db.query("INSERT INTO note VALUES ('inner')") }
+                _ = try db.transaction { try db.query("INSERT INTO note VALUES ('inner')") }
                 throw Stop()
             }
         }
