@@ -160,8 +160,8 @@
 
         private func changeStatus(_ to: JobStatus) {
             guard let company = session.company, let job else { return }
-            // A visit isn't Done until it has a pool photo, when the shop asks for one.
-            if to == .done, finishPhotoBlock(sync.store, settings: company.settings, jobId: jobId) != nil {
+            // No job is Done until it has a pool photo, when the shop asks for one.
+            if statusChangePhotoBlock(to, sync.store, settings: company.settings, jobId: jobId) != nil {
                 withAnimation { photoNeeded = true }
                 return
             }

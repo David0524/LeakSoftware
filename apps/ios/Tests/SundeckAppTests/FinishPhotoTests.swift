@@ -21,6 +21,9 @@ import Testing
                     PulledRow(
                         table: "job", xid: "1",
                         row: ["id": "j2", "company_id": "c1", "type": "maintenance", "status": "in_progress"]),
+                    PulledRow(
+                        table: "job", xid: "1",
+                        row: ["id": "j3", "company_id": "c1", "type": "detection", "status": "in_progress"]),
                     // Not photos of this job: a video, a voice note, a deleted photo, another job's.
                     PulledRow(
                         table: "media", xid: "1",
@@ -60,6 +63,20 @@ import Testing
         try s.sync.softDelete("media", "m1")
         #expect(jobPhotoCount(store, jobId: "j1") == 0)
         #expect(finishPhotoBlock(store, settings: ["require_finish_photo": true], jobId: "j1") != nil)
+    }
+
+    /// Any job type moving to Done waits for the photo (website changeJobStatus); other moves don't.
+    @Test func everyMoveToDoneIsChecked() throws {
+        let on: JSONValue = ["require_finish_photo": true]
+        let s = try shell(on)
+        for job in ["j1", "j3"] {
+            #expect(statusChangePhotoBlock(.done, s.sync.store, settings: on, jobId: job) == finishPhotoMessage)
+            for other in JobStatus.allCases where other != .done {
+                #expect(statusChangePhotoBlock(other, s.sync.store, settings: on, jobId: job) == nil)
+            }
+        }
+        #expect(statusChangePhotoBlock(.done, s.sync.store, settings: on, jobId: "j2") == nil)
+        #expect(statusChangePhotoBlock(.done, s.sync.store, settings: [:], jobId: "j3") == nil)
     }
 
     @Test func theRuleIsOffUnlessTheShopTurnsItOn() throws {

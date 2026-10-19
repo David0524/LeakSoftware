@@ -22,6 +22,14 @@ public func finishPhotoBlock(_ store: LocalStore, settings: JSONValue?, jobId: S
     return finishPhotoMessage
 }
 
+/// Whether moving a job to `to` waits for its pool photo: any job type moving to Done, as the
+/// website's changeJobStatus checks (`finishPhotoMessage`), else nil.
+public func statusChangePhotoBlock(
+    _ to: JobStatus, _ store: LocalStore, settings: JSONValue?, jobId: String
+) -> String? {
+    to == .done ? finishPhotoBlock(store, settings: settings, jobId: jobId) : nil
+}
+
 /// The photo notice's words.
 public enum FinishPhotoText {
     public static let takePhoto = "Take Photo"
