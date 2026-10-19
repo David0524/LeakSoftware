@@ -633,7 +633,24 @@
                 FindingEditor(jobId: ids.job, findingId: ids.finding, componentId: nil).app(env))
             try await snapshot(
                 "16-report", height: 2400, NavigationStack { JobScreen(jobId: ids.job, section: .wrapUp) }.app(env))
-            try await snapshot("17-review", height: 2400, NavigationStack { ReviewScreen(jobId: ids.job) }.app(env))
+            try await snapshot("17-review", height: 2600, NavigationStack { ReviewScreen(jobId: ids.job) }.app(env))
+            // Tests we ran (owner, 2026-10-19): every test, with a second one recorded without an
+            // outcome ("Recorded").
+            let types = InspectionConfig(env.session.sync.store, companyId: "c1")
+            let pressure = try #require(types.testTypes.first { $0.key == "pressure" })
+            let data = normalizeTestData(
+                pressure.fieldSchema,
+                ["line_name": "Main drain", "start_psi": "20", "end_psi": "20", "duration_min": "15"].mapValues {
+                    .string($0)
+                })
+            _ = try InspectionWrites.saveTest(
+                env.session.sync, companyId: "c1", jobId: ids.job, existing: nil, type: pressure, componentId: nil,
+                data: data, outcome: nil, notes: "")
+            try await snapshot(
+                "17-review-tests", height: 2800, NavigationStack { ReviewScreen(jobId: ids.job) }.app(env))
+            try await snapshot(
+                "17-review-tests-dark", dark: true, height: 2800,
+                NavigationStack { ReviewScreen(jobId: ids.job) }.app(env))
             try await snapshot(
                 "18-signature", NavigationStack { SignatureScreen(jobId: ids.job, quoteId: nil) }.app(env))
             let photo = try #require(jobMedia(env.session.sync.store, MediaTarget(jobId: ids.job)).first?.id)

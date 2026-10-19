@@ -3,6 +3,7 @@ import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import {
   MIN_INK,
+  calculate,
   checklistTally,
   formatAddress,
   inkLength,
@@ -20,7 +21,6 @@ import {
 import { useRow } from "../../../../data/hooks";
 import { useInspectionConfig, useJobInspection } from "../../../../data/inspection";
 import { finishReportFromPhone, useJobReports } from "../../../../data/reports";
-import { OutcomeChip } from "../../../../features/inspection/OutcomeChip";
 import { FinishPhotoNotice, useNeedsFinishPhoto } from "../../../../features/media/FinishPhoto";
 import { currentPosition, storeSignatureSvg } from "../../../../lib/media";
 import { useCompany, useSession } from "../../../../state/session";
@@ -30,12 +30,12 @@ import {
   Field,
   HeaderButton,
   Notice,
-  Row,
   Screen,
   Segmented,
   T,
 } from "../../../../ui/components";
 import { PadBlock } from "../../../../features/report/PadBlock";
+import { ReportTests } from "../../../../features/report/ReportTests";
 import { color, face, space } from "../../../../ui/theme";
 
 /**
@@ -90,7 +90,10 @@ export default function ReviewScreen() {
   const signer = (name ?? customer?.name ?? "").trim();
   const tally = checklistTally(insp.components, insp.results);
   const maintenance = job.type === "maintenance";
-  const sections = (draft?.final_sections ?? []).filter((s) => s.text.trim());
+  const written = (draft?.final_sections ?? []).filter((s) => s.text.trim());
+  // The draft's tests text goes with the tests themselves, as on the website's report.
+  const sections = written.filter((s) => s.key !== "tests");
+  const testsText = written.find((s) => s.key === "tests");
   const findings = [...insp.findings].sort((a, b) => a.id.localeCompare(b.id));
 
   async function finish(customerAway: boolean) {
@@ -179,16 +182,6 @@ export default function ReviewScreen() {
         </Notice>
       )}
 
-      <Card>
-        <T variant="cardTitle">Checklist</T>
-        <T>
-          {maintenance
-            ? `${tally.pass} done · ${tally.attention} need attention · ${tally.notApplicable} skipped`
-            : `${tally.pass} not leaking · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} not applicable`}
-        </T>
-        {tally.pending ? <T variant="secondary" muted>{`${tally.pending} still to do`}</T> : null}
-      </Card>
-
       {findings.length ? (
         <Card>
           <T variant="cardTitle">Findings</T>
@@ -209,17 +202,36 @@ export default function ReviewScreen() {
         </Card>
       ) : null}
 
-      {insp.tests.length ? (
-        <Card>
-          <T variant="cardTitle">Tests</T>
-          {insp.tests.map((t) => (
-            <Row key={t.id} style={{ justifyContent: "space-between" }}>
-              <T style={{ flex: 1 }}>{config.testTypeById.get(t.test_type_id)?.name ?? "Test"}</T>
-              <OutcomeChip outcome={t.outcome} />
-            </Row>
-          ))}
-        </Card>
-      ) : null}
+      <Card>
+        <T variant="cardTitle">Checklist</T>
+        <T>
+          {maintenance
+            ? `${tally.pass} done · ${tally.attention} need attention · ${tally.notApplicable} skipped`
+            : `${tally.pass} not leaking · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} not applicable`}
+        </T>
+        {tally.pending ? <T variant="secondary" muted>{`${tally.pending} still to do`}</T> : null}
+      </Card>
+
+      {/* Tests we ran: every test, after what was checked (owner, 2026-10-19). */}
+      <ReportTests
+        title={testsText?.title}
+        text={testsText?.text}
+        tests={insp.tests.map((t) => {
+          const type = config.testTypeById.get(t.test_type_id);
+          return {
+            id: t.id,
+            name: type?.name ?? "Test",
+            where: t.job_component_id
+              ? (insp.componentById.get(t.job_component_id)?.label ?? null)
+              : null,
+            result: type
+              ? (calculate(type, t.data).summary ??
+                (Object.values(t.data).filter(Boolean).join(", ") || null))
+              : null,
+            outcome: t.outcome,
+          };
+        })}
+      />
 
       <View style={[styles.sign, { borderTopColor: color.separator }]}>
         {tally.pending ? (

@@ -138,10 +138,42 @@ public struct ReviewSummary: Sendable {
         public var detail: String
     }
 
+    /// One row of "Tests we ran": the test, where, the reading summary, and its pill.
     public struct TestLine: Equatable, Sendable, Identifiable {
         public var id: String
         public var name: String
         public var outcome: Outcome?
+        /// The checklist item it was run on ("Return 3"), or nil.
+        public var place: String?
+        /// The calculator's summary, else the recorded values ("Dropped 8 PSI in 15 min").
+        public var result: String?
+        /// "Pass", "Fail", "Unclear" or "Recorded" (`testOutcomeLabel`).
+        public var pill: TestOutcomeLabel
+
+        public init(
+            id: String, name: String, outcome: Outcome?, place: String? = nil, result: String? = nil,
+            pill: TestOutcomeLabel? = nil
+        ) {
+            self.id = id
+            self.name = name
+            self.outcome = outcome
+            self.place = place
+            self.result = result
+            self.pill = pill ?? testOutcomeLabel(outcome?.rawValue)
+        }
+    }
+
+    /// The report's blocks in the homeowner report's order (`REPORT_BLOCKS.homeowner`), as the
+    /// customer reads them before signing.
+    public enum Block: Equatable, Sendable {
+        /// A written section (Summary, What happens next, ...).
+        case section(FinalSection)
+        /// The findings: the written section's text, then the numbered list.
+        case findings(title: String, text: String?, lines: [FindingLine])
+        /// What we checked: the checklist tally.
+        case coverage(tally: String, pending: String?)
+        /// Tests we ran: every test, pass or fail (owner, 2026-10-19).
+        case tests(title: String, text: String?, lines: [TestLine])
     }
 
     public var companyName: String
@@ -188,12 +220,50 @@ public struct ReviewSummary: Sendable {
                 id: f.id, title: "\(i + 1). \(f.title)",
                 detail: parts.compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
         }
-        tests = insp.tests.map {
-            TestLine(id: $0.id, name: config.testTypeById[$0.testTypeId]?.name ?? "Test", outcome: $0.outcome)
+        tests = insp.tests.map { test in
+            let type = config.testTypeById[test.testTypeId]
+            let place = test.jobComponentId.flatMap { insp.componentById[$0]?.label }.flatMap { $0.isEmpty ? nil : $0 }
+            return TestLine(
+                id: test.id, name: type?.name ?? "Test", outcome: test.outcome, place: place,
+                result: reportTestResult(type, test.data))
         }
         purposes = reportSignOffPurposes(settings)
         draftId = draft?.id
     }
+
+    /// The blocks to show, in the report's order. Findings and tests show when there's a list or
+    /// written text; written sections the report doesn't place come after What happens next.
+    public var blocks: [Block] {
+        let byKey = Dictionary(sections.map { ($0.key, $0) }, uniquingKeysWith: { a, _ in a })
+        let placed: Set<String> = ["summary", "findings", "next_steps", "tests"]
+        var out: [Block] = []
+        for key in reportBlocks["homeowner"] ?? [] {
+            switch key {
+            case "summary":
+                if let s = byKey["summary"] { out.append(.section(s)) }
+            case "findings":
+                let s = byKey["findings"]
+                if s != nil || !findings.isEmpty {
+                    out.append(.findings(title: s?.title ?? "Findings", text: s?.text, lines: findings))
+                }
+            case "next_steps":
+                if let s = byKey["next_steps"] { out.append(.section(s)) }
+                out += sections.filter { !placed.contains($0.key) }.map(Block.section)
+            case "coverage":
+                out.append(.coverage(tally: tallyText, pending: pendingText))
+            case "tests":
+                let s = byKey["tests"]
+                if s != nil || !tests.isEmpty {
+                    out.append(.tests(title: s?.title ?? "Tests we ran", text: s?.text, lines: tests))
+                }
+            default: break
+            }
+        }
+        return out
+    }
+
+    /// The column headings of "Tests we ran", as on the website's report.
+    public static let testColumns = ["Test", "Where", "Result", "Outcome"]
 
     public static let intro = "Please read your report. Sign at the bottom to confirm the visit."
     public static let summaryLater =
@@ -285,6 +355,24 @@ public enum ReviewFinish {
             return .stay
         }
     }
+}
+
+/// A test's result on the report: the calculator's summary, else its recorded values joined
+/// with ", " (website report-view: `testSummary(t) ?? Object.values(t.data).filter(Boolean)`),
+/// in the form's field order; nil when there's nothing.
+public func reportTestResult(_ type: TestType?, _ data: TestData) -> String? {
+    if let type, let summary = calculate(type, data).summary { return summary }
+    let keys = type?.fieldSchema.fields.map(\.key) ?? data.keys.sorted()
+    let values = keys.compactMap { key -> String? in
+        guard let value = data[key] else { return nil }
+        switch value {
+        case .null: return nil
+        case .number(let n) where n == 0 || n.isNaN: return nil
+        case .string(let t) where t.isEmpty: return nil
+        default: return testValueText(value)
+        }
+    }
+    return values.isEmpty ? nil : values.joined(separator: ", ")
 }
 
 /// A saved signature drawing, read back from its SVG (`signatureSvg`) to show on the Wrap-Up

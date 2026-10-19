@@ -300,6 +300,73 @@ private final class FinishCalls {
 }
 
 @Suite @MainActor struct ReviewScreenTests {
+    /// "Tests we ran" (owner, 2026-10-19): every test, pass or fail, after What we checked, with
+    /// where, the result and a pill; hidden with no tests.
+    @Test func theReportListsEveryTestAfterWhatWeChecked() throws {
+        let b = try SignatureBench()
+        try b.seedInspection(allDone: true)
+        try b.seed([
+            (
+                "test_type",
+                [
+                    "id": "tt-dye", "company_id": "c1", "key": "dye", "name": "Dye test", "sort_order": 20,
+                    "schema_version": 1, "active": true, "result_options": ["pass", "fail", "inconclusive"],
+                    "field_schema": [
+                        "fields": [
+                            ["key": "result", "label": "Result", "type": "text"],
+                            ["key": "spots", "label": "Spots", "type": "number"],
+                        ]
+                    ],
+                ]
+            ),
+            (
+                "test_result",
+                [
+                    "id": "t2", "company_id": "c1", "job_id": "j1", "test_type_id": "tt-dye", "schema_version": 1,
+                    "job_component_id": "jc2", "data": ["result": "No draw", "spots": 2], "computed": [:],
+                    "outcome": "pass", "performed_at": "2026-10-19T16:10:00.000Z",
+                ]
+            ),
+            (
+                "test_result",
+                [
+                    "id": "t3", "company_id": "c1", "job_id": "j1", "test_type_id": "tt-dye", "schema_version": 1,
+                    "data": ["result": "", "spots": 0], "computed": [:], "performed_at": "2026-10-19T16:20:00.000Z",
+                ]
+            ),
+        ])
+        try b.seedDraft(sections: [
+            ["key": "summary", "title": "Summary", "text": "We found one leak."],
+            ["key": "findings", "title": "What we found", "text": "The return line is broken."],
+            ["key": "next_steps", "title": "What happens next", "text": "Repair the line."],
+        ])
+        let s = try b.summary()
+        let byId = Dictionary(uniqueKeysWithValues: s.tests.map { ($0.id, $0) })
+        #expect(byId["t1"]?.pill == TestOutcomeLabel(label: "Fail", tone: .leaking))
+        #expect(byId["t2"]?.place == "Skimmer" && byId["t2"]?.result == "No draw, 2")
+        #expect(byId["t2"]?.pill.label == "Pass")
+        #expect(byId["t3"]?.pill == TestOutcomeLabel(label: "Recorded", tone: .pending) && byId["t3"]?.result == nil)
+        let kinds = s.blocks.map { block -> String in
+            switch block {
+            case .section(let section): section.key
+            case .findings: "findings"
+            case .coverage: "coverage"
+            case .tests(let title, _, let lines): "tests:\(title):\(lines.count)"
+            }
+        }
+        #expect(kinds == ["summary", "findings", "next_steps", "coverage", "tests:Tests we ran:3"])
+        #expect(ReviewSummary.testColumns == ["Test", "Where", "Result", "Outcome"])
+        #expect(reportTestResult(nil, ["b": .string("x"), "a": .number(3)]) == "3, x")
+    }
+
+    @Test func noTestsNoTestsBlock() throws {
+        let b = try SignatureBench()
+        let s = try b.summary()
+        #expect(s.tests.isEmpty)
+        #expect(!s.blocks.contains { if case .tests = $0 { true } else { false } })
+        #expect(s.blocks.contains { if case .coverage = $0 { true } else { false } })
+    }
+
     @Test func theSummaryShowsTheTallyFindingsTestsAndStatement() throws {
         let b = try SignatureBench()
         try b.seedInspection(allDone: false)

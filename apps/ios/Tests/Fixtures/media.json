@@ -1736,6 +1736,101 @@
       ]
     }
   ],
+  "REPORT_BLOCKS": [
+    {
+      "args": [],
+      "result": {
+        "homeowner": [
+          "header",
+          "summary",
+          "findings",
+          "diagram",
+          "next_steps",
+          "coverage",
+          "tests",
+          "photos",
+          "signature",
+          "footer"
+        ],
+        "partner": [
+          "header",
+          "summary",
+          "findings",
+          "diagram",
+          "tests",
+          "coverage",
+          "photos",
+          "signature",
+          "footer"
+        ]
+      }
+    }
+  ],
+  "testOutcomeLabel": [
+    {
+      "args": [
+        "pass"
+      ],
+      "result": {
+        "label": "Pass",
+        "tone": "pass"
+      }
+    },
+    {
+      "args": [
+        "fail"
+      ],
+      "result": {
+        "label": "Fail",
+        "tone": "leaking"
+      }
+    },
+    {
+      "args": [
+        "inconclusive"
+      ],
+      "result": {
+        "label": "Unclear",
+        "tone": "attention"
+      }
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": {
+        "label": "Recorded",
+        "tone": "pending"
+      }
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": {
+        "label": "Recorded",
+        "tone": "pending"
+      }
+    },
+    {
+      "args": [
+        "Pass"
+      ],
+      "result": {
+        "label": "Recorded",
+        "tone": "pending"
+      }
+    },
+    {
+      "args": [
+        "leaking"
+      ],
+      "result": {
+        "label": "Recorded",
+        "tone": "pending"
+      }
+    }
+  ],
   "reportSignOffPurposes": [
     {
       "args": [

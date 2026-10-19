@@ -280,6 +280,18 @@ extension Outcome {
     }
 }
 
+extension VerdictTone {
+    /// A report pill's fill: pass green, leaking red, attention amber, the rest gray.
+    public var tone: Tone {
+        switch self {
+        case .pass: .pass
+        case .leaking: .fail
+        case .attention: .warning
+        case .notApplicable, .pending: .excluded
+        }
+    }
+}
+
 extension SyncBarMessage.Tone {
     /// The sync bar's dot and fill (spec 3.17).
     public var tone: Tone {

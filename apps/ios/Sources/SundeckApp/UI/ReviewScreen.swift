@@ -65,48 +65,10 @@
                         }
                         if summary.sections.isEmpty {
                             Notice(kind: .info, text: ReviewSummary.summaryLater)
-                        } else {
-                            ForEach(summary.sections, id: \.key) { section in
-                                VStack(alignment: .leading, spacing: 4) {
-                                    SubHeading(section.title)
-                                    Text(section.text).textRole(.body).foregroundStyle(Color.text)
-                                }
-                            }
                         }
-                        VStack(alignment: .leading, spacing: 4) {
-                            SubHeading("Checklist")
-                            Text(summary.tallyText).textRole(.body).foregroundStyle(Color.text)
-                            if let pending = summary.pendingText {
-                                Text(pending).textRole(.secondary).foregroundStyle(Color.textMuted)
-                            }
-                        }
-                        if !summary.findings.isEmpty {
-                            VStack(alignment: .leading, spacing: 8) {
-                                SubHeading("Findings")
-                                ForEach(summary.findings) { line in
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(line.title).textRole(.bodyEmphasis).foregroundStyle(Color.text)
-                                        if !line.detail.isEmpty {
-                                            Text(line.detail).textRole(.secondary).foregroundStyle(Color.textMuted)
-                                        }
-                                    }
-                                    .accessibilityElement(children: .combine)
-                                }
-                            }
-                        }
-                        if !summary.tests.isEmpty {
-                            VStack(alignment: .leading, spacing: 4) {
-                                SubHeading("Tests")
-                                ForEach(summary.tests) { test in
-                                    HStack {
-                                        Text(test.name).textRole(.body).foregroundStyle(Color.text)
-                                        Spacer()
-                                        OutcomeChip(outcome: test.outcome)
-                                    }
-                                    .frame(minHeight: minTarget)
-                                    .accessibilityElement(children: .combine)
-                                }
-                            }
+                        // The homeowner report's blocks, in its order (REPORT_BLOCKS).
+                        ForEach(Array(summary.blocks.enumerated()), id: \.offset) { _, block in
+                            reviewBlock(block)
                         }
                     }
                     .card()
@@ -119,6 +81,61 @@
             .background(Color.bg)
             .scrollDisabled(drawing)
             .scrollDismissesKeyboard(.interactively)
+        }
+
+        @ViewBuilder private func reviewBlock(_ block: ReviewSummary.Block) -> some View {
+            switch block {
+            case .section(let section):
+                VStack(alignment: .leading, spacing: 4) {
+                    SubHeading(section.title)
+                    Text(section.text).textRole(.body).foregroundStyle(Color.text)
+                }
+            case .findings(let title, let text, let lines):
+                VStack(alignment: .leading, spacing: 8) {
+                    SubHeading(title)
+                    if let text, !text.isEmpty { Text(text).textRole(.body).foregroundStyle(Color.text) }
+                    ForEach(lines) { line in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(line.title).textRole(.bodyEmphasis).foregroundStyle(Color.text)
+                            if !line.detail.isEmpty {
+                                Text(line.detail).textRole(.secondary).foregroundStyle(Color.textMuted)
+                            }
+                        }
+                        .accessibilityElement(children: .combine)
+                    }
+                }
+            case .coverage(let tally, let pending):
+                VStack(alignment: .leading, spacing: 4) {
+                    SubHeading("What we checked")
+                    Text(tally).textRole(.body).foregroundStyle(Color.text)
+                    if let pending { Text(pending).textRole(.secondary).foregroundStyle(Color.textMuted) }
+                }
+            case .tests(let title, let text, let lines):
+                VStack(alignment: .leading, spacing: 4) {
+                    SubHeading(title)
+                    if let text, !text.isEmpty { Text(text).textRole(.body).foregroundStyle(Color.text) }
+                    // A phone-width table: each test with where and its result under it, the pill
+                    // on the right (the website's Test, Where, Result, Outcome columns).
+                    ForEach(Array(lines.enumerated()), id: \.element.id) { index, test in
+                        if index > 0 { Hairline() }
+                        HStack(alignment: .center, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(test.name).textRole(.body).foregroundStyle(Color.text)
+                                let detail = [test.place, test.result].compactMap { $0 }.joined(separator: " · ")
+                                if !detail.isEmpty {
+                                    Text(detail).textRole(.secondary).monospacedDigit().foregroundStyle(
+                                        Color.textMuted)
+                                }
+                            }
+                            Spacer(minLength: 0)
+                            Chip(text: test.pill.label, tone: test.pill.tone.tone)
+                        }
+                        .padding(.vertical, 6)
+                        .frame(minHeight: minTarget)
+                        .accessibilityElement(children: .combine)
+                    }
+                }
+            }
         }
 
         @ViewBuilder private func signOff(_ summary: ReviewSummary, _ form: SignatureForm) -> some View {

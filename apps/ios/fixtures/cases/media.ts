@@ -15,6 +15,8 @@ import {
   mimeFromFileName,
   parseMarkup,
   reportSignOffPurposes,
+  REPORT_BLOCKS,
+  testOutcomeLabel,
   shapeAtTap,
   shapeFromDrag,
   signatureStatement,
@@ -340,6 +342,12 @@ export const media: ModuleCases = {
   enabledSignaturePurposes: rule(
     (s: unknown) => enabledSignaturePurposes(s),
     purposeSettings.map((s) => [s]),
+  ),
+  REPORT_BLOCKS: rule(() => REPORT_BLOCKS, [[]]),
+  // Every test on the report gets a pill; one without an outcome reads Recorded.
+  testOutcomeLabel: rule(
+    (o: string | null) => testOutcomeLabel(o),
+    [["pass"], ["fail"], ["inconclusive"], [null], [""], ["Pass"], ["leaking"]],
   ),
   reportSignOffPurposes: rule(
     (s: unknown) => reportSignOffPurposes(s),

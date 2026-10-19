@@ -12,7 +12,7 @@ import Testing
             "mediaStoragePath", "fitWithin", "formatDuration", "formatBytes", "parseMarkup", "shapeFromDrag",
             "textShape", "shapeAtTap", "arrowHead", "SIGNATURE_PURPOSE_LABELS", "MIN_INK",
             "enabledSignaturePurposes", "reportSignOffPurposes", "signatureStoragePath", "inkLength", "strokePath",
-            "signatureSvg", "signatureStatement",
+            "signatureSvg", "signatureStatement", "REPORT_BLOCKS", "testOutcomeLabel",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -65,6 +65,8 @@ import Testing
         checkRule(module, "MIN_INK") { _ in minInk }
         checkRule(module, "enabledSignaturePurposes") { c in enabledSignaturePurposes(try c.arg(0, as: JSONValue?.self))
         }
+        checkRule(module, "REPORT_BLOCKS") { _ in reportBlocks }
+        checkRule(module, "testOutcomeLabel") { c in testOutcomeLabel(try c.arg(0, as: String?.self)) }
         checkRule(module, "reportSignOffPurposes") { c in reportSignOffPurposes(try c.arg(0, as: JSONValue?.self)) }
         checkRule(module, "signatureStoragePath") { c in signatureStoragePath(try c.arg(0), try c.arg(1), try c.arg(2))
         }
