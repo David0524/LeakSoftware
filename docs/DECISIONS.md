@@ -3,7 +3,7 @@
 Newest first. Each entry: date, decision, reason.
 
 ## 2026-10-19 (owner: "I have been approved to Apple Developer")
-- **Apple Developer Program account is approved** (company account). Next, owner steps: register the bundle ID `com.sundeckpro.app`, create the App Store Connect app record, and create an App Store Connect API key for uploads to TestFlight (`docs/release/LAUNCH.md` § 1).
+- **Apple Developer Program account is approved, as an individual** in the owner's own name (the plan was a company account, 2026-10-12). TestFlight works the same. Before the public App Store release, decide whether to move it to the company (Apple Developer Support converts an individual membership to an organization with the company's D-U-N-S number; apps and testers carry over), since the seller name and the EU trader details shown on the App Store would otherwise be the owner's personal ones. Next, owner steps: register the bundle ID `com.sundeckpro.app`, create the App Store Connect app record, and create an App Store Connect API key for uploads to TestFlight (`docs/release/LAUNCH.md` § 1).
 
 ## 2026-10-19 (owner's overnight list: "I will trust your judgement")
 Built on the website first; `docs/plans/owner-list-2026-10-19.md` has each change and what the apps need for the same.
