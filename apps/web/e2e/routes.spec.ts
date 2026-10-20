@@ -253,6 +253,87 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   );
 });
 
+test("on a phone, a stop drags by its grip to another place in the day", async ({ browser }) => {
+  test.setTimeout(180_000);
+  const owner = await signedInClient(OWNER.email, OWNER.password);
+  const { data: who } = await owner.auth.getUser();
+  const { data: membership } = await owner
+    .from("membership")
+    .select("company_id")
+    .eq("user_id", who.user!.id)
+    .limit(1)
+    .single();
+  const company = membership!.company_id as string;
+  const { data: priya } = await owner
+    .from("profile")
+    .select("id")
+    .eq("email", "priya@demo.leakbook.test")
+    .single();
+  const tech = priya!.id as string;
+  const day = quietDay();
+  await makeJob(owner, company, "zoo", { tech, date: day, time: "08:00" });
+  await makeJob(owner, company, "scottsdale", { tech, date: day, time: "10:00" });
+  await makeJob(owner, company, "tempe", { tech, date: day, time: "12:00" });
+
+  // An iPhone-sized touch screen (owner, 2026-10-20: "bring back drag/drop on mobile").
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+    deviceScaleFactor: 3,
+  });
+  const page = await context.newPage();
+  await signIn(page, OWNER, "/jobs");
+  const url = `/schedule?view=day&date=${day}&tech=${tech}`;
+  await page.goto(url);
+  const route = page.getByRole("region", { name: "Priya Shah" });
+  await expect(route.getByTestId("stop")).toHaveCount(3);
+  // The card: its place in the route, the time and customer, the kind of visit as a pill, the
+  // address, and Move… beside the grip, both shown on a phone.
+  const tempe = route.getByRole("article", { name: `12:00 PM, ${name("tempe")}` });
+  await expect(tempe).toContainText("Leak detection");
+  await expect(tempe.getByTestId("address-link")).toContainText("3500 S Rural Rd");
+  await expect(tempe.getByRole("button", { name: "Move…" })).toBeVisible();
+  const grip = tempe.getByRole("button", { name: `Drag ${name("tempe")}` });
+  await expect(grip).toBeVisible();
+  const grip44 = (await grip.boundingBox())!;
+  expect(grip44.width).toBeGreaterThanOrEqual(44);
+  expect(grip44.height).toBeGreaterThanOrEqual(44);
+  // The address keeps most of the card's width (the grip sits on the top row).
+  const address = (await tempe.getByTestId("address-link").boundingBox())!;
+  expect(grip44.y + grip44.height).toBeLessThanOrEqual(address.y + 1);
+
+  // Press and hold the grip, then drag it above the first stop (touch events, as a finger).
+  // The first and last stops on screen together (touch points are in the viewport).
+  await route
+    .getByTestId("stop")
+    .nth(1)
+    .evaluate((el) => el.scrollIntoView({ block: "center" }));
+  const first = (await route.getByTestId("stop").first().boundingBox())!;
+  const from = (await grip.boundingBox())!;
+  const cdp = await context.newCDPSession(page);
+  const touch = (type: "touchStart" | "touchMove" | "touchEnd", x = 0, y = 0) =>
+    cdp.send("Input.dispatchTouchEvent", {
+      type,
+      touchPoints: type === "touchEnd" ? [] : [{ x, y }],
+    });
+  const x = from.x + from.width / 2;
+  const y0 = from.y + from.height / 2;
+  const y1 = first.y + 8;
+  await touch("touchStart", x, y0);
+  await page.waitForTimeout(300);
+  for (let i = 1; i <= 20; i++) {
+    await touch("touchMove", x, y0 + ((y1 - y0) * i) / 20);
+    await page.waitForTimeout(16);
+  }
+  await touch("touchEnd");
+  await expect(page.getByText(/^Moved to \d/)).toBeVisible();
+  expect((await routeNames(page, "Priya Shah"))[0]).toBe(name("tempe"));
+  // A drag from the grip isn't a swipe to the next day.
+  expect(new URL(page.url()).searchParams.get("date")).toBe(day);
+  await context.close();
+});
+
 test("Today shows a tech's route with directions", async ({ page }) => {
   const owner = await signedInClient(OWNER.email, OWNER.password);
   const { data: who } = await owner.auth.getUser();
@@ -288,7 +369,9 @@ test("Today shows a tech's route with directions", async ({ page }) => {
   await expect(hero.getByTestId("hero-progress")).toHaveAttribute("aria-label", /\d+ of \d+/);
   await expect(hero.getByRole("button", { name: /On My Way|Start Job/ })).toHaveCount(0);
   // In the list, that stop is one row marked Now.
-  await expect(page.getByTestId("today-stop").filter({ hasText: "Now" })).toHaveCount(1);
+  await expect(
+    page.getByTestId("today-stop").filter({ has: page.getByText("Now", { exact: true }) }),
+  ).toHaveCount(1);
   const stop = page.getByTestId("today-stop").filter({ hasText: name("scottsdale") });
   // Stops are one row except the one you're on (owner, 2026-10-19); a tap opens it.
   const toggle = stop.getByRole("button", { expanded: false });

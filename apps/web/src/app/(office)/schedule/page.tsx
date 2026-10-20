@@ -21,6 +21,7 @@ import {
   dateFormat,
   type CleaningKind,
   NOT_ON_MAP,
+  JOB_TYPE_LABELS,
   mapStatus,
 } from "@leakbook/core";
 import { routingConfigured } from "@/server/routing";
@@ -65,6 +66,14 @@ export const metadata: Metadata = { title: "Schedule · Sundeck Pro" };
 function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardStop {
   const lock = lockReason(j);
   const onSecond = route && j.assigned_user_id !== route.techId;
+  // The kind of visit, or whose stop it is on the second tech's route: a pill on the card.
+  const tag = onSecond
+    ? `Second tech, with ${j.techName ?? "the main tech"}`
+    : j.secondTechName
+      ? `With ${j.secondTechName}`
+      : JOB_TYPE_LABELS[j.type];
+  // Left out of drive times until its address is found (owner, 2026-10-20).
+  const notOnMap = mapStatus(j.property, routingConfigured()) === "missing";
   return {
     id: j.id,
     number: j.number ?? null,
@@ -77,24 +86,11 @@ function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardSto
     draggable: canMoveJob(j.status),
     legMin: route ? (route.summary.legs[i] ?? null) : null,
     shortMin: route ? (route.summary.short[i] ?? 0) : 0,
-    note:
-      [
-        onSecond
-          ? `Second tech, with ${j.techName ?? "the main tech"}`
-          : j.secondTechName
-            ? `With ${j.secondTechName}`
-            : j.type === "repair"
-              ? "Repair"
-              : j.type === "maintenance"
-                ? "Maintenance"
-                : j.type === "inspection"
-                  ? "Pool inspection"
-                  : "Leak detection",
-        // Left out of drive times until its address is found (owner, 2026-10-20).
-        mapStatus(j.property, routingConfigured()) === "missing" ? NOT_ON_MAP.short : null,
-      ]
-        .filter(Boolean)
-        .join(" · ") || null,
+    tag,
+    notOnMap,
+    access: j.property?.access_notes?.trim() || null,
+    // One line for Needs a Time's compact cards.
+    note: [tag, notOnMap ? NOT_ON_MAP.short : null].filter(Boolean).join(" · "),
   };
 }
 
@@ -236,8 +232,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
         return [
           d,
           {
-            jobs: stops.filter((x) => x.note !== "Maintenance").length + extra,
-            cleanings: stops.filter((x) => x.note === "Maintenance").length,
+            jobs: stops.filter((x) => x.tag !== JOB_TYPE_LABELS.maintenance).length + extra,
+            cleanings: stops.filter((x) => x.tag === JOB_TYPE_LABELS.maintenance).length,
             due: stops.flatMap((x) => x.cleanings ?? []),
           },
         ];
@@ -378,7 +374,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                   .filter((c) => c.date === d)
                   .flatMap((c) =>
                     c.stops
-                      .filter((s) => !s.note?.startsWith("Second tech"))
+                      .filter((s) => !s.tag.startsWith("Second tech"))
                       .map((s) => ({ s, tech: c.title })),
                   )
                   .concat(

@@ -4,7 +4,8 @@ import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   closestCenter,
   pointerWithin,
   useDroppable,
@@ -36,7 +37,8 @@ import {
   type ReactNode,
 } from "react";
 import { durationLabel, type CleaningKind, type JobStatus, type LatLng } from "@leakbook/core";
-import { CleaningIcon } from "./icons";
+import { CleaningIcon, KeyIcon } from "./icons";
+import { NotOnMapTag } from "./not-on-map";
 import {
   moveJob,
   planRoute,
@@ -49,9 +51,10 @@ import { Sheet } from "./sheet";
 import { Button, Notice, StatusBadge, buttonClass, cx } from "./ui";
 
 // The schedule as routes (routing, owner request 2026-10-13): each tech's day in order with
-// the driving between stops. Drag a job to another place, tech, or day (mouse, touch, or
-// keyboard); on a phone, Move… (or a swipe left on the stop) does the same in a sheet. Jobs waiting for a time sit in the
-// tray with suggestions that fit them into the routes already planned.
+// the driving between stops. Drag a job by its grip to another place, tech, or day (mouse,
+// touch, or keyboard; phones too, owner 2026-10-20); Move… (or a swipe left on the stop) does
+// the same in a sheet. Jobs waiting for a time sit in the tray with suggestions that fit them
+// into the routes already planned.
 
 export interface BoardStop {
   id: string;
@@ -70,7 +73,16 @@ export interface BoardStop {
   legMin: number | null;
   /** Minutes short of that drive. */
   shortMin: number;
-  /** Shown on the second tech's route. */
+  /**
+   * The pill on the card: the kind of visit ("Leak detection", "Repair", "Maintenance", "Pool
+   * inspection"), or "Second tech, with …" / "With …" for a two-tech job.
+   */
+  tag: string;
+  /** The address wasn't found on the map, so drive times leave the stop out. */
+  notOnMap: boolean;
+  /** The pool's access notes (gate code, which gate, dogs): one line on the card. */
+  access: string | null;
+  /** Needs a Time's second line: the tag, Not on map, when it's booked. */
   note?: string | null;
   /** The plan's cleanings due on this visit: filter, salt cell (owner, 2026-10-20). */
   cleanings?: { kind: CleaningKind; name: string }[];
@@ -167,9 +179,12 @@ export function RouteBoard({
   const dndId = useId();
 
   const sensors = useSensors(
-    // Drags start from the grip, which doesn't scroll on touch (touch-none), so the pointer
-    // sensor handles fingers too.
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    // Drags start from the grip only. A mouse picks the job up once it moves a little; a
+    // finger after a short press (owner, 2026-10-20: drag and drop on phones again), so a
+    // flick that lands on the grip doesn't move a job. The grip doesn't scroll the page
+    // (touch-none), and while dragging the page scrolls near the screen's edges (autoScroll).
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
@@ -239,6 +254,7 @@ export function RouteBoard({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onDragCancel={() => setDragging(null)}
+      autoScroll={{ threshold: { x: 0.2, y: 0.15 }, acceleration: 12 }}
       accessibility={{
         screenReaderInstructions: {
           draggable:
@@ -289,9 +305,14 @@ export function RouteBoard({
 
       <DragOverlay dropAnimation={null}>
         {dragging ? (
-          <div className="rounded-2xl bg-surface p-3 shadow-xl ring-2 ring-link">
-            <span className="block font-semibold">{dragging.customer}</span>
-            <span className="block text-[0.9375rem] text-text-muted">{dragging.address}</span>
+          <div className="card max-w-sm p-3 shadow-xl ring-2 ring-link">
+            {dragging.time ? (
+              <span className="block font-display text-[1.0625rem] font-bold">{dragging.time}</span>
+            ) : null}
+            <span className="block truncate font-semibold">{dragging.customer}</span>
+            <span className="block truncate text-[0.9375rem] text-text-muted">
+              {dragging.address}
+            </span>
           </div>
         ) : null}
       </DragOverlay>
@@ -346,10 +367,12 @@ function DayColumn({
     <section
       aria-label={c.title}
       data-testid="route"
+      // The stops are cards of their own, as on Today: on a phone they sit on the page; wider
+      // screens group each tech's day in a faint well so the columns read apart.
       className={cx(
-        "card flex flex-col p-4",
+        "flex flex-col rounded-[22px] sm:bg-text/[0.03] sm:p-3",
         c.phoneHidden && "max-sm:hidden",
-        isOver && "ring-2 ring-link",
+        isOver && "bg-link/5 ring-2 ring-link",
       )}
     >
       <h2 className="font-display text-xl font-bold">{c.title}</h2>
@@ -385,14 +408,20 @@ function DayColumn({
       >
         <ol ref={setNodeRef} className="mt-3 min-h-16 flex-1 space-y-1">
           {stops.length === 0 ? (
-            <li className="rounded-2xl bg-text/[0.04] p-4 text-center text-text-muted">
+            <li className="card p-4 text-center text-text-muted">
               {c.open ? "Nothing scheduled. Drop a job here." : "Nothing scheduled."}
             </li>
           ) : null}
-          {stops.map((s) => (
+          {stops.map((s, i) => (
             <li key={s.id}>
-              {s.legMin != null && c.techId ? <Leg minutes={s.legMin} short={s.shortMin} /> : null}
-              <StopCard stop={s} onMove={onMove} />
+              {s.legMin != null && c.techId ? (
+                <Leg
+                  minutes={s.legMin}
+                  short={s.shortMin}
+                  label={i === 0 ? "from the shop" : "drive"}
+                />
+              ) : null}
+              <StopCard stop={s} position={i + 1} onMove={onMove} />
             </li>
           ))}
           {c.techId && stops.length && c.backLegMin != null ? (
@@ -416,7 +445,8 @@ function Leg({
   label?: string;
 }) {
   return (
-    <p className="flex items-center gap-2 py-1 pl-3 text-[0.9375rem] text-text-muted">
+    // Today's connector between stops: a dotted line and the drive.
+    <p className="flex items-center gap-2 py-0.5 pl-4 text-[0.9375rem] text-text-muted">
       <span aria-hidden="true" className="h-4 border-l-2 border-dotted border-text-muted" />
       {durationLabel(minutes)} {label}
       {short > 0 ? (
@@ -426,16 +456,21 @@ function Leg({
   );
 }
 
-function Grip(props: Record<string, unknown> & { label: string }) {
-  const { label, ...rest } = props;
+function Grip(props: Record<string, unknown> & { label: string; className?: string }) {
+  const { label, className, ...rest } = props;
   return (
     <button
       type="button"
       data-grip
+      // A drag from here isn't a swipe to the next day.
+      data-no-swipe
       aria-label={label}
-      // Phones use Move… instead: dragging inside a scrolling page is fiddly, and the handle's
-      // column took width from the address.
-      className="grid min-h-11 min-w-11 cursor-grab touch-none place-items-center rounded-md text-text-muted hover:bg-bg active:cursor-grabbing max-sm:hidden"
+      // On phones too (owner, 2026-10-20). touch-none: a finger on the grip drags the job, not
+      // the page; no text selection or callout on the long press.
+      className={cx(
+        "grid size-11 shrink-0 cursor-grab touch-none place-items-center rounded-full text-text-muted select-none [-webkit-touch-callout:none] hover:bg-text/[0.06] active:cursor-grabbing active:bg-link/10 active:text-link",
+        className,
+      )}
       {...rest}
     >
       <svg viewBox="0 0 24 24" className="size-5" fill="currentColor" aria-hidden="true">
@@ -474,7 +509,7 @@ function useSwipeToReveal(enabled: boolean) {
   const handlers = enabled
     ? {
         onPointerDown: (e: PointerEvent) => {
-          // Touch only, and not on the drag handle (wider screens).
+          // Touch only, and not on the drag grip.
           if (e.pointerType !== "touch" || (e.target as Element).closest("[data-grip]")) return;
           swiped.current = false;
           gesture.current = { x: e.clientX, y: e.clientY, base: open ? -REVEAL : 0, axis: null };
@@ -509,7 +544,77 @@ function useSwipeToReveal(enabled: boolean) {
   return { offset, dragging: drag !== null, handlers, close: () => setOpen(false) };
 }
 
-function StopCard({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop) => void }) {
+/** Done for the day: the report, quote, or invoice is under way or finished. */
+function finished(status: JobStatus) {
+  return !["unscheduled", "scheduled", "in_progress", "canceled"].includes(status);
+}
+
+/** The stop's place in the route, round, as on Today: a check once done, blue while on it. */
+function StopBadge({ position, status }: { position: number; status: JobStatus }) {
+  const done = finished(status);
+  return (
+    <span
+      aria-hidden="true"
+      className={cx(
+        "mt-1 grid size-8 shrink-0 place-items-center rounded-full font-display font-bold",
+        done
+          ? "bg-status-pass text-on-status"
+          : status === "in_progress"
+            ? "bg-link text-bg"
+            : "bg-bg",
+      )}
+    >
+      {done ? (
+        <svg
+          viewBox="0 0 24 24"
+          className="size-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M5 12.5l4.5 4.5L19 7.5" />
+        </svg>
+      ) : (
+        position
+      )}
+    </span>
+  );
+}
+
+function Chevron() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
+
+/**
+ * A stop on a tech's day, styled like Today's stops (owner, 2026-10-20: "Make the schedule cards
+ * a little more appealing. Refer to what the today page looks like"): a soft card with the
+ * stop's number in a circle, the time and the customer (a link to the job), Move… and the drag
+ * grip on the same row, then the kind of visit as a pill, the address, and the access notes.
+ */
+function StopCard({
+  stop: s,
+  position,
+  onMove,
+}: {
+  stop: BoardStop;
+  position: number;
+  onMove: (s: BoardStop) => void;
+}) {
   const {
     attributes,
     listeners,
@@ -526,7 +631,7 @@ function StopCard({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
       style={{ transform: CSS.Translate.toString(transform), transition }}
       data-testid="stop"
       aria-label={`${s.time ?? "No time"}, ${s.customer}`}
-      className={cx("relative overflow-hidden rounded-2xl", isDragging && "opacity-40")}
+      className={cx("card relative overflow-hidden", isDragging && "opacity-40")}
     >
       {swipe.offset < 0 ? (
         // Behind the stop, shown by the swipe. Screen readers and keyboards use Move… instead.
@@ -546,70 +651,104 @@ function StopCard({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
       ) : null}
       <div
         {...swipe.handlers}
+        // A swipe on a stop that moves opens Move, not the next day.
+        data-no-swipe={s.draggable ? "" : undefined}
         style={swipe.offset ? { transform: `translateX(${swipe.offset}px)` } : undefined}
         className={cx(
-          "well relative flex touch-pan-y gap-1 p-2",
+          "relative flex touch-pan-y items-start gap-2 rounded-[1.25rem] bg-surface py-1.5 pl-3",
+          s.draggable ? "pr-1" : "pr-3",
           !swipe.dragging && "transition-transform duration-200 motion-reduce:transition-none",
         )}
       >
-        {s.draggable ? (
-          <Grip
-            label={`Drag ${s.customer}`}
-            ref={setActivatorNodeRef}
-            {...attributes}
-            {...listeners}
-          />
-        ) : null}
-        {/* Stops that can't move (started) have no grip and no gap for one. */}
-        <div className={cx("min-w-0 flex-1", !s.draggable && "pl-1", "max-sm:pl-1")}>
-          {/* Time, number, and Move… on one row; the badge only when it says more than
-              "Scheduled" (most stops on a schedule are). */}
-          <div className="flex items-start gap-2">
-            <Link href={`/jobs/${s.id}`} className="block min-h-11 min-w-0 flex-1 hover:underline">
-              <span className="font-semibold">{s.time ?? "Saving…"}</span>
-              <span className="text-text-muted">{s.number ? ` · #${s.number}` : ""}</span>
-              <span className="block truncate">{s.customer}</span>
+        <StopBadge position={position} status={s.status} />
+        <div className="min-w-0 flex-1">
+          {/* The time, then the customer under it (always two lines, so the cards in a column
+              line up); both open the job. Move… and the grip sit at the end of the row, so the
+              lines under it keep the card's full width. */}
+          <div className="flex items-start">
+            <Link
+              href={`/jobs/${s.id}`}
+              className={cx(
+                "flex min-h-11 min-w-0 flex-1 flex-col justify-center py-1",
+                finished(s.status) && "opacity-70",
+              )}
+            >
+              <span className="font-display text-[1.0625rem] leading-snug font-bold whitespace-nowrap tabular-nums">
+                {s.time ?? "Saving…"}
+              </span>
+              <span className="flex min-w-0 items-center gap-0.5 font-semibold text-link">
+                <span className="truncate">{s.customer}</span>
+                <Chevron />
+              </span>
             </Link>
             {s.draggable ? (
-              <button
-                type="button"
-                className={buttonClass("quiet", "-mt-1.5 -mr-1 shrink-0 px-2")}
-                onClick={() => onMove(s)}
-              >
-                Move…
-              </button>
+              <>
+                <button
+                  type="button"
+                  className={buttonClass("quiet", "shrink-0 px-2")}
+                  onClick={() => onMove(s)}
+                >
+                  Move…
+                </button>
+                <Grip
+                  label={`Drag ${s.customer}`}
+                  ref={setActivatorNodeRef}
+                  {...attributes}
+                  {...listeners}
+                />
+              </>
             ) : null}
           </div>
-          <p className="truncate text-[0.9375rem]">
-            <AddressLink address={s.address} location={s.location} />
-          </p>
-          {s.note ? <p className="text-[0.9375rem] text-text-muted">{s.note}</p> : null}
-          {s.cleanings?.length ? (
-            <ul className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5" aria-label="Cleanings due">
-              {s.cleanings.map((c) => (
-                <li
-                  key={c.name}
-                  className="inline-flex items-center gap-1 text-[0.9375rem] font-medium text-text"
-                >
-                  <CleaningIcon kind={c.kind} className="size-[1.125rem] shrink-0" />
-                  {c.name}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          {s.status !== "scheduled" || s.lock || !s.location ? (
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <div className={cx("space-y-1 pb-1.5", s.draggable && "pr-2")}>
+            {/* The kind of visit (or the second tech's note) as a pill, then any state worth
+                saying: most stops are Scheduled, so that badge is left out. */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="rounded-full bg-fill px-2.5 py-0.5 text-[0.8125rem] font-semibold text-text">
+                {s.tag}
+              </span>
               {s.status !== "scheduled" ? <StatusBadge status={s.status} /> : null}
               {s.lock ? (
-                <span className="rounded-full bg-fill px-2.5 py-0.5 text-[0.8125rem] font-semibold">
-                  {s.lock}
+                <span className="text-[0.8125rem] font-semibold text-text-muted">{s.lock}</span>
+              ) : null}
+              {s.notOnMap ? (
+                <NotOnMapTag />
+              ) : !s.location ? (
+                <span className="text-[0.8125rem] font-semibold text-status-warning">
+                  No map location
                 </span>
               ) : null}
-              {!s.location ? (
-                <span className="text-[0.8125rem] text-status-warning">No map location</span>
+              {s.number ? (
+                <span className="text-[0.8125rem] text-text-muted">#{s.number}</span>
               ) : null}
             </div>
-          ) : null}
+            {s.address ? (
+              <p className="truncate text-[0.9375rem]">
+                <AddressLink address={s.address} location={s.location} muted />
+              </p>
+            ) : null}
+            {s.access && !finished(s.status) ? (
+              <p className="flex items-start gap-1.5 text-[0.9375rem] font-medium text-text">
+                <KeyIcon className="mt-0.5 size-[1.125rem] shrink-0 text-status-warning" />
+                <span className="min-w-0 truncate">
+                  <span className="sr-only">Access: </span>
+                  {s.access}
+                </span>
+              </p>
+            ) : null}
+            {s.cleanings?.length ? (
+              <ul className="flex flex-wrap gap-x-3 gap-y-0.5" aria-label="Cleanings due">
+                {s.cleanings.map((c) => (
+                  <li
+                    key={c.name}
+                    className="inline-flex items-center gap-1 text-[0.9375rem] font-medium text-text"
+                  >
+                    <CleaningIcon kind={c.kind} className="size-[1.125rem] shrink-0" />
+                    {c.name}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         </div>
       </div>
     </article>
@@ -730,6 +869,10 @@ function WeekCell({
   );
 }
 
+/**
+ * A stop in a week cell: the time, the customer, and the kind of visit, as a small card. The
+ * grip sits beside the time, so the name gets the cell's whole width.
+ */
 function WeekChip({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: s.id,
@@ -740,23 +883,48 @@ function WeekChip({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       data-testid="stop"
-      className={cx("well flex items-start", isDragging && "opacity-40")}
+      className={cx("well relative", isDragging && "opacity-40")}
     >
-      {s.draggable ? <Grip label={`Drag ${s.customer}`} {...attributes} {...listeners} /> : null}
       <Link
         href={`/jobs/${s.id}`}
-        className="min-h-11 min-w-0 flex-1 rounded-xl py-1.5 pr-1.5 hover:underline active:bg-text/[0.06]"
+        className={cx(
+          "block min-h-11 rounded-2xl px-2 pb-2 active:bg-text/[0.06]",
+          finished(s.status) && "opacity-70",
+        )}
       >
-        <span className="block text-[0.9375rem] font-semibold">{s.time ?? "Saving…"}</span>
-        <span className="line-clamp-2 block text-[0.9375rem]" title={s.customer}>
+        <span
+          className={cx(
+            "flex min-h-11 items-center font-display text-[0.9375rem] font-bold tabular-nums",
+            s.draggable && "pr-10",
+          )}
+        >
+          {s.time ?? "Saving…"}
+        </span>
+        <span
+          className="line-clamp-2 block text-[0.9375rem] leading-snug font-semibold text-link"
+          title={s.customer}
+        >
           {s.customer}
         </span>
-        {s.lock ? <span className="block text-[0.8125rem] text-text-muted">{s.lock}</span> : null}
+        <span className="mt-0.5 line-clamp-1 block text-[0.8125rem] text-text-muted" title={s.tag}>
+          {s.tag}
+        </span>
+        {s.lock ? (
+          <span className="block text-[0.8125rem] font-semibold text-text-muted">{s.lock}</span>
+        ) : null}
       </Link>
       {s.draggable ? (
-        <button type="button" className="sr-only focus:not-sr-only" onClick={() => onMove(s)}>
-          Move…
-        </button>
+        <>
+          <Grip
+            label={`Drag ${s.customer}`}
+            className="absolute top-0 right-0"
+            {...attributes}
+            {...listeners}
+          />
+          <button type="button" className="sr-only focus:not-sr-only" onClick={() => onMove(s)}>
+            Move…
+          </button>
+        </>
       ) : null}
     </div>
   );
