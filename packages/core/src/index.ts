@@ -32,3 +32,4 @@ export * from "./import";
 export * from "./checklist-summary";
 export * from "./schedule-moves";
 export * from "./notifications";
+export * from "./today-hero";

@@ -4,7 +4,7 @@ Owner, 2026-10-20: "I feel like the Today page needs a hero showing the current 
 like that. I'm not sure exactly but the live activity has some good info that we can take from.
 Plan something out."
 
-Status: plan, waiting on the owner. Every platform gets it: the website (desktop and phones), the
+Status: approved 2026-10-20 (all five recommendations). Every platform gets it: the website (desktop and phones), the
 iPhone app and the Android app.
 
 ## The idea

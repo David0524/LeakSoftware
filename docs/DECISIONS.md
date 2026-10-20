@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-20 (owner, Today hero plan `docs/plans/today-hero.md`: "1. Agreed 2. Sure 3. Yes 4. Yes 5. Yes")
+- **Today opens with a card for the stop you're on**, on every platform: the Live Activity's stop, words and figure (scheduled time, arrival time, checklist count, or ✓), the customer's name (opens the job), job type and stop count, the address (opens directions, "Not on map" when it isn't), the access notes on one line with a key, the next stop, and one progress segment per stop. Its main button is the moment's: On My Way, Start Job, or Open Checklist with Mark Complete. One rule in core (`todayHero`) picks the stop for the card, the Live Activity and Android's notification. No timer or countdown.
+- **Water blue card, white text, white main button with blue text.**
+- **On My Way is recorded on the job** (`job.on_my_way_at`, `arrive_at`, synced), so the website, the office and a second phone show "On the way, arriving 9:42".
+- **Done stops fold into one "N done" row**; the card's stop stays in the list as one row marked Now.
+- **Owners and admins looking at a tech's day see that tech's card** without On My Way or Start Job (Call and Directions stay).
+- **Before leaving, the card shows the drive**, such as "14 min drive" (a fixed estimate, not a countdown).
+
 ## 2026-10-20 (owner: "reschedule a job from the jobs page after creating it"; "an indicator for when address doesn't register"; "an auto complete or something for the mapping")
 - **A job can be rescheduled from its page until its work is done** (unscheduled, scheduled, or in progress; repairs as before), not only before it starts.
 - **"Not found on the map"**: a pool with an address but no map location for it shows a warning on the job page, "Not on map" on Today, Schedule and the customer's page. Routes and drive times leave it out until it's found. A lookup now counts only a match to the address or its street; a town or ZIP code's middle reads as not found instead of a wrong pin.

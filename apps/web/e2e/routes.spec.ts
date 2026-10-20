@@ -280,6 +280,15 @@ test("Today shows a tech's route with directions", async ({ page }) => {
   await page.goto(`/today?tech=${priya!.id}`);
   await expect(page.getByRole("heading", { name: "Today · Priya Shah" })).toBeVisible();
   await expect(page.getByTestId("today-summary")).toContainText(/stops? · .* driving/);
+  // The card at the top for the stop she's on (owner, 2026-10-20): the Live Activity's words and
+  // a segment per stop. On My Way and Start Job are hers to press, so an owner doesn't get them.
+  const hero = page.getByTestId("today-hero");
+  await expect(hero).toBeVisible();
+  await expect(hero).toContainText(/Stop \d+ of \d+/);
+  await expect(hero.getByTestId("hero-progress")).toHaveAttribute("aria-label", /\d+ of \d+/);
+  await expect(hero.getByRole("button", { name: /On My Way|Start Job/ })).toHaveCount(0);
+  // In the list, that stop is one row marked Now.
+  await expect(page.getByTestId("today-stop").filter({ hasText: "Now" })).toHaveCount(1);
   const stop = page.getByTestId("today-stop").filter({ hasText: name("scottsdale") });
   // Stops are one row except the one you're on (owner, 2026-10-19); a tap opens it.
   const toggle = stop.getByRole("button", { expanded: false });

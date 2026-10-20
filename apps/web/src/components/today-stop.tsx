@@ -21,9 +21,12 @@ export function TodayStop({
   href,
   extra,
   access,
+  startOpen = current,
   children,
 }: {
   label: string;
+  /** Open at first; the stop you're on, unless Today's card already shows it. */
+  startOpen?: boolean;
   number: number;
   /** The stop you're on: open, and ringed. */
   current: boolean;
@@ -41,7 +44,7 @@ export function TodayStop({
   access?: string | null;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(current);
+  const [open, setOpen] = useState(startOpen);
   const body = `stop-${number}`;
   return (
     <section

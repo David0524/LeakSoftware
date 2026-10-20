@@ -20,7 +20,13 @@ import type {
   TestResult,
   TestType,
 } from "@leakbook/core";
-import { canMakeJobs, cleaningKind, type CleaningKind } from "@leakbook/core";
+import {
+  canMakeJobs,
+  checklistTally,
+  cleaningKind,
+  inspectionProgress,
+  type CleaningKind,
+} from "@leakbook/core";
 import type { Office } from "./auth";
 import { createClient } from "./supabase/server";
 
@@ -267,6 +273,40 @@ export interface JobDetail {
   findings: Finding[];
   severities: Map<string, SeverityLevel>;
   media: Media[];
+}
+
+/** A pool inspection's items in checklist order, with their gates' answers, for folding. */
+export function inspectionRows(detail: JobDetail) {
+  return detail.components.flatMap((c) => {
+    const t = detail.componentTypes.get(c.component_type_id);
+    const r = detail.results.get(c.id);
+    return t
+      ? [
+          {
+            id: c.id,
+            section: t.section ?? null,
+            group_label: t.group_label ?? null,
+            options: t.options,
+            value: r?.value,
+            result: r ? { status: r.status, outcome: r.outcome ?? null } : null,
+          },
+        ]
+      : [];
+  });
+}
+
+/**
+ * How far a job's checklist is, as the Live Activity counts it: answered items of all, and for a
+ * pool inspection only the questions its gates leave open (2026-10-20).
+ */
+export function checklistCount(detail: JobDetail): { done: number; total: number } {
+  if (detail.job.type === "inspection") {
+    const p = inspectionProgress(inspectionRows(detail));
+    return { done: p.answered, total: p.total };
+  }
+  const t = checklistTally(detail.components, [...detail.results.values()]);
+  const total = t.pass + t.attention + t.leaking + t.notApplicable + t.pending;
+  return { done: total - t.pending, total };
 }
 
 export async function getJob(office: Office, id: string): Promise<JobDetail | null> {
