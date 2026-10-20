@@ -1,9 +1,14 @@
 import { useState } from "react";
+import { View } from "react-native";
 import {
+  JOB_LOCKS,
+  JOB_LOCK_HELP,
+  JOB_LOCK_LABELS,
   canUnschedule,
   formatSchedule,
   formatTime,
   isManagerRole,
+  jobLock,
   jobMinutes,
   jobReschedulable,
   localDate,
@@ -12,6 +17,7 @@ import {
   seesAllJobs,
   suggestTimes,
   suggestionDates,
+  type JobLock,
   type SuggestedTime,
 } from "@leakbook/core";
 import { useJobViews, type JobView } from "../../data/jobs";
@@ -20,13 +26,16 @@ import {
   routeKey,
   routesFor,
   saveJobChanges,
+  saveJobLock,
   useDriveTimes,
   useTeam,
 } from "../../data/schedule";
 import { useCompany, useSession } from "../../state/session";
-import { Group, ListRow, Section, T } from "../../ui/components";
+import { Button, Group, ListRow, Section, Segmented, T } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
-import { color } from "../../ui/theme";
+import { ModalSheet } from "../../ui/ModalSheet";
+import { color, space } from "../../ui/theme";
+import { WebIcon } from "../../ui/WebIcon";
 import { MoveSheet, SuggestSheet, type MoveTarget } from "../schedule/MoveSheet";
 
 /**
@@ -39,9 +48,9 @@ export function showsJobSchedule(job: { type: string; status: string }) {
 }
 
 /**
- * Job › Details › Schedule (spec 5.4; the website's `JobSchedule`): the tech and time, whether the
- * time was promised, then Schedule Job / Change Schedule (the Schedule tab's Move sheet) and
- * Suggest Times. Worked out on the phone and saved through the sync layer, like the Schedule tab.
+ * Job › Details › Schedule (spec 5.4; the website's `JobSchedule`): the tech and time, its lock
+ * (owner, 2026-10-20: "locks for jobs whether that's day, time, or both"), then Schedule Job /
+ * Change Schedule (the Schedule tab's Move sheet) and Suggest Times. Worked out on the phone and saved through the sync layer, like the Schedule tab.
  */
 export function JobSchedule({ jobId }: { jobId: string }) {
   const company = useCompany();
@@ -59,6 +68,7 @@ export function JobSchedule({ jobId }: { jobId: string }) {
     null,
   );
   const [result, setResult] = useState<{ message?: string; error?: string } | null>(null);
+  const [locking, setLocking] = useState<JobLock | null>(null);
   const job = jobs.find((j) => j.id === jobId);
   const { drive } = useDriveTimes(company.id, [
     ctx.depot,
@@ -69,6 +79,7 @@ export function JobSchedule({ jobId }: { jobId: string }) {
   const movers = (
     seesAll ? team.filter((t) => t.status === "active") : team.filter((t) => t.user_id === me)
   ).map((t) => ({ id: t.user_id, name: t.name }));
+  const lock = jobLock(job);
   const techName = job.assigned_user_id
     ? (team.find((t) => t.user_id === job.assigned_user_id)?.name ?? "Teammate")
     : "Nobody yet";
@@ -161,7 +172,23 @@ export function JobSchedule({ jobId }: { jobId: string }) {
               : "Not scheduled"
           }
         />
-        {job.arrival_fixed ? <ListRow title="Time promised to the customer" detail="Yes" /> : null}
+        {/* The lock: a padlock and what it holds; tapping it opens the Lock picker. */}
+        <ListRow
+          title="Lock"
+          accessibilityLabel={`Lock, ${JOB_LOCK_LABELS[lock].tag ?? "None"}`}
+          accessibilityHint="Changes what planning may move"
+          onPress={() => setLocking(lock)}
+          detail={
+            JOB_LOCK_LABELS[lock].tag ? (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <WebIcon name="lock" size={16} color={color.textMuted} strokeWidth={2} />
+                <T muted>{JOB_LOCK_LABELS[lock].tag}</T>
+              </View>
+            ) : (
+              "None"
+            )
+          }
+        />
         <ListRow
           title={job.scheduled_start ? "Change Schedule" : "Schedule Job"}
           tone="link"
@@ -215,6 +242,40 @@ export function JobSchedule({ jobId }: { jobId: string }) {
           moveTo(job, t, d, index);
         }}
       />
+      {/* Locks (owner, 2026-10-20): what Plan Route and Plan Week leave alone. */}
+      <ModalSheet visible={locking != null} onClose={() => setLocking(null)} title="Lock">
+        <View style={{ gap: space["2"] }}>
+          <Segmented
+            accessibilityLabel="Lock"
+            options={JOB_LOCKS.map((l) => ({ value: l, label: JOB_LOCK_LABELS[l].segment }))}
+            value={locking ?? lock}
+            onChange={setLocking}
+          />
+          <View accessibilityLiveRegion="polite">
+            <T variant="secondary" muted>
+              {JOB_LOCK_HELP[locking ?? lock]}
+            </T>
+          </View>
+        </View>
+        <Button
+          title="Save"
+          wide
+          onPress={() => {
+            const next = locking ?? lock;
+            setLocking(null);
+            if (next === lock) return;
+            try {
+              saveJobLock(company.id, job.id, next);
+              haptics.success();
+              setResult({
+                message: JOB_LOCK_LABELS[next].tag ? `${JOB_LOCK_LABELS[next].tag}.` : "Unlocked.",
+              });
+            } catch (e) {
+              setResult({ error: e instanceof Error ? e.message : String(e) });
+            }
+          }}
+        />
+      </ModalSheet>
       <SuggestSheet
         open={suggesting != null}
         title="Suggested Times"

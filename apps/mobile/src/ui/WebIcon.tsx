@@ -121,6 +121,12 @@ const SHAPES = {
   directions: { line: "M3 11l18-8-8 18-2-8z" },
   // The website's not-on-map warning (not-on-map.tsx).
   warning: { line: "M12 3l9.5 17h-19zM12 10v4.5M12 17.5v.01" },
+  // A padlock (the website's LockIcon): a job locked to its day, time, or both.
+  lock: {
+    line: "M7.5 11h9a2.5 2.5 0 0 1 2.5 2.5v5a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 18.5v-5A2.5 2.5 0 0 1 7.5 11zM8 11V8a4 4 0 0 1 8 0v3",
+  },
+  // Two corner arrows pointing out (the website's ExpandIcon): Enlarge a day map.
+  expand: { line: "M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" },
 } satisfies Record<string, Shape>;
 
 export type WebIconName = keyof typeof SHAPES;

@@ -2,7 +2,6 @@ import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Animated, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import {
-  LOCK_LABELS,
   canMakeJobs,
   daySummary,
   durationLabel,
@@ -20,7 +19,7 @@ import {
   routingSettings,
   workDay,
 } from "@leakbook/core";
-import { inRouteOrderViews, jobLock, useJobViews, type JobView } from "../../../../data/jobs";
+import { inRouteOrderViews, stopLockTag, useJobViews, type JobView } from "../../../../data/jobs";
 import { useDriveTimes, useTeam } from "../../../../data/schedule";
 import { useLine } from "../../../../data/texting";
 import { useWeather } from "../../../../data/weather";
@@ -54,6 +53,7 @@ import {
 } from "../../../../ui/components";
 import { haptics } from "../../../../ui/haptics";
 import { usePinnedSyncBar } from "../../../../ui/SyncBar";
+import { LockTag } from "../../../../ui/LockTag";
 import { AddressLine } from "../../../../ui/NotOnMap";
 import { useRoutingOn } from "../../../../lib/routing";
 import { ScreenTip } from "../../../../ui/Tip";
@@ -416,7 +416,7 @@ function Stop({
       useNativeDriver: true,
     }).start();
   }, [expanded, turn]);
-  const lock = jobLock(job);
+  const lock = stopLockTag(job);
   const name = job.customer?.name ?? "Customer";
   const phone = job.customer?.phone;
   return (
@@ -479,11 +479,7 @@ function Stop({
           {/* Most stops are scheduled; the chip shows other states. The Now row leaves it to the
               card, which already says it, so the name isn't cut short (2026-10-20). */}
           {job.status !== "scheduled" && !next ? <StatusChip status={job.status} /> : null}
-          {lock && lock !== "started" ? (
-            <T variant="footnote" muted style={face.semiBold}>
-              {LOCK_LABELS[lock]}
-            </T>
-          ) : null}
+          {lock ? <LockTag lock={lock} /> : null}
         </View>
         <Animated.View
           style={{

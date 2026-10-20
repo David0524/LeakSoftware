@@ -6,6 +6,7 @@ import { Card, T } from "../../ui/components";
 import { NotOnMapTag } from "../../ui/NotOnMap";
 import { useMenu } from "../../ui/Select";
 import { color, face, gutter, MAX_TEXT_SCALE, space, type } from "../../ui/theme";
+import { LockTag } from "../../ui/LockTag";
 import { GhostCard, type Stop } from "./RouteCard";
 import { dropTint, useDragHover, useDragSource, useDropZones } from "./ScheduleDrag";
 
@@ -128,6 +129,7 @@ function TrayCard({
               </T>
             ) : null}
           </View>
+          {j.lock ? <LockTag lock={j.lock} /> : null}
         </Pressable>
         <Pressable
           accessibilityRole="button"

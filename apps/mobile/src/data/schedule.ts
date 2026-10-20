@@ -3,12 +3,14 @@ import {
   estimateDriveMinutes,
   localDate,
   localMinutes,
+  lockColumns,
   pointKey,
   propertyLocation,
   routingSettings,
   type Company,
   type DriveFn,
   type JobChange,
+  type JobLock,
   type LatLng,
   type PlanContext,
 } from "@leakbook/core";
@@ -117,6 +119,12 @@ export function needsATime(jobs: JobView[], today: string, timeZone: string): Jo
     )
     .sort((a, b) => (a.scheduled_start ?? "").localeCompare(b.scheduled_start ?? ""));
   return [...waiting, ...untech];
+}
+
+/** Save a job's lock (core lockColumns: lock_day, lock_time, arrival_fixed) through sync. */
+export function saveJobLock(companyId: string, jobId: string, lock: JobLock) {
+  const { sync } = getServices();
+  sync.batch(() => sync.write("job", jobId, companyId, { ...lockColumns(lock) }));
 }
 
 /** Save schedule changes through the sync layer, all or none. */

@@ -9,6 +9,7 @@ import { durationLabel, type CleaningKind, type JobStatus, type LatLng } from "@
 import type { DragItem } from "../../lib/scheduleDrag";
 import { CleaningNames } from "../maintenance/Cleanings";
 import { Button, Card, StatusChip, T } from "../../ui/components";
+import { LockTag } from "../../ui/LockTag";
 import { AddressLine } from "../../ui/NotOnMap";
 import { WebIcon } from "../../ui/WebIcon";
 import {
@@ -39,8 +40,8 @@ export interface Stop {
   location: LatLng | null;
   time: string | null;
   status: JobStatus;
-  /** "Fixed time", "Two techs" (not "Started"). */
-  lock: string | null;
+  /** "Day locked", "Time locked", "Locked" (with a padlock), or "Two techs"; never "Started". */
+  lock: { label: string; icon: boolean } | null;
   movable: boolean;
   legMin: number | null;
   shortMin: number;
@@ -95,24 +96,22 @@ export function Leg({ text, late }: { text: string; late?: number }) {
   );
 }
 
-export function RouteCard({
+/**
+ * A route's summary line, the overtime warning, then Plan Route and the maps button: in the
+ * route's card, or under the day's map when one tech's day leads the screen (the website's
+ * DayFacts and DayButtons).
+ */
+export function RouteFacts({
   route: c,
   busy,
   mapsButton,
   onPlan,
-  onMove,
-  onDirections,
 }: {
   route: Route;
   busy: boolean;
-  /** The secondary maps button ("Apple Maps" / "Google Maps"), when the day has directions. */
   mapsButton: ReactNode;
   onPlan: () => void;
-  onMove: (s: Stop) => void;
-  onDirections: (s: Stop) => void;
 }) {
-  const { zoneRef } = useDropZones();
-  const hover = useDragHover();
   const summary = c.stops.length
     ? [
         `${c.stops.length} ${c.stops.length === 1 ? "stop" : "stops"}`,
@@ -123,42 +122,74 @@ export function RouteCard({
         .join(" · ")
     : null;
   return (
+    <>
+      {summary ? (
+        <T variant="secondary" muted>
+          {summary}
+        </T>
+      ) : null}
+      {c.overtimeMin > 0 ? (
+        <T variant="secondary" style={[face.semiBold, { color: color.warning, marginTop: 4 }]}>
+          Runs {durationLabel(c.overtimeMin)} past the end of the day.
+        </T>
+      ) : null}
+      {c.stops.length && (c.open || mapsButton) ? (
+        <View style={styles.buttons}>
+          {c.open ? (
+            <View style={styles.half}>
+              <Button
+                kind="secondary"
+                title="Plan Route"
+                onPress={onPlan}
+                disabled={busy}
+                wide
+                style={{ paddingHorizontal: 8 }}
+              />
+            </View>
+          ) : null}
+          {mapsButton ? <View style={styles.half}>{mapsButton}</View> : null}
+        </View>
+      ) : null}
+    </>
+  );
+}
+
+export function RouteCard({
+  route: c,
+  busy,
+  mapsButton,
+  lead = false,
+  onPlan,
+  onMove,
+  onDirections,
+}: {
+  route: Route;
+  busy: boolean;
+  /** The secondary maps button ("Apple Maps" / "Google Maps"), when the day has directions. */
+  mapsButton: ReactNode;
+  /** The day's map, summary and buttons lead the screen above Needs a Time: just the name here. */
+  lead?: boolean;
+  onPlan: () => void;
+  onMove: (s: Stop) => void;
+  onDirections: (s: Stop) => void;
+}) {
+  const { zoneRef } = useDropZones();
+  const hover = useDragHover();
+  return (
     // The whole route takes a drop: between two stops, or last.
     <View
       ref={zoneRef({ kind: "route", id: c.key, tech: c.techId, date: c.date, open: c.open })}
       collapsable={false}
       style={[styles.route, { backgroundColor: dropTint(hover, c.key) }]}
     >
-      <Card padding={space["4"]}>
+      {lead ? (
         <T variant="cardTitle">{c.title}</T>
-        {summary ? (
-          <T variant="secondary" muted>
-            {summary}
-          </T>
-        ) : null}
-        {c.overtimeMin > 0 ? (
-          <T variant="secondary" style={[face.semiBold, { color: color.warning, marginTop: 4 }]}>
-            Runs {durationLabel(c.overtimeMin)} past the end of the day.
-          </T>
-        ) : null}
-        {c.stops.length && (c.open || mapsButton) ? (
-          <View style={styles.buttons}>
-            {c.open ? (
-              <View style={styles.half}>
-                <Button
-                  kind="secondary"
-                  title="Plan Route"
-                  onPress={onPlan}
-                  disabled={busy}
-                  wide
-                  style={{ paddingHorizontal: 8 }}
-                />
-              </View>
-            ) : null}
-            {mapsButton ? <View style={styles.half}>{mapsButton}</View> : null}
-          </View>
-        ) : null}
-      </Card>
+      ) : (
+        <Card padding={space["4"]}>
+          <T variant="cardTitle">{c.title}</T>
+          <RouteFacts route={c} busy={busy} mapsButton={mapsButton} onPlan={onPlan} />
+        </Card>
+      )}
       <View style={styles.stops}>
         {c.stops.length === 0 ? (
           <View style={[styles.empty, { backgroundColor: color.well }]}>
@@ -305,16 +336,7 @@ function StopFace({
             </Text>
           </View>
           {s.status !== "scheduled" ? <StatusChip status={s.status} /> : null}
-          {s.lock ? (
-            <View style={[styles.pill, { backgroundColor: color.fill }]}>
-              <Text
-                style={[type.footnote, face.semiBold, { color: color.textMuted }]}
-                maxFontSizeMultiplier={MAX_TEXT_SCALE}
-              >
-                {s.lock}
-              </Text>
-            </View>
-          ) : null}
+          {s.lock ? <LockTag lock={s.lock} /> : null}
           {/* Not found on the map: a symbol after the address (below). */}
           {!s.notOnMap && !s.location ? (
             <Text
