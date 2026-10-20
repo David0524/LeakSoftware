@@ -1,5 +1,6 @@
 import { router, Stack } from "expo-router";
 import { PushSetup } from "../../features/notifications/PushSetup";
+import { VisitReportQueue } from "../../features/maintenance/VisitReport";
 import { LiveStopNotification } from "../../features/today/LiveStop";
 import { HeaderButton } from "../../ui/components";
 import { stackScreenOptions } from "../../ui/navigation";
@@ -19,6 +20,7 @@ export default function AppLayout() {
       {/* Notifications and the current stop's ongoing notification (owner, 2026-10-19). */}
       <PushSetup />
       <LiveStopNotification />
+      <VisitReportQueue />
       <Stack screenOptions={stackScreenOptions()}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false, title: "Back" }} />
         <Stack.Screen

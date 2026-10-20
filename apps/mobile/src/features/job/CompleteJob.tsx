@@ -11,6 +11,7 @@ import {
 import { useJobInspection } from "../../data/inspection";
 import { useJobMedia } from "../../data/media";
 import { getServices } from "../../lib/services";
+import { queueAutoVisitReport } from "../../lib/visitReports";
 import { useCompany } from "../../state/session";
 import { Button, Notice } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
@@ -63,6 +64,7 @@ export function TodayComplete({
   day: string;
   done: boolean;
 }) {
+  const company = useCompany();
   const blocker = useCompleteJobBlocker(job);
   const [asked, setAsked] = useState(false);
   // Done only for the day (a leak or repair stop), so it can be undone here.
@@ -80,6 +82,7 @@ export function TodayComplete({
     setAsked(false);
     sync.write("job", job.id, job.company_id, markCompleteValues(job, day));
     haptics.success();
+    if (job.type === "maintenance") queueAutoVisitReport(job, company.settings);
   }
   return (
     <View style={{ gap: space["1"] }}>

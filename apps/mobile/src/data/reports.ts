@@ -7,7 +7,7 @@ import { useJobRows } from "./hooks";
 export interface ReportRecord {
   id: string;
   job_id: string;
-  template_key: "homeowner" | "partner" | "insurance";
+  template_key: "homeowner" | "partner" | "insurance" | "maintenance";
   version: number;
   status: "draft" | "sent" | "superseded";
   final_sections: FinalSection[] | null;

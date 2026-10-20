@@ -14,7 +14,10 @@ import type { JobView } from "./jobs";
 // Invoices (spec 5.10) from synced rows: the list, what's owed, and the website's two CSV
 // exports, built on the phone and handed to the share sheet (spec 9: no downloads in apps).
 
-export type InvoiceListRow = Invoice & {
+export type InvoiceListRow = Omit<Invoice, "number" | "due_date" | "sent_at"> & {
+  number: number | null;
+  due_date: string | null;
+  sent_at: string | null;
   period_month?: string | null;
   created_at?: string | null;
   jobNumber: number | null;
@@ -37,6 +40,9 @@ export function useInvoiceList(companyId: string, jobs: JobView[]): InvoiceListR
       )
       .map((i) => ({
         ...i,
+        number: i.number ?? null,
+        due_date: i.due_date ?? null,
+        sent_at: i.sent_at ?? null,
         jobNumber: byId.get(i.job_id)?.number ?? null,
         customer: byId.get(i.job_id)?.customer?.name ?? null,
       }));

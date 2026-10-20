@@ -80,6 +80,8 @@ import { ChecklistTab } from "../../../../../../features/inspection/ChecklistTab
 import { DiagramPanel } from "../../../../../../features/inspection/DiagramPanel";
 import { ChemicalInline } from "../../../../../../features/chemicals/Calculator";
 import { VisitCleanings } from "../../../../../../features/maintenance/Cleanings";
+import { VisitReport } from "../../../../../../features/maintenance/VisitReport";
+import { queueAutoVisitReport } from "../../../../../../lib/visitReports";
 import { FindingsTab } from "../../../../../../features/inspection/FindingsTab";
 import { TestsTab } from "../../../../../../features/inspection/TestsTab";
 import { JobSchedule, showsJobSchedule } from "../../../../../../features/job/JobSchedule";
@@ -165,6 +167,8 @@ export default function JobDetail() {
     const values: Record<string, JsonValue> = { status: to };
     if (to === "in_progress" && !job!.started_at) values.started_at = new Date().toISOString();
     update(values);
+    // Automatic visit reports: sent once the completed visit reaches the server.
+    if (to === "done") queueAutoVisitReport(job!, company.settings);
     // Start Job: the current stop's ongoing notification moves to the pool.
     if (to === "in_progress") liveStopStarted(job!.id);
   }
@@ -720,6 +724,9 @@ function Details({
 
       {showsJobSchedule(job) ? <JobSchedule jobId={job.id} /> : null}
       <JobTimeline jobId={job.id} />
+
+      {/* A visit's report for the customer (owner, 2026-10-20), above its quotes. */}
+      {job.type === "maintenance" ? <VisitReport job={job} customer={customer} /> : null}
 
       {/* A visit has no Wrap-Up; the repairs it quotes are here (owner, 2026-10-19). */}
       {jobHasWrapUp(job.type) ? null : (

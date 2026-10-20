@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { SAVED_REPORT_SECTIONS, savedReportSections } from "@leakbook/core";
+import {
+  SAVED_REPORT_SECTIONS,
+  VISIT_REPORT_MODES,
+  offersPool,
+  savedReportSections,
+  visitReportMode,
+  type VisitReportMode,
+} from "@leakbook/core";
+import type { JsonValue } from "@leakbook/sync";
 import { useRows } from "../../data/hooks";
 import {
   addSavedReport,
@@ -20,6 +28,7 @@ import {
   ListRow,
   Notice,
   Section,
+  Segmented,
   T,
   Toggle,
 } from "../../ui/components";
@@ -66,9 +75,9 @@ function TemplatesPage() {
   const savedSheet = useEditSheet<SavedReport>();
   const removeSaved = (r: SavedReport) =>
     confirmDestructive({
-      title: `Delete “${r.name}”?`,
+      title: "Delete this saved report?",
       message: "Reports that used it keep their text.",
-      confirm: "Delete Saved Report",
+      confirm: "Delete",
       onConfirm: () => {
         removeSavedReport(company.id, r.id);
         savedSheet.done("Deleted.");
@@ -97,10 +106,12 @@ function TemplatesPage() {
           )}
         </Group>
 
+        {offersPool(company.settings) ? <VisitReportsSetting /> : null}
+
         {/* Saved reports (owner, 2026-10-20): the shop's own wording, used word for word. */}
         <Section
           title="Saved reports"
-          footer="Your shop’s own wording for a report. On a draft, Use Saved Report puts it in word for word."
+          footer="Text you use again and again. On a report, Use Saved Report puts it in word for word."
         >
           {saved.length ? (
             <Group>
@@ -181,6 +192,41 @@ function TemplateForm({ template, onDone }: { template: Template; onDone: (m: st
   );
 }
 
+/**
+ * Visit reports for pool service visits (owner, 2026-10-20: "Include manual send and auto send.
+ * Owner/admin can turn that off"): Automatic, By Hand or Off, in company.settings.visit_reports.
+ */
+function VisitReportsSetting() {
+  const company = useCompany();
+  const mode = visitReportMode(company.settings);
+  return (
+    <Section
+      title="Visit reports"
+      footer="A maintenance visit’s report: the water test, the checklist and cleanings, and photos, at a link for the customer."
+    >
+      <View style={styles.part}>
+        <Segmented
+          label="Send visit reports"
+          value={mode}
+          onChange={(v: VisitReportMode) => {
+            getServices().sync.write("company", company.id, company.id, {
+              settings: {
+                ...(company.settings as unknown as Record<string, JsonValue>),
+                visit_reports: v,
+              },
+            });
+            haptics.selection();
+          }}
+          options={VISIT_REPORT_MODES.map((m) => ({ value: m.value, label: m.label }))}
+        />
+        <T variant="secondary" muted>
+          {VISIT_REPORT_MODES.find((m) => m.value === mode)?.hint}
+        </T>
+      </View>
+    </Section>
+  );
+}
+
 function SavedReportForm({
   saved,
   onDone,
@@ -241,4 +287,4 @@ function SavedReportForm({
   );
 }
 
-const styles = StyleSheet.create({ form: { gap: space["4"] } });
+const styles = StyleSheet.create({ form: { gap: space["4"] }, part: { gap: space["2"] } });
