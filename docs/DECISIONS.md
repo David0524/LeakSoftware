@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-20 (owner on the route-maps build: "1. Can move 2. Great! 3. Include")
+- **Plan Week with Everyone may move a tech's scheduled jobs to another tech**, as planned; a waiting job already given to a tech stays theirs.
+- **The iPhone's small day map stays a preview** that doesn't take drags; tapping it opens the map you can pan and zoom.
+- **Saving only a job's lock says what it holds** on every platform: "Day locked.", "Time locked.", "Locked.", or "Lock removed." (core `lockSavedMessage`).
+
 ## 2026-10-20 (route maps built: day maps, Plan Week, locks, Routes)
 - **Day maps:** the small map is a preview (an image on the website and Android, a muted Apple map on the iPhone that doesn't take drags, so the Schedule still scrolls); tapping it or Enlarge opens a map you can pan and zoom (Mapbox GL on the website, Apple Maps on the iPhone; Android shows a larger image until an interactive one is added). On phones the selected tech's map leads the day, under the tech chips. Dark mode gets Mapbox's dark map.
 - **Plan Week's sheet has "Place Jobs from Needs a Time"** (on by default, with the count waiting), so one tap never silently fills the week with every waiting job. A waiting job given to a tech stays theirs; unassigned ones are placed only with the switch on. Scheduled jobs come first, then the oldest waiting, up to 150.

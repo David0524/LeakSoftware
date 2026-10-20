@@ -4,6 +4,7 @@ import {
   JOB_LOCKS,
   JOB_LOCK_HELP,
   JOB_LOCK_LABELS,
+  lockSavedMessage,
   canUnschedule,
   formatSchedule,
   formatTime,
@@ -267,9 +268,7 @@ export function JobSchedule({ jobId }: { jobId: string }) {
             try {
               saveJobLock(company.id, job.id, next);
               haptics.success();
-              setResult({
-                message: JOB_LOCK_LABELS[next].tag ? `${JOB_LOCK_LABELS[next].tag}.` : "Unlocked.",
-              });
+              setResult({ message: lockSavedMessage(next) });
             } catch (e) {
               setResult({ error: e instanceof Error ? e.message : String(e) });
             }

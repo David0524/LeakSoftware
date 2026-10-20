@@ -389,3 +389,12 @@ export function daySummary(
     unlocated: stops.filter((s) => !s.location).length,
   };
 }
+
+/**
+ * What saving says when only a job's lock changed (owner, 2026-10-20): "Day locked.",
+ * "Time locked.", "Locked.", or "Lock removed.".
+ */
+export function lockSavedMessage(lock: JobLock): string {
+  const tag = JOB_LOCK_LABELS[lock].tag;
+  return tag ? `${tag}.` : "Lock removed.";
+}
