@@ -115,7 +115,9 @@ import Testing
         // 18 nines fit in an Int as dollars but not as cents: this trapped (overflow).
         #expect(parseDollars("999999999999999999") == nil)
         #expect(parseDollars("-999999999999999999") == nil)
-        #expect(parseDollars("92233720368547758.07") == Int.max)
+        // Nothing over $9,999,999.99 is taken, so it always fits the database's integer cents.
+        #expect(parseDollars("9999999.99") == maxEnteredCents)
+        #expect(parseDollars("10000000") == nil)
         #expect(parseDollars("92233720368547758.08") == nil)
         // Ordinary input is unchanged.
         #expect(parseDollars("1,234.5") == 123_450)
@@ -196,5 +198,97 @@ import Testing
         #expect(invoiceLineQuantity("-1") == nil && invoiceLineQuantity("0") == nil)
         #expect(invoiceLineQuantity("1.005") == nil && invoiceLineQuantity("abc") == nil)
         #expect(invoiceLineQuantity("") == 1 && invoiceLineQuantity(" 2,5 ") == 2.5)
+    }
+}
+
+/// Discard changes, everywhere (owner, 2026-10-20): what each editor counts as unsaved, and a
+/// link arriving while something is.
+@Suite @MainActor struct DiscardChangesTests {
+    @Test func theWordsAreTheSameEverywhere() {
+        #expect(DiscardText.title == "Discard changes?")
+        #expect(DiscardText.keepEditing == "Keep Editing" && DiscardText.discard == "Discard Changes")
+    }
+
+    @Test func aLinkWaitsWhileSomethingIsUnsaved() {
+        let edits = UnsavedEdits()
+        // Nothing unsaved: the link opens at once.
+        #expect(edits.arrive(.job("j1")) == .job("j1"))
+        edits.set("sheet:test", dirty: true, sheet: true)
+        #expect(edits.any && edits.anySheet)
+        #expect(edits.arrive(.stop("j2", .markComplete)) == nil)
+        #expect(edits.heldLink == .stop("j2", .markComplete))
+        // Keep Editing: nothing opens, the editor stays.
+        edits.keepEditing()
+        #expect(edits.heldLink == nil && edits.any)
+        #expect(edits.arrive(.job("j3")) == nil)
+        // Discard Changes: the editors close (counter) and the link is released once.
+        let before = edits.discarded
+        edits.discardForLink()
+        #expect(edits.discarded == before + 1 && !edits.any && !edits.anySheet)
+        #expect(edits.takeReleased() == .job("j3"))
+        #expect(edits.takeReleased() == nil)
+        // An editor saved or closed reports clean.
+        edits.set("screen", dirty: true)
+        #expect(edits.any && !edits.anySheet)
+        edits.set("screen", dirty: false)
+        #expect(!edits.any)
+    }
+
+    @Test func aJobPageKnowsItsOwnUnsavedParts() {
+        let edits = UnsavedEdits()
+        edits.set("job:j1:invoice", dirty: true)
+        #expect(edits.any(under: "job:j1"))
+        #expect(!edits.any(under: "job:j"))
+        #expect(!edits.any(under: "job:j2"))
+    }
+
+    @Test func textOnlyCountsWhenItReallyChanged() {
+        #expect(!textChanged("", from: ""))
+        #expect(!textChanged(" (480) 555-0100 ", from: "(480) 555-0100"))
+        #expect(textChanged("(480) 555-0101", from: "(480) 555-0100"))
+        #expect(!textChanged("1", from: "1") && textChanged("2", from: "1"))
+    }
+
+    @Test func aDrawnSignatureIsUnsaved() {
+        var form = SignatureForm(.review, settings: nil, customerName: "Pat Doe")
+        #expect(!form.isDirty)
+        form.strokes = [[SIMD2(0, 0), SIMD2(1, 1)]]
+        #expect(form.isDirty)
+        form.clear()
+        #expect(!form.isDirty)
+    }
+
+    @Test func readingsCountUntilSubmitted() {
+        var form = ChemicalForm(gallons: 20_000)
+        #expect(!form.hasUnsubmittedReadings(since: [:]))
+        form.readings[.ph] = " "
+        #expect(!form.hasUnsubmittedReadings(since: [:]))
+        form.readings[.ph] = "7.4"
+        #expect(form.hasUnsubmittedReadings(since: [:]))
+        let submitted = form.readings
+        #expect(!form.hasUnsubmittedReadings(since: submitted))
+        form.readings[.fc] = "3"
+        #expect(form.hasUnsubmittedReadings(since: submitted))
+    }
+
+    @Test func phoneSettingsAreUnsavedUntilTheServerHasThem() async {
+        let host = "p\(UUID().uuidString.prefix(8).lowercased()).test"
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [StubServer.self]
+        var api = WebAPI(baseURL: URL(string: "https://\(host)")!) { "token" }
+        api.session = URLSession(configuration: config)
+        StubServer.set(host, "/api/phone", 200, ["configured": true, "line": .null, "my_phone": "+14805550100"])
+        let model = PhoneSettingsModel(api: api, companyId: "c1")
+        #expect(!model.isDirty)
+        await model.load()
+        #expect(!model.isDirty)
+        model.myPhone = "(480) 555-0100 "
+        #expect(!model.isDirty)
+        model.myPhone = "(480) 555-0199"
+        #expect(model.isDirty)
+        // Saved: the server's answer is what's saved now.
+        StubServer.set(host, "/api/phone", 200, ["configured": true, "line": .null, "my_phone": "+14805550199"])
+        await model.saveMyPhone()
+        #expect(!model.isDirty)
     }
 }
