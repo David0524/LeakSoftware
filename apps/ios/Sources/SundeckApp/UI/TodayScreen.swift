@@ -26,16 +26,9 @@
             ScreenScroll {
                 if let company = session.company, let day {
                     header(day)
-                    SyncBarRow()
                     // Getting Started is off on the phone for now: inside the tab view it stops Today
                     // drawing in the simulator screenshots, cause not found yet (docs/plans/swift-app.md).
                     if day.ctx.isManager && GettingStartedCard.enabled { GettingStartedCard(company: company) }
-                    if let tip = tipFor(
-                        platform: .web, screen: "today", role: company.role, services: company.services,
-                        seen: app.walkthrough.seen)
-                    {
-                        TipCard(title: tip.title, message: tip.message) { app.walkthrough.dismiss(tip.id) }
-                    }
                     if day.ctx.isManager && day.techs.count > 1 {
                         FilterPills(
                             selection: Binding(get: { day.techId }, set: { techId = $0 }),
@@ -45,9 +38,23 @@
                         .accessibilityLabel("Whose day")
                     }
                     route(day)
+                    // The tip comes after the stops, so the first stop's buttons are on screen at
+                    // launch (owner, 2026-10-20).
+                    if let tip = tipFor(
+                        platform: .web, screen: "today", role: company.role, services: company.services,
+                        seen: app.walkthrough.seen)
+                    {
+                        TipCard(title: tip.title, message: tip.message) { app.walkthrough.dismiss(tip.id) }
+                    }
                 }
             }
+            // The sync bar stays in view under the navigation bar (owner, 2026-10-20).
+            .pinnedSyncBar()
             .refreshable { await sync.syncNow() }
+            .onChange(of: app.stopRequest, initial: true) { _, request in
+                // A Live Activity button: show my day, where the stop's card does it.
+                if request != nil { techId = nil }
+            }
             .navigationTitle(title)
             .toolbar { NewJobToolbar(back: "Today") }
             .task(id: "\(sync.revision)|\(session.company?.id ?? "")|\(techId ?? "")|\(drive.known.count)") {
@@ -117,6 +124,13 @@
             guard let company = session.company, let user = session.user else { return }
             day = TodayDay(
                 store: sync.store, kv: sync.kv, company: company, userId: user.id, wanted: techId, drive: drive)
+            // A Live Activity button for a stop not on my route today: its job page instead.
+            if let request = app.stopRequest, let day, day.mine,
+                !(day.route?.jobs.contains { $0.id == request.jobId } ?? false)
+            {
+                app.stopRequest = nil
+                openRoute(.job(request.jobId))
+            }
         }
     }
 
@@ -189,8 +203,8 @@
     /// A stop on Today (spec 5.1; owner, 2026-10-19: "keep these cards on Today collapsed except
     /// for the job you are on"): one row (the number, or a green check when done; the time, the
     /// customer, the state, a chevron) that opens to the address, cleanings, access notes, Mark
-    /// Complete, and call and On My Way; once open, the customer's name links to the job. The
-    /// stop you're on starts open and ringed.
+    /// Complete, and call and On My Way; the customer's name links to the job. The stop you're on
+    /// starts open and ringed. A Live Activity button opens its stop here and does it.
     /// Website components/today-stop.tsx.
     struct TodayStopCard: View {
         var number: Int
@@ -199,6 +213,7 @@
         var leg: Int
         var isNext: Bool
         @State private var open: Bool?
+        @Environment(AppEnvironment.self) private var app
         @Environment(\.openRoute) private var openRoute
         @Environment(\.openURL) private var openURL
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -208,8 +223,8 @@
             let done = job.doneOn(day.ctx.today)
             let expanded = open ?? isNext
             VStack(alignment: .leading, spacing: 0) {
-                // The row opens and closes the card; once open, the customer's name is the link to
-                // the job (owner, 2026-10-20; no Open Job button).
+                // The row (number, time, chevron) opens and closes the card; the customer's name is
+                // the link to the job, open or closed (owner, 2026-10-20; no Open Job button).
                 summary(done: done, expanded: expanded)
                     .onTapGesture { toggle(expanded) }
                     .accessibilityElement(children: .combine)
@@ -258,6 +273,16 @@
             }
             .card(padding: 0)
             .overlay { if isNext { shape.strokeBorder(Color.link, lineWidth: 2) } }
+            .onChange(of: app.stopRequest, initial: true) { _, request in
+                guard let request, request.jobId == job.id else { return }
+                open = true
+                // Its button does it; when it isn't there (done, or not my day), it's done with.
+                let done = job.doneOn(day.ctx.today)
+                let handled =
+                    request.action == .onMyWay
+                    ? !done && day.mine : !done && markStopTitle(job, day: day.ctx.today) != nil
+                if !handled { app.stopRequest = nil }
+            }
             .zoomSource(job.id)
             // Cards ease in as they scroll onto the screen.
             .scrollTransition(.animated(.smooth)) { card, phase in
@@ -294,26 +319,17 @@
                         .font(.custom(BrandFonts.Weight.bold.rawValue, size: 17, relativeTo: .body))
                         .monospacedDigit()
                         .foregroundStyle(Color.text)
-                    Group {
-                        if expanded {
-                            Button {
-                                openRoute(.job(job.id))
-                            } label: {
-                                Text(job.customerName + " ›")
-                                    .textRole(.bodyEmphasis)
-                                    .foregroundStyle(Color.link)
-                                    .lineLimit(1)
-                                    .frame(minHeight: minTarget)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                        } else {
-                            Text(job.customerName)
-                                .textRole(.bodyEmphasis)
-                                .foregroundStyle(Color.text)
-                                .lineLimit(1)
-                        }
+                    Button {
+                        openRoute(.job(job.id))
+                    } label: {
+                        Text(job.customerName + " ›")
+                            .textRole(.bodyEmphasis)
+                            .foregroundStyle(Color.link)
+                            .lineLimit(1)
+                            .frame(minHeight: minTarget)
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     // Most stops are scheduled; the chip shows other states.
                     if job.status != .scheduled { StatusChip(status: job.status) }
@@ -361,8 +377,9 @@
     /// Mark Complete on a Today stop (owner, 2026-10-19: every stop on the day's route): a
     /// maintenance visit is completed; a leak or repair job's stop is done for the day, and its
     /// report and invoice still follow. When the shop wants the checklist or a photo first, it
-    /// says so, with Open Job. A stop marked by mistake is marked not complete again. Website
-    /// components/today-complete.tsx.
+    /// says so, with Open Job. A stop marked by mistake is marked not complete again. When
+    /// completing sends the visit report (Automatic shops), it asks first (owner, 2026-10-20).
+    /// Website components/today-complete.tsx.
     struct TodayMarkButton: View {
         var job: ScheduleJob
         var day: TodayDay
@@ -372,6 +389,7 @@
         @Environment(\.openRoute) private var openRoute
         @State private var blocked: String?
         @State private var marked = 0
+        @State private var askingSend = false
 
         var body: some View {
             let done = job.doneOn(day.ctx.today)
@@ -381,7 +399,7 @@
                         .buttonStyle(.secondary)
                         .accessibilityLabel(MarkStopText.spoken(true, job.customerName))
                 } else {
-                    Button(MarkStopText.complete) { mark(complete: true) }
+                    Button(MarkStopText.complete) { complete() }
                         .buttonStyle(.primary)
                         .accessibilityLabel(MarkStopText.spoken(false, job.customerName))
                 }
@@ -392,6 +410,31 @@
                 }
             }
             .sensoryFeedback(.success, trigger: marked)
+            .alert(CompleteSendPrompt.title, isPresented: $askingSend) {
+                Button(CompleteSendPrompt.cancel, role: .cancel) {}
+                Button(CompleteSendPrompt.confirm) { mark(complete: true) }
+                    .keyboardShortcut(.defaultAction)
+            } message: {
+                Text(CompleteSendPrompt.message(customer: job.customerName == "Customer" ? nil : job.customerName))
+            }
+            .onChange(of: app.stopRequest, initial: true) { _, request in
+                // The Live Activity's Mark Complete, done here.
+                guard let request, request.jobId == job.id, request.action == .markComplete else { return }
+                app.stopRequest = nil
+                if !job.doneOn(day.ctx.today) { complete() }
+            }
+        }
+
+        /// Mark Complete: a visit whose report goes out by itself asks first; otherwise one tap.
+        private func complete() {
+            guard let company = session.company else { return }
+            if CompleteSendPrompt.asks(jobType: job.type, settings: company.settings),
+                statusChangeBlock(.done, sync.store, settings: company.settings, jobId: job.id) == nil
+            {
+                askingSend = true
+            } else {
+                mark(complete: true)
+            }
         }
 
         private func mark(complete: Bool) {
@@ -471,6 +514,12 @@
         var body: some View {
             Button(done ?? "On My Way", action: send)
                 .buttonStyle(.secondary)
+                .onChange(of: app.stopRequest, initial: true) { _, request in
+                    // The Live Activity's On My Way, done here (owner, 2026-10-20).
+                    guard let request, request.jobId == job.id, request.action == .onMyWay else { return }
+                    app.stopRequest = nil
+                    send()
+                }
                 .confirmationDialog(
                     "On My Way goes out from your company number, which isn’t working yet.", isPresented: $asking,
                     titleVisibility: .visible

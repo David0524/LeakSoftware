@@ -86,7 +86,7 @@
                 .navigationTitle("Report PDF")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } }
+                    ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
                     if let file {
                         ToolbarItem(placement: .primaryAction) {
                             ShareLink(item: file) { Image(systemName: "square.and.arrow.up") }
@@ -179,7 +179,7 @@
                 .navigationTitle("Report")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } }
+                    ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
                     ToolbarItem(placement: .primaryAction) {
                         ShareLink(item: url) { Image(systemName: "square.and.arrow.up") }
                             .accessibilityLabel("Share")

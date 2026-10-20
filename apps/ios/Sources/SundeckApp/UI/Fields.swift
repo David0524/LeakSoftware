@@ -32,6 +32,8 @@
                             .padding(-4)
                     }
                 }
+                // A drag in a field moves the cursor, never the page (owner, 2026-10-20).
+                .keepsHorizontalDrags()
         }
     }
 
@@ -77,7 +79,16 @@
         var multiline = false
         /// Tabular and right-aligned (short money and number fields).
         var numeric = false
+        /// The form's shared focus and this field's key in it, so the keyboard bar's Previous and
+        /// Next move between fields (`.keyboardBar`, owner 2026-10-20). nil: the field's own.
+        var chain: FocusState<String?>.Binding? = nil
+        var chainKey: String? = nil
         @FocusState private var focused: Bool
+
+        private var isFocused: Bool {
+            if let chain, let chainKey { return chain.wrappedValue == chainKey }
+            return focused
+        }
 
         var body: some View {
             VStack(alignment: .leading, spacing: 4) {
@@ -92,18 +103,64 @@
                     .keyboardType(keyboard)
                     .multilineTextAlignment(numeric ? .trailing : .leading)
                     .monospacedDigit()
-                    .focused($focused)
+                    .modifier(ChainFocus(chain: chain, key: chainKey, own: $focused))
                     .accessibilityLabel(label)
                     if let unit {
                         Text(unit).textRole(.secondary).foregroundStyle(Color.textMuted)
                     }
                 }
                 .frame(minHeight: multiline ? 80 : nil, alignment: .topLeading)
-                .fieldBox(error: error != nil, focused: focused, minHeight: multiline ? 96 : minTarget)
+                .fieldBox(error: error != nil, focused: isFocused, minHeight: multiline ? 96 : minTarget)
                 if let error {
                     FieldHint(text: error, error: true)
                 } else if let hint {
                     FieldHint(text: hint)
+                }
+            }
+        }
+    }
+
+    /// A field focused by the form's shared focus when it has a key in it, else by its own.
+    private struct ChainFocus: ViewModifier {
+        var chain: FocusState<String?>.Binding?
+        var key: String?
+        var own: FocusState<Bool>.Binding
+
+        func body(content: Content) -> some View {
+            if let chain, let key {
+                content.focused(chain, equals: key)
+            } else {
+                content.focused(own)
+            }
+        }
+    }
+
+    extension View {
+        /// The bar over the keyboard on a form (owner, 2026-10-20): Previous and Next move
+        /// through the fields in `order` (a number pad has no return key), Done puts the keyboard
+        /// away. Attach once, on the form; give each field the same `focus` and its key.
+        func keyboardBar(_ focus: FocusState<String?>.Binding, order: [String]) -> some View {
+            modifier(KeyboardBar(focus: focus, order: order))
+        }
+    }
+
+    private struct KeyboardBar: ViewModifier {
+        var focus: FocusState<String?>.Binding
+        var order: [String]
+
+        func body(content: Content) -> some View {
+            content.toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Button(KeyboardBarText.previous) {
+                        focus.wrappedValue = fieldStep(order, from: focus.wrappedValue, by: -1)
+                    }
+                    .disabled(fieldStep(order, from: focus.wrappedValue, by: -1) == nil)
+                    Button(KeyboardBarText.next) {
+                        focus.wrappedValue = fieldStep(order, from: focus.wrappedValue, by: 1)
+                    }
+                    .disabled(fieldStep(order, from: focus.wrappedValue, by: 1) == nil)
+                    Spacer()
+                    Button(KeyboardBarText.done) { focus.wrappedValue = nil }.fontWeight(.semibold)
                 }
             }
         }

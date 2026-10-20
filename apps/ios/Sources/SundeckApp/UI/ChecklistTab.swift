@@ -4,7 +4,8 @@
     import SwiftUI
 
     /// The job page's Checklist section (spec 5.4): the tally, the job's tip, one folding block per
-    /// checklist section with a verdict pill per item, and "Add an item". Works offline; every
+    /// checklist section with each item's answers in one tap, and "Add an item". Complete Job is on
+    /// the job page's Next Step bar (owner, 2026-10-20). Works offline; every
     /// write goes through the sync layer. Port of ChecklistEditor in apps/web/src/components/job-work.tsx.
     struct ChecklistTab: View {
         var job: JobView
@@ -16,15 +17,8 @@
         /// Edit, as in an iOS list: every item gets Remove (owner, 2026-10-19).
         @State private var editing: Bool
 
-        /// Complete Job at the end of a visit's list (the job page's status change, with its
-        /// checks), and why it was last stopped.
-        var complete: (() -> Void)?
-        var blocked: String?
-
-        init(job: JobView, editing: Bool = false, complete: (() -> Void)? = nil, blocked: String? = nil) {
+        init(job: JobView, editing: Bool = false) {
             self.job = job
-            self.complete = complete
-            self.blocked = blocked
             _editing = State(initialValue: editing)
         }
 
@@ -87,19 +81,10 @@
                                 ChecklistGroup(
                                     jobId: job.id, section: section, photos: photos, editing: editing,
                                     choose: choose, saveWhere: saveWhere, remove: remove,
-                                    markRest: { markRest(section.items) })
+                                    markRest: { markRest(section.items) }, undoMarked: undoMarked)
                             }
                         }
                         if !model.addOptions.isEmpty { addItem(model, inspection).padding(.top, 16) }
-                    }
-                    // Complete Job ends a visit, right under its list (owner, 2026-10-19).
-                    if let complete, checklistShowsCompleteJob(job) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Button(CompleteJobText.title, action: complete)
-                                .buttonStyle(.primary(fullWidth: true, size: .field))
-                            if let blocked { CompleteJobNotice(jobId: job.id, message: blocked) }
-                        }
-                        .padding(.top, 24)
                     }
                 }
                 .alert(
@@ -170,12 +155,22 @@
             }
         }
 
-        private func markRest(_ items: [ChecklistItemRow]) {
-            guard let company = session.company else { return }
-            run {
-                try InspectionWrites.markRemaining(
+        /// Mark N Remaining, saved straight away; returns what Undo puts back.
+        private func markRest(_ items: [ChecklistItemRow]) -> MarkedUndo? {
+            guard let company = session.company else { return nil }
+            do {
+                let ids = try InspectionWrites.markRemaining(
                     sync, companyId: company.id, jobId: job.id, items: items, userId: session.user?.id)
+                return ids.isEmpty ? nil : MarkedUndo(resultIds: ids)
+            } catch {
+                saveError = String(describing: error)
+                return nil
             }
+        }
+
+        private func undoMarked(_ marked: MarkedUndo) {
+            guard let company = session.company else { return }
+            run { try marked.undo(sync, companyId: company.id) }
         }
 
         private func addAnother(_ type: ComponentType, _ inspection: JobInspection) {
@@ -205,7 +200,8 @@
     }
 
     /// One checklist section as a grouped block that folds away: a 56 tall header with a chevron,
-    /// the name and its summary; open, a row per item and "Mark N Remaining …".
+    /// the name and its summary; open, a row per item and "Mark N Remaining …", which shows
+    /// "Marked N" and Undo in its place for 5 seconds after (owner, 2026-10-20).
     private struct ChecklistGroup: View {
         var jobId: String
         var section: ChecklistSectionRows
@@ -214,14 +210,17 @@
         var choose: (ChecklistItemRow, Verdict?) -> Void
         var saveWhere: (ChecklistItemRow, String) -> Void
         var remove: (ChecklistItemRow) -> Void
-        var markRest: () -> Void
+        var markRest: () -> MarkedUndo?
+        var undoMarked: (MarkedUndo) -> Void
         /// nil follows the items: open while any are to do.
         @State private var folded: Bool?
+        @State private var marked: MarkedUndo?
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         var body: some View {
             // Editing opens every section, so each item shows its Remove button.
-            let open = section.isOpen(folded: folded, editing: editing)
+            // Open while Undo shows, though nothing is left to do.
+            let open = section.isOpen(folded: folded, editing: editing) || marked != nil
             VStack(spacing: 0) {
                 Button {
                     let shown = !(folded ?? !section.startsOpen)
@@ -263,14 +262,23 @@
                             choose: { choose(item, $0) }, saveWhere: { saveWhere(item, $0) },
                             remove: { remove(item) })
                     }
-                    if let title = section.markRemainingTitle {
+                    if let marked {
                         Hairline()
-                        ActionRow(title, action: markRest)
+                        UndoRow(text: marked.text) {
+                            undoMarked(marked)
+                            withAnimation(Motion.smooth) { self.marked = nil }
+                        }
+                        .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    } else if let title = section.markRemainingTitle {
+                        Hairline()
+                        ActionRow(title) { withAnimation(Motion.smooth) { marked = markRest() } }
                     }
                 }
             }
             .background(Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: CGFloat(Radius.grouped), style: .continuous))
+            .undoWindow($marked)
         }
 
         /// Barlow SemiBold 15.
@@ -289,8 +297,10 @@
         }
     }
 
-    /// One item: its name (opening the item's screen) and its verdict pill, or for a maintenance
-    /// item a round check; "Where" under a Leaking or Attention item, saved when it loses focus.
+    /// One item: its name (opening the item's screen), then its answers as an inline segmented
+    /// control, full width and 44 tall (owner, 2026-10-20: one tap; tapping the chosen one again
+    /// clears it). "Where" under a Leaking or Attention item saves by itself 1 second after typing
+    /// stops and when it loses focus. Remove stays behind Edit and swipe to remove.
     private struct ChecklistItemView: View {
         var jobId: String
         var item: ChecklistItemRow
@@ -302,6 +312,7 @@
         @Environment(\.openRoute) private var openRoute
         @State private var draft: String?
         @State private var confirmRemove = false
+        @State private var savedWhere = false
         @FocusState private var focused: Bool
 
         var body: some View {
@@ -312,7 +323,7 @@
                 } else {
                     // Swipe left to Remove; Edit over the checklist is the visible way.
                     SwipeDeleteRow(name: item.component.label, title: "Remove", delete: { confirmRemove = true }) {
-                        if item.isCheck { checkRow } else { verdictRow }
+                        verdictRow
                     }
                 }
             }
@@ -362,90 +373,18 @@
 
         private var verdictRow: some View {
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 12) {
-                    name
-                    verdictMenu
+                name
+                VerdictSegments(item: item, choose: choose)
+                if item.needsWhere && item.result != nil {
+                    whereField
+                    if savedWhere { SavedLabel() }
                 }
-                if item.needsWhere && item.result != nil { whereField }
                 if let reason = item.exclusionText {
                     Text(reason).textRole(.secondary).foregroundStyle(Color.textMuted)
                 }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
-        }
-
-        private var checkRow: some View {
-            HStack(spacing: 12) {
-                Button {
-                    choose(item.isDone ? nil : .ok)
-                } label: {
-                    RoundCheck(done: item.isDone)
-                        .frame(width: minTarget, height: minTarget)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .padding(.leading, -10)
-                .accessibilityLabel(item.component.label)
-                .accessibilityValue(item.isDone ? "Done" : "Not done")
-                .accessibilityAddTraits(.isToggle)
-                name
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 4)
-        }
-
-        /// The verdict pill: "To Do" on `fill`, else the verdict's status color; a menu of the
-        /// options, and Remove Item… on every item (owner, 2026-10-19).
-        private var verdictMenu: some View {
-            Menu {
-                ForEach(item.options, id: \.value) { option in
-                    Button {
-                        if option.value != item.verdict { choose(option.value) }
-                    } label: {
-                        if option.value == item.verdict {
-                            Label(option.label, systemImage: "checkmark")
-                        } else {
-                            Text(option.label)
-                        }
-                    }
-                }
-                Divider()
-                Button("Remove Item…", role: .destructive) { confirmRemove = true }
-            } label: {
-                Text(item.verdictLabel)
-                    .font(.role(.secondary).weight(.semibold))
-                    .foregroundStyle(item.verdict == nil ? Color.text : Color.onStatus)
-                    .lineLimit(1)
-                    .fixedSize()
-                    .padding(.leading, 12)
-                    .padding(.trailing, 32)
-                    .frame(minHeight: minTarget)
-                    .background(Capsule().fill(pillColor))
-                    // A new verdict pops into its color.
-                    .contentTransition(.interpolate)
-                    .animation(Motion.bouncy, value: item.verdict)
-                    .overlay(alignment: .trailing) {
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(item.verdict == nil ? Color.text : Color.onStatus)
-                            .padding(.trailing, 10)
-                    }
-                    .contentShape(Capsule())
-            }
-            .accessibilityLabel(item.component.label)
-            .accessibilityValue(item.verdictLabel)
-            .sensoryFeedback(.selection, trigger: item.verdict)
-        }
-
-        private var pillColor: Color {
-            switch item.verdict {
-            case nil: .fill
-            case .ok: .pass
-            case .leaking: .fail
-            case .attention: .warning
-            case .na: .excluded
-            }
         }
 
         private var whereField: some View {
@@ -469,11 +408,79 @@
             )
             .padding(.bottom, 4)
             .accessibilityLabel("Where: \(item.component.label)")
+            .keepsHorizontalDrags()
             .onChange(of: focused) { _, isFocused in
                 if !isFocused, let draft {
-                    saveWhere(draft)
+                    save(draft)
                     self.draft = nil
                 }
+            }
+            .task(id: draft) {
+                guard let draft else { return }
+                try? await Task.sleep(for: Autosave.delay)
+                guard !Task.isCancelled else { return }
+                save(draft)
+            }
+            .onDisappear { if let draft { saveWhere(draft) } }
+        }
+
+        private func save(_ text: String) {
+            guard text != (item.result?.locationText ?? "") else { return }
+            saveWhere(text)
+            withAnimation { savedWhere = true }
+        }
+    }
+
+    /// An item's answers in one tap (owner, 2026-10-20): the core `verdictOptions` labels as a
+    /// segmented control, 44 tall and full row width; the chosen one in its status color, and
+    /// tapping it again clears it back to To do.
+    private struct VerdictSegments: View {
+        var item: ChecklistItemRow
+        var choose: (Verdict?) -> Void
+
+        var body: some View {
+            HStack(spacing: 2) {
+                ForEach(item.options, id: \.value) { option in
+                    let chosen = option.value == item.verdict
+                    Button {
+                        choose(item.verdictAfterTap(option.value))
+                    } label: {
+                        Text(option.label)
+                            .font(.role(.segment).weight(chosen ? .semibold : .medium))
+                            .foregroundStyle(chosen ? Color.onStatus : Color.text)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                            .padding(.horizontal, 4)
+                            .frame(maxWidth: .infinity, minHeight: 40)
+                            .background {
+                                if chosen { Capsule().fill(color(option.value)) }
+                            }
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(option.label)
+                    .accessibilityAddTraits(chosen ? [.isSelected] : [])
+                    .accessibilityHint(chosen ? "Tap again to clear" : "")
+                }
+            }
+            .padding(2)
+            .background(
+                RoundedRectangle(cornerRadius: CGFloat(Radius.segmentTrack), style: .continuous).fill(Color.fill)
+            )
+            .animation(Motion.bouncy, value: item.verdict)
+            .sensoryFeedback(.selection, trigger: item.verdict)
+            .keepsHorizontalDrags()
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(item.component.label)
+            .accessibilityValue(item.verdictLabel)
+        }
+
+        private func color(_ verdict: Verdict) -> Color {
+            switch verdict {
+            case .ok: .pass
+            case .leaking: .fail
+            case .attention: .warning
+            case .na: .excluded
             }
         }
     }

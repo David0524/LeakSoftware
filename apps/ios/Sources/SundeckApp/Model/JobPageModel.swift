@@ -74,6 +74,61 @@ public func jobHeaderActions(_ status: JobStatus, type: JobType) -> [JobStatus] 
     userTransitions(from: status, type: type.rawValue).filter { $0 != .canceled }
 }
 
+/// The header's status buttons on a phone (owner, 2026-10-20): Start Job moves to the Next Step
+/// bar, so the header keeps the rest (Unschedule, Reopen Visit, Complete Job).
+public func jobHeaderPhoneActions(_ status: JobStatus, type: JobType) -> [JobStatus] {
+    jobHeaderActions(status, type: type).filter { !($0 == .inProgress && jobCanStart(status, type: type)) }
+}
+
+/// The job can be started (Scheduled or Unscheduled): the Next Step bar's Start Job.
+public func jobCanStart(_ status: JobStatus, type: JobType) -> Bool {
+    (status == .scheduled || status == .unscheduled) && jobHeaderActions(status, type: type).contains(.inProgress)
+}
+
+// MARK: - Next Step bar
+
+/// A button on the job page's Next Step bar (spec 1): the same action as the inline button it
+/// replaces.
+public enum NextStepAction: String, Equatable, Sendable {
+    case startJob, completeJob, addTest, addFinding, addPhoto, addVideo, writeDraft, reviewWithCustomer
+
+    public var title: String {
+        switch self {
+        case .startJob: "Start Job"
+        case .completeJob: CompleteJobText.title
+        case .addTest: "Add Test"
+        case .addFinding: "Add Finding"
+        case .addPhoto: "Add Photo"
+        case .addVideo: "Add Video"
+        case .writeDraft: "Write Draft"
+        case .reviewWithCustomer: ReportTabModel.reviewWithCustomer
+        }
+    }
+}
+
+/// The Next Step bar's buttons, primary first; empty hides the bar. First match wins: Start Job
+/// while the job can be started; Complete Job on a visit's Checklist; Add Test and Add Finding
+/// on Findings; Add Photo and Add Video on Photos; Write Draft on Wrap-Up before a draft
+/// (Review with Customer when a draft can't be written now, offline).
+public func nextStepActions(
+    _ job: JobView, section: JobPageSection, hasTestTypes: Bool, reportOn: Bool, hasDraft: Bool, online: Bool
+) -> [NextStepAction] {
+    if jobCanStart(job.status, type: job.type) { return [.startJob] }
+    switch section {
+    case .checklist:
+        return checklistShowsCompleteJob(job) ? [.completeJob] : []
+    case .findings:
+        return hasTestTypes ? [.addTest, .addFinding] : [.addFinding]
+    case .photos:
+        return [.addPhoto, .addVideo]
+    case .wrapUp:
+        guard reportOn, !hasDraft else { return [] }
+        return [online ? .writeDraft : .reviewWithCustomer]
+    case .details:
+        return []
+    }
+}
+
 /// Complete Job at the end of a visit's Checklist: maintenance, scheduled or in progress.
 public func checklistShowsCompleteJob(_ job: JobView) -> Bool {
     job.type == .maintenance && (job.status == .scheduled || job.status == .inProgress)

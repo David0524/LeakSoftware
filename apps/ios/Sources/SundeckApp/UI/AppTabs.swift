@@ -142,6 +142,11 @@
                 path.append(MessagesRoute.conversation(id))
                 paths[.messages] = path
                 tab = .messages
+            case .stop(let id, let action):
+                // A Live Activity button: Today, on that stop, which does it there (owner, 2026-10-20).
+                paths[.today] = NavigationPath()
+                tab = .today
+                app.stopRequest = StopRequest(jobId: id, action: action)
             }
         }
 

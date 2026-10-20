@@ -616,3 +616,76 @@ private func signature(_ id: String, _ name: String, purpose: String = "inspecti
         #expect(f.busy == nil && f.step == 0 && f.error == nil)
     }
 }
+
+/// Finish Report and the sends without signal (owner, 2026-10-20): kept on the phone, run once
+/// the signal is back.
+@Suite @MainActor struct ReportSendQueueTests {
+    func api(_ host: String, offline: Bool = false) -> WebAPI {
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [offline ? NoConnection.self : StubServer.self]
+        var api = WebAPI(baseURL: URL(string: "https://\(host)")!) { "token" }
+        api.session = URLSession(configuration: config)
+        return api
+    }
+
+    @Test func offlineFinishAndSendsWaitOnThePhone() async throws {
+        let s = try ReportJob(rows: [
+            report("r1", version: 1, status: "draft", sections: twoSections), signature("s1", "Pat Doe"),
+        ])
+        let queue = ReportSendQueue(kv: s.sync.kv)
+        s.sync.networkChanged(online: false)
+        let f = ReportFlow(sync: s.sync, companyId: "c1", jobId: "j1", sends: queue)
+        // Still checked on the phone first.
+        f.to = "nobody"
+        await f.run(.email, server: s.server)
+        #expect(f.error == ReportFlow.Failure(at: .send, text: "Enter the customer’s email."))
+        f.to = "pat@home.test"
+        await f.run(.email, server: s.server)
+        #expect(f.error == nil && f.message == ReportSendText.willSend)
+        await f.run(.text, reportId: "r1", server: s.server)
+        await f.run(.finish, server: s.server)
+        #expect(f.message == "Will send when you’re back online.")
+        #expect(StubServer.calls(s.host).isEmpty)
+        #expect(
+            queue.pending(jobId: "j1") == [
+                ReportSendRequest(jobId: "j1", reportId: "r1", action: .email, to: "pat@home.test"),
+                ReportSendRequest(jobId: "j1", reportId: "r1", action: .text, to: "(602) 555-0100"),
+                ReportSendRequest(jobId: "j1", reportId: "r1", action: .finish, to: nil),
+            ])
+        // Tapped again: the request is replaced, not doubled.
+        await f.run(.email, server: s.server)
+        #expect(queue.pending.count == 3)
+
+        // Still offline: nothing goes.
+        await queue.flush(api(s.host, offline: true))
+        #expect(queue.pending.count == 3)
+
+        // Back online: each runs once, in order (the email tapped again went last); the text's
+        // message waits for the tech to send.
+        StubServer.set(s.host, "/api/reports/r1/finish", 200, ["token": "tok"])
+        StubServer.set(
+            s.host, "/api/reports/r1/send", 200, ["message": "Shop: https://sundeck.test/r/tok", "emailed": false])
+        await queue.flush(api(s.host))
+        #expect(queue.pending.isEmpty)
+        #expect(
+            StubServer.calls(s.host).map(\.path) == [
+                "/api/reports/r1/send", "/api/reports/r1/finish", "/api/reports/r1/send",
+            ])
+        #expect(queue.readyText(jobId: "j1") == "Shop: https://sundeck.test/r/tok")
+        #expect(queue.takeReadyText(jobId: "j1") == "Shop: https://sundeck.test/r/tok")
+        #expect(queue.readyText(jobId: "j1") == nil)
+        #expect(queue.failure(jobId: "j1") == nil)
+    }
+
+    @Test func aRefusedRequestIsDroppedAndSaysWhy() async throws {
+        let s = try ReportJob(rows: [report("r1", version: 1, status: "sent", sections: twoSections)])
+        let queue = ReportSendQueue(kv: s.sync.kv)
+        queue.add(ReportSendRequest(jobId: "j1", reportId: "r1", action: .email, to: "pat@home.test"))
+        StubServer.set(s.host, "/api/reports/r1/send", 409, ["error": "This report was replaced."])
+        await queue.flush(api(s.host))
+        #expect(queue.pending.isEmpty && queue.failure(jobId: "j1") != nil)
+        // Online, the flow sends straight away as before.
+        let f = ReportFlow(sync: s.sync, companyId: "c1", jobId: "j1", sends: queue)
+        #expect(f.sends != nil)
+    }
+}

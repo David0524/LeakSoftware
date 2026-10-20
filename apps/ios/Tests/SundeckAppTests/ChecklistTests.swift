@@ -444,6 +444,47 @@ import Testing
         #expect(try section(.plumbing).toDo.isEmpty)
     }
 
+    // MARK: - One-handed use (owner, 2026-10-20)
+
+    @Test func markRemainingCanBeUndone() throws {
+        try setUp(property: try property())
+        try tap("Returns 1", .leaking)
+        let ids = try InspectionWrites.markRemaining(
+            sync, companyId: Self.company, jobId: Self.job, items: try section(.plumbing).items, userId: Self.me)
+        // Returns 2 and any other item still to do; never the one already answered.
+        let answered = try result("Returns 1").id
+        #expect(!ids.isEmpty && !ids.contains(answered))
+        let undo = MarkedUndo(resultIds: ids)
+        #expect(undo.text == "Marked \(ids.count)")
+        let before = sync.revision
+        try undo.undo(sync, companyId: Self.company)
+        #expect(sync.revision == before + 1)  // one batch
+        #expect(try result("Returns 2")["status"] == "pending")
+        #expect(try result("Returns 1")["outcome"] == "leaking")
+        #expect(try section(.plumbing).toDo.count == ids.count)
+    }
+
+    @Test func tappingTheChosenAnswerAgainClearsIt() throws {
+        try setUp(property: try property())
+        #expect(try row("Returns 1").verdictAfterTap(.leaking) == .leaking)
+        try tap("Returns 1", .leaking)
+        let item = try row("Returns 1")
+        #expect(item.verdictAfterTap(.leaking) == nil)
+        #expect(item.verdictAfterTap(.ok) == .ok)
+        #expect(item.options.map(\.label) == ["Not Leaking", "Leaking", "Attention", "N/A"])
+    }
+
+    @Test func theItemPageKnowsThePreviousAndNextItem() throws {
+        try setUp(property: try property())
+        let m = model(property: nil)
+        let ids = m.itemIds
+        #expect(ids.count > 2)
+        #expect(m.neighbors(of: ids[0]).previous == nil && m.neighbors(of: ids[0]).next == ids[1])
+        #expect(m.neighbors(of: ids[1]).previous == ids[0] && m.neighbors(of: ids[1]).next == ids[2])
+        #expect(m.neighbors(of: ids[ids.count - 1]).next == nil)
+        #expect(m.neighbors(of: "nope").previous == nil && m.neighbors(of: "nope").next == nil)
+    }
+
     @Test func addOptionsOfferAnotherOfRepeatingTypesThenMissingOnes() throws {
         try setUp(property: try property(spa: false, poolType: "gunite_plaster"))
         let options = model(property: try property(spa: true)).addOptions
@@ -675,4 +716,5 @@ import Testing
         #expect(svgCommands("m13 9.5-2.5 3h3L11 15").last == .line(SVGPoint(11, 15)))
         #expect(svgCommands(CleaningGlyph.of(.other).paths[0]).contains { if case .curve = $0 { true } else { false } })
     }
+
 }

@@ -4,8 +4,10 @@
     import SwiftUI
 
     /// Add Test / Edit {Test name} (spec 6.1), a sheet: Test (adding only), Item, the type's fields,
-    /// the live calculation, Result, Notes, photos, then Add Test / Save Test; editing ends with
-    /// Delete Test. Port of TestForm and TestsEditor's sheet in apps/web/src/components/job-work.tsx.
+    /// the live calculation, Result, Notes and photos; Add Test / Save Test in a bar pinned to the
+    /// bottom (above the keyboard), and the keyboard bar's Previous and Next through the readings
+    /// (owner, 2026-10-20). Editing ends with Delete Test, away from Save. Add Photo on a new test
+    /// saves it first and keeps the sheet open as Edit. Port of TestForm and TestsEditor's sheet in apps/web/src/components/job-work.tsx.
     struct TestEditor: View {
         var jobId: String
         /// nil for a new test.
@@ -23,10 +25,14 @@
         @State private var components: [JobComponent] = []
         @State private var types: [TestType] = []
         @State private var loaded = false
+        /// A new test saved by Add Photo: the sheet edits it from then on.
+        @State private var savedId: String?
         @State private var confirmDiscard = false
         @State private var confirmDelete = false
         @State private var saveError: String?
         @State private var saves = 0
+        /// The field with the keyboard, for the keyboard bar's Previous and Next.
+        @FocusState private var focus: String?
 
         var body: some View {
             NavigationStack {
@@ -47,6 +53,7 @@
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { cancel() } }
                 }
+                .keyboardBar($focus, order: fieldOrder)
             }
             .sheetPresentation(dirty: form?.isDirty ?? false)
             .task(id: sync.revision) { load() }
@@ -107,15 +114,13 @@
                         optionLabel: { self.form?.resultLabel($0) ?? "" })
                     OutlinedField(
                         label: "Notes (optional)",
-                        text: Binding(get: { self.form?.notes ?? "" }, set: { self.form?.notes = $0 }), multiline: true)
-                    // Photos for the test (apps, S5); a new test is saved first.
-                    if let savedId = form.existingId {
-                        MediaSection(target: MediaTarget(jobId: jobId, testResultId: savedId))
-                    } else {
-                        FieldHint(text: "Save the test first, then add photos.")
-                    }
-                    Button(form.submitTitle) { save() }
-                        .buttonStyle(.primary(fullWidth: true, size: .field))
+                        text: Binding(get: { self.form?.notes ?? "" }, set: { self.form?.notes = $0 }), multiline: true,
+                        chain: $focus, chainKey: notesKey)
+                    // Photos for the test (apps, S5), from the start: Add Photo on a new test saves
+                    // it first, with the same checks as Save (owner, 2026-10-20).
+                    MediaSection(
+                        target: form.existingId.map { MediaTarget(jobId: jobId, testResultId: $0) }, jobId: jobId,
+                        prepare: saveForPhotos)
                     if !form.isNew {
                         VStack(spacing: 16) {
                             Hairline()
@@ -134,6 +139,39 @@
                 .padding(.bottom, 24)
             }
             .scrollDismissesKeyboard(.interactively)
+            // Save is always in reach: pinned to the bottom, above the keyboard when it's open.
+            .bottomBar {
+                Button(form.submitTitle) { save() }
+                    .buttonStyle(.primary(fullWidth: true, size: .field))
+            }
+        }
+
+        private let notesKey = "notes"
+
+        /// The typed fields in order, then Notes: Next moves through the readings.
+        private var fieldOrder: [String] {
+            (form?.type.fieldSchema.fields ?? []).filter { $0.type != .select }.map(\.key) + [notesKey]
+        }
+
+        /// Add Photo on a test not saved yet: saves it (the same checks as Save) and keeps the
+        /// sheet open as Edit; nil when a field needs fixing, so no camera opens.
+        private func saveForPhotos() -> MediaTarget? {
+            guard var current = form, let company = session.company else { return nil }
+            do {
+                guard let id = try current.save(sync, companyId: company.id, jobId: jobId, existing: existing) else {
+                    form = current
+                    return nil
+                }
+                current.markSaved(id)
+                form = current
+                savedId = id
+                existing = JobInspection(sync.store, jobId: jobId).tests.first { $0.id == id }
+                saves += 1
+                return MediaTarget(jobId: jobId, testResultId: id)
+            } catch {
+                saveError = String(describing: error)
+                return nil
+            }
         }
 
         private func value(_ key: String) -> Binding<String> {
@@ -153,11 +191,15 @@
                     if let error { FieldHint(text: error, error: true) }
                 }
             case .textarea:
-                OutlinedField(label: label, text: value(field.key), error: error, multiline: true)
+                OutlinedField(
+                    label: label, text: value(field.key), error: error, multiline: true, chain: $focus,
+                    chainKey: field.key)
             case .number:
-                OutlinedField(label: label, text: value(field.key), error: error, keyboard: .decimalPad)
+                OutlinedField(
+                    label: label, text: value(field.key), error: error, keyboard: .decimalPad, chain: $focus,
+                    chainKey: field.key)
             case .text:
-                OutlinedField(label: label, text: value(field.key), error: error)
+                OutlinedField(label: label, text: value(field.key), error: error, chain: $focus, chainKey: field.key)
             }
         }
 
@@ -167,7 +209,7 @@
             guard let company = session.company else { return }
             let insp = JobInspection(sync.store, jobId: jobId)
             components = insp.components
-            existing = testId.flatMap { id in insp.tests.first { $0.id == id } }
+            existing = (testId ?? savedId).flatMap { id in insp.tests.first { $0.id == id } }
             defer { loaded = true }
             let config = InspectionConfig(sync.store, companyId: company.id)
             types = config.testTypes

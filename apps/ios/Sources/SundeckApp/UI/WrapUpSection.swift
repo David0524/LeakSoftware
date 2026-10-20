@@ -7,10 +7,12 @@
     /// page's scroll view.
     struct WrapUpSection: View {
         var job: JobView
+        /// The job page's report flow, shared with the Next Step bar's Write Draft.
+        var flow: ReportFlow? = nil
 
         var body: some View {
             VStack(alignment: .leading, spacing: 32) {
-                ReportTab(job: job)
+                ReportTab(job: job, sharedFlow: flow)
                 if job.type == .detection { QuoteSection(job: job) }
                 InvoiceSection(job: job)
             }

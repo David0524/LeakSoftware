@@ -4,8 +4,9 @@
     import SwiftUI
 
     /// "Tests" in the job's Findings section (spec 5.4): a grouped row per test (name, item and
-    /// time, the calculation, the recorded fields, notes, the outcome chip), swipe left to delete,
-    /// then Add Test. Tapping a row opens its Edit sheet. Port of TestsEditor in
+    /// time, the calculation, the recorded fields, notes, the outcome chip), swipe left to delete.
+    /// Add Test is on the job page's Next Step bar (owner, 2026-10-20). Tapping a row opens its
+    /// Edit sheet. Port of TestsEditor in
     /// apps/web/src/components/job-work.tsx.
     struct TestsTab: View {
         var job: JobView
@@ -42,12 +43,6 @@
                                 }
                             }
                         }
-                    }
-                    if !config.testTypes.isEmpty {
-                        Button("Add Test") {
-                            openEditor(.test(jobId: job.id, testId: nil, typeId: nil, componentId: nil))
-                        }
-                        .buttonStyle(.secondary)
                     }
                 }
             }

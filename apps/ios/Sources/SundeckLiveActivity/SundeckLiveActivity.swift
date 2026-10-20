@@ -20,10 +20,13 @@
     struct StopActivityWidget: Widget {
         var body: some WidgetConfiguration {
             ActivityConfiguration(for: StopAttributes.self) { context in
-                LiveStopLockScreen(content: liveStopContent(context.state.stop), logo: LiveStopLogo.image())
-                    .activityBackgroundTint(LiveStopStyle.background)
-                    .activitySystemActionForegroundColor(.white)
-                    .widgetURL(LiveStopLink.job(context.state.jobId))
+                LiveStopLockScreen(
+                    content: liveStopContent(context.state.stop), logo: LiveStopLogo.image(),
+                    actions: LiveStopActionLink.links(context.state.stop.phase, jobId: context.state.jobId)
+                )
+                .activityBackgroundTint(LiveStopStyle.background)
+                .activitySystemActionForegroundColor(.white)
+                .widgetURL(LiveStopLink.job(context.state.jobId))
             } dynamicIsland: { context in
                 let content = liveStopContent(context.state.stop)
                 let logo = LiveStopLogo.image()
@@ -34,7 +37,8 @@
                     DynamicIslandExpandedRegion(.bottom) {
                         LiveStopIsland.bottom(
                             content, call: LiveStopLink.call(context.state.phone),
-                            open: LiveStopLink.job(context.state.jobId))
+                            open: LiveStopLink.job(context.state.jobId),
+                            actions: LiveStopActionLink.links(context.state.stop.phase, jobId: context.state.jobId))
                     }
                 } compactLeading: {
                     LiveStopIsland.mark(logo: logo)

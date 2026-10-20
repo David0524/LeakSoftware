@@ -49,7 +49,19 @@
         @ObservationIgnored var cameraStartedAt = ""
         @ObservationIgnored var position: Task<Coordinate?, Never>?
 
+        /// A new camera after each photo, so it opens again for the next one (owner, 2026-10-20).
+        var shots = 0
+
         init(target: MediaTarget) { self.target = target }
+
+        /// Add Photo and Add Video: the camera straight away, or the library on a phone without one.
+        func takeOrChoose(_ kind: MediaKind) async {
+            if CameraPicker.isAvailable {
+                await openCamera(kind)
+            } else {
+                library = kind
+            }
+        }
 
         func openCamera(_ kind: MediaKind) async {
             busy = kind
@@ -75,10 +87,17 @@
             _ result: CameraPicker.Result?, save: @escaping (CapturedFile, Task<Coordinate?, Never>?) async -> Void
         ) {
             guard let kind = camera else { return }
-            camera = nil
             let lookup = position
-            position = nil
             let capturedAt = cameraStartedAt
+            // After a photo the camera opens again for the next one, until Cancel (owner,
+            // 2026-10-20): a fresh camera in the same cover, the location looked up once.
+            if CaptureRules.cameraOpensAgain(kind, took: result != nil) {
+                shots += 1
+                cameraStartedAt = CaptureRules.now()
+            } else {
+                camera = nil
+                position = nil
+            }
             guard let result else {
                 lookup?.cancel()
                 busy = nil
@@ -208,6 +227,7 @@
                         get: { capture.camera != nil }, set: { if !$0 { capture.cameraClosed(nil, save: save) } })
                 ) {
                     CameraPicker(kind: capture.camera ?? .photo) { capture.cameraClosed($0, save: save) }
+                        .id(capture.shots)
                         .ignoresSafeArea()
                 }
                 .sheet(
@@ -235,10 +255,13 @@
     // MARK: - The section in a list (checklist item, test and finding editors)
 
     /// Photos, videos and voice notes for one part of a job, with capture buttons, as a `Section`
-    /// in the host's List: buttons, then a grid of thumbnails that open the viewer.
+    /// in the host's List: buttons, then a grid of thumbnails that open the viewer. On a test or
+    /// finding not saved yet, `target` is nil and `prepare` saves it first (owner, 2026-10-20):
+    /// it returns the saved one's target, or nil when its checks fail (then no camera opens).
     struct MediaSection: View {
-        var target: MediaTarget
+        var target: MediaTarget?
         var title: String? = nil
+        var prepare: (() -> MediaTarget?)? = nil
 
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
@@ -247,10 +270,12 @@
         @State private var capture: CaptureController
         @State private var deleting: Media?
 
-        init(target: MediaTarget, title: String? = nil) {
+        init(target: MediaTarget?, jobId: String? = nil, title: String? = nil, prepare: (() -> MediaTarget?)? = nil) {
             self.target = target
             self.title = title
-            _capture = State(initialValue: CaptureController(target: target))
+            self.prepare = prepare
+            _capture = State(
+                initialValue: CaptureController(target: target ?? MediaTarget(jobId: jobId ?? "")))
         }
 
         var body: some View {
@@ -288,6 +313,10 @@
                 SectionLabel(title ?? "Photos and notes").textCase(nil)
             }
             .task(id: TaskKey(revision: sync.revision, target: target)) {
+                guard let target else {
+                    media = []
+                    return
+                }
                 capture.target = target
                 media = jobMedia(sync.store, target)
             }
@@ -306,52 +335,74 @@
 
         /// Add Photo, Add Video and Voice Note, as the Photos section's tiles.
         private var buttons: some View {
-            CaptureTiles(capture: capture)
+            CaptureTiles(capture: capture, prepare: target == nil ? Optional(saveFirst) : nil)
                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+        }
+
+        /// Saves the test or finding first; true when it saved and capture may go on.
+        private func saveFirst() -> Bool {
+            guard let saved = prepare?() else { return false }
+            capture.target = saved
+            return true
         }
 
         private struct TaskKey: Hashable {
             var revision: Int
-            var target: MediaTarget
+            var target: MediaTarget?
         }
     }
 
     // MARK: - Capture tiles
 
-    /// Add Photo, Add Video and Voice Note (spec 5.4 Photos): three equal tiles, 8 apart, each 56
-    /// tall with the icon over the label, `iconTint` behind them, all `link`. A tap opens the
-    /// camera (the library when this phone has none); a long press offers Choose from Library.
-    /// Stacked when large text doesn't fit.
+    /// Add Photo, Library, Add Video and Voice Note (spec 5.4 Photos): equal tiles, 8 apart, each
+    /// 56 tall with the icon over the label, `iconTint` behind them, all `link`. Add Photo opens the
+    /// camera straight away (the library when this phone has none); Library sits beside it, visible
+    /// (owner, 2026-10-20; a long press still offers it too). Two rows when large text doesn't fit.
     struct CaptureTiles: View {
         @Bindable var capture: CaptureController
+        /// Runs before any capture (a new test or finding saves first); false stops it.
+        var prepare: (() -> Bool)? = nil
 
         var body: some View {
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: 8) { tiles }
-                VStack(spacing: 8) { tiles }
+                HStack(spacing: 8) {
+                    photoTiles
+                    otherTiles
+                }
+                VStack(spacing: 8) {
+                    HStack(spacing: 8) { photoTiles }
+                    HStack(spacing: 8) { otherTiles }
+                }
             }
         }
 
-        @ViewBuilder private var tiles: some View {
+        @ViewBuilder private var photoTiles: some View {
             tile("Add Photo", icon: "camera", kind: .photo)
+            tile("Library", icon: "photo.on.rectangle", kind: .photo, library: true)
+        }
+
+        @ViewBuilder private var otherTiles: some View {
             tile("Add Video", icon: "video", kind: .video)
             tile("Voice Note", icon: "mic", kind: nil)
         }
 
-        private func tile(_ title: String, icon: String, kind: MediaKind?) -> some View {
+        private func go(_ start: () -> Void) {
+            if let prepare, !prepare() { return }
+            start()
+        }
+
+        private func tile(_ title: String, icon: String, kind: MediaKind?, library: Bool = false) -> some View {
             Button {
-                if let kind {
-                    if CameraPicker.isAvailable {
-                        Task { await capture.openCamera(kind) }
+                go {
+                    if let kind {
+                        if library { capture.library = kind } else { Task { await capture.takeOrChoose(kind) } }
                     } else {
-                        capture.library = kind
+                        capture.recording = true
                     }
-                } else {
-                    capture.recording = true
                 }
             } label: {
                 VStack(spacing: 2) {
-                    if let kind, capture.busy == kind {
+                    if let kind, !library, capture.busy == kind {
                         ProgressView().frame(height: 24)
                     } else {
                         Image(systemName: icon).font(.system(size: 22)).frame(height: 24)
@@ -369,12 +420,12 @@
             .buttonStyle(.plain)
             .disabled(capture.busy != nil || capture.recording)
             .contextMenu {
-                if let kind {
-                    Button("Take \(kind.label)", systemImage: icon) { Task { await capture.openCamera(kind) } }
-                    Button("Choose from Library", systemImage: "photo.on.rectangle") { capture.library = kind }
+                if let kind, !library {
+                    Button("Take \(kind.label)", systemImage: icon) { go { Task { await capture.openCamera(kind) } } }
+                    Button("Choose from Library", systemImage: "photo.on.rectangle") { go { capture.library = kind } }
                 }
             }
-            .accessibilityAction(named: "Choose from Library") { if let kind { capture.library = kind } }
+            .accessibilityAction(named: "Choose from Library") { if let kind { go { capture.library = kind } } }
         }
     }
 

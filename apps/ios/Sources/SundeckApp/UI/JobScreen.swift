@@ -4,10 +4,10 @@
     import SwiftUI
 
     /// The job page (spec 5.4): large title "Job #1040", the status chip, type and time, the
-    /// status buttons and the sync bar; then the section switcher (Details, Checklist, Findings,
+    /// status buttons, with the sync bar pinned under the navigation bar; then the section switcher (Details, Checklist, Findings,
     /// Photos, Wrap-Up; no Findings on a maintenance visit), which pins under the navigation bar
-    /// as the page scrolls, and the chosen section. Port of apps/web/src/app/(office)/jobs/[id]/page.tsx
-    /// and components/job-sections.tsx.
+    /// as the page scrolls, and the chosen section; the Next Step bar above the tab bar (owner,
+    /// 2026-10-20). Port of apps/web/src/app/(office)/jobs/[id]/page.tsx and components/job-sections.tsx.
     struct JobScreen: View {
         var jobId: String
         @Environment(Session.self) private var session
@@ -20,6 +20,16 @@
         @State private var changes = 0
         /// Why Complete Job was stopped (the checklist, or the pool photo), shown under the header.
         @State private var blocked: String?
+        /// Complete Job on a visit whose report goes out by itself asks first (owner, 2026-10-20).
+        @State private var askingSend = false
+        @State private var keyboardShown = false
+        /// The Photos section's capture (Attach to, camera, library), shared with the Next Step
+        /// bar's Add Photo and Add Video.
+        @State private var capture: CaptureController
+        /// The report the Wrap-Up section works on, shared with the Next Step bar's Write Draft.
+        @State private var reportFlow: ReportFlow?
+        @Environment(\.openEditor) private var openEditor
+        @Environment(\.openRoute) private var openRoute
         /// Opens the checklist in Edit (screenshots).
         private let checklistEditing: Bool
 
@@ -34,6 +44,9 @@
             self.checklistEditing = checklistEditing
             _section = State(initialValue: section)
             _blocked = State(initialValue: photoNeeded ? finishPhotoMessage : nil)
+            _capture = State(
+                initialValue: CaptureController(
+                    target: CaptureTargetMemory.target(for: jobId) ?? MediaTarget(jobId: jobId)))
         }
 
         var body: some View {
@@ -91,18 +104,100 @@
                 .scrollDismissesKeyboard(.interactively)
                 .refreshable { await sync.syncNow() }
                 .background(Color.bg)
+                // The sync bar stays in view under the navigation bar (owner, 2026-10-20).
+                .pinnedSyncBar()
+                // The Next Step bar above the tab bar; the page scrolls its last row above it.
+                .safeAreaInset(edge: .bottom, spacing: 0) { nextStepBar(job, current, company) }
+                .trackingKeyboard($keyboardShown)
                 .mediaViewer(jobId: jobId)
                 .onChange(of: section) { _, _ in
                     proxy.scrollTo("top", anchor: .top)
                 }
             }
+            .alert(CompleteSendPrompt.title, isPresented: $askingSend) {
+                Button(CompleteSendPrompt.cancel, role: .cancel) {}
+                Button(CompleteSendPrompt.confirm) { changeStatus(.done, confirmed: true) }
+                    .keyboardShortcut(.defaultAction)
+            } message: {
+                Text(CompleteSendPrompt.message(customer: job.customer?["name"]?.string))
+            }
+        }
+
+        // MARK: - Next Step bar
+
+        /// The Next Step bar (spec 1): one or two pills for the next thing to do on this part of
+        /// the job, on the tab bar's material; hidden when it has nothing to offer and while the
+        /// keyboard is open.
+        @ViewBuilder private func nextStepBar(_ job: JobView, _ current: JobPageSection, _ company: CompanyContext)
+            -> some View
+        {
+            let actions = nextActions(job, current, company)
+            let notice = blocked.flatMap { current == .checklist && job.status != .done ? $0 : nil }
+            if !keyboardShown, !actions.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    if let notice { CompleteJobNotice(jobId: job.id, message: notice) }
+                    HStack(spacing: 12) {
+                        ForEach(Array(actions.enumerated()), id: \.element) { index, action in
+                            nextStepButton(action, primary: index == 0)
+                        }
+                    }
+                }
+                .padding(.horizontal, CGFloat(Spacing.pageMargin))
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.bar)
+                .overlay(alignment: .top) { Hairline() }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+
+        private func nextActions(_ job: JobView, _ current: JobPageSection, _ company: CompanyContext)
+            -> [NextStepAction]
+        {
+            let report =
+                current == .wrapUp
+                ? ReportTabModel(store: sync.store, companyId: company.id, settings: company.settings, job: job) : nil
+            return nextStepActions(
+                job, section: current,
+                hasTestTypes: current == .findings
+                    && !InspectionConfig(sync.store, companyId: company.id).testTypes.isEmpty,
+                reportOn: !(report?.templates.isEmpty ?? true), hasDraft: report?.hasDraftText ?? false,
+                online: sync.status.phase != .offline)
+        }
+
+        @ViewBuilder private func nextStepButton(_ action: NextStepAction, primary: Bool) -> some View {
+            let writing = action == .writeDraft && reportFlow?.busy == .draft
+            Button {
+                run(action)
+            } label: {
+                BusyButtonLabel(action.title, busy: writing, busyTitle: "Writing…")
+            }
+            .modifier(BarButtonStyle(primary: primary))
+            .disabled(action == .writeDraft && reportFlow?.busy != nil)
+        }
+
+        /// Exactly what the inline buttons did (same action, confirmation and errors).
+        private func run(_ action: NextStepAction) {
+            switch action {
+            case .startJob: changeStatus(.inProgress)
+            case .completeJob: changeStatus(.done)
+            case .addTest: openEditor(.test(jobId: jobId, testId: nil, typeId: nil, componentId: nil))
+            case .addFinding: openEditor(.finding(jobId: jobId, findingId: nil, componentId: nil))
+            case .addPhoto: Task { await capture.takeOrChoose(.photo) }
+            case .addVideo: Task { await capture.takeOrChoose(.video) }
+            case .writeDraft:
+                guard let reportFlow else { return }
+                Task { await reportFlow.run(.draft, server: ReportServer(sync: sync, api: app.api)) }
+            case .reviewWithCustomer: openRoute(.review(jobId: jobId))
+            }
         }
 
         // MARK: - Header
 
-        /// The status chip and type, the time on its own line, the status buttons, the sync bar.
+        /// The status chip and type, the time on its own line, the status buttons.
         private func header(_ job: JobView, _ company: CompanyContext) -> some View {
-            let actions = jobHeaderActions(job.status, type: job.type)
+            // Start Job is on the Next Step bar (owner, 2026-10-20).
+            let actions = jobHeaderPhoneActions(job.status, type: job.type)
             return VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
                     FlowRow(spacing: 12) {
@@ -118,23 +213,15 @@
                 if !actions.isEmpty {
                     FlowRow(spacing: 12) {
                         ForEach(actions, id: \.self) { to in
-                            if to == .inProgress {
-                                Button(jobActionLabel(from: job.status, to: to)) { changeStatus(to) }.buttonStyle(
-                                    .primary)
-                            } else {
-                                Button(jobActionLabel(from: job.status, to: to)) { changeStatus(to) }.buttonStyle(
-                                    .secondary)
-                            }
+                            Button(jobActionLabel(from: job.status, to: to)) { changeStatus(to) }
+                                .buttonStyle(.secondary)
                         }
                     }
                 }
-                // Shown once: at the end of a visit's Checklist when that's open, else here.
-                if let blocked, job.status != .done,
-                    !(currentSection(job) == .checklist && checklistShowsCompleteJob(job))
-                {
+                // Shown once: on the Next Step bar while the Checklist is open, else here.
+                if let blocked, job.status != .done, currentSection(job) != .checklist {
                     CompleteJobNotice(jobId: job.id, message: blocked)
                 }
-                SyncBarRow()
             }
             .padding(.top, 4)
             .padding(.bottom, 16)
@@ -158,7 +245,7 @@
             switch current {
             case .details: JobDetailsSection(job: job)
             case .checklist:
-                ChecklistTab(job: job, editing: checklistEditing, complete: { changeStatus(.done) }, blocked: blocked)
+                ChecklistTab(job: job, editing: checklistEditing)
             case .findings:
                 VStack(alignment: .leading, spacing: 32) {
                     // The pool's drawing first, as on the website (owner, 2026-10-19).
@@ -166,8 +253,8 @@
                     TestsTab(job: job)
                     FindingsTab(job: job)
                 }
-            case .photos: JobPhotosSection(job: job)
-            case .wrapUp: WrapUpSection(job: job)
+            case .photos: JobPhotosSection(job: job, capture: capture)
+            case .wrapUp: WrapUpSection(job: job, flow: reportFlow)
             }
         }
 
@@ -189,11 +276,16 @@
 
         // MARK: - Writes
 
-        private func changeStatus(_ to: JobStatus) {
+        private func changeStatus(_ to: JobStatus, confirmed: Bool = false) {
             guard let company = session.company, let job else { return }
             // Complete Job waits for the checklist or a pool photo, when the shop asks.
             if let block = statusChangeBlock(to, sync.store, settings: company.settings, jobId: jobId) {
                 withAnimation { blocked = block }
+                return
+            }
+            // When completing sends the visit report, ask first (owner, 2026-10-20).
+            if to == .done, !confirmed, CompleteSendPrompt.asks(jobType: job.type, settings: company.settings) {
+                askingSend = true
                 return
             }
             do {
@@ -220,6 +312,23 @@
             let inspection = JobInspection(sync.store, jobId: jobId)
             toDo = checklistTally(inspection.components, inspection.results).pending
             if section == nil { section = JobSectionMemory.section(for: jobId, type: found.type) }
+            if reportFlow == nil, jobHasWrapUp(found.type.rawValue) {
+                reportFlow = ReportFlow(
+                    sync: sync, companyId: company.id, jobId: jobId, settings: company.settings, sends: app.reportSends)
+            }
+        }
+    }
+
+    /// The Next Step bar's pills: full width when alone, side by side when two.
+    private struct BarButtonStyle: ViewModifier {
+        var primary: Bool
+
+        func body(content: Content) -> some View {
+            if primary {
+                content.buttonStyle(.primary(fullWidth: true, size: .field))
+            } else {
+                content.buttonStyle(.secondary(fullWidth: true, size: .field))
+            }
         }
     }
 

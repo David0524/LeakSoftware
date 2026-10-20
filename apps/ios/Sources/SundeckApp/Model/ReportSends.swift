@@ -1,0 +1,106 @@
+import Foundation
+import SundeckCore
+import SundeckSync
+
+// Finish Report, Send by Email and Send by Text without signal (owner, 2026-10-20;
+// docs/design/2026-10-20-one-handed-use.md, item 6): the buttons stay enabled offline. A tap
+// keeps the request on the phone and says "Will send when you’re back online."; it runs once the
+// signal is back and the job's changes have reached the server, the same way automatic visit
+// reports are queued (`VisitReportQueue`). Write Draft still needs a connection.
+
+public enum ReportSendText {
+    public static let willSend = "Will send when you’re back online."
+}
+
+/// One report request kept on the phone until it can run.
+public struct ReportSendRequest: Codable, Equatable, Sendable {
+    public enum Action: String, Codable, Sendable { case finish, email, text }
+
+    public var jobId: String
+    public var reportId: String
+    public var action: Action
+    /// The customer's email (Send by Email) or phone (Send by Text).
+    public var to: String?
+
+    public init(jobId: String, reportId: String, action: Action, to: String?) {
+        self.jobId = jobId
+        self.reportId = reportId
+        self.action = action
+        self.to = to
+    }
+}
+
+/// Report requests made offline, run after a sync once nothing is waiting to upload. The server
+/// decides; any answer but no connection is final. A text's message waits on the phone for the
+/// tech to send from the report card (Copy Message or Share), since the phone sends texts itself.
+@MainActor
+public final class ReportSendQueue {
+    private let kv: KeyValue
+    static let key = "report_send:pending"
+    static let textsKey = "report_send:texts"
+    static let failuresKey = "report_send:failures"
+
+    public init(kv: KeyValue) { self.kv = kv }
+
+    public var pending: [ReportSendRequest] { kv.getJSON(Self.key, as: [ReportSendRequest].self) ?? [] }
+
+    /// Requests still waiting for this job.
+    public func pending(jobId: String) -> [ReportSendRequest] { pending.filter { $0.jobId == jobId } }
+
+    /// Keeps a request; the same action on the same report replaces the older one.
+    public func add(_ request: ReportSendRequest) {
+        var list = pending.filter { !($0.reportId == request.reportId && $0.action == request.action) }
+        list.append(request)
+        kv.setJSON(Self.key, list)
+        var failures = self.failures
+        failures[request.jobId] = nil
+        kv.setJSON(Self.failuresKey, failures)
+    }
+
+    /// A text that went through while away from the report card: its message, by job.
+    public func readyText(jobId: String) -> String? { texts[jobId] }
+
+    public func takeReadyText(jobId: String) -> String? {
+        var all = texts
+        let text = all.removeValue(forKey: jobId)
+        kv.setJSON(Self.textsKey, all)
+        return text
+    }
+
+    /// Why the last queued request for a job didn't go (the server's words).
+    public func failure(jobId: String) -> String? { failures[jobId] }
+
+    private var texts: [String: String] { kv.getJSON(Self.textsKey, as: [String: String].self) ?? [:] }
+    private var failures: [String: String] { kv.getJSON(Self.failuresKey, as: [String: String].self) ?? [:] }
+
+    /// Runs the requests in order; stops at the first one without a connection.
+    public func flush(_ api: WebAPI) async {
+        for request in pending {
+            do {
+                switch request.action {
+                case .finish:
+                    _ = try await api.post("api/reports/\(request.reportId)/finish", ["customerAway": false])
+                case .email, .text:
+                    let reply = try await api.post(
+                        "api/reports/\(request.reportId)/send",
+                        [
+                            "channel": .string(request.action == .email ? "email" : "sms_device"),
+                            "to": request.to.map(JSONValue.string) ?? .null,
+                        ])
+                    if request.action == .text, let message = reply["message"]?.string, !message.isEmpty {
+                        var all = texts
+                        all[request.jobId] = message
+                        kv.setJSON(Self.textsKey, all)
+                    }
+                }
+            } catch let failure as WebAPI.Failure where failure.offline {
+                return
+            } catch {
+                var all = failures
+                all[request.jobId] = (error as? WebAPI.Failure)?.description ?? String(describing: error)
+                kv.setJSON(Self.failuresKey, all)
+            }
+            kv.setJSON(Self.key, pending.filter { $0 != request })
+        }
+    }
+}

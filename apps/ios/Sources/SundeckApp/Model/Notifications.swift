@@ -11,6 +11,9 @@ import SundeckLiveStop
 public enum AppLink: Equatable, Sendable {
     case job(String)
     case conversation(String)
+    /// A Live Activity button (owner, 2026-10-20): Today, on that stop, doing On My Way or Mark
+    /// Complete there (with its Undo).
+    case stop(String, LiveStopAction)
 
     /// From a push's custom data: `{"job": id}` or `{"conversation": id}` (website notify-events).
     public init?(push userInfo: [AnyHashable: Any]) {
@@ -23,10 +26,14 @@ public enum AppLink: Equatable, Sendable {
         }
     }
 
-    /// From `sundeckpro://job/<id>` (the Live Activity's Open Job).
+    /// From `sundeckpro://job/<id>` (the Live Activity's Open Job), or with an action after it.
     public init?(url: URL) {
         guard let id = LiveStopLink.jobId(url) else { return nil }
-        self = .job(id)
+        if let action = LiveStopLink.action(url) {
+            self = .stop(id, action)
+        } else {
+            self = .job(id)
+        }
     }
 }
 

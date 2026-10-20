@@ -23,11 +23,53 @@ public enum LiveStopLink {
         return id.isEmpty ? nil : id
     }
 
+    /// `sundeckpro://job/<id>/on-my-way` or `…/mark-complete`: the Live Activity's two actions
+    /// (owner, 2026-10-20), which open the app on that stop and do it there.
+    public static func action(_ action: LiveStopAction, jobId id: String) -> URL? {
+        URL(string: "\(scheme)://job/\(id)/\(action.rawValue)")
+    }
+
+    /// The action a link asks for, or nil for a plain job link.
+    public static func action(_ url: URL) -> LiveStopAction? {
+        guard jobId(url) != nil else { return nil }
+        return url.pathComponents.dropFirst(2).first.flatMap(LiveStopAction.init(rawValue:))
+    }
+
+    /// The actions the activity offers in a phase: On My Way before the drive, Mark Complete
+    /// until the stop is done.
+    public static func actions(_ phase: LiveStopPhase) -> [LiveStopAction] {
+        switch phase {
+        case .ahead: [.onMyWay, .markComplete]
+        case .driving, .onSite: [.markComplete]
+        case .done: []
+        }
+    }
+
     /// `tel:` for the customer's phone, or nil without one.
     public static func call(_ phone: String?) -> URL? {
         guard let phone else { return nil }
         let digits = phone.filter { $0.isNumber || $0 == "+" }
         return digits.isEmpty ? nil : URL(string: "tel:\(digits)")
+    }
+}
+
+/// What a Live Activity button does in the app, on its stop.
+public enum LiveStopAction: String, Codable, CaseIterable, Hashable, Sendable {
+    case onMyWay = "on-my-way"
+    case markComplete = "mark-complete"
+
+    public var title: String {
+        switch self {
+        case .onMyWay: "On My Way"
+        case .markComplete: "Mark Complete"
+        }
+    }
+
+    public var systemImage: String {
+        switch self {
+        case .onMyWay: "car.fill"
+        case .markComplete: "checkmark.circle.fill"
+        }
     }
 }
 
