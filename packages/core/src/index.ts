@@ -5,6 +5,7 @@ export * from "./models";
 export * from "./job-list";
 export * from "./forms";
 export * from "./inspection";
+export * from "./pool-inspection";
 export * from "./media";
 export * from "./office";
 export * from "./settings";

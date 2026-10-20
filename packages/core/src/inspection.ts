@@ -3,6 +3,7 @@
  * Config rows (component_type, test_type, severity_level) come from the database.
  */
 import type { JobType, Property } from "./models";
+import { inspectionAnswerText } from "./pool-inspection";
 
 // ---------------------------------------------------------------------------
 // Row shapes
@@ -15,7 +16,21 @@ interface Base {
 }
 
 /** Where an item is listed on the checklist and the report. */
-export type ChecklistSection = "visual" | "plumbing" | "bond_beam" | "other" | "service";
+export type ChecklistSection =
+  | "visual"
+  | "plumbing"
+  | "bond_beam"
+  | "other"
+  | "service"
+  // Pool Inspection's tabs (2026-10-20).
+  | "insp_equipment"
+  | "insp_self_cleaning"
+  | "insp_heaters"
+  | "insp_electrical"
+  | "insp_fencing"
+  | "insp_covers"
+  | "insp_visual"
+  | "insp_plumbing";
 
 export const CHECKLIST_SECTION_LABELS: Record<ChecklistSection, string> = {
   visual: "Visual Leak Inspection",
@@ -23,6 +38,14 @@ export const CHECKLIST_SECTION_LABELS: Record<ChecklistSection, string> = {
   bond_beam: "Bond Beam",
   other: "Other",
   service: "Service",
+  insp_equipment: "Equipment",
+  insp_self_cleaning: "Self Cleaning (In Floor) System",
+  insp_heaters: "Heaters",
+  insp_electrical: "Electrical Safety",
+  insp_fencing: "Fencing and Child Barriers",
+  insp_covers: "Covers",
+  insp_visual: "Visual Leak Inspection",
+  insp_plumbing: "Plumbing Static Test",
 };
 
 export interface ComponentType extends Base {
@@ -31,11 +54,18 @@ export interface ComponentType extends Base {
   section?: ChecklistSection;
   /**
    * leak: a verdict (not leaking, leaking, attention, not applicable); yes_no: yes or no;
-   * done: a maintenance task (done, needs attention, skipped).
+   * done: a maintenance task (done, needs attention, skipped); choice, multi, text: a pool
+   * inspection question (pool-inspection.ts).
    */
-  answer?: "leak" | "yes_no" | "done";
-  /** Which jobs get the item: leak detection (default) or maintenance visits. */
-  job_type?: "detection" | "maintenance";
+  answer?: "leak" | "yes_no" | "done" | "choice" | "multi" | "text";
+  /** Which jobs get the item: leak detection (default), maintenance visits, or pool inspections. */
+  job_type?: "detection" | "maintenance" | "inspection";
+  /** The small header it sits under ("Filtration System"). */
+  group_label?: string | null;
+  /** A choice or multi question's options (ChoiceOption[]). */
+  options?: unknown;
+  /** A banner shown before it, word for word. */
+  notice?: string | null;
   /** Only for this pool type (vinyl checks); null for every pool. */
   applies_to_pool_type?: string | null;
   /**
@@ -79,6 +109,8 @@ export interface ChecklistItemResult extends Base {
   notes?: string | null;
   inspected_at?: string | null;
   inspected_by?: string | null;
+  /** A pool inspection answer: an option's label, a list of labels, or text. */
+  value?: unknown;
 }
 
 export type FieldType = "text" | "number" | "select" | "textarea";
@@ -292,10 +324,15 @@ export function checklistTally(
 
 /** Badge text for an item, in his words. Yes/no items read "Yes" or "No". */
 export function verdictLabel(
-  r: Pick<ChecklistItemResult, "status" | "outcome"> | undefined,
-  answer: "leak" | "yes_no" | "done" = "leak",
+  r: (Pick<ChecklistItemResult, "status" | "outcome"> & { value?: unknown }) | undefined,
+  answer: ComponentType["answer"] = "leak",
 ): string {
   if (!r || r.status === "pending") return "To do";
+  if (answer === "choice" || answer === "multi" || answer === "text")
+    return (
+      inspectionAnswerText(answer, r.value) ??
+      (r.status === "excluded" ? "Not applicable" : "Answered")
+    );
   if (answer === "done") {
     if (r.status === "excluded") return "Skipped";
     return r.outcome === "attention" ? "Needs attention" : "Done";

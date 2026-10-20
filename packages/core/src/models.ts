@@ -143,7 +143,7 @@ export const offersLeak = (settings: unknown) => companyServices(settings) !== "
 /** Whether the shop does pool care (cleaning plans, the service checklist, monthly billing). */
 export const offersPool = (settings: unknown) => companyServices(settings) !== "leak";
 
-export type JobType = "detection" | "repair" | "maintenance";
+export type JobType = "detection" | "repair" | "maintenance" | "inspection";
 
 /**
  * What the job's price is called (owner, 2026-10-19): a detection fee on leak detection, a
@@ -186,6 +186,8 @@ export interface IntakeQuestion {
   label: string;
   type: "multi" | "single" | "text";
   options?: string[];
+  /** The job types that ask it; none: leak detection (intakeQuestionsFor). */
+  job_types?: JobType[];
 }
 
 /** Split "a@x.com b@y.com, c@z.com" into addresses. */
@@ -320,4 +322,5 @@ export const JOB_TYPE_LABELS: Record<Job["type"], string> = {
   detection: "Leak detection",
   repair: "Repair",
   maintenance: "Maintenance",
+  inspection: "Pool inspection",
 };

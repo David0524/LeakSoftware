@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-20 (owner: "Pool inspection plan approved, go with your recommendations")
+- **Pool Inspection is a job type for leak shops** (`docs/plans/pool-inspection.md`), with the four recommendations: a gate question's No folds its group ("Not present"); the twelve feature questions are one tap-all-that-apply list in From the Customer; Write Draft drafts the report's summary; one price on the job from a new "Pool inspection" price book item ($495 to start; shops set their own).
+- **Every question of the Leaktronics form is a checklist row** (133 in eight sections, word for word, with group headers and banners). Contact fields are the job's own; Leaks noted and Summary notes are the report's text; the insurance claim question is left out ("Remove the insurance stuff").
+- **Which answer needs attention** is set per option, from the wording (No on "Is the heater properly sized?", Yes on "Does the system show visible leaking?"); "is there one" questions flag nothing. Shops can change any of it in Settings.
+- **The inspection report uses the homeowner report's draft, sign-off, and send**, titled Pool Inspection Report, rather than a separate report template.
+
 ## 2026-10-20 (owner: "Dashboard should be in the apps"; "On invoices tab add some filtering and sorting"; visit reports)
 - **The Dashboard is in both apps**, first in More, for owners and admins: the website's numbers (collected, owed, quotes accepted, invoiced, collected by month, jobs by status) as phone cards and a bar chart, from the same `owner_dashboard`. Replaces decision 12 of the native-apps spec ("Dashboard is left out of the apps").
 - **Invoices filter, search, and sort** on every platform: All, Unpaid, Overdue, Drafts, Paid, Void (with counts); customer, invoice, or job number; Newest, Oldest, Due Date, Amount Owed, Total, Customer. An unpaid invoice past its due date reads "Overdue".

@@ -179,10 +179,13 @@ select is((select count(*) from component_type where company_id = (select id fro
   'signup: the maintenance checklist too');
 select is((select count(*) from component_type where company_id = (select id from signup) and section = 'bond_beam'), 5::bigint,
   'signup: checklist items come in sections');
+select is((select count(*) from component_type where company_id = (select id from signup)
+            and job_type = 'inspection'), 133::bigint,
+  'signup: the pool inspection''s questions too');
 select is((select count(*) from test_type where company_id = (select id from signup)), 4::bigint,
   'signup: default test types copied');
-select is((select count(*) from price_book_item where company_id = (select id from signup)), 26::bigint,
-  'signup: both packages: both sample price books (10 leak, 16 pool)');
+select is((select count(*) from price_book_item where company_id = (select id from signup)), 27::bigint,
+  'signup: both packages: both sample price books (11 leak, 16 pool)');
 select is((select count(*) from report_template where company_id = (select id from signup) and key = 'insurance'),
   0::bigint, 'signup: no insurance template (removed 2026-10-20)');
 select is((select status from subscription where company_id = (select id from signup)), 'trialing',

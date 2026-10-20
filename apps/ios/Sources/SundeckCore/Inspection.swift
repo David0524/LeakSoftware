@@ -9,6 +9,15 @@ public enum ChecklistSection: String, Codable, CaseIterable, Sendable {
     case bondBeam = "bond_beam"
     case other
     case service
+    // Pool Inspection's tabs (2026-10-20).
+    case inspEquipment = "insp_equipment"
+    case inspSelfCleaning = "insp_self_cleaning"
+    case inspHeaters = "insp_heaters"
+    case inspElectrical = "insp_electrical"
+    case inspFencing = "insp_fencing"
+    case inspCovers = "insp_covers"
+    case inspVisual = "insp_visual"
+    case inspPlumbing = "insp_plumbing"
 
     public var label: String {
         switch self {
@@ -17,6 +26,14 @@ public enum ChecklistSection: String, Codable, CaseIterable, Sendable {
         case .bondBeam: "Bond Beam"
         case .other: "Other"
         case .service: "Service"
+        case .inspEquipment: "Equipment"
+        case .inspSelfCleaning: "Self Cleaning (In Floor) System"
+        case .inspHeaters: "Heaters"
+        case .inspElectrical: "Electrical Safety"
+        case .inspFencing: "Fencing and Child Barriers"
+        case .inspCovers: "Covers"
+        case .inspVisual: "Visual Leak Inspection"
+        case .inspPlumbing: "Plumbing Static Test"
         }
     }
 

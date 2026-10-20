@@ -7,7 +7,15 @@
         "plumbing": "Plumbing Static Test",
         "bond_beam": "Bond Beam",
         "other": "Other",
-        "service": "Service"
+        "service": "Service",
+        "insp_equipment": "Equipment",
+        "insp_self_cleaning": "Self Cleaning (In Floor) System",
+        "insp_heaters": "Heaters",
+        "insp_electrical": "Electrical Safety",
+        "insp_fencing": "Fencing and Child Barriers",
+        "insp_covers": "Covers",
+        "insp_visual": "Visual Leak Inspection",
+        "insp_plumbing": "Plumbing Static Test"
       }
     }
   ],
