@@ -2,9 +2,11 @@
     import SundeckCore
     import SwiftUI
 
-    // Our own segmented control (spec 3.9, decision 8): 44 tall on every iOS version, a white
-    // capsule thumb that slides to the chosen segment. For 2 to 5 related views or states; over
-    // five, use a `SelectField`.
+    // The segmented control (spec 3.9, decision 8). On iOS 26 it is the system's own segmented
+    // `Picker` (owner, 2026-10-19: "not liquid glass with that slider"): its Liquid Glass thumb
+    // can be held and dragged. Before iOS 26 (and in the flat screenshots) it is our own: 44 tall,
+    // a white capsule thumb that slides to the chosen segment. For 2 to 5 related views or
+    // states; over five, use a `SelectField`.
     //
     //     Segmented(selection: $mode, options: [.jobs, .reports], label: \.title, minSegmentWidth: 112)
     //     Segmented(selection: $appearance, options: Appearance.allCases, label: \.label, minSegmentWidth: 80)
@@ -24,8 +26,19 @@
         @State private var held = false
         @State private var frames: [Int: CGRect] = [:]
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
+        @Environment(\.drawsGlass) private var drawsGlass
 
         var body: some View {
+            if #available(iOS 26, *), drawsGlass {
+                SystemSegmented(selection: $selection, options: options, label: label, title: title)
+                    .fixedSize(horizontal: !fillsWidth, vertical: false)
+                    .keepsHorizontalDrags()
+            } else {
+                custom.keepsHorizontalDrags()
+            }
+        }
+
+        private var custom: some View {
             HStack(spacing: 2) {
                 ForEach(Array(options.enumerated()), id: \.element) { index, option in
                     let chosen = option == selection
@@ -169,11 +182,32 @@
         @State private var frames: [Int: CGRect] = [:]
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
         @Environment(\.dynamicTypeSize) private var typeSize
+        @Environment(\.drawsGlass) private var drawsGlass
 
         var body: some View {
             // At accessibility text sizes five equal columns cut every label short ("Det…"), so
-            // the segments keep their full labels and the row scrolls sideways.
-            if typeSize.isAccessibilitySize {
+            // the segments keep their full labels and the row scrolls sideways in our own track.
+            if #available(iOS 26, *), drawsGlass, !typeSize.isAccessibilitySize {
+                // The system control (equal segments), each to-do count as a badge over its segment.
+                SystemSegmented(
+                    selection: $selection, options: options, label: label, title: "Job sections",
+                    hint: options.compactMap { o in toDoAccessibilityText(badge(o)).map { "\(label(o)), \($0)" } }
+                        .joined(separator: ". ")
+                )
+                .overlay {
+                    GeometryReader { geo in
+                        let width = geo.size.width / CGFloat(max(1, options.count))
+                        ForEach(Array(options.enumerated()), id: \.element) { index, option in
+                            if let text = badgeText(badge(option)) {
+                                CountBadge(text: text, tone: .warning)
+                                    .position(x: width * CGFloat(index + 1) - 12, y: 2)
+                            }
+                        }
+                    }
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+                }
+            } else if typeSize.isAccessibilitySize {
                 ScrollView(.horizontal, showsIndicators: false) { track(fill: false).padding(.top, 8) }
                     .padding(.top, -8)
             } else {
@@ -242,6 +276,31 @@
                 .frame(minWidth: 20, minHeight: 20)
                 .background(Capsule().fill(tone?.color ?? Color.brandPrimary))
                 .fixedSize()
+        }
+    }
+#endif
+
+#if os(iOS)
+    /// iOS 26's segmented control: the system `Picker`, large (about 44 tall), its glass thumb
+    /// held and dragged like the system's everywhere.
+    @available(iOS 26, *)
+    struct SystemSegmented<Value: Hashable>: View {
+        @Binding var selection: Value
+        var options: [Value]
+        var label: (Value) -> String
+        var title: String
+        var hint = ""
+
+        var body: some View {
+            Picker(title, selection: $selection) {
+                ForEach(options, id: \.self) { Text(label($0)).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .controlSize(.large)
+            .labelsHidden()
+            .accessibilityLabel(title)
+            .accessibilityHint(hint)
+            .sensoryFeedback(.selection, trigger: selection)
         }
     }
 #endif

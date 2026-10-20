@@ -21,6 +21,7 @@
         @State private var list: [Conversation] = []
         @State private var line: PhoneLine?
         @State private var loaded = false
+        @Environment(\.openRoute) private var openRoute
         @State private var browser: BrowserPage?
 
         var body: some View {
@@ -41,7 +42,7 @@
                 if loaded, let notice = lineNotice(line, manager: isManagerRole(company?.role)) {
                     Section {
                         Notice(kind: .info, text: notice.text, link: notice.link) {
-                            browser = .site("settings/phone")
+                            openRoute(.more(.settingsPage(.phone)))
                         }
                         .plainListRow()
                     }

@@ -126,6 +126,9 @@ public struct JobListRow: Identifiable, Equatable, Sendable {
     /// "Sun, Oct 11, 9:00 AM · Tony Tech", "Started · Tony Tech", "Not scheduled · Unassigned".
     public var when: String
     public var status: JobStatus
+    /// For the row's Call and Text swipe actions.
+    public var customerId: String? = nil
+    public var phone: String? = nil
 }
 
 /// The Jobs list for a filter and search: deleted jobs left out, a limited tech's own jobs only,
@@ -171,7 +174,8 @@ public func jobList(
         return JobListRow(
             id: v.id, customer: v.customerName,
             kind: "\(v.number.map { "#\($0)" } ?? "New job") · \(jobTypeLabel(v.type))", address: address,
-            when: "\(when) · \(tech)", status: v.status)
+            when: "\(when) · \(tech)", status: v.status, customerId: v.customer?.id,
+            phone: v.customer?["phone"]?.string.flatMap { $0.isEmpty ? nil : $0 })
     }
 }
 

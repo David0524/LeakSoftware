@@ -56,7 +56,8 @@ public enum SettingsPage: String, CaseIterable, Hashable, Sendable {
     /// Built in the app; the rest open the website (spec 10.4).
     public var isNative: Bool {
         switch self {
-        case .team, .priceBook, .components, .tests, .severities, .exclusions: true
+        case .team, .priceBook, .components, .tests, .severities, .exclusions, .company, .scheduling, .phone, .reports:
+            true
         default: false
         }
     }

@@ -54,6 +54,8 @@
         let signer: MediaURLSigner
         /// This phone's push token on the server.
         let push: PushRegistration
+        /// Map pins to find again after an address change (POST /api/locate after a sync).
+        let locate: LocateQueue
         /// The Live Activity for the stop the tech is on.
         let liveStop: LiveStopController
         /// Where a tapped notification or the Live Activity's Open Job goes (MainView opens it).
@@ -66,6 +68,7 @@
             self.walkthrough = walkthrough
             appearance = AppearanceSetting(session.sync.kv)
             push = PushRegistration(kv: session.sync.kv)
+            locate = LocateQueue(kv: session.sync.kv)
             liveStop = LiveStopController(session: session)
             signer = MediaURLSigner { path, seconds in
                 try await client.storage.from("media").createSignedURL(path: path, expiresIn: seconds)
@@ -148,6 +151,11 @@
         /// After each sync: the company list, and teammates' names for offline use.
         private func afterSync() async {
             session.reloadCompanies()
+            let waiting = locate.pending.count
+            if waiting > 0, session.sync.status.pending == 0 {
+                await locate.flush(api)
+                if locate.pending.count < waiting { session.sync.syncSoon(2) }  // bring the new pins down
+            }
             if let team: [TeamProfile] = try? await client.from("profile").select("id, full_name, email").execute()
                 .value
             {

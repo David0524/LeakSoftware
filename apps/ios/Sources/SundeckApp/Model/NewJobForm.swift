@@ -659,7 +659,7 @@ private func dollarsText(_ cents: Cents) -> String {
 private func optional(_ s: String?) -> JSONValue { s.map { .string($0) } ?? .null }
 
 /// A network failure, as opposed to the server saying no.
-private func isNetworkFailure(_ message: String) -> Bool {
+func isNetworkFailure(_ message: String) -> Bool {
     message.firstMatch(
         of:
             /(?i)network|offline|timed? ?out|could not connect|internet connection|NSURLErrorDomain|URLError|no connection/

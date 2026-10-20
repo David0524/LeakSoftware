@@ -187,7 +187,8 @@
     /// A stop on Today (spec 5.1; owner, 2026-10-19: "keep these cards on Today collapsed except
     /// for the job you are on"): one row (the number, or a green check when done; the time, the
     /// customer, the state, a chevron) that opens to the address, cleanings, access notes, Mark
-    /// Complete, Open Job, and call and On My Way. The stop you're on starts open and ringed.
+    /// Complete, and call and On My Way; once open, the customer's name links to the job. The
+    /// stop you're on starts open and ringed.
     /// Website components/today-stop.tsx.
     struct TodayStopCard: View {
         var number: Int
@@ -205,15 +206,17 @@
             let done = job.doneOn(day.ctx.today)
             let expanded = open ?? isNext
             VStack(alignment: .leading, spacing: 0) {
-                Button {
-                    withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { open = !expanded }
-                } label: {
-                    summary(done: done, expanded: expanded)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(stopLabel(done: done))
-                .accessibilityValue(expanded ? "Expanded" : "Collapsed")
-                .accessibilityHint(expanded ? "Folds the stop" : "Shows the address and buttons")
+                // The row opens and closes the card; once open, the customer's name is the link to
+                // the job (owner, 2026-10-20; no Open Job button).
+                summary(done: done, expanded: expanded)
+                    .onTapGesture { toggle(expanded) }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityLabel(stopLabel(done: done))
+                    .accessibilityValue(expanded ? "Expanded" : "Collapsed")
+                    .accessibilityHint(expanded ? "Folds the stop" : "Shows the address and buttons")
+                    .accessibilityAction { toggle(expanded) }
+                    .accessibilityAction(named: "Open Job") { openRoute(.job(job.id)) }
                 if expanded {
                     VStack(alignment: .leading, spacing: 4) {
                         AddressButton(place: job.place)
@@ -251,6 +254,10 @@
             }
         }
 
+        private func toggle(_ expanded: Bool) {
+            withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { open = !expanded }
+        }
+
         private func stopLabel(done: Bool) -> String {
             ["Stop \(number): \(job.customerName)", done ? "done" : nil].compactMap { $0 }.joined(separator: ", ")
         }
@@ -276,11 +283,27 @@
                         .font(.custom(BrandFonts.Weight.bold.rawValue, size: 17, relativeTo: .body))
                         .monospacedDigit()
                         .foregroundStyle(Color.text)
-                    Text(job.customerName)
-                        .textRole(.bodyEmphasis)
-                        .foregroundStyle(Color.text)
-                        .lineLimit(1)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Group {
+                        if expanded {
+                            Button {
+                                openRoute(.job(job.id))
+                            } label: {
+                                Text(job.customerName + " ›")
+                                    .textRole(.bodyEmphasis)
+                                    .foregroundStyle(Color.link)
+                                    .lineLimit(1)
+                                    .frame(minHeight: minTarget)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            Text(job.customerName)
+                                .textRole(.bodyEmphasis)
+                                .foregroundStyle(Color.text)
+                                .lineLimit(1)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     // Most stops are scheduled; the chip shows other states.
                     if job.status != .scheduled { StatusChip(status: job.status) }
                     if let lock = job.lock, lock != .started {
@@ -300,14 +323,12 @@
             .contentShape(Rectangle())
         }
 
-        /// Mark Complete (primary) or Mark Not Complete, Open Job, then call and On My Way.
+        /// Mark Complete (primary) or Mark Not Complete, then call and On My Way.
         private func buttons(done: Bool) -> some View {
             HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 8) {
                     FlowRow(spacing: 8) {
                         if markStopTitle(job, day: day.ctx.today) != nil { TodayMarkButton(job: job, day: day) }
-                        Button(MarkStopText.openJob) { openRoute(.job(job.id)) }
-                            .buttonStyle(.secondary)
                     }
                 }
                 Spacer(minLength: 0)

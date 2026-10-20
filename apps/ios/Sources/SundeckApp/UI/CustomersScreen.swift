@@ -402,6 +402,7 @@
         var saved: () -> Void
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
+        @Environment(AppEnvironment.self) private var app
         @Environment(\.dismiss) private var dismiss
         @State private var street = ""
         @State private var unit = ""
@@ -482,7 +483,7 @@
                         "address_line2": opt(unit), "city": opt(city), "state": opt(state.uppercased()),
                         "postal_code": opt(zip), "pool_type": opt(poolType), "has_spa": .bool(hasSpa),
                         "approx_gallons": approxGallons, "access_notes": opt(access),
-                    ])
+                    ], locate: app.locate)
                 saved()
                 dismiss()
             } catch {

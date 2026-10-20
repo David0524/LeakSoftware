@@ -6,6 +6,7 @@ import {
   companyServices,
   formatCents,
   formatPhone,
+  isHexColor,
   isManagerRole,
   jobActionLabel,
   jobFeeLabel,
@@ -13,6 +14,7 @@ import {
   newJobTypes,
   offersPool,
   parseGallons,
+  parseReminderDays,
   requiresFinishPhoto,
   requiresFinishedChecklist,
   FINISH_CHECKLIST_MESSAGE,
@@ -306,6 +308,26 @@ export const basics: ModuleCases = {
         },
         "2026-10-15T12:00:00Z",
       ],
+    ],
+  ),
+  // Settings › Company and Branding on the phone (owner, 2026-10-20).
+  isHexColor: rule(
+    (v: unknown) => isHexColor(v),
+    [["#12263A"], ["#ee6a1f"], ["12263A"], ["#12263"], ["#12263AA"], ["#GGGGGG"], [null], [42]],
+  ),
+  parseReminderDays: rule(
+    (s: string) => parseReminderDays(s),
+    [
+      [""],
+      ["3, 7"],
+      ["7 3 3"],
+      ["14,30,7"],
+      ["0"],
+      ["366"],
+      ["365"],
+      ["1, x"],
+      ["1000"],
+      ["  5  "],
     ],
   ),
 };

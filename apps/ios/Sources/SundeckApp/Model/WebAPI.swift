@@ -19,6 +19,13 @@ public struct WebAPI: Sendable {
 
     public struct Failure: Error, CustomStringConvertible, Equatable {
         public let description: String
+        /// Form errors by field name (a 400 reply's `fields`).
+        public var fields: [String: String] = [:]
+
+        public static let noConnection = "No connection. Try again when you have signal."
+
+        /// The phone couldn't reach the server (nothing was done there).
+        public var offline: Bool { description == Self.noConnection }
     }
 
     /// POSTs `body` as JSON with the person's sign-in, and returns the JSON reply.
@@ -60,12 +67,16 @@ public struct WebAPI: Sendable {
         do {
             (data, response) = try await session.data(for: request)
         } catch {
-            throw Failure(description: "No connection. Try again when you have signal.")
+            throw Failure(description: Failure.noConnection)
         }
         let reply = (try? JSONDecoder().decode(JSONValue.self, from: data)) ?? [:]
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {
-            throw Failure(description: reply["error"]?.string ?? "The server said \(status).")
+            var fields: [String: String] = [:]
+            if case .object(let f)? = reply["fields"] { for (k, v) in f { fields[k] = v.string } }
+            throw Failure(
+                description: reply["error"]?.string ?? fields.values.sorted().first ?? "The server said \(status).",
+                fields: fields)
         }
         return reply
     }

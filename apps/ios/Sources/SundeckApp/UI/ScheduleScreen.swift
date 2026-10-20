@@ -68,17 +68,26 @@
                     if board.ctx.isManager && view != .month {
                         NeedsATimeCard(jobs: board.tray, board: board, onMove: move, onSuggest: { suggesting = $0 })
                     }
-                    switch view {
-                    case .day: dayView(board)
-                    case .week: weekView(board)
-                    case .month: MonthGrid(board: board) { pick($0) }
+                    // Swipe left or right for the next or previous day, week or month (the arrows
+                    // above do the same).
+                    VStack(alignment: .leading, spacing: 16) {
+                        switch view {
+                        case .day: dayView(board)
+                        case .week: weekView(board)
+                        case .month: MonthGrid(board: board) { pick($0) }
+                        }
+                        if board.jobsShown == 0 {
+                            Text(
+                                "No jobs scheduled \(view == .day ? "this day" : view == .week ? "this week" : "this month")."
+                            )
+                            .textRole(.body).foregroundStyle(Color.textMuted)
+                        }
                     }
-                    if board.jobsShown == 0 {
-                        Text(
-                            "No jobs scheduled \(view == .day ? "this day" : view == .week ? "this week" : "this month")."
-                        )
-                        .textRole(.body).foregroundStyle(Color.textMuted)
-                    }
+                    .frame(maxWidth: .infinity, minHeight: 240, alignment: .topLeading)
+                    .contentShape(Rectangle())
+                    .pageSwipe(
+                        previous: { withAnimation(Motion.smooth) { date = step(board.date, -1) } },
+                        next: { withAnimation(Motion.smooth) { date = step(board.date, 1) } })
                 }
             }
             .refreshable { await sync.syncNow() }
@@ -168,7 +177,7 @@
                     kind: .warning,
                     text: "Routes start and end at the shop, which has no map location yet. "
                         + (board.ctx.isManager
-                            ? "Set it on the website in Settings › Scheduling."
+                            ? "Set it in More › Settings › Scheduling and Routes."
                             : "An owner can set it in Settings › Scheduling."))
             }
             if board.unlocated {

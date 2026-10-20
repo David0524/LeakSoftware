@@ -248,3 +248,16 @@ public func poolGallonsValue(_ typed: String) -> JSONValue? {
     if text.isEmpty { return .null }
     return parseGallons(text).map { .number(Double($0)) }
 }
+
+/// The job page's large title (owner, 2026-10-20): the customer's name, else "Job #1042" (a
+/// plain String: a localized number would print "1,042"), else "New Job".
+public func jobPageTitle(_ job: JobView) -> String {
+    if let name = job.customer?["name"]?.string, !name.isEmpty { return name }
+    return job.number.map { "Job #" + String($0) } ?? "New Job"
+}
+
+/// "Job #1042" in smaller print under the customer's name; nil when the number is the title.
+public func jobNumberLine(_ job: JobView) -> String? {
+    guard let name = job.customer?["name"]?.string, !name.isEmpty, let n = job.number else { return nil }
+    return "Job #" + String(n)
+}

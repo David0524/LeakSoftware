@@ -480,6 +480,7 @@
         @State private var line: PhoneLine?
         @State private var recipients: [MessageRecipient] = []
         @State private var loaded = false
+        @Environment(\.openRoute) private var openRoute
         @State private var browser: BrowserPage?
 
         var body: some View {
@@ -497,7 +498,9 @@
                     PageHeader(subtitle: "To \(picked.name), \(picked.phone)")
                 }
                 if loaded, let notice = lineNotice(line, manager: isManagerRole(company?.role)) {
-                    Notice(kind: .info, text: notice.text, link: notice.link) { browser = .site("settings/phone") }
+                    Notice(kind: .info, text: notice.text, link: notice.link) {
+                        openRoute(.more(.settingsPage(.phone)))
+                    }
                 } else if loaded {
                     if picked == nil {
                         VStack(alignment: .leading, spacing: 4) {

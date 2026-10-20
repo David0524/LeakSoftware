@@ -815,6 +815,9 @@ public enum LandmarkKind: String, Codable, CaseIterable, Sendable {
     public var label: String { landmarkDrawings.first { $0.key == self }!.label }
     /// Its filled parts in a 24 x 24 box (absolute M, L, H, V, Q, C, Z only).
     public var parts: [LandmarkPart] { landmarkDrawings.first { $0.key == self }!.parts }
+    /// How a tap mirrors it (LANDMARKS' `mirror`): "y" top to bottom for a drawing that's the
+    /// same both ways across (the steps; owner, 2026-10-20), else nil, left to right.
+    public var mirrorAxis: String? { self == .steps ? "y" : nil }
 }
 
 /// A landmark drawing's colors (brand/tokens.json color.landmark): filled, with a thin dark
@@ -943,13 +946,14 @@ public struct PoolDiagram: Codable, Equatable, Sendable {
     }
 
     /// A landmark's parts in a `size` box centered on cx, cy: translate(cx - size / 2, cy -
-    /// size / 2) scale(size / 24); flipped, mirrored about cx.
+    /// size / 2) scale(size / 24); flipped, mirrored about cx (`mirror` "x") or about cy ("y").
     public struct PlacedLandmark: Codable, Equatable, Sendable {
         public var kind: LandmarkKind
         public var cx: Double
         public var cy: Double
         public var size: Double
         public var flip: Bool
+        public var mirror: String
         public var parts: [LandmarkPart]
     }
 
@@ -1210,7 +1214,7 @@ public func poolDiagram(_ shape: DiagramShape?, _ hasSpa: Bool, _ layout: Diagra
             return .init(
                 kind: l.kind, cx: min(diagramWidth - half, max(half, l.x * diagramWidth)),
                 cy: min(diagramHeight - half, max(half, l.y * diagramHeight)), size: size, flip: l.flip == true,
-                parts: l.kind.parts)
+                mirror: l.kind.mirrorAxis ?? "x", parts: l.kind.parts)
         })
 }
 

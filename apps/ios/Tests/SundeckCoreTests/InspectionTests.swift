@@ -63,10 +63,12 @@ import Testing
         }
         checkRule(module, "LANDMARKS") { _ in
             try landmarkDrawings.map {
-                JSONValue.object([
+                var o: [String: JSONValue] = [
                     "key": .string($0.key.rawValue), "label": .string($0.label),
                     "parts": try JSONValue(encoding: $0.parts),
-                ])
+                ]
+                if let axis = $0.key.mirrorAxis { o["mirror"] = .string(axis) }
+                return JSONValue.object(o)
             }
         }
         checkRule(module, "DRAWING_MAX") { _ in drawingMax }

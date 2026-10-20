@@ -74,6 +74,7 @@
         @Environment(SyncService.self) private var sync
         @Environment(AppEnvironment.self) private var app
         @Environment(\.openRoute) private var openRoute
+        @Environment(\.openURL) private var openURL
         @State private var mode = JobsMode.jobs
         @State private var filter = JobFilter.open
         @State private var reportFilter = ReportFilter.all
@@ -135,13 +136,16 @@
                     text: q.isEmpty ? "No jobs here. Add one with New Job, or on the phone." : "No jobs match “\(q)”.")
             } else {
                 GroupedRows(rows) { row in
-                    Button {
-                        openRoute(.job(row.id))
-                    } label: {
-                        JobListRowView(row: row)
+                    // Swipe left (or touch and hold) for Call and Text; the job page has both too.
+                    SwipeActionsRow(actions: contactActions(row)) {
+                        Button {
+                            openRoute(.job(row.id))
+                        } label: {
+                            JobListRowView(row: row)
+                        }
+                        .buttonStyle(.row)
+                        .zoomSource(row.id)
                     }
-                    .buttonStyle(.row)
-                    .zoomSource(row.id)
                 }
             }
         }
@@ -159,6 +163,20 @@
                     .buttonStyle(.row)
                 }
             }
+        }
+
+        private func contactActions(_ row: JobListRow) -> [SwipeAction] {
+            var actions: [SwipeAction] = []
+            if let phone = row.phone, let url = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") {
+                actions.append(SwipeAction(title: "Call", systemImage: "phone.fill", tint: Color.pass) { openURL(url) })
+            }
+            if let customerId = row.customerId, row.phone != nil {
+                actions.append(
+                    SwipeAction(title: "Text", systemImage: "message.fill", tint: Color.link) {
+                        openRoute(.messages(.newMessage(customerId: customerId)))
+                    })
+            }
+            return actions
         }
 
         private func reload() {

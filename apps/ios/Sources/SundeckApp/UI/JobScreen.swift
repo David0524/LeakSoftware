@@ -44,8 +44,8 @@
                 }
             }
             .background(Color.bg)
-            // A plain String: a localized title would print 1042 as "1,042".
-            .navigationTitle(job?.number.map { "Job #" + String($0) } ?? "New Job")
+            // The customer's name on top, the job number smaller below (owner, 2026-10-20).
+            .navigationTitle(job.map(jobPageTitle) ?? "New Job")
             .navigationBarTitleDisplayMode(.large)
             .task(id: sync.revision) { reload() }
             .sensoryFeedback(.success, trigger: changes)
@@ -75,12 +75,20 @@
                                 .padding(.horizontal, CGFloat(Spacing.pageMargin))
                                 .padding(.top, 16)
                                 .padding(.bottom, 32)
+                                // Swipe left or right for the next or previous section; the
+                                // switcher above follows (and stays the visible way).
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
+                                .pageSwipe(
+                                    previous: page(sections, current, -1).map { p in { choose(p) } },
+                                    next: page(sections, current, 1).map { p in { choose(p) } })
                         } header: {
                             switcher(sections, current)
                         }
                     }
                 }
                 .scrollDismissesKeyboard(.interactively)
+                .refreshable { await sync.syncNow() }
                 .background(Color.bg)
                 .mediaViewer(jobId: jobId)
                 .onChange(of: section) { _, _ in
@@ -97,6 +105,7 @@
             return VStack(alignment: .leading, spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
                     FlowRow(spacing: 12) {
+                        if let number = jobNumberLine(job) { Text(number) }
                         StatusChip(status: job.status).padding(.vertical, 2)
                         Text(jobTypeLabel(job))
                     }
@@ -164,6 +173,12 @@
         private func currentSection(_ job: JobView) -> JobPageSection {
             if let section, JobPageSection.sections(for: job.type).contains(section) { return section }
             return JobSectionMemory.section(for: job.id, type: job.type)
+        }
+
+        private func page(_ sections: [JobPageSection], _ current: JobPageSection, _ direction: Int)
+            -> JobPageSection?
+        {
+            PageSwipeRule.page(sections, from: current, direction: direction)
         }
 
         private func choose(_ next: JobPageSection) {

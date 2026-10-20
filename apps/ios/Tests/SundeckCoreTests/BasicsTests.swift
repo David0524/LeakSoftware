@@ -13,7 +13,7 @@ import Testing
             "isManagerRole", "splitEmails", "POOL_TYPE_LABELS", "jobOnPhones", "requiresFinishPhoto",
             "FINISH_PHOTO_MESSAGE", "REPAIR_ITEM_KEY", "REPAIR_ITEM_LABEL", "jobActionLabel", "jobFeeLabel",
             "parseGallons", "requiresFinishedChecklist", "FINISH_CHECKLIST_MESSAGE", "completeJobBlocker",
-            "jobHasWrapUp", "stopDone", "markCompleteValues",
+            "jobHasWrapUp", "stopDone", "markCompleteValues", "isHexColor", "parseReminderDays",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -25,6 +25,11 @@ import Testing
             return formatCents(Int(value))
         }
         checkRule(module, "parseDollars") { c in parseDollars(try c.arg(0)) }
+    }
+
+    @Test func companySettings() {
+        checkRule(module, "isHexColor") { c in isHexColor(try c.arg(0, as: JSONValue.self)) }
+        checkRule(module, "parseReminderDays") { c in parseReminderDays(try c.arg(0)) }
     }
 
     @Test func uuid() throws {

@@ -3398,5 +3398,131 @@
       ],
       "result": false
     }
+  ],
+  "isHexColor": [
+    {
+      "args": [
+        "#12263A"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "#ee6a1f"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "12263A"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "#12263"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "#12263AA"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "#GGGGGG"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        42
+      ],
+      "result": false
+    }
+  ],
+  "parseReminderDays": [
+    {
+      "args": [
+        ""
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "3, 7"
+      ],
+      "result": [
+        3,
+        7
+      ]
+    },
+    {
+      "args": [
+        "7 3 3"
+      ],
+      "result": [
+        3,
+        7
+      ]
+    },
+    {
+      "args": [
+        "14,30,7"
+      ],
+      "result": [
+        7,
+        14,
+        30
+      ]
+    },
+    {
+      "args": [
+        "0"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "366"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "365"
+      ],
+      "result": [
+        365
+      ]
+    },
+    {
+      "args": [
+        "1, x"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "1000"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "  5  "
+      ],
+      "result": [
+        5
+      ]
+    }
   ]
 }

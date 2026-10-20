@@ -4,9 +4,10 @@
     import SwiftUI
 
     // More › Settings (spec 5.12; website app/(office)/settings). Managers only. The index lists
-    // the shop's pages in their groups; the list pages techs' work depends on are native (read
-    // from synced rows, edited in sheets through the sync layer); Company and Branding,
-    // Scheduling, Phone and Texting, and Payments open the website; Import stays on a computer.
+    // the shop's pages in their groups, built in the app (owner, 2026-10-20: "From the app, do
+    // not link to the website"): read from synced rows and written through the sync layer, and
+    // Phone and Texting through /api/phone. Payments opens Stripe's onboarding on the website;
+    // Import stays on a computer.
 
     struct ShopSettingsScreen: View {
         @Environment(Session.self) private var session

@@ -157,7 +157,7 @@
                 }
                 ForEach(Array(d.landmarks.enumerated()), id: \.offset) { _, l in
                     let side = l.size * scale
-                    LandmarkArt(parts: l.parts, side: side, flip: l.flip)
+                    LandmarkArt(parts: l.parts, side: side, flip: l.flip, mirror: l.mirror)
                         .offset(x: (l.cx - l.size / 2) * scale, y: (l.cy - l.size / 2) * scale)
                 }
             }
@@ -196,6 +196,8 @@
         var parts: [LandmarkPart]
         var side: CGFloat
         var flip = false
+        /// "x": a flip mirrors it left to right; "y": top to bottom (the steps).
+        var mirror = "x"
 
         var body: some View {
             let k = side / 24
@@ -215,7 +217,7 @@
                 }
             }
             .frame(width: side, height: side)
-            .scaleEffect(x: flip ? -1 : 1, y: 1)
+            .scaleEffect(x: flip && mirror != "y" ? -1 : 1, y: flip && mirror == "y" ? -1 : 1)
             .accessibilityHidden(true)
         }
     }
