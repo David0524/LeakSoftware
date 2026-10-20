@@ -292,17 +292,21 @@ public struct ReviewSummary: Sendable {
     /// "2 still to do" under the tally, while items are left.
     public var pendingText: String? { pending > 0 ? "\(pending) still to do" : nil }
 
+    /// What holds up signing: the checklist, except on a pool inspection, whose report lists the
+    /// questions answered (2026-10-20).
+    var blocking: Int { inspection != nil ? 0 : pending }
+
     /// Signing waits for the checklist.
     public var pendingNotice: String? {
-        guard pending > 0 else { return nil }
+        guard blocking > 0 else { return nil }
         let items = pending == 1 ? "item is" : "items are"
         return "\(pending) checklist \(items) still to do. Finish the checklist, then come back to sign."
     }
 
     /// The sign-off fields and pad: the checklist is done and the shop takes signatures.
-    public var showsSignOff: Bool { pending == 0 && !purposes.isEmpty }
+    public var showsSignOff: Bool { blocking == 0 && !purposes.isEmpty }
     /// Sign (or Finish Report) and Customer Not Here, once the checklist is done.
-    public var showsButtons: Bool { pending == 0 }
+    public var showsButtons: Bool { blocking == 0 }
     public var signTitle: String { purposes.isEmpty ? "Finish Report" : "Sign" }
     public var showsCustomerNotHere: Bool { !purposes.isEmpty }
 

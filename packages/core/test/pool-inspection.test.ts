@@ -356,6 +356,16 @@ describe("the pool inspection report", () => {
       "DUE TO ACCIDENTS AND INJURIES, INFORM CUSTOMER THAT CHILD PROOF BARRIERS MUST BE INSTALLED",
     ]);
     expect(validateNarrative(draft, INSPECTION)).toEqual([]);
+    // The leak checklist's names ("Main drain", "Pool") read as part of the inspection's words.
+    expect(
+      validateNarrative(draft, {
+        ...INSPECTION,
+        component_types: [
+          { key: "main_drain", name: "Main drain" },
+          { key: "bond_beam_pool", name: "Pool" },
+        ],
+      }),
+    ).toEqual([]);
   });
 
   it("says so when nothing needs attention", () => {

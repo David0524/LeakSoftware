@@ -485,3 +485,100 @@ language sql stable security definer set search_path = public, app, pg_temp as $
   from app.report_snapshot_m11(target_job) s
 $$;
 revoke all on function app.report_snapshot(uuid), app.report_snapshot_m11(uuid) from public;
+
+-- ---------------------------------------------------------------------------
+-- Sending the report
+-- ---------------------------------------------------------------------------
+
+-- The body behind public.send_report (20261012002800_visibility_functions.sql), as
+-- 20261012002600_report_sign_off.sql except that a pool inspection can be sent before all of
+-- its 133 questions are answered: the report lists the ones that were.
+create or replace function app.send_report_unchecked(target_report uuid, unsigned_reason text default null)
+returns jsonb
+language plpgsql security definer set search_path = public, app, pg_temp as $$
+declare
+  rep public.report;
+  link text;
+  pending int;
+  snap jsonb;
+  reason text := nullif(trim(coalesce(unsigned_reason, '')), '');
+begin
+  select * into rep from public.report where id = target_report and deleted_at is null for update;
+  if rep.id is null or not app.is_member(rep.company_id)
+     or not app.job_visible(rep.company_id, rep.job_id) then
+    raise exception 'Report not found' using errcode = 'insufficient_privilege';
+  end if;
+  if rep.status <> 'draft' then
+    raise exception 'This report has already been sent' using errcode = 'check_violation';
+  end if;
+  if rep.final_sections is null or jsonb_typeof(rep.final_sections) <> 'array'
+     or jsonb_array_length(rep.final_sections) = 0
+     or not exists (select 1 from jsonb_array_elements(rep.final_sections) s
+                    where length(trim(coalesce(s ->> 'text', ''))) > 0) then
+    raise exception 'Write the report before sending it' using errcode = 'check_violation';
+  end if;
+  -- BUILD_PLAN 6.1: every checklist item is inspected or excluded with a reason. A pool
+  -- inspection's report shows the questions answered, so its unanswered ones don't hold it up.
+  select count(*) into pending
+  from public.job_component jc
+  join public.job j on j.id = jc.job_id
+  left join public.checklist_item_result r on r.job_component_id = jc.id and r.deleted_at is null
+  where jc.job_id = rep.job_id and jc.deleted_at is null and j.type <> 'inspection'
+    and coalesce(r.status, 'pending') = 'pending';
+  if pending > 0 then
+    raise exception '% checklist item(s) are still to do. Inspect them or mark them not inspected with a reason.', pending
+      using errcode = 'check_violation', hint = 'checklist_pending';
+  end if;
+
+  -- Signatures taken since the last version belong to this one.
+  update public.signature set report_id = rep.id
+  where job_id = rep.job_id and report_id is null and purpose <> 'quote_acceptance'
+    and deleted_at is null;
+  snap := app.report_snapshot(rep.job_id);
+  if reason is not null and not exists (
+    select 1 from public.signature
+    where report_id = rep.id and deleted_at is null) then
+    snap := snap || jsonb_build_object('sign_off', jsonb_build_object('unsigned_reason', reason));
+  end if;
+
+  update public.report set status = 'superseded'
+  where job_id = rep.job_id and template_key = rep.template_key and status = 'sent'
+    and deleted_at is null;
+  update public.report set status = 'sent', sent_at = now(), data_snapshot = snap
+  where id = rep.id;
+  insert into public.share_link (company_id, job_id, report_id)
+  values (rep.company_id, rep.job_id, rep.id)
+  returning token into link;
+  update public.job set status = 'report_sent'
+  where id = rep.job_id and status = 'in_progress';
+  return jsonb_build_object('token', link, 'report_id', rep.id, 'version', rep.version);
+end
+$$;
+
+-- The review screen's draft (behind public.report_preview, as 20261012002600_report_sign_off.sql):
+-- nothing pending holds up signing a pool inspection.
+create or replace function app.report_preview_unchecked(target_report uuid) returns jsonb
+language plpgsql stable security definer set search_path = public, app, pg_temp as $$
+declare
+  rep public.report;
+  pending int;
+begin
+  select * into rep from public.report where id = target_report and deleted_at is null;
+  if rep.id is null or not app.is_member(rep.company_id) or not app.job_visible(rep.company_id, rep.job_id) then
+    return null;
+  end if;
+  select count(*) into pending
+  from public.job_component jc
+  join public.job j on j.id = jc.job_id
+  left join public.checklist_item_result r on r.job_component_id = jc.id and r.deleted_at is null
+  where jc.job_id = rep.job_id and jc.deleted_at is null and j.type <> 'inspection'
+    and coalesce(r.status, 'pending') = 'pending';
+  return jsonb_build_object(
+    'report_id', rep.id, 'job_id', rep.job_id, 'template_key', rep.template_key,
+    'version', rep.version, 'status', rep.status, 'sent_at', rep.sent_at,
+    'final_sections', rep.final_sections,
+    'snapshot', case when rep.status = 'draft' then app.report_snapshot(rep.job_id)
+                     else rep.data_snapshot end,
+    'pending', pending);
+end
+$$;

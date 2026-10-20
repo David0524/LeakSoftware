@@ -612,7 +612,9 @@ export function validateNarrative(draft: unknown, s: ReportSnapshot): NarrativeP
             message: `“${m[0]}” does not match any reading, result, or count recorded on this job.`,
           });
       }
-      for (const type of s.component_types) {
+      // A pool inspection's questions are sentences that use the leak checklist's names ("Main
+      // drain", "Pool"), so the names aren't checked there (2026-10-20).
+      for (const type of s.job.type === "inspection" ? [] : s.component_types) {
         const name = escapeRegExp(type.name.toLowerCase());
         const lower = text.toLowerCase();
         // A numbered instance ("Return 5") must exist on this job.

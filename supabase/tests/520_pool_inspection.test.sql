@@ -102,6 +102,19 @@ select results_eq($$ select description, unit_price_cents::int from invoice_line
   $$ values ('Pool inspection'::text, 49500) $$, 'its price is billed as a pool inspection');
 reset role;
 
+-- The report can go before every question is answered: it lists the answered ones. A leak
+-- detection job still waits for its whole checklist.
+insert into report (company_id, job_id, template_key, final_sections)
+values ((select ca from ids), (select v from st where k = 'job'), 'homeowner',
+        '[{"key": "summary", "title": "Summary", "text": "We inspected the pool."}]');
+select tests.authenticate_as((select owner_a from ids));
+select is((report_preview((select id from report where job_id = (select v from st where k = 'job')))
+           ->> 'pending')::int, 0, 'nothing holds up signing an inspection');
+select lives_ok(format($$ select send_report(%L, 'Buyer not present') $$,
+  (select id from report where job_id = (select v from st where k = 'job'))),
+  'and it is sent with questions left open');
+reset role;
+
 select throws_ok($$ insert into component_type (company_id, key, name, job_type, answer, section,
   methods) values ((select ca from ids), 'bad_one', 'Bad', 'inspection', 'essay', 'insp_covers', '{}') $$,
   '23514', null, 'unknown answer kinds are refused');

@@ -99,6 +99,8 @@ export default function ReviewScreen() {
   const signer = (name ?? customer?.name ?? "").trim();
   const { tally } = progress;
   const toDo = progress.toDo;
+  // A pool inspection's report lists the questions answered, so they don't hold up signing.
+  const blocking = job.type === "inspection" ? 0 : toDo;
   const maintenance = job.type === "maintenance";
   const written = (draft?.final_sections ?? []).filter((s) => s.text.trim());
   // The draft's tests text goes with the tests themselves, as on the website's report.
@@ -255,9 +257,9 @@ export default function ReviewScreen() {
       />
 
       <View style={[styles.sign, { borderTopColor: color.separator }]}>
-        {toDo ? (
+        {blocking ? (
           <Notice tone="warning">
-            {`${toDo} checklist ${toDo === 1 ? "item is" : "items are"} still to do. Finish the checklist, then come back to sign.`}
+            {`${blocking} checklist ${blocking === 1 ? "item is" : "items are"} still to do. Finish the checklist, then come back to sign.`}
           </Notice>
         ) : purposes.length ? (
           <>
@@ -304,8 +306,8 @@ export default function ReviewScreen() {
           </>
         ) : null}
         {error ? <Notice tone="error">{error}</Notice> : null}
-        {!toDo && needsPhoto ? <FinishPhotoNotice jobId={job.id} /> : null}
-        {toDo ? null : (
+        {!blocking && needsPhoto ? <FinishPhotoNotice jobId={job.id} /> : null}
+        {blocking ? null : (
           <>
             <Button
               title={

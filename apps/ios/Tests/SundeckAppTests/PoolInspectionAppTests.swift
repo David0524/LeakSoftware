@@ -288,7 +288,7 @@ import Testing
         #expect(jobFeeLabel(.inspection) == "Price")
     }
 
-    @Test func signingWaitsOnlyForTheQuestionsLeftOpen() throws {
+    @Test func signingDoesNotWaitForUnansweredQuestions() throws {
         let jobId = try book()
         try answer(jobId, "Is solar present?", .text("No"))
         try answer(jobId, "Is the system accessible?", .text("No"))
@@ -296,7 +296,9 @@ import Testing
         let form = try #require(
             ReviewSummary(sync.store, companyId: Self.company, companyName: "Desert Leak", settings: nil, jobId: jobId))
         #expect(form.title == "Pool Inspection Report")
-        #expect(form.pending == 1)
+        // The report lists what was answered, so a question left open doesn't hold up signing.
+        #expect(form.pending == 1 && form.pendingText == "1 still to do")
+        #expect(form.pendingNotice == nil && form.showsButtons)
         #expect(form.tallyText == "3 of 4 answered · 1 need attention · 0 leaking")
         try InspectionWrites.saveTextAnswer(
             sync, companyId: Self.company, jobId: jobId, question: try question(jobId, "Heater make"), draft: "Gas",
