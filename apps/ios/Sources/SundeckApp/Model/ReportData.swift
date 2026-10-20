@@ -111,6 +111,8 @@ public func jobSignatures(_ store: LocalStore, jobId: String) -> [SignatureRecor
 public struct ReportServer {
     public let sync: SyncService
     public let api: WebAPI
+    /// Told each step as it starts (`ReportProgress`): 0 saving, 1 the server, 2 syncing down.
+    public var onStep: (@MainActor (Int) -> Void)?
 
     public init(sync: SyncService, api: WebAPI) {
         self.sync = sync
@@ -124,8 +126,11 @@ public struct ReportServer {
 
     /// Saves the job to the server, then has it write the draft; the report syncs down.
     public func writeDraft(jobId: String, template: ReportRecord.Template) async throws -> Draft {
+        onStep?(0)
         await sync.syncNow()
+        onStep?(1)
         let reply = try await api.post("api/jobs/\(jobId)/reports", ["template": .string(template.rawValue)])
+        onStep?(2)
         await sync.syncNow()
         return Draft(
             reportId: reply["reportId"]?.string ?? "",
@@ -145,13 +150,16 @@ public struct ReportServer {
 
     /// Sends a report. Edits must reach the server first, so the customer gets what was approved.
     public func send(reportId: String, channel: Channel, to: String?) async throws -> Sent {
+        onStep?(0)
         await sync.syncNow()
         if sync.hasPendingWrites("report", reportId) {
             throw WebAPI.Failure(description: "Your edits haven’t reached the server yet. Try again with signal.")
         }
+        onStep?(1)
         let reply = try await api.post(
             "api/reports/\(reportId)/send",
             ["channel": .string(channel.rawValue), "to": to.map(JSONValue.string) ?? .null])
+        onStep?(2)
         await sync.syncNow()
         return Sent(
             link: reply["link"]?.string ?? "", message: reply["message"]?.string ?? "",
@@ -161,13 +169,16 @@ public struct ReportServer {
     /// Finishes a report after the customer signed on this phone (or with Customer Not Here).
     /// The signature and any edits must reach the server first, so the report carries them.
     public func finish(reportId: String, customerAway: Bool) async throws -> String {
+        onStep?(0)
         await sync.syncNow()
         if sync.hasPendingWrites("report", reportId) || sync.hasPendingWrites("signature") {
             throw WebAPI.Failure(
                 description:
                     "The signature or your edits haven’t reached the server yet. Finish when you have signal.")
         }
+        onStep?(1)
         let reply = try await api.post("api/reports/\(reportId)/finish", ["customerAway": .bool(customerAway)])
+        onStep?(2)
         await sync.syncNow()
         return reply["token"]?.string ?? ""
     }

@@ -18,6 +18,8 @@
         @State private var form: SignatureForm?
         @State private var missing = false
         @State private var busy: Busy?
+        /// The finish's step, for the step list while it runs.
+        @State private var step = 0
         @State private var drawing = false
         @FocusState private var focus: Field?
 
@@ -228,6 +230,7 @@
                         .buttonStyle(.quiet)
                         .padding(.leading, -20)
                     }
+                    if busy != nil { ProgressSteps(steps: ReportProgress.review, current: step) }
                 }
                 .disabled(busy != nil)
             }
@@ -256,7 +259,9 @@
             guard var current = form, let summary, busy == nil, let company = session.company else { return }
             focus = nil
             busy = customerAway ? .away : .sign
-            let server = ReportServer(sync: sync, api: app.api)
+            step = 0
+            var server = ReportServer(sync: sync, api: app.api)
+            server.onStep = { step = $0 }
             Task {
                 let result = await ReviewFinish.run(
                     &current, customerAway: customerAway, summary: summary, sync: sync, companyId: company.id,

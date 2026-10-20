@@ -547,3 +547,72 @@ private func signature(_ id: String, _ name: String, purpose: String = "inspecti
         #expect(StubServer.calls(ok.host).last?.body == ["customerAway": false])
     }
 }
+
+/// Saved reports (owner, 2026-10-20) and the step list while a report waits on the server.
+@Suite @MainActor struct SavedReportTests {
+    private let saved: [(String, JSONValue)] = [
+        (
+            "saved_report",
+            [
+                "id": "sr1", "company_id": "c1", "name": "No leak found", "sort_order": 2,
+                "sections": ["summary": "We found no leak.", "next_steps": "Repair the return line."],
+            ]
+        ),
+        (
+            "saved_report",
+            ["id": "sr0", "company_id": "c1", "name": "Return line", "sort_order": 1, "sections": ["findings": "x"]]
+        ),
+    ]
+
+    @Test func useSavedReportFillsTheSectionsAndAsksFirst() throws {
+        let s = try ReportJob(rows: saved + [report("r1", version: 1, status: "draft", sections: twoSections)])
+        let list = savedReports(s.store, companyId: "c1")
+        #expect(list.map(\.id) == ["sr0", "sr1"])
+        #expect(list[1].detail == "Summary, What happens next")
+        let f = s.flow()
+        // Summary has its own different text: asked about; next_steps already says the same.
+        #expect(f.savedReportReplaces(list[1]) == ["Summary"])
+        #expect(replaceSavedReportQuestion(f.savedReportReplaces(list[1])) == "Replace the text in Summary?")
+        f.useSavedReport(list[1])
+        #expect(f.message == "Used “No leak found”. Read it over before sending.")
+        let sections = try #require(jobReports(s.store, jobId: "j1").first?.finalSections)
+        #expect(sections.map(\.text) == ["We found no leak.", "Repair the return line."])
+        #expect(try s.pendingFields("report", "r1") == ["final_sections"])
+        // A saved report with nothing for this draft's sections changes nothing.
+        #expect(f.savedReportReplaces(list[0]).isEmpty)
+    }
+
+    @Test func saveAsSavedReportAndEditThem() throws {
+        let s = try ReportJob(rows: saved + [report("r1", version: 1, status: "draft", sections: twoSections)])
+        let f = s.flow()
+        #expect(throws: WebAPI.Failure(description: "Enter a name.")) { try f.saveAsSavedReport(name: "  ") }
+        f.edits["summary"] = "  Pressure held.  "
+        try f.saveAsSavedReport(name: " Pressure held ")
+        #expect(f.message == "Saved as “Pressure held”.")
+        let made = try #require(savedReports(s.store, companyId: "c1").last)
+        #expect(made.name == "Pressure held" && made.sortOrder == 3)
+        #expect(made.sections == ["summary": "Pressure held.", "next_steps": "Repair the return line."])
+        try SavedReportWrites.save(
+            s.sync, companyId: "c1", id: made.id, name: "Held", sections: ["summary": "", "findings": " New. "])
+        #expect(savedReports(s.store, companyId: "c1").last?.sections == ["findings": "New."])
+        try SavedReportWrites.delete(s.sync, id: made.id)
+        #expect(savedReports(s.store, companyId: "c1").map(\.id) == ["sr0", "sr1"])
+        #expect(savedReportNameProblem(String(repeating: "a", count: 81)) != nil)
+    }
+
+    @Test func waitingOnTheServerShowsSteps() async throws {
+        let s = try ReportJob()
+        try await s.shell.session.signIn(email: "tech@shop.test", password: "right")
+        StubServer.set(s.host, "/api/jobs/j1/reports", 200, ["reportId": "r9", "problems": []])
+        var server = s.server
+        var seen: [Int] = []
+        server.onStep = { seen.append($0) }
+        _ = try await server.writeDraft(jobId: "j1", template: .homeowner)
+        #expect(seen == [0, 1, 2])
+        #expect(ReportProgress.steps(.draft) == ["Saving your work", "Writing the report", "Getting it ready"])
+        #expect(ReportProgress.spoken(ReportProgress.steps(.draft), 1) == "Writing the report, step 2 of 3")
+        let f = s.flow()
+        await f.run(.draft, server: s.server)
+        #expect(f.busy == nil && f.step == 0 && f.error == nil)
+    }
+}

@@ -72,6 +72,11 @@
         @State private var browsing: BrowsedPage?
         /// The version whose Send by Text opened the share sheet.
         @State private var sharingFrom: String?
+        /// The version being sent, whose steps show under its buttons.
+        @State private var sendingFrom: String?
+        @State private var pickingSaved = false
+        @State private var savingAs = false
+        @Environment(Session.self) private var session
         @FocusState private var focus: Field?
 
         enum Field: Hashable {
@@ -89,6 +94,7 @@
                 } else {
                     writeButtons
                 }
+                if flow.busy == .draft { ProgressSteps(steps: ReportProgress.steps(.draft), current: flow.step) }
                 if let error = flow.error, error.at == .draft { Notice(kind: .error, text: error.text) }
                 if let message = flow.message { Notice(kind: .success, text: message) }
                 if model.hasDraftText, let draft = model.draft {
@@ -242,6 +248,23 @@
                 // Every pending edit is saved in one write when a section loses focus.
                 if case .section = old { flow.saveEdits() }
             }
+            // Saved reports (owner, 2026-10-20): the shop's own wording, word for word.
+            FlowRow(spacing: 12) {
+                Button(SavedReportText.use) {
+                    focus = nil
+                    pickingSaved = true
+                }
+                .buttonStyle(.secondary)
+                if isManagerRole(session.company?.role) {
+                    Button(SavedReportText.saveAs) {
+                        focus = nil
+                        savingAs = true
+                    }
+                    .buttonStyle(.quiet)
+                }
+            }
+            .sheet(isPresented: $pickingSaved) { UseSavedReportSheet(flow: flow) }
+            .sheet(isPresented: $savingAs) { SaveAsSavedReportSheet(flow: flow) }
 
             Hairline().padding(.top, 12)
             if let title = model.finishTitle {
@@ -256,6 +279,7 @@
                 }
                 .buttonStyle(.primary)
                 .disabled(flow.busy != nil || !model.online)
+                if flow.busy == .finish { ProgressSteps(steps: ReportProgress.steps(.finish), current: flow.step) }
             } else {
                 Button(ReportTabModel.reviewWithCustomer) {
                     flow.saveEdits()
@@ -324,11 +348,15 @@
             ) {
                 ShareSheet(text: flow.share ?? "")
             }
+            if let busy = flow.busy, busy == .email || busy == .text, sendingFrom == reportId {
+                ProgressSteps(steps: ReportProgress.steps(busy), current: flow.step)
+            }
         }
 
         @ViewBuilder private func sendButtons(reportId: String, primary: Bool) -> some View {
             Button {
                 focus = nil
+                sendingFrom = reportId
                 Task { await flow.run(.email, reportId: reportId, server: server) }
             } label: {
                 BusyButtonLabel("Send by Email", busy: flow.busy == .email, busyTitle: "Sending…")
@@ -338,6 +366,7 @@
             Button {
                 focus = nil
                 sharingFrom = reportId
+                sendingFrom = reportId
                 Task { await flow.run(.text, reportId: reportId, server: server) }
             } label: {
                 BusyButtonLabel("Send by Text", busy: flow.busy == .text, busyTitle: "Sending…")
@@ -561,9 +590,13 @@
     }
 
     extension View {
-        /// Shows `page` in the in-app browser while it's set.
+        /// Shows `page` in the app while it's set: a PDF downloaded with a progress bar and shown
+        /// with PDFKit; a report page in a web view with its steps until it has drawn (owner,
+        /// 2026-10-20: no long white screen).
         func browser(_ page: Binding<BrowsedPage?>) -> some View {
-            sheet(item: page) { SafariView(url: $0.url).ignoresSafeArea() }
+            sheet(item: page) { p in
+                if p.url.lastPathComponent == "pdf" { PDFSheet(url: p.url) } else { ReportPageSheet(url: p.url) }
+            }
         }
     }
 #endif

@@ -14,6 +14,8 @@ import Testing
             "FINISH_PHOTO_MESSAGE", "REPAIR_ITEM_KEY", "REPAIR_ITEM_LABEL", "jobActionLabel", "jobFeeLabel",
             "parseGallons", "requiresFinishedChecklist", "FINISH_CHECKLIST_MESSAGE", "completeJobBlocker",
             "jobHasWrapUp", "stopDone", "markCompleteValues", "isHexColor", "parseReminderDays",
+            "SAVED_REPORT_SECTIONS", "savedReportSections", "applySavedReport", "replaceSavedReportQuestion",
+            "savedReportFrom",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -30,6 +32,20 @@ import Testing
     @Test func companySettings() {
         checkRule(module, "isHexColor") { c in isHexColor(try c.arg(0, as: JSONValue.self)) }
         checkRule(module, "parseReminderDays") { c in parseReminderDays(try c.arg(0)) }
+    }
+
+    @Test func savedReports() {
+        checkRule(module, "SAVED_REPORT_SECTIONS") { _ in
+            savedReportSectionList.map { ["key": $0.key, "title": $0.title] }
+        }
+        checkRule(module, "savedReportSections") { c in savedReportSections(try c.arg(0, as: JSONValue?.self)) }
+        checkRule(module, "applySavedReport") { c in
+            let r = applySavedReport(try c.arg(0), try c.arg(1, as: JSONValue?.self))
+            return ["sections": try JSONValue(encoding: r.sections), "replaces": try JSONValue(encoding: r.replaces)]
+                as JSONValue
+        }
+        checkRule(module, "replaceSavedReportQuestion") { c in replaceSavedReportQuestion(try c.arg(0)) }
+        checkRule(module, "savedReportFrom") { c in savedReportFrom(try c.arg(0)) }
     }
 
     @Test func uuid() throws {

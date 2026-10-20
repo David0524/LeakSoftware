@@ -218,7 +218,11 @@ public final class ReportFlow {
     public var template: ReportRecord.Template = .homeowner
     /// Section text being edited, by section key; saved together when a field loses focus.
     public var edits: [String: String] = [:]
-    public var busy: Action?
+    public var busy: Action? {
+        didSet { if busy != oldValue { step = 0 } }
+    }
+    /// The step of `busy` under way (`ReportProgress.steps(busy)`), for the step list.
+    public var step = 0
     public var error: Failure?
     public var message: String?
     /// The customer email as typed; nil shows the customer's own.
@@ -344,7 +348,9 @@ public final class ReportFlow {
     }
 
     /// Writes the draft, finishes it, or sends a version (`reportId`, else the draft).
-    public func run(_ action: Action, reportId: String? = nil, server: ReportServer) async {
+    public func run(_ action: Action, reportId: String? = nil, server base: ReportServer) async {
+        var server = base
+        server.onStep = { [weak self] step in self?.step = step }
         busy = action
         error = nil
         message = nil

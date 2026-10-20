@@ -528,6 +528,7 @@
                         .disabled(!item.editable)
                     }
                 }
+                SavedReportsGroup()
             }
             .refreshable { await sync.syncNow() }
             .navigationTitle(SettingsPage.reports.title)
