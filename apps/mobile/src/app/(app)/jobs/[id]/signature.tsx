@@ -29,6 +29,7 @@ import {
   Segmented,
   T,
 } from "../../../../ui/components";
+import { signerNameError } from "../../../../lib/limits";
 import { useDiscardChanges } from "../../../../ui/discard";
 import { haptics } from "../../../../ui/haptics";
 import { PadBlock } from "../../../../features/report/PadBlock";
@@ -100,6 +101,8 @@ export default function SignatureScreen() {
   async function save() {
     if (!purpose) return setError("Choose what this signature is for.");
     if (!signer) return setError("Enter your name.");
+    const tooLong = signerNameError(signer);
+    if (tooLong) return setError(tooLong);
     if (inkLength(strokes) < MIN_INK) return setError("Sign in the box with your finger.");
     setSaving(true);
     try {

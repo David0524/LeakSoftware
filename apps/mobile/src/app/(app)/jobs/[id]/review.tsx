@@ -37,6 +37,7 @@ import {
 } from "../../../../ui/components";
 import { PadBlock } from "../../../../features/report/PadBlock";
 import { ReportTests } from "../../../../features/report/ReportTests";
+import { signerNameError } from "../../../../lib/limits";
 import { useDiscardChanges } from "../../../../ui/discard";
 import { color, face, space } from "../../../../ui/theme";
 
@@ -115,6 +116,8 @@ export default function ReviewScreen() {
     if (!customerAway && purposes.length) {
       if (!purpose) return setError("Choose what this signature is for.");
       if (!signer) return setError("Enter your name.");
+      const tooLong = signerNameError(signer);
+      if (tooLong) return setError(tooLong);
       if (inkLength(strokes) < MIN_INK) return setError("Sign in the box with your finger.");
     }
     if (customerAway && !draft) return setError("Write the draft first, then finish it here.");

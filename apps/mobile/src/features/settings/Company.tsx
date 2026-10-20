@@ -22,6 +22,7 @@ import { Select } from "../../ui/Select";
 import { color, space } from "../../ui/theme";
 import { ManagersOnly } from "./SettingsList";
 import { formChanged } from "../../lib/discard";
+import { isWebUrl, REVIEW_URL_ERROR } from "../../lib/limits";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 // Settings › Company and Branding (the website's settings/company): the company profile,
@@ -104,6 +105,8 @@ function Profile({ row, onSaved }: { row: Row; onSaved: Said }) {
 
   function save() {
     if (!f.name.trim()) return setError("Enter the company name.");
+    // It goes into customer emails as a link: web pages only (the website's rule).
+    if (f.review_url.trim() && !isWebUrl(f.review_url.trim())) return setError(REVIEW_URL_ERROR);
     setError(undefined);
     const opt = (v: string) => v.trim() || null;
     const address = {

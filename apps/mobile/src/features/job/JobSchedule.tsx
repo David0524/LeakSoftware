@@ -26,6 +26,7 @@ import { Group, ListRow, Section, T } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { color } from "../../ui/theme";
 import { MoveSheet, SuggestSheet, type MoveTarget } from "../schedule/MoveSheet";
+import { jobDateError } from "../../lib/limits";
 
 /** Repair jobs and jobs not yet started show the Schedule group (as on the website). */
 export function showsJobSchedule(job: { type: string; status: string }) {
@@ -92,6 +93,9 @@ export function JobSchedule({ jobId }: { jobId: string }) {
   }
 
   function moveTo(j: JobView, techId: string | null, d: string | null, index: number) {
+    // Years 2000 to 2100 and a real day, as the website (owner, 2026-10-20).
+    const badDate = d ? jobDateError(d) : null;
+    if (badDate) return setResult({ error: badDate });
     const fromDate = j.scheduled_start ? localDate(new Date(j.scheduled_start), tz) : null;
     save(
       moveJobChange(

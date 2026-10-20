@@ -8,6 +8,7 @@ import { color, MAX_TEXT_SCALE, minTap, space, type } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
 import { DatePicker } from "./Calendar";
 import { formChanged } from "../../lib/discard";
+import { jobDateError } from "../../lib/limits";
 
 // Move {Customer} and Suggested Times (spec 6.3; the website's route-board.tsx MoveSheet and
 // Suggestions).
@@ -121,6 +122,7 @@ function MoveForm({
   const [tech, setTech] = useState(techs.length === 1 ? techs[0]!.id : (job.from?.tech ?? ""));
   const [date, setDate] = useState(job.from && job.from.date >= today ? job.from.date : today);
   const [picking, setPicking] = useState(false);
+  const [dateError, setDateError] = useState<string | null>(null);
   const others = tech ? placesFor(tech, date, job.id) : [];
   const [place, setPlace] = useState(() => others.length);
   // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
@@ -198,7 +200,17 @@ function MoveForm({
         </View>
       ) : null}
       <View style={{ gap: space["2"], marginTop: space["1"] }}>
-        <Button title="Move" wide onPress={() => onMove(tech || null, date, tech ? at : 9_999)} />
+        <Button
+          title="Move"
+          wide
+          onPress={() => {
+            // Years 2000 to 2100 and a real day, as the website (owner, 2026-10-20).
+            const bad = jobDateError(date);
+            setDateError(bad);
+            if (!bad) onMove(tech || null, date, tech ? at : 9_999);
+          }}
+        />
+        {dateError ? <Notice tone="error">{dateError}</Notice> : null}
         {job.from ? (
           <Button
             title="Take Off Schedule"

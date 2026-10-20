@@ -55,6 +55,7 @@ import {
   Toggle,
   Segmented,
 } from "../../../../../ui/components";
+import { jobDateError } from "../../../../../lib/limits";
 import { useDiscardChanges } from "../../../../../ui/discard";
 import { haptics } from "../../../../../ui/haptics";
 import { DateField, TimeField } from "../../../../../features/schedule/DateField";
@@ -337,6 +338,9 @@ function NewJobForm() {
     };
     const e = validateNewJob(input);
     if (when === "scheduled" && !input.scheduleDate) e.scheduleDate = "Pick a date.";
+    // Years 2000 to 2100 and a real day, as the website (owner, 2026-10-20).
+    else if (when === "scheduled" && !e.scheduleDate && jobDateError(input.scheduleDate))
+      e.scheduleDate = jobDateError(input.scheduleDate)!;
     setErrors(e);
     const feeCents = feeText.trim() ? parseDollars(feeText) : null;
     const badFee = leak && Boolean(feeText.trim()) && (feeCents === null || feeCents < 0);

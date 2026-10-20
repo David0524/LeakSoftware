@@ -31,6 +31,7 @@ import {
 } from "../../data/quotes";
 import { reportsOnline } from "../../data/reports";
 import { API_URL } from "../../lib/config";
+import { discountTooLarge, lineDescriptionError } from "../../lib/limits";
 import { getServices } from "../../lib/services";
 import { useCompany, useSession } from "../../state/session";
 import { Button, Card, Field, Notice, T } from "../../ui/components";
@@ -208,6 +209,8 @@ function QuoteBuilder({ job, quote }: { job: Job; quote: JobQuote }) {
     const cents = discount.trim() === "" ? 0 : parseDollars(discount);
     setDiscountText(null);
     if (cents === null || cents < 0) return setError("Enter a discount like 50 or 50.00.");
+    const tooLarge = discountTooLarge(cents, totals.subtotal_cents);
+    if (tooLarge) return setError(tooLarge);
     if (!discountAllowed(totals.subtotal_cents, cents, isOwner, limitBps))
       return setError(`Techs can give up to ${limitBps / 100}% off. Ask an owner for more.`);
     setError(null);
@@ -216,7 +219,8 @@ function QuoteBuilder({ job, quote }: { job: Job; quote: JobQuote }) {
 
   function addCustom() {
     const cents = parseDollars(custom.price);
-    if (!custom.description.trim()) return setError("Describe the work.");
+    const described = lineDescriptionError(custom.description);
+    if (described) return setError(described);
     if (cents === null || cents < 0) return setError("Enter a price like 125 or 125.50.");
     setError(null);
     addLine(sync, company, quote, {
@@ -481,8 +485,11 @@ function LineEditor({
   );
 
   function commit() {
-    if (description !== null && description.trim() && description.trim() !== l.description)
-      onSave({ description: description.trim() });
+    if (description !== null && description.trim() && description.trim() !== l.description) {
+      const described = lineDescriptionError(description);
+      if (described) onError(described);
+      else onSave({ description: description.trim() });
+    }
     if (quantity !== null) {
       const n = Number(quantity.replace(",", "."));
       if (n > 0 && n < 100_000) {
