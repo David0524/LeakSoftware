@@ -1,10 +1,11 @@
 import Constants from "expo-constants";
 import { router } from "expo-router";
-import { isManagerRole, offersPool } from "@leakbook/core";
+import { ACTIVITY_DETAIL, ACTIVITY_TITLE, isManagerRole, offersPool } from "@leakbook/core";
 import { useState, useSyncExternalStore } from "react";
 import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, View } from "react-native";
 import { notificationSummary, useNotificationPrefs } from "../../../../../data/notificationPrefs";
 import { call } from "../../../../../data/reports";
+import { useActivityUnread } from "../../../../../data/activity";
 import { API_URL } from "../../../../../lib/config";
 import { useSession, useSyncStatus } from "../../../../../state/session";
 import { useWalkthrough } from "../../../../../state/walkthrough";
@@ -52,6 +53,7 @@ export default function More() {
   const team = services.sync.team();
   const me = team.find((t) => t.id === user?.id);
   const { prefs: notificationPrefs } = useNotificationPrefs();
+  const activityDot = useActivityUnread(company?.id ?? "");
 
   function confirmSignOut() {
     const changes = status.pending + status.problems.length;
@@ -85,6 +87,18 @@ export default function More() {
         {manager ? <ListRow title="Dashboard" onPress={() => router.push("/dashboard")} /> : null}
         <ListRow title="Customers" onPress={() => router.push("/customers")} />
         <ListRow title="Invoices" onPress={() => router.push("/invoices")} />
+        {/* What happened in the shop, with a dot when there's something new (owner, 2026-10-20). */}
+        <ListRow
+          title={ACTIVITY_TITLE}
+          subtitle={ACTIVITY_DETAIL}
+          accessibilityLabel={`${ACTIVITY_TITLE}${activityDot ? ", new activity" : ""}`}
+          detail={
+            activityDot ? (
+              <View style={[styles.dot, { backgroundColor: color.primary }]} />
+            ) : undefined
+          }
+          onPress={() => router.push("/activity" as never)}
+        />
         {company && offersPool(company.settings) ? (
           <ListRow title="Chemicals" onPress={() => router.push("/chemicals")} />
         ) : null}

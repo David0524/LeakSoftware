@@ -20,18 +20,10 @@ vi.mock("../src/lib/config", () => ({ API_URL: "https://sundeck.test" }));
 vi.mock("../src/data/hooks", () => ({ useRows: () => [], useJobRows: () => [] }));
 
 const { SyncService } = await import("../src/lib/sync-service");
-const {
-  actionPlace,
-  canReorderDay,
-  dropPlace,
-  reorderChange,
-  reorderRows,
-  saveMove,
-  snapshotJobs,
-  stopLock,
-  writeJobs,
-} = await import("../src/lib/todayReorder");
+const { canReorderDay, dropPlace, reorderChange, reorderRows, todayStops, writeJobs } =
+  await import("../src/lib/todayReorder");
 type ReorderStop = import("../src/lib/todayReorder").ReorderStop;
+type TodayMove = import("@leakbook/core").TodayMove;
 
 const TZ = "America/Phoenix"; // UTC-7 all year
 const today = "2026-10-20";
@@ -83,7 +75,7 @@ const day = () => [stop("a", "09:00"), stop("b", "10:30"), stop("c", "12:00"), s
 const move = (
   stops: ReorderStop[],
   jobId: string,
-  place: number,
+  to: TodayMove,
   who: { userId?: string; seesAll?: boolean; techId?: string } = {},
 ) =>
   reorderChange(
@@ -91,7 +83,7 @@ const move = (
     {
       stops,
       jobId,
-      place,
+      to,
       techId: who.techId ?? ann,
       seesAll: who.seesAll ?? false,
       userId: who.userId ?? ann,
@@ -99,27 +91,26 @@ const move = (
     drive,
   );
 
-describe("which stops can move", () => {
-  it("locks started stops, promised times, done stops, and a second tech's job", () => {
-    expect(stopLock(stop("a", "09:00", { status: "in_progress" }), ann, today, TZ)).toEqual({
-      kind: "started",
-      label: "Started",
+describe("which stops can move (the shared rule, core todayStopLock and todayMoves)", () => {
+  it("locks started stops, promised times, done stops, and two-tech jobs on every day", () => {
+    const lock = (over: Partial<ReorderStop>) =>
+      reorderRows([stop("a", "09:00", over)], today, TZ)[0]!.lock;
+    expect(lock({ status: "in_progress" })).toBe("Started");
+    expect(lock({ arrival_fixed: true })).toMatch(/^Promised for 9:00\sAM$/u);
+    expect(lock({ stop_done_on: today })).toBe("Done");
+    expect(lock({ status: "done" })).toBe("Done");
+    // The main tech's day too, not only the second tech's.
+    expect(lock({ second_tech_id: bob })).toBe("Two techs");
+    expect(lock({})).toBeNull();
+    expect(todayStops([stop("s", "09:00", { status: "in_progress" })], today, TZ)[0]).toEqual({
+      id: "s",
+      done: false,
+      lock: "Started",
+      started: true,
     });
-    const promised = stopLock(stop("a", "09:00", { arrival_fixed: true }), ann, today, TZ);
-    expect(promised?.kind).toBe("promised");
-    expect(promised?.label).toMatch(/^Promised for 9:00\sAM$/u);
-    expect(stopLock(stop("a", "09:00", { stop_done_on: today }), ann, today, TZ)?.kind).toBe(
-      "done",
-    );
-    expect(stopLock(stop("a", "09:00", { status: "done" }), ann, today, TZ)?.kind).toBe("done");
-    expect(
-      stopLock(stop("a", "09:00", { assigned_user_id: bob, second_tech_id: ann }), ann, today, TZ)
-        ?.kind,
-    ).toBe("second");
-    expect(stopLock(stop("a", "09:00"), ann, today, TZ)).toBeNull();
   });
 
-  it("offers Move Up only below the last started or done stop, Move Down and Do Later above the last", () => {
+  it("offers Move Up only below a started stop, and nothing that would do nothing", () => {
     const rows = reorderRows(
       [
         stop("x", "08:00", { stop_done_on: today }),
@@ -128,7 +119,6 @@ describe("which stops can move", () => {
         stop("p", "11:00", { arrival_fixed: true }),
         stop("b", "12:00"),
       ],
-      ann,
       today,
       TZ,
     );
@@ -137,59 +127,55 @@ describe("which stops can move", () => {
     expect(by.s).toMatchObject({ canUp: false, canDown: false, canLater: false });
     // Right after the started stop: nowhere to go up to.
     expect(by.a).toMatchObject({ lock: null, canUp: false, canDown: true, canLater: true });
-    expect(by.p?.lock?.kind).toBe("promised");
+    expect(by.p?.lock).toMatch(/^Promised for/u);
     expect(by.p).toMatchObject({ canUp: false, canDown: false });
-    // The last stop: up only (it can go above a promised one), no Do Later.
+    // The last stop still to do: up only (it can go above a promised one), no Do Later.
     expect(by.b).toMatchObject({ canUp: true, canDown: false, canLater: false });
+  });
+
+  it("ignores done stops when counting places", () => {
+    // A stop done out of order sits in the middle: the next stop can still move up past it.
+    const rows = reorderRows(
+      [stop("a", "09:00"), stop("x", "10:30", { stop_done_on: today }), stop("b", "12:00")],
+      today,
+      TZ,
+    );
+    const by = Object.fromEntries(rows.map((r) => [r.id, r]));
+    expect(by.b).toMatchObject({ canUp: true, canDown: false, canLater: false });
+    expect(by.a).toMatchObject({ canUp: false, canDown: true, canLater: true });
   });
 });
 
-describe("places", () => {
-  it("Do Later is past the last stop; Move Up and Move Down are one place", () => {
-    // Four stops, the second one: three others.
-    expect(actionPlace(4, 1, "later")).toBe(3);
-    expect(actionPlace(4, 1, "up")).toBe(0);
-    expect(actionPlace(4, 1, "down")).toBe(2);
-    expect(actionPlace(4, 3, "down")).toBe(3);
-    expect(actionPlace(4, 0, "up")).toBe(0);
-  });
-
-  it("a drop lands before the stop under it, and never ahead of a started one", () => {
-    const stops = [stop("s", "08:00", { status: "in_progress" }), ...day()];
-    expect(dropPlace(stops, "d", "b", ann, today, TZ)).toBe(2);
-    expect(dropPlace(stops, "d", null, ann, today, TZ)).toBe(4);
-    expect(dropPlace(stops, "d", "s", ann, today, TZ)).toBe(1);
+describe("dragging", () => {
+  it("lands at a place among the stops still to do, before the row under it", () => {
+    const stops = [stop("x", "08:00", { stop_done_on: today }), ...day()];
+    expect(dropPlace(stops, "d", "b", today)).toBe(1);
+    expect(dropPlace(stops, "a", null, today)).toBe(3);
+    // Before the done stop: the first place to do.
+    expect(dropPlace(stops, "d", "x", today)).toBe(0);
+    // Where it already is.
+    expect(dropPlace(stops, "b", "c", today)).toBeNull();
+    expect(dropPlace(stops, "d", null, today)).toBeNull();
   });
 });
 
 describe("the move", () => {
   it("Do Later puts the stop after every stop still to do and says when", () => {
     const stops = day();
-    const change = move(stops, "a", actionPlace(4, 0, "later"));
+    const change = move(stops, "a", "later");
     expect(change.error).toBeUndefined();
     expect(change.message).toMatch(/^Moved to \d{1,2}:\d{2}\sPM\./u);
     expect(orderAfter(stops, change.updates)).toEqual(["b", "c", "d", "a"]);
     // Same tech, same day.
-    expect(change.updates[0]).toMatchObject({ id: "a", assigned_user_id: ann });
-    expect(
-      change.updates.every((u) => !u.scheduled_start || u.scheduled_start.startsWith(today)),
-    ).toBe(true);
+    expect(change.updates.find((u) => u.id === "a")?.scheduled_start?.startsWith(today)).toBe(true);
+    expect(move(stops, "d", "later").error).toBe("It’s already there.");
   });
 
-  it("Move Up and Move Down swap with the stop next to it", () => {
+  it("Move Up and Move Down swap with the stop next to it; a drag goes to its place", () => {
     const stops = day();
-    expect(orderAfter(stops, move(stops, "c", actionPlace(4, 2, "up")).updates)).toEqual([
-      "a",
-      "c",
-      "b",
-      "d",
-    ]);
-    expect(orderAfter(stops, move(stops, "b", actionPlace(4, 1, "down")).updates)).toEqual([
-      "a",
-      "c",
-      "b",
-      "d",
-    ]);
+    expect(orderAfter(stops, move(stops, "c", "up").updates)).toEqual(["a", "c", "b", "d"]);
+    expect(orderAfter(stops, move(stops, "b", "down").updates)).toEqual(["a", "c", "b", "d"]);
+    expect(orderAfter(stops, move(stops, "d", 0).updates)).toEqual(["d", "a", "b", "c"]);
   });
 
   it("keeps promised and started stops where they are", () => {
@@ -199,22 +185,28 @@ describe("the move", () => {
       stop("p", "11:00", { arrival_fixed: true }),
       stop("b", "12:30"),
     ];
-    const change = move(stops, "a", actionPlace(4, 1, "later"));
-    const s = change.updates.find((u) => u.id === "s");
-    const p = change.updates.find((u) => u.id === "p");
-    expect(s?.scheduled_start).toBeUndefined();
-    expect(p?.scheduled_start).toBeUndefined();
+    const change = move(stops, "a", "later");
+    expect(change.updates.find((u) => u.id === "s")?.scheduled_start).toBeUndefined();
+    expect(change.updates.find((u) => u.id === "p")?.scheduled_start).toBeUndefined();
     expect(orderAfter(stops, change.updates)).toEqual(["s", "p", "b", "a"]);
-    expect(move(stops, "s", 3).error).toMatch(/started/);
-    expect(move(stops, "p", 3).error).toMatch(/^Promised for 11:00\sAM/u);
+    expect(move(stops, "s", "later").error).toBe("Started, so it stays where it is.");
+    expect(move(stops, "p", "later").error).toMatch(/^Promised for 11:00\sAM, so it stays/u);
+    expect(move(stops, "b", 0).updates.length).toBeGreaterThan(0);
+    // Nothing goes above the started stop: place 0 is right after it.
+    expect(orderAfter(stops, move(stops, "b", 0).updates)[0]).toBe("s");
   });
 
-  it("doesn't retime a stop already done for the day", () => {
+  it("leaves stops done for the day out of the move", () => {
     const stops = [stop("x", "08:00", { stop_done_on: today }), ...day()];
-    const change = move(stops, "a", actionPlace(5, 1, "later"));
-    expect(change.updates.find((u) => u.id === "x")?.scheduled_start).toBeUndefined();
+    const change = move(stops, "a", "later");
+    expect(change.updates.find((u) => u.id === "x")).toBeUndefined();
     expect(orderAfter(stops, change.updates)).toEqual(["x", "b", "c", "d", "a"]);
-    expect(move(stops, "x", 4).error).toMatch(/done/);
+    expect(move(stops, "x", "later").error).toBe("This stop is done, so it stays where it is.");
+  });
+
+  it("won't move a two-tech job, on either tech's day", () => {
+    const stops = [stop("a", "09:00", { second_tech_id: bob }), stop("b", "10:30")];
+    expect(move(stops, "a", "later").error).toBe("Two techs, so it stays where it is.");
   });
 
   it("techs move only their own day; owners and admins any day they view", () => {
@@ -222,8 +214,8 @@ describe("the move", () => {
     expect(canReorderDay({ manager: false, me: bob, techId: ann })).toBe(false);
     expect(canReorderDay({ manager: false, me: ann, techId: ann })).toBe(true);
     expect(canReorderDay({ manager: true, me: owner, techId: ann })).toBe(true);
-    expect(move(stops, "a", 3, { userId: bob }).error).toMatch(/only your own jobs/);
-    const byOwner = move(stops, "a", 3, { userId: owner, seesAll: true });
+    expect(move(stops, "a", "later", { userId: bob }).error).toMatch(/only your own jobs/);
+    const byOwner = move(stops, "a", "later", { userId: owner, seesAll: true });
     expect(byOwner.error).toBeUndefined();
     expect(orderAfter(stops, byOwner.updates)).toEqual(["b", "c", "d", "a"]);
   });
@@ -254,45 +246,39 @@ describe("saving and Undo", () => {
     arrival_fixed: r?.arrival_fixed,
   });
 
-  it("Undo writes back the exact saved values of every row the move changed", () => {
+  it("saves only what changes, and Undo writes back the saved values of those fields", () => {
     const sync = service();
     const stops = day().map((s, i) => ({ ...s, route_order: i + 1 }));
     for (const { id, property: _p, ...values } of stops)
       sync.write("job", id, company, { ...values, type: "detection" });
     const before = new Map(stops.map((s) => [s.id, fields(sync.get("job", s.id))]));
 
-    const change = move(stops, "a", 3);
-    const undo = saveMove(sync, company, change.updates);
-    expect(undo.map((u) => u.id).sort()).toEqual(change.updates.map((u) => u.id).sort());
+    const change = move(stops, "a", "later");
+    // Unchanged fields and rows are left out (core changeWithUndo).
+    for (const u of change.updates) {
+      const was = stops.find((s) => s.id === u.id)! as unknown as Record<string, unknown>;
+      for (const [k, v] of Object.entries(u)) if (k !== "id") expect(v).not.toEqual(was[k]);
+    }
+    expect(change.undo.map((u) => u.id)).toEqual(change.updates.map((u) => u.id));
+    expect(change.updates.find((u) => u.id === "a")).not.toHaveProperty("assigned_user_id");
+
+    writeJobs(sync, company, change.updates);
     expect(sync.get("job", "a")?.route_order).toBe(4);
     expect(sync.get("job", "a")?.scheduled_start).not.toBe(before.get("a")?.scheduled_start);
     // The move went to the outbox with the rows.
     expect(sync.hasPendingWrites("job", "a")).toBe(true);
 
-    writeJobs(sync, company, undo);
+    writeJobs(sync, company, change.undo);
     for (const s of stops) expect(fields(sync.get("job", s.id))).toEqual(before.get(s.id));
     // Fields the move doesn't write are left alone.
     expect(sync.get("job", "a")?.type).toBe("detection");
     sync.stop();
   });
 
-  it("a field the row never had comes back empty (arrival_fixed off)", () => {
-    const sync = service();
-    sync.write("job", "a", company, { status: "scheduled" });
-    expect(
-      snapshotJobs(sync, [
-        { id: "a", route_order: 2, arrival_fixed: true, scheduled_start: at("10:00") },
-      ]),
-    ).toEqual([{ id: "a", route_order: null, arrival_fixed: false, scheduled_start: null }]);
-    sync.stop();
-  });
-
-  it("takes the snapshot before writing", () => {
-    const sync = service();
-    sync.write("job", "a", company, { route_order: 1 });
-    const undo = saveMove(sync, company, [{ id: "a", route_order: 3 }]);
-    expect(undo).toEqual([{ id: "a", route_order: 1 }]);
-    expect(sync.get("job", "a")?.route_order).toBe(3);
-    sync.stop();
+  it("a value the job never had comes back empty", () => {
+    const stops = day();
+    const change = move(stops, "a", "later");
+    // route_order was null on every stop: Undo puts null back.
+    expect(change.undo.find((u) => u.id === "a")?.route_order).toBeNull();
   });
 });

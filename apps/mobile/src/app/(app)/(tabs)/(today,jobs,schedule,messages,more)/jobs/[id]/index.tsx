@@ -98,6 +98,7 @@ import { FindingsTab } from "../../../../../../features/inspection/FindingsTab";
 import { TestsTab } from "../../../../../../features/inspection/TestsTab";
 import { JobSchedule, showsJobSchedule } from "../../../../../../features/job/JobSchedule";
 import { JobTimeline } from "../../../../../../features/job/Timeline";
+import { useRememberOpened } from "../../../../../../features/search/useRememberOpened";
 import { MediaSection, type MediaControls } from "../../../../../../features/media/MediaSection";
 import { InvoiceSection } from "../../../../../../features/invoice/InvoiceSection";
 import { QuoteTab } from "../../../../../../features/quote/QuoteTab";
@@ -126,6 +127,17 @@ export default function JobDetail() {
   const job = useRow<Job>("job", id);
   const property = useRow<Property>("property", job?.property_id);
   const customer = useRow<Customer>("customer", job?.bill_to_customer_id ?? property?.customer_id);
+  // First under Recent in search (docs/plans/search-and-activity.md), as the website's.
+  useRememberOpened(
+    job
+      ? {
+          kind: "job",
+          id: job.id,
+          title: `${job.number ? `Job #${job.number}` : "New job"} · ${JOB_TYPE_LABELS[job.type] ?? "Job"}`,
+          detail: customer?.name ?? null,
+        }
+      : null,
+  );
   const insp = useJobInspection(company.id, id);
   const insets = useSafeAreaInsets();
   const [section, setSectionState] = useState<JobSection>(

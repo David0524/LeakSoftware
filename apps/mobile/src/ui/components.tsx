@@ -40,7 +40,8 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { Stack } from "expo-router";
-import { useRoute, useScrollToTop } from "expo-router/react-navigation";
+import type { NativeStackNavigationOptions } from "expo-router/native-stack";
+import { useNavigationState, useRoute, useScrollToTop } from "expo-router/react-navigation";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { JOB_STATUS_LABELS, type JobStatus } from "@leakbook/core";
 import {
@@ -60,7 +61,8 @@ import {
   tint,
   type,
 } from "./theme";
-import { BAR_HEIGHT, barState, setLargeTitle } from "./Bar";
+import { BAR_HEIGHT, setBarRight, setLargeTitle, smallTitleOpacity, useBar } from "./Bar";
+import { liquidGlass } from "./navigation";
 import { haptics } from "./haptics";
 import { Icon, type IconName } from "./Icon";
 import { WebIcon, type WebIconName } from "./WebIcon";
@@ -193,26 +195,86 @@ export function useScreenChrome({
   const tabSpace = useContext(TabBarSpace);
   const ref = useRef<ScrollView>(null);
   useScrollToTop(ref);
-  const bar = barState(route.key);
+  const bar = useBar(route.key);
   const large = Boolean(title);
+  // No Back (a tab's root, the first screen in its stack): the large title sits in the bar's
+  // row, beside the "+" (owner, 2026-10-20), unless one of its words is too wide to fit there
+  // (very large text): then it takes its own row under the bar ("stacked").
+  const first = useNavigationState((state) => state?.routes[0]?.key === route.key);
+  const root = large && first && tabSpace > 0;
+  const [stacked, setStacked] = useState(false);
+  const inline = root && !stacked;
+  // The page draws the large title: always with the drawn bar (Android), and on iPhone for a
+  // tab's root, whose title the native bar can't put beside its buttons.
+  const ownTitle = large && (drawnChrome || root);
   useEffect(() => {
-    if (drawnChrome) setLargeTitle(route.key, large);
-  }, [route.key, large]);
+    setLargeTitle(route.key, ownTitle, inline);
+  }, [route.key, ownTitle, inline]);
 
-  const options = {
+  // iPhone, a tab's root: the native bar keeps its buttons but shows no large title; its small
+  // title fades in as on Android, and its material (blur before iOS 26, the scroll edge effect
+  // on iOS 26) waits until an inline title has scrolled away, so it isn't drawn over it.
+  const nativeOwn = ios && root;
+  const [scrolledAway, setScrolledAway] = useState(false);
+  useEffect(() => {
+    if (!nativeOwn) return;
+    const id = bar.y.addListener(({ value }) => setScrolledAway(value > INLINE_TITLE_SCROLLED));
+    return () => bar.y.removeListener(id);
+  }, [nativeOwn, bar.y]);
+  const material = !inline || scrolledAway;
+  const options: NativeStackNavigationOptions = {
     ...(title !== undefined ? { title } : null),
-    ...(headerRight ? { headerRight } : null),
+    ...(headerRight
+      ? {
+          headerRight: nativeOwn
+            ? () => (
+                <View
+                  style={styles.barRight}
+                  onLayout={(e) => setBarRight(route.key, e.nativeEvent.layout.width)}
+                >
+                  {headerRight()}
+                </View>
+              )
+            : headerRight,
+        }
+      : null),
     // Drawn bar: transparent over the page while a large title is in it.
     ...(drawnChrome && large ? { headerTransparent: true } : null),
+    ...(nativeOwn
+      ? {
+          headerLargeTitleEnabled: false,
+          headerTitle: ({ children }: { children: string }) => (
+            <Animated.Text
+              style={[type.navTitle, { color: color.text, opacity: smallTitleOpacity(bar) }]}
+              numberOfLines={1}
+              maxFontSizeMultiplier={1.6}
+            >
+              {children}
+            </Animated.Text>
+          ),
+          headerBlurEffect: liquidGlass || !material ? undefined : "systemChromeMaterial",
+          scrollEdgeEffects: { top: material ? "automatic" : "hidden" },
+        }
+      : null),
   };
   const hasOptions = Object.keys(options).length > 0;
 
   const header = (
     <>
       {hasOptions ? <Stack.Screen options={options} /> : null}
-      {(drawnChrome && large) || subtitle || headerActions ? (
+      {ownTitle || subtitle || headerActions ? (
         <View style={styles.titleBlock}>
-          {drawnChrome && large ? <T variant="largeTitle">{title}</T> : null}
+          {ownTitle ? (
+            <LargeTitle
+              title={title!}
+              inline={inline}
+              room={bar.right}
+              tryInline={root}
+              onStacked={setStacked}
+              // In the bar's row, the pinned sync bar (Android) floats under the title.
+              below={inline ? topInset : 0}
+            />
+          ) : null}
           {subtitle ? typeof subtitle === "string" ? <T muted>{subtitle}</T> : subtitle : null}
           {headerActions ? <View style={styles.headerActions}>{headerActions}</View> : null}
         </View>
@@ -220,15 +282,19 @@ export function useScreenChrome({
     </>
   );
 
-  const onScroll = drawnChrome
-    ? Animated.event([{ nativeEvent: { contentOffset: { y: bar.y } } }], {
-        useNativeDriver: false,
-      })
-    : undefined;
+  const onScroll =
+    drawnChrome || nativeOwn
+      ? Animated.event([{ nativeEvent: { contentOffset: { y: bar.y } } }], {
+          useNativeDriver: false,
+        })
+      : undefined;
 
   const contentContainerStyle: ViewStyle = {
     paddingHorizontal: gutter,
-    paddingTop: (drawnChrome && large ? insets.top + BAR_HEIGHT : space["4"]) + topInset,
+    paddingTop: inline
+      ? // In the bar's row: the title's 42 line centered on the bar's 44.
+        insets.top + (BAR_HEIGHT - VARIANTS.largeTitle.style.lineHeight!) / 2
+      : (ownTitle ? insets.top + BAR_HEIGHT : space["4"]) + topInset,
     paddingBottom: Math.max(space["7"], tabSpace),
   };
 
@@ -238,12 +304,75 @@ export function useScreenChrome({
     scrollProps: {
       onScroll: onScroll as ((e: NativeSyntheticEvent<NativeScrollEvent>) => void) | undefined,
       scrollEventThrottle: 16,
-      // iOS: lets the large title collapse as the page scrolls.
-      contentInsetAdjustmentBehavior: "automatic" as const,
+      // iOS: lets the large title collapse as the page scrolls. Inline, the page starts at the
+      // top of the screen, the title in the bar's row.
+      contentInsetAdjustmentBehavior: nativeOwn ? ("never" as const) : ("automatic" as const),
       keyboardShouldPersistTaps: "handled" as const,
     },
     contentContainerStyle,
   };
+}
+
+/** Scrolled this far, an inline title has gone under the status bar (the bar's material shows). */
+const INLINE_TITLE_SCROLLED = 22;
+
+/**
+ * The large title drawn in the page (spec 3.1). Inline (in the bar's row), it keeps clear of
+ * the bar's buttons (`room`, their width) and wraps between words; when its widest word can't
+ * fit beside them (very large text), `onStacked` moves it to its own row under the bar.
+ */
+function LargeTitle({
+  title,
+  inline,
+  room,
+  tryInline,
+  onStacked,
+  below,
+}: {
+  title: string;
+  inline: boolean;
+  room: number;
+  tryInline: boolean;
+  onStacked: (stacked: boolean) => void;
+  /** Room kept under the title. */
+  below: number;
+}) {
+  const [width, setWidth] = useState(0);
+  const [widest, setWidest] = useState(0);
+  const words = title.split(" ");
+  const sizes = useRef<number[]>([]);
+  useEffect(() => {
+    if (tryInline && width > 0 && widest > 0) onStacked(widest > width - room);
+  }, [tryInline, width, widest, room, onStacked]);
+  return (
+    <View style={{ marginBottom: below }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      <T variant="largeTitle" style={inline ? { paddingRight: room } : null}>
+        {title}
+      </T>
+      {tryInline ? (
+        // Each word's width, measured out of sight.
+        <View
+          style={styles.titleWords}
+          pointerEvents="none"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          {words.map((word, i) => (
+            <View
+              key={`${i}-${word}`}
+              onLayout={(e) => {
+                sizes.current[i] = e.nativeEvent.layout.width;
+                sizes.current.length = words.length;
+                setWidest(Math.max(0, ...sizes.current.map((w) => w ?? 0)));
+              }}
+            >
+              <T variant="largeTitle">{word}</T>
+            </View>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
 }
 
 export function Screen({
@@ -1837,6 +1966,8 @@ const styles = StyleSheet.create({
   // Blocks on a screen are 24 apart (spec 2.4).
   stack: { gap: space["5"] },
   titleBlock: { gap: space["1"], marginBottom: -space["2"] },
+  titleWords: { position: "absolute", left: 0, top: 0, opacity: 0, alignItems: "flex-start" },
+  barRight: { flexDirection: "row", alignItems: "center" },
   headerActions: {
     flexDirection: "row",
     flexWrap: "wrap",

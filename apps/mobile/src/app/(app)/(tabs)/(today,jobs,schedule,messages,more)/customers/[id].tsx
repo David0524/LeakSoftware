@@ -22,6 +22,7 @@ import { Alert, Linking, StyleSheet, Text, View } from "react-native";
 import { latestByPool, useChemicalLog } from "../../../../../data/chemicals";
 import { KIND_LABELS, useCustomerData } from "../../../../../data/customers";
 import { MaintenancePlans } from "../../../../../features/maintenance/MaintenancePlans";
+import { useRememberOpened } from "../../../../../features/search/useRememberOpened";
 import { useTeam } from "../../../../../data/schedule";
 import { useLine } from "../../../../../data/texting";
 import { locateAfterSync } from "../../../../../lib/locate";
@@ -72,6 +73,17 @@ export default function CustomerPage() {
   const [editing, setEditing] = useState<"contact" | Property | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const customer = customers.find((c) => c.id === id && !c.deleted_at);
+  // First under Recent in search (docs/plans/search-and-activity.md), as the website's.
+  useRememberOpened(
+    customer
+      ? {
+          kind: "customer",
+          id: customer.id,
+          title: customer.name,
+          detail: customer.phone?.trim() || customer.email?.trim() || null,
+        }
+      : null,
+  );
 
   if (!customer) {
     return (

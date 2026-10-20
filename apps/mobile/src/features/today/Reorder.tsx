@@ -2,17 +2,15 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 import { StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
-import { formatTime, type Company, type DriveFn } from "@leakbook/core";
+import { formatTime, type Company, type DriveFn, type TodayMove } from "@leakbook/core";
 import type { JobView } from "../../data/jobs";
 import { planContext } from "../../data/schedule";
 import { getServices } from "../../lib/services";
 import {
-  actionPlace,
   canReorderDay,
   dropPlace,
   reorderChange,
   reorderRows,
-  saveMove,
   writeJobs,
   type ReorderAction,
   type ReorderRow as RowInfo,
@@ -39,8 +37,9 @@ import {
 // it after every stop still to do, with "Moved to 2:15 PM" and Undo where the button was for 5
 // seconds. Reorder at the end of the day's line switches the list to edit mode, as iOS
 // Reminders: a drag handle and Move Up / Move Down on each stop that can move, a lock and the
-// reason on those that can't, and Done to end it. Each move is the Schedule's (core
-// moveJobChange), worked out from this phone's jobs and saved through the sync layer at once.
+// reason on those that can't, and Done to end it. Each move is the shared rule's (core
+// todayMoveIndex, then the Schedule's moveJobChange), as the website's, worked out from this
+// phone's jobs and saved through the sync layer at once.
 
 const asStop = (j: JobView): ReorderStop => ({ ...j, property: j.property ?? null });
 
@@ -60,8 +59,8 @@ export function useTodayReorder(input: {
   const ctx = planContext(company);
   const plan = useMemo(() => stops.map(asStop), [stops]);
   const rows = useMemo(
-    () => new Map(reorderRows(plan, techId, ctx.today, ctx.timeZone).map((r) => [r.id, r])),
-    [plan, techId, ctx.today, ctx.timeZone],
+    () => new Map(reorderRows(plan, ctx.today, ctx.timeZone).map((r) => [r.id, r])),
+    [plan, ctx.today, ctx.timeZone],
   );
   const allowed = canReorderDay({ manager, me, techId });
   const anyMoves = [...rows.values()].some((r) => r.canUp || r.canDown);
@@ -72,11 +71,11 @@ export function useTodayReorder(input: {
   const [undoFor, setUndoFor] = useState<{ jobId: string; from: DoLaterFrom } | null>(null);
   const editing = allowed && editingFor === techId;
 
-  /** Saves the stop at `place`; what Undo writes back, or null when refused or failed. */
-  function move(jobId: string, place: number) {
+  /** Saves the move; what Undo writes back, or null when refused or failed. */
+  function move(jobId: string, to: TodayMove) {
     const change = reorderChange(
       ctx,
-      { stops: plan, jobId, place, techId, seesAll: manager, userId: me },
+      { stops: plan, jobId, to, techId, seesAll: manager, userId: me },
       drive,
     );
     if (change.error) {
@@ -85,9 +84,9 @@ export function useTodayReorder(input: {
       return null;
     }
     try {
-      const before = saveMove(getServices().sync, company.id, change.updates);
+      writeJobs(getServices().sync, company.id, change.updates);
       setErrorFor(null);
-      return { before, message: change.message ?? "Moved." };
+      return { before: change.undo, message: change.message ?? "Moved." };
     } catch (e) {
       setErrorFor({ tech: techId, text: e instanceof Error ? e.message : String(e) });
       return null;
@@ -95,9 +94,7 @@ export function useTodayReorder(input: {
   }
 
   function act(jobId: string, action: ReorderAction) {
-    const i = plan.findIndex((s) => s.id === jobId);
-    if (i < 0) return;
-    if (move(jobId, actionPlace(plan.length, i, action))) haptics.selection();
+    if (move(jobId, action)) haptics.selection();
   }
 
   return {
@@ -110,7 +107,7 @@ export function useTodayReorder(input: {
     act,
     /** Do Later from the card or a row: saved at once, with Undo in its place for 5 seconds. */
     doLater(jobId: string, from: DoLaterFrom) {
-      const done = move(jobId, plan.length - 1);
+      const done = move(jobId, "later");
       if (!done) return;
       haptics.success();
       setUndoFor({ jobId, from });
@@ -134,9 +131,8 @@ export function useTodayReorder(input: {
     undo: undo.undo,
     /** A drag let go just before `beforeId` (null: at the end). */
     drop(jobId: string, beforeId: string | null) {
-      const i = plan.findIndex((s) => s.id === jobId);
-      const place = dropPlace(plan, jobId, beforeId, techId, ctx.today, ctx.timeZone);
-      if (i < 0 || place === i) return;
+      const place = dropPlace(plan, jobId, beforeId, ctx.today);
+      if (place === null) return;
       if (move(jobId, place)) haptics.selection();
     },
   };
@@ -247,7 +243,7 @@ export function ReorderStopRow({
             buttons below stay for everyone else. */}
         <View
           accessible
-          accessibilityLabel={`Stop ${n}: ${time} ${name}${info.lock ? `, ${info.lock.label}` : ""}`}
+          accessibilityLabel={`Stop ${n}: ${time} ${name}${info.lock ? `, ${info.lock}` : ""}`}
           accessibilityActions={actions}
           onAccessibilityAction={(e) =>
             onAct(e.nativeEvent.actionName === "moveUp" ? "up" : "down")
@@ -278,7 +274,7 @@ export function ReorderStopRow({
                 style={[type.footnote, { color: color.textMuted }]}
                 maxFontSizeMultiplier={MAX_TEXT_SCALE}
               >
-                {info.lock.label}
+                {info.lock}
               </Text>
             </View>
           ) : (

@@ -11,6 +11,10 @@ import { WebIcon } from "./WebIcon";
 // The large title is the first thing in the page (Screen draws it); the small title fades in
 // once the large one scrolls under the bar, and the bar turns to glass once anything does.
 // iPhone uses the native bar with large titles instead.
+//
+// Without Back (the tab roots), the large title sits in the bar's row, left of the screen's
+// action, as on the website (owner, 2026-10-20: "push up towards where the plus button is").
+// The bar reports its action's width (`right`) so the title keeps clear of it.
 
 export const BAR_HEIGHT = 44;
 
@@ -18,6 +22,10 @@ export const BAR_HEIGHT = 44;
 interface BarState {
   y: Animated.Value;
   large: boolean;
+  /** The large title is in the bar's row (no Back), not under it. */
+  inline: boolean;
+  /** The width of the bar's right-hand content (the "+"), in points. */
+  right: number;
 }
 const states = new Map<string, BarState>();
 const listeners = new Set<() => void>();
@@ -26,19 +34,41 @@ let version = 0;
 export function barState(key: string): BarState {
   let s = states.get(key);
   if (!s) {
-    s = { y: new Animated.Value(0), large: false };
+    s = { y: new Animated.Value(0), large: false, inline: false, right: 0 };
     states.set(key, s);
   }
   return s;
 }
 
-/** A screen says whether it draws a large title (the small one then waits for the scroll). */
-export function setLargeTitle(key: string, large: boolean) {
-  const s = barState(key);
-  if (s.large === large) return;
-  s.large = large;
+function changed() {
   version++;
   for (const l of listeners) l();
+}
+
+/**
+ * A screen says whether it draws a large title (the small one then waits for the scroll), and
+ * whether that title sits in the bar's row.
+ */
+export function setLargeTitle(key: string, large: boolean, inline = false) {
+  const s = barState(key);
+  if (s.large === large && s.inline === inline) return;
+  s.large = large;
+  s.inline = inline;
+  changed();
+}
+
+/** The bar's right-hand content was laid out (its width keeps an inline title clear of it). */
+export function setBarRight(key: string, width: number) {
+  const s = barState(key);
+  if (Math.abs(s.right - width) < 0.5) return;
+  s.right = width;
+  changed();
+}
+
+/** The screen's bar state, re-rendering when it changes. */
+export function useBar(key: string): BarState {
+  useBarVersion();
+  return barState(key);
 }
 
 function useBarVersion() {
@@ -55,6 +85,17 @@ function useBarVersion() {
 
 /** Large title block height before the small title shows (title 42 + top margin). */
 const TITLE_HANDOFF: [number, number] = [30, 46];
+/** In the bar's row: once about half of the title has scrolled off the top. */
+export const INLINE_TITLE_HANDOFF: [number, number] = [14, 30];
+
+/** The small title's opacity as the page scrolls. */
+export function smallTitleOpacity(s: BarState) {
+  return s.y.interpolate({
+    inputRange: s.inline ? INLINE_TITLE_HANDOFF : TITLE_HANDOFF,
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
+}
 
 /** The native-stack `header` for Android and the browser preview. */
 export function DrawnHeader({ back, options, route, navigation }: NativeStackHeaderProps) {
@@ -63,12 +104,15 @@ export function DrawnHeader({ back, options, route, navigation }: NativeStackHea
   const s = barState(route.key);
   const title = typeof options.title === "string" ? options.title : "";
   const solid = options.headerTransparent === false;
-  const titleOpacity = s.large
-    ? s.y.interpolate({ inputRange: TITLE_HANDOFF, outputRange: [0, 1], extrapolate: "clamp" })
-    : 1;
+  const titleOpacity = s.large ? smallTitleOpacity(s) : 1;
   const barOpacity = solid
     ? 1
-    : s.y.interpolate({ inputRange: [0, 8], outputRange: [0, 1], extrapolate: "clamp" });
+    : s.y.interpolate({
+        // A title in the bar's row stays clear of the glass until it has scrolled away.
+        inputRange: s.inline ? INLINE_TITLE_HANDOFF : [0, 8],
+        outputRange: [0, 1],
+        extrapolate: "clamp",
+      });
   const right = options.headerRight?.({ tintColor: color.link, canGoBack: Boolean(back) });
   const left = options.headerLeft?.({ tintColor: color.link, canGoBack: Boolean(back) });
   return (
@@ -113,7 +157,14 @@ export function DrawnHeader({ back, options, route, navigation }: NativeStackHea
             {title}
           </Text>
         </Animated.View>
-        <View style={[styles.side, styles.right]}>{right}</View>
+        <View style={[styles.side, styles.right]}>
+          <View
+            style={styles.rightContent}
+            onLayout={(e) => setBarRight(route.key, e.nativeEvent.layout.width)}
+          >
+            {right}
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -154,6 +205,7 @@ const styles = StyleSheet.create({
   },
   side: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center" },
   right: { justifyContent: "flex-end" },
+  rightContent: { flexDirection: "row", alignItems: "center" },
   titleBox: { maxWidth: "55%", alignItems: "center" },
   back: {
     minHeight: minTap,

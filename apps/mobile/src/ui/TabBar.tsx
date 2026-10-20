@@ -1,6 +1,7 @@
 import type { BottomTabBarProps } from "expo-router/tabs";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useActivityUnread } from "../data/activity";
 import { useSyncStatus } from "../data/hooks";
 import { useConversations } from "../data/texting";
 import { useCompany } from "../state/session";
@@ -22,7 +23,7 @@ export const TABS: { name: string; label: string; icon: WebIconName }[] = [
  * The website's floating tab bar (spec 3.2, 8.2), drawn the same on iPhone and Android: a
  * glass capsule 12 in from the sides, five items of an icon over a label, the selected one
  * filled in the link color. Messages carries the unread count; More a red dot when changes
- * couldn't be saved. Tapping the current tab pops its stack to the root, then scrolls to the
+ * couldn't be saved, else a blue one when there's new Activity (owner, 2026-10-20). Tapping the current tab pops its stack to the root, then scrolls to the
  * top (the stack and the screen's scroll view listen for the press).
  */
 export function TabBar({ state, navigation }: BottomTabBarProps) {
@@ -30,6 +31,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
   const company = useCompany();
   const unread = useConversations(company.id).filter((c) => c.unread).length;
   const problems = useSyncStatus().problems.length;
+  const activity = useActivityUnread(company.id);
   return (
     // The full-width layer catches taps beside the bar so they never reach the page under it.
     <View
@@ -44,6 +46,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
             const focused = state.index === index;
             const badge = tab.name === "(messages)" && unread > 0 ? unread : null;
             const dot = tab.name === "(more)" && problems > 0;
+            const news = tab.name === "(more)" && !dot && activity;
             const tint = focused ? color.link : color.textMuted;
             return (
               <Pressable
@@ -54,6 +57,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
                   tab.label,
                   badge ? `${badge} unread` : null,
                   dot ? "changes not saved" : null,
+                  news ? "new activity" : null,
                 ]
                   .filter(Boolean)
                   .join(", ")}
@@ -85,6 +89,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
                     </View>
                   ) : null}
                   {dot ? <View style={[styles.dot, { backgroundColor: color.fail }]} /> : null}
+                  {news ? <View style={[styles.dot, { backgroundColor: color.primary }]} /> : null}
                 </View>
                 <Text style={[type.tabLabel, { color: tint }]} maxFontSizeMultiplier={1.4}>
                   {tab.label}

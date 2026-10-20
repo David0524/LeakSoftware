@@ -498,6 +498,8 @@ export class SyncService {
       // A different person on this phone gets the tips and welcome cards fresh.
       "walkthrough:tips_seen",
       "walkthrough:launch_seen",
+      // Recent in search: what this person opened (lib/shopSearch RECENT_KEY).
+      "search:recent",
     ]) {
       this.kv.remove(key);
     }
