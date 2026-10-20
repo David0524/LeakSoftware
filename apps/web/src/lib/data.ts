@@ -349,15 +349,28 @@ export interface AuditRow {
 export async function auditFor(office: Office, rowIds: string[]): Promise<AuditRow[]> {
   if (!office.isManager || rowIds.length === 0) return [];
   const supabase = await db();
-  return must(
-    await supabase
-      .from("audit_log")
-      .select("id, user_id, table_name, row_id, field, old_value, new_value, created_at")
-      .eq("company_id", office.company.id)
-      .in("row_id", rowIds)
-      .order("created_at", { ascending: false })
-      .limit(1000),
-  ) as AuditRow[];
+  // The ids go in the request's address, so a long checklist (a pool inspection has 133
+  // questions, each with its answer row) is read in batches that keep it short.
+  const batches: string[][] = [];
+  for (let i = 0; i < rowIds.length; i += 100) batches.push(rowIds.slice(i, i + 100));
+  const rows = await Promise.all(
+    batches.map(
+      async (ids) =>
+        must(
+          await supabase
+            .from("audit_log")
+            .select("id, user_id, table_name, row_id, field, old_value, new_value, created_at")
+            .eq("company_id", office.company.id)
+            .in("row_id", ids)
+            .order("created_at", { ascending: false })
+            .limit(1000),
+        ) as AuditRow[],
+    ),
+  );
+  return rows
+    .flat()
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .slice(0, 1000);
 }
 
 // ---------------------------------------------------------------------------
