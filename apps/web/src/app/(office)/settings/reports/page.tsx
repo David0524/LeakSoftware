@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import {
   SAVED_REPORT_SECTIONS,
+  offersLeak,
   offersPool,
   savedReportSections,
   visitReportMode,
@@ -90,63 +91,76 @@ export default async function ReportTemplatesPage() {
   const shown = templates
     .filter((t) => t.key !== "partner")
     .sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+  // Pool care shops have only visit reports; the leak report and saved reports are leak
+  // detection's (2026-10-20).
+  const leak = offersLeak(company.settings);
   return (
     <SettingsListPage
       title="Report Templates"
-      subtitle="Which reports techs can send, and what they’re called. Each report is written from the job’s checklist, tests, and findings."
-      add={{
-        label: "Add Saved Report",
-        inList: true,
-        form: (
-          <SettingsForm action={saveSavedReport} submit="Add Saved Report" primary full>
-            <SavedReportFields />
-          </SettingsForm>
-        ),
-      }}
+      subtitle={
+        leak
+          ? "Which reports techs can send, and what they’re called. Each report is written from the job’s checklist, tests, and findings."
+          : "What goes to the customer after each maintenance visit."
+      }
+      add={
+        leak
+          ? {
+              label: "Add Saved Report",
+              inList: true,
+              form: (
+                <SettingsForm action={saveSavedReport} submit="Add Saved Report" primary full>
+                  <SavedReportFields />
+                </SettingsForm>
+              ),
+            }
+          : undefined
+      }
     >
-      <Grouped>
-        {shown.map((t) =>
-          t.key === "insurance" ? (
-            <SheetRow
-              key={t.id}
-              title={t.name}
-              label={t.name}
-              detail={ABOUT.insurance}
-              value="Coming soon"
-            />
-          ) : (
-            <SheetRow
-              key={t.id}
-              title={t.name}
-              label={t.name}
-              detail={ABOUT[t.key as "homeowner"]}
-              value={t.enabled ? "On" : "Off"}
-            >
-              <SettingsForm action={saveReportTemplate} primary full>
-                <input type="hidden" name="id" value={t.id} />
-                <SettingsFields labelWidth="5rem">
-                  <SField label="Name" name="name" id={`name-${t.id}`} defaultValue={t.name} />
-                </SettingsFields>
-                <SettingsFields>
-                  <SSwitch
-                    label="Techs can send this report"
-                    name="enabled"
-                    id={`enabled-${t.id}`}
-                    defaultChecked={t.enabled}
-                  />
-                </SettingsFields>
-              </SettingsForm>
-            </SheetRow>
-          ),
-        )}
-      </Grouped>
+      {leak ? (
+        <Grouped>
+          {shown.map((t) =>
+            t.key === "insurance" ? (
+              <SheetRow
+                key={t.id}
+                title={t.name}
+                label={t.name}
+                detail={ABOUT.insurance}
+                value="Coming soon"
+              />
+            ) : (
+              <SheetRow
+                key={t.id}
+                title={t.name}
+                label={t.name}
+                detail={ABOUT[t.key as "homeowner"]}
+                value={t.enabled ? "On" : "Off"}
+              >
+                <SettingsForm action={saveReportTemplate} primary full>
+                  <input type="hidden" name="id" value={t.id} />
+                  <SettingsFields labelWidth="5rem">
+                    <SField label="Name" name="name" id={`name-${t.id}`} defaultValue={t.name} />
+                  </SettingsFields>
+                  <SettingsFields>
+                    <SSwitch
+                      label="Techs can send this report"
+                      name="enabled"
+                      id={`enabled-${t.id}`}
+                      defaultChecked={t.enabled}
+                    />
+                  </SettingsFields>
+                </SettingsForm>
+              </SheetRow>
+            ),
+          )}
+        </Grouped>
+      ) : null}
 
       {/* Your own wording, used word for word (owner, 2026-10-20: "Not like AI prompts, but a
           copy/paste essentially that the tech uses each time"). */}
       {offersPool(company.settings) ? (
         <Grouped
           title="Visit reports"
-          className="mt-8"
+          className={leak ? "mt-8" : undefined}
           footer="A maintenance visit’s report: the water test, the checklist and cleanings, and photos, at a link for the customer."
         >
           <li className="py-3">
@@ -155,41 +169,43 @@ export default async function ReportTemplatesPage() {
         </Grouped>
       ) : null}
 
-      <Grouped
-        title="Saved reports"
-        className="mt-8"
-        footer="Text you use again and again. On a report, Use Saved Report puts it in word for word."
-      >
-        {saved.map((r) => (
-          <SheetRow
-            key={r.id}
-            title={r.name}
-            label={r.name}
-            detail={SAVED_REPORT_SECTIONS.filter((s) => savedReportSections(r.sections)[s.key])
-              .map((s) => s.title)
-              .join(", ")}
-          >
-            <SettingsForm action={saveSavedReport} primary full>
-              <input type="hidden" name="id" value={r.id} />
-              <SavedReportFields saved={r} />
-            </SettingsForm>
-            <SheetDanger>
-              <SettingsForm
-                action={removeConfigRow}
-                submit="Delete"
-                danger
-                full
-                confirm="Delete this saved report?"
-              >
-                <input type="hidden" name="table" value="saved_report" />
+      {leak ? (
+        <Grouped
+          title="Saved reports"
+          className="mt-8"
+          footer="Text you use again and again. On a report, Use Saved Report puts it in word for word."
+        >
+          {saved.map((r) => (
+            <SheetRow
+              key={r.id}
+              title={r.name}
+              label={r.name}
+              detail={SAVED_REPORT_SECTIONS.filter((s) => savedReportSections(r.sections)[s.key])
+                .map((s) => s.title)
+                .join(", ")}
+            >
+              <SettingsForm action={saveSavedReport} primary full>
                 <input type="hidden" name="id" value={r.id} />
-                <input type="hidden" name="path" value="/settings/reports" />
+                <SavedReportFields saved={r} />
               </SettingsForm>
-            </SheetDanger>
-          </SheetRow>
-        ))}
-        <SettingsAddRow label="Add Saved Report" />
-      </Grouped>
+              <SheetDanger>
+                <SettingsForm
+                  action={removeConfigRow}
+                  submit="Delete"
+                  danger
+                  full
+                  confirm="Delete this saved report?"
+                >
+                  <input type="hidden" name="table" value="saved_report" />
+                  <input type="hidden" name="id" value={r.id} />
+                  <input type="hidden" name="path" value="/settings/reports" />
+                </SettingsForm>
+              </SheetDanger>
+            </SheetRow>
+          ))}
+          <SettingsAddRow label="Add Saved Report" />
+        </Grouped>
+      ) : null}
     </SettingsListPage>
   );
 }

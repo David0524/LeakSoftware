@@ -17,13 +17,11 @@ const SETTINGS_SECTIONS = [
   { href: "/settings/reports", label: "Report Templates" },
 ];
 
-/** Leak detection's settings: hidden for pool care shops (company services setting). */
-const LEAK_ONLY = [
-  "/settings/tests",
-  "/settings/severities",
-  "/settings/exclusions",
-  "/settings/reports",
-];
+/**
+ * Leak detection's settings: hidden for pool care shops (company services setting). Report
+ * Templates stays: pool shops set their visit reports there (2026-10-20).
+ */
+const LEAK_ONLY = ["/settings/tests", "/settings/severities", "/settings/exclusions"];
 
 /** The settings pages this shop uses. */
 export function settingsSections(settings: unknown) {
@@ -54,7 +52,7 @@ export function settingsGroups(settings: unknown) {
       hrefs: ["/settings/price-book", "/settings/payments", "/settings/billing"],
     },
     {
-      title: offersLeak(settings) ? "Checklists and reports" : "Checklists",
+      title: "Checklists and reports",
       hrefs: [
         "/settings/components",
         "/settings/tests",
