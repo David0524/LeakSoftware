@@ -43,6 +43,9 @@ Newest first. Each entry: date, decision, reason.
 - **The inspection report uses the homeowner report's draft, sign-off, and send**, titled Pool Inspection Report, rather than a separate report template.
 - **An inspection's report can be signed and sent before every question is answered** (unlike a leak detection, which waits for its whole checklist): the report lists the questions answered, and Needs attention lists the flagged ones. Write Draft doesn't check an inspection's text for leak checklist names ("Main drain", "Pool"), since its questions use those words.
 
+## 2026-10-20 (owner: techs change the order of stops from Today, "Fix this")
+- **Do Later and Reorder on Today** on every platform (`docs/plans/today-reorder.md`): Do Later moves a stop to the end of the day's route (with a 5-second Undo); Reorder puts the day in edit mode with drag handles and Move Up / Move Down. Both use the Schedule's own move, so promised times and started jobs stay put and techs move only their own stops.
+
 ## 2026-10-20 (owner: navigation compared with other SaaS apps)
 - **Search across the shop** on every platform (`docs/plans/search-and-activity.md`): customers, pools, jobs, quotes and invoices by name, phone, address or number; at the top of Jobs on phones (offline, from the phone's data), a header field and ⌘K on desktop; Recent when empty. It follows the existing visibility rules.
 - **Activity** in More on every platform, with a card on the owner's Dashboard: quotes accepted, payments, reports signed and sent, jobs completed, assigned or moved, customer texts. Recorded by the database; techs see only events about jobs and conversations they can see.
