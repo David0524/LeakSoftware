@@ -154,3 +154,13 @@ stop's buttons are on screen at launch.
 - **Wording:** "Show Draft" / "Hide Draft" becomes a disclosure row named **Report Text**; Save
   Text is removed (item 4). On iPhone, Done buttons sit in the confirmation spot (top right), not
   the cancel spot.
+
+## Discard changes, everywhere (owner, 2026-10-20: "should apply everywhere")
+
+Every editor with unsaved changes asks before closing, on every platform and every way out:
+Cancel, swiping a sheet down, tapping outside a sheet, Escape, the browser's Back, a link or tab
+that leaves the page, the Android back button, and a notification or Live Activity opening
+another screen. The alert is the one from item 4: title "Discard changes?", buttons **Keep
+Editing** and **Discard Changes** (destructive). Reloading or closing a browser tab with unsaved
+changes shows the browser's own leave-page warning. Nothing asks when nothing has changed, after
+a successful save, or for fields that save by themselves.

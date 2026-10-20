@@ -31,7 +31,8 @@ reset role;
 select tests.authenticate_as((select (a ->> 'tech')::uuid from fx));
 select ok((select (a ->> 'company')::uuid from fx) = any (app.member_companies()), 'a tech is a member');
 select ok(not ((select (a ->> 'company')::uuid from fx) = any (app.owner_companies())), 'not an owner');
-select ok((select (a ->> 'company')::uuid from fx) = any (app.all_jobs_companies()), 'and sees every job by default');
+select ok(not ((select (a ->> 'company')::uuid from fx) = any (app.all_jobs_companies())),
+  'and in a new shop sees only their own jobs');
 
 reset role;
 select ok(exists (select 1 from pg_constraint
