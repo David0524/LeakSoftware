@@ -28,9 +28,19 @@ private struct Inspection {
             "field_schema": [
                 "fields": [
                     ["key": "line_name", "label": "Line", "type": "text", "required": true],
-                    ["key": "start_psi", "label": "Start pressure", "type": "number", "unit": "PSI", "required": true],
-                    ["key": "end_psi", "label": "End pressure", "type": "number", "unit": "PSI", "required": true],
-                    ["key": "duration_min", "label": "Duration", "type": "number", "unit": "min", "required": true],
+                    [
+                        "key": "start_psi", "label": "Start pressure", "type": "number", "unit": "PSI",
+                        "required": true,
+                        "min": 0, "max": 150,
+                    ],
+                    [
+                        "key": "end_psi", "label": "End pressure", "type": "number", "unit": "PSI", "required": true,
+                        "min": 0, "max": 150,
+                    ],
+                    [
+                        "key": "duration_min", "label": "Duration", "type": "number", "unit": "min", "required": true,
+                        "min": 0, "max": 1440,
+                    ],
                 ]
             ],
         ]
@@ -132,7 +142,8 @@ private struct Inspection {
         form.values = ["line_name": "  Main drain ", "start_psi": "abc", "end_psi": "-2", "duration_min": "15"]
         let ok2 = form.validate()
         #expect(!ok2)
-        #expect(form.errors == ["start_psi": "Enter a number.", "end_psi": "Can't be negative."])
+        #expect(
+            form.errors == ["start_psi": "Enter a number.", "end_psi": "Enter end pressure between 0 and 150 PSI."])
         form.values["start_psi"] = " 20 "
         form.values["end_psi"] = "19.5"
         let ok3 = form.validate()
@@ -166,6 +177,16 @@ private struct Inspection {
         form.values["end_psi"] = "20"
         #expect(form.calculation.summary == "Held at 20 PSI in 15 min")
         #expect(!form.changedSuggestion)
+    }
+
+    @Test func anImpossibleReadingIsRefusedAndKeptOutOfTheSummary() throws {
+        let s = try Inspection()
+        var form = TestForm(type: s.type("tt-pressure"), existing: nil, componentId: nil, component: nil)
+        form.values = ["line_name": "Return 1", "start_psi": "1e23", "end_psi": "0", "duration_min": "15"]
+        #expect(form.calculation.summary == nil)
+        let ok = form.validate()
+        #expect(!ok)
+        #expect(form.errors == ["start_psi": "Enter start pressure between 0 and 150 PSI."])
     }
 
     @Test func aBucketTestCalculatesTheLossBeyondEvaporation() throws {

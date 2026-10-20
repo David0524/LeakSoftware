@@ -9,6 +9,7 @@ import {
   nextInstance,
   normalizeTestData,
   planComponents,
+  previewTest,
   poolDiagram,
   pressureDrop,
   checklistTally,
@@ -263,6 +264,91 @@ describe("test forms", () => {
     };
     expect(calculate(t, { start_psi: 20, end_psi: 19 }).suggested).toBe("pass");
     expect(calculate({ calculator: null, field_schema: { fields: [] } }, {}).suggested).toBeNull();
+  });
+
+  describe("reading bounds (owner, 2026-10-20)", () => {
+    const pressure = {
+      calculator: "pressure_drop" as const,
+      field_schema: {
+        fields: [
+          {
+            key: "start_psi",
+            label: "Start pressure",
+            type: "number" as const,
+            unit: "PSI",
+            required: true,
+            min: 0,
+            max: 150,
+          },
+          {
+            key: "end_psi",
+            label: "End pressure",
+            type: "number" as const,
+            unit: "PSI",
+            required: true,
+            min: 0,
+            max: 150,
+          },
+          {
+            key: "duration_min",
+            label: "Duration",
+            type: "number" as const,
+            unit: "min",
+            min: 0,
+            max: 1440,
+          },
+        ],
+      },
+    };
+
+    it("refuses readings outside a field's bounds", () => {
+      expect(
+        validateTestData(pressure.field_schema, {
+          start_psi: "1e23",
+          end_psi: "-2",
+          duration_min: 1441,
+        }),
+      ).toEqual({
+        start_psi: "Enter start pressure between 0 and 150 PSI.",
+        end_psi: "Enter end pressure between 0 and 150 PSI.",
+        duration_min: "Enter duration between 0 and 1440 min.",
+      });
+      expect(
+        validateTestData(pressure.field_schema, {
+          start_psi: 150,
+          end_psi: "0",
+          duration_min: "1440",
+        }),
+      ).toEqual({});
+    });
+
+    it("words a one-sided bound, and keeps the old rule without bounds", () => {
+      const f = (extra: object) => ({
+        fields: [{ key: "x", label: "Flow", type: "number" as const, ...extra }],
+      });
+      expect(validateTestData(f({ unit: "gal", min: 5 }), { x: 4 })).toEqual({
+        x: "Enter flow of 5 gal or more.",
+      });
+      expect(validateTestData(f({ max: 2.5 }), { x: 3 })).toEqual({
+        x: "Enter flow of 2.5 or less.",
+      });
+      expect(validateTestData(f({ min: -10 }), { x: -3 })).toEqual({});
+      expect(validateTestData(f({}), { x: -3 })).toEqual({ x: "Can't be negative." });
+      expect(validateTestData(f({}), { x: 1e23 })).toEqual({});
+      expect(validateTestData(f({ min: "0", max: null }), { x: -1 })).toEqual({
+        x: "Can't be negative.",
+      });
+    });
+
+    it("keeps an impossible reading out of the live summary", () => {
+      expect(previewTest(pressure, { start_psi: "1e23", end_psi: "0" }).summary).toBeNull();
+      expect(
+        previewTest(pressure, { start_psi: "20", end_psi: "12", duration_min: "15" }).summary,
+      ).toBe("Dropped 8 PSI in 15 min");
+      expect(
+        previewTest(pressure, { start_psi: "20", end_psi: "12", duration_min: "9999" }).summary,
+      ).toBe("Dropped 8 PSI");
+    });
   });
 });
 

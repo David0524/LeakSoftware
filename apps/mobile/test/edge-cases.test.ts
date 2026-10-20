@@ -192,6 +192,16 @@ describe("readings, quantities and money as typed", () => {
     expect(normalizeTestData(schema, { psi: " 12.5 " })).toEqual({ psi: 12.5 });
     expect(JSON.stringify(normalizeTestData(schema, { psi: "-0" }))).toBe('{"psi":0}');
   });
+  it("a reading must sit within the field's bounds (owner, 2026-10-20)", () => {
+    const bounded = {
+      fields: [{ ...schema.fields[0]!, unit: "PSI", min: 0, max: 150 }],
+    } as TestFieldSchema;
+    const err = (v: string) => validateTestData(bounded, { psi: v }).psi ?? null;
+    expect(err("1e23")).toBe("Enter start psi between 0 and 150 PSI.");
+    expect(err("-1")).toBe("Enter start psi between 0 and 150 PSI.");
+    expect(err("150")).toBeNull();
+    expect(err("0")).toBeNull();
+  });
   it("an invoice quantity is a real number above 0 with at most two decimals", () => {
     expect(parseLineQuantity("")).toBe(1);
     expect(parseLineQuantity("2,5")).toBe(2.5);

@@ -4,6 +4,7 @@ import { StyleSheet, TextInput, View } from "react-native";
 import {
   calculate,
   normalizeTestData,
+  previewTest,
   validateTestData,
   type Outcome,
   type TestData,
@@ -80,10 +81,7 @@ export default function TestScreen() {
     return ref;
   };
 
-  const calc = useMemo(
-    () => (type ? calculate(type, normalizeTestData(type.field_schema, values)) : null),
-    [type, values],
-  );
+  const calc = useMemo(() => (type ? previewTest(type, values) : null), [type, values]);
 
   function cancel() {
     router.back();

@@ -17,9 +17,9 @@ import {
   jobFeeLabel,
   calculate,
   currentVerdict,
-  normalizeTestData,
   parseDiagramLayout,
   poolDiagram,
+  previewTest,
   userTransitions,
   verdictOptions,
   type ChecklistItemResult,
@@ -1047,7 +1047,7 @@ function TestForm({
     ),
   );
   const type = types.find((t) => t.id === typeId);
-  const calc = type ? calculate(type, normalizeTestData(type.field_schema, values)) : null;
+  const calc = type ? previewTest(type, values) : null;
   const set = (k: string, v: string) => setValues((old) => ({ ...old, [k]: v }));
   // In a sheet: the sheet carries the title and Cancel.
   return (

@@ -70,6 +70,7 @@ import {
   validateFinding,
   validateNewJob,
   validateTestData,
+  previewTest,
   type ChecklistItemResult,
   type ComponentType,
   type DiagramLayout,
@@ -251,6 +252,35 @@ const schema: TestFieldSchema = {
     { key: "minutes", label: "Minutes", type: "number" },
   ],
 };
+
+// Reading bounds (owner, 2026-10-20), as the shop defaults set them.
+const bounded: TestFieldSchema = {
+  fields: [
+    {
+      key: "start_psi",
+      label: "Start pressure",
+      type: "number",
+      unit: "PSI",
+      required: true,
+      min: 0,
+      max: 150,
+    },
+    {
+      key: "end_psi",
+      label: "End pressure",
+      type: "number",
+      unit: "PSI",
+      required: true,
+      min: 0,
+      max: 150,
+    },
+    { key: "duration_min", label: "Duration", type: "number", unit: "min", min: 0, max: 1440 },
+    { key: "level", label: "Level", type: "number", min: 0.5 },
+    { key: "flow", label: "Flow", type: "number", unit: "gal", max: 2.5 },
+    { key: "temp", label: "Temperature", type: "number", min: -40, max: 120 },
+  ],
+};
+const boundedPressure = testType({ calculator: "pressure_drop", field_schema: bounded });
 
 const blank: NewJobInput = {
   customerName: "",
@@ -662,6 +692,27 @@ export const inspection: ModuleCases = {
       [schema, { line_name: "x", start_psi: "1,5" }],
       [{ fields: [{ key: "a", label: "ÀBC Ünit", type: "text", required: true }] }, {}],
       [{ fields: [{ key: "s", label: "S", type: "select" }] }, { s: "anything" }],
+      [bounded, { start_psi: "1e23", end_psi: "-2", duration_min: 1441 }],
+      [bounded, { start_psi: 150, end_psi: "0", duration_min: "1440", level: "0.5", flow: 2.5 }],
+      [bounded, { start_psi: "150.01", end_psi: -0, level: 0.49, flow: "2.6", temp: -41 }],
+      [bounded, { start_psi: "Infinity", end_psi: "abc", temp: -3 }],
+      [bounded, { start_psi: 20, end_psi: 12, temp: 121 }],
+      [{ fields: [{ key: "x", label: "X", type: "number", min: 1e21, max: 1e-7 }] }, { x: 5 }],
+      [{ fields: [{ key: "x", label: "X", type: "number", unit: "", max: 1 }] }, { x: 5 }],
+    ],
+  ),
+
+  // The live summary: readings that fail the checks count as blank.
+  previewTest: rule(
+    (t: TestType, data: TestData) => previewTest(t, data),
+    [
+      [boundedPressure, { start_psi: "1e23", end_psi: "0" }],
+      [boundedPressure, { start_psi: "20", end_psi: "12", duration_min: "15" }],
+      [boundedPressure, { start_psi: "20", end_psi: "12", duration_min: "9999" }],
+      [boundedPressure, { start_psi: 20, end_psi: "", duration_min: 15 }],
+      [pressure(), { start_psi: "1e21", end_psi: 0, duration_min: 3 }],
+      [bucket(), { ...bucketBase, pool_end_in: 9.5, bucket_end_in: 9.75 }],
+      [testType({}), { start_psi: 20, end_psi: 10 }],
     ],
   ),
 

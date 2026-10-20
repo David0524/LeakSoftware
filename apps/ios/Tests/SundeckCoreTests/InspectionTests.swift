@@ -10,7 +10,8 @@ import Testing
     @Test func everyRuleIsChecked() {
         let checked: Set<String> = [
             "CHECKLIST_SECTION_LABELS", "DIAGRAM_SHAPES", "componentApplies", "planComponents", "nextInstance",
-            "checklistTally", "calculate", "validateTestData", "normalizeTestData", "validateFinding", "poolDiagram",
+            "checklistTally", "calculate", "previewTest", "validateTestData", "normalizeTestData", "validateFinding",
+            "poolDiagram",
             "validateNewJob", "formatAddress", "newJobRecords", "localDate", "groupJobs", "formatSchedule",
             "propertyLocation", "nativeMapsUrl", "instanceLabel", "FINDING_STATUS_LABELS", "verdictLabel",
             "verdictOptions", "currentVerdict", "verdictValues", "checklistSectionSummary", "markRemainingLabel",
@@ -45,6 +46,7 @@ import Testing
 
     @Test func tests() {
         checkRule(module, "calculate") { c in calculate(try c.arg(0), try c.arg(1)) }
+        checkRule(module, "previewTest") { c in previewTest(try c.arg(0), try c.arg(1)) }
         checkRule(module, "validateTestData") { c in validateTestData(try c.arg(0), try c.arg(1)) }
         checkRule(module, "normalizeTestData") { c in normalizeTestData(try c.arg(0), try c.arg(1)) }
     }
