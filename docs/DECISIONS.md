@@ -2,6 +2,10 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-20 (owner: one-handed use review, "Do all changes except for 11")
+- **One-handed use on every platform** (`docs/design/2026-10-20-one-handed-use.md`): a Next Step bar at the bottom of the job page on phones (Start Job, Complete Job, Add Test · Add Finding, Add Photo · Add Video, Write Draft); photos on a test or finding before its first save; Save pinned in the test and finding sheets; typed text saves by itself (no Save Text); Android back asks before discarding; a 5-second Undo after Mark Complete, Complete Job, and Mark Remaining, with the automatic visit report held until it passes; report send controls first and versions folded; offline Finish and Send queue on the phones; checklist answers as one-tap segments (Remove Item only behind Edit and swipe); Delete in a photo's More menu; camera straight from Add Photo, Library visible; sync bar pinned; Today's tip after the stops. Reason: frequent field actions were at the top of the screen, two or more taps deep, or one slip from losing work.
+- **Not changed:** tap targets stay at the 44 pt minimum (review item 11, declined).
+
 ## 2026-10-20 (owner: "Dashboard should be in the apps"; "On invoices tab add some filtering and sorting"; visit reports)
 - **The Dashboard is in both apps**, first in More, for owners and admins: the website's numbers (collected, owed, quotes accepted, invoiced, collected by month, jobs by status) as phone cards and a bar chart, from the same `owner_dashboard`. Replaces decision 12 of the native-apps spec ("Dashboard is left out of the apps").
 - **Invoices filter, search, and sort** on every platform: All, Unpaid, Overdue, Drafts, Paid, Void (with counts); customer, invoice, or job number; Newest, Oldest, Due Date, Amount Owed, Total, Customer. An unpaid invoice past its due date reads "Overdue".
