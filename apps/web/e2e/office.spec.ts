@@ -82,7 +82,7 @@ test("owner views the M4 sample job", async ({ page }) => {
   await expect(
     page
       .getByRole("radiogroup", { name: "Return 3", exact: true })
-      .getByRole("radio", { name: "Leaking" }),
+      .getByRole("radio", { name: "Leaking", exact: true }),
   ).toHaveAttribute("aria-checked", "true");
   await expect(page.getByLabel("Where: Return 3")).toHaveValue(/Under the deck/);
   await expect(

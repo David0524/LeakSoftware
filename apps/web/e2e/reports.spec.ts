@@ -106,7 +106,11 @@ test("field parity report: counts, verdicts, fee, and disclaimer", async ({ page
   await expect(page.getByText("$649.00", { exact: true })).toBeVisible();
   await expect(page.getByText("Pool water level dropping")).toBeVisible();
   await openChecklist(page);
-  await expect(page.getByLabel("Skimmer seam", { exact: true })).toHaveValue("leaking");
+  await expect(
+    page
+      .getByRole("radiogroup", { name: "Skimmer seam", exact: true })
+      .getByRole("radio", { name: "Leaking", exact: true }),
+  ).toHaveAttribute("aria-checked", "true");
 
   const panel = await writeDraft(page, "homeowner");
   await sendUnsigned(panel, "Send by Text");
