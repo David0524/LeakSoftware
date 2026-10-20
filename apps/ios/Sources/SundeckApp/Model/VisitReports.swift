@@ -148,11 +148,18 @@ public final class VisitReportQueue {
         if jobType == .maintenance && visitReportMode(settings) == .auto { add(jobId) }
     }
 
+    private var running = false
+
+    /// One run at a time; waits on no connection, no sign-in or a server fault (as the shipping
+    /// app does); any other answer is final.
     public func flush(_ api: WebAPI) async {
+        guard !running else { return }
+        running = true
+        defer { running = false }
         for jobId in pending {
             do {
                 _ = try await api.post("api/jobs/\(jobId)/visit-report", ["automatic": true])
-            } catch let failure as WebAPI.Failure where failure.offline {
+            } catch let failure as WebAPI.Failure where failure.tryAgainLater {
                 return
             } catch {}
             kv.setJSON(Self.key, pending.filter { $0 != jobId })

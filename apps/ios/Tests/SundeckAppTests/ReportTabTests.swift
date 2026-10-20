@@ -356,6 +356,28 @@ private func signature(_ id: String, _ name: String, purpose: String = "inspecti
         #expect(m.sections.map(\.key) == ["summary", "next_steps"])
     }
 
+    @Test func savingByItselfKeepsWhatIsBeingTyped() throws {
+        // A pause after "held. ": the saved text is trimmed, but the field keeps the space (and a
+        // new line) so the next word isn't run on.
+        let s = try ReportJob(rows: [report("r1", version: 1, status: "draft", sections: twoSections)])
+        let f = s.flow()
+        let section = try #require(s.model().sections.first)
+        f.edits["summary"] = "Pressure held. "
+        f.saveEdits(keepTyping: true)
+        #expect(s.model().sections.first?.text == "Pressure held.")
+        #expect(f.sectionText(section) == "Pressure held. ")
+        // Saving again with nothing new writes nothing.
+        let pending = try s.store.pendingCount()
+        f.saveEdits(keepTyping: true)
+        f.saveEdits()
+        #expect(try s.store.pendingCount() == pending)
+        #expect(f.edits.isEmpty)
+        // Typed back to what's saved: no write either.
+        f.edits["summary"] = "Pressure held."
+        f.saveEdits()
+        #expect(try s.store.pendingCount() == pending)
+    }
+
     @Test func aSentReportIsNeverEdited() throws {
         let s = try ReportJob(rows: [report("r1", version: 1, status: "sent", sections: twoSections)])
         let f = s.flow()
@@ -687,5 +709,45 @@ private func signature(_ id: String, _ name: String, purpose: String = "inspecti
         // Online, the flow sends straight away as before.
         let f = ReportFlow(sync: s.sync, companyId: "c1", jobId: "j1", sends: queue)
         #expect(f.sends != nil)
+    }
+
+    @Test func sendingOnlineForgetsTheSameRequestQueuedOffline() async throws {
+        // Send tapped offline (queued); signal back, Send tapped again: one email, not two.
+        let s = try ReportJob(rows: [report("r1", version: 1, status: "draft", sections: twoSections)])
+        let queue = ReportSendQueue(kv: s.sync.kv)
+        s.sync.networkChanged(online: false)
+        let f = ReportFlow(sync: s.sync, companyId: "c1", jobId: "j1", sends: queue)
+        f.to = "pat@home.test"
+        await f.run(.email, server: s.server)
+        await f.run(.finish, server: s.server)
+        #expect(queue.pending.count == 2)
+        s.sync.networkChanged(online: true)
+        await s.sync.syncNow()
+        #expect(s.sync.status.phase != .offline)
+        StubServer.set(s.host, "/api/reports/r1/send", 200, ["message": "Your report", "emailed": true])
+        await f.run(.email, server: s.server)
+        #expect(f.error == nil && f.message == "Sent to pat@home.test.")
+        // The email went; the queued finish of the same report is a different request and stays.
+        #expect(queue.pending == [ReportSendRequest(jobId: "j1", reportId: "r1", action: .finish, to: nil)])
+        StubServer.set(s.host, "/api/reports/r1/finish", 200, ["token": "tok"])
+        await f.run(.finish, server: s.server)
+        #expect(queue.pending.isEmpty)
+    }
+
+    @Test func aQueuedTextWaitsWhileTheAppIsInTheBackground() async throws {
+        // The phone sends the text itself; run in the background it would count as sent with
+        // nobody there to send it.
+        let s = try ReportJob(rows: [report("r1", version: 1, status: "sent", sections: twoSections)])
+        let queue = ReportSendQueue(kv: s.sync.kv)
+        let text = ReportSendRequest(jobId: "j1", reportId: "r1", action: .text, to: "(602) 555-0100")
+        let mail = ReportSendRequest(jobId: "j1", reportId: "r1", action: .email, to: "pat@home.test")
+        queue.add(text)
+        queue.add(mail)
+        StubServer.set(s.host, "/api/reports/r1/send", 200, ["message": "Your report", "emailed": true])
+        await queue.flush(api(s.host), canText: false)
+        #expect(queue.pending == [text])
+        #expect(StubServer.calls(s.host).map { $0.body["channel"] } == ["email"])
+        await queue.flush(api(s.host), canText: true)
+        #expect(queue.pending.isEmpty && queue.readyText(jobId: "j1") == "Your report")
     }
 }

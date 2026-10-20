@@ -111,6 +111,8 @@
             .onChange(of: app.link, initial: true) { _, link in
                 guard let link else { return }
                 app.link = nil
+                // The same link twice at once (URL and restore at a cold start) is done once.
+                guard app.linkGate.accept(link) else { return }
                 open(link)
             }
             .task(id: showWelcome) {

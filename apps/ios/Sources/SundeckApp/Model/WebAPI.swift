@@ -21,11 +21,26 @@ public struct WebAPI: Sendable {
         public let description: String
         /// Form errors by field name (a 400 reply's `fields`).
         public var fields: [String: String] = [:]
+        /// The server's HTTP status, when it answered.
+        public var status: Int? = nil
 
         public static let noConnection = "No connection. Try again when you have signal."
+        public static let signInAgain = "Sign in again to continue."
 
         /// The phone couldn't reach the server (nothing was done there).
         public var offline: Bool { description == Self.noConnection }
+
+        /// Worth trying again later rather than a refusal: no connection, no sign-in, or the server
+        /// busy or at fault (401, 408, 429, 5xx). Decided by the status when the server answered,
+        /// so a fault with its own message isn't taken for a refusal (apps/mobile `tryAgainLater`).
+        public var tryAgainLater: Bool {
+            if let status { return status == 401 || status == 408 || status == 429 || status >= 500 }
+            return offline || description == Self.signInAgain
+        }
+
+        public static func == (a: Failure, b: Failure) -> Bool {
+            a.description == b.description && a.fields == b.fields
+        }
     }
 
     /// POSTs `body` as JSON with the person's sign-in, and returns the JSON reply.
@@ -59,7 +74,7 @@ public struct WebAPI: Sendable {
     }
 
     private func send(_ prepared: URLRequest) async throws -> JSONValue {
-        guard let token = await accessToken() else { throw Failure(description: "Sign in again to continue.") }
+        guard let token = await accessToken() else { throw Failure(description: Failure.signInAgain) }
         var request = prepared
         request.setValue("Bearer \(token)", forHTTPHeaderField: "authorization")
         let data: Data
@@ -76,7 +91,7 @@ public struct WebAPI: Sendable {
             if case .object(let f)? = reply["fields"] { for (k, v) in f { fields[k] = v.string } }
             throw Failure(
                 description: reply["error"]?.string ?? fields.values.sorted().first ?? "The server said \(status).",
-                fields: fields)
+                fields: fields, status: status)
         }
         return reply
     }

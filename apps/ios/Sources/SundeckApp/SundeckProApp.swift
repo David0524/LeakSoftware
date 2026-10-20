@@ -66,6 +66,8 @@
         let liveStop: LiveStopController
         /// Where a tapped notification or the Live Activity's Open Job goes (MainView opens it).
         var link: AppLink?
+        /// Drops the same link arriving twice at once.
+        @ObservationIgnored var linkGate = LinkGate()
         @ObservationIgnored private let monitor = NWPathMonitor()
 
         init(client: SupabaseClient, session: Session, walkthrough: Walkthrough) {
@@ -166,7 +168,8 @@
             }
             if !reportSends.pending.isEmpty, session.sync.status.pending == 0 {
                 let before = reportSends.pending.count
-                await reportSends.flush(api)
+                // A queued text opens for the tech to send: only with the app in front.
+                await reportSends.flush(api, canText: UIApplication.shared.applicationState == .active)
                 if reportSends.pending.count < before { session.sync.syncSoon(2) }  // bring the report down
             }
             let waiting = locate.pending.count

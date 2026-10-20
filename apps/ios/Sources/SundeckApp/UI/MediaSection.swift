@@ -51,6 +51,8 @@
 
         /// A new camera after each photo, so it opens again for the next one (owner, 2026-10-20).
         var shots = 0
+        /// Photos taken since the camera opened (they share its location lookup).
+        @ObservationIgnored var taken = 0
 
         init(target: MediaTarget) { self.target = target }
 
@@ -80,6 +82,7 @@
             }
             position = lookup
             cameraStartedAt = CaptureRules.now()
+            taken = 0
             camera = kind
         }
 
@@ -93,13 +96,16 @@
             // 2026-10-20): a fresh camera in the same cover, the location looked up once.
             if CaptureRules.cameraOpensAgain(kind, took: result != nil) {
                 shots += 1
+                taken += 1
                 cameraStartedAt = CaptureRules.now()
             } else {
                 camera = nil
                 position = nil
             }
             guard let result else {
-                lookup?.cancel()
+                // Photos taken in this camera still wait for the location: it's only stopped when
+                // none were.
+                if taken == 0 { lookup?.cancel() }
                 busy = nil
                 return
             }
@@ -119,6 +125,12 @@
                     }
                     await save(file, lookup)
                 } catch {
+                    // A photo that couldn't be kept stops the camera reopening, so the tech sees
+                    // why instead of taking more that fail the same way.
+                    if camera != nil {
+                        camera = nil
+                        position = nil
+                    }
                     fail(CaptureRules.failureTitle(kind), error)
                 }
             }
@@ -168,6 +180,11 @@
                 status = Status(text: JobPhotos.added(file.kind), tone: .pass)
             } catch {
                 try? FileManager.default.removeItem(at: file.url)
+                // The camera stops reopening, so the alert can show and no more fail the same way.
+                if camera != nil {
+                    camera = nil
+                    position = nil
+                }
                 status = Status(text: message(error), tone: .fail)
                 problem = Problem(title: "Couldn’t Save", message: message(error))
             }

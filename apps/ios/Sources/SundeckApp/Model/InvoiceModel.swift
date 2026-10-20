@@ -193,6 +193,16 @@ public func invoiceURL(_ webURL: URL, _ token: String) -> URL {
 }
 
 /// A draft invoice's edits, through the sync layer (the server freezes lines once it's sent).
+/// An invoice line's quantity as typed ("2.5", "2,5", blank for 1), or nil when it isn't one:
+/// more than 0, at most two decimals, and a real number ("1e309" is too big to be one).
+public func invoiceLineQuantity(_ text: String) -> Double? {
+    let q = text.trimmingCharacters(in: .whitespaces)
+    guard let n = q.isEmpty ? 1 : Double(q.replacingOccurrences(of: ",", with: ".")), n.isFinite, n > 0,
+        (n * 100).rounded() == n * 100
+    else { return nil }
+    return n
+}
+
 @MainActor
 public enum InvoiceWrites {
     public struct Problem: Error, Equatable, CustomStringConvertible {
@@ -208,10 +218,9 @@ public enum InvoiceWrites {
     ) throws -> String {
         try requireDraft(invoice)
         let text = description.trimmingCharacters(in: .whitespacesAndNewlines)
-        let q = quantity.trimmingCharacters(in: .whitespaces)
-        let n = q.isEmpty ? 1 : Double(q.replacingOccurrences(of: ",", with: "."))
+        let n = invoiceLineQuantity(quantity)
         if text.isEmpty { throw Problem(field: "description", description: "Describe the work.") }
-        guard let n, n > 0, (n * 100).rounded() == n * 100 else {
+        guard let n else {
             throw Problem(field: "quantity", description: "Enter a quantity like 1 or 2.5.")
         }
         guard let cents = parseDollars(price), cents >= 0 else {

@@ -464,6 +464,81 @@ import Testing
         #expect(try section(.plumbing).toDo.count == ids.count)
     }
 
+    @Test func undoKeepsAnItemAnsweredAgainMeanwhile() throws {
+        try setUp(property: try property())
+        let ids = try InspectionWrites.markRemaining(
+            sync, companyId: Self.company, jobId: Self.job, items: try section(.plumbing).items, userId: Self.me)
+        // Within the 5 seconds the tech changes Returns 2 to Leaking, with where.
+        try tap("Returns 2", .leaking)
+        let item = try row("Returns 2")
+        try InspectionWrites.saveWhere(
+            sync, companyId: Self.company, jobId: Self.job, componentId: item.component.id, result: item.result,
+            draft: "at the elbow")
+        let undo = MarkedUndo(resultIds: ids)
+        try undo.undo(sync, companyId: Self.company)
+        #expect(try result("Returns 2")["outcome"] == "leaking")
+        #expect(try result("Returns 2")["location_text"] == "at the elbow")
+        #expect(try result("Returns 1")["status"] == "pending")
+        // Tapped twice: nothing more is written.
+        let pending = try sync.store.pendingCount()
+        try undo.undo(sync, companyId: Self.company)
+        #expect(try sync.store.pendingCount() == pending)
+    }
+
+    @Test func theItemPageSavesAnAnswerChangedThereWhenLeft() throws {
+        // Next Item (or back) after choosing an answer: the answer must not be lost.
+        try setUp(property: try property())
+        let item = try row("Returns 1")
+        let form = ComponentForm(
+            companyId: Self.company, jobId: Self.job, component: item.component, type: item.type, result: item.result)
+        #expect(!form.isDirty)
+        #expect(try !form.saveChanges(sync, userId: Self.me))
+        form.verdict = .leaking
+        #expect(form.isDirty)
+        #expect(try form.saveChanges(sync, userId: Self.me))
+        #expect(try result("Returns 1")["outcome"] == "leaking")
+        #expect(!form.isDirty)
+    }
+
+    @Test func notesSavedByThemselvesNeverUndoAnAnswerChangedElsewhere() throws {
+        try setUp(property: try property())
+        let item = try row("Returns 1")
+        let form = ComponentForm(
+            companyId: Self.company, jobId: Self.job, component: item.component, type: item.type, result: item.result)
+        // The page is open; the answer changes elsewhere (the checklist, another phone).
+        try tap("Returns 1", .leaking)
+        form.notes = "Dye pulled in"
+        try form.saveChanges(sync, userId: Self.me)
+        var r = try result("Returns 1")
+        #expect(r["outcome"] == "leaking" && r["notes"] == "Dye pulled in")
+        // When the page hears of the change, it shows it and keeps what was typed.
+        form.notes = "Dye pulled in hard"
+        form.refresh(try row("Returns 1").result)
+        #expect(form.verdict == .leaking && form.notes == "Dye pulled in hard" && form.isDirty)
+        try form.saveChanges(sync, userId: Self.me)
+        r = try result("Returns 1")
+        #expect(r["outcome"] == "leaking" && r["notes"] == "Dye pulled in hard")
+    }
+
+    @Test func whereTypedAgainAfterItWasClearedSaves() throws {
+        // Where "deck" saved; Not Leaking clears it; Leaking again and "deck" typed again.
+        try setUp(property: try property())
+        let item = try row("Returns 1")
+        let form = ComponentForm(
+            companyId: Self.company, jobId: Self.job, component: item.component, type: item.type, result: item.result)
+        form.verdict = .leaking
+        form.location = "deck"
+        try form.saveChanges(sync, userId: Self.me)
+        try tap("Returns 1", .ok)
+        form.refresh(try row("Returns 1").result)
+        #expect(form.verdict == .ok && form.location == "")
+        form.verdict = .leaking
+        form.location = "deck"
+        try form.saveChanges(sync, userId: Self.me)
+        let r = try result("Returns 1")
+        #expect(r["outcome"] == "leaking" && r["location_text"] == "deck")
+    }
+
     @Test func tappingTheChosenAnswerAgainClearsIt() throws {
         try setUp(property: try property())
         #expect(try row("Returns 1").verdictAfterTap(.leaking) == .leaking)

@@ -81,13 +81,24 @@ public struct MarkedUndo: Equatable, Sendable {
 
 @MainActor
 extension InspectionWrites {
-    /// Undo for Mark N Remaining: the items it answered go back to To do, in one batch.
+    /// Undo for Mark N Remaining: the items it answered go back to To do, in one batch. An item
+    /// answered again since keeps the newer answer (apps/mobile `marksToUndo`): only those still
+    /// at the answer Mark Remaining gave are cleared.
     public static func clearMarked(_ sync: SyncService, companyId: String, resultIds: [String]) throws {
-        guard !resultIds.isEmpty else { return }
+        let still = try resultIds.filter { id in
+            guard let row = try sync.store.get("checklist_item_result", id), row["deleted_at"]?.string == nil else {
+                return false
+            }
+            let verdict = currentVerdict(
+                status: row["status"]?.string.flatMap(ChecklistStatus.init(rawValue:)),
+                outcome: row["outcome"]?.string.flatMap(ChecklistOutcome.init(rawValue:)))
+            return verdict == .ok
+        }
+        guard !still.isEmpty else { return }
         var values = verdictValues(nil, userId: nil)
         values["location_text"] = .null
         try sync.batch {
-            for id in resultIds {
+            for id in still {
                 try sync.store.write("checklist_item_result", id: id, companyId: companyId, values)
             }
         }
@@ -113,6 +124,22 @@ public enum CaptureTargetMemory {
 }
 
 // MARK: - Live Activity actions (Low)
+
+/// The same link arriving twice at once (a Live Activity tap at a cold start can come by URL and
+/// again by the scene): the second within a few seconds is dropped, so a stop isn't completed
+/// twice and no second alert shows.
+public struct LinkGate: Sendable {
+    public static let window: TimeInterval = 3
+    private var last: (link: AppLink, at: Date)?
+
+    public init() {}
+
+    public mutating func accept(_ link: AppLink, at now: Date = Date()) -> Bool {
+        if let last, last.link == link, now.timeIntervalSince(last.at) < Self.window { return false }
+        last = (link, now)
+        return true
+    }
+}
 
 /// A Live Activity button's request for Today: the stop, and On My Way or Mark Complete to do
 /// there (owner, 2026-10-20).

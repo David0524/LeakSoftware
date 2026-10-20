@@ -221,7 +221,7 @@
             media = MediaDetail.load(sync, mediaId)
             if let media {
                 inspection = JobInspection(sync.store, jobId: media.jobId)
-                if !captionEdited { caption = media.caption ?? "" }
+                if !captionEdited { caption = MediaDetail.captionShown(typed: caption, media) }
             }
             loaded = true
             if case .ready = source {} else { Task { await resolveSource() } }

@@ -25,6 +25,9 @@ public func parseDollars(_ input: String) -> Cents? {
     var fraction = parts.count > 1 ? String(parts[1]) : ""
     while fraction.count < 2 { fraction.append("0") }
     guard let wholeValue = Int(whole), let fractionValue = Int(fraction) else { return nil }
-    let cents = wholeValue * 100 + fractionValue
+    // Too large for integer cents ("999999999999999999"): refused rather than overflowing.
+    let (hundreds, over) = wholeValue.multipliedReportingOverflow(by: 100)
+    let (cents, over2) = hundreds.addingReportingOverflow(fractionValue)
+    guard !over, !over2 else { return nil }
     return negative ? -cents : cents
 }

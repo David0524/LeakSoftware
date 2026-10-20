@@ -251,7 +251,8 @@
                     guard !flow.edits.isEmpty else { return }
                     try? await Task.sleep(for: Autosave.delay)
                     guard !Task.isCancelled else { return }
-                    saveText()
+                    // Still typing: the field keeps a trailing space or new line.
+                    saveText(keepTyping: true)
                 }
                 .onChange(of: focus) { old, _ in
                     // Every pending edit is saved in one write when a section loses focus.
@@ -397,9 +398,9 @@
         }
 
         /// Saves the edited sections, and says so.
-        private func saveText() {
+        private func saveText(keepTyping: Bool = false) {
             guard !flow.edits.isEmpty else { return }
-            flow.saveEdits()
+            flow.saveEdits(keepTyping: keepTyping)
             if flow.saveError == nil { withAnimation { savedText = true } }
         }
 
