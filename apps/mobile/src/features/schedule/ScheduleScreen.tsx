@@ -169,7 +169,9 @@ export function ScheduleScreen() {
             ? "Repair"
             : j.type === "maintenance"
               ? "Maintenance"
-              : null,
+              : j.type === "inspection"
+                ? "Pool inspection"
+                : null,
       cleanings: visitCleanings.get(j.id),
     };
   };

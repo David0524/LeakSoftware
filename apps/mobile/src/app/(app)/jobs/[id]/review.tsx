@@ -4,10 +4,10 @@ import { StyleSheet, View } from "react-native";
 import {
   MIN_INK,
   calculate,
-  checklistTally,
   formatAddress,
   inkLength,
   reportSignOffPurposes,
+  reportTitle,
   signatureStatement,
   signatureStoragePath,
   signatureSvg,
@@ -19,7 +19,11 @@ import {
   type SignatureStroke,
 } from "@leakbook/core";
 import { useRow } from "../../../../data/hooks";
-import { useInspectionConfig, useJobInspection } from "../../../../data/inspection";
+import {
+  useChecklistProgress,
+  useInspectionConfig,
+  useJobInspection,
+} from "../../../../data/inspection";
 import { REPORT_STEPS, finishReportFromPhone, useJobReports } from "../../../../data/reports";
 import { StepList } from "../../../../ui/Progress";
 import { FinishPhotoNotice, useNeedsFinishPhoto } from "../../../../features/media/FinishPhoto";
@@ -36,6 +40,7 @@ import {
   T,
 } from "../../../../ui/components";
 import { PadBlock } from "../../../../features/report/PadBlock";
+import { InspectionReview } from "../../../../features/report/InspectionReport";
 import { ReportTests } from "../../../../features/report/ReportTests";
 import { color, face, space } from "../../../../ui/theme";
 
@@ -68,6 +73,8 @@ export default function ReviewScreen() {
   // Signing finishes the report, so it waits for a photo when the shop requires one (owner
   // setting, 2026-10-19).
   const needsPhoto = useNeedsFinishPhoto(id);
+  // A pool inspection counts only the questions its gates leave open (2026-10-20).
+  const progress = useChecklistProgress(company.id, id, job?.type);
 
   const bar = (
     <Stack.Screen
@@ -90,7 +97,8 @@ export default function ReviewScreen() {
 
   const address = property ? formatAddress(property) : "";
   const signer = (name ?? customer?.name ?? "").trim();
-  const tally = checklistTally(insp.components, insp.results);
+  const { tally } = progress;
+  const toDo = progress.toDo;
   const maintenance = job.type === "maintenance";
   const written = (draft?.final_sections ?? []).filter((s) => s.text.trim());
   // The draft's tests text goes with the tests themselves, as on the website's report.
@@ -159,7 +167,7 @@ export default function ReviewScreen() {
         <T variant="secondary" muted style={face.semiBold}>
           {company.name}
         </T>
-        <T variant="sectionHeading">{maintenance ? "Service Report" : "Leak Detection Report"}</T>
+        <T variant="sectionHeading">{maintenance ? "Service Report" : reportTitle(job.type)}</T>
         <T variant="bodyEmphasis">{customer?.name ?? "Customer"}</T>
         {address ? <T variant="secondary">{address}</T> : null}
         <T variant="secondary" muted>
@@ -205,14 +213,24 @@ export default function ReviewScreen() {
         </Card>
       ) : null}
 
+      {progress.inspection ? (
+        <InspectionReview
+          components={insp.components}
+          resultByComponent={insp.resultByComponent}
+          typeById={config.componentTypeById}
+        />
+      ) : null}
+
       <Card>
         <T variant="cardTitle">Checklist</T>
         <T>
-          {maintenance
-            ? `${tally.pass} done · ${tally.attention} need attention · ${tally.notApplicable} skipped`
-            : `${tally.pass} not leaking · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} not applicable`}
+          {progress.inspection
+            ? `${progress.inspection.answered} of ${progress.inspection.total} answered · ${progress.inspection.attention} need attention · ${progress.inspection.leaking} leaking`
+            : maintenance
+              ? `${tally.pass} done · ${tally.attention} need attention · ${tally.notApplicable} skipped`
+              : `${tally.pass} not leaking · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} not applicable`}
         </T>
-        {tally.pending ? <T variant="secondary" muted>{`${tally.pending} still to do`}</T> : null}
+        {toDo ? <T variant="secondary" muted>{`${toDo} still to do`}</T> : null}
       </Card>
 
       {/* Tests we ran: every test, after what was checked (owner, 2026-10-19). */}
@@ -237,9 +255,9 @@ export default function ReviewScreen() {
       />
 
       <View style={[styles.sign, { borderTopColor: color.separator }]}>
-        {tally.pending ? (
+        {toDo ? (
           <Notice tone="warning">
-            {`${tally.pending} checklist ${tally.pending === 1 ? "item is" : "items are"} still to do. Finish the checklist, then come back to sign.`}
+            {`${toDo} checklist ${toDo === 1 ? "item is" : "items are"} still to do. Finish the checklist, then come back to sign.`}
           </Notice>
         ) : purposes.length ? (
           <>
@@ -286,8 +304,8 @@ export default function ReviewScreen() {
           </>
         ) : null}
         {error ? <Notice tone="error">{error}</Notice> : null}
-        {!tally.pending && needsPhoto ? <FinishPhotoNotice jobId={job.id} /> : null}
-        {tally.pending ? null : (
+        {!toDo && needsPhoto ? <FinishPhotoNotice jobId={job.id} /> : null}
+        {toDo ? null : (
           <>
             <Button
               title={

@@ -9,6 +9,7 @@ import {
   enabledSignaturePurposes,
   formatSchedule,
   isManagerRole,
+  reportTitle,
   splitEmails,
   type Customer,
   type FinalSection,
@@ -306,7 +307,10 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
     <Card style={styles.card}>
       <View style={styles.titleRow}>
         <T variant="cardTitle" style={{ flexShrink: 1 }}>
-          {templateRow?.name ?? "Homeowner report"}
+          {/* A pool inspection's report is named for it (2026-10-20), as the website. */}
+          {job.type === "inspection"
+            ? reportTitle("inspection")
+            : (templateRow?.name ?? "Homeowner report")}
         </T>
         <View style={styles.titleLinks}>
           {hasDraft ? (
