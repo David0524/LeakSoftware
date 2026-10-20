@@ -19,6 +19,8 @@ import {
   workDay,
   zonedMinutesToIso,
   type PlanJob,
+  jobReschedulable,
+  mapStatus,
 } from "../src";
 
 const TZ = "America/Phoenix"; // UTC-7 all year
@@ -276,5 +278,48 @@ describe("moving jobs by hand", () => {
     expect(canUnschedule("scheduled")).toBe(true);
     expect(canUnschedule("unscheduled")).toBe(true);
     expect(canUnschedule("invoiced")).toBe(false);
+  });
+});
+
+describe("mapStatus (owner, 2026-10-20)", () => {
+  const pool = {
+    address_line1: "455 N Galvin Pkwy",
+    city: "Phoenix",
+    state: "AZ",
+    postal_code: "85008",
+  };
+  const address = "455 N Galvin Pkwy, Phoenix, AZ 85008";
+  it("is found with coordinates for the current address", () => {
+    expect(
+      mapStatus({ ...pool, latitude: 33.45, longitude: -111.94, geocoded_address: address }, true),
+    ).toBe("found");
+    // Located before lookups kept their address.
+    expect(mapStatus({ ...pool, latitude: 33.45, longitude: -111.94 }, true)).toBe("found");
+  });
+  it("is missing when the address wasn't found, or changed since", () => {
+    expect(mapStatus({ ...pool, latitude: null, longitude: null }, true)).toBe("missing");
+    expect(
+      mapStatus(
+        { ...pool, latitude: 33.45, longitude: -111.94, geocoded_address: "1 Old Rd, Mesa, AZ" },
+        true,
+      ),
+    ).toBe("missing");
+  });
+  it("says nothing without an address or a routing service", () => {
+    expect(
+      mapStatus({ ...pool, address_line1: "", latitude: null, longitude: null }, true),
+    ).toBeNull();
+    expect(mapStatus({ ...pool, latitude: null, longitude: null }, false)).toBeNull();
+    expect(mapStatus(null, true)).toBeNull();
+  });
+});
+
+describe("jobReschedulable (owner, 2026-10-20)", () => {
+  it("offers a new time until the work is done", () => {
+    for (const status of ["unscheduled", "scheduled", "in_progress"])
+      expect(jobReschedulable({ type: "detection", status })).toBe(true);
+    for (const status of ["report_sent", "done", "invoiced", "canceled"])
+      expect(jobReschedulable({ type: "maintenance", status })).toBe(false);
+    expect(jobReschedulable({ type: "repair", status: "report_sent" })).toBe(true);
   });
 });

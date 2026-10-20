@@ -13,6 +13,7 @@ import {
   type Services,
 } from "@leakbook/core";
 import { createJobAction } from "@/app/actions/jobs";
+import { AddressField } from "./address-field";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
 import { Suggestions } from "./route-board";
 import type { RepeatChoice } from "@/lib/plan-repeat";
@@ -191,7 +192,7 @@ export function NewJobForm({
       {newPool ? (
         <Section title="Pool">
           <div className="grid gap-4 sm:grid-cols-2">
-            <SField label="Street address" name="address_line1" className="sm:col-span-2" />
+            <AddressField label="Street address" name="address_line1" className="sm:col-span-2" />
             <SField label="City" name="city" />
             <div className="grid grid-cols-2 gap-4">
               <SField label="State" name="state" maxLength={2} />

@@ -9,6 +9,8 @@ import {
   POOL_TYPE_LABELS,
   SIGNATURE_PURPOSE_LABELS,
   checklistTally,
+  jobReschedulable,
+  mapStatus,
   inspectionProgress,
   intakeQuestionsFor,
   reportTitle,
@@ -97,6 +99,8 @@ import { AddressLink } from "@/components/open-in-maps";
 import { ChemicalDropdown } from "@/components/chem-dropdown";
 import { JobSchedule } from "@/components/schedule-form";
 import { emailConfigured } from "@/server/email";
+import { routingConfigured } from "@/server/routing";
+import { NotOnMapRow } from "@/components/not-on-map";
 
 export const metadata: Metadata = { title: "Job · Sundeck Pro" };
 
@@ -254,6 +258,9 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                             .filter(Boolean)
                             .join(" · ")}
                         />
+                        {mapStatus(job.property, routingConfigured()) === "missing" ? (
+                          <NotOnMapRow />
+                        ) : null}
                         {job.property.access_notes ? (
                           <Row>
                             <span className="min-w-0 flex-1">
@@ -314,7 +321,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                   </section>
                 </div>
 
-                {job.type === "repair" || ["unscheduled", "scheduled"].includes(job.status) ? (
+                {jobReschedulable(job) ? (
                   <section className="mt-8 max-w-2xl" aria-labelledby="schedule">
                     <h2
                       id="schedule"

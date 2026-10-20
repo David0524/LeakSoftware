@@ -90,6 +90,20 @@ export function markCompleteValues(
 }
 
 /**
+ * Whether the job's page offers Schedule Job / Change Schedule (owner, 2026-10-20: "You should
+ * be able to reschedule a job from the jobs page after creating it"): until its work is done,
+ * started jobs included; repairs as before.
+ */
+export function jobReschedulable(job: { type: string; status: string }): boolean {
+  return (
+    job.type === "repair" ||
+    job.status === "unscheduled" ||
+    job.status === "scheduled" ||
+    job.status === "in_progress"
+  );
+}
+
+/**
  * What a done stop on Today offers (owner, 2026-10-20: "Maintenance jobs don't have a reopen
  * visit button on the Today page"): a completed maintenance visit, Reopen Visit (back to in
  * progress); a leak or repair stop marked done today, Mark Not Complete; otherwise nothing.

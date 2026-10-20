@@ -1,6 +1,9 @@
-import { offersLeak, offersPool } from "@leakbook/core";
+import { mapStatus, offersLeak, offersPool } from "@leakbook/core";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { AddressField } from "@/components/address-field";
+import { NotOnMapTag } from "@/components/not-on-map";
+import { routingConfigured } from "@/server/routing";
 import {
   JOB_TYPE_LABELS,
   POOL_TYPE_LABELS,
@@ -219,7 +222,14 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                 <Grouped title={properties.length > 1 ? `Pool ${i + 1}` : "Pool"}>
                   <SheetRow
                     title="Pool Details"
-                    label={<span className="font-semibold">{address}</span>}
+                    label={
+                      <>
+                        <span className="font-semibold">{address}</span>
+                        {mapStatus(p, routingConfigured()) === "missing" ? (
+                          <NotOnMapTag className="mt-0.5 flex" />
+                        ) : null}
+                      </>
+                    }
                     detail={[
                       p.pool_type ? POOL_TYPE_LABELS[p.pool_type] : null,
                       p.has_spa ? "Pool and spa" : "Pool",
@@ -234,7 +244,7 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
                     <SettingsForm action={savePool} primary full>
                       <input type="hidden" name="property" value={p.id} />
                       <SettingsFields labelWidth="6.5rem">
-                        <SField
+                        <AddressField
                           label="Street"
                           name="address_line1"
                           defaultValue={p.address_line1 ?? ""}

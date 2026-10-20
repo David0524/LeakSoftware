@@ -20,7 +20,10 @@ import {
   type ScheduleView,
   dateFormat,
   type CleaningKind,
+  NOT_ON_MAP,
+  mapStatus,
 } from "@leakbook/core";
+import { routingConfigured } from "@/server/routing";
 import {
   RouteBoard,
   type BoardColumn,
@@ -74,17 +77,24 @@ function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardSto
     draggable: canMoveJob(j.status),
     legMin: route ? (route.summary.legs[i] ?? null) : null,
     shortMin: route ? (route.summary.short[i] ?? 0) : 0,
-    note: onSecond
-      ? `Second tech, with ${j.techName ?? "the main tech"}`
-      : j.secondTechName
-        ? `With ${j.secondTechName}`
-        : j.type === "repair"
-          ? "Repair"
-          : j.type === "maintenance"
-            ? "Maintenance"
-            : j.type === "inspection"
-              ? "Pool inspection"
-              : null,
+    note:
+      [
+        onSecond
+          ? `Second tech, with ${j.techName ?? "the main tech"}`
+          : j.secondTechName
+            ? `With ${j.secondTechName}`
+            : j.type === "repair"
+              ? "Repair"
+              : j.type === "maintenance"
+                ? "Maintenance"
+                : j.type === "inspection"
+                  ? "Pool inspection"
+                  : null,
+        // Left out of drive times until its address is found (owner, 2026-10-20).
+        mapStatus(j.property, routingConfigured()) === "missing" ? NOT_ON_MAP.short : null,
+      ]
+        .filter(Boolean)
+        .join(" · ") || null,
   };
 }
 

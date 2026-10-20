@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-20 (owner: "reschedule a job from the jobs page after creating it"; "an indicator for when address doesn't register"; "an auto complete or something for the mapping")
+- **A job can be rescheduled from its page until its work is done** (unscheduled, scheduled, or in progress; repairs as before), not only before it starts.
+- **"Not found on the map"**: a pool with an address but no map location for it shows a warning on the job page, "Not on map" on Today, Schedule and the customer's page. Routes and drive times leave it out until it's found. A lookup now counts only a match to the address or its street; a town or ZIP code's middle reads as not found instead of a wrong pin.
+- **Address suggestions as you type** in every street-address field, from the same Mapbox account (no new service): up to 5 real addresses near the shop after a short pause; picking one fills street, city, state and ZIP. Suggestions have their own daily allowance per shop (`ADDRESS_SUGGEST_DAILY_LIMIT`, default 2000), apart from lookups and drive times. They're Mapbox's temporary results, so only the address picked is kept; its location comes from the usual lookup.
+- **New Job's types are Service, Repair, Leak, Inspection**, in that order, short enough to fit across a phone.
+
 ## 2026-10-20 (owner: tech profiles, centered pool shapes, the sync note, Reopen Visit on Today, phone numbers)
 - **Profiles for each person** (Settings › Team › Profiles): name, phone, email, address, emergency contact (name and phone) and notes. Owners and admins read and write them, on the website and their phones; techs don't see them, their own included. Team members get one each, and Add Person keeps one for someone who doesn't use the app.
 - **Pool shapes are drawn in the middle of the diagram** and of their buttons. Pools saved before sat 10 units left to leave room for the spa; those with nothing placed on them moved now, the rest move with their spa, landmarks and drawing the next time their shape is saved. Finding pins already placed and sent reports keep where they were.

@@ -18,7 +18,10 @@ import {
   stopDone,
   todayUndo,
   visitReportMode,
+  mapStatus,
 } from "@leakbook/core";
+import { NotOnMapTag } from "@/components/not-on-map";
+import { routingConfigured } from "@/server/routing";
 import { completeSendPrompt } from "@/lib/next-step";
 import { Suspense } from "react";
 import { CleaningIcon, PhoneIcon } from "@/components/icons";
@@ -82,6 +85,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   const legs = route?.summary.legs.reduce((a, b) => a + b, 0) ?? 0;
   const backLeg = route ? route.summary.driveMin - legs : 0;
   const mine = techId === office.user.id;
+  const routing = routingConfigured();
   // Completing a visit in an Automatic shop sends its report: ask first (owner, 2026-10-20).
   const reportMode = visitReportMode(company.settings);
   // The plan's cleanings on each visit's checklist, with how they stand against their due date
@@ -204,6 +208,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                     <p className="w-fit max-w-full text-[0.9375rem]">
                       <AddressLink address={address} location={propertyLocation(j.property)} />
                     </p>
+                    {mapStatus(j.property, routing) === "missing" ? <NotOnMapTag /> : null}
                     {!done && dueAt(j).length ? (
                       // Just the icon and how soon (owner, 2026-10-19: "Don't make it too
                       // wordy"); read aloud with the cleaning's name.
