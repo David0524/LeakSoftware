@@ -172,18 +172,14 @@ describe("gates fold their group", () => {
 });
 
 describe("pool inspection jobs", () => {
-  it("leak shops offer Pool Inspection after Leak Detection", () => {
-    expect(newJobTypes("leak").map((t) => t.label)).toEqual([
-      "Leak Detection",
-      "Pool Inspection",
-      "Repair",
-    ]);
+  it("New Job offers Service, Repair, Leak, then Inspection", () => {
+    expect(newJobTypes("leak").map((t) => t.label)).toEqual(["Repair", "Leak", "Inspection"]);
     expect(newJobTypes("pool").map((t) => t.value)).toEqual(["maintenance", "repair"]);
-    expect(newJobTypes("both").map((t) => t.value)).toEqual([
-      "detection",
-      "inspection",
-      "maintenance",
-      "repair",
+    expect(newJobTypes("both").map((t) => t.label)).toEqual([
+      "Service",
+      "Repair",
+      "Leak",
+      "Inspection",
     ]);
   });
 

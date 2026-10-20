@@ -143,9 +143,9 @@ describe("newJobRecords", () => {
 describe("newJobTypes", () => {
   const values = (s: Services) => newJobTypes(s).map((t) => t.value);
   it("offers the package's own jobs, then Repair to every shop", () => {
-    expect(values("leak")).toEqual(["detection", "inspection", "repair"]);
+    expect(values("leak")).toEqual(["repair", "detection", "inspection"]);
     expect(values("pool")).toEqual(["maintenance", "repair"]);
-    expect(values("both")).toEqual(["detection", "inspection", "maintenance", "repair"]);
+    expect(values("both")).toEqual(["maintenance", "repair", "detection", "inspection"]);
   });
 });
 
