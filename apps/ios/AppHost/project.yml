@@ -31,7 +31,7 @@ targets:
     dependencies:
       - package: SundeckPackage
         product: SundeckPro
-      - target: SundeckLiveActivity
+      - target: SundeckLiveActivityExtension
         embed: true
     settings:
       base:
@@ -42,7 +42,9 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         CODE_SIGN_ENTITLEMENTS: ../SundeckPro.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-  SundeckLiveActivity:
+  # Not "SundeckLiveActivity": that's the package module it links, and two targets of one name
+  # build into the same folders ("Multiple commands produce", TestFlight run 2).
+  SundeckLiveActivityExtension:
     type: app-extension
     platform: iOS
     sources:
@@ -56,7 +58,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.sundeckpro.app.SundeckLiveActivity
-        PRODUCT_NAME: SundeckLiveActivity
+        PRODUCT_NAME: SundeckLiveActivityExtension
         INFOPLIST_FILE: ../LiveActivity-Info.plist
         GENERATE_INFOPLIST_FILE: YES
         SKIP_INSTALL: YES
