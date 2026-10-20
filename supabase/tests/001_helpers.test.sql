@@ -99,6 +99,8 @@ begin
             3, current_date);
   insert into chemical_reading (company_id, property_id, job_id, recorded_by, gallons, fc, ph)
     values (c, prop, j, t, 20000, 2.5, 7.6);
+  insert into saved_report (company_id, name, sections)
+    values (c, 'No leak found ' || label, '{"summary": "We found no leak."}');
   -- Company texting: a number per shop, made unique by the label.
   insert into phone_line (company_id, number)
     values (c, '+1555' || lpad((abs(hashtext(label)) % 10000000)::text, 7, '0'));
