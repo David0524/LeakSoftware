@@ -1,6 +1,6 @@
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -36,7 +36,7 @@ import {
   type CapturedFile,
 } from "../../lib/media";
 import { useCompany, useSession } from "../../state/session";
-import { Button, Card, Empty, T } from "../../ui/components";
+import { Button, Card, Empty, RoundButton, T } from "../../ui/components";
 import { Icon } from "../../ui/Icon";
 import { MarkupLayer } from "../../ui/MarkupLayer";
 import { Select, useMenu } from "../../ui/Select";
@@ -60,6 +60,15 @@ export function useAttachedTo(media: Media | undefined): string {
 
 type Status = { text: string; tone: "muted" | "pass" | "fail" } | null;
 
+/** What the job page's Next Step bar asks of the Photos section (the same captures). */
+export interface MediaControls {
+  photo: () => void;
+  video: () => void;
+}
+
+/** "Attach to", per job, while the app is open (owner, 2026-10-20: it remembers). */
+const lastAttachTo = new Map<string, string>();
+
 /**
  * Photos, videos, and voice notes (spec 5.4 Photos): the capture card (Attach to, then the
  * Add Photo, Add Video and Voice Note tiles and a status line), then the captures. `layout`
@@ -73,6 +82,9 @@ export function MediaSection({
   disabledReason,
   targets,
   layout = "grid",
+  controls,
+  beforeCapture,
+  unsaved = false,
 }: {
   target: MediaTarget;
   /** A section label over the grid ("Photos"). */
@@ -82,10 +94,26 @@ export function MediaSection({
   /** "finding:<id>" or "component:<id>" with a label, for "Attach to" (job Photos only). */
   targets?: { value: string; label: string }[];
   layout?: "cards" | "grid";
+  /** Filled in for the Next Step bar's Add Photo and Add Video. */
+  controls?: RefObject<MediaControls | null>;
+  /**
+   * Runs before a capture (a test or finding not saved yet saves first, owner 2026-10-20).
+   * Returns where the capture goes, or null to stop (the form shows its errors).
+   */
+  beforeCapture?: () => MediaTarget | null;
+  /** The test or finding isn't saved yet, so nothing is attached to it. */
+  unsaved?: boolean;
 }) {
   const company = useCompany();
-  const media = useJobMedia(company.id, target.jobId, target);
-  const [attachTo, setAttachTo] = useState("");
+  const attached = useJobMedia(company.id, target.jobId, target);
+  const media = unsaved ? [] : attached;
+  const [attachTo, setAttachToState] = useState(
+    () => (targets ? lastAttachTo.get(target.jobId) : undefined) ?? "",
+  );
+  const setAttachTo = (v: string) => {
+    lastAttachTo.set(target.jobId, v);
+    setAttachToState(v);
+  };
   const [busy, setBusy] = useState<"photo" | "video" | null>(null);
   const [recording, setRecording] = useState(false);
   const [status, setStatus] = useState<Status>(null);
@@ -103,42 +131,69 @@ export function MediaSection({
     file: CapturedFile,
     position: Promise<{ latitude: number; longitude: number } | null>,
     added: string,
+    to: MediaTarget = captureTarget(),
   ) {
     try {
-      await saveCapture(company.id, captureTarget(), file, position);
+      await saveCapture(company.id, to, file, position);
       setStatus({ text: added, tone: "pass" });
     } catch (e) {
       setStatus({ text: e instanceof Error ? e.message : String(e), tone: "fail" });
     }
   }
 
-  /** Photo and Video ask: take a new one, or choose one already on the phone. */
-  function choose(kind: "photo" | "video") {
-    const noun = kind === "photo" ? "Photo" : "Video";
+  /** Video asks: record a new one, or choose one already on the phone. */
+  function chooseVideo() {
     menu.open({
-      title: `Add ${noun}`,
+      title: "Add Video",
       items: [
-        { label: `Take ${noun}`, onPress: () => void capture(kind, "camera") },
-        { label: "Choose from Library", onPress: () => void capture(kind, "library") },
+        { label: "Take Video", onPress: () => void capture("video", "camera") },
+        { label: "Choose from Library", onPress: () => void capture("video", "library") },
       ],
     });
   }
 
+  /**
+   * Add Photo opens the camera straight away, and again after each photo until Cancel (owner,
+   * 2026-10-20: one-handed use, item 10); Library is its own button.
+   */
   async function capture(kind: "photo" | "video", source: "camera" | "library") {
+    const to = beforeCapture ? beforeCapture() : captureTarget();
+    if (!to) return;
     setBusy(kind);
     setStatus(null);
-    const added = kind === "photo" ? "Photo added." : "Video added.";
     try {
       if (source === "library") {
         // Taken earlier, maybe elsewhere: where the phone is now isn't where it was taken.
         const file = await chooseFromLibrary(kind);
-        if (file) await save(file, Promise.resolve(null), added);
+        if (file)
+          await save(
+            file,
+            Promise.resolve(null),
+            kind === "photo" ? "Photo added." : "Video added.",
+            to,
+          );
         return;
       }
       await askLocationOnce();
-      const position = currentPosition();
-      const file = await captureWithCamera(kind);
-      if (file) await save(file, position, added);
+      let taken = 0;
+      for (;;) {
+        const position = currentPosition();
+        const file = await captureWithCamera(kind);
+        if (!file) break;
+        taken++;
+        await save(
+          file,
+          position,
+          kind === "video"
+            ? "Video added."
+            : taken === 1
+              ? "Photo added."
+              : `${taken} photos added.`,
+          to,
+        );
+        // Photos keep the camera open for the next one; a video is one at a time.
+        if (kind === "video") break;
+      }
     } catch (e) {
       const title = kind === "photo" ? "Couldn’t take the photo" : "Couldn’t record the video";
       const message = e instanceof Error ? e.message : String(e);
@@ -152,6 +207,12 @@ export function MediaSection({
       setBusy(null);
     }
   }
+
+  // The Next Step bar's Add Photo and Add Video do the same as the tiles.
+  useEffect(() => {
+    if (!controls) return;
+    controls.current = { photo: () => void capture("photo", "camera"), video: chooseVideo };
+  });
 
   const captureCard = (
     <Card padding={space["4"]} style={{ gap: space["3"] }}>
@@ -179,14 +240,21 @@ export function MediaSection({
                 label="Add Photo"
                 busy={busy === "photo"}
                 disabled={busy !== null}
-                onPress={() => choose("photo")}
+                onPress={() => void capture("photo", "camera")}
+              />
+              <Tile
+                icon="photos"
+                label="Library"
+                accessibilityLabel="Choose Photo from Library"
+                disabled={busy !== null}
+                onPress={() => void capture("photo", "library")}
               />
               <Tile
                 icon="video"
                 label="Add Video"
                 busy={busy === "video"}
                 disabled={busy !== null}
-                onPress={() => choose("video")}
+                onPress={chooseVideo}
               />
               <Tile
                 icon="mic"
@@ -294,6 +362,7 @@ function Tile({
 function MediaCard({ media }: { media: Media }) {
   const company = useCompany();
   const { services } = useSession();
+  const more = useMenu();
   const source = useMediaSource(media);
   const attached = useAttachedTo(media);
   const kind = MEDIA_KIND_LABELS[media.kind];
@@ -370,12 +439,26 @@ function MediaCard({ media }: { media: Media }) {
               onPress={() => open(true)}
             />
           ) : null}
-          <Button
-            title="Delete"
-            kind="danger"
-            onPress={() => confirmDeleteMedia(services.sync, media.company_id, media)}
-          />
+          {/* Delete sits behind More, away from Mark Up (owner, 2026-10-20), still confirmed. */}
+          <View style={{ marginLeft: "auto" }}>
+            <RoundButton
+              icon="more"
+              label={`More for this ${kind.toLowerCase()}`}
+              onPress={() =>
+                more.open({
+                  items: [
+                    {
+                      label: `Delete ${kind}`,
+                      destructive: true,
+                      onPress: () => confirmDeleteMedia(services.sync, media.company_id, media),
+                    },
+                  ],
+                })
+              }
+            />
+          </View>
         </View>
+        {more.element}
       </View>
     </Card>
   );

@@ -36,14 +36,14 @@ func testValueText(_ value: TestValue) -> String? {
 /// The Add/Edit Test form: values typed as text, the component, the chosen outcome and notes.
 public struct TestForm: Equatable, Sendable {
     public private(set) var type: TestType
-    public let existingId: String?
+    public private(set) var existingId: String?
     public var componentId: String?
     public var values: [String: String]
     /// The tech's pick; nil follows the calculator's suggestion.
     public var chosenOutcome: Outcome?
     public var notes: String
     public private(set) var errors: [String: String] = [:]
-    private let initial: Snapshot
+    private var initial: Snapshot
 
     private struct Snapshot: Equatable, Sendable {
         var typeId: String
@@ -80,10 +80,18 @@ public struct TestForm: Equatable, Sendable {
 
     public var isNew: Bool { existingId == nil }
 
-    /// Anything changed since the sheet opened: Cancel asks first, and a swipe can't close it.
-    public var isDirty: Bool {
+    private var snapshot: Snapshot {
         Snapshot(typeId: type.id, componentId: componentId, values: values, chosenOutcome: chosenOutcome, notes: notes)
-            != initial
+    }
+
+    /// Anything changed since the sheet opened: Cancel asks first, and a swipe can't close it.
+    public var isDirty: Bool { snapshot != initial }
+
+    /// Add Photo on a test not saved yet saves it first (owner, 2026-10-20): the sheet stays
+    /// open as Edit, with nothing left unsaved.
+    public mutating func markSaved(_ id: String) {
+        existingId = id
+        initial = snapshot
     }
 
     var data: TestData { values.mapValues { TestValue.string($0) } }
@@ -185,7 +193,7 @@ public let findingStatusChoices: [FindingStatus] = [.open, .quoted, .repaired, .
 
 /// The Add/Edit Finding form.
 public struct FindingForm: Equatable, Sendable {
-    public let existingId: String?
+    public private(set) var existingId: String?
     public var title: String
     public var componentId: String?
     /// The severity's key; blank until picked (no default).
@@ -195,7 +203,7 @@ public struct FindingForm: Equatable, Sendable {
     public var status: FindingStatus
     public var notes: String
     public private(set) var errors: [String: String] = [:]
-    private let initial: Snapshot
+    private var initial: Snapshot
 
     private struct Snapshot: Equatable, Sendable {
         var title: String
@@ -229,6 +237,13 @@ public struct FindingForm: Equatable, Sendable {
 
     public var isNew: Bool { existingId == nil }
     public var isDirty: Bool { snapshot != initial }
+
+    /// Add Photo on a finding not saved yet saves it first (owner, 2026-10-20): the sheet stays
+    /// open as Edit Finding, with nothing left unsaved.
+    public mutating func markSaved(_ id: String) {
+        existingId = id
+        initial = snapshot
+    }
     /// Status shows on every finding, new ones too (as on the website); a new one starts open.
     public var showsStatus: Bool { true }
     public var navigationTitle: String { isNew ? "Add Finding" : "Edit Finding" }

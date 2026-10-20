@@ -21,6 +21,10 @@ public struct ChecklistItemRow: Identifiable, Equatable, Sendable {
     /// "Where" only for Leaking and Attention, never on yes/no items.
     public var needsWhere: Bool { needsWhereField(type, verdict) }
 
+    /// The answer after tapping a segment (owner, 2026-10-20): tapping the chosen one again
+    /// clears it, back to To do.
+    public func verdictAfterTap(_ tapped: Verdict) -> Verdict? { tapped == verdict ? nil : tapped }
+
     /// The verdict pill's word: "To Do", or the chosen option's label.
     public var verdictLabel: String {
         verdict.flatMap { v in options.first { $0.value == v }?.label } ?? "To Do"
@@ -185,6 +189,16 @@ public struct ChecklistModel: Equatable, Sendable {
         return (try? row.decode(Property.self))!
     }
 
+    /// The items in checklist order, for the item page's Previous Item and Next Item.
+    public var itemIds: [String] { sections.flatMap { $0.items.map(\.id) } }
+
+    /// The items before and after `componentId` on the checklist (nil at either end).
+    public func neighbors(of componentId: String) -> (previous: String?, next: String?) {
+        let ids = itemIds
+        guard let index = ids.firstIndex(of: componentId) else { return (nil, nil) }
+        return (index > 0 ? ids[index - 1] : nil, index + 1 < ids.count ? ids[index + 1] : nil)
+    }
+
     /// The "where" to save when the field loses focus, or nil when nothing changed (or the item
     /// has no result row yet). Blank saves as null.
     public static func whereToSave(draft: String?, result: ChecklistItemResult?) -> JSONValue? {
@@ -196,24 +210,26 @@ public struct ChecklistModel: Equatable, Sendable {
 /// The checklist section's writes, on top of `InspectionWrites`.
 @MainActor
 extension InspectionWrites {
-    /// "Mark 4 Remaining Not Leaking": every item still to do answered OK, in one batch.
+    /// "Mark 4 Remaining Not Leaking": every item still to do answered OK, in one batch. Returns
+    /// the results it answered, for Undo (owner, 2026-10-20).
+    @discardableResult
     public static func markRemaining(
         _ sync: SyncService, companyId: String, jobId: String, items: [ChecklistItemRow], userId: String?
-    ) throws {
+    ) throws -> [String] {
         let rest = items.filter { $0.verdict == nil }
-        guard !rest.isEmpty else { return }
+        guard !rest.isEmpty else { return [] }
         var values = verdictValues(.ok, userId: userId)
         values["location_text"] = .null
-        try sync.batch {
-            for item in rest {
+        return try sync.batch {
+            try rest.map { item in
                 if let result = item.result {
                     try sync.store.write("checklist_item_result", id: result.id, companyId: companyId, values)
-                } else {
-                    var row = values
-                    row["job_id"] = .string(jobId)
-                    row["job_component_id"] = .string(item.component.id)
-                    try sync.store.insert("checklist_item_result", companyId: companyId, row)
+                    return result.id
                 }
+                var row = values
+                row["job_id"] = .string(jobId)
+                row["job_component_id"] = .string(item.component.id)
+                return try sync.store.insert("checklist_item_result", companyId: companyId, row)
             }
         }
     }

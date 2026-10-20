@@ -40,7 +40,8 @@ export async function saveText(_: ReportFormState, form: FormData): Promise<Repo
   if (final.every((s) => !s.text)) return { error: "The report has no text." };
   try {
     await saveReportText(await createClient(), text(form, "report"), final);
-    revalidatePath(`/jobs/${text(form, "job")}`);
+    // Saved by itself as it's typed (owner, 2026-10-20): the text on screen is already current.
+    if (text(form, "auto") !== "1") revalidatePath(`/jobs/${text(form, "job")}`);
     return { message: "Saved." };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };

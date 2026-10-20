@@ -3,12 +3,14 @@
     import SundeckTokens
     import SwiftUI
     import UIKit
+    import WidgetKit
 
     // The Live Activity's views (owner, 2026-10-19: "Make the live notification look beautiful
     // please. Include our logo." and "Do not include a timer or stop watch"): drawn by the widget
     // extension, and by the screenshot tests straight from here. Everything they show comes from
     // `liveStopContent`: an arrival time of day, the checklist, or the next stop, never a
-    // countdown, so nothing on them ticks.
+    // countdown, so nothing on them ticks. Text is 15 pt or larger and scales with Dynamic Type,
+    // and On My Way and Mark Complete open the app on the stop and do it there (owner, 2026-10-20).
 
     extension TokenColor {
         /// The token as a SwiftUI color (the app's own helper lives in its UI target).
@@ -19,32 +21,57 @@
         }
     }
 
-    /// The Live Activity's colors and type: brand navy behind white text, the water blue for
-    /// the progress, Barlow (the brand display face) for the name and the figure.
+    /// The Live Activity's colors and type: the brand's water blue behind white text (owner,
+    /// 2026-10-20: "use our lighter blue for live activities"; it was navy), white for the
+    /// progress and the check, Barlow (the brand display face) for the name and the figure. The
+    /// Dynamic Island is always black, where the same white reads too.
     public enum LiveStopStyle {
-        public static let background = Tokens.Brand.navy.liveColor
-        /// The water blue as it reads on navy (the light shade of `color.brand.water`).
-        public static let water = Tokens.Role.link.dark.liveColor
+        public static let background = Tokens.Brand.water.liveColor
+        /// The Dynamic Island's keyline: the same water blue.
+        public static let keyline = Tokens.Brand.water.liveColor
+        /// The progress bar and the done check.
+        public static let accent = Color.white
+        /// Text in the Dynamic Island, which is always black: the water blue's light shade.
+        public static let island = Tokens.Role.link.dark.liveColor
         public static let text = Color.white
-        public static let muted = Color.white.opacity(0.72)
-        public static let track = Color.white.opacity(0.18)
+        /// Secondary text: 0.85 white keeps 4.5:1 on the water blue.
+        public static let muted = Color.white.opacity(0.85)
+        public static let track = Color.white.opacity(0.28)
 
+        /// Barlow at `size`, scaling with Dynamic Type.
         public static func display(_ size: CGFloat, _ weight: BrandFonts.Weight = .bold) -> Font {
-            .custom(weight.rawValue, size: size)
+            .custom(weight.rawValue, size: size, relativeTo: .body)
         }
+
+        /// The small text: 15 pt (subheadline), scaling with Dynamic Type.
+        public static func small(_ weight: Font.Weight = .regular) -> Font { .subheadline.weight(weight) }
     }
 
     /// Sundeck Pro's mark (brand/logo/png/mark-reverse-512.png, the white pin for dark
     /// backgrounds), copied into the extension by xtool.yml's `resources`.
     public enum LiveStopLogo {
         public static let fileName = "mark-reverse-512"
+        /// The tallest the mark is drawn (the Lock Screen's), at 3x: 48 pt.
+        static let pixelHeight: CGFloat = 144
 
-        /// The mark from a bundle's root (the extension's), or nil when it isn't there.
+        /// The mark from a bundle's root (the extension's), or nil when it isn't there. It's
+        /// redrawn at the size it shows (the file is 512 by 749): a Live Activity's images are
+        /// kept small, and one too big for it came out as a black shape (TestFlight, 2026-10-20).
         public static func image(in bundle: Bundle = .main) -> Image? {
             guard let url = bundle.url(forResource: fileName, withExtension: "png"),
-                let picture = UIImage(contentsOfFile: url.path)
+                let picture = UIImage(contentsOfFile: url.path), picture.size.height > 0
             else { return nil }
-            return Image(uiImage: picture)
+            let scale = min(1, pixelHeight / (picture.size.height * picture.scale))
+            let size = CGSize(
+                width: (picture.size.width * picture.scale * scale).rounded(),
+                height: (picture.size.height * picture.scale * scale).rounded())
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 1
+            format.opaque = false
+            let small = UIGraphicsImageRenderer(size: size, format: format).image { _ in
+                picture.draw(in: CGRect(origin: .zero, size: size))
+            }
+            return Image(uiImage: small).renderingMode(.original)
         }
     }
 
@@ -61,10 +88,13 @@
         public var body: some View {
             Group {
                 if let logo {
-                    logo.resizable().interpolation(.high).aspectRatio(contentMode: .fit)
+                    // In its own colors, also where the Lock Screen tints a Live Activity (it drew
+                    // the mark as a black shape there, TestFlight 2026-10-20).
+                    logo.resizable().interpolation(.high).widgetAccentedRenderingMode(.fullColor)
+                        .aspectRatio(contentMode: .fit)
                 } else {
                     Image(systemName: "drop.fill").resizable().aspectRatio(contentMode: .fit)
-                        .foregroundStyle(LiveStopStyle.water)
+                        .foregroundStyle(LiveStopStyle.accent)
                 }
             }
             .frame(height: height)
@@ -72,7 +102,7 @@
         }
     }
 
-    /// The day's progress: a thin water-blue bar on a faint track.
+    /// The day's progress: a thin white bar on a faint track.
     public struct LiveStopProgress: View {
         public var value: Double
 
@@ -82,7 +112,7 @@
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(LiveStopStyle.track)
-                    Capsule().fill(LiveStopStyle.water)
+                    Capsule().fill(LiveStopStyle.accent)
                         .frame(width: max(geo.size.height, geo.size.width * min(1, max(0, value))))
                 }
             }
@@ -92,7 +122,7 @@
     }
 
     /// The stop's access notes on one line with a key (owner, 2026-10-20: gate code, which gate,
-    /// dogs), in the brand's warning amber on navy.
+    /// dogs), with a light amber key on the water blue.
     public struct LiveStopAccess: View {
         public var text: String
 
@@ -101,10 +131,10 @@
         public var body: some View {
             HStack(spacing: 6) {
                 Image(systemName: "key.fill")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color(red: 1, green: 0.78, blue: 0.35))
+                    .font(LiveStopStyle.small(.semibold))
+                    .foregroundStyle(Color(red: 1, green: 0.84, blue: 0.48))
                 Text(text)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(LiveStopStyle.small(.medium))
                     .foregroundStyle(LiveStopStyle.text)
                     .lineLimit(1)
             }
@@ -134,7 +164,7 @@
                 if content.figure == "✓" {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: size * 0.8, weight: .semibold))
-                        .foregroundStyle(LiveStopStyle.water)
+                        .foregroundStyle(LiveStopStyle.accent)
                         .frame(height: size)
                 } else {
                     Text(content.figure)
@@ -150,32 +180,66 @@
                         if let symbol { Image(systemName: symbol) }
                         if !content.figureLabel.isEmpty { Text(content.figureLabel) }
                     }
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(LiveStopStyle.small(.semibold))
                     .foregroundStyle(LiveStopStyle.muted)
                 }
             }
         }
     }
 
-    /// The Lock Screen (and banner) view: the mark and "Sundeck Pro", the headline, the large
-    /// figure, the stop and the next stop, and the day's progress, on brand navy.
+    /// One Live Activity button: its title, and the link that opens the app on the stop to do it.
+    public struct LiveStopActionLink: Identifiable, Sendable {
+        public var action: LiveStopAction
+        public var url: URL
+
+        public var id: String { action.rawValue }
+
+        public init(action: LiveStopAction, url: URL) {
+            self.action = action
+            self.url = url
+        }
+
+        /// The phase's actions for a job (`LiveStopLink.actions`).
+        public static func links(_ phase: LiveStopPhase, jobId: String) -> [LiveStopActionLink] {
+            LiveStopLink.actions(phase).compactMap { action in
+                LiveStopLink.action(action, jobId: jobId).map { LiveStopActionLink(action: action, url: $0) }
+            }
+        }
+    }
+
+    /// The Lock Screen (and banner) view: the mark and "Sundeck Pro" (or the actions), the
+    /// headline, the large figure, the stop and the next stop, and the day's progress, on the
+    /// brand's water blue.
     public struct LiveStopLockScreen: View {
         public var content: LiveStopContent
         public var logo: Image?
+        /// On My Way and Mark Complete, beside the mark (owner, 2026-10-20).
+        public var actions: [LiveStopActionLink]
 
-        public init(content: LiveStopContent, logo: Image?) {
+        public init(content: LiveStopContent, logo: Image?, actions: [LiveStopActionLink] = []) {
             self.content = content
             self.logo = logo
+            self.actions = actions
         }
 
         public var body: some View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 8) {
                     LiveStopMark(logo: logo, height: 22)
-                    Text("Sundeck Pro")
-                        .font(LiveStopStyle.display(15, .semiBold))
-                        .foregroundStyle(LiveStopStyle.muted)
-                    Spacer(minLength: 8)
+                    if actions.isEmpty {
+                        Text("Sundeck Pro")
+                            .font(LiveStopStyle.display(15, .semiBold))
+                            .foregroundStyle(LiveStopStyle.muted)
+                        Spacer(minLength: 8)
+                    } else {
+                        Spacer(minLength: 8)
+                        ForEach(actions) { link in
+                            Link(destination: link.url) {
+                                LiveStopButtonLabel(title: link.action.title, systemImage: link.action.systemImage)
+                            }
+                            .fixedSize(horizontal: true, vertical: false)
+                        }
+                    }
                 }
                 HStack(alignment: .center, spacing: 12) {
                     VStack(alignment: .leading, spacing: 3) {
@@ -185,12 +249,12 @@
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
                         Text(content.detail)
-                            .font(.system(size: 14))
+                            .font(LiveStopStyle.small())
                             .foregroundStyle(LiveStopStyle.muted)
                             .lineLimit(1)
                         if let next = content.next {
                             Text(next)
-                                .font(.system(size: 14, weight: .medium))
+                                .font(LiveStopStyle.small(.medium))
                                 .foregroundStyle(LiveStopStyle.text)
                                 .lineLimit(1)
                         }
@@ -202,7 +266,7 @@
                 LiveStopProgress(value: content.progress)
             }
             .padding(16)
-            .accessibilityElement(children: .ignore)
+            .accessibilityElement(children: .contain)
             .accessibilityLabel(content.spoken)
         }
     }
@@ -229,13 +293,17 @@
                 .minimumScaleFactor(0.75)
         }
 
-        /// Bottom: the stop, the next stop and the progress, then Call and Open Job.
-        public static func bottom(_ content: LiveStopContent, call: URL?, open: URL?) -> some View {
+        /// Bottom: the stop, the next stop and the progress, then Call and On My Way and Mark
+        /// Complete (owner, 2026-10-20); Open Job when there are no actions (the island's tap opens
+        /// the job too).
+        public static func bottom(
+            _ content: LiveStopContent, call: URL?, open: URL?, actions: [LiveStopActionLink] = []
+        ) -> some View {
             VStack(alignment: .leading, spacing: 8) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(content.detail).font(.system(size: 14)).foregroundStyle(LiveStopStyle.muted).lineLimit(1)
+                    Text(content.detail).font(LiveStopStyle.small()).foregroundStyle(LiveStopStyle.muted).lineLimit(1)
                     if let next = content.next {
-                        Text(next).font(.system(size: 14, weight: .medium)).foregroundStyle(LiveStopStyle.text)
+                        Text(next).font(LiveStopStyle.small(.medium)).foregroundStyle(LiveStopStyle.text)
                             .lineLimit(1)
                     }
                     if let access = content.access { LiveStopAccess(text: access) }
@@ -245,11 +313,23 @@
                 LiveStopProgress(value: content.progress)
                 HStack(spacing: 8) {
                     if let call {
-                        Link(destination: call) { LiveStopButtonLabel(title: "Call", systemImage: "phone.fill") }
+                        Link(destination: call) {
+                            Image(systemName: "phone.fill")
+                                .font(LiveStopStyle.small(.semibold))
+                                .foregroundStyle(LiveStopStyle.text)
+                                .frame(width: 44, height: 44)
+                                .background(Circle().fill(Color.white.opacity(0.16)))
+                        }
+                        .accessibilityLabel("Call")
                     }
-                    if let open {
+                    if actions.isEmpty, let open {
                         Link(destination: open) {
                             LiveStopButtonLabel(title: "Open Job", systemImage: "arrow.up.forward.app.fill")
+                        }
+                    }
+                    ForEach(actions) { link in
+                        Link(destination: link.url) {
+                            LiveStopButtonLabel(title: link.action.title, systemImage: link.action.systemImage)
                         }
                     }
                 }
@@ -261,7 +341,7 @@
             Text(content.compact)
                 .font(LiveStopStyle.display(15))
                 .monospacedDigit()
-                .foregroundStyle(LiveStopStyle.water)
+                .foregroundStyle(LiveStopStyle.island)
                 .accessibilityLabel(content.spoken)
         }
 
@@ -276,8 +356,11 @@
 
         public var body: some View {
             Label(title, systemImage: systemImage)
-                .font(.system(size: 15, weight: .semibold))
+                .font(LiveStopStyle.small(.semibold))
                 .foregroundStyle(LiveStopStyle.text)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .padding(.horizontal, 12)
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .background(Capsule().fill(Color.white.opacity(0.16)))
         }

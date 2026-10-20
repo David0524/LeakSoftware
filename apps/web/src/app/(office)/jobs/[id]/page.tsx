@@ -86,6 +86,7 @@ import {
 } from "@/lib/data";
 import { getCustomerThread, getLine } from "@/lib/messages";
 import { siteOrigin } from "@/lib/origin";
+import { completeSendPrompt } from "@/lib/next-step";
 import { CreateInvoice, InvoicePanel } from "@/components/invoice-panel";
 import { QuoteBuilder, StartQuote } from "@/components/quote-builder";
 import { QuotePanel } from "@/components/quote-panel";
@@ -134,6 +135,12 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
     { q: { key: REPAIR_ITEM_KEY, label: REPAIR_ITEM_LABEL }, a: job.intake?.[REPAIR_ITEM_KEY] },
     ...questions.map((q) => ({ q, a: job.intake?.[q.key] })),
   ].filter(({ a }) => (Array.isArray(a) ? a.length > 0 : !!a));
+  // Completing a visit in an Automatic shop sends its report: ask first (owner, 2026-10-20).
+  const completePrompt = completeSendPrompt({
+    jobType: job.type,
+    reportMode: visitReportMode(company.settings),
+    customer: job.customer?.name,
+  });
 
   return (
     <>
@@ -162,10 +169,24 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
             </span>
           </span>
         }
-        actions={<JobStatusActions jobId={job.id} status={job.status} jobType={job.type} />}
+        actions={
+          <JobStatusActions
+            jobId={job.id}
+            status={job.status}
+            jobType={job.type}
+            prompt={completePrompt}
+          />
+        }
       />
 
       <JobSections
+        nextStep={{
+          jobId: job.id,
+          status: job.status,
+          jobType: job.type,
+          hasTestTypes: [...detail.testTypes.values()].some((t) => t.active && !t.deleted_at),
+          completePrompt,
+        }}
         sections={[
           {
             id: "details",
@@ -387,7 +408,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                 {/* Complete Job ends a visit, right under its list (owner, 2026-10-19). */}
                 {job.type === "maintenance" &&
                 (job.status === "scheduled" || job.status === "in_progress") ? (
-                  <CompleteJob jobId={job.id} />
+                  <CompleteJob jobId={job.id} prompt={completePrompt} />
                 ) : null}
               </section>
             ),

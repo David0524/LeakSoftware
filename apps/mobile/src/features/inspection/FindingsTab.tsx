@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { FINDING_STATUS_LABELS, type Job } from "@leakbook/core";
 import { useInspectionConfig, useJobInspection } from "../../data/inspection";
 import { useSession } from "../../state/session";
-import { Button, Group, ListRow, T } from "../../ui/components";
+import { Group, ListRow, T } from "../../ui/components";
 import { color, face, space } from "../../ui/theme";
 import { confirmDeleteFinding } from "./remove";
 
@@ -12,8 +12,8 @@ const NUM = 28;
 
 /**
  * Findings, as on the website (spec 5.4): a row per finding with its severity circle; tap to
- * edit, swipe left to delete; then Add Finding. The pool diagram with the numbered pins is its
- * own section above (DiagramPanel).
+ * edit, swipe left to delete (Add Finding is in the Next Step bar). The pool diagram with
+ * the numbered pins is its own section above (DiagramPanel).
  */
 export function FindingsTab({ job }: { job: Job }) {
   const { services } = useSession();
@@ -76,11 +76,7 @@ export function FindingsTab({ job }: { job: Job }) {
           </Group>
         </View>
       )}
-      <Button
-        title="Add Finding"
-        kind="secondary"
-        onPress={() => router.push(`/jobs/${job.id}/finding/new`)}
-      />
+      {/* Add Finding is in the job page's Next Step bar (owner, 2026-10-20). */}
     </View>
   );
 }

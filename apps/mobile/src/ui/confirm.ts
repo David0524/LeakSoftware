@@ -79,3 +79,28 @@ export function chooseAction({
     { text: cancel, style: "cancel" as const },
   ]);
 }
+
+/**
+ * A centered alert with Cancel and one default (bold) button, on iPhone and Android alike: a
+ * question before something that goes out (owner, 2026-10-20: "Ready to send the visit
+ * report?"), not an action sheet.
+ */
+export function confirmAlert({
+  title,
+  message,
+  confirm,
+  cancel = "Cancel",
+  onConfirm,
+}: {
+  title: string;
+  message?: string;
+  /** The default button, in Title Case ("Complete and Send"). */
+  confirm: string;
+  cancel?: string;
+  onConfirm: () => void;
+}) {
+  Alert.alert(title, message, [
+    { text: cancel, style: "cancel" },
+    { text: confirm, style: "default", isPreferred: true, onPress: onConfirm },
+  ]);
+}

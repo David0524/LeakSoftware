@@ -20,7 +20,6 @@ import {
   Animated,
   InputAccessoryView,
   Keyboard,
-  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -65,6 +64,8 @@ import { haptics } from "./haptics";
 import { Icon, type IconName } from "./Icon";
 import { WebIcon, type WebIconName } from "./WebIcon";
 import { SwipeLeading, SwipeToDelete } from "./SwipeRow";
+import { useNoSwipe } from "./SwipeNav";
+import { FormKeyboardBar, KEYBOARD_BAR_HEIGHT, KeyboardAvoider, useKeyboardOpen } from "./keyboard";
 import { chooseAction } from "./confirm";
 
 // The app's building blocks, drawn like the phone website on iPhone and Android (spec 3).
@@ -162,6 +163,8 @@ export interface ScreenChrome {
   headerActions?: ReactNode;
   /** The bar's right slot: the screen's main action ("+"). */
   headerRight?: () => ReactNode;
+  /** Extra room at the top for something pinned under the bar (the sync bar). */
+  topInset?: number;
 }
 
 /**
@@ -169,7 +172,13 @@ export interface ScreenChrome {
  * content, and props for its scroll view (ScrollView, FlatList, SectionList). Screen uses it;
  * list screens call it themselves.
  */
-export function useScreenChrome({ title, subtitle, headerActions, headerRight }: ScreenChrome) {
+export function useScreenChrome({
+  title,
+  subtitle,
+  headerActions,
+  headerRight,
+  topInset = 0,
+}: ScreenChrome) {
   const route = useRoute();
   const insets = useSafeAreaInsets();
   const tabSpace = useContext(TabBarSpace);
@@ -210,7 +219,7 @@ export function useScreenChrome({ title, subtitle, headerActions, headerRight }:
 
   const contentContainerStyle: ViewStyle = {
     paddingHorizontal: gutter,
-    paddingTop: drawnChrome && large ? insets.top + BAR_HEIGHT : space["4"],
+    paddingTop: (drawnChrome && large ? insets.top + BAR_HEIGHT : space["4"]) + topInset,
     paddingBottom: Math.max(space["7"], tabSpace),
   };
 
@@ -233,9 +242,21 @@ export function Screen({
   scroll = true,
   scrollEnabled = true,
   refreshControl,
+  footer,
+  overlay,
+  keyboardBar = false,
   ...chrome
 }: ScreenChrome & {
+  /** iPhone's Previous, Next and Done bar over the keyboard (the Test and Finding sheets). */
+  keyboardBar?: boolean;
   children: ReactNode;
+  /** Drawn over the page, positioned by itself (the pinned sync bar). */
+  overlay?: ReactNode;
+  /**
+   * A bar pinned under the page, above the keyboard when it is open (a sheet's Save, owner
+   * 2026-10-20). The page scrolls above it.
+   */
+  footer?: ReactNode;
   scroll?: boolean;
   /** Turn scrolling off for a moment, e.g. while a finger draws on a pad. */
   scrollEnabled?: boolean;
@@ -268,12 +289,43 @@ export function Screen({
     </View>
   );
   return (
-    <KeyboardAvoidingView
-      style={[styles.screen, { backgroundColor: color.bg }]}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    // Fields stay above the keyboard, edge to edge on Android too (owner, 2026-10-20).
+    <KeyboardAvoider style={[styles.screen, { backgroundColor: color.bg }]}>
       {body}
-    </KeyboardAvoidingView>
+      {overlay}
+      {footer ? <ScreenFooter keyboardBar={keyboardBar}>{footer}</ScreenFooter> : null}
+      {keyboardBar ? <FormKeyboardBar /> : null}
+    </KeyboardAvoider>
+  );
+}
+
+/** The bar under a page: the page's gray, a hairline above, clear of the home indicator. */
+function ScreenFooter({ children, keyboardBar }: { children: ReactNode; keyboardBar: boolean }) {
+  const insets = useSafeAreaInsets();
+  const keyboard = useKeyboardOpen();
+  // In a tab, the bar sits above the floating tab bar (56 items, border, 8 above it).
+  const inTabs = useContext(TabBarSpace) > 0;
+  const bottom = Math.max(insets.bottom, space["3"]);
+  return (
+    <View
+      style={[
+        styles.screenFooter,
+        {
+          backgroundColor: color.bg,
+          borderTopColor: color.separator,
+          // Over the keyboard: just above it (and above the iPhone keyboard bar).
+          paddingBottom: keyboard ? space["2"] : inTabs ? space["2"] : bottom,
+          marginBottom:
+            keyboard && ios && keyboardBar
+              ? KEYBOARD_BAR_HEIGHT
+              : !keyboard && inTabs
+                ? Math.max(12, insets.bottom) + 66
+                : 0,
+        },
+      ]}
+    >
+      {children}
+    </View>
   );
 }
 
@@ -605,10 +657,13 @@ export function Field({
   ref?: Ref<TextInput>;
 }) {
   const [focused, setFocused] = useState(false);
+  // Typing and selecting text never change the job section (owner, 2026-10-20).
+  const noSwipe = useNoSwipe();
   return (
     <View style={styles.field}>
       <T variant="bodyMedium">{label}</T>
       <TextInput
+        {...noSwipe}
         ref={ref}
         placeholderTextColor={color.placeholder}
         maxFontSizeMultiplier={MAX_TEXT_SCALE}
@@ -775,11 +830,17 @@ export function Segmented<V extends string>({
   minSegmentWidth,
   variant = "default",
   accessibilityLabel,
+  onReselect,
+  compact = false,
 }: {
   label?: string;
   options: { value: V; label: string; badge?: number }[];
   value: V | null;
   onChange: (v: V) => void;
+  /** Tapping the chosen segment again (a checklist answer clears back to To do). */
+  onReselect?: () => void;
+  /** Tighter sides, for four answers across a phone's row. */
+  compact?: boolean;
   fill?: boolean;
   minSegmentWidth?: number;
   variant?: "default" | "switcher";
@@ -829,8 +890,11 @@ export function Segmented<V extends string>({
     ]).start();
   }, [chosen, reduceMotion, x, w]);
 
+  // Dragging the chosen segment never changes the job section (owner, 2026-10-20).
+  const noSwipe = useNoSwipe();
   const control = (
     <View
+      {...noSwipe}
       ref={track}
       onLayout={measureTrack}
       // A held chosen segment takes over the touch once it moves; then it follows the finger.
@@ -905,12 +969,17 @@ export function Segmented<V extends string>({
               }, 0);
             }}
             onPress={() => {
-              if (on) return;
+              if (on) {
+                if (!onReselect) return;
+                haptics.selection();
+                return onReselect();
+              }
               haptics.selection();
               onChange(o.value);
             }}
             style={[
               switcher ? styles.switchSegment : styles.segment,
+              compact && styles.segmentCompact,
               (fill || switcher) && { flex: 1 },
               minSegmentWidth ? { minWidth: minSegmentWidth } : null,
               // Until the thumb has measured, the chosen segment draws its own.
@@ -1354,8 +1423,10 @@ export function FieldRow({
   const numeric = ios && NUMERIC_KEYBOARDS.has(String(input.keyboardType ?? ""));
   const scaledWidth = labelWidth * Math.min(fontScale, 1.35);
 
+  const noSwipe = useNoSwipe();
   const field = (
     <TextInput
+      {...noSwipe}
       ref={setRef}
       placeholderTextColor={color.placeholder}
       clearButtonMode={multiline || wrap ? undefined : "while-editing"}
@@ -1767,6 +1838,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: space["4"],
   },
+  screenFooter: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: gutter,
+    paddingTop: space["2"],
+  },
+  segmentCompact: { paddingHorizontal: space["1"] },
   switchSegment: {
     minHeight: minTap,
     borderRadius: shape.segmentTrack - 2,

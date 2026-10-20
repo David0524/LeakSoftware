@@ -29,6 +29,12 @@ import { CleaningsDue } from "../../../../features/maintenance/Cleanings";
 import { TodayComplete } from "../../../../features/job/CompleteJob";
 import { OnMyWay } from "../../../../features/today/OnMyWay";
 import { WeatherBadge } from "../../../../features/today/WeatherBadge";
+import {
+  clearStopAction,
+  pendingStopAction,
+  useLiveStopVersion,
+  type StopAction,
+} from "../../../../lib/liveStop";
 import { useCompany, useSession } from "../../../../state/session";
 import { useWalkthrough } from "../../../../state/walkthrough";
 import { mapsAppFor, openDirections, useDirectionsChoice } from "../../../../state/directions";
@@ -43,7 +49,7 @@ import {
   T,
 } from "../../../../ui/components";
 import { haptics } from "../../../../ui/haptics";
-import { SyncBar } from "../../../../ui/SyncBar";
+import { usePinnedSyncBar } from "../../../../ui/SyncBar";
 import { ScreenTip } from "../../../../ui/Tip";
 import { WebIcon } from "../../../../ui/WebIcon";
 import {
@@ -62,7 +68,9 @@ import {
 /**
  * Today (spec 5.1): your day stop by stop, from the jobs on this phone. Stops are in route
  * order with drive estimates from the shared routing rules; the server's drive times, the
- * weather and On My Way come with the full route (S8).
+ * weather and On My Way come with the full route (S8). The sync bar stays pinned under the bar
+ * and the tip comes after the stops, so the first stop's buttons are in view at launch (owner,
+ * 2026-10-20).
  */
 export default function Today() {
   const company = useCompany();
@@ -74,6 +82,10 @@ export default function Today() {
   const [refreshing, setRefreshing] = useState(false);
   const me = user?.id ?? "";
   const [techId, setTechId] = useState(me);
+  const sync = usePinnedSyncBar(() => router.push("/more/sync"));
+  // The current-stop notification's On My Way or Mark Complete: done on your own stop here.
+  useLiveStopVersion();
+  const asked = pendingStopAction();
   const tz = company.timezone;
   const now = new Date();
   const today = localDate(now, tz);
@@ -114,7 +126,8 @@ export default function Today() {
     );
     return [{ value: me, label: "Me" }, ...list.map((m) => ({ value: m.user_id, label: m.name }))];
   }, [dayJobs, me, members]);
-  const shownTech = people.some((p) => p.value === techId) ? techId : me;
+  // A notification's request shows your own day.
+  const shownTech = !asked && people.some((p) => p.value === techId) ? techId : me;
   const mine = shownTech === me;
   const techName = people.find((p) => p.value === shownTech)?.label ?? "Teammate";
   const meProfile = team.find((t) => t.id === me);
@@ -144,6 +157,11 @@ export default function Today() {
     workDay(settings),
     drive,
   );
+  // A notification's request for a stop that isn't on your route today: nothing to do.
+  const askedHere = !asked || shownTech !== me || stops.some((j) => j.id === asked.jobId);
+  useEffect(() => {
+    if (asked && !askedHere) clearStopAction(asked.nonce);
+  }, [asked, askedHere]);
   // The stop you're on: the first not done today (Mark Complete moves it on).
   const next = stops.find((j) => !stopDone(j, today));
   const depotAddress = formatAddress(company as unknown as Parameters<typeof formatAddress>[0]);
@@ -194,12 +212,21 @@ export default function Today() {
         ) : undefined
       }
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+      topInset={sync.height}
+      overlay={sync.overlay}
     >
-      <SyncBar onPress={() => router.push("/more/sync")} />
+      {sync.inline}
       {manager ? <GettingStarted company={company} /> : null}
-      <ScreenTip screen="today" />
       {manager && people.length > 1 ? (
-        <FilterPills label="Whose day" options={people} value={shownTech} onChange={setTechId} />
+        <FilterPills
+          label="Whose day"
+          options={people}
+          value={shownTech}
+          onChange={(v) => {
+            if (asked) clearStopAction(asked.nonce);
+            setTechId(v);
+          }}
+        />
       ) : null}
 
       {stops.length === 0 ? (
@@ -235,6 +262,7 @@ export default function Today() {
                 next={j.id === next?.id}
                 timeZone={tz}
                 day={today}
+                action={mine && asked?.jobId === j.id ? asked : null}
                 onMyWay={
                   mine ? (
                     <OnMyWay
@@ -250,6 +278,11 @@ export default function Today() {
                       lineActive={line?.status === "active"}
                       isManager={manager}
                       jobId={j.id}
+                      trigger={
+                        asked?.jobId === j.id && asked.action === "on_my_way"
+                          ? asked.nonce
+                          : undefined
+                      }
                     />
                   ) : null
                 }
@@ -268,6 +301,8 @@ export default function Today() {
           <Leg text={`${durationLabel(backLeg)} back to the shop`} />
         </View>
       )}
+      {/* After the stops, so the first stop's buttons are on screen at launch (2026-10-20). */}
+      <ScreenTip screen="today" />
     </Screen>
   );
 }
@@ -300,6 +335,7 @@ function Stop({
   next,
   timeZone,
   day,
+  action,
   onDirections,
   onMyWay,
 }: {
@@ -311,9 +347,13 @@ function Stop({
   day: string;
   onMyWay: ReactNode;
   onDirections: () => void;
+  /** The notification asked to do something on this stop: it opens and does it. */
+  action: { action: StopAction; nonce: number } | null;
 }) {
   const done = stopDone(job, day);
-  const [expanded, setExpanded] = useState(next);
+  const [opened, setExpanded] = useState(next);
+  // Asked from the notification: open, and its buttons act as they appear.
+  const expanded = opened || action !== null;
   const [turn] = useState(() => new Animated.Value(next ? 1 : 0));
   useEffect(() => {
     Animated.timing(turn, {
@@ -339,7 +379,10 @@ function Stop({
         accessibilityRole="button"
         accessibilityLabel={`Stop ${n}: ${name}${done ? ", done" : ""}`}
         accessibilityState={{ expanded }}
-        onPress={() => setExpanded(!expanded)}
+        onPress={() => {
+          if (action) clearStopAction(action.nonce);
+          setExpanded(!expanded);
+        }}
         style={({ pressed }) => [styles.stopTop, pressed && { opacity: 0.7 }]}
       >
         <View
@@ -360,29 +403,24 @@ function Stop({
           <Text style={[styles.time, tabular, { color: color.text }]}>
             {job.scheduled_start ? formatTime(job.scheduled_start, timeZone) : ""}
           </Text>
-          {expanded ? (
-            // Open, the name is the link to the job (owner, 2026-10-20: no Open Job button).
-            <Pressable
-              accessibilityRole="link"
-              accessibilityLabel={`Open the job for ${name}`}
-              onPress={() => router.push(`/jobs/${job.id}`)}
-              hitSlop={8}
-              style={({ pressed }) => [styles.nameLink, pressed && { opacity: 0.5 }]}
+          {/* The name is the link to the job, open or closed (owner, 2026-10-20); the rest of
+              the row opens and closes the card. */}
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={`Open the job for ${name}`}
+            onPress={() => router.push(`/jobs/${job.id}`)}
+            hitSlop={8}
+            style={({ pressed }) => [styles.nameLink, pressed && { opacity: 0.5 }]}
+          >
+            <Text
+              numberOfLines={1}
+              style={[type.bodyEmphasis, { color: color.link, flexShrink: 1 }]}
+              maxFontSizeMultiplier={MAX_TEXT_SCALE}
             >
-              <Text
-                numberOfLines={1}
-                style={[type.bodyEmphasis, { color: color.link, flexShrink: 1 }]}
-                maxFontSizeMultiplier={MAX_TEXT_SCALE}
-              >
-                {name}
-              </Text>
-              <WebIcon name="chevronRight" size={16} color={color.link} strokeWidth={2.4} />
-            </Pressable>
-          ) : (
-            <T variant="bodyEmphasis" numberOfLines={1} style={{ flexShrink: 1 }}>
               {name}
-            </T>
-          )}
+            </Text>
+            <WebIcon name="chevronRight" size={16} color={color.link} strokeWidth={2.4} />
+          </Pressable>
           {/* Most stops are scheduled; the chip shows other states. */}
           {job.status !== "scheduled" ? <StatusChip status={job.status} /> : null}
           {lock && lock !== "started" ? (
@@ -442,6 +480,8 @@ function Stop({
               customer={job.customer?.name ?? "this stop"}
               day={day}
               done={done}
+              customerName={job.customer?.name ?? null}
+              trigger={action?.action === "mark_complete" ? action.nonce : undefined}
             />
             {done ? null : (
               <View style={styles.actions}>

@@ -15,17 +15,26 @@
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
         @Environment(AppEnvironment.self) private var app
-        @State private var flow: ReportFlow?
+        /// The job page's flow (shared with its Next Step bar), else this tab's own.
+        var sharedFlow: ReportFlow?
+        @State private var ownFlow: ReportFlow?
 
-        init(job: JobView) { self.job = job }
+        init(job: JobView, sharedFlow: ReportFlow? = nil) {
+            self.job = job
+            self.sharedFlow = sharedFlow
+        }
+
+        private var flow: ReportFlow? { sharedFlow ?? ownFlow }
 
         // Worked out on every render: reading `sync.revision` re-renders after any write or pull.
         var body: some View {
             let _ = sync.revision
             if let company = session.company, let flow, flow.jobId == job.id {
+                // Write Draft needs a connection; Finish and the sends wait on the phone without one.
                 let model = ReportTabModel(
                     store: sync.store, companyId: company.id, settings: company.settings, job: job,
-                    template: flow.template, timeZone: TimeZone(identifier: company.timeZone) ?? .current)
+                    template: flow.template, online: sync.status.phase != .offline,
+                    timeZone: TimeZone(identifier: company.timeZone) ?? .current)
                 VStack(alignment: .leading, spacing: 32) {
                     VStack(alignment: .leading, spacing: 12) {
                         SectionHeading("Report and Sign-Off")
@@ -48,7 +57,9 @@
                 ProgressView()
                     .frame(maxWidth: .infinity, minHeight: minTarget)
                     .onAppear {
-                        flow = ReportFlow(sync: sync, companyId: company.id, jobId: job.id, settings: company.settings)
+                        ownFlow = ReportFlow(
+                            sync: sync, companyId: company.id, jobId: job.id, settings: company.settings,
+                            sends: app.reportSends)
                     }
             }
         }
@@ -68,6 +79,8 @@
         @State private var open = false
         @State private var confirmWriteAgain = false
         @State private var showUnsigned = false
+        @State private var showVersions = false
+        /// "Saved" after the report text saved by itself (owner, 2026-10-20).
         @State private var savedText = false
         @State private var browsing: BrowsedPage?
         /// The version whose Send by Text opened the share sheet.
@@ -89,26 +102,9 @@
         var body: some View {
             VStack(alignment: .leading, spacing: 12) {
                 titleRow
-                if !model.online {
-                    Notice(kind: .warning, text: ReportTabModel.offlineNotice)
-                } else {
-                    writeButtons
-                }
-                if flow.busy == .draft { ProgressSteps(steps: ReportProgress.steps(.draft), current: flow.step) }
-                if let error = flow.error, error.at == .draft { Notice(kind: .error, text: error.text) }
-                if let message = flow.message { Notice(kind: .success, text: message) }
-                if model.hasDraftText, let draft = model.draft {
-                    if open {
-                        draftBody(draft)
-                    } else if let collapsed = model.collapsedText {
-                        Text(collapsed).textRole(.secondary).foregroundStyle(Color.textMuted)
-                    }
-                }
-                if let texted = flow.texted {
-                    CopyBox(label: ReportTabModel.textedLabel, text: texted, button: "Copy Message")
-                }
+                // The send controls come first, right under the finished version's status line
+                // (owner, 2026-10-20).
                 if let title = model.finishedTitle, let finished = model.finished {
-                    Hairline().padding(.top, 12)
                     Text(title).textRole(.bodyMedium).foregroundStyle(Color.text)
                     Text(ReportTabModel.finishedNote).textRole(.secondary).foregroundStyle(Color.textMuted)
                     sendControls(reportId: finished.id, primary: model.finishedEmailIsPrimary)
@@ -119,11 +115,43 @@
                         Button("Download PDF") { browsing = BrowsedPage(url: pdf) }.buttonStyle(.quiet).padding(
                             .leading, -20)
                     }
+                    Hairline().padding(.vertical, 4)
+                }
+                // Waiting for signal, or the server's answer to a request that waited.
+                if !app.reportSends.pending(jobId: job.id).isEmpty, flow.message != ReportSendText.willSend {
+                    Notice(kind: .info, text: ReportSendText.willSend)
+                }
+                if let failed = app.reportSends.failure(jobId: job.id) { Notice(kind: .error, text: failed) }
+                if !model.online {
+                    Notice(kind: .warning, text: ReportTabModel.offlineNotice)
+                } else {
+                    writeButtons
+                }
+                if flow.busy == .draft { ProgressSteps(steps: ReportProgress.steps(.draft), current: flow.step) }
+                if let error = flow.error, error.at == .draft { Notice(kind: .error, text: error.text) }
+                if let message = flow.message { Notice(kind: .success, text: message) }
+                if model.hasDraftText, let draft = model.draft {
+                    // "Report Text", a disclosure row (owner, 2026-10-20; was Show / Hide Draft).
+                    DisclosureRow(title: "Report Text", open: $open) { flow.saveEdits() }
+                    if open {
+                        draftBody(draft)
+                    } else if let collapsed = model.collapsedText {
+                        Text(collapsed).textRole(.secondary).foregroundStyle(Color.textMuted)
+                    }
+                }
+                if let texted = flow.texted {
+                    CopyBox(label: ReportTabModel.textedLabel, text: texted, button: "Copy Message")
                 }
                 if !model.versions.isEmpty { versions }
             }
             .card()
             .onAppear { if model.hasDraftText && flow.message != nil { open = true } }
+            .task(id: sync.revision) {
+                // A text that went out while away: its message to send from here.
+                guard app.reportSends.readyText(jobId: job.id) != nil else { return }
+                flow.texted = app.reportSends.takeReadyText(jobId: job.id)
+            }
+            .onDisappear { flow.saveEdits() }
             .onChange(of: flow.busy) { old, _ in
                 // Write Draft opens the draft it wrote.
                 if old == .draft, flow.error == nil { open = true }
@@ -139,7 +167,7 @@
             }
         }
 
-        /// "Homeowner report", Show/Hide Draft, View version n.
+        /// "Homeowner report" and View version n.
         private var titleRow: some View {
             ViewThatFits(in: .horizontal) {
                 HStack(alignment: .firstTextBaseline, spacing: 12) { titleParts }
@@ -150,24 +178,6 @@
         @ViewBuilder private var titleParts: some View {
             CardTitle(model.templateName)
             Spacer(minLength: 0)
-            if model.hasDraftText {
-                Button {
-                    flow.saveEdits()
-                    withAnimation { open.toggle() }
-                } label: {
-                    HStack(spacing: 4) {
-                        Text(open ? "Hide Draft" : "Show Draft")
-                        Image(systemName: "chevron.down").font(.footnote.weight(.semibold))
-                            .rotationEffect(.degrees(open ? 180 : 0))
-                    }
-                    .font(.role(.bodyEmphasis))
-                    .foregroundStyle(Color.link)
-                    .frame(minHeight: minTarget)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityValue(open ? "Expanded" : "Collapsed")
-            }
             if let latest = model.viewLatest, let url = latest.url {
                 Button {
                     browsing = BrowsedPage(url: url)
@@ -222,7 +232,7 @@
                             get: { flow.sectionText(section) },
                             set: {
                                 flow.edits[section.key] = $0
-                                savedText = false
+                                withAnimation { savedText = false }
                             }),
                         axis: .vertical
                     )
@@ -233,21 +243,20 @@
                 }
                 .id("\(draft.id)-\(section.key)")
             }
-            HStack(spacing: 12) {
-                Button("Save Text") {
-                    focus = nil
-                    flow.saveEdits()
-                    savedText = flow.saveError == nil
+            // No Save Text (owner, 2026-10-20): the text saves by itself 1 second after typing
+            // stops, and when a section loses focus or the card goes away, with "Saved" after.
+            if savedText { SavedLabel() }
+            Color.clear.frame(height: 0)
+                .task(id: flow.edits) {
+                    guard !flow.edits.isEmpty else { return }
+                    try? await Task.sleep(for: Autosave.delay)
+                    guard !Task.isCancelled else { return }
+                    saveText()
                 }
-                .buttonStyle(.secondary)
-                if savedText {
-                    Text("Saved.").textRole(.secondary).foregroundStyle(Color.pass)
+                .onChange(of: focus) { old, _ in
+                    // Every pending edit is saved in one write when a section loses focus.
+                    if case .section = old { saveText() }
                 }
-            }
-            .onChange(of: focus) { old, _ in
-                // Every pending edit is saved in one write when a section loses focus.
-                if case .section = old { flow.saveEdits() }
-            }
             // Saved reports (owner, 2026-10-20): the shop's own wording, word for word.
             FlowRow(spacing: 12) {
                 Button(SavedReportText.use) {
@@ -278,7 +287,8 @@
                     BusyButtonLabel(ReportTabModel.finishReport, busy: flow.busy == .finish, busyTitle: "Finishing…")
                 }
                 .buttonStyle(.primary)
-                .disabled(flow.busy != nil || !model.online)
+                // Offline it stays enabled: the request waits on the phone (owner, 2026-10-20).
+                .disabled(flow.busy != nil)
                 if flow.busy == .finish { ProgressSteps(steps: ReportProgress.steps(.finish), current: flow.step) }
             } else {
                 Button(ReportTabModel.reviewWithCustomer) {
@@ -362,7 +372,7 @@
                 BusyButtonLabel("Send by Email", busy: flow.busy == .email, busyTitle: "Sending…")
             }
             .modifier(KindStyle(primary: primary))
-            .disabled(flow.busy != nil || !model.online)
+            .disabled(flow.busy != nil)
             Button {
                 focus = nil
                 sharingFrom = reportId
@@ -372,15 +382,29 @@
                 BusyButtonLabel("Send by Text", busy: flow.busy == .text, busyTitle: "Sending…")
             }
             .buttonStyle(.secondary)
-            .disabled(flow.busy != nil || !model.online)
+            .disabled(flow.busy != nil)
         }
 
         // MARK: Versions
 
+        /// Earlier versions, folded under "Versions (N)", closed at first (owner, 2026-10-20).
         private var versions: some View {
             VStack(alignment: .leading, spacing: 4) {
-                Hairline().padding(.vertical, 12)
-                Text("Versions").textRole(.bodyMedium).foregroundStyle(Color.text)
+                Hairline().padding(.vertical, 8)
+                DisclosureRow(title: "Versions (\(model.versions.count))", open: $showVersions)
+                if showVersions { versionRows }
+            }
+        }
+
+        /// Saves the edited sections, and says so.
+        private func saveText() {
+            guard !flow.edits.isEmpty else { return }
+            flow.saveEdits()
+            if flow.saveError == nil { withAnimation { savedText = true } }
+        }
+
+        private var versionRows: some View {
+            VStack(alignment: .leading, spacing: 4) {
                 ForEach(Array(model.versions.enumerated()), id: \.element.id) { index, version in
                     if index > 0 { Hairline() }
                     VStack(alignment: .leading, spacing: 0) {

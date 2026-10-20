@@ -3,7 +3,7 @@ import { View } from "react-native";
 import { calculate, formatSchedule, type Job } from "@leakbook/core";
 import { useInspectionConfig, useJobInspection } from "../../data/inspection";
 import { useCompany, useSession } from "../../state/session";
-import { Button, Group, ListRow, T } from "../../ui/components";
+import { Group, ListRow, T } from "../../ui/components";
 import { space } from "../../ui/theme";
 import { OutcomeChip } from "./OutcomeChip";
 import { confirmDeleteTest } from "./remove";
@@ -11,7 +11,7 @@ import { confirmDeleteTest } from "./remove";
 /**
  * Tests, as on the website (spec 5.4 Findings): a row per test with its item and time, the
  * calculated summary, the recorded fields and notes, the outcome chip; tap to edit, swipe left
- * to delete. Then Add Test, which opens the sheet with the test type to choose.
+ * to delete. Add Test is in the job page's Next Step bar.
  */
 export function TestsTab({ job }: { job: Job }) {
   const company = useCompany();
@@ -82,13 +82,7 @@ export function TestsTab({ job }: { job: Job }) {
           })}
         </Group>
       )}
-      {config.testTypes.length ? (
-        <Button
-          title="Add Test"
-          kind="secondary"
-          onPress={() => router.push(`/jobs/${job.id}/test/new`)}
-        />
-      ) : null}
+      {/* Add Test is in the job page's Next Step bar (owner, 2026-10-20). */}
     </View>
   );
 }

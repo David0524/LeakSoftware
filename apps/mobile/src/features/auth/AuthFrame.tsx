@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "react-native";
+import { Image, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { T } from "../../ui/components";
+import { KeyboardAvoider } from "../../ui/keyboard";
 import { color, space } from "../../ui/theme";
 
 const mark = require("../../../../../brand/logo/png/mark-512.png");
@@ -22,10 +23,8 @@ export function AuthFrame({
 }) {
   const insets = useSafeAreaInsets();
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: color.bg }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    // Fields stay above the keyboard, edge to edge on Android too (owner, 2026-10-20).
+    <KeyboardAvoider style={{ flex: 1, backgroundColor: color.bg }}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
@@ -55,7 +54,7 @@ export function AuthFrame({
         </View>
         <View style={styles.body}>{children}</View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   );
 }
 

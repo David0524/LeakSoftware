@@ -1,6 +1,13 @@
 "use client";
 
-import { useId, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import {
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import { SEGMENT_TRACK, cx, segmentClass } from "./ui";
 
 /** SEGMENT_TRACK as one full-width row. */
@@ -14,6 +21,8 @@ export function Segmented<T extends string>({
   options,
   onChange,
   fit = false,
+  description,
+  segmentClassName,
 }: {
   label: string;
   name: string;
@@ -25,6 +34,10 @@ export function Segmented<T extends string>({
    * labels on a phone (iOS never wraps a segmented control onto two rows).
    */
   fit?: boolean;
+  /** A line under the label, e.g. a checklist item's method and notes. */
+  description?: ReactNode;
+  /** Extra classes for each segment, e.g. min-h-11 for 44 pt answers. */
+  segmentClassName?: string;
 }) {
   // Unique per control: a page can hold several with the same field name (Team's role).
   const labelId = `${name}-label-${useId()}`;
@@ -72,10 +85,18 @@ export function Segmented<T extends string>({
       <p className="font-medium" id={labelId}>
         {label}
       </p>
+      {description ? (
+        <p id={`${labelId}-note`} className="truncate text-[0.8125rem] text-text-muted">
+          {description}
+        </p>
+      ) : null}
       <input type="hidden" name={name} value={value} />
       <div
         role="radiogroup"
         aria-labelledby={labelId}
+        aria-describedby={description ? `${labelId}-note` : undefined}
+        // Dragging the thumb sideways never swipes to the next job section.
+        data-no-swipe
         className={cx(fit ? FIT_TRACK : SEGMENT_TRACK, "touch-pan-y select-none")}
         onKeyDown={onKeyDown}
         onPointerDown={onPointerDown}
@@ -102,6 +123,7 @@ export function Segmented<T extends string>({
                   : undefined,
                 "transition-transform duration-200 motion-reduce:transition-none",
                 held && value === o.value && "scale-[1.06] shadow-lg",
+                segmentClassName,
               ),
             )}
           >

@@ -7,7 +7,9 @@
     // arrows stay the visible way to do the same. The swipe works alongside vertical scrolling
     // (a mostly sideways drag only), never starts at the screen's left edge (the system's swipe
     // back), and never in a control that drags sideways itself (segmented controls, rows that
-    // swipe to delete, sliders): those mark themselves with `.keepsHorizontalDrags()`.
+    // swipe to delete, sliders, text fields): those mark themselves with `.keepsHorizontalDrags()`.
+    // A swipe counts by the website's rule (`PageSwipeRule`: 70 pt, 1.8 times as far sideways as
+    // up or down), with a light tap of haptics when the page changes (owner, 2026-10-20).
 
     /// Frames (in global space) where a sideways drag belongs to the control under it.
     @MainActor final class PageSwipeZones {
@@ -29,6 +31,7 @@
         var previous: (() -> Void)?
         var next: (() -> Void)?
         @State private var zones = PageSwipeZones()
+        @State private var turns = 0
 
         func body(content: Content) -> some View {
             content
@@ -38,12 +41,20 @@
                         .onEnded { value in
                             guard enabled, !zones.contains(value.startLocation) else { return }
                             switch PageSwipeRule.direction(start: value.startLocation, translation: value.translation) {
-                            case 1: next?()
-                            case -1: previous?()
+                            case 1:
+                                guard let next else { return }
+                                next()
+                                turns += 1
+                            case -1:
+                                guard let previous else { return }
+                                previous()
+                                turns += 1
                             default: break
                             }
                         },
-                    including: enabled ? .all : .subviews)
+                    including: enabled ? .all : .subviews
+                )
+                .sensoryFeedback(.impact(weight: .light), trigger: turns)
         }
     }
 

@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore, type ReactNode } from "react";
 import { SwipePages, useSegmentDrag } from "./gestures";
+import { NextStepBar, type NextStepJob } from "./next-step-bar";
 import { cx } from "./ui";
 
 export interface JobSection {
@@ -17,7 +18,14 @@ export interface JobSection {
  * one part at a time (the page was 15 screens long); wider screens keep one page.
  * The part shown is kept in the URL (#checklist) so a reload or a shared link returns to it.
  */
-export function JobSections({ sections }: { sections: JobSection[] }) {
+export function JobSections({
+  sections,
+  nextStep,
+}: {
+  sections: JobSection[];
+  /** The job, for the phone's Next Step bar (owner, 2026-10-20). */
+  nextStep?: NextStepJob;
+}) {
   const hash = useSyncExternalStore(
     (onChange) => {
       window.addEventListener("hashchange", onChange);
@@ -109,6 +117,7 @@ export function JobSections({ sections }: { sections: JobSection[] }) {
           </div>
         ))}
       </SwipePages>
+      {nextStep ? <NextStepBar section={active} job={nextStep} /> : null}
     </>
   );
 }

@@ -27,6 +27,7 @@
         @State private var attempt = 0
         @State private var caption = ""
         @State private var captionEdited = false
+        @State private var captionSaved = false
         @State private var editing = false
         @State private var confirmDelete = false
         @State private var saveError: String?
@@ -93,19 +94,9 @@
         }
 
         /// Done, the title and Share, on the bar material over the photo.
+        /// Share on the left, Done in the confirmation spot on the right (owner, 2026-10-20).
         private var bar: some View {
             HStack(spacing: 8) {
-                Button("Done") { close() }
-                    .font(.role(.bodyEmphasis))
-                    .foregroundStyle(Color.link)
-                    .frame(minWidth: minTarget, minHeight: minTarget)
-                Spacer(minLength: 0)
-                Text(title)
-                    .textRole(.navTitle)
-                    .foregroundStyle(Color.text)
-                    .lineLimit(1)
-                    .accessibilityAddTraits(.isHeader)
-                Spacer(minLength: 0)
                 Group {
                     if let url = source.url {
                         ShareLink(item: url) {
@@ -118,6 +109,17 @@
                     }
                 }
                 .foregroundStyle(Color.link)
+                Spacer(minLength: 0)
+                Text(title)
+                    .textRole(.navTitle)
+                    .foregroundStyle(Color.text)
+                    .lineLimit(1)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 0)
+                Button("Done") { close() }
+                    .font(.role(.bodyEmphasis))
+                    .foregroundStyle(Color.link)
+                    .frame(minWidth: minTarget, minHeight: minTarget)
             }
             .padding(.horizontal, 8)
             .chromeBar(hairline: nil)
@@ -146,8 +148,21 @@
                         .focused($captionFocused)
                         .accessibilityLabel("Caption")
                         .fieldBox(focused: captionFocused)
-                        .onChange(of: caption) { if captionFocused { captionEdited = true } }
+                        .onChange(of: caption) {
+                            if captionFocused {
+                                captionEdited = true
+                                captionSaved = false
+                            }
+                        }
                         .onChange(of: captionFocused) { _, focused in if !focused { flushCaption() } }
+                        // Saved by itself 1 second after typing stops (owner, 2026-10-20).
+                        .task(id: caption) {
+                            guard captionEdited else { return }
+                            try? await Task.sleep(for: Autosave.delay)
+                            guard !Task.isCancelled else { return }
+                            flushCaption()
+                        }
+                        if captionSaved { SavedLabel() }
                     }
                     Text([text.meta, MediaDetail.upload(media)].filter { !$0.isEmpty }.joined(separator: " · "))
                         .textRole(.secondary).foregroundStyle(Color.textMuted)
@@ -225,11 +240,15 @@
             dismiss()
         }
 
-        /// Caption saves when leaving the field and when leaving the screen.
+        /// Caption saves 1 second after typing stops, when leaving the field and when leaving the
+        /// screen, with "Saved" after.
         private func flushCaption() {
             guard captionEdited, let media else { return }
             do {
-                if try MediaWrites.saveCaptionIfChanged(sync, media, caption) { captionEdited = false }
+                if try MediaWrites.saveCaptionIfChanged(sync, media, caption) {
+                    captionEdited = false
+                    withAnimation { captionSaved = true }
+                }
             } catch {
                 saveError = String(describing: error)
             }

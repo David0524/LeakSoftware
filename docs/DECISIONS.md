@@ -2,12 +2,21 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-20 (owner, from TestFlight: "live activity logo appears black"; "use our lighter blue for live activities"; "It doesn't seem to allow me to access photos from my camera roll")
+- **Live Activity and Android's current-stop notification in the water blue** (#1F6FAE) instead of navy: white text, white progress and check; the Dynamic Island keeps its black, with the water blue's light shade for its text and keyline.
+- **The Live Activity's logo** is drawn in its own colors where the Lock Screen tints Live Activities, and at the size it shows (the 512 by 749 file is redrawn to 144 pixels tall).
+- **The photo library:** build 1006 opened it only from a long press on Add Photo. The one-handed changes (merged here) put a Library button beside Add Photo on every platform.
+
 ## 2026-10-20 (owner: "Pool inspection plan approved, go with your recommendations")
 - **Pool Inspection is a job type for leak shops** (`docs/plans/pool-inspection.md`), with the four recommendations: a gate question's No folds its group ("Not present"); the twelve feature questions are one tap-all-that-apply list in From the Customer; Write Draft drafts the report's summary; one price on the job from a new "Pool inspection" price book item ($495 to start; shops set their own).
 - **Every question of the Leaktronics form is a checklist row** (133 in eight sections, word for word, with group headers and banners). Contact fields are the job's own; Leaks noted and Summary notes are the report's text; the insurance claim question is left out ("Remove the insurance stuff").
 - **Which answer needs attention** is set per option, from the wording (No on "Is the heater properly sized?", Yes on "Does the system show visible leaking?"); "is there one" questions flag nothing. Shops can change any of it in Settings.
 - **The inspection report uses the homeowner report's draft, sign-off, and send**, titled Pool Inspection Report, rather than a separate report template.
 - **An inspection's report can be signed and sent before every question is answered** (unlike a leak detection, which waits for its whole checklist): the report lists the questions answered, and Needs attention lists the flagged ones. Write Draft doesn't check an inspection's text for leak checklist names ("Main drain", "Pool"), since its questions use those words.
+
+## 2026-10-20 (owner: one-handed use review, "Do all changes except for 11")
+- **One-handed use on every platform** (`docs/design/2026-10-20-one-handed-use.md`): a Next Step bar at the bottom of the job page on phones (Start Job, Complete Job, Add Test · Add Finding, Add Photo · Add Video, Write Draft); photos on a test or finding before its first save; Save pinned in the test and finding sheets; typed text saves by itself (no Save Text); Android back asks before discarding; completing a visit asks "Ready to send the visit report?" when it would send one (Automatic shops), and Mark Remaining gets a 5-second Undo; report send controls first and versions folded; offline Finish and Send queue on the phones; checklist answers as one-tap segments (Remove Item only behind Edit and swipe); Delete in a photo's More menu; camera straight from Add Photo, Library visible; sync bar pinned; Today's tip after the stops. Reason: frequent field actions were at the top of the screen, two or more taps deep, or one slip from losing work.
+- **Not changed:** tap targets stay at the 44 pt minimum (review item 11, declined).
 
 ## 2026-10-20 (owner: "Dashboard should be in the apps"; "On invoices tab add some filtering and sorting"; visit reports)
 - **The Dashboard is in both apps**, first in More, for owners and admins: the website's numbers (collected, owed, quotes accepted, invoiced, collected by month, jobs by status) as phone cards and a bar chart, from the same `owner_dashboard`. Replaces decision 12 of the native-apps spec ("Dashboard is left out of the apps").

@@ -50,14 +50,17 @@ import {
   setPoolShape,
   setPoolSpa,
   setVerdict,
+  unmarkRest,
 } from "@/app/actions/inspection";
 import { InspectionChecklist } from "./inspection-checklist";
+import { useNextStep } from "./next-step-events";
 import { DiagramShapes } from "./pool-diagram";
 import { Segmented } from "./segmented";
 import { ShapePicker } from "./shape-picker";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
 import { Sheet, useConfirm } from "./sheet";
 import { Button, Checkbox, Chip, Select, buttonClass, cx } from "./ui";
+import { SavedNote, UndoNotice, useAutosave, useUndoWindow } from "./undo";
 
 // Working a job on the website (M9.5): the phone's job screen, for a browser.
 
@@ -67,16 +70,32 @@ type Action = (state: FormState, form: FormData) => Promise<FormState>;
 export function useRun() {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  function run(action: Action, fields: Record<string, string>, before?: () => void) {
-    start(async () => {
-      before?.();
-      const form = new FormData();
-      for (const [k, v] of Object.entries(fields)) form.set(k, v);
-      const result = await action({}, form);
-      setError(result.error ?? Object.values(result.fields ?? {})[0] ?? null);
-    });
+  /**
+   * As `run`, and resolves with what the action returned. `after` runs before the button
+   * stops being busy, so what it shows next (an Undo) is on screen without a gap.
+   */
+  function call(
+    action: Action,
+    fields: Record<string, string>,
+    before?: () => void,
+    after?: (result: FormState) => void,
+  ): Promise<FormState> {
+    return new Promise((resolve) =>
+      start(async () => {
+        before?.();
+        const form = new FormData();
+        for (const [k, v] of Object.entries(fields)) form.set(k, v);
+        const result = await action({}, form);
+        setError(result.error ?? Object.values(result.fields ?? {})[0] ?? null);
+        after?.(result);
+        resolve(result);
+      }),
+    );
   }
-  return { pending, error, run };
+  function run(action: Action, fields: Record<string, string>, before?: () => void) {
+    void call(action, fields, before);
+  }
+  return { pending, error, run, call };
 }
 
 export function ErrorText({ error }: { error: string | null }) {
@@ -96,10 +115,13 @@ export function JobStatusActions({
   status,
   jobType,
   cancel = false,
+  prompt = null,
 }: {
   jobId: string;
   status: JobStatus;
   jobType?: string;
+  /** Asked before Complete Job when completing sends the visit report (owner, 2026-10-20). */
+  prompt?: SendPrompt;
   /**
    * Cancel Job lives apart, at the end of Details, so the destructive action isn't the first
    * control on the page (M11 review M5). false: every other action; true: only Cancel Job.
@@ -119,6 +141,12 @@ export function JobStatusActions({
             type="button"
             disabled={pending}
             kind={to === "in_progress" ? "primary" : to === "canceled" ? "danger" : "secondary"}
+            // Phones start a job from the Next Step bar instead (owner, 2026-10-20).
+            className={
+              to === "in_progress" && (status === "scheduled" || status === "unscheduled")
+                ? "max-sm:hidden"
+                : undefined
+            }
             onClick={async () => {
               if (
                 to === "canceled" &&
@@ -129,6 +157,7 @@ export function JobStatusActions({
                 }))
               )
                 return;
+              if (to === "done" && prompt && !(await confirm({ ...prompt, alert: true }))) return;
               run(changeJobStatus, { job: jobId, to });
             }}
           >
@@ -142,24 +171,52 @@ export function JobStatusActions({
   );
 }
 
+/** The question before completing sends the visit report (completeSendPrompt), if any. */
+export type SendPrompt = { title: string; message: string; confirmLabel: string } | null;
+
 /**
  * Complete Job at the end of a visit's Checklist (owner, 2026-10-19): one tap, from Scheduled
  * or In progress. The server says what's missing when the shop asks for the checklist or a
- * photo first.
+ * photo first. Phones have it in the Next Step bar instead (owner, 2026-10-20).
  */
-export function CompleteJob({ jobId }: { jobId: string }) {
-  const { pending, error, run } = useRun();
+export function CompleteJob({ jobId, prompt }: { jobId: string; prompt: SendPrompt }) {
   return (
-    <div className="mt-6 max-w-2xl space-y-2">
+    <div className="mt-6 max-w-2xl max-sm:hidden">
+      <CompleteJobButton jobId={jobId} prompt={prompt} className="w-full" />
+    </div>
+  );
+}
+
+/**
+ * The Complete Job button. When completing sends the visit report (Automatic shops), it asks
+ * first in an alert (owner, 2026-10-20); otherwise one tap.
+ */
+export function CompleteJobButton({
+  jobId,
+  prompt,
+  className,
+}: {
+  jobId: string;
+  prompt: SendPrompt;
+  className?: string;
+}) {
+  const { pending, error, run } = useRun();
+  const [confirm, confirmSheet] = useConfirm();
+  return (
+    <div className="space-y-2">
       <Button
         type="button"
-        className="w-full"
+        className={className}
         disabled={pending}
-        onClick={() => run(changeJobStatus, { job: jobId, to: "done" })}
+        onClick={async () => {
+          if (prompt && !(await confirm({ ...prompt, alert: true }))) return;
+          run(changeJobStatus, { job: jobId, to: "done" });
+        }}
       >
         {pending ? "Completing…" : "Complete Job"}
       </Button>
       <ErrorText error={error} />
+      {confirmSheet}
     </div>
   );
 }
@@ -397,8 +454,11 @@ function ChecklistGroup({
   items: ChecklistRow[];
   editing: boolean;
 }) {
-  const { pending, error, run } = useRun();
+  const { pending, error, call } = useRun();
   const toDo = items.filter((r) => currentVerdict(r.result ?? undefined) === null);
+  // Undo after Mark Remaining (owner, 2026-10-20): "Marked N" and Undo where the button was.
+  const undo = useUndoWindow();
+  const [marked, setMarked] = useState<string[]>([]);
   const leaking = items.filter((r) => r.result?.outcome === "leaking").length;
   const attention = items.filter((r) => r.result?.outcome === "attention").length;
   const [folded, setOpen] = useState(toDo.length > 0);
@@ -463,15 +523,36 @@ function ChecklistGroup({
               </li>
             ))}
           </ul>
-          {toDo.length > 0 ? (
+          {undo.open ? (
+            <div className="border-t-[0.5px] border-separator px-4 py-1">
+              <UndoNotice
+                text={`Marked ${marked.length}`}
+                label={`Undo Marked ${marked.length}: ${title}`}
+                onUndo={() => {
+                  undo.cancel();
+                  void call(unmarkRest, { job: jobId, components: marked.join(",") });
+                }}
+              />
+            </div>
+          ) : toDo.length > 0 ? (
             <div className="border-t-[0.5px] border-separator px-4 py-1">
               <button
                 type="button"
                 disabled={pending}
                 className="min-h-11 text-[1.0625rem] text-link"
-                onClick={() =>
-                  run(markRest, { job: jobId, components: toDo.map((r) => r.id).join(",") })
-                }
+                onClick={() => {
+                  const ids = toDo.map((r) => r.id);
+                  void call(
+                    markRest,
+                    { job: jobId, components: ids.join(",") },
+                    undefined,
+                    (result) => {
+                      if (result.error) return;
+                      setMarked(ids);
+                      undo.start();
+                    },
+                  );
+                }}
               >
                 {pending
                   ? "Saving…"
@@ -481,6 +562,10 @@ function ChecklistGroup({
                       ? `Mark ${toDo.length} Remaining Done`
                       : `Mark ${toDo.length} Remaining Not Leaking`}
               </button>
+            </div>
+          ) : null}
+          {error ? (
+            <div className="px-4 pb-2">
               <ErrorText error={error} />
             </div>
           ) : null}
@@ -490,15 +575,13 @@ function ChecklistGroup({
   );
 }
 
-const VERDICT_STYLE: Record<Verdict, string> = {
-  ok: "bg-status-pass text-on-status border-transparent",
-  leaking: "bg-status-fail text-on-status border-transparent",
-  attention: "bg-status-warning text-on-status border-transparent",
-  na: "bg-status-excluded text-on-status border-transparent",
-};
 const REMOVE = "remove";
 
-/** One row: the item, and its verdict as a pull-down (the system menu on a phone). */
+/**
+ * One row: the item, and its answers as a segmented control under its name, 44 pt tall and
+ * full width (owner, 2026-10-20: "Checklist answers in one tap"). Tapping the chosen answer
+ * again puts the item back to do. Remove Item is behind Edit (and the menu is gone).
+ */
 function ChecklistItem({
   jobId,
   row,
@@ -512,10 +595,12 @@ function ChecklistItem({
   const [confirm, confirmSheet] = useConfirm();
   const saved = currentVerdict(row.result ?? undefined);
   const [shown, show] = useOptimistic(saved);
-  const needsWhere = row.type.answer !== "yes_no" && (shown === "leaking" || shown === "attention");
+  // Where only for leak items marked Leaking or Attention.
+  const needsWhere =
+    row.type.answer !== "yes_no" &&
+    row.type.answer !== "done" &&
+    (shown === "leaking" || shown === "attention");
   const options = verdictOptions(row.type);
-  // Maintenance items are just done or not: a check, no menu (owner, 2026-10-18).
-  const check = row.type.answer === "done";
 
   async function choose(value: string) {
     if (value === REMOVE) {
@@ -557,104 +642,19 @@ function ChecklistItem({
     );
   }
 
-  if (check) {
-    const done = shown === "ok";
-    const other = shown && !done ? options.find((o) => o.value === shown)?.label : null;
-    return (
-      <div className="flex min-h-11 items-center gap-1 px-4 py-1">
-        <label className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3">
-          <input
-            type="checkbox"
-            className="peer sr-only"
-            checked={done}
-            onChange={(e) => void choose(e.target.checked ? "ok" : "todo")}
-          />
-          <span
-            aria-hidden="true"
-            className={cx(
-              "grid size-6 shrink-0 place-items-center rounded-full peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus",
-              done ? "bg-status-pass text-white" : "border-2 border-control-border",
-            )}
-          >
-            {done ? (
-              <svg
-                viewBox="0 0 24 24"
-                className="size-4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M5 12.5l4.5 4.5L19 7.5" />
-              </svg>
-            ) : null}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className={cx("block leading-tight font-medium", done && "text-text-muted")}>
-              {row.label}
-            </span>
-            {other || row.result?.notes ? (
-              <span className="block truncate text-[0.8125rem] text-text-muted">
-                {[other, row.result?.notes].filter(Boolean).join(" · ")}
-              </span>
-            ) : null}
-          </span>
-        </label>
-
-        <ErrorText error={error} />
-        {confirmSheet}
-      </div>
-    );
-  }
-
+  const note = [row.result?.method, row.result?.notes].filter(Boolean).join(" · ");
   return (
     <div className="px-4 py-2">
-      <div className="flex min-h-11 items-center gap-3">
-        <span className="min-w-0 flex-1">
-          <span className="block leading-tight font-medium">{row.label}</span>
-          {row.result?.method || row.result?.notes ? (
-            <span className="block truncate text-[0.8125rem] text-text-muted">
-              {[row.result.method, row.result.notes].filter(Boolean).join(" · ")}
-            </span>
-          ) : null}
-        </span>
-        <span className="relative shrink-0">
-          <select
-            aria-label={row.label}
-            value={shown ?? ""}
-            onChange={(e) => void choose(e.target.value)}
-            className={cx(
-              "min-h-11 cursor-pointer appearance-none rounded-full border py-1 pr-8 pl-3 text-[0.9375rem] font-semibold",
-              shown ? VERDICT_STYLE[shown] : "border-transparent bg-fill text-text",
-            )}
-          >
-            {shown === null ? (
-              <option value="" disabled>
-                To Do
-              </option>
-            ) : null}
-            {options.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-            <option value={REMOVE}>Remove Item…</option>
-          </select>
-          <svg
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M7 10l5 5 5-5" />
-          </svg>
-        </span>
-      </div>
+      <Segmented<Verdict | "">
+        label={row.label}
+        name={`verdict-${row.id}`}
+        value={shown ?? ""}
+        options={options}
+        description={note || undefined}
+        fit
+        segmentClassName="min-h-11!"
+        onChange={(v) => void choose(v === shown ? "todo" : v)}
+      />
       {needsWhere && row.result ? (
         <WhereField
           jobId={jobId}
@@ -664,7 +664,7 @@ function ChecklistItem({
         />
       ) : null}
       {row.result?.status === "excluded" && row.result.exclusion_reason ? (
-        <p className="pb-1 text-[0.9375rem] text-text-muted">{row.result.exclusion_reason}</p>
+        <p className="pt-1 text-[0.9375rem] text-text-muted">{row.result.exclusion_reason}</p>
       ) : null}
       <ErrorText error={error} />
       {confirmSheet}
@@ -672,6 +672,7 @@ function ChecklistItem({
   );
 }
 
+/** Where on a Leaking or Attention item: saves by itself (owner, 2026-10-20). */
 function WhereField({
   jobId,
   resultId,
@@ -683,22 +684,26 @@ function WhereField({
   item: string;
   value: string | null | undefined;
 }) {
-  const { error, run } = useRun();
+  const autosave = useAutosave((value ?? "").trim(), async (where) => {
+    const form = new FormData();
+    form.set("job", jobId);
+    form.set("result", resultId);
+    form.set("where", where);
+    const result = await saveWhere({}, form);
+    return result.error ?? null;
+  });
   return (
-    <div className="pb-2">
+    <div className="pt-2">
       <input
         aria-label={`Where: ${item}`}
         title="Where"
-        key={value ?? ""}
         defaultValue={value ?? ""}
         placeholder="Where? Under the deck, at the throat…"
-        onBlur={(e) => {
-          if (e.target.value.trim() !== (value ?? ""))
-            run(saveWhere, { job: jobId, result: resultId, where: e.target.value });
-        }}
+        onChange={(e) => autosave.change(e.target.value.trim())}
+        onBlur={() => void autosave.flush()}
         className="block min-h-11 w-full rounded-[10px] border border-control-border bg-bg px-3 py-2"
       />
-      <ErrorText error={error} />
+      <SavedNote status={autosave.status} className="block" />
     </div>
   );
 }
@@ -773,7 +778,8 @@ function SwipeRow({
   }
 
   return (
-    <li className="relative overflow-hidden">
+    // A row that swipes by itself never swipes to the next job section (owner, 2026-10-20).
+    <li className="relative overflow-hidden" data-no-swipe>
       {first ? null : (
         <span
           aria-hidden="true"
@@ -897,6 +903,9 @@ export function TestsEditor({
   const current = editing && editing !== "new" ? tests.find((t) => t.id === editing) : undefined;
   const currentType = current ? typeOf.get(current.typeId) : undefined;
   const remove = (t: TestRow) => run(deleteTest, { job: jobId, test: t.id }, close);
+  useNextStep("add-test", () => {
+    if (types.length) setEditing("new");
+  });
 
   return (
     <div className="space-y-4">
@@ -964,8 +973,14 @@ export function TestsEditor({
         </ul>
       )}
       <ErrorText error={error} />
+      {/* Phones add from the Next Step bar (owner, 2026-10-20). */}
       {types.length ? (
-        <Button type="button" kind="secondary" onClick={() => setEditing("new")}>
+        <Button
+          type="button"
+          kind="secondary"
+          className="max-sm:hidden"
+          onClick={() => setEditing("new")}
+        >
           Add Test
         </Button>
       ) : null}
@@ -1037,6 +1052,7 @@ function TestForm({
       submit={test ? "Save Test" : "Add Test"}
       onSaved={onDone}
       primary
+      pinned
     >
       <input type="hidden" name="job" value={jobId} />
       <input type="hidden" name="test" value={test?.id ?? ""} />
@@ -1180,6 +1196,7 @@ export function FindingsEditor({
   const componentLabel = new Map(components.map((c) => [c.id, c.label]));
   const current = editing && editing !== "new" ? findings.find((f) => f.id === editing) : undefined;
   const remove = (f: FindingRow) => run(deleteFinding, { job: jobId, finding: f.id }, close);
+  useNextStep("add-finding", () => setEditing("new"));
   return (
     <div className="space-y-4">
       {findings.length === 0 ? (
@@ -1236,7 +1253,12 @@ export function FindingsEditor({
         </div>
       )}
       <ErrorText error={error} />
-      <Button type="button" kind="secondary" onClick={() => setEditing("new")}>
+      <Button
+        type="button"
+        kind="secondary"
+        className="max-sm:hidden"
+        onClick={() => setEditing("new")}
+      >
         Add Finding
       </Button>
       <Sheet
@@ -1311,6 +1333,7 @@ function FindingForm({
       submit={finding ? "Save Finding" : "Add Finding"}
       onSaved={onDone}
       primary
+      pinned
     >
       <input type="hidden" name="job" value={jobId} />
       <input type="hidden" name="finding" value={finding?.id ?? ""} />

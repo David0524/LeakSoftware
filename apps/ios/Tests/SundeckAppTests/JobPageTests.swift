@@ -146,4 +146,38 @@ import Testing
         #expect(links[1].detail == "Opened once, last Oct 15 · Works until Apr 13")
         #expect(links[2].detail == "Not opened yet")
     }
+
+    @Test func theNextStepBarOffersTheNextThing() {
+        func steps(
+            _ section: JobPageSection, type: String = "detection", status: String = "in_progress",
+            tests: Bool = true, report: Bool = true, draft: Bool = false, online: Bool = true
+        ) -> [String] {
+            nextStepActions(
+                view(type: type, status: status), section: section, hasTestTypes: tests, reportOn: report,
+                hasDraft: draft, online: online
+            ).map(\.title)
+        }
+        // Start Job wins while the job can be started, on any section.
+        #expect(steps(.findings, status: "scheduled") == ["Start Job"])
+        #expect(steps(.details, status: "unscheduled") == ["Start Job"])
+        #expect(steps(.checklist, type: "maintenance", status: "scheduled") == ["Start Job"])
+        #expect(steps(.checklist, type: "maintenance") == ["Complete Job"])
+        #expect(steps(.checklist).isEmpty)
+        #expect(steps(.checklist, type: "maintenance", status: "done").isEmpty)
+        #expect(steps(.findings) == ["Add Test", "Add Finding"])
+        #expect(steps(.findings, tests: false) == ["Add Finding"])
+        #expect(steps(.photos) == ["Add Photo", "Add Video"])
+        #expect(steps(.wrapUp) == ["Write Draft"])
+        #expect(steps(.wrapUp, online: false) == ["Review with Customer"])
+        #expect(steps(.wrapUp, draft: true).isEmpty)
+        #expect(steps(.wrapUp, report: false).isEmpty)
+        #expect(steps(.details).isEmpty)
+
+        // On the phone the header drops Start Job (it's on the bar) and keeps the rest.
+        #expect(
+            jobHeaderPhoneActions(.scheduled, type: .detection).map { jobActionLabel(from: .scheduled, to: $0) } == [
+                "Unschedule"
+            ])
+        #expect(jobHeaderPhoneActions(.done, type: .maintenance) == [.inProgress])  // Reopen Visit
+    }
 }

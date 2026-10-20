@@ -4,7 +4,8 @@
     import SwiftUI
 
     /// "Findings" in the job's Findings section (spec 5.4): a
-    /// numbered grouped row per finding (swipe left to delete), then Add Finding. Tapping a row
+    /// numbered grouped row per finding (swipe left to delete); Add Finding is on the job page's
+    /// Next Step bar (owner, 2026-10-20). Tapping a row
     /// opens its Edit sheet; the pool's shape is set in that sheet. Port of FindingsEditor in
     /// apps/web/src/components/job-work.tsx.
     struct FindingsTab: View {
@@ -44,8 +45,6 @@
                             }
                         }
                     }
-                    Button("Add Finding") { openEditor(.finding(jobId: job.id, findingId: nil, componentId: nil)) }
-                        .buttonStyle(.secondary)
                 }
             }
             .confirmationDialog(

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { haptics } from "./haptics";
+import { useNoSwipe } from "./SwipeNav";
 import { color, minTap } from "./theme";
 
 /**
@@ -45,9 +46,11 @@ export function Slider({
       onEnd?.();
     });
   const frac = (value - min) / (max - min);
+  const noSwipe = useNoSwipe();
   return (
     <GestureDetector gesture={pan}>
       <View
+        {...noSwipe}
         style={styles.hit}
         onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
         accessible

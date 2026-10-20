@@ -6,9 +6,16 @@
     /// The Checklist item screen (apps only, spec 5.4), pushed from an item's name: its answer and
     /// where, method, exclusion reason, notes, photos and voice notes, and its tests and findings.
     /// Port of apps/mobile/src/app/(app)/jobs/[id]/component/[componentId].tsx, restyled to the spec.
+    /// Where and Notes save by themselves 1 second after typing stops and when the item is left; it
+    /// ends with Previous Item and Next Item in a bottom bar (owner, 2026-10-20).
     struct ComponentScreen: View {
         var jobId: String
-        var componentId: String
+        /// The item shown: starts at the one opened, then Previous Item and Next Item move it.
+        @State private var componentId: String
+        @State private var neighbors: (previous: String?, next: String?) = (nil, nil)
+        /// Where or Notes typed since the last save, and "Saved" after one.
+        @State private var typed = false
+        @State private var savedText = false
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
         @Environment(\.dismiss) private var dismiss
@@ -26,7 +33,7 @@
 
         init(jobId: String, componentId: String) {
             self.jobId = jobId
-            self.componentId = componentId
+            _componentId = State(initialValue: componentId)
         }
 
         /// A test or finding waiting for its delete confirmation (with its name for the title).
@@ -62,7 +69,18 @@
             }
             .navigationTitle(form?.component.label ?? "Item")
             .navigationBarTitleDisplayMode(.large)
-            .task(id: sync.revision) { reload() }
+            .task(id: "\(sync.revision)|\(componentId)") { reload() }
+            .onDisappear { autosave() }
+            .bottomBar {
+                HStack(spacing: 12) {
+                    Button("Previous Item") { move(to: neighbors.previous) }
+                        .buttonStyle(.secondary(fullWidth: true, size: .field))
+                        .disabled(neighbors.previous == nil)
+                    Button("Next Item") { move(to: neighbors.next) }
+                        .buttonStyle(.secondary(fullWidth: true, size: .field))
+                        .disabled(neighbors.next == nil)
+                }
+            }
             .sensoryFeedback(.success, trigger: saved)
             .confirmationDialog(
                 "Remove \(form?.component.label ?? "") from the checklist?", isPresented: $confirmRemove,
@@ -102,7 +120,8 @@
                     }
                     if form.needsWhere {
                         OutlinedField(
-                            label: "Where", text: $form.location, placeholder: "Where? Under the deck, at the throat…")
+                            label: "Where", text: typing($form.location),
+                            placeholder: "Where? Under the deck, at the throat…")
                     }
                     if !form.type.methods.isEmpty {
                         SelectField(
@@ -119,8 +138,18 @@
                             options: choices, optionLabel: { $0.isEmpty ? "Choose…" : $0 })
                     }
                     OutlinedField(
-                        label: "Notes (optional)", text: $form.notes, placeholder: "What you saw", multiline: true)
-                    Button("Save") { save(form) }.buttonStyle(.primary)
+                        label: "Notes (optional)", text: typing($form.notes), placeholder: "What you saw",
+                        multiline: true)
+                    HStack(spacing: 12) {
+                        Button("Save") { save(form) }.buttonStyle(.primary)
+                        if savedText { SavedLabel() }
+                    }
+                    .task(id: "\(form.location)|\(form.notes)") {
+                        guard typed else { return }
+                        try? await Task.sleep(for: Autosave.delay)
+                        guard !Task.isCancelled else { return }
+                        autosave()
+                    }
                 }
 
                 MediaSection(target: MediaTarget(jobId: jobId, componentId: componentId))
@@ -191,9 +220,42 @@
 
         // MARK: - Writes
 
+        /// A field binding that marks the item as typed in, for saving by itself.
+        private func typing(_ text: Binding<String>) -> Binding<String> {
+            Binding(
+                get: { text.wrappedValue },
+                set: {
+                    text.wrappedValue = $0
+                    typed = true
+                    savedText = false
+                })
+        }
+
+        /// Saves what was typed (the whole form, as Save does) without leaving the item.
+        private func autosave() {
+            guard typed, let form else { return }
+            do {
+                try form.save(sync, userId: session.user?.id)
+                typed = false
+                withAnimation { savedText = true }
+            } catch {
+                saveError = String(describing: error)
+            }
+        }
+
+        /// Previous Item or Next Item: what was typed is saved first, then the item changes here.
+        private func move(to next: String?) {
+            guard let next else { return }
+            autosave()
+            form = nil
+            savedText = false
+            componentId = next
+        }
+
         private func save(_ form: ComponentForm) {
             do {
                 try form.save(sync, userId: session.user?.id)
+                typed = false
                 saved += 1
                 dismiss()
             } catch {
@@ -244,6 +306,11 @@
                 return
             }
             missing = false
+            if let job = (try? jobViews(sync.store, companyId: company.id))?.first(where: { $0.id == jobId }) {
+                neighbors = ChecklistModel(
+                    config: config, inspection: inspection, jobType: job.type, property: job.decodedProperty
+                ).neighbors(of: componentId)
+            }
             if let form {
                 form.result = inspection.resultByComponent[componentId]
             } else {

@@ -7,18 +7,20 @@
     /// The job page's Photos section (spec 5.4 Photos, 6.5): "Photos and Recordings", the capture
     /// card ("Attach to" and the Add Photo, Add Video and Voice Note tiles, with a live status
     /// line), then one card per capture, newest first, as the website shows them. Tapping a photo
-    /// or video opens the full-screen viewer. Content for the job page's scroll view.
+    /// or video opens the full-screen viewer. Content for the job page's scroll view. The capture
+    /// is the job page's, shared with the Next Step bar's Add Photo and Add Video; "Attach to"
+    /// remembers the last choice for the job while the app runs (owner, 2026-10-20).
     struct JobPhotosSection: View {
         var job: JobView
+        @Bindable var capture: CaptureController
 
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
-        @State private var capture: CaptureController
-        @State private var targetIndex = 0
 
-        init(job: JobView) {
+        /// Without the page's capture (screenshots): one of its own.
+        init(job: JobView, capture: CaptureController? = nil) {
             self.job = job
-            _capture = State(initialValue: CaptureController(target: MediaTarget(jobId: job.id)))
+            _capture = Bindable(capture ?? CaptureController(target: MediaTarget(jobId: job.id)))
         }
 
         var body: some View {
@@ -45,9 +47,6 @@
             .frame(maxWidth: .infinity, alignment: .leading)
             .captureFlow(capture)
             .mediaViewer(jobId: job.id)
-            .onChange(of: targetIndex) { _, index in
-                if targets.indices.contains(index) { capture.target = targets[index].target }
-            }
         }
 
         private func captureCard(_ targets: [CaptureTargetOption]) -> some View {
@@ -56,10 +55,11 @@
                     SelectField(
                         label: "Attach to",
                         selection: Binding(
-                            get: { min(targetIndex, targets.count - 1) },
+                            get: { targets.firstIndex { $0.target == capture.target } ?? 0 },
                             set: { index in
-                                targetIndex = index
-                                if targets.indices.contains(index) { capture.target = targets[index].target }
+                                guard targets.indices.contains(index) else { return }
+                                capture.target = targets[index].target
+                                CaptureTargetMemory.remember(targets[index].target)
                             }),
                         options: Array(targets.indices), optionLabel: { targets[$0].label })
                 }
@@ -88,7 +88,8 @@
 
     /// One capture's card (spec 5.4 Photos): the photo (4:3, its markup over it), the video (16:9
     /// on navy) or a voice note player; then "{Photo} · {attached to}", the caption, the transcript
-    /// and when; then Mark Up and Delete.
+    /// and when; then Mark Up and a round More button whose menu holds Delete, away from Mark Up
+    /// (owner, 2026-10-20).
     struct MediaCard: View {
         var media: Media
         var text: MediaCardText
@@ -123,9 +124,20 @@
                                 .buttonStyle(.secondary)
                                 .disabled(source.url == nil)
                         }
-                        Button("Delete") { confirmDelete = true }
-                            .buttonStyle(.danger)
-                            .accessibilityLabel("\(MediaDetail.deleteButton(media.kind))")
+                        Spacer(minLength: 0)
+                        Menu {
+                            Button(MediaDetail.deleteButton(media.kind), systemImage: "trash", role: .destructive) {
+                                confirmDelete = true
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 20, weight: .regular))
+                                .foregroundStyle(Color.link)
+                                .frame(width: minTarget, height: minTarget)
+                                .background(Circle().fill(Color.iconTint))
+                                .contentShape(Circle())
+                        }
+                        .accessibilityLabel("More")
                     }
                     .padding(.top, 10)
                 }

@@ -106,3 +106,38 @@ export function useLiveStopVersion(): number {
     () => 0,
   );
 }
+
+// The notification's On My Way and Mark Complete (owner, 2026-10-20: they open the app on
+// that stop and do it there): the request waits here until Today shows the stop and acts.
+
+export type StopAction = "on_my_way" | "mark_complete";
+
+let requested: { jobId: string; action: StopAction; nonce: number } | null = null;
+let nonce = 0;
+
+/** Asked from the notification; Today picks it up. */
+export function requestStopAction(jobId: string, action: StopAction) {
+  requested = { jobId, action, nonce: ++nonce };
+  changed();
+}
+
+/** The stop action waiting for Today, if any (re-renders with useLiveStopVersion). */
+export function pendingStopAction() {
+  return requested;
+}
+
+const done = new Set<number>();
+
+/** The stop's button takes the request: true only the first time, so it's done once. */
+export function takeStopAction(n: number): boolean {
+  if (done.has(n)) return false;
+  done.add(n);
+  return true;
+}
+
+/** The request is over (the tech moved on: another stop, another tech's day). */
+export function clearStopAction(n: number) {
+  if (requested?.nonce !== n) return;
+  requested = null;
+  changed();
+}

@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, Linking, Share } from "react-native";
 import { localMinutes, onMyWayText, type OnMyWayVia } from "@leakbook/core";
 import { sendCompanyText } from "../../data/texting";
 import { Button } from "../../ui/components";
 import { chooseAction } from "../../ui/confirm";
-import { startLiveStop } from "../../lib/liveStop";
+import { startLiveStop, takeStopAction } from "../../lib/liveStop";
 import { haptics } from "../../ui/haptics";
 
 /**
@@ -27,6 +27,7 @@ export function OnMyWay({
   lineActive,
   isManager,
   jobId,
+  trigger,
 }: {
   phone: string | null;
   customer: string | null;
@@ -40,6 +41,8 @@ export function OnMyWay({
   lineActive: boolean;
   isManager: boolean;
   jobId: string;
+  /** Changes when the current-stop notification's On My Way asks for this stop. */
+  trigger?: number;
 }) {
   const [done, setDone] = useState<string | null>(null);
   useEffect(() => {
@@ -102,6 +105,15 @@ export function OnMyWay({
     }
     await fromPhone(text);
   }
+
+  // The notification's On My Way opens Today on this stop and sends it here (owner, 2026-10-20).
+  const latest = useRef(send);
+  useEffect(() => {
+    latest.current = send;
+  });
+  useEffect(() => {
+    if (trigger && takeStopAction(trigger)) void latest.current();
+  }, [trigger]);
 
   return (
     <Button

@@ -42,6 +42,7 @@ import {
 import { PadBlock } from "../../../../features/report/PadBlock";
 import { InspectionReview } from "../../../../features/report/InspectionReport";
 import { ReportTests } from "../../../../features/report/ReportTests";
+import { confirmDiscard, useBackPrompt } from "../../../../ui/sheet";
 import { color, face, space } from "../../../../ui/theme";
 
 /**
@@ -76,12 +77,22 @@ export default function ReviewScreen() {
   // A pool inspection counts only the questions its gates leave open (2026-10-20).
   const progress = useChecklistProgress(company.id, id, job?.type);
 
+  // A drawn signature isn't thrown away without asking: Cancel and Android's back button
+  // (owner, 2026-10-20). Finishing leaves without asking.
+  const signed = strokes.length > 0 && busy === null;
+  function cancel() {
+    if (!signed) return router.back();
+    confirmDiscard(() => router.back());
+  }
+  useBackPrompt(signed, cancel);
+
   const bar = (
     <Stack.Screen
       options={{
         title: "Review and Sign",
         headerBackVisible: false,
-        headerLeft: () => <HeaderButton title="Cancel" onPress={() => router.back()} />,
+        gestureEnabled: !signed,
+        headerLeft: () => <HeaderButton title="Cancel" onPress={cancel} />,
       }}
     />
   );

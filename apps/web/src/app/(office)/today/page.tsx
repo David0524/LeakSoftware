@@ -16,7 +16,9 @@ import {
   cleaningKind,
   cleaningShortLabel,
   stopDone,
+  visitReportMode,
 } from "@leakbook/core";
+import { completeSendPrompt } from "@/lib/next-step";
 import { Suspense } from "react";
 import { CleaningIcon, PhoneIcon } from "@/components/icons";
 import { OnMyWay } from "@/components/on-my-way";
@@ -79,6 +81,8 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   const legs = route?.summary.legs.reduce((a, b) => a + b, 0) ?? 0;
   const backLeg = route ? route.summary.driveMin - legs : 0;
   const mine = techId === office.user.id;
+  // Completing a visit in an Automatic shop sends its report: ask first (owner, 2026-10-20).
+  const reportMode = visitReportMode(company.settings);
   // The plan's cleanings on each visit's checklist, with how they stand against their due date
   // (owner, 2026-10-19; 2026-10-20: what Today shows is what the checklist has).
   const [cleanings, onVisits] = await Promise.all([
@@ -121,9 +125,6 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
       />
       <Suspense fallback={null}>
         <GettingStarted />
-      </Suspense>
-      <Suspense fallback={null}>
-        <ScreenTip screen="today" />
       </Suspense>
       {office.isManager && techs.length > 1 ? (
         <nav aria-label="Whose day" className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4">
@@ -229,6 +230,11 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                         customer={j.customer?.name ?? "this stop"}
                         done={done}
                         undoable={j.type !== "maintenance" && j.stop_done_on === ctx.today}
+                        prompt={completeSendPrompt({
+                          jobType: j.type,
+                          reportMode,
+                          customer: j.customer?.name,
+                        })}
                       />
                       {done ? null : (
                         <span className="ml-auto flex shrink-0 gap-2">
@@ -276,6 +282,13 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
           </ol>
         </>
       )}
+      {/* After the stops, so the first stop's buttons are on screen at launch (owner,
+          2026-10-20). */}
+      <div className="mt-6">
+        <Suspense fallback={null}>
+          <ScreenTip screen="today" />
+        </Suspense>
+      </div>
     </>
   );
 }

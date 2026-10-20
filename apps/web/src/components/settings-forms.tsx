@@ -65,6 +65,7 @@ export function SettingsForm({
   confirm,
   inline = false,
   full = false,
+  pinned = false,
   onSaved,
 }: {
   action: Action;
@@ -79,6 +80,11 @@ export function SettingsForm({
   inline?: boolean;
   /** One full-width button, with what happened in a banner under it (iOS forms). */
   full?: boolean;
+  /**
+   * In a sheet: the button sits in a bar pinned to the bottom of the sheet, always in reach,
+   * not at the end of the scroll (owner, 2026-10-20).
+   */
+  pinned?: boolean;
   /** Called after a save that succeeded, e.g. to close the form. */
   onSaved?: () => void;
 }) {
@@ -110,7 +116,7 @@ export function SettingsForm({
       type="submit"
       kind={danger ? "danger" : primary ? "primary" : "secondary"}
       disabled={pending}
-      className={full ? "w-full" : undefined}
+      className={full || pinned ? "w-full" : undefined}
       onClick={(e) => {
         // Ask with an action sheet first; once confirmed, submit for real.
         if (!confirm || confirmed.current) {
@@ -147,7 +153,15 @@ export function SettingsForm({
           ) : null}
         </div>
       ) : (
-        <div className={cx("flex flex-wrap items-center gap-3", inline && "self-end")}>
+        <div
+          className={cx(
+            "flex flex-wrap items-center gap-3",
+            inline && "self-end",
+            // The sheet's scroll area has 1.5rem of padding below: pin to its very bottom.
+            pinned &&
+              "sticky -bottom-6 z-10 -mx-4 border-t-[0.5px] border-separator bg-bg px-4 py-3",
+          )}
+        >
           {button}
           <span aria-live="polite" className="text-[0.9375rem]">
             {state.error ? (

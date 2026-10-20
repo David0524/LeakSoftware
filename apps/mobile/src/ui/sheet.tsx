@@ -1,13 +1,16 @@
-import { useNavigation } from "expo-router";
+import { useFocusEffect, useNavigation } from "expo-router";
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useId,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+import { BackHandler, Platform } from "react-native";
+import { confirmDestructive } from "./confirm";
 
 type SetLock = (id: string, locked: boolean) => void;
 
@@ -43,8 +46,12 @@ export function SheetProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** Keep the sheet from closing with a swipe while `locked`. Does nothing outside a sheet. */
-export function useSheetLock(locked: boolean) {
+/**
+ * Keep the sheet from closing with a swipe while `locked`. Does nothing outside a sheet. With
+ * `onBack`, Android's back button runs it while locked instead of leaving (owner, 2026-10-20:
+ * a locked sheet asks on back instead of ignoring it); pass the screen's Cancel.
+ */
+export function useSheetLock(locked: boolean, onBack?: () => void) {
   const setLock = useContext(SheetLock);
   const id = useId();
   useEffect(() => {
@@ -52,6 +59,39 @@ export function useSheetLock(locked: boolean) {
     setLock(id, locked);
     return () => setLock(id, false);
   }, [setLock, id, locked]);
+  useBackPrompt(locked && Boolean(onBack), () => onBack?.());
+}
+
+/**
+ * Android's back button runs `onBack` instead of going back while `active` and this screen
+ * is in front (owner, 2026-10-20: an editor with unsaved changes asks first, with the same
+ * alert as Cancel). Leaving by code (Save, Discard Changes) isn't affected.
+ */
+export function useBackPrompt(active: boolean, onBack: () => void) {
+  const latest = useRef(onBack);
+  useEffect(() => {
+    latest.current = onBack;
+  });
+  useFocusEffect(
+    useCallback(() => {
+      if (!active || Platform.OS !== "android") return;
+      const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+        latest.current();
+        return true;
+      });
+      return () => sub.remove();
+    }, [active]),
+  );
+}
+
+/** The question before throwing away typed or drawn changes (Cancel and Android's back). */
+export function confirmDiscard(onDiscard: () => void) {
+  confirmDestructive({
+    title: "Discard changes?",
+    confirm: "Discard Changes",
+    cancel: "Keep Editing",
+    onConfirm: onDiscard,
+  });
 }
 
 /** Whether this screen is inside a sheet's stack (so it pushes within the sheet). */

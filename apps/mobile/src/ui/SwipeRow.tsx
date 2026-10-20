@@ -10,6 +10,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { haptics } from "./haptics";
+import { useNoSwipe } from "./SwipeNav";
 import { color, face } from "./theme";
 
 /** Width of the revealed red button. */
@@ -36,6 +37,8 @@ export function SwipeToDelete({
   const ref = useRef<SwipeableMethods>(null);
   const [rowWidth, setRowWidth] = useState(0);
   const armed = useRef(false);
+  // A row that swipes by itself never changes the page under it (owner, 2026-10-20).
+  const noSwipe = useNoSwipe();
 
   function arm(on: boolean) {
     if (on && !armed.current) haptics.light();
@@ -49,7 +52,7 @@ export function SwipeToDelete({
   }
 
   return (
-    <View onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}>
+    <View {...noSwipe} onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}>
       <ReanimatedSwipeable
         ref={ref}
         friction={1}
@@ -147,6 +150,8 @@ export function SwipeLeading({
   const ref = useRef<SwipeableMethods>(null);
   const [rowWidth, setRowWidth] = useState(0);
   const armed = useRef(false);
+  // A row that swipes by itself never changes the page under it (owner, 2026-10-20).
+  const noSwipe = useNoSwipe();
 
   function arm(on: boolean) {
     if (on && !armed.current) haptics.light();
@@ -160,7 +165,7 @@ export function SwipeLeading({
   }
 
   return (
-    <View onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}>
+    <View {...noSwipe} onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}>
       <ReanimatedSwipeable
         ref={ref}
         friction={1}

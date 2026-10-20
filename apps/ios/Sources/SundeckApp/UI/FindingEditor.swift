@@ -4,8 +4,10 @@
     import SwiftUI
 
     /// Add Finding / Edit Finding (spec 6.2), a sheet: What, Severity, Item, Where, Status, the
-    /// pool's shape and spa (saved at once), the pin on the diagram, Notes, photos, then Add
-    /// Finding / Save Finding; editing ends with Delete Finding. Port of FindingForm and
+    /// pool's shape and spa (saved at once), the pin on the diagram, Notes and photos; Add Finding
+    /// / Save Finding in a bar pinned to the bottom, above the keyboard (owner, 2026-10-20).
+    /// Editing ends with Delete Finding, away from Save. Add Photo on a new finding saves it first
+    /// and keeps the sheet open as Edit Finding. Port of FindingForm and
     /// FindingsEditor's sheet in apps/web/src/components/job-work.tsx.
     struct FindingEditor: View {
         var jobId: String
@@ -27,6 +29,10 @@
         @State private var confirmDelete = false
         @State private var saveError: String?
         @State private var saves = 0
+        /// A new finding saved by Add Photo: the sheet edits it from then on.
+        @State private var savedId: String?
+        /// The field with the keyboard, for the keyboard bar's Previous and Next.
+        @FocusState private var focus: String?
 
         var body: some View {
             NavigationStack {
@@ -47,6 +53,7 @@
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { cancel() } }
                 }
+                .keyboardBar($focus, order: ["title", "location", "notes"])
             }
             .sheetPresentation(dirty: form?.isDirty ?? false)
             .task(id: sync.revision) { load() }
@@ -80,7 +87,7 @@
                     VStack(alignment: .leading, spacing: 16) {
                         OutlinedField(
                             label: "What", text: binding(\.title, ""), placeholder: "Crack at the skimmer throat",
-                            error: form.errors["title"])
+                            error: form.errors["title"], chain: $focus, chainKey: "title")
                         VStack(alignment: .leading, spacing: 4) {
                             SelectField(
                                 label: "Severity", selection: binding(\.severity, ""),
@@ -97,7 +104,7 @@
                             optionLabel: { id in insp.componentById[id]?.label ?? "None" })
                         OutlinedField(
                             label: "Where (optional)", text: binding(\.location, ""),
-                            placeholder: "Two feet left of the skimmer")
+                            placeholder: "Two feet left of the skimmer", chain: $focus, chainKey: "location")
                         VStack(alignment: .leading, spacing: 4) {
                             FieldLabel("Status")
                             Segmented(
@@ -106,15 +113,14 @@
                         }
                         if let property { pool(property) }
                         pin(form, config)
-                        OutlinedField(label: "Notes (optional)", text: binding(\.notes, ""), multiline: true)
-                        // Photos for the finding (apps, S5); a new finding is saved first.
-                        if let savedId = form.existingId {
-                            MediaSection(target: MediaTarget(jobId: jobId, findingId: savedId))
-                        } else {
-                            FieldHint(text: "Save the finding first, then add photos.")
-                        }
-                        Button(form.submitTitle) { save() }
-                            .buttonStyle(.primary(fullWidth: true, size: .field))
+                        OutlinedField(
+                            label: "Notes (optional)", text: binding(\.notes, ""), multiline: true, chain: $focus,
+                            chainKey: "notes")
+                        // Photos for the finding (apps, S5), from the start: Add Photo on a new
+                        // finding saves it first, with the same checks as Save (owner, 2026-10-20).
+                        MediaSection(
+                            target: form.existingId.map { MediaTarget(jobId: jobId, findingId: $0) }, jobId: jobId,
+                            prepare: saveForPhotos)
                         if !form.isNew {
                             VStack(spacing: 16) {
                                 Hairline()
@@ -133,6 +139,32 @@
                     .padding(.bottom, 24)
                 }
                 .scrollDismissesKeyboard(.interactively)
+                // Save is always in reach: pinned to the bottom, above the keyboard when it's open.
+                .bottomBar {
+                    Button(form.submitTitle) { save() }
+                        .buttonStyle(.primary(fullWidth: true, size: .field))
+                }
+            }
+        }
+
+        /// Add Photo on a finding not saved yet: saves it (the same checks as Save) and keeps the
+        /// sheet open as Edit Finding; nil when a field needs fixing, so no camera opens.
+        private func saveForPhotos() -> MediaTarget? {
+            guard var current = form, let company = session.company else { return nil }
+            do {
+                guard let id = try current.save(sync, companyId: company.id, jobId: jobId, existing: existing) else {
+                    form = current
+                    return nil
+                }
+                current.markSaved(id)
+                form = current
+                savedId = id
+                existing = JobInspection(sync.store, jobId: jobId).findings.first { $0.id == id }
+                saves += 1
+                return MediaTarget(jobId: jobId, findingId: id)
+            } catch {
+                saveError = String(describing: error)
+                return nil
             }
         }
 
@@ -202,7 +234,7 @@
             config = InspectionConfig(sync.store, companyId: company.id)
             let job = try? sync.store.get("job", jobId)
             property = (job?["property_id"]?.string).flatMap { try? sync.store.get("property", $0) }
-            existing = findingId.flatMap { id in current.findings.first { $0.id == id } }
+            existing = (findingId ?? savedId).flatMap { id in current.findings.first { $0.id == id } }
             defer { loaded = true }
             guard form == nil, findingId == nil || existing != nil else { return }
             form = FindingForm(existing: existing, componentId: componentId)

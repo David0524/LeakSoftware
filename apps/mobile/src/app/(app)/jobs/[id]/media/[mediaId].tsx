@@ -1,11 +1,9 @@
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -31,6 +29,8 @@ import { AudioRow, useAttachedTo } from "../../../../../features/media/MediaSect
 import { confirmDeleteMedia } from "../../../../../features/media/remove";
 import { Glass } from "../../../../../ui/Glass";
 import { haptics } from "../../../../../ui/haptics";
+import { KeyboardAvoider } from "../../../../../ui/keyboard";
+import { useAutosaveText } from "../../../../../ui/useAutosave";
 import { MarkupEditor } from "../../../../../features/media/MarkupEditor";
 import { MarkupLayer } from "../../../../../ui/MarkupLayer";
 import { color, face, ios, minTap, shape, space, type } from "../../../../../ui/theme";
@@ -58,16 +58,12 @@ export default function MediaScreen() {
   const direct = startInMarkup === "1";
   const [editing, setEditing] = useState(direct);
 
-  // Caption saves when leaving the field and when leaving the screen.
-  const [caption, setCaption] = useState<string | null>(null);
-  const flushCaption = useRef(() => {});
-  useEffect(() => {
-    flushCaption.current = () => {
-      if (media && caption !== null && caption.trim() !== (media.caption ?? ""))
-        services.sync.write("media", media.id, company.id, { caption: caption.trim() || null });
-    };
+  // The caption saves 1 second after typing stops, and when leaving the field or the screen
+  // (owner, 2026-10-20).
+  const caption = useAutosaveText(media?.caption ?? "", (v) => {
+    if (media && v.trim() !== (media.caption ?? ""))
+      services.sync.write("media", media.id, company.id, { caption: v.trim() || null });
   });
-  useEffect(() => () => flushCaption.current(), []);
 
   const hidden = <Stack.Screen options={{ headerShown: false, gestureEnabled: !editing }} />;
 
@@ -96,7 +92,6 @@ export default function MediaScreen() {
     const values: Record<string, JsonValue> = { markup: markup as unknown as JsonValue };
     if (newCaption.trim() !== (capture.caption ?? "")) values.caption = newCaption.trim() || null;
     services.sync.write("media", capture.id, company.id, values);
-    setCaption(null);
     haptics.success();
     closeEditor();
   }
@@ -135,9 +130,8 @@ export default function MediaScreen() {
     .join(" · ");
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAvoider
       style={[styles.screen, media.kind === "video" && { backgroundColor: color.navy }]}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       {hidden}
       <View style={styles.stage}>
@@ -184,10 +178,11 @@ export default function MediaScreen() {
           ) : null}
           <Field
             label="Caption"
-            value={caption ?? media.caption ?? ""}
-            onChangeText={setCaption}
-            onBlur={() => flushCaption.current()}
+            value={caption.value}
+            onChangeText={caption.onChangeText}
+            onBlur={caption.onBlur}
             placeholder="What this shows"
+            hint={caption.justSaved ? "Saved" : undefined}
           />
           {meta ? (
             <T variant="secondary" muted>
@@ -214,7 +209,7 @@ export default function MediaScreen() {
           </View>
         </ScrollView>
       </View>
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   );
 }
 

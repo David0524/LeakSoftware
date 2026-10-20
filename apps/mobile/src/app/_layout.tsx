@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { initMonitoring, reportError } from "../lib/monitoring";
 import { SessionProvider, useSession } from "../state/session";
 import { Button, T } from "../ui/components";
@@ -70,10 +71,14 @@ export default function RootLayout() {
   return (
     // Swipe actions on list rows need the gesture handler's root.
     <GestureHandlerRootView style={StyleSheet.absoluteFill}>
-      <SessionProvider>
-        <StatusBar style={scheme === "dark" ? "light" : "dark"} />
-        <RootStack key={scheme} />
-      </SessionProvider>
+      {/* Fields and sheet buttons follow the keyboard, edge to edge on Android (owner,
+          2026-10-20); see ui/keyboard.tsx. */}
+      <KeyboardProvider>
+        <SessionProvider>
+          <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+          <RootStack key={scheme} />
+        </SessionProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

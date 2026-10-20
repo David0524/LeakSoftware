@@ -58,6 +58,10 @@
         let locate: LocateQueue
         /// Completed visits whose report may go out by itself (POST visit-report after a sync).
         let visitReports: VisitReportQueue
+        /// Finish Report and report sends tapped without signal (run after a sync).
+        let reportSends: ReportSendQueue
+        /// A Live Activity button's request, done by Today on that stop (owner, 2026-10-20).
+        var stopRequest: StopRequest?
         /// The Live Activity for the stop the tech is on.
         let liveStop: LiveStopController
         /// Where a tapped notification or the Live Activity's Open Job goes (MainView opens it).
@@ -72,6 +76,7 @@
             push = PushRegistration(kv: session.sync.kv)
             locate = LocateQueue(kv: session.sync.kv)
             visitReports = VisitReportQueue(kv: session.sync.kv)
+            reportSends = ReportSendQueue(kv: session.sync.kv)
             liveStop = LiveStopController(session: session)
             signer = MediaURLSigner { path, seconds in
                 try await client.storage.from("media").createSignedURL(path: path, expiresIn: seconds)
@@ -158,6 +163,11 @@
                 let before = visitReports.pending.count
                 await visitReports.flush(api)
                 if visitReports.pending.count < before { session.sync.syncSoon(2) }  // bring the sent report down
+            }
+            if !reportSends.pending.isEmpty, session.sync.status.pending == 0 {
+                let before = reportSends.pending.count
+                await reportSends.flush(api)
+                if reportSends.pending.count < before { session.sync.syncSoon(2) }  // bring the report down
             }
             let waiting = locate.pending.count
             if waiting > 0, session.sync.status.pending == 0 {

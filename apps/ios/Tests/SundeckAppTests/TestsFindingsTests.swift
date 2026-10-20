@@ -671,4 +671,23 @@ private struct Inspection {
         #expect(try s.store.get("job", jobId)?["diagram_markup"] == .null)
         #expect(jobDiagramMarkup(try s.store.get("job", jobId)).isEmpty)
     }
+
+    @Test func addPhotoOnANewTestSavesItFirstAndKeepsEditing() throws {
+        let s = try Inspection()
+        var form = TestForm(type: s.type("tt-pressure"), existing: nil, componentId: nil, component: nil)
+        // The same checks as Save: nothing saved while a field needs fixing.
+        #expect(try form.save(s.sync, companyId: "c1", jobId: "j1", existing: nil) == nil)
+        form.values.merge(["line_name": "Main drain", "start_psi": "20", "end_psi": "18", "duration_min": "15"]) {
+            $1
+        }
+        let id = try #require(try form.save(s.sync, companyId: "c1", jobId: "j1", existing: nil))
+        form.markSaved(id)
+        #expect(!form.isNew && form.existingId == id && !form.isDirty)
+        #expect(form.submitTitle == "Save Test" && form.sheetTitle == "Edit Pressure test")
+
+        var finding = FindingForm(existing: nil, componentId: nil)
+        finding.markSaved("f1")
+        #expect(finding.navigationTitle == "Edit Finding" && finding.submitTitle == "Save Finding")
+        #expect(!finding.isDirty)
+    }
 }

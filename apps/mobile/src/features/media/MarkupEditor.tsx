@@ -1,7 +1,5 @@
 import { useRef, useState, type ReactNode } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,10 +22,10 @@ import {
   type MarkupShape,
 } from "@leakbook/core";
 import { Button, Field, Segmented, T } from "../../ui/components";
-import { confirmDestructive } from "../../ui/confirm";
 import { MarkupLayer } from "../../ui/MarkupLayer";
 import { Slider } from "../../ui/Slider";
-import { useSheetLock } from "../../ui/sheet";
+import { KeyboardAvoider } from "../../ui/keyboard";
+import { confirmDiscard, useBackPrompt, useSheetLock } from "../../ui/sheet";
 import { color, face, markupColor, minTap, space, type } from "../../ui/theme";
 
 type Tool = "pen" | "arrow" | "circle" | "text";
@@ -67,8 +65,10 @@ export function MarkupEditor({
   onSave: (shapes: MarkupShape[], caption: string) => void;
 }) {
   const insets = useSafeAreaInsets();
-  // Drawing drags on the photo; inside a sheet they must not pull the sheet down.
+  // Drawing drags on the photo; inside a sheet they must not pull the sheet down. Android's
+  // back button is Cancel: with changes it asks first (owner, 2026-10-20).
   useSheetLock(true);
+  useBackPrompt(true, () => cancel());
   // Every change is a new entry, so Undo also brings back a Clear All.
   const [history, setHistory] = useState<MarkupShape[][]>([saved]);
   const draft = history[history.length - 1]!;
@@ -171,19 +171,11 @@ export function MarkupEditor({
 
   function cancel() {
     if (!dirty) return onCancel();
-    confirmDestructive({
-      title: "Discard changes?",
-      confirm: "Discard Changes",
-      cancel: "Keep Editing",
-      onConfirm: onCancel,
-    });
+    confirmDiscard(onCancel);
   }
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.editor, { backgroundColor: color.bg }]}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <KeyboardAvoider style={[styles.editor, { backgroundColor: color.bg }]}>
       <View style={{ paddingTop: insets.top, backgroundColor: color.bg }}>
         <View
           style={[
@@ -437,7 +429,7 @@ export function MarkupEditor({
           <Field label="Caption (optional)" value={caption} onChangeText={setCaption} />
         ) : null}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   );
 }
 

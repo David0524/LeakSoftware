@@ -242,12 +242,28 @@ public final class ReportFlow {
     public let sync: SyncService
     public let companyId: String
     public let jobId: String
+    /// Where Finish Report and the sends wait without signal (owner, 2026-10-20); nil runs them
+    /// only online.
+    public let sends: ReportSendQueue?
 
-    public init(sync: SyncService, companyId: String, jobId: String, settings: JSONValue = .null) {
+    public init(
+        sync: SyncService, companyId: String, jobId: String, settings: JSONValue = .null,
+        sends: ReportSendQueue? = nil
+    ) {
         self.sync = sync
         self.companyId = companyId
         self.jobId = jobId
         self.settings = settings
+        self.sends = sends
+    }
+
+    /// No signal now: Finish and the sends wait on the phone instead of failing.
+    private var queues: Bool { sends != nil && sync.status.phase == .offline }
+
+    /// Keeps a request for when the signal is back, and says so.
+    private func keep(_ action: ReportSendRequest.Action, reportId: String, to: String?) {
+        sends?.add(ReportSendRequest(jobId: jobId, reportId: reportId, action: action, to: to))
+        message = ReportSendText.willSend
     }
 
     /// The draft as the phone has it now (nil once it's sent or replaced).
@@ -373,6 +389,7 @@ public final class ReportFlow {
                 saveEdits()
                 try checkFinishPhoto()
                 guard let id else { throw WebAPI.Failure(description: "There’s no draft to finish.") }
+                if queues { return keep(.finish, reportId: id, to: nil) }
                 _ = try await server.finish(reportId: id, customerAway: false)
                 message = "Report finished. Send it to the customer below."
             case .email, .text:
@@ -388,6 +405,11 @@ public final class ReportFlow {
                 // Sending a draft finishes it first; a finished version goes out as it is.
                 if jobReports(sync.store, jobId: jobId).first(where: { $0.id == id })?.status == .draft {
                     try checkFinishPhoto()
+                }
+                if queues {
+                    return keep(
+                        action == .email ? .email : .text, reportId: id,
+                        to: action == .email ? email : customer?["phone"]?.string)
                 }
                 let sent = try await server.send(
                     reportId: id, channel: action == .email ? .email : .smsDevice,
