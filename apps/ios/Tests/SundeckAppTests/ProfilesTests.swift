@@ -225,7 +225,7 @@ import Testing
             JobView(
                 id: "j2", job: ["id": "j2", "type": "detection", "status": "scheduled"],
                 property: ["id": "p2", "address_line1": "2 Main St"], customer: nil))
-        #expect(stopNote(leak, routeTech: nil, names: [:], routing: true) == "Not on map")
-        #expect(stopNote(leak, routeTech: nil, names: [:]) == nil)
+        #expect(stopNote(leak, routeTech: nil, names: [:], routing: true) == "Leak detection · Not on map")
+        #expect(stopNote(leak, routeTech: nil, names: [:]) == "Leak detection")
     }
 }

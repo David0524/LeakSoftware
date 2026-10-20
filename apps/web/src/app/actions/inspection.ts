@@ -136,6 +136,22 @@ export async function markStop(_: FormState, form: FormData): Promise<FormState>
 }
 
 /**
+ * On My Way, kept on the job (owner, 2026-10-20: Today's card): when it was sent and the arrival
+ * it promised, so the website, the office and other phones show "On the way, arriving 9:42".
+ */
+export async function recordOnMyWay(jobId: string, arriveAt: string): Promise<void> {
+  const { office, db } = await ctx();
+  const arrive = new Date(arriveAt);
+  if (Number.isNaN(arrive.getTime())) return;
+  await db
+    .from("job")
+    .update({ on_my_way_at: new Date().toISOString(), arrive_at: arrive.toISOString() })
+    .eq("id", jobId)
+    .eq("company_id", office.company.id);
+  revalidatePath("/today");
+}
+
+/**
  * The job's price, "Leak location marked" (leak detection only: the form leaves it out on
  * other jobs, so it's kept as is), and the job notes, as on the phone's job screen.
  */

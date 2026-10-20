@@ -87,6 +87,7 @@ export function TodayComplete({
   day,
   done,
   trigger,
+  onWater = false,
 }: {
   job: Job;
   /** The customer's name, or "this stop". */
@@ -98,6 +99,8 @@ export function TodayComplete({
   done: boolean;
   /** Changes when the current-stop notification's Mark Complete asks for this stop. */
   trigger?: number;
+  /** Beside the main button on Today's water-blue card (owner, 2026-10-20). */
+  onWater?: boolean;
 }) {
   const company = useCompany();
   const blocker = useCompleteJobBlocker(job);
@@ -123,7 +126,9 @@ export function TodayComplete({
     setAsked(false);
     const complete = () => {
       sync.write("job", job.id, job.company_id, markCompleteValues(job, day));
-      haptics.success();
+      // A light tap on Today's card (docs/design/2026-10-20-today-card.md).
+      if (onWater) haptics.light();
+      else haptics.success();
       if (job.type === "maintenance") queueAutoVisitReport(job, company.settings);
     };
     // Asks first when completing sends the visit report (Automatic shops).
@@ -145,21 +150,27 @@ export function TodayComplete({
     <View style={{ gap: space["1"] }}>
       <Button
         title={label}
-        kind={done ? "secondary" : "primary"}
+        kind={onWater ? "onWaterTinted" : done ? "secondary" : "primary"}
         accessibilityLabel={`${label} for ${customer}`}
         onPress={press}
       />
       {asked && blocker && !done ? (
         <Text
           accessibilityRole="alert"
-          style={[type.secondary, { color: color.fail }]}
+          style={[
+            type.secondary,
+            onWater ? [face.semiBold, { color: color.paper }] : { color: color.fail },
+          ]}
           maxFontSizeMultiplier={MAX_TEXT_SCALE}
         >
           {blocker}{" "}
           <Text
             accessibilityRole="link"
             onPress={() => router.push(`/jobs/${job.id}`)}
-            style={[face.semiBold, { color: color.link, textDecorationLine: "underline" }]}
+            style={[
+              face.semiBold,
+              { color: onWater ? color.paper : color.link, textDecorationLine: "underline" },
+            ]}
           >
             Open Job
           </Text>

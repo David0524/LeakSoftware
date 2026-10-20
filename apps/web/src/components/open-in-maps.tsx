@@ -29,10 +29,13 @@ export function AddressLink({
   address,
   location,
   className,
+  muted = false,
 }: {
   address: string;
   location?: LatLng | null;
   className?: string;
+  /** Secondary text color instead of the link color (Schedule's stop cards). */
+  muted?: boolean;
 }) {
   return (
     <a
@@ -40,7 +43,11 @@ export function AddressLink({
       target="_blank"
       rel="noopener noreferrer"
       aria-label={`${address}, directions in Maps`}
-      className={cx("text-link underline-offset-4 hover:underline", className)}
+      className={cx(
+        muted ? "text-text-muted" : "text-link",
+        "underline-offset-4 hover:underline",
+        className,
+      )}
       data-testid="address-link"
     >
       {address}

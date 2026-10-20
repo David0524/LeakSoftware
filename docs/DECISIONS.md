@@ -2,6 +2,22 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-20 (owner, route maps plan `docs/plans/route-maps.md`: "1. Cool by me. 2. Ok 3. Yeah. There needs to be locks for jobs whether that's day, time, or both. 4. Yes. 5. Yes")
+- **Maps by Mapbox** on the website and Android, Apple Maps on the iPhone: a map for each day on Schedule with numbered pins, Enlarge, and Plan Route.
+- **Plan Week** places a week's jobs on days and in order for the least driving, across techs when asked, with one Undo; up to 150 jobs a run.
+- **Routes** (owners and admins): Customers to Add, drag a pool customer onto a weekday to set the plan's day and tech, and Suggest Days. Visits already made for coming weeks move with the plan's new day.
+- **Locks:** each job can be locked to its day, its time, or both. Day: stays on its day, order and time may change. Time: keeps its clock time, may move to another day. Both: stays put. "The customer was told this time" becomes Both. Planning respects every lock.
+- **Day maps fold away on phones:** open on the Day view, closed on the week strip.
+- **Schedule cards look like Today's**, and stops can be dragged on phones again (website, iPhone, Android), with Move… kept. Leak detections carry their "Leak detection" tag like the other types.
+
+## 2026-10-20 (owner, Today hero plan `docs/plans/today-hero.md`: "1. Agreed 2. Sure 3. Yes 4. Yes 5. Yes")
+- **Today opens with a card for the stop you're on**, on every platform: the Live Activity's stop, words and figure (scheduled time, arrival time, checklist count, or ✓), the customer's name (opens the job), job type and stop count, the address (opens directions, "Not on map" when it isn't), the access notes on one line with a key, the next stop, and one progress segment per stop. Its main button is the moment's: On My Way, Start Job, or Open Checklist with Mark Complete. One rule in core (`todayHero`) picks the stop for the card, the Live Activity and Android's notification. No timer or countdown.
+- **Water blue card, white text, white main button with blue text.**
+- **On My Way is recorded on the job** (`job.on_my_way_at`, `arrive_at`, synced), so the website, the office and a second phone show "On the way, arriving 9:42".
+- **Done stops fold into one "N done" row**; the card's stop stays in the list as one row marked Now.
+- **Owners and admins looking at a tech's day see that tech's card** without On My Way or Start Job (Call and Directions stay).
+- **Before leaving, the card shows the drive**, such as "14 min drive" (a fixed estimate, not a countdown).
+
 ## 2026-10-20 (owner: "reschedule a job from the jobs page after creating it"; "an indicator for when address doesn't register"; "an auto complete or something for the mapping")
 - **A job can be rescheduled from its page until its work is done** (unscheduled, scheduled, or in progress; repairs as before), not only before it starts.
 - **"Not found on the map"**: a pool with an address but no map location for it shows a warning on the job page, "Not on map" on Today, Schedule and the customer's page. Routes and drive times leave it out until it's found. A lookup now counts only a match to the address or its street; a town or ZIP code's middle reads as not found instead of a wrong pin.
@@ -26,6 +42,9 @@ Newest first. Each entry: date, decision, reason.
 - **Which answer needs attention** is set per option, from the wording (No on "Is the heater properly sized?", Yes on "Does the system show visible leaking?"); "is there one" questions flag nothing. Shops can change any of it in Settings.
 - **The inspection report uses the homeowner report's draft, sign-off, and send**, titled Pool Inspection Report, rather than a separate report template.
 - **An inspection's report can be signed and sent before every question is answered** (unlike a leak detection, which waits for its whole checklist): the report lists the questions answered, and Needs attention lists the flagged ones. Write Draft doesn't check an inspection's text for leak checklist names ("Main drain", "Pool"), since its questions use those words.
+
+## 2026-10-20 (owner: "Job numbers should never have commas to separate digits")
+- **Job, quote and invoice numbers never have thousands separators** on any platform ("Job #1038", not "#1,038"). On iPhone a number put in a SwiftUI `Text` literal is formatted with them, so document numbers use `Text(verbatim:)` or a `String`; `DocumentNumberTests` fails on a `#\(…)` inside a Text literal.
 
 ## 2026-10-20 (owner: one-handed use review, "Do all changes except for 11")
 - **One-handed use on every platform** (`docs/design/2026-10-20-one-handed-use.md`): a Next Step bar at the bottom of the job page on phones (Start Job, Complete Job, Add Test · Add Finding, Add Photo · Add Video, Write Draft); photos on a test or finding before its first save; Save pinned in the test and finding sheets; typed text saves by itself (no Save Text); Android back asks before discarding; completing a visit asks "Ready to send the visit report?" when it would send one (Automatic shops), and Mark Remaining gets a 5-second Undo; report send controls first and versions folded; offline Finish and Send queue on the phones; checklist answers as one-tap segments (Remove Item only behind Edit and swipe); Delete in a photo's More menu; camera straight from Add Photo, Library visible; sync bar pinned; Today's tip after the stops. Reason: frequent field actions were at the top of the screen, two or more taps deep, or one slip from losing work.

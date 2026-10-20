@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import { localMinutes, onMyWayText, type OnMyWayVia } from "@leakbook/core";
 import { sendMessage } from "@/app/actions/texting";
+import { recordOnMyWay } from "@/app/actions/inspection";
 import { Sheet, useConfirm } from "./sheet";
 import { buttonClass } from "./ui";
 import { NO_CONNECTION, whenOffline } from "@/lib/offline";
@@ -27,7 +28,10 @@ export function OnMyWay({
   lineActive = false,
   isOwner = false,
   jobId,
+  buttonClassName,
 }: {
+  /** The whole button's look, in place of the secondary button (Today's card). */
+  buttonClassName?: string;
   phone: string | null;
   customer: string | null;
   tech: string;
@@ -58,6 +62,14 @@ export function OnMyWay({
   async function send() {
     const arriveMin = localMinutes(new Date().toISOString(), timeZone) + Math.max(5, driveMin);
     const text = onMyWayText({ customer, tech, shop, arriveMin, windowMin });
+    // Kept on the job once it's on its way to the customer (Today's card, 2026-10-20).
+    const record = () => {
+      if (jobId)
+        void recordOnMyWay(
+          jobId,
+          new Date(Date.now() + Math.max(5, driveMin) * 60_000).toISOString(),
+        );
+    };
     if (phone && via === "messages" && !lineActive) {
       const fromPhone = await confirm({
         title: "On My Way goes out from your company number, which isn’t working yet.",
@@ -80,10 +92,12 @@ export function OnMyWay({
           ? { label: "Not Sent", spoken: sent.error }
           : { label: "Texted ✓", spoken: `Texted from the company number: ${text}` },
       );
+      if (!sent.error) record();
       return;
     }
     if (phone) {
       // "?&body=" works in both iOS and Android Messages.
+      record();
       window.location.href = `sms:${phone.replace(/[^\d+]/g, "")}?&body=${encodeURIComponent(text)}`;
       setDone({ label: "Texted ✓", spoken: `Opened Messages with the text: ${text}` });
       return;
@@ -91,6 +105,7 @@ export function OnMyWay({
     if (navigator.share) {
       try {
         await navigator.share({ text });
+        record();
         setDone({ label: "Shared ✓", spoken: "Shared the text." });
         return;
       } catch (e) {
@@ -100,6 +115,7 @@ export function OnMyWay({
     }
     try {
       await navigator.clipboard.writeText(text);
+      record();
       setDone({ label: "Copied ✓", spoken: `Copied the text: ${text}` });
     } catch {
       setManual(text);
@@ -107,7 +123,11 @@ export function OnMyWay({
   }
   return (
     <>
-      <button type="button" className={buttonClass("secondary", className)} onClick={send}>
+      <button
+        type="button"
+        className={buttonClassName ?? buttonClass("secondary", className)}
+        onClick={send}
+      >
         {done?.label ?? "On My Way"}
       </button>
       {confirmSheet}

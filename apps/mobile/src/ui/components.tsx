@@ -9,6 +9,7 @@ import {
   useId,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactElement,
   type ReactNode,
   type Ref,
@@ -152,6 +153,13 @@ export function T({
 // Screens: the large title, subtitle and header actions, then the content (spec 3.1)
 // ---------------------------------------------------------------------------
 
+/** A scroll view's offset and sizes, in points. */
+export interface ScrollMetrics {
+  y: number;
+  contentHeight: number;
+  viewHeight: number;
+}
+
 /** Bottom room for the floating tab bar; set by the tabs layout for every screen inside it. */
 export const TabBarSpace = createContext(0);
 
@@ -246,6 +254,8 @@ export function Screen({
   footer,
   overlay,
   keyboardBar = false,
+  scrollRef,
+  onScrollMetrics,
   ...chrome
 }: ScreenChrome & {
   /** iPhone's Previous, Next and Done bar over the keyboard (the Test and Finding sheets). */
@@ -262,13 +272,36 @@ export function Screen({
   /** Turn scrolling off for a moment, e.g. while a finger draws on a pad. */
   scrollEnabled?: boolean;
   refreshControl?: ReactElement<RefreshControlProps>;
+  /** The page's scroll view, for scrolling it from code (a held schedule stop near an edge). */
+  scrollRef?: { current: ScrollView | null };
+  /** The scroll offset and sizes as they change (the schedule's drag and drop). */
+  onScrollMetrics?: (m: Partial<ScrollMetrics>) => void;
 }) {
   const { header, ref, scrollProps, contentContainerStyle } = useScreenChrome(chrome);
   const headerHeight = useHeaderHeightSafe();
+  useEffect(() => {
+    if (scrollRef) scrollRef.current = ref.current;
+  });
+  const chromeScroll = scrollProps.onScroll;
   const body = scroll ? (
     <Animated.ScrollView
       ref={ref}
       {...scrollProps}
+      {...(onScrollMetrics
+        ? {
+            onScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+              if (typeof chromeScroll === "function") chromeScroll(e);
+              onScrollMetrics({
+                y: e.nativeEvent.contentOffset.y,
+                contentHeight: e.nativeEvent.contentSize.height,
+                viewHeight: e.nativeEvent.layoutMeasurement.height,
+              });
+            },
+            onContentSizeChange: (_w: number, h: number) => onScrollMetrics({ contentHeight: h }),
+            onLayout: (e: { nativeEvent: { layout: LayoutRectangle } }) =>
+              onScrollMetrics({ viewHeight: e.nativeEvent.layout.height }),
+          }
+        : null)}
       contentContainerStyle={[contentContainerStyle, styles.stack]}
       scrollEnabled={scrollEnabled}
       refreshControl={refreshControl}
@@ -455,7 +488,11 @@ export function Empty({ children }: { children: ReactNode }) {
 // Buttons and pills (spec 3.7, 3.8, 3.10)
 // ---------------------------------------------------------------------------
 
-type ButtonKind = "primary" | "secondary" | "quiet" | "danger";
+/**
+ * `onWater` and `onWaterTinted` sit on Today's water-blue card (owner, 2026-10-20): the main
+ * button white with water-blue text, the others white at 18% with white text.
+ */
+type ButtonKind = "primary" | "secondary" | "quiet" | "danger" | "onWater" | "onWaterTinted";
 
 function buttonColors(kind: ButtonKind, pressed: boolean) {
   switch (kind) {
@@ -467,6 +504,10 @@ function buttonColors(kind: ButtonKind, pressed: boolean) {
       return { bg: pressed ? color.dangerPressed : color.dangerTint, fg: color.fail, dim: false };
     case "quiet":
       return { bg: pressed ? color.iconTint : "transparent", fg: color.link, dim: false };
+    case "onWater":
+      return { bg: color.paper, fg: color.water, dim: false };
+    case "onWaterTinted":
+      return { bg: tint(color.paper, 0.18), fg: color.paper, dim: false };
   }
 }
 
@@ -500,6 +541,10 @@ export function Button({
   /** When the label alone doesn't say what it acts on ("Remove Skimmer 2"). */
   accessibilityLabel?: string;
 }) {
+  // Today's card buttons are 50 pt capsules that fill their share of the row and press in
+  // (0.96 and 85%; no scale with Reduce Motion), as docs/design/2026-10-20-today-card.md.
+  const card = kind === "onWater" || kind === "onWaterTinted";
+  const reduceMotion = useReduceMotion();
   return (
     <Pressable
       accessibilityRole="button"
@@ -507,14 +552,17 @@ export function Button({
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
       onPress={onPress}
       disabled={disabled || loading}
-      android_ripple={{ color: color.ripple }}
+      android_ripple={card ? undefined : { color: color.ripple }}
       style={({ pressed }) => {
         const c = buttonColors(kind, pressed);
         return [
           styles.button,
-          { backgroundColor: c.bg, alignSelf: wide ? "stretch" : "flex-start" },
+          { backgroundColor: c.bg, alignSelf: wide || card ? "stretch" : "flex-start" },
           small && styles.buttonSmall,
           c.dim && { opacity: 0.9 },
+          card && styles.buttonCard,
+          card && pressed && { opacity: 0.85 },
+          card && pressed && !reduceMotion && { transform: [{ scale: 0.96 }] },
           disabled && { opacity: 0.5 },
           style,
         ];
@@ -547,10 +595,13 @@ export function RoundButton({
   icon,
   label,
   onPress,
+  onWater = false,
 }: {
   icon: WebIconName;
   label: string;
   onPress: () => void;
+  /** On Today's water-blue card: white at 18% with a white icon. */
+  onWater?: boolean;
 }) {
   return (
     <Pressable
@@ -560,10 +611,16 @@ export function RoundButton({
       android_ripple={{ color: color.ripple, borderless: true }}
       style={({ pressed }) => [
         styles.round,
-        { backgroundColor: pressed ? color.tintedPressed : color.iconTint },
+        {
+          backgroundColor: onWater
+            ? tint(color.paper, pressed ? 0.28 : 0.18)
+            : pressed
+              ? color.tintedPressed
+              : color.iconTint,
+        },
       ]}
     >
-      <WebIcon name={icon} size={20} color={color.link} />
+      <WebIcon name={icon} size={20} color={onWater ? color.paper : color.link} />
     </Pressable>
   );
 }
@@ -807,14 +864,29 @@ export function Choice<V extends string>({
 // Segmented controls (spec 3.9): our own, 44 pt, the same on iPhone and Android
 // ---------------------------------------------------------------------------
 
-function useReduceMotion(): boolean {
-  const [on, setOn] = useState(false);
-  useEffect(() => {
-    void AccessibilityInfo.isReduceMotionEnabled().then(setOn);
-    const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", setOn);
-    return () => sub.remove();
-  }, []);
-  return on;
+// Reduce Motion, read once for the whole app and shared by every control that moves.
+let reduceMotionOn = false;
+const reduceMotionListeners = new Set<() => void>();
+let reduceMotionWatched = false;
+function watchReduceMotion(listener: () => void) {
+  reduceMotionListeners.add(listener);
+  if (!reduceMotionWatched) {
+    reduceMotionWatched = true;
+    const set = (on: boolean) => {
+      reduceMotionOn = on;
+      reduceMotionListeners.forEach((l) => l());
+    };
+    void AccessibilityInfo.isReduceMotionEnabled().then(set);
+    AccessibilityInfo.addEventListener("reduceMotionChanged", set);
+  }
+  return () => {
+    reduceMotionListeners.delete(listener);
+  };
+}
+
+/** Whether the phone asks for less motion (Reduce Motion, or Android's Remove animations). */
+export function useReduceMotion(): boolean {
+  return useSyncExternalStore(watchReduceMotion, () => reduceMotionOn);
 }
 
 /**
@@ -1808,6 +1880,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   buttonSmall: { paddingHorizontal: space["3"] },
+  buttonCard: { minHeight: 50, paddingHorizontal: space["4"] },
   buttonText: { ...face.semiBold, fontSize: 17, lineHeight: 22 },
   buttonTextSmall: { ...face.semiBold, fontSize: 15, lineHeight: 20 },
   round: {

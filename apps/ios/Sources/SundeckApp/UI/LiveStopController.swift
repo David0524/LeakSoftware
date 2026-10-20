@@ -9,10 +9,11 @@
     /// it works offline). One at a time, one a work day (owner, 2026-10-19: "Live Activity should
     /// begin at the beginning of the workday"):
     /// - it begins by itself (`check()`: launch, the app coming back, each sync and change, and
-    ///   every minute while open) once `liveStopRuns`, on the first stop not done today;
+    ///   every minute while open) once `liveStopRuns`, on the stop Today's card shows (the shared
+    ///   `todayHero` rule: the one on the way, else one started, else the first not done);
     /// - On My Way turns it to the drive for that stop;
-    /// - a done stop shows done for a minute, then the same activity moves on to the next stop not
-    ///   done, and after the last one it ends;
+    /// - a done stop shows done for a minute, then the same activity moves on to the card's next
+    ///   stop, and after the last one it ends;
     /// - ended from the Lock Screen, it stays off until the next work day; signing out ends it.
     @MainActor
     final class LiveStopController {
@@ -60,7 +61,11 @@
         func start(jobId: String, eta: String?) {
             guard enabled, let day = day() else { return }
             cancelLinger()
-            show(LiveStopTarget(jobId: jobId, eta: eta, day: day.today), day: day.today)
+            // The stop the day is on (`todayHero`): this one, once the job has On My Way.
+            let wanted = LiveStopTarget(jobId: jobId, eta: eta, day: day.today)
+            let stop =
+                input(wanted) != nil ? wanted : day.open().map { LiveStopTarget(jobId: $0.id, day: day.today) }
+            show(stop ?? wanted, day: day.today)
         }
 
         /// Starts, updates, moves on or ends the activity for the tech's day as it is now.
@@ -88,7 +93,8 @@
                 return
             }
             guard let current, let state = input(current) else {
-                // Its stop left the phone (moved, unassigned): on to the next one, else end.
+                // Its stop left the phone (moved, unassigned), or the day is on another stop (On
+                // My Way or Start Job elsewhere, as Today's card shows): that one, else end.
                 if let next = day.open() {
                     show(LiveStopTarget(jobId: next.id, eta: nil, day: day.today), day: day.today)
                 } else {
@@ -115,11 +121,12 @@
             if running.state.stop != state { send(current, state) }
         }
 
-        /// After the done stop's minute: the next stop not done, else the activity ends.
+        /// After the done stop's minute: the stop the day is on now (`todayHero`, as Today's
+        /// card), else the activity ends.
         private func moveOn(from jobId: String) {
             lingering = nil
             guard let day = day(), target?.jobId == jobId else { return }
-            if let next = day.open(after: jobId) {
+            if let next = day.open() {
                 show(LiveStopTarget(jobId: next.id, eta: nil, day: day.today), day: day.today)
             } else {
                 end()

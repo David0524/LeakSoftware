@@ -344,6 +344,9 @@ export interface Job extends Base {
   plan_date?: string | null;
   /** A maintenance visit's monthly invoice (set by the server). */
   billed_invoice_id?: string | null;
+  /** On My Way: when it was sent, and the arrival it promised (owner, 2026-10-20). */
+  on_my_way_at?: string | null;
+  arrive_at?: string | null;
   created_at?: string;
 }
 

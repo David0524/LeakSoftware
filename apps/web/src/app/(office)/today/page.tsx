@@ -19,7 +19,10 @@ import {
   todayUndo,
   visitReportMode,
   mapStatus,
+  todayHero,
+  JOB_TYPE_LABELS,
 } from "@leakbook/core";
+import { TodayHeroCard, type HeroJob } from "@/components/today-hero";
 import { NotOnMapTag } from "@/components/not-on-map";
 import { routingConfigured } from "@/server/routing";
 import { completeSendPrompt } from "@/lib/next-step";
@@ -32,7 +35,14 @@ import { WeatherBadge } from "@/components/weather-badge";
 import { AddressLink, OpenRouteInMaps } from "@/components/open-in-maps";
 import { Empty, PageHeader, StatusBadge, cx, iconButtonClass, pillClass } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getCompany, getPlanCleanings, visitCleanings, mayMakeJobs } from "@/lib/data";
+import {
+  checklistCount,
+  getCompany,
+  getJob,
+  getPlanCleanings,
+  visitCleanings,
+  mayMakeJobs,
+} from "@/lib/data";
 import { getLine } from "@/lib/messages";
 import { mapsAppForRequest } from "@/lib/maps";
 import { loadRoutes, routeContext, routeKey, shopToday } from "@/server/route-days";
@@ -69,8 +79,6 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   const tech = team.find((t) => t.user_id === techId);
   const route = routes.get(routeKey(techId, ctx.today));
   const jobs = route?.jobs ?? [];
-  // The stop you're on: the first not done today (Mark Complete moves it on).
-  const next = jobs.find((j) => !stopDone(j, ctx.today));
   const origin =
     ctx.depot || ctx.depotAddress ? { address: ctx.depotAddress, location: ctx.depot } : null;
   const directions = dayDirections(
@@ -99,6 +107,57 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
       jobs.map((j) => j.id),
     ).catch(() => new Map<string, { planCleaningId: string }[]>()),
   ]);
+  // The card at the top for the stop you're on (owner, 2026-10-20; docs/plans/today-hero.md):
+  // the Live Activity's rule, so the phone and the website pick the same stop. A started job's
+  // checklist count is read from its rows.
+  const counts = new Map(
+    await Promise.all(
+      jobs
+        .filter((j) => j.status === "in_progress")
+        .map(async (j) => {
+          const detail = await getJob(office, j.id).catch(() => null);
+          return [j.id, detail ? checklistCount(detail) : { done: 0, total: 0 }] as const;
+        }),
+    ),
+  );
+  const hero = todayHero({
+    stops: jobs.map((j) => ({
+      id: j.id,
+      type: j.type,
+      status: j.status,
+      stop_done_on: j.stop_done_on,
+      scheduled_start: j.scheduled_start,
+      on_my_way_at: j.on_my_way_at,
+      arrive_at: j.arrive_at,
+      customer: j.customer?.name ?? "Customer",
+      address: j.property?.address_line1 ?? null,
+      access: j.property?.access_notes ?? null,
+      checklistDone: counts.get(j.id)?.done ?? 0,
+      checklistTotal: counts.get(j.id)?.total ?? 0,
+    })),
+    today: ctx.today,
+    timeZone: ctx.timeZone,
+  });
+  // The stop you're on: the card's (Mark Complete moves it on).
+  const next = jobs.find((j) => j.id === hero?.stopId);
+  const heroJob = (j: (typeof jobs)[number] | undefined): HeroJob | null => {
+    if (!j) return null;
+    const i = jobs.indexOf(j);
+    return {
+      id: j.id,
+      typeLabel: JOB_TYPE_LABELS[j.type],
+      customer: j.customer?.name ?? "Customer",
+      address: j.property ? formatAddress(j.property) : "",
+      location: propertyLocation(j.property),
+      notOnMap: mapStatus(j.property, routing) === "missing",
+      phone: j.customer?.phone ?? null,
+      driveMin: route?.summary.legs[i] ?? null,
+      done: stopDone(j, ctx.today),
+      undo: todayUndo(j, ctx.today)?.label ?? null,
+      prompt: completeSendPrompt({ jobType: j.type, reportMode, customer: j.customer?.name }),
+    };
+  };
+  const doneJobs = jobs.filter((j) => stopDone(j, ctx.today));
   const dueAt = (j: (typeof jobs)[number]) => {
     const here = new Set((onVisits.get(j.id) ?? []).map((x) => x.planCleaningId));
     return cleanings
@@ -109,6 +168,126 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
         kind: cleaningKind(c.type ?? {}),
         due: cleaningCountdown(c.next_due, j.plan_date ?? ctx.today),
       }));
+  };
+
+  const stopRow = (j: (typeof jobs)[number], withLeg: boolean) => {
+    const i = jobs.indexOf(j);
+    const address = j.property ? formatAddress(j.property) : "";
+    const lock = lockReason(j);
+    const leg = route!.summary.legs[i] ?? 0;
+    const isNext = j.id === next?.id;
+    const done = stopDone(j, ctx.today);
+    return (
+      <li key={j.id}>
+        {withLeg ? (
+          <p className="flex items-center gap-2 py-0.5 pl-4 text-[0.9375rem] text-text-muted">
+            <span aria-hidden="true" className="h-4 border-l-2 border-dotted border-text-muted" />
+            {durationLabel(leg)} {i === 0 ? "from the shop" : "drive"}
+            {route!.summary.short[i] ? (
+              <span className="font-semibold text-status-warning">
+                · {durationLabel(route!.summary.short[i]!)} late
+              </span>
+            ) : null}
+          </p>
+        ) : null}
+        <TodayStop
+          label={`Stop ${i + 1}: ${j.customer?.name ?? "Customer"}`}
+          number={i + 1}
+          current={isNext}
+          // The card above shows the stop you're on: here it's one row, marked Now.
+          startOpen={false}
+          done={done}
+          time={j.scheduled_start ? formatTime(j.scheduled_start, ctx.timeZone) : ""}
+          name={j.customer?.name ?? "Customer"}
+          href={`/jobs/${j.id}`}
+          access={j.property?.access_notes ?? null}
+          extra={
+            <>
+              {isNext ? (
+                <span className="rounded-full bg-water px-2.5 py-0.5 text-[0.8125rem] font-semibold text-white">
+                  Now
+                </span>
+              ) : null}
+              {/* Most stops are scheduled; the badge shows other states. */}
+              {j.status !== "scheduled" ? <StatusBadge status={j.status} /> : null}
+              {lock && lock !== "started" ? (
+                <span className="text-[0.8125rem] font-semibold text-text-muted">
+                  {LOCK_LABELS[lock]}
+                </span>
+              ) : null}
+            </>
+          }
+        >
+          <p className="w-fit max-w-full text-[0.9375rem]">
+            <AddressLink address={address} location={propertyLocation(j.property)} />
+          </p>
+          {mapStatus(j.property, routing) === "missing" ? <NotOnMapTag /> : null}
+          {!done && dueAt(j).length ? (
+            // Just the icon and how soon (owner, 2026-10-19: "Don't make it too
+            // wordy"); read aloud with the cleaning's name.
+            <ul className="flex flex-wrap gap-x-4 gap-y-1" aria-label="Cleanings due">
+              {dueAt(j).map((c) => (
+                <li
+                  key={c.id}
+                  aria-label={cleaningDueSpoken(c.name, c.due)}
+                  className={cx(
+                    "inline-flex items-center gap-1.5 text-[0.9375rem] font-medium",
+                    c.due.days < 0 ? "text-status-fail" : "text-text-muted",
+                  )}
+                >
+                  <CleaningIcon kind={c.kind} className="size-[1.125rem] shrink-0" />
+                  <span aria-hidden="true">{cleaningShortLabel(c.due)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <div className="flex flex-wrap items-start gap-2 pt-2">
+            {/* Every stop: done for the day without the full process (owner,
+                          2026-10-19). */}
+            <TodayComplete
+              jobId={j.id}
+              customer={j.customer?.name ?? "this stop"}
+              done={done}
+              undo={todayUndo(j, ctx.today)?.label ?? null}
+              prompt={completeSendPrompt({
+                jobType: j.type,
+                reportMode,
+                customer: j.customer?.name,
+              })}
+            />
+            {done ? null : (
+              <span className="ml-auto flex max-w-full min-w-0 gap-2">
+                {j.customer?.phone ? (
+                  <a
+                    href={`tel:${j.customer.phone}`}
+                    aria-label={`Call ${j.customer.name ?? "the customer"}`}
+                    className={iconButtonClass()}
+                  >
+                    <PhoneIcon />
+                  </a>
+                ) : null}
+                {mine ? (
+                  <OnMyWay
+                    phone={j.customer?.phone ?? null}
+                    customer={j.customer?.name ?? null}
+                    tech={office.user.name ?? tech?.name ?? "your tech"}
+                    shop={ctx.shopName}
+                    driveMin={leg}
+                    windowMin={ctx.settings.windowMin}
+                    timeZone={ctx.timeZone}
+                    className="px-3"
+                    via={onMyWayVia(company.settings)}
+                    lineActive={line?.status === "active"}
+                    isOwner={office.isManager}
+                    jobId={j.id}
+                  />
+                ) : null}
+              </span>
+            )}
+          </div>
+        </TodayStop>
+      </li>
+    );
   };
 
   return (
@@ -163,119 +342,44 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
               ? ` · back by ${minutesLabel(route!.summary.backMin)}`
               : ""}
           </p>
+          {hero ? (
+            <TodayHeroCard
+              hero={hero}
+              job={heroJob(next)}
+              next={null}
+              mine={mine}
+              onMyWay={{
+                tech: office.user.name ?? tech?.name ?? "your tech",
+                shop: ctx.shopName,
+                windowMin: ctx.settings.windowMin,
+                timeZone: ctx.timeZone,
+                via: onMyWayVia(company.settings),
+                lineActive: line?.status === "active",
+                isOwner: office.isManager,
+              }}
+            />
+          ) : null}
           <ol className="space-y-1">
-            {jobs.map((j, i) => {
-              const address = j.property ? formatAddress(j.property) : "";
-              const lock = lockReason(j);
-              const leg = route!.summary.legs[i] ?? 0;
-              const isNext = j.id === next?.id;
-              const done = stopDone(j, ctx.today);
-              return (
-                <li key={j.id}>
-                  <p className="flex items-center gap-2 py-0.5 pl-4 text-[0.9375rem] text-text-muted">
+            {doneJobs.length ? (
+              <li>
+                <details className="group" data-testid="today-done">
+                  <summary className="card flex min-h-12 cursor-pointer list-none items-center gap-2 px-4 py-2 font-semibold text-text-muted">
+                    <span aria-hidden="true" className="text-status-pass">
+                      ✓
+                    </span>
+                    {doneJobs.length} done
                     <span
                       aria-hidden="true"
-                      className="h-4 border-l-2 border-dotted border-text-muted"
-                    />
-                    {durationLabel(leg)} {i === 0 ? "from the shop" : "drive"}
-                    {route!.summary.short[i] ? (
-                      <span className="font-semibold text-status-warning">
-                        · {durationLabel(route!.summary.short[i]!)} late
-                      </span>
-                    ) : null}
-                  </p>
-                  <TodayStop
-                    label={`Stop ${i + 1}: ${j.customer?.name ?? "Customer"}`}
-                    number={i + 1}
-                    current={isNext}
-                    done={done}
-                    time={j.scheduled_start ? formatTime(j.scheduled_start, ctx.timeZone) : ""}
-                    name={j.customer?.name ?? "Customer"}
-                    href={`/jobs/${j.id}`}
-                    access={j.property?.access_notes ?? null}
-                    extra={
-                      <>
-                        {/* Most stops are scheduled; the badge shows other states. */}
-                        {j.status !== "scheduled" ? <StatusBadge status={j.status} /> : null}
-                        {lock && lock !== "started" ? (
-                          <span className="text-[0.8125rem] font-semibold text-text-muted">
-                            {LOCK_LABELS[lock]}
-                          </span>
-                        ) : null}
-                      </>
-                    }
-                  >
-                    <p className="w-fit max-w-full text-[0.9375rem]">
-                      <AddressLink address={address} location={propertyLocation(j.property)} />
-                    </p>
-                    {mapStatus(j.property, routing) === "missing" ? <NotOnMapTag /> : null}
-                    {!done && dueAt(j).length ? (
-                      // Just the icon and how soon (owner, 2026-10-19: "Don't make it too
-                      // wordy"); read aloud with the cleaning's name.
-                      <ul className="flex flex-wrap gap-x-4 gap-y-1" aria-label="Cleanings due">
-                        {dueAt(j).map((c) => (
-                          <li
-                            key={c.id}
-                            aria-label={cleaningDueSpoken(c.name, c.due)}
-                            className={cx(
-                              "inline-flex items-center gap-1.5 text-[0.9375rem] font-medium",
-                              c.due.days < 0 ? "text-status-fail" : "text-text-muted",
-                            )}
-                          >
-                            <CleaningIcon kind={c.kind} className="size-[1.125rem] shrink-0" />
-                            <span aria-hidden="true">{cleaningShortLabel(c.due)}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                    <div className="flex flex-wrap items-start gap-2 pt-2">
-                      {/* Every stop: done for the day without the full process (owner,
-                          2026-10-19). */}
-                      <TodayComplete
-                        jobId={j.id}
-                        customer={j.customer?.name ?? "this stop"}
-                        done={done}
-                        undo={todayUndo(j, ctx.today)?.label ?? null}
-                        prompt={completeSendPrompt({
-                          jobType: j.type,
-                          reportMode,
-                          customer: j.customer?.name,
-                        })}
-                      />
-                      {done ? null : (
-                        <span className="ml-auto flex max-w-full min-w-0 gap-2">
-                          {j.customer?.phone ? (
-                            <a
-                              href={`tel:${j.customer.phone}`}
-                              aria-label={`Call ${j.customer.name ?? "the customer"}`}
-                              className={iconButtonClass()}
-                            >
-                              <PhoneIcon />
-                            </a>
-                          ) : null}
-                          {mine ? (
-                            <OnMyWay
-                              phone={j.customer?.phone ?? null}
-                              customer={j.customer?.name ?? null}
-                              tech={office.user.name ?? tech?.name ?? "your tech"}
-                              shop={ctx.shopName}
-                              driveMin={leg}
-                              windowMin={ctx.settings.windowMin}
-                              timeZone={ctx.timeZone}
-                              className="px-3"
-                              via={onMyWayVia(company.settings)}
-                              lineActive={line?.status === "active"}
-                              isOwner={office.isManager}
-                              jobId={j.id}
-                            />
-                          ) : null}
-                        </span>
-                      )}
-                    </div>
-                  </TodayStop>
-                </li>
-              );
-            })}
+                      className="ml-auto transition-transform group-open:rotate-90"
+                    >
+                      ›
+                    </span>
+                  </summary>
+                  <ol className="mt-1 space-y-1">{doneJobs.map((j) => stopRow(j, false))}</ol>
+                </details>
+              </li>
+            ) : null}
+            {jobs.filter((j) => !stopDone(j, ctx.today)).map((j) => stopRow(j, true))}
             <li>
               <p className="flex items-center gap-2 py-0.5 pl-4 text-[0.9375rem] text-text-muted">
                 <span

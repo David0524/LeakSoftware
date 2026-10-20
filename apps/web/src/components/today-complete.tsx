@@ -22,7 +22,10 @@ export function TodayComplete({
   done,
   undo,
   prompt = null,
+  buttonClassName,
 }: {
+  /** The button's look in place of the usual one (Today's card, on water blue). */
+  buttonClassName?: string;
   jobId: string;
   customer: string;
   done: boolean;
@@ -53,12 +56,17 @@ export function TodayComplete({
           if (!done && prompt && !(await confirm({ ...prompt, alert: true }))) return;
           run(!done);
         }}
-        className={cx(buttonClass(done ? "secondary" : "primary", "min-h-11 px-5"))}
+        className={
+          buttonClassName ?? cx(buttonClass(done ? "secondary" : "primary", "min-h-11 px-5"))
+        }
       >
         {pending ? "Saving…" : done ? undo : "Mark Complete"}
       </button>
       {error ? (
-        <p role="alert" className="text-[0.9375rem] text-status-fail">
+        <p
+          role="alert"
+          className={cx("text-[0.9375rem]", buttonClassName ? "font-semibold" : "text-status-fail")}
+        >
           {error}{" "}
           <Link href={`/jobs/${jobId}`} className="font-semibold text-link underline">
             Open Job

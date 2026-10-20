@@ -62,7 +62,10 @@ export function mapbox(token: string, fetchImpl: typeof fetch = fetch): RoutingP
       if (near) url.searchParams.set("proximity", `${near.lng},${near.lat}`);
       url.searchParams.set("access_token", token);
       const res = await fetchImpl(url);
-      if (!res.ok) throw new Error(`Mapbox suggestions ${res.status}`);
+      if (!res.ok)
+        throw new Error(
+          `Mapbox suggestions ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`,
+        );
       const body = (await res.json()) as { features?: { properties?: MapboxProperties }[] };
       return (body.features ?? []).flatMap((f) => {
         const p = f.properties;
@@ -118,9 +121,144 @@ interface MapboxProperties {
   };
 }
 
+const DIRECTION: Record<string, string> = {
+  N: "N",
+  NORTH: "N",
+  S: "S",
+  SOUTH: "S",
+  E: "E",
+  EAST: "E",
+  W: "W",
+  WEST: "W",
+  NE: "NE",
+  NORTHEAST: "NE",
+  NW: "NW",
+  NORTHWEST: "NW",
+  SE: "SE",
+  SOUTHEAST: "SE",
+  SW: "SW",
+  SOUTHWEST: "SW",
+};
+
+/** The house number and street direction an address starts with ("455", "N"). */
+export function addressKey(address: string): { number: string | null; direction: string | null } {
+  const words = address.toUpperCase().replace(/[.,]/g, " ").split(/\s+/).filter(Boolean);
+  const number = /^\d+[A-Z]?$/.test(words[0] ?? "") ? words[0]! : null;
+  const direction = number ? (DIRECTION[words[1] ?? ""] ?? null) : null;
+  return { number, direction };
+}
+
+/** Whether a match is the address typed: the same house number, and direction if one was given. */
+function sameAddress(typed: string, matched: string): boolean {
+  const a = addressKey(typed);
+  const b = addressKey(matched);
+  if (!a.number || a.number !== b.number) return false;
+  return !a.direction || a.direction === b.direction;
+}
+
+/**
+ * The US Census Bureau's geocoder (free, no key, public domain, results ours to keep). Pools are
+ * looked up with it, not Mapbox: Mapbox's permanent geocoding, the kind that may be stored, has
+ * no free tier (owner, 2026-10-20: "ensure I do not surpass the free tier"). A match must be the
+ * house typed: Census sometimes offers 1000 E for 1000 W.
+ */
+export function census(fetchImpl: typeof fetch = fetch): Pick<RoutingProvider, "geocode"> {
+  return {
+    async geocode(address) {
+      const url = new URL("https://geocoding.geo.census.gov/geocoder/locations/onelineaddress");
+      url.searchParams.set("address", address);
+      url.searchParams.set("benchmark", "Public_AR_Current");
+      url.searchParams.set("format", "json");
+      const res = await fetchImpl(url);
+      if (!res.ok) throw new Error(`Census geocoder ${res.status}`);
+      const body = (await res.json()) as {
+        result?: {
+          addressMatches?: { matchedAddress?: string; coordinates?: { x?: number; y?: number } }[];
+        };
+      };
+      const m = (body.result?.addressMatches ?? []).find((x) =>
+        sameAddress(address, x.matchedAddress ?? ""),
+      );
+      const c = m?.coordinates;
+      return c && typeof c.x === "number" && typeof c.y === "number"
+        ? { lat: c.y, lng: c.x }
+        : null;
+    },
+  };
+}
+
+let osmNext = 0;
+
+/**
+ * OpenStreetMap's Nominatim, when Census has no match (free; results may be kept, ODbL). Its
+ * usage policy asks for at most one request a second and an identifying User-Agent. Only a
+ * match to the house itself counts, never a street's or a town's middle.
+ */
+export function nominatim(fetchImpl: typeof fetch = fetch): Pick<RoutingProvider, "geocode"> {
+  return {
+    async geocode(address) {
+      const wait = Math.max(0, osmNext - Date.now());
+      osmNext = Date.now() + wait + 1100;
+      if (wait) await new Promise((r) => setTimeout(r, wait));
+      const url = new URL("https://nominatim.openstreetmap.org/search");
+      url.searchParams.set("q", address);
+      url.searchParams.set("format", "jsonv2");
+      url.searchParams.set("limit", "3");
+      url.searchParams.set("countrycodes", "us");
+      url.searchParams.set("addressdetails", "1");
+      const res = await fetchImpl(url, {
+        headers: { "user-agent": "SundeckPro/1.0 (+https://sundeckpro.com)" },
+      });
+      if (!res.ok) throw new Error(`Nominatim ${res.status}`);
+      const found = (await res.json()) as {
+        lat?: string;
+        lon?: string;
+        address?: { house_number?: string; road?: string };
+      }[];
+      const m = found.find(
+        (f) =>
+          f.address?.house_number &&
+          sameAddress(address, `${f.address.house_number} ${f.address.road ?? ""}`),
+      );
+      return m?.lat && m.lon ? { lat: Number(m.lat), lng: Number(m.lon) } : null;
+    },
+  };
+}
+
+/** Free lookups for pools: Census, then OpenStreetMap. */
+export function freeGeocoder(fetchImpl: typeof fetch = fetch): Pick<RoutingProvider, "geocode"> {
+  const a = census(fetchImpl);
+  const b = nominatim(fetchImpl);
+  return {
+    async geocode(address) {
+      const first = await a.geocode(address).catch(() => null);
+      return first ?? b.geocode(address);
+    },
+  };
+}
+
+/** Mapbox for suggestions and drive times; pools are looked up for free (freeGeocoder). */
 function routingProvider(): RoutingProvider | null {
   const token = process.env.MAPBOX_TOKEN;
-  return token ? mapbox(token) : null;
+  return token ? { ...mapbox(token), geocode: freeGeocoder().geocode } : null;
+}
+
+/**
+ * Take from Mapbox's monthly free tier, shared by every shop (app.mapbox_budget): false past
+ * about 90% of it, so the account is never billed. Callers fall back as they do with no key.
+ */
+export async function mapboxBudget(
+  db: SupabaseClient,
+  companyId: string,
+  api: "static_image" | "geocode_temp" | "matrix_element" | "map_load",
+  units: number,
+): Promise<boolean> {
+  const { data, error } = await db.rpc("mapbox_take", {
+    target_company: companyId,
+    api_kind: api,
+    how_many: units,
+  });
+  return !error && data === true;
 }
 
 export function routingConfigured(): boolean {
@@ -161,19 +299,35 @@ export async function suggestAddresses(
   text: string,
   near: LatLng | null,
   provider: RoutingProvider | null = routingProvider(),
+  /** Told why nothing came back: no key, the day's allowance, or the service's error. */
+  onProblem: (problem: string) => void = () => {},
 ): Promise<AddressSuggestion[]> {
   const q = text.trim().slice(0, 120);
-  if (!provider || q.length < 4) return [];
+  if (q.length < 4) return [];
+  if (!provider) {
+    onProblem("No routing key");
+    return [];
+  }
   const { data, error } = await db.rpc("routing_use", {
     target_company: companyId,
     use_kind: "suggest",
     how_many: 1,
     day_limit: suggestLimit(),
   });
-  if (error || data !== true) return [];
+  if (error || data !== true) {
+    onProblem(error ? `Allowance check: ${error.message}` : "Day's allowance used");
+    return [];
+  }
+  if (!(await mapboxBudget(db, companyId, "geocode_temp", 1))) {
+    onProblem("This month's free suggestions are used");
+    return [];
+  }
   try {
     return await provider.suggest(q, near);
-  } catch {
+  } catch (e) {
+    const problem = e instanceof Error ? e.message : String(e);
+    console.error(`Address suggestions: ${problem}`);
+    onProblem(problem);
     return [];
   }
 }
@@ -223,7 +377,11 @@ export async function driveTimes(
     unique.some((b) => a !== b && !known.has(`${pointKey(a)}>${pointKey(b)}`)),
   );
   if (live && provider && missing && unique.length > 1 && unique.length <= provider.maxPoints) {
-    if (await allowed(db, companyId, "matrix", 1)) {
+    // Mapbox bills drive times by element: every origin times every destination.
+    if (
+      (await allowed(db, companyId, "matrix", 1)) &&
+      (await mapboxBudget(db, companyId, "matrix_element", unique.length * unique.length))
+    ) {
       try {
         const m = await provider.matrix(unique);
         const rows: { from: string; to: string; minutes: number }[] = [];

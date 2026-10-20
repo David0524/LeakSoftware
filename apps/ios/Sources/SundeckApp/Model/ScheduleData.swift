@@ -109,6 +109,9 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
     public var planDate: String?
     /// Today's Mark Complete on a leak or repair job: the shop-local day its stop was done.
     public var stopDoneOn: String?
+    /// On My Way: when it was sent, and the arrival it promised (synced, owner 2026-10-20).
+    public var onMyWayAt: String?
+    public var arriveAt: String?
     /// Its pool has an address with no map location for it (core `mapStatus` "missing"), shown as
     /// "Not on map" once the server looks addresses up (`MapLookups`).
     public var mapMissing = false
@@ -117,6 +120,8 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
         let j = v.job
         stopDoneOn = j["stop_done_on"]?.string.map { String($0.prefix(10)) }
         servicePlanId = j["service_plan_id"]?.string
+        onMyWayAt = j["on_my_way_at"]?.string
+        arriveAt = j["arrive_at"]?.string
         planDate = j["plan_date"]?.string
         id = v.id
         number = v.number
@@ -147,6 +152,8 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
     public var label: String? { customerName }
     /// Started, finished, or canceled: shown faded on Today.
     public var done: Bool { status != .scheduled && status != .inProgress }
+    /// Past the field work (a report, quote, invoice, or done): the Schedule's stop shows a check.
+    public var finished: Bool { isFinished(status) }
     /// Done as a stop on `day`'s route (core `stopDone`): past the field part of its pipeline, or
     /// marked complete that day.
     public func doneOn(_ day: String) -> Bool { stopDone(status: status.rawValue, stopDoneOn: stopDoneOn, day: day) }
@@ -173,6 +180,12 @@ public struct DayRoute: Sendable, Identifiable {
     public var summary: DaySummary
 
     public var id: String { routeKey(techId, date) }
+}
+
+/// Past the field work: not waiting, booked, under way, or canceled (website route-board.tsx
+/// `finished`).
+public func isFinished(_ status: JobStatus) -> Bool {
+    ![.unscheduled, .scheduled, .inProgress, .canceled].contains(status)
 }
 
 public func routeKey(_ techId: String?, _ date: String) -> String { "\(techId ?? "none")|\(date)" }
@@ -253,8 +266,8 @@ public func routePoints(_ jobs: [ScheduleJob], depot: LatLng?) -> [String] {
     return keys
 }
 
-/// The note on a stop: "Second tech, with Tony", "With Sam", "Repair", "Maintenance", "Pool inspection",
-/// then " · Not on map" when its address wasn't found and the server looks addresses up (owner,
+/// The note on a stop: "Second tech, with Tony", "With Sam", "Leak detection", "Repair", "Maintenance"
+/// or "Pool inspection", then " · Not on map" when its address wasn't found and the server looks addresses up (owner,
 /// 2026-10-20: it's left out of drive times until it is).
 public func stopNote(_ j: ScheduleJob, routeTech: String?, names: [String: String], routing: Bool = false) -> String? {
     let note: String? = {
@@ -266,7 +279,7 @@ public func stopNote(_ j: ScheduleJob, routeTech: String?, names: [String: Strin
         case .repair: return "Repair"
         case .maintenance: return "Maintenance"
         case .inspection: return "Pool inspection"
-        case .detection: return nil
+        case .detection: return "Leak detection"
         }
     }()
     let parts = [note, routing && j.mapMissing ? NotOnMap.short : nil].compactMap { $0 }
@@ -336,6 +349,49 @@ public func moveJob(
             ?? [],
         seesAll: ctx.seesAll, userId: ctx.userId)
     return try result(moveJobChange(ctx.plan, input, drive: drive.drive))
+}
+
+/// Where a stop is dropped on the phone's Schedule (owner, 2026-10-20: "bring back drag/drop on
+/// mobile"). Website components/route-board.tsx `onDragEnd`.
+public enum ScheduleDrop: Equatable, Sendable {
+    /// A tech's day: on a stop (`index`, its place in the route; the dropped job takes it) or on
+    /// the route itself (`index` nil: last).
+    case route(tech: String, date: String, index: Int?)
+    /// A day in the week strip or the week list: the job's own tech, last on that day.
+    case day(String)
+    /// Needs a Time: off the schedule (only a job that hasn't started).
+    case needsATime
+}
+
+/// Drag and drop: the same move as Move… (`moveJob`), so the same rules apply: any job but a
+/// canceled one moves, a started or finished job keeps its status, only an unstarted job goes back
+/// to Needs a Time, and past days refuse. Nil when the drop leaves the job where it was.
+public func dropJob(
+    _ jobId: String, on drop: ScheduleDrop, jobs: [ScheduleJob], ctx: ScheduleContext, team: [TeamMember],
+    drive: DriveTimes
+) throws -> (updates: [JobUpdate], message: String)? {
+    guard let job = jobs.first(where: { $0.id == jobId }) else {
+        throw ScheduleProblem("This job is gone. Pull down to refresh.")
+    }
+    let move = { (tech: String?, date: String?, index: Int) in
+        try moveJob(jobId, tech: tech, date: date, index: index, jobs: jobs, ctx: ctx, team: team, drive: drive)
+    }
+    switch drop {
+    case .needsATime:
+        if needsATime(jobs, ctx: ctx).contains(where: { $0.id == jobId }) { return nil }
+        return try move(nil, nil, 0)
+    case .day(let date):
+        let onDay = job.status != .unscheduled && job.start.map { localDay($0, timeZone: ctx.timeZone) } == date
+        if onDay { return nil }
+        return try move(job.assignedUserId, date, 9_999)
+    case .route(let tech, let date, let index):
+        let list = dayJobs(tech, date, jobs: jobs, ctx: ctx, team: team)
+        let others = list.filter { $0.id != jobId }.count
+        let at = list.firstIndex { $0.id == jobId }
+        let to = min(index ?? others, others)
+        if let at, at == to { return nil }
+        return try move(tech, date, to)
+    }
 }
 
 /// Saves planning changes through the sync layer, all or none.

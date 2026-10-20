@@ -83,6 +83,7 @@ import {
   getSignatures,
   listConfig,
   getTeam,
+  inspectionRows,
   signedMediaUrls,
   type JobDetail,
 } from "@/lib/data";
@@ -571,26 +572,6 @@ function Checklist({ detail }: { detail: JobDetail }) {
 /** Which checklist a job takes: its own for visits and inspections, the leak one otherwise. */
 function checklistJobType(type: string) {
   return type === "maintenance" || type === "inspection" ? type : "detection";
-}
-
-/** A pool inspection's items in checklist order, with their gates' answers, for folding. */
-function inspectionRows(detail: JobDetail) {
-  return detail.components.flatMap((c) => {
-    const t = detail.componentTypes.get(c.component_type_id);
-    const r = detail.results.get(c.id);
-    return t
-      ? [
-          {
-            id: c.id,
-            section: t.section ?? null,
-            group_label: t.group_label ?? null,
-            options: t.options,
-            value: r?.value,
-            result: r ? { status: r.status, outcome: r.outcome ?? null } : null,
-          },
-        ]
-      : [];
-  });
 }
 
 function Tests({ detail, tz }: { detail: JobDetail; tz: string }) {
