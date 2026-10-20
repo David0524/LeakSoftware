@@ -550,6 +550,7 @@
     struct HeroButtonStyle: ButtonStyle {
         var filled: Bool
         @Environment(\.isEnabled) private var isEnabled
+        @Environment(\.heroSwiping) private var swiping
 
         func makeBody(configuration: Configuration) -> some View {
             configuration.label
@@ -566,7 +567,8 @@
                 .opacity(configuration.isPressed ? 0.85 : 1)
                 .scaleEffect(configuration.isPressed && !Motion.reduced ? 0.96 : 1)
                 .animation(Motion.snappy, value: configuration.isPressed)
-                .opacity(isEnabled ? 1 : 0.6)
+                // Turned off while the card is swiped, not dimmed.
+                .opacity(isEnabled || swiping ? 1 : 0.6)
         }
     }
 
@@ -653,6 +655,11 @@
     /// VoiceOver's swipe up or down and Mark Complete (which moves on to the next stop) slide it
     /// the same way. With Reduce Motion the stop cross-fades instead. What's on the card is local
     /// state: no round trip, nothing read from the database.
+    extension EnvironmentValues {
+        /// Today's card is being swiped: its buttons are off without looking dimmed.
+        @Entry var heroSwiping = false
+    }
+
     struct TodayHeroPager: View {
         var day: TodayDay
         /// The stop the tech picked (nil: the one the day is on).
@@ -667,6 +674,10 @@
         @State private var sideways: Bool?
         @State private var width: CGFloat = 360
         @State private var turns = 0
+        /// A sideways drag is on: the card's buttons and its name don't take the lift of the
+        /// finger as a tap (owner, 2026-10-20: "When you swipe on the hero tile, it also opens
+        /// that job's page"). Back on shortly after the drag ends.
+        @State private var swiping = false
 
         private var ids: [String] { day.heroStops.map(\.id) }
 
@@ -678,6 +689,8 @@
                     hero: hero, day: day, flashing: flash != nil,
                     go: { pick($0) }, backToNow: { viewing = nil }
                 )
+                .disabled(swiping)
+                .environment(\.heroSwiping, swiping)
                 .id(reduceMotion ? (hero.stopId ?? "day") : "card")
                 .transition(.opacity)
                 .offset(x: drag)
@@ -711,13 +724,23 @@
                 .onChanged { value in
                     let dx = value.translation.width
                     if sideways == nil { sideways = abs(dx) > abs(value.translation.height) }
+                    if sideways == true && !swiping { swiping = true }
                     guard sideways == true, flash == nil else { return }
                     let free = dx < 0 ? hasNext : hasPrevious
                     // Past the first or last stop it resists.
                     drag = free ? dx : dx / (1 + abs(dx) / 80) * 0.6
                 }
                 .onEnded { value in
-                    defer { sideways = nil }
+                    defer {
+                        sideways = nil
+                        // After the lift's tap would have landed.
+                        if swiping {
+                            Task {
+                                try? await Task.sleep(for: .milliseconds(300))
+                                swiping = false
+                            }
+                        }
+                    }
                     guard sideways == true, flash == nil else { return }
                     let dx = value.translation.width
                     let flung = value.predictedEndTranslation.width
