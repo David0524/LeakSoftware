@@ -75,15 +75,18 @@ export function weekdayName(date: string): string {
 }
 
 /**
- * What a card says about what keeps it in place: its lock ("Day locked", "Time locked",
- * "Locked", with a padlock), else "Two techs". A started job says nothing here (its status
+ * What keeps a card's job in place: its lock (shown as an icon, read as "Day locked", "Time
+ * locked" or "Locked"), else "Two techs". A started job says nothing here (its status
  * does).
  */
-export function lockTag(job: PlanJob): { label: string; icon: boolean } | null {
+export function lockTag(
+  job: PlanJob,
+): { label: string; kind: "day" | "time" | "both" | "two_techs" } | null {
   const reason = lockReason(job);
   if (reason === "started") return null;
-  const tag = JOB_LOCK_LABELS[jobLock(job)].tag;
-  if (tag) return { label: tag, icon: true };
-  if (reason === "two_techs") return { label: LOCK_LABELS.two_techs, icon: false };
+  const lock = jobLock(job);
+  const tag = JOB_LOCK_LABELS[lock].tag;
+  if (tag && lock !== "none") return { label: tag, kind: lock };
+  if (reason === "two_techs") return { label: LOCK_LABELS.two_techs, kind: "two_techs" };
   return null;
 }

@@ -103,10 +103,24 @@ describe("todayHero (owner, 2026-10-20)", () => {
 
 describe("the card's buttons and lines", () => {
   it("gives each moment its main button, and none of the tech's to someone else", () => {
-    expect(heroActions("ahead", true)).toEqual({ primary: "on_my_way", complete: false });
-    expect(heroActions("driving", true)).toEqual({ primary: "start_job", complete: false });
-    expect(heroActions("on_site", true)).toEqual({ primary: "open_checklist", complete: true });
-    expect(heroActions("done", true).primary).toBe("on_my_way");
+    // Start Job from the start; On My Way is an icon until it's sent.
+    expect(heroActions("ahead", true)).toEqual({
+      primary: "start_job",
+      complete: false,
+      onMyWay: true,
+    });
+    expect(heroActions("driving", true)).toEqual({
+      primary: "start_job",
+      complete: false,
+      onMyWay: false,
+    });
+    expect(heroActions("on_site", true)).toEqual({
+      primary: "open_checklist",
+      complete: true,
+      onMyWay: false,
+    });
+    expect(heroActions("done", true)).toMatchObject({ primary: "start_job", onMyWay: true });
+    expect(heroActions("ahead", false).onMyWay).toBe(false);
     expect(heroActions("day_done", true).primary).toBeNull();
     expect(heroActions("ahead", false).primary).toBeNull();
     expect(heroActions("driving", false).primary).toBeNull();

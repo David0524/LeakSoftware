@@ -1,11 +1,12 @@
 import { useSyncExternalStore } from "react";
 import { Platform } from "react-native";
 import { Notifications } from "./push";
+import { dismissalAfter, type LiveStopEvent } from "./liveStopRule";
 import { getServices } from "./services";
 
 // What the current stop's ongoing notification (features/today/LiveStop.tsx) remembers on this
-// phone: the day the tech swiped it away (it stays away until the next work day, across
-// restarts), and a stop just completed (shown done for a minute, on the notification and on
+// phone: the day the tech swiped it away (it stays away only while the app stays in the
+// background, across restarts there; opening the app brings it back, owner 2026-10-20), and a stop just completed (shown done for a minute, on the notification and on
 // Today's card). Which stop it shows comes from the day's route itself (owner, 2026-10-19), and
 // whether that stop is on the way from the job's own On My Way (job.on_my_way_at, arrive_at,
 // synced; owner, 2026-10-20), so every phone and the website agree.
@@ -31,11 +32,16 @@ export function liveDismissedOn(): string | null {
   return dismissed;
 }
 
-/** The tech swiped it away: it stays away until the next work day. */
-export function dismissLiveStopFor(day: string) {
-  dismissed = day;
-  getServices().kv.set(DISMISSED_KEY, day);
+function apply(event: LiveStopEvent) {
+  dismissed = dismissalAfter(liveDismissedOn(), event);
+  if (dismissed) getServices().kv.set(DISMISSED_KEY, dismissed);
+  else getServices().kv.remove(DISMISSED_KEY);
   changed();
+}
+
+/** The tech swiped it away: it stays away while the app stays in the background. */
+export function dismissLiveStopFor(day: string) {
+  apply({ kind: "swiped", day });
 }
 
 /**
@@ -43,9 +49,24 @@ export function dismissLiveStopFor(day: string) {
  * also brings back a notification swiped away today.
  */
 export function startLiveStop() {
-  dismissed = null;
-  getServices().kv.remove(DISMISSED_KEY);
-  changed();
+  apply({ kind: "on_my_way" });
+}
+
+let foregrounds = 0;
+
+/**
+ * The app was opened or came to the front: a notification swiped away comes back, and one that
+ * should be up but isn't is shown again (owner, 2026-10-20: "anytime you have the app open
+ * during the work day").
+ */
+export function foregroundLiveStop() {
+  foregrounds++;
+  apply({ kind: "foreground" });
+}
+
+/** Counts the times the app came to the front, so the stop's card checks it's still up. */
+export function liveForegrounds(): number {
+  return foregrounds;
 }
 
 /** The stop completed in the last minute, if any (core todayHero's `justDone`). */

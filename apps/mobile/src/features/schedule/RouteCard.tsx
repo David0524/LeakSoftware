@@ -6,6 +6,7 @@ import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { durationLabel, type CleaningKind, type JobStatus, type LatLng } from "@leakbook/core";
+import type { LockTagKind } from "../../lib/dayMap";
 import type { DragItem } from "../../lib/scheduleDrag";
 import { CleaningNames } from "../maintenance/Cleanings";
 import { Button, Card, StatusChip, T } from "../../ui/components";
@@ -40,8 +41,8 @@ export interface Stop {
   location: LatLng | null;
   time: string | null;
   status: JobStatus;
-  /** "Day locked", "Time locked", "Locked" (with a padlock), or "Two techs"; never "Started". */
-  lock: { label: string; icon: boolean } | null;
+  /** A day, time or both lock (shown as an icon), or "Two techs"; never "Started". */
+  lock: { label: string; kind: LockTagKind } | null;
   movable: boolean;
   legMin: number | null;
   shortMin: number;

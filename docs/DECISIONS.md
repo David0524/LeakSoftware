@@ -2,15 +2,24 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-20 (owner: "I think the live activity only starts when you have the app open at the day start time. It should run anytime you have the app open during the work day")
+- **The Live Activity (iPhone) and the ongoing stop notification (Android) start whenever the app is opened during the work day**: a work day, after the working day's start, with a stop not done, and nothing showing. A tech who removes it keeps it off only while the app stays in the background; opening the app brings it back. Before, a removal (or what looked like one after the app was closed) kept it off until the next work day.
+
+## 2026-10-20 (owner: "In the regular maintenance report, do not list/include items that were not completed"; "make the 'on my way' text to just be an icon and make 'Start Job' stay there from the beginning. You have to remember, not every tech is going to use every function all the time"; the job's address "should open up the screen to edit it. You can put a little pin icon to open in maps"; a picked suggestion still said "not found")
+- **The maintenance visit report lists only what was done**; skipped items are left out (the report page is shared by every platform).
+- **Today: Start Job is the main button from the start**, so a tech never has to send On My Way. On My Way is a round car icon, first among the card's round buttons and on Today's rows, until it's sent.
+- **The job's Pool row opens the pool's details to edit** (the customer page's editor, with suggestions); a round pin at its end opens Maps.
+- **Pool lookups no longer count against the shop's daily Mapbox allowance**: they're free (Census, OpenStreetMap), and a day that used the allowance up on drive times had left newly picked addresses unfound.
+
 ## 2026-10-20 (owner on the route-maps build: "1. Can move 2. Great! 3. Include")
 - **Plan Week with Everyone may move a tech's scheduled jobs to another tech**, as planned; a waiting job already given to a tech stays theirs.
 - **The iPhone's small day map stays a preview** that doesn't take drags; tapping it opens the map you can pan and zoom.
-- **Saving only a job's lock says what it holds** on every platform: "Day locked.", "Time locked.", "Locked.", or "Lock removed." (core `lockSavedMessage`).
+- **Locks are icons, not messages** (owner, then: "Don't do lock messages. Do icons"): saving a lock shows no message, and cards show the lock as an icon only, a calendar with a padlock (day), a clock with a padlock (time) or a padlock (both), read aloud and shown on hover as "Day locked", "Time locked" or "Locked". The job's own Lock row keeps its words; "Two techs" stays words.
 
 ## 2026-10-20 (route maps built: day maps, Plan Week, locks, Routes)
 - **Day maps:** the small map is a preview (an image on the website and Android, a muted Apple map on the iPhone that doesn't take drags, so the Schedule still scrolls); tapping it or Enlarge opens a map you can pan and zoom (Mapbox GL on the website, Apple Maps on the iPhone; Android shows a larger image until an interactive one is added). On phones the selected tech's map leads the day, under the tech chips. Dark mode gets Mapbox's dark map.
 - **Plan Week's sheet has "Place Jobs from Needs a Time"** (on by default, with the count waiting), so one tap never silently fills the week with every waiting job. A waiting job given to a tech stays theirs; unassigned ones are placed only with the switch on. Scheduled jobs come first, then the oldest waiting, up to 150.
-- **Locks are set on the job's schedule** with None · Day · Time · Both; cards show a padlock and "Day locked", "Time locked" or "Locked". Moving a time-locked job by hand keeps its clock time on every platform.
+- **Locks are set on the job's schedule** with None · Day · Time · Both; cards show the lock's icon. Moving a time-locked job by hand keeps its clock time on every platform.
 - **Routes** is a fourth Schedule segment for owners and admins (Day · Week · Month · Routes), as designed in `docs/plans/route-maps.md`. Its drive times are estimates (no Mapbox calls), said as "about … driving".
 
 ## 2026-10-20 (owner: "For the address error, just put a little error symbol next to the address. Don't waste space with text"; "On the today hero, you have to have customer notes there")

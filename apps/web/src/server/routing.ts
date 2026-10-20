@@ -332,15 +332,20 @@ export async function suggestAddresses(
   }
 }
 
-/** Find coordinates for an address. Null without a routing key or past the daily limit. */
+/**
+ * Find coordinates for an address, or null without a routing key or a match. The shop and
+ * database are kept in the signature for callers; lookups are free, so nothing is counted.
+ */
 export async function geocodeAddress(
-  db: SupabaseClient,
-  companyId: string,
+  _db: SupabaseClient,
+  _companyId: string,
   address: string,
   provider: RoutingProvider | null = routingProvider(),
 ): Promise<LatLng | null> {
   if (!provider || !address.trim()) return null;
-  if (!(await allowed(db, companyId, "geocode", 1))) return null;
+  // Lookups are free (Census, then OpenStreetMap), so they don't use the shop's Mapbox
+  // allowance: a busy day of drive times never leaves a pool unfound (owner, 2026-10-20).
+
   try {
     return await provider.geocode(address);
   } catch {

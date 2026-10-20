@@ -25,7 +25,7 @@ export function NotOnMapRow() {
 export function NotOnMapTag({ className }: { className?: string }) {
   return (
     <span
-      className={cx("inline-flex shrink-0 align-[-0.15em] text-status-warning", className)}
+      className={cx("relative inline-flex shrink-0 align-[-0.15em] text-status-warning", className)}
       title={NOT_ON_MAP.title}
       data-testid="not-on-map-tag"
     >

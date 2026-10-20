@@ -14,12 +14,15 @@ import { inRouteOrderViews, useJobViews, type JobView } from "../../data/jobs";
 import {
   LIVE_STOP_ID,
   dismissLiveStopFor,
+  foregroundLiveStop,
   hideLiveStop,
   liveDismissedOn,
+  liveForegrounds,
   liveJustDone,
   setLiveJustDone,
   useLiveStopVersion,
 } from "../../lib/liveStop";
+import { liveStopPhase } from "../../lib/liveStopRule";
 import { heroStops } from "../../lib/todayHero";
 import { NOTIFICATION_COLOR, Notifications, STOP_CATEGORY, STOP_CHANNEL } from "../../lib/push";
 import { useCompany, useSession } from "../../state/session";
@@ -32,7 +35,10 @@ import { useTodayHero } from "./useTodayHero";
 // core liveStopRuns says the tech's day has begun, on the first stop not done ("ahead" with its
 // time, or at the pool once started); On My Way puts that stop on the way; after Mark Complete
 // it shows the stop done for a minute, then moves to the next; it ends after the last stop.
-// Swiped away, it stays away until the next work day. Checked at launch, coming back to the
+// Swiped away, it stays away while the app stays in the background; whenever the app is opened
+// or comes to the front during the working day, it's shown again if it isn't up (owner,
+// 2026-10-20: "It should run anytime you have the app open during the work day"). Timers and
+// background syncs never bring back one swiped away. Checked at launch, coming back to the
 // app, after a sync, and each minute while open. The app shows it itself (no signal needed).
 // Which stop and moment come from core todayHero (owner, 2026-10-20), as Today's card, and On
 // My Way is read from the job (job.on_my_way_at, arrive_at), so a second phone agrees.
@@ -63,10 +69,20 @@ function LiveStopDay() {
 
   // "Now", moved on each minute while the app is open and when it comes back to the front.
   const [now, setNow] = useState(() => new Date());
+  // Whether the notification was up; the swipe check reads it (below).
+  const up = useRef<LiveStopPhase | null>(null);
   useEffect(() => {
+    // Opened or back in front: forget a swipe-away and show the stop again if it isn't up. The
+    // swipe check mustn't count that missing notification as a new swipe.
+    const foreground = () => {
+      up.current = null;
+      foregroundLiveStop();
+    };
+    if (AppState.currentState === "active") foreground();
     let tick: ReturnType<typeof setInterval> | null = setInterval(() => setNow(new Date()), MINUTE);
     const sub = AppState.addEventListener("change", (s) => {
       if (s === "active") {
+        foreground();
         setNow(new Date());
         tick ??= setInterval(() => setNow(new Date()), MINUTE);
       } else if (tick) {
@@ -135,19 +151,16 @@ function LiveStopDay() {
     nowMin,
     stopsLeft: left.length,
   });
-  const dismissedToday = liveDismissedOn() === today;
-
-  let shown: Shown | null = null;
-  if (!dismissedToday && hero && job && hero.moment !== "day_done") {
-    const phase = hero.moment as LiveStopPhase;
-    // A done stop shows its minute; a stop on the way shows before the day starts too.
-    if (phase === "done" || runs || phase === "driving")
-      shown = { job, phase, content: hero.content };
-  }
+  const phase = liveStopPhase({
+    moment: hero && job ? hero.moment : null,
+    runs,
+    dismissedOn: liveDismissedOn(),
+    today,
+  });
+  const shown: Shown | null = phase && hero && job ? { job, phase, content: hero.content } : null;
 
   // Swiped away: once it was up, it's gone from the tray without us taking it down. A done
   // card swiped away only ends that card; the stop card swiped away stays away for the day.
-  const up = useRef<LiveStopPhase | null>(null);
   useEffect(() => {
     if (!up.current) return;
     void Notifications.getPresentedNotificationsAsync()
@@ -173,6 +186,7 @@ function LiveStopDay() {
     <StopCard
       key={shown.job.id}
       shown={shown}
+      foregrounds={liveForegrounds()}
       onUp={(phase) => {
         up.current = phase;
       }}
@@ -181,7 +195,16 @@ function LiveStopDay() {
 }
 
 /** One stop's notification, from todayHero's content (the checklist count included). */
-function StopCard({ shown, onUp }: { shown: Shown; onUp: (phase: LiveStopPhase) => void }) {
+function StopCard({
+  shown,
+  foregrounds,
+  onUp,
+}: {
+  shown: Shown;
+  /** Changes each time the app comes to the front: the card is shown again if it isn't up. */
+  foregrounds: number;
+  onUp: (phase: LiveStopPhase) => void;
+}) {
   const { job } = shown;
   const c = shown.content;
   // Title: the headline. Text: the figure with its label, then the detail and next lines for
@@ -199,28 +222,43 @@ function StopCard({ shown, onUp }: { shown: Shown; onUp: (phase: LiveStopPhase) 
   const key = JSON.stringify([c.headline, body, phone]);
 
   const shownKey = useRef("");
+  const shownAt = useRef(foregrounds);
   useEffect(() => {
-    if (key === shownKey.current) return;
-    shownKey.current = key;
-    const [title, text] = JSON.parse(key) as [string, string, string | null];
-    void Notifications.scheduleNotificationAsync({
-      identifier: LIVE_STOP_ID,
-      content: {
-        title,
-        body: text,
-        color: NOTIFICATION_COLOR,
-        // Ongoing for the day; the done card can be swiped away.
-        sticky: shown.phase !== "done",
-        autoDismiss: false,
-        sound: false,
-        priority: Notifications.AndroidNotificationPriority.LOW,
-        categoryIdentifier: STOP_CATEGORY,
-        data: { kind: "live", job: job.id, phone },
-      },
-      trigger: { channelId: STOP_CHANNEL },
-    })
-      .then(() => onUp(shown.phase))
+    const post = () => {
+      const [title, text] = JSON.parse(key) as [string, string, string | null];
+      return Notifications.scheduleNotificationAsync({
+        identifier: LIVE_STOP_ID,
+        content: {
+          title,
+          body: text,
+          color: NOTIFICATION_COLOR,
+          // Ongoing for the day; the done card can be swiped away.
+          sticky: shown.phase !== "done",
+          autoDismiss: false,
+          sound: false,
+          priority: Notifications.AndroidNotificationPriority.LOW,
+          categoryIdentifier: STOP_CATEGORY,
+          data: { kind: "live", job: job.id, phone },
+        },
+        trigger: { channelId: STOP_CHANNEL },
+      })
+        .then(() => onUp(shown.phase))
+        .catch(() => undefined);
+    };
+    if (key !== shownKey.current) {
+      shownKey.current = key;
+      shownAt.current = foregrounds;
+      void post();
+      return;
+    }
+    if (foregrounds === shownAt.current) return;
+    // Back in front with the same card: shown again only if it's no longer up.
+    shownAt.current = foregrounds;
+    void Notifications.getPresentedNotificationsAsync()
+      .then((list) =>
+        list.some((n) => n.request.identifier === LIVE_STOP_ID) ? onUp(shown.phase) : post(),
+      )
       .catch(() => undefined);
-  }, [key, shown.phase, job.id, phone, onUp]);
+  }, [key, foregrounds, shown.phase, job.id, phone, onUp]);
   return null;
 }

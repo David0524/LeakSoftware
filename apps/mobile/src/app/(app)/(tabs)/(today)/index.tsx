@@ -185,7 +185,7 @@ export default function Today() {
   const heroAt = heroJob ? stops.indexOf(heroJob) : -1;
   const backLeg = summary.driveMin - summary.legs.reduce((a, b) => a + b, 0);
 
-  /** On My Way for a stop: in its row, or as the card's main button. */
+  /** On My Way for a stop, a round car button: in its row, or on the card's Next line. */
   function onMyWayFor(j: JobView, opts: { onWater?: boolean; trigger?: number } = {}) {
     return (
       <OnMyWay
@@ -542,6 +542,7 @@ function Stop({
             />
             {done ? null : (
               <View style={styles.actions}>
+                {onMyWay}
                 {phone ? (
                   <RoundButton
                     icon="phone"
@@ -549,7 +550,6 @@ function Stop({
                     onPress={() => void Linking.openURL(`tel:${phone}`)}
                   />
                 ) : null}
-                {onMyWay}
               </View>
             )}
           </View>

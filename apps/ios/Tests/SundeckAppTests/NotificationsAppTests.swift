@@ -211,9 +211,10 @@ import Testing
                 serverHLC: "1792508400001-0000-server"))
     }
 
-    /// The workday (owner, 2026-10-19: "Live Activity should begin at the beginning of the
-    /// workday"): it runs from the day's start on a work day while a stop isn't done, on the
-    /// first stop not done, and moves on from a done one.
+    /// The workday (owner, 2026-10-19 and 2026-10-20: "It should run anytime you have the app
+    /// open during the work day"): it runs from the day's start on a work day while a stop isn't
+    /// done, on the first stop not done, moves on from a done one, and a removal lasts only until
+    /// the app comes back.
     @Test func liveStopBeginsWithTheWorkday() throws {
         let s = try ScheduleDataTests()
         let me = ScheduleDataTests.me
@@ -223,6 +224,11 @@ import Testing
         #expect(day.stops.map(\.id) == [s.id(2), s.id(1)])
         #expect(day.open()?.id == s.id(2))
         #expect(day.hero()?.moment == .ahead && day.hero()?.stop == 1)
+        // Whenever the app is open during the work day (owner, 2026-10-20): it begins; removed
+        // today, it stays off only until the app comes back (which clears the removal).
+        #expect(liveStopBegins(day, dismissedOn: nil))
+        #expect(!liveStopBegins(day, dismissedOn: day.today))
+        #expect(liveStopBegins(day, dismissedOn: "2026-10-19"))
         // On My Way to the second stop: the day is on it (Today's card agrees: `todayHero`).
         try StopWrites.recordOnMyWay(
             s.sync, companyId: ScheduleDataTests.company, jobId: s.id(1), driveMinutes: 10, now: ScheduleDataTests.now)
@@ -240,12 +246,13 @@ import Testing
         let early = liveStopDay(
             s.sync.store, kv: s.sync.kv, company: s.company, userId: me,
             now: ScheduleDataTests.now.addingTimeInterval(-60))
-        #expect(!early.runs)
+        #expect(!early.runs && !liveStopBegins(early, dismissedOn: nil))
         // Both stops done: it doesn't run, and there's nothing to move on to.
         try setStatus(s, s.id(2), "completed")
         try setStatus(s, s.id(1), "completed")
         let after = liveStopDay(s.sync.store, kv: s.sync.kv, company: s.company, userId: me, now: ScheduleDataTests.now)
         #expect(!after.runs && after.open() == nil && after.hero()?.moment == .dayDone)
+        #expect(!liveStopBegins(after, dismissedOn: nil))
         // Sam has no stops today.
         #expect(
             !liveStopDay(

@@ -73,19 +73,22 @@ describe("lock tag", () => {
     lock_time: false,
     property: null,
   };
-  it("says what the lock holds, with a padlock", () => {
+  it("says which lock holds it (shown as its icon)", () => {
     expect(lockTag(job)).toBeNull();
-    expect(lockTag({ ...job, lock_day: true })).toEqual({ label: "Day locked", icon: true });
-    expect(lockTag({ ...job, lock_time: true })).toEqual({ label: "Time locked", icon: true });
+    expect(lockTag({ ...job, lock_day: true })).toEqual({ label: "Day locked", kind: "day" });
+    expect(lockTag({ ...job, lock_time: true })).toEqual({ label: "Time locked", kind: "time" });
     expect(lockTag({ ...job, lock_day: true, lock_time: true })).toEqual({
       label: "Locked",
-      icon: true,
+      kind: "both",
     });
     // Saved before locks: a told time is both.
-    expect(lockTag({ ...job, arrival_fixed: true })).toEqual({ label: "Locked", icon: true });
+    expect(lockTag({ ...job, arrival_fixed: true })).toEqual({ label: "Locked", kind: "both" });
   });
   it("keeps Two techs, and says nothing for a started job", () => {
-    expect(lockTag({ ...job, second_tech_id: "u" })).toEqual({ label: "Two techs", icon: false });
+    expect(lockTag({ ...job, second_tech_id: "u" })).toEqual({
+      label: "Two techs",
+      kind: "two_techs",
+    });
     expect(lockTag({ ...job, status: "in_progress", lock_day: true })).toBeNull();
   });
 });

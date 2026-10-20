@@ -995,7 +995,8 @@
                 customerDetail(
                     env.session.sync.store, companyId: "c1", customerId: maria, timeZone: "America/Phoenix"))
             let pool = try #require(detail.pools.first)
-            try await snapshot("45-pool-details", height: 1400, PoolSheet(pool: pool, saved: {}).app(env))
+            try await snapshot(
+                "45-pool-details", height: 1400, PoolSheet(propertyId: pool.id, row: pool.row, saved: {}).app(env))
         }
 
         /// Maintenance plans (spec 5.5 and 5.9): a customer's plan on their page, the plan sheet,

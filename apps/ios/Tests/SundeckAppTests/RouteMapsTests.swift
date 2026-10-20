@@ -97,16 +97,16 @@ extension ScheduleDataTests {
             return lockTag(try #require(jobs.first { $0.id == id(1) }))
         }
         #expect(try tag([:]) == nil)
-        #expect(try tag(["lock_day": true]) == LockTag(label: "Day locked", icon: true))
-        #expect(try tag(["lock_day": false, "lock_time": true]) == LockTag(label: "Time locked", icon: true))
-        #expect(try tag(["lock_day": true]) == LockTag(label: "Locked", icon: true))
+        #expect(try tag(["lock_day": true]) == LockTag(label: "Day locked", kind: .day))
+        #expect(try tag(["lock_day": false, "lock_time": true]) == LockTag(label: "Time locked", kind: .time))
+        #expect(try tag(["lock_day": true]) == LockTag(label: "Locked", kind: .both))
         // A job saved before locks with a promised time is locked both ways.
         #expect(
             try tag(["lock_day": false, "lock_time": false, "arrival_fixed": true])
-                == LockTag(label: "Locked", icon: true))
+                == LockTag(label: "Locked", kind: .both))
         #expect(
             try tag(["arrival_fixed": false, "second_tech_id": .string(Self.sam)])
-                == LockTag(label: "Two techs", icon: false))
+                == LockTag(label: "Two techs", kind: .twoTechs))
         // A started job's status says it.
         #expect(try tag(["status": "in_progress", "lock_day": true]) == nil)
     }
@@ -128,12 +128,12 @@ extension ScheduleDataTests {
         let saved = try #require(jobs.first { $0.id == id(1) })
         #expect(jobLock(saved) == .time)
 
-        // Only the lock: one row, nothing re-timed.
+        // Only the lock: one row, nothing re-timed, and no message (owner, 2026-10-20).
         let only = lockOnlyChange(.both, jobId: id(2))
-        #expect(only.message == "Locked.")
+        #expect(only.message.isEmpty)
         #expect(only.updates.map(\.values) == [["lock_day": true, "lock_time": true, "arrival_fixed": true]])
-        #expect(lockOnlyChange(.none, jobId: id(2)).message == "Lock removed.")
-        #expect(lockOnlyChange(.day, jobId: id(2)).message == "Day locked.")
+        #expect(lockOnlyChange(.none, jobId: id(2)).message.isEmpty)
+        #expect(lockOnlyChange(.day, jobId: id(2)).message.isEmpty)
     }
 
     // MARK: - Plan Week

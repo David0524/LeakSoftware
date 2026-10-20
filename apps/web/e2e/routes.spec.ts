@@ -231,15 +231,12 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   await expect(page.getByText(/^Moved to \d/)).toBeVisible();
   await expect(tray.getByTestId("tray-job").filter({ hasText: name("tempe") })).toHaveCount(0);
 
-  // 5. The job's address links to directions to the pool's spot (Google Maps off Apple
-  //    devices).
+  // 5. The job's pool has directions to its spot (Google Maps off Apple devices).
   await page.goto(`/jobs/${zoo}`);
-  await expect(
-    page.getByRole("link", { name: /^455 N Galvin Pkwy.*directions in Maps$/ }),
-  ).toHaveAttribute("href", /^\/maps\?to=455\+N\+Galvin/);
-  const href = (await page
-    .getByRole("link", { name: /^455 N Galvin Pkwy.*directions in Maps$/ })
-    .getAttribute("href"))!;
+  // The address opens the pool's details; the pin beside it opens Maps (owner, 2026-10-20).
+  const pin = page.getByTestId("pool-row").getByRole("link", { name: "Open in Maps" });
+  await expect(pin).toHaveAttribute("href", /^\/maps\?to=455\+N\+Galvin/);
+  const href = (await pin.getAttribute("href"))!;
   expect(await mapsTarget(page, href)).toMatch(
     /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&destination=33\.45006%2C-111\.94886/,
   );

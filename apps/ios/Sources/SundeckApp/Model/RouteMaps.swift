@@ -150,20 +150,25 @@ public func weekdayName(_ date: String) -> String {
 
 // MARK: - Locks
 
-/// What a card says about what keeps it in place (`lockTag`): its lock ("Day locked", "Time
-/// locked", "Locked", with a padlock), else "Two techs". A started job says nothing here (its
-/// status does).
+/// What a card shows about what keeps it in place (`lockTag`, the website's `LockTag`). A lock is
+/// an icon only (owner, 2026-10-20: "Do icons"): a calendar with a padlock for a day lock, a clock
+/// with a padlock for a time lock, a padlock for both, with `label` ("Day locked", "Time locked",
+/// "Locked") read aloud and shown on hover. "Two techs" stays words. A started job says nothing
+/// here (its status does).
 public struct LockTag: Equatable, Sendable {
+    public enum Kind: Equatable, Sendable { case day, time, both, twoTechs }
     public var label: String
-    /// Shows the padlock (`lock.fill`).
-    public var icon: Bool
+    public var kind: Kind
 }
 
 public func lockTag<J: PlanJobFields>(_ job: J) -> LockTag? {
     let reason = lockReason(job)
     if reason == .started { return nil }
-    if let tag = jobLock(job).tag { return LockTag(label: tag, icon: true) }
-    if reason == .twoTechs { return LockTag(label: LockReason.twoTechs.label, icon: false) }
+    let lock = jobLock(job)
+    if let tag = lock.tag {
+        return LockTag(label: tag, kind: lock == .day ? .day : lock == .time ? .time : .both)
+    }
+    if reason == .twoTechs { return LockTag(label: LockReason.twoTechs.label, kind: .twoTechs) }
     return nil
 }
 
@@ -192,7 +197,8 @@ public func scheduleWithLock(
     return (updates, message)
 }
 
-/// Only the lock changed: its columns, and what to say.
+/// Only the lock changed: its columns, and no message (owner, 2026-10-20: "Don't do lock
+/// messages"; the Schedule group's Lock row and the success haptic say it).
 public func lockOnlyChange(_ lock: JobLock, jobId: String) -> (updates: [JobUpdate], message: String) {
-    ([JobUpdate(id: jobId, values: lockColumns(lock).values)], lock.tag.map { "\($0)." } ?? "Lock removed.")
+    ([JobUpdate(id: jobId, values: lockColumns(lock).values)], "")
 }

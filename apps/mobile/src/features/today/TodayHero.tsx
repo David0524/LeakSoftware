@@ -76,7 +76,7 @@ export function TodayHeroCard({
   /** The drive to the card's stop, for "14 min drive" before leaving. */
   driveMin: number | null;
   notOnMap: boolean;
-  /** On My Way for a stop, as the card's main button. */
+  /** On My Way for a stop: a round car button, first on the Next line. */
   onMyWay: (job: JobView) => ReactNode;
   onDirections: (job: JobView) => void;
 }) {
@@ -124,7 +124,10 @@ export function TodayHeroCard({
   const line = useLine(company.id);
   const conversations = useConversations(company.id);
   // Message, Call and Directions for the card's stop, while it's still to come or under way.
-  const contact = Boolean(target && hero.moment !== "done" && (phone || target.property));
+  // On My Way joins them first, before leaving, as a car icon (owner, 2026-10-20).
+  const contact = Boolean(
+    target && hero.moment !== "done" && (actions.onMyWay || phone || target.property),
+  );
 
   /** Text the customer as the job page does: the shop's number when it's on, else the phone's
    *  own texts. */
@@ -259,7 +262,7 @@ export function TodayHeroCard({
         </View>
       ) : null}
 
-      {/* The next stop, with Message, Call and Directions on its line (owner, 2026-10-20: "find
+      {/* The next stop, with On My Way, Message, Call and Directions on its line (owner, 2026-10-20: "find
           a better place for the call/direction icon … so we can shorten the card"). Without a
           next stop the circles sit alone at the right. */}
       {c.next || contact ? (
@@ -274,6 +277,7 @@ export function TodayHeroCard({
           ) : null}
           {contact && target ? (
             <View style={styles.round}>
+              {actions.onMyWay ? onMyWay(target) : null}
               {phone ? (
                 <RoundButton
                   onWater
@@ -308,7 +312,6 @@ export function TodayHeroCard({
         <View style={[styles.buttons, stacked && styles.buttonsStacked]}>
           {actions.primary && target ? (
             <View style={stacked ? undefined : styles.slot}>
-              {actions.primary === "on_my_way" ? onMyWay(target) : null}
               {actions.primary === "start_job" ? (
                 <Button
                   kind="onWater"

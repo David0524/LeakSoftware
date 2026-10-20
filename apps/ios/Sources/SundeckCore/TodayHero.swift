@@ -185,20 +185,26 @@ public enum HeroAction: String, Codable, CaseIterable, Sendable {
 }
 
 public struct HeroActions: Codable, Equatable, Sendable {
+    /// Start Job or Open Checklist (never On My Way: that's a round icon, `onMyWay`).
     public var primary: HeroAction?
     /// Mark Complete (or Complete Visit) beside it.
     public var complete: Bool
+    /// On My Way shows as a round icon with Message, Call and Directions.
+    public var onMyWay: Bool
 }
 
-/// The card's buttons for its moment: the main one, and whether Mark Complete shows beside it.
-/// Someone looking at another tech's day (owners and admins, "Whose day") gets no On My Way or
-/// Start Job: those are the tech's to press (decision 4).
+/// The card's buttons for its moment: the main one, whether Mark Complete shows beside it, and
+/// whether On My Way shows as a round icon with Message, Call and Directions. Start Job is the
+/// main button from the start, so a tech who doesn't send On My Way never has to (owner,
+/// 2026-10-20: "not every tech is going to use every function all the time"). Someone looking
+/// at another tech's day (owners and admins, "Whose day") gets no On My Way or Start Job: those
+/// are the tech's to press (decision 4).
 public func heroActions(_ moment: HeroMoment, mine: Bool) -> HeroActions {
     switch moment {
-    case .ahead, .done: HeroActions(primary: mine ? .onMyWay : nil, complete: false)
-    case .driving: HeroActions(primary: mine ? .startJob : nil, complete: false)
-    case .onSite: HeroActions(primary: .openChecklist, complete: true)
-    case .dayDone: HeroActions(primary: nil, complete: false)
+    case .ahead, .done: HeroActions(primary: mine ? .startJob : nil, complete: false, onMyWay: mine)
+    case .driving: HeroActions(primary: mine ? .startJob : nil, complete: false, onMyWay: false)
+    case .onSite: HeroActions(primary: .openChecklist, complete: true, onMyWay: false)
+    case .dayDone: HeroActions(primary: nil, complete: false, onMyWay: false)
     }
 }
 

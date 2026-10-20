@@ -205,10 +205,13 @@ describe("day maps on the phone", () => {
 
   it("tags locks on cards, and says nothing for started jobs", () => {
     const base = job({ date: "2026-10-21" });
-    expect(lockTag({ ...base, lock_day: true })).toEqual({ label: "Day locked", icon: true });
-    expect(lockTag({ ...base, lock_time: true })).toEqual({ label: "Time locked", icon: true });
-    expect(lockTag({ ...base, arrival_fixed: true })).toEqual({ label: "Locked", icon: true });
-    expect(lockTag({ ...base, second_tech_id: "t2" })).toEqual({ label: "Two techs", icon: false });
+    expect(lockTag({ ...base, lock_day: true })).toEqual({ label: "Day locked", kind: "day" });
+    expect(lockTag({ ...base, lock_time: true })).toEqual({ label: "Time locked", kind: "time" });
+    expect(lockTag({ ...base, arrival_fixed: true })).toEqual({ label: "Locked", kind: "both" });
+    expect(lockTag({ ...base, second_tech_id: "t2" })).toEqual({
+      label: "Two techs",
+      kind: "two_techs",
+    });
     expect(lockTag({ ...base, status: "in_progress", lock_day: true })).toBeNull();
     expect(lockTag(base)).toBeNull();
   });

@@ -167,19 +167,27 @@ export function todayHero(input: {
 }
 
 /**
- * The card's buttons for its moment: the main one, and whether Mark Complete shows beside it.
- * Someone looking at another tech's day (owners and admins, "Whose day") gets no On My Way or
- * Start Job: those are the tech's to press (decision 4).
+ * The card's buttons for its moment: the main one, whether Mark Complete shows beside it, and
+ * whether On My Way shows as a round icon with Message, Call and Directions. Start Job is the
+ * main button from the start, so a tech who doesn't send On My Way never has to (owner,
+ * 2026-10-20: "not every tech is going to use every function all the time"). Someone looking
+ * at another tech's day (owners and admins, "Whose day") gets no On My Way or Start Job: those
+ * are the tech's to press (decision 4).
  */
 export function heroActions(
   moment: HeroMoment,
   mine: boolean,
-): { primary: "on_my_way" | "start_job" | "open_checklist" | null; complete: boolean } {
+): {
+  primary: "start_job" | "open_checklist" | null;
+  complete: boolean;
+  onMyWay: boolean;
+} {
   if (moment === "ahead" || moment === "done")
-    return { primary: mine ? "on_my_way" : null, complete: false };
-  if (moment === "driving") return { primary: mine ? "start_job" : null, complete: false };
-  if (moment === "on_site") return { primary: "open_checklist", complete: true };
-  return { primary: null, complete: false };
+    return { primary: mine ? "start_job" : null, complete: false, onMyWay: mine };
+  if (moment === "driving")
+    return { primary: mine ? "start_job" : null, complete: false, onMyWay: false };
+  if (moment === "on_site") return { primary: "open_checklist", complete: true, onMyWay: false };
+  return { primary: null, complete: false, onMyWay: false };
 }
 
 export const HERO_ACTION_LABELS = {

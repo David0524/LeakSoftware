@@ -4,7 +4,6 @@ import {
   jobLock,
   lockColumns,
   lockReason,
-  lockSavedMessage,
   planWeek,
   planWeekSummary,
   durationLabel,
@@ -42,12 +41,6 @@ describe("locks", () => {
     expect(jobLock({ arrival_fixed: true })).toBe("both");
     expect(lockColumns("time")).toEqual({ lock_day: false, lock_time: true, arrival_fixed: false });
     expect(lockColumns("both")).toEqual({ lock_day: true, lock_time: true, arrival_fixed: true });
-  });
-  it("says what a lock-only save did", () => {
-    expect(lockSavedMessage("day")).toBe("Day locked.");
-    expect(lockSavedMessage("time")).toBe("Time locked.");
-    expect(lockSavedMessage("both")).toBe("Locked.");
-    expect(lockSavedMessage("none")).toBe("Lock removed.");
   });
   it("planning a day keeps time locks, not day locks", () => {
     const base = {

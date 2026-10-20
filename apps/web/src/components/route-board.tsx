@@ -73,7 +73,7 @@ export interface BoardStop {
    * What keeps it in place: its lock ("Day locked", "Time locked", "Locked", with a padlock)
    * or "Two techs".
    */
-  lock: { label: string; icon: boolean } | null;
+  lock: { label: string; kind: "day" | "time" | "both" | "two_techs" } | null;
   /** Started jobs stay put. */
   draggable: boolean;
   /** Driving in from the stop before (null: not on a route). */
@@ -1236,7 +1236,7 @@ function Tray({
               2026-10-18: "super cluttered on desktop"). */}
           <ul
             className={cx(
-              "-mx-4 mt-3 flex snap-x snap-mandatory scroll-px-4 items-start gap-3 overflow-x-auto px-4 pb-1",
+              "relative -mx-4 mt-3 flex snap-x snap-mandatory scroll-px-4 items-start gap-3 overflow-x-auto px-4 pb-1",
               all &&
                 "md:mx-0 md:grid md:grid-cols-[repeat(2,minmax(0,1fr))] md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-[repeat(3,minmax(0,1fr))]",
             )}
@@ -1284,7 +1284,12 @@ function TrayCard({
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       data-testid="tray-job"
-      className={cx("well flex items-center gap-1 py-1 pr-1 pl-1", isDragging && "opacity-40")}
+      className={cx(
+        // Positioned, so nothing absolutely placed inside (screen-reader text) escapes the
+        // sideways-scrolling list and widens the page.
+        "well relative flex items-center gap-1 py-1 pr-1 pl-1",
+        isDragging && "opacity-40",
+      )}
     >
       <Grip label={`Drag ${j.customer}`} ref={setActivatorNodeRef} {...attributes} {...listeners} />
       {/* Two lines, with the actions behind "…", so a long list stays short (owner,

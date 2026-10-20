@@ -180,11 +180,13 @@ describe("drive times", () => {
     expect(provider.matrixCalls).toBe(0);
   });
 
-  it("counts each call against the shop's daily cap", async () => {
-    const f = fakeDb(5);
-    await geocodeAddress(f.db, "co", "455 N Galvin Pkwy, Phoenix", fakeProvider());
-    await driveTimes(f.db, "co", [SHOP, ZOO], { provider: fakeProvider() });
-    expect(f.used()).toBe(2);
+  it("counts drive times against the shop's daily cap, never the free lookups", async () => {
+    const f = fakeDb(0);
+    // Past the cap, a pool is still looked up: lookups are free (Census, OpenStreetMap).
+    expect(await geocodeAddress(f.db, "co", "455 N Galvin Pkwy, Phoenix", fakeProvider())).toEqual(
+      ZOO,
+    );
+    expect(f.used()).toBe(0);
     expect(await geocodeAddress(f.db, "co", "nowhere", fakeProvider())).toBeNull();
     expect(await geocodeAddress(f.db, "co", "anything", null)).toBeNull();
   });

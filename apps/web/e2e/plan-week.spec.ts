@@ -143,8 +143,7 @@ test("a day lock set on the job shows on its schedule card", async ({ page }) =>
     sheet.getByText("Stays on its day. Planning may change its time that day."),
   ).toBeVisible();
   await sheet.getByRole("button", { name: "Save Schedule" }).click();
-  // Only the lock changed, so saving says what it holds (owner, 2026-10-20).
-  await expect(page.getByText("Day locked.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Scheduled.")).toBeVisible();
   // The job's schedule says so.
   await expect(page.getByText("Day locked", { exact: true })).toBeVisible();
 
@@ -152,7 +151,9 @@ test("a day lock set on the job shows on its schedule card", async ({ page }) =>
   const card = page
     .getByRole("region", { name: "Jake Turner" })
     .getByRole("article", { name: `9:00 AM, ${name("zoo")}` });
+  // Cards show the lock as an icon, named for screen readers and on hover (owner, 2026-10-20).
   await expect(card.getByTestId("lock-tag")).toHaveText("Day locked");
+  await expect(card.getByTestId("lock-tag")).toHaveAttribute("title", "Day locked");
   await noBrokenMaps(page);
 
   // The week's card too.

@@ -10,9 +10,11 @@
     /// Activity brought into the app, in its water blue, from the same rule (core `todayHero`), so
     /// the Lock Screen and the card always pick the same stop. The top names the moment ("At the
     /// pool · Stop 2 of 3", core `heroHeadline`); the customer's name opens the job; the address
-    /// opens directions; Message, Call and Directions sit on the Next line; the main button is the
-    /// moment's (On My Way, Start Job, Open Checklist with Mark Complete). Owners and admins
-    /// looking at a tech's day get Message, Call and Directions only. Website
+    /// opens directions; On My Way (a round car, when it's the tech's to send), Message, Call and
+    /// Directions sit on the Next line; the main button is the moment's: Start Job from the start
+    /// (owner, 2026-10-20: "not every tech is going to use every function all the time"), then
+    /// Open Checklist with Mark Complete. Owners and admins looking at a tech's day get Message,
+    /// Call and Directions only. Website
     /// components/today-hero.tsx. A solid card in the content layer, never glass.
     struct TodayHeroCard: View {
         var hero: TodayHero
@@ -217,7 +219,7 @@
             }
         }
 
-        /// "Next: Wayne Gretzky at 9:15 AM", then Message, Call and Directions, 44 pt circles
+        /// "Next: Wayne Gretzky at 9:15 AM", then On My Way, Message, Call and Directions, 44 pt circles
         /// right-aligned (alone at the right when there's no next stop).
         private func nextLine(_ c: LiveStopContent) -> some View {
             HStack(alignment: .center, spacing: 12) {
@@ -230,12 +232,17 @@
                 } else {
                     Spacer(minLength: 0)
                 }
-                if let contact { contactButtons(contact).accessibilitySortPriority(1) }
+                if let contact {
+                    contactButtons(contact, onMyWay: heroActions(hero.moment, mine: day.mine).onMyWay)
+                        .accessibilitySortPriority(1)
+                }
             }
         }
 
-        private func contactButtons(_ job: ScheduleJob) -> some View {
+        /// On My Way first (when it's the tech's to send), then Message, Call and Directions.
+        private func contactButtons(_ job: ScheduleJob, onMyWay: Bool) -> some View {
             HStack(spacing: 8) {
+                if onMyWay { OnMyWayButton(job: job, day: day, leg: day.leg(job), onCard: true) }
                 if let phone = job.customerPhone {
                     HeroRoundButton(systemImage: "message.fill", label: "Text \(job.customerName)") {
                         text(job, phone: phone)
@@ -296,7 +303,8 @@
         @ViewBuilder private func primaryButton(_ action: HeroAction, _ target: ScheduleJob) -> some View {
             switch action {
             case .onMyWay:
-                OnMyWayButton(job: target, day: day, leg: day.leg(target), onCard: true)
+                // Never the main button any more: a round car on the Next line (`heroActions`).
+                EmptyView()
             case .startJob:
                 Button(HeroAction.startJob.label) { start(target) }
                     .buttonStyle(HeroButtonStyle(filled: true))

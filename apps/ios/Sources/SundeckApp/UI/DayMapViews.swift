@@ -323,29 +323,68 @@
         }
     }
 
-    /// What keeps a job in place, small and muted: a padlock and "Day locked", or "Two techs".
+    /// What keeps a job in place, small and muted (the website's `LockTag`): a lock is an icon
+    /// only (owner, 2026-10-20: "Do icons"), a calendar with a padlock (day), a clock with a padlock
+    /// (time) or a padlock (both), spoken and shown on hover as its label; "Two techs" stays words.
     struct LockTagLabel: View {
         var tag: LockTag
 
         var body: some View {
-            HStack(spacing: 3) {
-                if tag.icon {
-                    Image(systemName: "lock.fill").font(.system(size: 11, weight: .semibold))
-                        .accessibilityHidden(true)
-                }
+            if tag.kind == .twoTechs {
                 Text(tag.label)
+                    .font(.role(.footnote).weight(.semibold))
+                    .foregroundStyle(Color.textMuted)
+                    .lineLimit(1)
+            } else {
+                LockIcon(kind: tag.kind)
+                    .foregroundStyle(Color.textMuted)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(tag.label)
+                    .help(tag.label)
             }
-            .font(.role(.footnote).weight(.semibold))
-            .foregroundStyle(Color.textMuted)
-            .lineLimit(1)
-            .accessibilityElement(children: .combine)
         }
     }
 
-    extension LockTag {
-        /// The tag inside a line of text: " · 🔒 Day locked".
-        var inline: Text {
-            Text(" · ") + (icon ? Text(Image(systemName: "lock.fill")) + Text(" ") : Text("")) + Text(label)
+    /// The lock's symbol at about 17 pt: `calendar` or `clock` with a small `lock.fill` at its
+    /// bottom trailing corner (composed: SF Symbols has no calendar or clock padlock for iOS 18),
+    /// or `lock.fill` for both.
+    struct LockIcon: View {
+        var kind: LockTag.Kind
+        @ScaledMetric(relativeTo: .body) private var size: CGFloat = 17
+
+        var body: some View {
+            switch kind {
+            case .day: badged("calendar")
+            case .time: badged("clock")
+            case .both, .twoTechs:
+                Image(systemName: "lock.fill").font(.system(size: size, weight: .medium))
+            }
+        }
+
+        private func badged(_ base: String) -> some View {
+            let badge = size * 0.62
+            let dx = size * 0.22
+            let dy = size * 0.18
+            return Image(systemName: base)
+                .font(.system(size: size, weight: .regular))
+                // A gap around the padlock, cut out so it reads on any background.
+                .mask {
+                    Rectangle()
+                        .overlay(alignment: .bottomTrailing) {
+                            Circle().frame(width: badge, height: badge).offset(x: dx, y: dy)
+                                .blendMode(.destinationOut)
+                        }
+                        .compositingGroup()
+                }
+                .overlay(alignment: .bottomTrailing) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: size * 0.45, weight: .bold))
+                        .frame(width: badge, height: badge)
+                        .offset(x: dx, y: dy)
+                }
+                .padding(.trailing, dx)
+                .padding(.bottom, dy)
         }
     }
+
 #endif

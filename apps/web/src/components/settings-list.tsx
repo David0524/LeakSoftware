@@ -133,11 +133,14 @@ export function SheetRow({
   value,
   title,
   testId,
+  accessory,
   children,
 }: {
   label: ReactNode;
   detail?: ReactNode;
   value?: ReactNode;
+  /** A control at the row's end, beside the row's button (a round icon button). */
+  accessory?: ReactNode;
   /** The sheet's title, usually the item's name. */
   title: string;
   testId?: string;
@@ -168,7 +171,7 @@ export function SheetRow({
   );
   const row = "flex min-h-11 w-full items-center gap-3 px-4 py-2.5 text-left";
   return (
-    <li data-testid={testId}>
+    <li data-testid={testId} className={accessory ? "flex items-center pr-3" : undefined}>
       {children ? (
         <>
           <button
@@ -178,13 +181,14 @@ export function SheetRow({
               notify("");
               setOpen(true);
             }}
-            className={`${row} transition-colors hover:bg-text/[0.03] focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus active:bg-text/[0.06]`}
+            className={`${row} ${accessory ? "min-w-0 flex-1" : ""} transition-colors hover:bg-text/[0.03] focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-focus active:bg-text/[0.06]`}
           >
             {inner}
             <span aria-hidden="true" className="shrink-0 text-xl leading-none text-text-muted/70">
               ›
             </span>
           </button>
+          {accessory}
           <Sheet open={open} onClose={close} title={title}>
             <SheetDone value={done}>{children}</SheetDone>
           </Sheet>

@@ -217,12 +217,16 @@
                 await NotificationPermission.registerIfAllowed()
             }
             .task(id: "\(scenePhase == .active)|\(session.user?.id ?? "")|\(session.company?.id ?? "")") {
-                // The Live Activity begins with the workday by itself: checked on launch, on coming
-                // back to the app, and every minute while it's open (and after each change, above).
+                // The Live Activity runs whenever the app is open during the work day: on launch
+                // and on coming back to the app it begins again even if the tech removed it earlier
+                // (`foregrounded`), then it's checked every minute while open (and after each
+                // change, above), which keeps a removal.
                 guard scenePhase == .active, session.user != nil, session.company != nil else { return }
+                app.liveStop.foregrounded()
                 while !Task.isCancelled {
-                    app.liveStop.check()
                     try? await Task.sleep(for: .seconds(60))
+                    guard !Task.isCancelled else { return }
+                    app.liveStop.check()
                 }
             }
             .onOpenURL { url in

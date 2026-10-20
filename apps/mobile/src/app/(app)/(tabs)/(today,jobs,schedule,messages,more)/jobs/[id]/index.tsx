@@ -70,7 +70,9 @@ import {
 import { KeyboardAvoider } from "../../../../../../ui/keyboard";
 import { SwipeNav, useNoSwipe } from "../../../../../../ui/SwipeNav";
 import { usePinnedSyncBar } from "../../../../../../ui/SyncBar";
-import { NotOnMapRow } from "../../../../../../ui/NotOnMap";
+import { AddressLine, NotOnMapRow } from "../../../../../../ui/NotOnMap";
+import { ModalSheet } from "../../../../../../ui/ModalSheet";
+import { PoolForm } from "../../../../../../features/pool/PoolForm";
 import { useRoutingOn } from "../../../../../../lib/routing";
 import { ScreenTip } from "../../../../../../ui/Tip";
 import {
@@ -82,6 +84,7 @@ import {
   shape,
   space,
   tabular,
+  type,
 } from "../../../../../../ui/theme";
 import { ChecklistTab } from "../../../../../../features/inspection/ChecklistTab";
 import { DiagramPanel } from "../../../../../../features/inspection/DiagramPanel";
@@ -480,6 +483,7 @@ function Details({
   const [fee, setFee] = useState<string | null>(null);
   const [gallons, setGallons] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [editingPool, setEditingPool] = useState(false);
   // Notes save shortly after typing stops and when leaving the screen: leaving the field
   // often doesn't blur it on iPhone.
   const notesTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -619,27 +623,44 @@ function Details({
       <Section title="Pool">
         <Group>
           {property ? (
-            <ListRow
-              accessibilityRole="link"
-              accessibilityHint="Directions"
-              chevron={false}
-              onPress={() =>
-                openDirections({ address, location: propertyLocation(property) }, choice)
-              }
-            >
-              <T style={{ color: color.link }}>{address}</T>
-              <T variant="secondary" muted>
-                {[
-                  property.pool_type ? POOL_TYPE_LABELS[property.pool_type] : null,
-                  property.has_spa ? "Pool and spa" : "Pool",
-                  property.approx_gallons
-                    ? `${property.approx_gallons.toLocaleString("en-US")} gallons`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </T>
-            </ListRow>
+            // The address opens the pool's details to edit; the pin opens Maps (owner,
+            // 2026-10-20), as the website's Pool group.
+            <View style={styles.poolRow}>
+              <View style={{ flex: 1 }}>
+                <ListRow
+                  chevron={false}
+                  accessibilityLabel={`${address}, Pool Details`}
+                  accessibilityHint="Edits the pool’s address and details"
+                  onPress={() => setEditingPool(true)}
+                >
+                  <AddressLine
+                    notOnMap={mapStatus(property, routing) === "missing"}
+                    lineHeight={type.body.lineHeight!}
+                    size={17}
+                  >
+                    <T variant="bodyEmphasis">{address}</T>
+                  </AddressLine>
+                  <T variant="secondary" muted>
+                    {[
+                      property.pool_type ? POOL_TYPE_LABELS[property.pool_type] : null,
+                      property.has_spa ? "Pool and spa" : "Pool",
+                      property.approx_gallons
+                        ? `${property.approx_gallons.toLocaleString("en-US")} gallons`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </T>
+                </ListRow>
+              </View>
+              <RoundButton
+                icon="pin"
+                label="Open in Maps"
+                onPress={() =>
+                  openDirections({ address, location: propertyLocation(property) }, choice)
+                }
+              />
+            </View>
           ) : (
             <ListRow subtitle="Address not on this phone yet." />
           )}
@@ -654,6 +675,15 @@ function Details({
           ) : null}
         </Group>
       </Section>
+      <ModalSheet
+        visible={editingPool && property != null}
+        onClose={() => setEditingPool(false)}
+        title="Pool Details"
+      >
+        {editingPool && property ? (
+          <PoolForm pool={property} onSaved={() => setEditingPool(false)} />
+        ) : null}
+      </ModalSheet>
 
       <Section title="Assigned to">
         <Group>
@@ -829,6 +859,8 @@ function Details({
 
 const styles = StyleSheet.create({
   header: { gap: space["1"] },
+  // The address row with the round Open in Maps button at its trailing edge.
+  poolRow: { flexDirection: "row", alignItems: "center", paddingRight: space["4"] },
   subtitle: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: space["3"] },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: space["3"], marginTop: space["3"] },
   switcher: {

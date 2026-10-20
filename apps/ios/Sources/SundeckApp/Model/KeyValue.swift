@@ -52,7 +52,8 @@ public enum KVKey {
     /// Live Activity is for.
     public static let notificationPrefs = "push:prefs"
     public static let liveStopTarget = "live_stop:target"
-    /// The day the tech removed the Live Activity, and when the current one began.
+    /// The day the tech removed the Live Activity (kept only until the app next comes to the
+    /// foreground), and when the current one began.
     public static let liveStopDismissed = "live_stop:dismissed_on"
     public static let liveStopStarted = "live_stop:started_at"
 

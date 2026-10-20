@@ -87,6 +87,16 @@ public struct LiveStopDay: Sendable {
     }
 }
 
+/// Whether the Live Activity begins now, when none runs for today (owner, 2026-10-20: "It
+/// should run anytime you have the app open during the work day"): the day runs (`liveStopRuns`)
+/// with a stop to show, and the tech hasn't removed it today since the app last came to the
+/// foreground. Opening the app, or bringing it back, clears a removal (`dismissedOn` nil), so it
+/// comes back even after being removed earlier today; the every-minute check and background
+/// syncs keep a removal.
+public func liveStopBegins(_ day: LiveStopDay, dismissedOn: String?) -> Bool {
+    day.runs && day.open() != nil && dismissedOn != day.today
+}
+
 @MainActor
 public func liveStopDay(
     _ store: LocalStore, kv: KeyValue, company: CompanyContext, userId: String, now: Date = Date()

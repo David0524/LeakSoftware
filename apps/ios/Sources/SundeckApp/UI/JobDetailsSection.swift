@@ -26,6 +26,8 @@
         @State private var turningOff: Set<String> = []
         @State private var turnedOff: Set<String> = []
         @State private var linkError: String?
+        /// The job's pool, open in Pool Details (owner, 2026-10-20: the address opens it to edit).
+        @State private var editingPool = false
         @FocusState private var focus: Field?
         @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -85,6 +87,13 @@
                 saveNotes()
             }
             .sensoryFeedback(.success, trigger: saves)
+            .sheet(isPresented: $editingPool) {
+                // The customer page's Pool Details: address suggestions, saved through sync, and
+                // the map lookup after an address change.
+                if let property = job.property {
+                    PoolSheet(propertyId: property.id, row: property) { saves += 1 }
+                }
+            }
             .confirmationDialog("Cancel this job?", isPresented: $confirmCancel, titleVisibility: .visible) {
                 Button("Cancel Job", role: .destructive) { save(jobStatusValues(.canceled, job: job.job)) }
             }
@@ -242,28 +251,32 @@
         }
 
         private func pool(_ details: JobDetails) -> some View {
-            Grouped(label: "Pool") {
-                Button {
-                    let place = MapPlace(address: job.address, location: propertyLocation(job.decodedProperty))
-                    if let url = URL(string: nativeMapsUrl(place, "ios")) { openURL(url) }
-                } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(details.address ?? "").textRole(.body).foregroundStyle(Color.link)
-                        if let detail = details.poolDetail {
-                            Text(detail).textRole(.secondary).foregroundStyle(Color.textMuted)
-                        }
+            let missing =
+                propertyMapStatus(job.property, routing: MapLookups.on(sync, companyId: session.company?.id))
+                == .missing
+            return Grouped(label: "Pool") {
+                // The address opens the pool's details to edit; the pin opens Maps (owner,
+                // 2026-10-20; the website's Pool group).
+                HStack(spacing: 0) {
+                    Button {
+                        editingPool = true
+                    } label: {
+                        ListRow(
+                            title: details.address ?? "", detail: details.poolDetail, emphasized: true,
+                            titleMark: missing ? NotOnMapTag.text() : nil
+                        ) { EmptyView() }
                     }
-                    .multilineTextAlignment(.leading)
-                    .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
-                    .padding(.vertical, CGFloat(Spacing.rowVertical))
-                    .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
-                    .contentShape(Rectangle())
+                    .buttonStyle(.row)
+                    .disabled(job.property == nil)
+                    .accessibilityHint("Opens Pool Details")
+                    RoundIconButton(systemImage: "mappin", label: "Open in Maps") {
+                        let place = MapPlace(address: job.address, location: propertyLocation(job.decodedProperty))
+                        if let url = URL(string: nativeMapsUrl(place, "ios")) { openURL(url) }
+                    }
+                    .help("Open in Maps")
+                    .padding(.trailing, CGFloat(Spacing.rowHorizontal))
                 }
-                .buttonStyle(.row)
-                .accessibilityHint("Opens directions")
-                if propertyMapStatus(job.property, routing: MapLookups.on(sync, companyId: session.company?.id))
-                    == .missing
-                {
+                if missing {
                     NotOnMapRow()
                 }
                 if let access = details.accessNotes {

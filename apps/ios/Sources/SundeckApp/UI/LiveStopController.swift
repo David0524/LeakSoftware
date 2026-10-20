@@ -6,15 +6,18 @@
     import SundeckSync
 
     /// Runs the Live Activity for the stop a tech is on, with ActivityKit on the phone (no push, so
-    /// it works offline). One at a time, one a work day (owner, 2026-10-19: "Live Activity should
-    /// begin at the beginning of the workday"):
-    /// - it begins by itself (`check()`: launch, the app coming back, each sync and change, and
-    ///   every minute while open) once `liveStopRuns`, on the stop Today's card shows (the shared
-    ///   `todayHero` rule: the one on the way, else one started, else the first not done);
+    /// it works offline). One at a time, running whenever the app is open during the work day
+    /// (owner, 2026-10-20: "It should run anytime you have the app open during the work day"):
+    /// - it begins by itself (`check()`: each sync and change, and every minute while open; and
+    ///   `foregrounded()`: launch and the app coming back) once `liveStopRuns`, on the stop Today's
+    ///   card shows (the shared `todayHero` rule: the one on the way, else one started, else the
+    ///   first not done);
     /// - On My Way turns it to the drive for that stop;
     /// - a done stop shows done for a minute, then the same activity moves on to the card's next
     ///   stop, and after the last one it ends;
-    /// - ended from the Lock Screen, it stays off until the next work day; signing out ends it.
+    /// - removed from the Lock Screen, it stays off only while the app stays in the background:
+    ///   the next time the app is opened or comes back during the work day, it begins again
+    ///   (`liveStopBegins`). Signing out ends it.
     @MainActor
     final class LiveStopController {
         private let session: Session
@@ -41,7 +44,8 @@
             }
         }
 
-        /// The day the tech ended it from the Lock Screen.
+        /// The day the tech removed it from the Lock Screen; cleared when the app comes to the
+        /// foreground (`foregrounded()`).
         private var dismissedOn: String? {
             get { kv.get(Self.dismissedKey) }
             set { if let newValue { kv.set(Self.dismissedKey, newValue) } else { kv.remove(Self.dismissedKey) } }
@@ -68,8 +72,17 @@
             show(stop ?? wanted, day: day.today)
         }
 
+        /// The app was opened or came back: a removal earlier today no longer keeps it off, and
+        /// no guess is made about an activity gone while the app was closed (what this app ended
+        /// is forgotten then, so iOS ending one could read as the tech removing it).
+        func foregrounded() {
+            dismissedOn = nil
+            check(foreground: true)
+        }
+
         /// Starts, updates, moves on or ends the activity for the tech's day as it is now.
-        func check() {
+        /// `foreground`: called by `foregrounded()`, which never reads a missing activity as removed.
+        func check(foreground: Bool = false) {
             guard enabled else { return }
             guard let day = day() else {
                 end()
@@ -80,12 +93,15 @@
             watchAll()
             guard let running, running.day == day.today else {
                 // Not running today. With a target still set (we didn't end it), either the tech
-                // removed it or iOS ended it at its time limit; only the first keeps it off today.
-                // Otherwise it begins now. Older activities are ended (`show` ends others).
-                if current != nil && running == nil && removedByTech(day: day.today) { dismissedOn = day.today }
+                // removed it or iOS ended it at its time limit; only the first keeps it off, until
+                // the app next comes to the foreground. Otherwise it begins now. Older activities
+                // are ended (`show` ends others).
+                if !foreground && current != nil && running == nil && removedByTech(day: day.today) {
+                    dismissedOn = day.today
+                }
                 cancelLinger()
                 target = nil
-                guard dismissedOn != day.today, day.runs, let first = day.open() else {
+                guard liveStopBegins(day, dismissedOn: dismissedOn), let first = day.open() else {
                     if running != nil { end() }
                     return
                 }
@@ -209,7 +225,7 @@
                 if !endedByUs.contains(id) { endedBySystem.insert(id) }
             case .dismissed:
                 guard !endedByUs.contains(id), !endedBySystem.contains(id), let day = target?.day else { return }
-                // The tech removed it: off until the next work day.
+                // The tech removed it: off while the app stays in the background.
                 dismissedOn = day
                 cancelLinger()
                 target = nil

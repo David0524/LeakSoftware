@@ -676,10 +676,13 @@
                         (Text(job.customerName).fontWeight(.semibold).foregroundStyle(Color.text)
                             + Text(job.number.map { " · #\($0)" } ?? "").foregroundStyle(Color.textMuted))
                             .textRole(.body).lineLimit(1)
-                        (Text(job.address) + (notOnMap ? NotOnMapTag.text() : Text(""))
-                            + Text(job.address.isEmpty || note.isEmpty ? note : " · \(note)")
-                            + (lockTag(job)?.inline ?? Text("")))
-                            .textRole(.secondary).foregroundStyle(Color.textMuted).lineLimit(1)
+                        HStack(spacing: 6) {
+                            (Text(job.address) + (notOnMap ? NotOnMapTag.text() : Text(""))
+                                + Text(job.address.isEmpty || note.isEmpty ? note : " · \(note)"))
+                                .textRole(.secondary).foregroundStyle(Color.textMuted).lineLimit(1)
+                            // The lock's icon stays in view when the line is cut short.
+                            if let lock = lockTag(job) { LockTagLabel(tag: lock).layoutPriority(1) }
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }

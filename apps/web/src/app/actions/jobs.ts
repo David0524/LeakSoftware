@@ -20,9 +20,7 @@ import {
   intakeQuestionsFor,
   parseGallons,
   JOB_LOCKS,
-  jobLock,
   lockColumns,
-  lockSavedMessage,
   type JobLock,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
@@ -56,16 +54,13 @@ export async function scheduleJob(_: FormState, form: FormData): Promise<FormSta
   const supabase = await createClient();
   const { data: job } = await supabase
     .from("job")
-    .select("status, scheduled_start, assigned_user_id, lock_day, lock_time, arrival_fixed")
+    .select("status, scheduled_start, assigned_user_id")
     .eq("id", id)
     .maybeSingle();
   const before = job as {
     status: JobStatus;
     scheduled_start: string | null;
     assigned_user_id: string | null;
-    lock_day: boolean;
-    lock_time: boolean;
-    arrival_fixed: boolean;
   } | null;
   const lock: JobLock = (JOB_LOCKS as string[]).includes(text(form, "lock"))
     ? (text(form, "lock") as JobLock)
@@ -99,12 +94,6 @@ export async function scheduleJob(_: FormState, form: FormData): Promise<FormSta
       by: office.user.id,
       timeZone: office.company.timezone,
     });
-  // Only the lock changed: say what it holds now, as the apps do (owner, 2026-10-20).
-  const sameTime =
-    before?.scheduled_start && Date.parse(before.scheduled_start) === Date.parse(start);
-  const sameTech = before?.assigned_user_id === (text(form, "tech") || null);
-  if (before && sameTime && sameTech && jobLock(before) !== lock)
-    return { message: lockSavedMessage(lock) };
   return { message: "Scheduled." };
 }
 

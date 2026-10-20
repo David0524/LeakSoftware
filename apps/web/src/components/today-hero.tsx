@@ -164,7 +164,24 @@ export function TodayHeroCard({
       {c.next || (target && hero.moment !== "done") ? (
         <div className="mt-3 flex items-center gap-3">
           <p className={cx("min-w-0 flex-1 text-[0.9375rem]", SOFT)}>{c.next}</p>
-          {target && hero.moment !== "done" ? <Contact job={target} /> : null}
+          {target && hero.moment !== "done" ? (
+            <Contact
+              job={target}
+              onMyWay={
+                actions.onMyWay ? (
+                  <OnMyWay
+                    {...onMyWay}
+                    icon
+                    phone={target.phone}
+                    customer={target.customer}
+                    driveMin={target.driveMin ?? 0}
+                    jobId={target.id}
+                    buttonClassName={ROUND}
+                  />
+                ) : null
+              }
+            />
+          ) : null}
         </div>
       ) : null}
 
@@ -173,7 +190,7 @@ export function TodayHeroCard({
         <div className="mt-4 flex gap-2.5 [&>*]:min-w-0 [&>*]:flex-1">
           {actions.primary && target ? (
             <div>
-              <Primary action={actions.primary} job={target} onMyWay={onMyWay} />
+              <Primary action={actions.primary} job={target} />
             </div>
           ) : null}
           {actions.complete && job ? (
@@ -221,10 +238,11 @@ function Detail({ icon, children }: { icon: React.ReactNode; children: React.Rea
   );
 }
 
-/** Message, Call and Directions as round buttons, each named for screen readers. */
-function Contact({ job }: { job: HeroJob }) {
+/** On My Way (when it's the tech's to send), Message, Call and Directions as round buttons, each named for screen readers. */
+function Contact({ job, onMyWay }: { job: HeroJob; onMyWay?: React.ReactNode }) {
   return (
     <span className="flex shrink-0 gap-2">
+      {onMyWay}
       {job.phone && job.textHref ? (
         <a href={job.textHref} aria-label={`Text ${job.customer}`} className={ROUND}>
           <MessageIcon />
@@ -261,32 +279,10 @@ function Contact({ job }: { job: HeroJob }) {
   );
 }
 
-function Primary({
-  action,
-  job,
-  onMyWay,
-}: {
-  action: "on_my_way" | "start_job" | "open_checklist";
-  job: HeroJob;
-  onMyWay: Omit<
-    React.ComponentProps<typeof OnMyWay>,
-    "phone" | "customer" | "driveMin" | "jobId" | "buttonClassName"
-  >;
-}) {
+function Primary({ action, job }: { action: "start_job" | "open_checklist"; job: HeroJob }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const button = cx(BUTTON, ON_WATER);
-  if (action === "on_my_way")
-    return (
-      <OnMyWay
-        {...onMyWay}
-        phone={job.phone}
-        customer={job.customer}
-        driveMin={job.driveMin ?? 0}
-        jobId={job.id}
-        buttonClassName={button}
-      />
-    );
   if (action === "open_checklist")
     return (
       <Link href={`/jobs/${job.id}#checklist`} className={button}>

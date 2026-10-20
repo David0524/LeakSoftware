@@ -419,6 +419,8 @@
                 }
                 Spacer(minLength: 0)
                 if !done {
+                    // On My Way as a round car, first (owner, 2026-10-20: "just be an icon").
+                    if day.mine { OnMyWayButton(job: job, day: day, leg: leg) }
                     if let phone = job.customerPhone {
                         RoundIconButton(systemImage: "phone", label: "Call \(job.customerName), \(phone)") {
                             if let url = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") {
@@ -426,7 +428,6 @@
                             }
                         }
                     }
-                    if day.mine { OnMyWayButton(job: job, day: day, leg: leg) }
                 }
             }
             .padding(.top, 8)
@@ -587,8 +588,8 @@
         var job: ScheduleJob
         var day: TodayDay
         var leg: Int
-        /// On Today's card: its main button, white with water-blue text; the list's row does the
-        /// Live Activity's On My Way (so it's sent once).
+        /// On Today's card: a round button on the Next line, white at 18% behind a white car; the
+        /// list's row does the Live Activity's On My Way (so it's sent once).
         var onCard = false
         @Environment(SyncService.self) private var sync
         @Environment(AppEnvironment.self) private var app
@@ -622,14 +623,26 @@
                     try? await Task.sleep(for: .seconds(3))
                     done = nil
                 }
-                .accessibilityLabel(done ?? "On My Way, text \(job.customerName)")
+                .accessibilityLabel(done ?? "On My Way to \(job.customerName)")
+                .help(HeroAction.onMyWay.label)
         }
 
+        /// A round 44 pt car, never words (owner, 2026-10-20: "make the 'on my way' text to just be
+        /// an icon"), with a checkmark for a few seconds once it's sent. Its state is spoken.
         @ViewBuilder private var styled: some View {
+            let symbol =
+                switch done {
+                case nil: "car.fill"
+                case "Sending…"?: "ellipsis"
+                case "Not Sent"?: "exclamationmark.triangle.fill"
+                default: "checkmark"
+                }
             if onCard {
-                Button(done ?? HeroAction.onMyWay.label, action: send).buttonStyle(HeroButtonStyle(filled: true))
+                HeroRoundButton(systemImage: symbol, label: done ?? "On My Way to \(job.customerName)", action: send)
+                    .disabled(done == "Sending…")
             } else {
-                Button(done ?? HeroAction.onMyWay.label, action: send).buttonStyle(.secondary)
+                RoundIconButton(systemImage: symbol, label: done ?? "On My Way to \(job.customerName)", action: send)
+                    .disabled(done == "Sending…")
             }
         }
 

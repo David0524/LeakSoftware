@@ -1,3 +1,4 @@
+import { dismissalAfter, liveStopPhase } from "../src/lib/liveStopRule";
 import { describe, expect, it } from "vitest";
 import { heroActions, todayHero } from "@leakbook/core";
 import {
@@ -122,5 +123,46 @@ describe("the list under the card", () => {
     const end = todayHero({ stops: heroStops(all), today, timeZone: TZ });
     expect(end!.moment).toBe("day_done");
     expect(todayList(all, today, end).nowId).toBeNull();
+  });
+});
+
+describe("the ongoing stop notification", () => {
+  const day = "2026-10-20";
+  it("shows whenever the app is open during the working day, not only at its start", () => {
+    expect(liveStopPhase({ moment: "ahead", runs: true, dismissedOn: null, today: day })).toBe(
+      "ahead",
+    );
+    // Before the day starts only a stop on the way shows; a done stop shows its minute.
+    expect(liveStopPhase({ moment: "ahead", runs: false, dismissedOn: null, today: day })).toBe(
+      null,
+    );
+    expect(liveStopPhase({ moment: "driving", runs: false, dismissedOn: null, today: day })).toBe(
+      "driving",
+    );
+    expect(liveStopPhase({ moment: "done", runs: false, dismissedOn: null, today: day })).toBe(
+      "done",
+    );
+    expect(liveStopPhase({ moment: "day_done", runs: true, dismissedOn: null, today: day })).toBe(
+      null,
+    );
+  });
+
+  it("stays away after a swipe only while the app stays in the background", () => {
+    const swiped = dismissalAfter(null, { kind: "swiped", day });
+    expect(swiped).toBe(day);
+    expect(liveStopPhase({ moment: "on_site", runs: true, dismissedOn: swiped, today: day })).toBe(
+      null,
+    );
+    // Opening the app (or bringing it to the front) brings it back the same day.
+    const back = dismissalAfter(swiped, { kind: "foreground" });
+    expect(back).toBeNull();
+    expect(liveStopPhase({ moment: "on_site", runs: true, dismissedOn: back, today: day })).toBe(
+      "on_site",
+    );
+    expect(dismissalAfter(swiped, { kind: "on_my_way" })).toBeNull();
+    // Yesterday's swipe never holds today.
+    expect(
+      liveStopPhase({ moment: "ahead", runs: true, dismissedOn: "2026-10-19", today: day }),
+    ).toBe("ahead");
   });
 });

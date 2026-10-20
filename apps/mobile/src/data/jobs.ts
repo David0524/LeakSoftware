@@ -7,7 +7,7 @@ import {
   type LockReason,
   type Property,
 } from "@leakbook/core";
-import { lockTag } from "../lib/dayMap";
+import { lockTag, type LockTagKind } from "../lib/dayMap";
 import { useRows } from "./hooks";
 
 export interface JobView extends Job {
@@ -50,7 +50,7 @@ export function stopLockReason(job: JobView): LockReason | null {
   return lockReason({ ...job, property: job.property ?? null });
 }
 
-/** What a stop's card says keeps it in place ("Day locked", "Two techs"), if anything. */
-export function stopLockTag(job: JobView): { label: string; icon: boolean } | null {
+/** What keeps a stop in place (a lock icon, or "Two techs"), if anything. */
+export function stopLockTag(job: JobView): { label: string; kind: LockTagKind } | null {
   return lockTag({ ...job, property: job.property ?? null });
 }

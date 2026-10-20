@@ -5,7 +5,8 @@ import { localMinutes, onMyWayText, type OnMyWayVia } from "@leakbook/core";
 import { sendMessage } from "@/app/actions/texting";
 import { recordOnMyWay } from "@/app/actions/inspection";
 import { Sheet, useConfirm } from "./sheet";
-import { buttonClass } from "./ui";
+import { CarIcon, CheckIcon } from "./icons";
+import { buttonClass, iconButtonClass } from "./ui";
 
 /**
  * On My Way: a text to the customer with an arrival time (now plus the drive). By default
@@ -28,7 +29,13 @@ export function OnMyWay({
   isOwner = false,
   jobId,
   buttonClassName,
+  icon = false,
 }: {
+  /**
+   * A round icon button (a car) instead of the words (owner, 2026-10-20: "make the 'on my way'
+   * text to just be an icon"); named "On My Way" for screen readers and on hover.
+   */
+  icon?: boolean;
   /** The whole button's look, in place of the secondary button (Today's card). */
   buttonClassName?: string;
   phone: string | null;
@@ -122,13 +129,25 @@ export function OnMyWay({
   }
   return (
     <>
-      <button
-        type="button"
-        className={buttonClassName ?? buttonClass("secondary", className)}
-        onClick={send}
-      >
-        {done?.label ?? "On My Way"}
-      </button>
+      {icon ? (
+        <button
+          type="button"
+          aria-label={done?.label ?? `On My Way to ${customer ?? "the customer"}`}
+          title={done?.label ?? "On My Way"}
+          className={buttonClassName ?? iconButtonClass(className)}
+          onClick={send}
+        >
+          {done ? <CheckIcon className="size-5" /> : <CarIcon className="size-5" />}
+        </button>
+      ) : (
+        <button
+          type="button"
+          className={buttonClassName ?? buttonClass("secondary", className)}
+          onClick={send}
+        >
+          {done?.label ?? "On My Way"}
+        </button>
+      )}
       {confirmSheet}
       <span role="status" className="sr-only">
         {done?.spoken ?? ""}

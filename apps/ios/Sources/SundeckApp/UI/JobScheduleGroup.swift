@@ -17,6 +17,7 @@
         @State private var moving: MoveTarget?
         @State private var suggesting: ScheduleJob?
         @State private var result: (text: String, failed: Bool)?
+        @State private var saves = 0
 
         static func shows(_ job: JobView) -> Bool {
             jobReschedulable(type: job.type.rawValue, status: job.status.rawValue)
@@ -59,6 +60,7 @@
                     }
                 }
             }
+            .sensoryFeedback(.success, trigger: saves)
             .task(id: "\(sync.revision)|\(drive.known.count)") { reload() }
             .task(id: job.id) {
                 guard let company = session.company, let user = session.user else { return }
@@ -120,7 +122,9 @@
             do {
                 let (updates, message) = try change()
                 try saveJobUpdates(sync, companyId: company.id, updates)
-                result = (message, false)
+                // A lock saved alone says nothing (owner, 2026-10-20); the haptic confirms it.
+                result = message.isEmpty ? nil : (message, false)
+                saves += 1
             } catch {
                 result = (String(describing: error), true)
             }

@@ -188,7 +188,7 @@
                 ContactSheet(customer: c) { saved = "Saved." }
             }
             .sheet(item: $editingPool) { pool in
-                PoolSheet(pool: pool) { saved = "Saved." }
+                PoolSheet(propertyId: pool.id, row: pool.row) { saved = "Saved." }
             }
             .confirmationDialog("Delete \(c.name)?", isPresented: $confirmDelete, titleVisibility: .visible) {
                 Button("Delete Customer", role: .destructive) { Task { await delete(c) } }
@@ -403,7 +403,8 @@
 
     /// Pool Details: the address, the pool type, gallons, the spa, and access notes.
     struct PoolSheet: View {
-        var pool: CustomerPool
+        var propertyId: String
+        var row: Row
         var saved: () -> Void
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
@@ -462,7 +463,7 @@
             }
             .onAppear {
                 guard original.isEmpty else { return }
-                let r = pool.row
+                let r = row
                 street = r["address_line1"]?.string ?? ""
                 unit = r["address_line2"]?.string ?? ""
                 city = r["city"]?.string ?? ""
@@ -495,7 +496,7 @@
             }
             do {
                 try CustomerWrites.savePool(
-                    sync, companyId: companyId, propertyId: pool.id,
+                    sync, companyId: companyId, propertyId: propertyId,
                     [
                         "address_line1": .string(street.trimmingCharacters(in: .whitespaces)),
                         "address_line2": opt(unit), "city": opt(city), "state": opt(state.uppercased()),

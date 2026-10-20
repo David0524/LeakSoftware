@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import {
+  directionsHref,
   visitReportMode,
   JOB_TYPE_LABELS,
   MEDIA_KIND_LABELS,
@@ -46,7 +47,7 @@ import { CustomerLinks } from "@/components/customer-links";
 import { DiagramPanel } from "@/components/diagram-work";
 import { GalleryImage } from "@/components/gallery-image";
 import { Thread } from "@/components/inbox";
-import { CleaningIcon, MailIcon, MessageIcon, PhoneIcon } from "@/components/icons";
+import { CleaningIcon, MailIcon, MessageIcon, PhoneIcon, PinIcon } from "@/components/icons";
 import { JobSections } from "@/components/job-sections";
 import { MediaActions, MediaCapture, SignatureForm } from "@/components/media-work";
 import {
@@ -97,12 +98,13 @@ import { QuotePanel } from "@/components/quote-panel";
 import { RemoveSignature } from "@/components/remove-signature";
 import { ReportPanel } from "@/components/report-panel";
 import { VisitReportPanel } from "@/components/visit-report-panel";
-import { AddressLink } from "@/components/open-in-maps";
 import { ChemicalDropdown } from "@/components/chem-dropdown";
 import { JobSchedule } from "@/components/schedule-form";
 import { emailConfigured } from "@/server/email";
 import { routingConfigured } from "@/server/routing";
-import { NotOnMapRow } from "@/components/not-on-map";
+import { NotOnMapRow, NotOnMapTag } from "@/components/not-on-map";
+import { PoolDetailsForm } from "@/components/pool-details";
+import { SheetRow } from "@/components/settings-list";
 
 export const metadata: Metadata = { title: "Job · Sundeck Pro" };
 
@@ -241,12 +243,18 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
 
                     {job.property ? (
                       <Grouped title="Pool">
-                        <Row
+                        {/* The address opens the pool's details to edit; the pin opens Maps
+                            (owner, 2026-10-20). */}
+                        <SheetRow
+                          title="Pool Details"
+                          testId="pool-row"
                           label={
-                            <AddressLink
-                              address={formatAddress(job.property)}
-                              location={propertyLocation(job.property)}
-                            />
+                            <>
+                              <span className="font-semibold">{formatAddress(job.property)}</span>
+                              {mapStatus(job.property, routingConfigured()) === "missing" ? (
+                                <NotOnMapTag className="ml-1.5" />
+                              ) : null}
+                            </>
                           }
                           detail={[
                             job.property.pool_type
@@ -259,7 +267,24 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                           ]
                             .filter(Boolean)
                             .join(" · ")}
-                        />
+                          accessory={
+                            <a
+                              href={directionsHref({
+                                address: formatAddress(job.property),
+                                location: propertyLocation(job.property),
+                              })}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label="Open in Maps"
+                              title="Open in Maps"
+                              className={iconButtonClass()}
+                            >
+                              <PinIcon className="size-5" />
+                            </a>
+                          }
+                        >
+                          <PoolDetailsForm pool={job.property} />
+                        </SheetRow>
                         {mapStatus(job.property, routingConfigured()) === "missing" ? (
                           <NotOnMapRow />
                         ) : null}

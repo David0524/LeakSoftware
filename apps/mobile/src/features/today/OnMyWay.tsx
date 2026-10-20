@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, Linking, Share } from "react-native";
-import { HERO_ACTION_LABELS, localMinutes, onMyWayText, type OnMyWayVia } from "@leakbook/core";
+import { localMinutes, onMyWayText, type OnMyWayVia } from "@leakbook/core";
 import { sendCompanyText } from "../../data/texting";
-import { Button } from "../../ui/components";
+import { RoundButton } from "../../ui/components";
 import { chooseAction } from "../../ui/confirm";
 import { startLiveStop, takeStopAction } from "../../lib/liveStop";
 import { getServices } from "../../lib/services";
@@ -15,7 +15,9 @@ import { haptics } from "../../ui/haptics";
  * arrival time (now plus the drive). By default it goes from the company number, into the
  * shared Messages; without a working number it asks before using the phone's own Messages.
  * Shops can choose the phone instead: Messages when the customer has a number, else the share
- * sheet. The label says what happened for 3 seconds (no toast). Once the text is on its way,
+ * sheet. A round car button (owner, 2026-10-20: "make the 'on my way' text to just be an
+ * icon"), named "On My Way to {customer}"; for 3 seconds after it acts it shows a check and is
+ * named for what happened (no toast). Once the text is on its way,
  * the job keeps when it was sent and the arrival it promised (owner, 2026-10-20: Today's card),
  * through the sync layer, so the website, the office and a second phone show "On the way".
  */
@@ -49,7 +51,7 @@ export function OnMyWay({
   jobId: string;
   /** Changes when the current-stop notification's On My Way asks for this stop. */
   trigger?: number;
-  /** The main button on Today's water-blue card: white with water-blue text. */
+  /** On Today's water-blue card: white at 18% with a white icon. */
   onWater?: boolean;
 }) {
   const company = useCompany();
@@ -89,6 +91,7 @@ export function OnMyWay({
   }
 
   async function send() {
+    if (done === "Sending…") return;
     haptics.light();
     const arriveMin = localMinutes(new Date().toISOString(), timeZone) + Math.max(5, driveMin);
     const text = onMyWayText({ customer, tech, shop, arriveMin, windowMin });
@@ -133,12 +136,11 @@ export function OnMyWay({
   }, [trigger]);
 
   return (
-    <Button
-      kind={onWater ? "onWater" : "secondary"}
-      title={done ?? HERO_ACTION_LABELS.on_my_way}
+    <RoundButton
+      icon={done && done !== "Sending…" && done !== "Not Sent" ? "check" : "car"}
+      label={done ?? `On My Way to ${customer ?? "the customer"}`}
       onPress={() => void send()}
-      disabled={done === "Sending…"}
-      style={onWater ? undefined : { paddingHorizontal: 12 }}
+      onWater={onWater}
     />
   );
 }

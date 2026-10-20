@@ -270,7 +270,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                     driveMin={leg}
                     windowMin={ctx.settings.windowMin}
                     timeZone={ctx.timeZone}
-                    className="px-3"
+                    icon
                     via={onMyWayVia(company.settings)}
                     lineActive={line?.status === "active"}
                     isOwner={office.isManager}
