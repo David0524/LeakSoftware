@@ -27,6 +27,11 @@
           "key": "report",
           "label": "Signed reports",
           "hint": "A customer signs a report."
+        },
+        {
+          "key": "live",
+          "label": "Live Activity",
+          "hint": "Your current stop on the Lock Screen during the workday."
         }
       ]
     }
@@ -77,6 +82,13 @@
     },
     {
       "args": [
+        null,
+        "live"
+      ],
+      "result": true
+    },
+    {
+      "args": [
         {},
         "text"
       ],
@@ -107,6 +119,13 @@
       "args": [
         {},
         "report"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {},
+        "live"
       ],
       "result": true
     },
@@ -158,6 +177,15 @@
     {
       "args": [
         {
+          "text": false
+        },
+        "live"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
           "text": true,
           "job": false
         },
@@ -208,6 +236,16 @@
     {
       "args": [
         {
+          "text": true,
+          "job": false
+        },
+        "live"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
           "payment": "false"
         },
         "text"
@@ -253,6 +291,15 @@
     {
       "args": [
         {
+          "payment": "false"
+        },
+        "live"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
           "quote": 0
         },
         "text"
@@ -297,6 +344,15 @@
     },
     {
       "args": [
+        {
+          "quote": 0
+        },
+        "live"
+      ],
+      "result": true
+    },
+    {
+      "args": [
         "x",
         "text"
       ],
@@ -332,6 +388,13 @@
     },
     {
       "args": [
+        "x",
+        "live"
+      ],
+      "result": true
+    },
+    {
+      "args": [
         [
           false
         ],
@@ -372,6 +435,15 @@
           false
         ],
         "report"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        [
+          false
+        ],
+        "live"
       ],
       "result": true
     }
@@ -627,14 +699,15 @@
       ],
       "result": {
         "headline": "Up next: Smith",
-        "figure": "Today",
-        "figureLabel": "",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "…",
+        "compact": "3/7",
         "spoken": "Up next: Smith. Stop 3 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -656,14 +729,15 @@
       ],
       "result": {
         "headline": "Up next: Smith",
-        "figure": "Today",
-        "figureLabel": "",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "…",
+        "compact": "3/7",
         "spoken": "Up next: Smith. Stop 3 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -685,14 +759,15 @@
       ],
       "result": {
         "headline": "Up next: Smith",
-        "figure": "Today",
-        "figureLabel": "",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "…",
+        "compact": "3/7",
         "spoken": "Up next: Smith. Stop 3 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -714,14 +789,15 @@
       ],
       "result": {
         "headline": "Up next: Smith",
-        "figure": "Today",
-        "figureLabel": "",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "…",
+        "compact": "3/7",
         "spoken": "Up next: Smith. Stop 3 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -743,14 +819,15 @@
       ],
       "result": {
         "headline": "Up next: Smith",
-        "figure": "Today",
-        "figureLabel": "",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "…",
+        "compact": "3/7",
         "spoken": "Up next: Smith. Stop 3 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -772,14 +849,15 @@
       ],
       "result": {
         "headline": "Up next: Smith",
-        "figure": "Today",
-        "figureLabel": "",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "…",
+        "compact": "3/7",
         "spoken": "Up next: Smith. Stop 3 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -801,14 +879,15 @@
       ],
       "result": {
         "headline": "Up next: Smith",
-        "figure": "Today",
-        "figureLabel": "",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "…",
+        "compact": "3/7",
         "spoken": "Up next: Smith. Stop 3 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -827,14 +906,15 @@
       ],
       "result": {
         "headline": "Up next: Smith",
-        "figure": "Today",
-        "figureLabel": "",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
         "next": null,
         "progress": 0.2857142857142857,
-        "compact": "…",
+        "compact": "3/7",
         "spoken": "Up next: Smith. Stop 3 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -856,14 +936,15 @@
       ],
       "result": {
         "headline": "Up next: Smith",
-        "figure": "Today",
-        "figureLabel": "",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
         "next": "Next: Lee",
         "progress": 0.2857142857142857,
-        "compact": "…",
+        "compact": "3/7",
         "spoken": "Up next: Smith. Stop 3 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -885,14 +966,15 @@
       ],
       "result": {
         "headline": "Up next: Smith",
-        "figure": "Today",
-        "figureLabel": "",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
         "next": "Next: Lee",
         "progress": 0.2857142857142857,
-        "compact": "…",
+        "compact": "3/7",
         "spoken": "Up next: Smith. Stop 3 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -914,14 +996,15 @@
       ],
       "result": {
         "headline": "Up next: Smith",
-        "figure": "Today",
-        "figureLabel": "",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "…",
+        "compact": "3/7",
         "spoken": "Up next: Smith. Stop 3 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -943,14 +1026,15 @@
       ],
       "result": {
         "headline": "Up next: Smith",
-        "figure": "Today",
-        "figureLabel": "",
+        "figure": "1 of 1",
+        "figureLabel": "Stop",
         "detail": "Stop 1 of 1 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0,
-        "compact": "…",
+        "compact": "1/1",
         "spoken": "Up next: Smith. Stop 1 of 1.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -969,14 +1053,15 @@
       ],
       "result": {
         "headline": "Up next: Smith",
-        "figure": "Today",
-        "figureLabel": "",
+        "figure": "7 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 7 of 7 · 123 Palm Ln",
         "next": null,
         "progress": 0.8571428571428571,
-        "compact": "…",
+        "compact": "7/7",
         "spoken": "Up next: Smith. Stop 7 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -998,14 +1083,15 @@
       ],
       "result": {
         "headline": "Up next: Smith",
-        "figure": "Today",
-        "figureLabel": "",
+        "figure": "9 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 9 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 1,
-        "compact": "…",
+        "compact": "9/7",
         "spoken": "Up next: Smith. Stop 9 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1030,11 +1116,12 @@
         "figure": "Today",
         "figureLabel": "",
         "detail": "Stop 0 of 0 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0,
         "compact": "…",
         "spoken": "Up next: Smith. Stop 0 of 0.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1057,14 +1144,15 @@
       ],
       "result": {
         "headline": "Up next: Smith",
-        "figure": "9:00 AM",
-        "figureLabel": "Scheduled",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "9:00",
-        "spoken": "Up next: Smith at 9:00 AM. Stop 3 of 7.",
-        "access": null
+        "compact": "3/7",
+        "spoken": "Up next: Smith. Stop 3 of 7.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1087,14 +1175,15 @@
       ],
       "result": {
         "headline": "Up next: Smith",
-        "figure": "Today",
-        "figureLabel": "",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "…",
+        "compact": "3/7",
         "spoken": "Up next: Smith. Stop 3 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1117,14 +1206,161 @@
       ],
       "result": {
         "headline": "Up next: Smith",
-        "figure": "1:15 pm",
-        "figureLabel": "Scheduled",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "1:15",
-        "spoken": "Up next: Smith at 1:15 pm. Stop 3 of 7.",
-        "access": null
+        "compact": "3/7",
+        "spoken": "Up next: Smith. Stop 3 of 7.",
+        "access": null,
+        "cleanings": []
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "ahead",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          },
+          "access": "Gate 4821",
+          "cleanings": [
+            {
+              "name": "Clean salt cell",
+              "kind": "salt_cell",
+              "days": 14,
+              "weeks": 2
+            },
+            {
+              "name": "Clean filter",
+              "kind": "filter",
+              "days": -2,
+              "weeks": 0
+            },
+            {
+              "name": "Replace filter",
+              "kind": "filter_replace",
+              "days": 0,
+              "weeks": 0
+            }
+          ]
+        }
+      ],
+      "result": {
+        "headline": "Up next: Smith",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones",
+        "progress": 0.2857142857142857,
+        "compact": "3/7",
+        "spoken": "Up next: Smith. Stop 3 of 7. Access: Gate 4821 Clean filter overdue, Replace filter due today, Clean salt cell due in 2 weeks.",
+        "access": "Gate 4821",
+        "cleanings": [
+          {
+            "kind": "filter",
+            "label": "Overdue",
+            "spoken": "Clean filter overdue",
+            "overdue": true
+          },
+          {
+            "kind": "filter_replace",
+            "label": "Today",
+            "spoken": "Replace filter due today",
+            "overdue": false
+          },
+          {
+            "kind": "salt_cell",
+            "label": "2 weeks",
+            "spoken": "Clean salt cell due in 2 weeks",
+            "overdue": false
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "ahead",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          },
+          "cleanings": [
+            {
+              "name": "Clean filter",
+              "kind": "filter",
+              "days": 1,
+              "weeks": 0
+            }
+          ]
+        }
+      ],
+      "result": {
+        "headline": "Up next: Smith",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones",
+        "progress": 0.2857142857142857,
+        "compact": "3/7",
+        "spoken": "Up next: Smith. Stop 3 of 7. Clean filter due in 1 day.",
+        "access": null,
+        "cleanings": [
+          {
+            "kind": "filter",
+            "label": "1 day",
+            "spoken": "Clean filter due in 1 day",
+            "overdue": false
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "ahead",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          },
+          "cleanings": []
+        }
+      ],
+      "result": {
+        "headline": "Up next: Smith",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones",
+        "progress": 0.2857142857142857,
+        "compact": "3/7",
+        "spoken": "Up next: Smith. Stop 3 of 7.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1146,14 +1382,15 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "9:42 AM",
-        "figureLabel": "Arriving",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
-        "access": null
+        "compact": "3/7",
+        "spoken": "On the way to Smith. Stop 3 of 7.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1175,14 +1412,15 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "On the way",
-        "figureLabel": "",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "…",
+        "compact": "3/7",
         "spoken": "On the way to Smith. Stop 3 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1204,14 +1442,15 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "On the way",
-        "figureLabel": "",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "…",
+        "compact": "3/7",
         "spoken": "On the way to Smith. Stop 3 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1233,14 +1472,15 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "12:05 pm",
-        "figureLabel": "Arriving",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "12:05",
-        "spoken": "On the way to Smith, arriving at 12:05 pm. Stop 3 of 7.",
-        "access": null
+        "compact": "3/7",
+        "spoken": "On the way to Smith. Stop 3 of 7.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1262,14 +1502,15 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "14:05",
-        "figureLabel": "Arriving",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "14:05",
-        "spoken": "On the way to Smith, arriving at 14:05. Stop 3 of 7.",
-        "access": null
+        "compact": "3/7",
+        "spoken": "On the way to Smith. Stop 3 of 7.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1291,14 +1532,15 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "9:42 AM",
-        "figureLabel": "Arriving",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
-        "access": null
+        "compact": "3/7",
+        "spoken": "On the way to Smith. Stop 3 of 7.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1320,14 +1562,15 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "9:42 AM",
-        "figureLabel": "Arriving",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
-        "access": null
+        "compact": "3/7",
+        "spoken": "On the way to Smith. Stop 3 of 7.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1346,14 +1589,15 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "9:42 AM",
-        "figureLabel": "Arriving",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
         "next": null,
         "progress": 0.2857142857142857,
-        "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
-        "access": null
+        "compact": "3/7",
+        "spoken": "On the way to Smith. Stop 3 of 7.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1375,14 +1619,15 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "9:42 AM",
-        "figureLabel": "Arriving",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
         "next": "Next: Lee",
         "progress": 0.2857142857142857,
-        "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
-        "access": null
+        "compact": "3/7",
+        "spoken": "On the way to Smith. Stop 3 of 7.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1404,14 +1649,15 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "9:42 AM",
-        "figureLabel": "Arriving",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
         "next": "Next: Lee",
         "progress": 0.2857142857142857,
-        "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
-        "access": null
+        "compact": "3/7",
+        "spoken": "On the way to Smith. Stop 3 of 7.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1433,14 +1679,15 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "9:42 AM",
-        "figureLabel": "Arriving",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
-        "access": null
+        "compact": "3/7",
+        "spoken": "On the way to Smith. Stop 3 of 7.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1462,14 +1709,15 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "9:42 AM",
-        "figureLabel": "Arriving",
+        "figure": "1 of 1",
+        "figureLabel": "Stop",
         "detail": "Stop 1 of 1 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0,
-        "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 1 of 1.",
-        "access": null
+        "compact": "1/1",
+        "spoken": "On the way to Smith. Stop 1 of 1.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1488,14 +1736,15 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "9:42 AM",
-        "figureLabel": "Arriving",
+        "figure": "7 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 7 of 7 · 123 Palm Ln",
         "next": null,
         "progress": 0.8571428571428571,
-        "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 7 of 7.",
-        "access": null
+        "compact": "7/7",
+        "spoken": "On the way to Smith. Stop 7 of 7.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1517,14 +1766,15 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "9:42 AM",
-        "figureLabel": "Arriving",
+        "figure": "9 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 9 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 1,
-        "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 9 of 7.",
-        "access": null
+        "compact": "9/7",
+        "spoken": "On the way to Smith. Stop 9 of 7.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1546,14 +1796,15 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "9:42 AM",
-        "figureLabel": "Arriving",
+        "figure": "On the way",
+        "figureLabel": "",
         "detail": "Stop 0 of 0 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0,
-        "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 0 of 0.",
-        "access": null
+        "compact": "…",
+        "spoken": "On the way to Smith. Stop 0 of 0.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1576,14 +1827,15 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "9:42 AM",
-        "figureLabel": "Arriving",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
-        "access": null
+        "compact": "3/7",
+        "spoken": "On the way to Smith. Stop 3 of 7.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1606,14 +1858,15 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "9:42 AM",
-        "figureLabel": "Arriving",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
-        "access": null
+        "compact": "3/7",
+        "spoken": "On the way to Smith. Stop 3 of 7.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1636,14 +1889,161 @@
       ],
       "result": {
         "headline": "On the way to Smith",
-        "figure": "9:42 AM",
-        "figureLabel": "Arriving",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.2857142857142857,
-        "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
-        "access": null
+        "compact": "3/7",
+        "spoken": "On the way to Smith. Stop 3 of 7.",
+        "access": null,
+        "cleanings": []
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          },
+          "access": "Gate 4821",
+          "cleanings": [
+            {
+              "name": "Clean salt cell",
+              "kind": "salt_cell",
+              "days": 14,
+              "weeks": 2
+            },
+            {
+              "name": "Clean filter",
+              "kind": "filter",
+              "days": -2,
+              "weeks": 0
+            },
+            {
+              "name": "Replace filter",
+              "kind": "filter_replace",
+              "days": 0,
+              "weeks": 0
+            }
+          ]
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones",
+        "progress": 0.2857142857142857,
+        "compact": "3/7",
+        "spoken": "On the way to Smith. Stop 3 of 7. Access: Gate 4821 Clean filter overdue, Replace filter due today, Clean salt cell due in 2 weeks.",
+        "access": "Gate 4821",
+        "cleanings": [
+          {
+            "kind": "filter",
+            "label": "Overdue",
+            "spoken": "Clean filter overdue",
+            "overdue": true
+          },
+          {
+            "kind": "filter_replace",
+            "label": "Today",
+            "spoken": "Replace filter due today",
+            "overdue": false
+          },
+          {
+            "kind": "salt_cell",
+            "label": "2 weeks",
+            "spoken": "Clean salt cell due in 2 weeks",
+            "overdue": false
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          },
+          "cleanings": [
+            {
+              "name": "Clean filter",
+              "kind": "filter",
+              "days": 1,
+              "weeks": 0
+            }
+          ]
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones",
+        "progress": 0.2857142857142857,
+        "compact": "3/7",
+        "spoken": "On the way to Smith. Stop 3 of 7. Clean filter due in 1 day.",
+        "access": null,
+        "cleanings": [
+          {
+            "kind": "filter",
+            "label": "1 day",
+            "spoken": "Clean filter due in 1 day",
+            "overdue": false
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "driving",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          },
+          "cleanings": []
+        }
+      ],
+      "result": {
+        "headline": "On the way to Smith",
+        "figure": "3 of 7",
+        "figureLabel": "Stop",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones",
+        "progress": 0.2857142857142857,
+        "compact": "3/7",
+        "spoken": "On the way to Smith. Stop 3 of 7.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1668,11 +2068,12 @@
         "figure": "4 of 9",
         "figureLabel": "Checklist",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1697,11 +2098,12 @@
         "figure": "4 of 9",
         "figureLabel": "Checklist",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1726,11 +2128,12 @@
         "figure": "4 of 9",
         "figureLabel": "Checklist",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1755,11 +2158,12 @@
         "figure": "4 of 9",
         "figureLabel": "Checklist",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1784,11 +2188,12 @@
         "figure": "4 of 9",
         "figureLabel": "Checklist",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1813,11 +2218,12 @@
         "figure": "4 of 9",
         "figureLabel": "Checklist",
         "detail": "Stop 3 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1842,11 +2248,12 @@
         "figure": "4 of 9",
         "figureLabel": "Checklist",
         "detail": "Stop 3 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1872,7 +2279,8 @@
         "progress": 0.35714285714285715,
         "compact": "4/9",
         "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1901,7 +2309,8 @@
         "progress": 0.35714285714285715,
         "compact": "4/9",
         "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Lee.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1930,7 +2339,8 @@
         "progress": 0.35714285714285715,
         "compact": "4/9",
         "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Lee.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1955,11 +2365,12 @@
         "figure": "On site",
         "figureLabel": "",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.35714285714285715,
         "compact": "•",
-        "spoken": "At Smith. Stop 3 of 7. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "At Smith. Stop 3 of 7. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -1984,11 +2395,12 @@
         "figure": "4 of 9",
         "figureLabel": "Checklist",
         "detail": "Stop 1 of 1 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.5,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 1 of 1. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "At Smith. Checklist 4 of 9. Stop 1 of 1. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2014,7 +2426,8 @@
         "progress": 0.9285714285714286,
         "compact": "4/9",
         "spoken": "At Smith. Checklist 4 of 9. Stop 7 of 7.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2039,11 +2452,12 @@
         "figure": "4 of 9",
         "figureLabel": "Checklist",
         "detail": "Stop 9 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 1,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 9 of 7. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "At Smith. Checklist 4 of 9. Stop 9 of 7. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2068,11 +2482,12 @@
         "figure": "4 of 9",
         "figureLabel": "Checklist",
         "detail": "Stop 0 of 0 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 0 of 0. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "At Smith. Checklist 4 of 9. Stop 0 of 0. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2098,11 +2513,12 @@
         "figure": "4 of 9",
         "figureLabel": "Checklist",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2128,11 +2544,12 @@
         "figure": "4 of 9",
         "figureLabel": "Checklist",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2158,11 +2575,158 @@
         "figure": "4 of 9",
         "figureLabel": "Checklist",
         "detail": "Stop 3 of 7 · 123 Palm Ln",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones.",
+        "access": null,
+        "cleanings": []
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          },
+          "access": "Gate 4821",
+          "cleanings": [
+            {
+              "name": "Clean salt cell",
+              "kind": "salt_cell",
+              "days": 14,
+              "weeks": 2
+            },
+            {
+              "name": "Clean filter",
+              "kind": "filter",
+              "days": -2,
+              "weeks": 0
+            },
+            {
+              "name": "Replace filter",
+              "kind": "filter_replace",
+              "days": 0,
+              "weeks": 0
+            }
+          ]
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "4 of 9",
+        "figureLabel": "Checklist",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones",
+        "progress": 0.35714285714285715,
+        "compact": "4/9",
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones. Access: Gate 4821 Clean filter overdue, Replace filter due today, Clean salt cell due in 2 weeks.",
+        "access": "Gate 4821",
+        "cleanings": [
+          {
+            "kind": "filter",
+            "label": "Overdue",
+            "spoken": "Clean filter overdue",
+            "overdue": true
+          },
+          {
+            "kind": "filter_replace",
+            "label": "Today",
+            "spoken": "Replace filter due today",
+            "overdue": false
+          },
+          {
+            "kind": "salt_cell",
+            "label": "2 weeks",
+            "spoken": "Clean salt cell due in 2 weeks",
+            "overdue": false
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          },
+          "cleanings": [
+            {
+              "name": "Clean filter",
+              "kind": "filter",
+              "days": 1,
+              "weeks": 0
+            }
+          ]
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "4 of 9",
+        "figureLabel": "Checklist",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones",
+        "progress": 0.35714285714285715,
+        "compact": "4/9",
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones. Clean filter due in 1 day.",
+        "access": null,
+        "cleanings": [
+          {
+            "kind": "filter",
+            "label": "1 day",
+            "spoken": "Clean filter due in 1 day",
+            "overdue": false
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "on_site",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          },
+          "cleanings": []
+        }
+      ],
+      "result": {
+        "headline": "At Smith",
+        "figure": "4 of 9",
+        "figureLabel": "Checklist",
+        "detail": "Stop 3 of 7 · 123 Palm Ln",
+        "next": "Next: Jones",
+        "progress": 0.35714285714285715,
+        "compact": "4/9",
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2187,11 +2751,12 @@
         "figure": "✓",
         "figureLabel": "Next stop",
         "detail": "Stop 3 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "Smith done. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2216,11 +2781,12 @@
         "figure": "✓",
         "figureLabel": "Next stop",
         "detail": "Stop 3 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "Smith done. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2245,11 +2811,12 @@
         "figure": "✓",
         "figureLabel": "Next stop",
         "detail": "Stop 3 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "Smith done. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2274,11 +2841,12 @@
         "figure": "✓",
         "figureLabel": "Next stop",
         "detail": "Stop 3 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "Smith done. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2303,11 +2871,12 @@
         "figure": "✓",
         "figureLabel": "Next stop",
         "detail": "Stop 3 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "Smith done. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2332,11 +2901,12 @@
         "figure": "✓",
         "figureLabel": "Next stop",
         "detail": "Stop 3 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "Smith done. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2361,11 +2931,12 @@
         "figure": "✓",
         "figureLabel": "Next stop",
         "detail": "Stop 3 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "Smith done. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2391,7 +2962,8 @@
         "progress": 0.42857142857142855,
         "compact": "✓",
         "spoken": "Smith done. That was the last stop today.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2420,7 +2992,8 @@
         "progress": 0.42857142857142855,
         "compact": "✓",
         "spoken": "Smith done. Next: Lee.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2449,7 +3022,8 @@
         "progress": 0.42857142857142855,
         "compact": "✓",
         "spoken": "Smith done. Next: Lee.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2474,11 +3048,12 @@
         "figure": "✓",
         "figureLabel": "Next stop",
         "detail": "Stop 3 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "Smith done. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2503,11 +3078,12 @@
         "figure": "✓",
         "figureLabel": "Next stop",
         "detail": "Stop 1 of 1",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 1,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "Smith done. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2533,7 +3109,8 @@
         "progress": 1,
         "compact": "✓",
         "spoken": "Smith done. That was the last stop today.",
-        "access": null
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2558,11 +3135,12 @@
         "figure": "✓",
         "figureLabel": "Next stop",
         "detail": "Stop 9 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 1,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "Smith done. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2587,11 +3165,12 @@
         "figure": "✓",
         "figureLabel": "Next stop",
         "detail": "Stop 0 of 0",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "Smith done. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2617,11 +3196,12 @@
         "figure": "✓",
         "figureLabel": "Next stop",
         "detail": "Stop 3 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "Smith done. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2647,11 +3227,12 @@
         "figure": "✓",
         "figureLabel": "Next stop",
         "detail": "Stop 3 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "Smith done. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     },
     {
@@ -2677,11 +3258,132 @@
         "figure": "✓",
         "figureLabel": "Next stop",
         "detail": "Stop 3 of 7",
-        "next": "Next: Jones at 10:30 AM",
+        "next": "Next: Jones",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM.",
-        "access": null
+        "spoken": "Smith done. Next: Jones.",
+        "access": null,
+        "cleanings": []
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          },
+          "access": "Gate 4821",
+          "cleanings": [
+            {
+              "name": "Clean salt cell",
+              "kind": "salt_cell",
+              "days": 14,
+              "weeks": 2
+            },
+            {
+              "name": "Clean filter",
+              "kind": "filter",
+              "days": -2,
+              "weeks": 0
+            },
+            {
+              "name": "Replace filter",
+              "kind": "filter_replace",
+              "days": 0,
+              "weeks": 0
+            }
+          ]
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Next stop",
+        "detail": "Stop 3 of 7",
+        "next": "Next: Jones",
+        "progress": 0.42857142857142855,
+        "compact": "✓",
+        "spoken": "Smith done. Next: Jones.",
+        "access": null,
+        "cleanings": []
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          },
+          "cleanings": [
+            {
+              "name": "Clean filter",
+              "kind": "filter",
+              "days": 1,
+              "weeks": 0
+            }
+          ]
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Next stop",
+        "detail": "Stop 3 of 7",
+        "next": "Next: Jones",
+        "progress": 0.42857142857142855,
+        "compact": "✓",
+        "spoken": "Smith done. Next: Jones.",
+        "access": null,
+        "cleanings": []
+      }
+    },
+    {
+      "args": [
+        {
+          "phase": "done",
+          "customer": "Smith",
+          "address": "123 Palm Ln",
+          "stop": 3,
+          "stops": 7,
+          "eta": "9:42 AM",
+          "checklistDone": 4,
+          "checklistTotal": 9,
+          "next": {
+            "customer": "Jones",
+            "time": "10:30 AM"
+          },
+          "cleanings": []
+        }
+      ],
+      "result": {
+        "headline": "Smith done",
+        "figure": "✓",
+        "figureLabel": "Next stop",
+        "detail": "Stop 3 of 7",
+        "next": "Next: Jones",
+        "progress": 0.42857142857142855,
+        "compact": "✓",
+        "spoken": "Smith done. Next: Jones.",
+        "access": null,
+        "cleanings": []
       }
     }
   ],

@@ -386,9 +386,31 @@ test("Today shows a tech's route with directions", async ({ page }) => {
   // a segment per stop. On My Way and Start are hers to press, so an owner doesn't get them.
   const hero = page.getByTestId("today-hero");
   await expect(hero).toBeVisible();
-  await expect(hero).toContainText(/Stop \d+ of \d+/);
+  await expect(hero).toContainText(/\d+ of \d+/);
+  // No clock times on the card (owner, 2026-10-20; gestures.md section 10).
+  await expect(hero).not.toContainText(/\d{1,2}:\d{2}\s?(AM|PM)/);
   await expect(hero.getByTestId("hero-progress")).toHaveAttribute("aria-label", /\d+ of \d+/);
   await expect(hero.getByRole("button", { name: /^(On My Way|Start)$/ })).toHaveCount(0);
+  // One text button: no car, and an owner's Message is a blank text (gestures.md section 2).
+  await expect(hero.getByRole("button", { name: /On My Way/ })).toHaveCount(0);
+  await expect(hero.getByRole("link", { name: /On My Way/ })).toHaveCount(0);
+  // Each segment of the bar goes to its stop; Back to Now returns (section 1).
+  const segments = hero.getByTestId("hero-progress").getByRole("button");
+  const count = await segments.count();
+  expect(count).toBeGreaterThan(0);
+  const current = await segments.evaluateAll((b) =>
+    b.findIndex((x) => x.getAttribute("aria-current") === "step"),
+  );
+  if (count > 1 && current >= 0) {
+    const other = current === 0 ? 1 : 0;
+    await segments.nth(other).click();
+    await expect(hero.getByRole("button", { name: "Back to Now" })).toBeVisible();
+    await expect(segments.nth(other)).toHaveAttribute("aria-current", "step");
+    // The Left and Right arrow keys move it while the card has focus.
+    await hero.focus();
+    await page.keyboard.press(other > current ? "ArrowLeft" : "ArrowRight");
+    await expect(hero.getByRole("button", { name: "Back to Now" })).toHaveCount(0);
+  }
   await expect(hero.getByTestId("hero-start-row")).toHaveCount(0);
   // In the list, that stop is one row marked Now.
   await expect(

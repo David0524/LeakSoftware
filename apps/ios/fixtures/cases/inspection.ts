@@ -58,6 +58,10 @@ import {
   formatAddress,
   formatSchedule,
   groupJobs,
+  JOB_SORTS,
+  jobSort,
+  sortJobs,
+  type JobSortItem,
   localDate,
   nativeMapsUrl,
   newJobRecords,
@@ -1159,6 +1163,49 @@ export const inspection: ModuleCases = {
     ],
   ),
 
+  // Sorting the Jobs list (owner, 2026-10-20).
+  JOB_SORTS: rule(() => JOB_SORTS, [[]]),
+  jobSort: rule((key: unknown) => jobSort(key), [["customer"], ["newest"], ["bad"], [null]]),
+  sortJobs: rule(
+    (jobs: Parameters<typeof sortJobs>[0], sort: string) => sortJobs(jobs, sort),
+    ["scheduled", "newest", "oldest", "customer", "number", "bad"].map(
+      (sort): [JobSortItem[], string] => [
+        [
+          {
+            number: 3,
+            scheduled_start: "2026-10-22T16:00:00Z",
+            created_at: "2026-10-01T00:00:00Z",
+            customer: "lee",
+          },
+          {
+            number: 7,
+            scheduled_start: null,
+            created_at: "2026-10-05T00:00:00Z",
+            customer: "Adams",
+          },
+          {
+            number: 5,
+            scheduled_start: "2026-10-21T16:00:00Z",
+            created_at: "2026-10-03T00:00:00Z",
+            customer: null,
+          },
+          {
+            number: null,
+            scheduled_start: "2026-10-21T16:00:00Z",
+            created_at: null,
+            customer: "  ",
+          },
+          {
+            number: 9,
+            scheduled_start: "2026-10-21T16:00:00Z",
+            created_at: "2026-10-03T00:00:00Z",
+            customer: "Émile",
+          },
+        ],
+        sort,
+      ],
+    ),
+  ),
   formatSchedule: rule(
     (start: string | null, now: string, tz: string) => formatSchedule(start, new Date(now), tz),
     [

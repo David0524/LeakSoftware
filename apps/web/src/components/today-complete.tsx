@@ -22,7 +22,13 @@ export function TodayComplete({
   undo,
   prompt = null,
   buttonClassName,
+  onCompleting,
+  onCompleted,
 }: {
+  /** Completing is under way (Today's card arms its slide to the next stop). */
+  onCompleting?: () => void;
+  /** Completed (Today's card says so in the top banner, with Undo). */
+  onCompleted?: () => void;
   /** The button's look in place of the usual one (Today's card, on water blue). */
   buttonClassName?: string;
   jobId: string;
@@ -44,6 +50,7 @@ export function TodayComplete({
       form.set("complete", String(complete));
       const result = await markStop({}, form);
       setError(result.error ?? null);
+      if (complete && !result.error) onCompleted?.();
     });
   return (
     <div className="space-y-1">
@@ -53,6 +60,7 @@ export function TodayComplete({
         aria-label={`${done ? undo : "Mark Complete"} for ${customer}`}
         onClick={async () => {
           if (!done && prompt && !(await confirm({ ...prompt, alert: true }))) return;
+          if (!done) onCompleting?.();
           run(!done);
         }}
         className={

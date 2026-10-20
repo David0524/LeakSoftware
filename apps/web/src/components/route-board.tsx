@@ -1622,22 +1622,36 @@ function MoveSheet({
           />
         </li>
         {tech && known && others.length ? (
-          <li className={row}>
-            <label htmlFor={`${ids}-place`}>Place in the route</label>
-            <select
-              id={`${ids}-place`}
-              value={Math.min(place, others.length)}
-              onChange={(e) => setPlace(Number(e.target.value))}
-              className={control}
-            >
-              <option value={0}>First stop</option>
-              {others.map((s, i) => (
-                <option key={s.id} value={i + 1}>
-                  After {s.customer}
-                  {s.time ? ` (${s.time})` : ""}
-                </option>
-              ))}
-            </select>
+          <li className={cx(row, "py-2.5")}>
+            <label htmlFor={`${ids}-place`} className="shrink-0">
+              Place in the route
+            </label>
+            {/* A select can't wrap its value, so the chosen place is shown as text that wraps
+                (the row grows to fit "After Lebron James (8:00 AM)"), with the select over it
+                to pick (owner, 2026-10-20: "Make place in the route taller"). */}
+            <span className="relative min-w-0 flex-1 rounded-md text-right text-link has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-link">
+              <span aria-hidden="true" className="block leading-snug break-words">
+                {(() => {
+                  const at = Math.min(place, others.length);
+                  const s = at > 0 ? others[at - 1] : null;
+                  return s ? `After ${s.customer}${s.time ? ` (${s.time})` : ""}` : "First stop";
+                })()}
+              </span>
+              <select
+                id={`${ids}-place`}
+                value={Math.min(place, others.length)}
+                onChange={(e) => setPlace(Number(e.target.value))}
+                className="absolute inset-0 size-full cursor-pointer appearance-none opacity-0"
+              >
+                <option value={0}>First stop</option>
+                {others.map((s, i) => (
+                  <option key={s.id} value={i + 1}>
+                    After {s.customer}
+                    {s.time ? ` (${s.time})` : ""}
+                  </option>
+                ))}
+              </select>
+            </span>
           </li>
         ) : null}
       </ul>

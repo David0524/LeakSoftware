@@ -72,6 +72,8 @@ export interface WeekPlan {
   driveAfter: number;
   /** Jobs that changed day or tech. */
   moved: number;
+  /** Each planned tech's share of the movable jobs: how many, and their minutes of work. */
+  split: { techId: string; jobs: number; minutes: number }[];
 }
 
 const key = (techId: string, date: string) => `${techId}|${date}`;
@@ -92,6 +94,11 @@ function asStop(j: WeekJob, earliest: number | null | undefined): RouteStop {
  * or past its end; a tie keeps it on its own day, then the earlier day. Each day is then ordered
  * as Plan Route orders it. A job no day has room for stays where it was. The same week planned
  * twice gives the same answer.
+ *
+ * `even` (owner, 2026-10-20: "select multiple techs when planning a week. Then it should split
+ * the open jobs up evenly"): a job that may go to several techs goes to one whose share of the
+ * week's movable work is within one job of the lightest, then where it adds the least driving.
+ * When none of those has room, any tech that does.
  */
 export function planWeek(input: {
   days: WeekDay[];
@@ -100,6 +107,7 @@ export function planWeek(input: {
   day: WorkDay;
   drive: DriveFn;
   limit?: number;
+  even?: boolean;
 }): WeekPlan {
   const { depot, day, drive } = input;
   const limit = input.limit ?? PLAN_WEEK_LIMIT;
@@ -130,13 +138,11 @@ export function planWeek(input: {
       a.id.localeCompare(b.id),
   );
 
-  const planned = new Map(days.map((d) => [key(d.techId, d.date), [...d.stays]]));
-  const placed: WeekPlacement[] = [];
-  const unplaced: string[] = [];
-  for (const j of order) {
+  /** Where a job adds the least driving, on the days of the techs `ok` allows. */
+  function cheapest(j: WeekJob, ok: (techId: string) => boolean) {
     let best: { k: string; at: number; cost: number; home: boolean; i: number } | null = null;
     days.forEach((d, di) => {
-      if (!j.techs.includes(d.techId)) return;
+      if (!ok(d.techId)) return;
       const k = key(d.techId, d.date);
       const stops = planned.get(k)!;
       const was = timeRoute(stops, depot, day, drive);
@@ -160,6 +166,25 @@ export function planWeek(input: {
         if (better) best = { k, at, cost, home, i: di };
       }
     });
+    return best as { k: string; at: number; cost: number; home: boolean; i: number } | null;
+  }
+
+  const planned = new Map(days.map((d) => [key(d.techId, d.date), [...d.stays]]));
+  const placed: WeekPlacement[] = [];
+  const unplaced: string[] = [];
+  const techIds = [...new Set(days.map((d) => d.techId))];
+  const load = new Map(techIds.map((t) => [t, 0]));
+  const count = new Map(techIds.map((t) => [t, 0]));
+  for (const j of order) {
+    const allowed = j.techs.filter((t) => load.has(t));
+    const lightest = Math.min(...allowed.map((t) => load.get(t)!));
+    const fair = new Set(
+      input.even && allowed.length > 1
+        ? allowed.filter((t) => load.get(t)! < lightest + j.durationMin)
+        : allowed,
+    );
+    let best = cheapest(j, (t) => fair.has(t));
+    if (!best && fair.size < allowed.length) best = cheapest(j, (t) => allowed.includes(t));
     if (!best) {
       // A scheduled job that fits nowhere stays on its own day, in its cheapest place, so that
       // day's times still count it; one from Needs a Time stays there.
@@ -180,12 +205,17 @@ export function planWeek(input: {
         }
         stops.splice(at, 0, stop);
         placed.push({ id: j.id, techId: home.techId, date: home.date });
+        load.set(home.techId, (load.get(home.techId) ?? 0) + j.durationMin);
+        count.set(home.techId, (count.get(home.techId) ?? 0) + 1);
       } else unplaced.push(j.id);
       continue;
     }
-    const b = best as { k: string; at: number; i: number };
+    const b = best;
+    const techId = days[b.i]!.techId;
     planned.get(b.k)!.splice(b.at, 0, asStop(j, days[b.i]!.earliestMin));
-    placed.push({ id: j.id, techId: days[b.i]!.techId, date: days[b.i]!.date });
+    placed.push({ id: j.id, techId, date: days[b.i]!.date });
+    load.set(techId, load.get(techId)! + j.durationMin);
+    count.set(techId, count.get(techId)! + 1);
   }
 
   const out: WeekPlanDay[] = [];
@@ -209,7 +239,22 @@ export function planWeek(input: {
     driveBefore,
     driveAfter,
     moved,
+    split: techIds.map((t) => ({ techId: t, jobs: count.get(t)!, minutes: load.get(t)! })),
   };
+}
+
+/**
+ * How Plan Week split the jobs, for the banner's second line when it planned several techs:
+ * "Ana 6 jobs · Ben 5 jobs". Empty for one tech.
+ */
+export function planWeekSplit(
+  p: Pick<WeekPlan, "split">,
+  name: (techId: string) => string,
+): string {
+  if (p.split.length < 2) return "";
+  return p.split
+    .map((s) => `${name(s.techId)} ${s.jobs} ${s.jobs === 1 ? "job" : "jobs"}`)
+    .join(" · ");
 }
 
 /** "Moved 9 jobs · 3 hr 10 min less driving", or why nothing changed. */

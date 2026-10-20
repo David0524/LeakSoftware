@@ -5,6 +5,7 @@ import {
   heroHeadline,
   heroSegmentsSpoken,
   heroSubtitle,
+  heroTopLine,
   onTheWay,
   todayHero,
   type HeroMoment,
@@ -83,6 +84,28 @@ const days: HeroArgs[] = [
   [[stop("a", { access: "x".repeat(120) })], today, TZ, null],
   [[stop("a", { status: "done", access: "Gate" }), stop("b", { access: "Gate" })], today, TZ, "a"],
   [[stop("a", { status: "in_progress", access: "Gate", checklistTotal: 0 })], today, TZ, null],
+  [
+    [
+      stop("a", {
+        cleanings: [{ name: "Clean salt cell", kind: "salt_cell", days: 3, weeks: 0 }],
+      }),
+      stop("b", { cleanings: [{ name: "Clean filter", kind: "filter", days: 21, weeks: 3 }] }),
+    ],
+    today,
+    TZ,
+    null,
+  ],
+  [
+    [
+      stop("a", {
+        status: "done",
+        cleanings: [{ name: "Clean filter", kind: "filter", days: 0, weeks: 0 }],
+      }),
+    ],
+    today,
+    TZ,
+    "a",
+  ],
   [[stop("a", { on_my_way_at: "not a date" })], today, TZ, null],
   [[stop("a", { scheduled_start: "not a date" })], today, TZ, null],
   [
@@ -102,6 +125,26 @@ export const todayHeroCases: ModuleCases = {
     (stops: HeroStop[], day: string, timeZone: string, justDone: string | null) =>
       todayHero({ stops, today: day, timeZone, justDone }),
     days,
+  ),
+  // Owner, 2026-10-20: swipe the card back to an earlier stop (or ahead to a later one).
+  todayHeroViewing: rule(
+    (stops: HeroStop[], day: string, timeZone: string, viewing: string | null) =>
+      todayHero({ stops, today: day, timeZone, viewing }),
+    [
+      [[stop("a", { stop_done_on: today }), stop("b"), stop("c")], today, TZ, "a"],
+      [[stop("a", { stop_done_on: today }), stop("b"), stop("c")], today, TZ, "b"],
+      [
+        [stop("a", { stop_done_on: today }), stop("b"), stop("c", { access: "Gate" })],
+        today,
+        TZ,
+        "c",
+      ],
+      [[stop("a", { stop_done_on: today }), stop("b", omw), stop("c")], today, TZ, "c"],
+      [[stop("a", { status: "in_progress" }), stop("b", omw)], today, TZ, "b"],
+      [[stop("a", { status: "done" }), stop("b", { status: "done" })], today, TZ, "a"],
+      [[stop("a"), stop("b")], today, TZ, "missing"],
+      [[stop("a"), stop("b")], today, TZ, null],
+    ],
   ),
   onTheWay: rule(
     (s: HeroStop, day: string, timeZone: string) => onTheWay(s, day, timeZone),
@@ -160,6 +203,17 @@ export const todayHeroCases: ModuleCases = {
     (moment: HeroMoment, headline: string) =>
       heroHeadline({ moment, content: { headline } as never }),
     moments.map((m) => [m, "All 6 stops done"] as [HeroMoment, string]),
+  ),
+  heroTopLine: rule(
+    (stops: HeroStop[], day: string, timeZone: string, viewing: string | null) =>
+      heroTopLine(todayHero({ stops, today: day, timeZone, viewing })!),
+    [
+      [[stop("a"), stop("b")], today, TZ, null],
+      [[stop("a", omw), stop("b")], today, TZ, null],
+      [[stop("a", { status: "in_progress" }), stop("b")], today, TZ, null],
+      [[stop("a", { stop_done_on: today }), stop("b")], today, TZ, "a"],
+      [[stop("a", { stop_done_on: today })], today, TZ, null],
+    ],
   ),
   heroSegmentsSpoken: rule(
     (doneCount: number, stops: number) => heroSegmentsSpoken({ doneCount, stops }),

@@ -140,7 +140,7 @@ extension ScheduleDataTests {
 
     @Test func planWeekTakesTheMovableJobsAsTheWebsiteDoes() throws {
         let input = try weekPlanInput(
-            dates: week, tech: Self.me, tray: true, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+            dates: week, techs: [Self.me], tray: true, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
         // Monday is past; Saturday and Sunday aren't working days.
         #expect(input.dates == ["2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23"])
         #expect(input.techs == [Self.me])
@@ -155,15 +155,41 @@ extension ScheduleDataTests {
 
         // Off: only Dana's own jobs move.
         let own = try weekPlanInput(
-            dates: week, tech: Self.me, tray: false, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+            dates: week, techs: [Self.me], tray: false, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
         #expect(own.jobs.map(\.id) == [id(2), id(1)])
 
         // Everyone: Sam's visit without a map location stays on his day.
         let all = try weekPlanInput(
-            dates: week, tech: "all", tray: false, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+            dates: week, techs: ["all"], tray: false, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
         #expect(all.techs == [Self.me, Self.sam])
         #expect(all.stays.keys.sorted() == ["\(Self.sam)|\(id(3))"])
         #expect(all.jobs.first?.techs == [Self.me, Self.sam])
+    }
+
+    /// Several techs, split evenly (owner, 2026-10-20): the checklist's rules, and the banner's
+    /// second line.
+    @Test func planWeekForSeveralTechs() throws {
+        let techs = planWeekTechs(team, ctx: ctx)
+        let ids = techs.map(\.id)
+        #expect(ids == [Self.me, Self.sam])
+        #expect(planForLabel(ids, techs: techs) == "Everyone")
+        #expect(planForLabel(["all"], techs: techs) == "Everyone")
+        #expect(planForLabel([Self.sam], techs: techs) == techs[1].name)
+        #expect(planForLabel([], techs: techs).isEmpty)
+        #expect(togglePlanTech(ids, "all", techs: techs).isEmpty)
+        #expect(togglePlanTech([], "all", techs: techs) == ids)
+        #expect(togglePlanTech([Self.sam], Self.me, techs: techs) == ids)
+        #expect(togglePlanTech(ids, Self.me, techs: techs) == [Self.sam])
+        #expect(planTechs([Self.sam, Self.me, Self.sam], team: team) == ids)
+        let both = try weekPlanInput(
+            dates: week, techs: ids, tray: true, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+        #expect(both.jobs.allSatisfy { $0.techId == nil ? true : $0.techs == ids })
+        let outcome = try planTheWeek(
+            dates: week, techs: ids, tray: true, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+        #expect(outcome.detail?.contains(" · ") == true)
+        let one = try planTheWeek(
+            dates: week, techs: [Self.me], tray: true, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+        #expect(one.detail == nil)
     }
 
     @Test func locksAndTwoTechJobsStayWhereTheyAre() throws {
@@ -171,7 +197,7 @@ extension ScheduleDataTests {
         try sync.write("job", id: id(2), companyId: Self.company, ["lock_time": true])
         try sync.write("job", id: id(5), companyId: Self.company, ["lock_time": true, "lock_day": true])
         let input = try weekPlanInput(
-            dates: week, tech: Self.me, tray: true, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+            dates: week, techs: [Self.me], tray: true, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
         // A day lock stays on its day; a time lock moves at its clock time; in Needs a Time, any
         // lock that keeps the time keeps it.
         #expect(input.stays.keys.sorted() == ["\(Self.me)|\(id(1))"])
@@ -180,15 +206,15 @@ extension ScheduleDataTests {
         // A started job stays too: with Riley locked, Dana's week has nothing left to move.
         try sync.write("job", id: id(2), companyId: Self.company, ["status": "in_progress"])
         let withTray = try weekPlanInput(
-            dates: week, tech: Self.me, tray: true, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+            dates: week, techs: [Self.me], tray: true, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
         #expect(withTray.stays.count == 2 && withTray.jobs.map(\.id) == [id(4), id(5)])
         #expect(throws: ScheduleProblem("Nothing to plan: every job this week is locked or started.")) {
             try planTheWeek(
-                dates: week, tech: Self.me, tray: false, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+                dates: week, techs: [Self.me], tray: false, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
         }
         #expect(throws: ScheduleProblem("No working days left this week to plan.")) {
             try weekPlanInput(
-                dates: ["2026-10-19", "2026-10-24"], tech: Self.me, tray: true, jobs: jobs, ctx: ctx, team: team,
+                dates: ["2026-10-19", "2026-10-24"], techs: [Self.me], tray: true, jobs: jobs, ctx: ctx, team: team,
                 drive: DriveTimes())
         }
     }
@@ -196,7 +222,7 @@ extension ScheduleDataTests {
     @Test func planWeekSavesThroughTheSyncLayerAndUndoPutsItBack() throws {
         let original = try [1, 2, 4, 5].map { try #require(try sync.store.get("job", id($0))) }
         let outcome = try planTheWeek(
-            dates: week, tech: Self.me, tray: true, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+            dates: week, techs: [Self.me], tray: true, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
         // Diana and Noah come onto Dana's week.
         #expect(outcome.message.hasPrefix("Moved "))
         #expect(Set(outcome.updates.map(\.id)).isSuperset(of: [id(4), id(5)]))
@@ -211,7 +237,7 @@ extension ScheduleDataTests {
 
         // Planned again, nothing changes, so there's nothing to undo.
         let again = try planTheWeek(
-            dates: week, tech: Self.me, tray: true, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+            dates: week, techs: [Self.me], tray: true, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
         #expect(again.updates.isEmpty && again.undo.isEmpty)
 
         try saveJobUpdates(sync, companyId: Self.company, undoWeekPlan(outcome.undo))

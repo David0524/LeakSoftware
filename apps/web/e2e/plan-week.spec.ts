@@ -211,8 +211,15 @@ test("Plan Week places a tech's own waiting jobs on a week ahead, and Undo puts 
   await page.getByRole("button", { name: "Plan Week" }).click();
   const sheet = page.getByRole("dialog", { name: "Plan Week" });
   await expect(sheet.getByText(/^Puts this week’s movable jobs on days/)).toBeVisible();
-  await sheet.getByRole("radio", { name: "Jake Turner" }).click();
-  await expect(sheet.getByRole("radio", { name: "Jake Turner" })).toHaveAttribute(
+  // Who to plan for is a checklist (owner, 2026-10-20): Everyone selects or clears every tech,
+  // and with none chosen Plan Week is dimmed.
+  const everyone = sheet.getByRole("checkbox", { name: "Everyone" });
+  if ((await everyone.getAttribute("aria-checked")) !== "true") await everyone.click();
+  await expect(sheet.getByText("Everyone", { exact: true }).first()).toBeVisible();
+  await everyone.click();
+  await expect(sheet.getByRole("button", { name: "Plan Week" })).toBeDisabled();
+  await sheet.getByRole("checkbox", { name: "Jake Turner" }).click();
+  await expect(sheet.getByRole("checkbox", { name: "Jake Turner" })).toHaveAttribute(
     "aria-checked",
     "true",
   );
@@ -252,4 +259,26 @@ test("Plan Week places a tech's own waiting jobs on a week ahead, and Undo puts 
     expect(j.assigned_user_id).toBe(jake);
   }
   expect(await row(other)).toEqual(otherBefore);
+
+  // Two techs: the week is split evenly, and the banner's second line says how (section 7).
+  await page.getByRole("button", { name: "Plan Week" }).click();
+  const again = page.getByRole("dialog", { name: "Plan Week" });
+  const all = again.getByRole("checkbox", { name: "Everyone" });
+  if ((await all.getAttribute("aria-checked")) === "true") await all.click();
+  for (const who of ["Jake Turner", "Luis"]) {
+    const box = again.getByRole("checkbox", { name: new RegExp(`^${who}`) });
+    if ((await box.getAttribute("aria-checked")) !== "true") await box.click();
+  }
+  await expect(again.getByText("2 Techs")).toBeVisible();
+  const tray = again.getByRole("switch", { name: /Place Jobs from Needs a Time/ });
+  if (await tray.count()) await tray.uncheck();
+  await again.getByRole("button", { name: "Plan Week" }).click();
+  const split = page.getByTestId("top-banner");
+  await expect(split).toContainText(
+    /Jake Turner \d+ jobs? · Luis[^·]* \d+ jobs?|Luis[^·]* \d+ jobs? · Jake Turner \d+ jobs?/,
+  );
+  // A job given to a tech stays that tech's.
+  for (const id of waiting) expect((await row(id)).assigned_user_id).toBe(jake);
+  await split.getByRole("button", { name: "Undo" }).click();
+  await expect(page.getByText("Put back as it was.")).toBeVisible();
 });

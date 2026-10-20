@@ -1,10 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 
 // Local helper: ui.tsx renders NavBar, so importing from it here would be circular.
 const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(" ");
+
+/** Pages that keep the large-title bar as it is (no collapse while they're shown). */
+let stills = 0;
+const listeners = new Set<() => void>();
+const subscribe = (f: () => void) => {
+  listeners.add(f);
+  return () => void listeners.delete(f);
+};
+
+/**
+ * Keep the navigation bar from collapsing to its small title while `on` (owner, 2026-10-20:
+ * "When on the findings page, it doesn't make sense for the nav bar to shrink on scroll since
+ * it's sitting on a tile").
+ */
+export function useStillNavBar(on: boolean) {
+  useEffect(() => {
+    if (!on) return;
+    stills += 1;
+    listeners.forEach((f) => f());
+    return () => {
+      stills -= 1;
+      listeners.forEach((f) => f());
+    };
+  }, [on]);
+}
 
 /**
  * Phones: the iOS navigation bar (toolbars.md › large titles). The page's large title sits in
@@ -23,16 +48,30 @@ export function NavBar({
   back?: { href: string; label: string };
   action?: ReactNode;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [past, setPast] = useState(false);
+  const still = useSyncExternalStore(
+    subscribe,
+    () => stills > 0,
+    () => false,
+  );
   useEffect(() => {
     const el = document.getElementById(titleId);
     if (!el) return;
-    const io = new IntersectionObserver(([e]) => setCollapsed(!e!.isIntersecting), {
-      rootMargin: "-52px 0px 0px 0px",
-    });
+    const io = new IntersectionObserver(
+      ([e]) =>
+        // A page whose content fits (it can't scroll the title away) never collapses; only a
+        // real scroll past the large title does.
+        setPast(
+          !e!.isIntersecting &&
+            document.documentElement.scrollHeight - window.innerHeight >
+              el.getBoundingClientRect().height + 52,
+        ),
+      { rootMargin: "-52px 0px 0px 0px" },
+    );
     io.observe(el);
     return () => io.disconnect();
   }, [titleId]);
+  const collapsed = past && !still;
 
   return (
     <div

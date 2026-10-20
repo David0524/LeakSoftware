@@ -11,6 +11,12 @@
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
         @Environment(AppEnvironment.self) private var app
+        @Environment(\.openURL) private var openURL
+
+        static func telURL(_ phone: String) -> URL? {
+            let digits = phone.filter { $0.isNumber || $0 == "+" }
+            return digits.isEmpty ? nil : URL(string: "tel:\(digits)")
+        }
         @State private var search = ""
         @State private var sort = CustomerSort.name
         @State private var show = "all"
@@ -55,6 +61,21 @@
                                         c, sort: sort, timeZone: company?.timeZone ?? "America/Phoenix"))
                             }
                             .surfaceRow()
+                            // Swipe left (or touch and hold) for Call where there's a phone; the
+                            // customer's page has it too (gestures spec section 5).
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                if let url = c.phone.flatMap(Self.telURL) {
+                                    Button("Call", systemImage: "phone.fill") { openURL(url) }.tint(Color.pass)
+                                }
+                            }
+                            .contextMenu {
+                                if let phone = c.phone, let url = Self.telURL(phone) {
+                                    Button("Call", systemImage: "phone") { openURL(url) }
+                                    if let sms = URL(string: "sms:\(phone.filter { $0.isNumber || $0 == "+" })") {
+                                        Button("Message", systemImage: "message") { openURL(sms) }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

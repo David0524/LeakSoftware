@@ -37,9 +37,10 @@ Everything else supports it, and there is one main action.
 │                                              │  12
 │ 📍 1000 W Charleston Blvd, Las Vegas ⚠       │  17 pt white, map pin 15 pt; ⚠ when not on map
 │ 🔑 Side gate code 4821                        │  15 pt
+│ 🧽 Overdue · 🧂 2 weeks                       │  15 pt medium; overdue a white pill
 │ 📝 Dog is friendly. Pays by check.           │  15 pt, two lines at most
 │                                              │  12
-│ Next: Wayne Gretzky at 9:15 AM  (💬)(📞)(➤)  │  15 pt 92%; round buttons 44 pt
+│ Next: Wayne Gretzky          (💬)(📞)(➤)    │  15 pt 92%; round buttons 44 pt
 │                                              │  16
 │ [  Open Checklist  ] [  Mark Complete  ]     │  equal widths, 50 pt tall, capsules
 │                                              │  16
@@ -47,21 +48,33 @@ Everything else supports it, and there is one main action.
 └──────────────────────────────────────────────┘
 ```
 
-- **Top line:** the moment and the stop count, "At the pool · Stop 2 of 3". The job type moves
+- **Top line:** the moment, with the stop count only when the figure doesn't show it (core
+  `heroTopLine`, gestures.md section 10): "Up next" beside a "2 of 3 · Stop" figure, "At the
+  pool · Stop 2 of 3" on site. No clock times anywhere on the card. The job type moves
   under the name on its own line ("Maintenance"), with the drive before leaving: "Leak
   detection · 14 min drive".
 - **Name:** 28 pt Barlow ExtraBold, up to two lines, then truncates. It opens the job.
-- **Figure:** top-right, 22 pt semibold with tabular numbers, label under it. With the largest
+- **Figure:** top-right, 22 pt semibold with tabular numbers, label under it: before arriving
+  the stop's place in the day ("2 of 5", "Stop"), on site the checklist ("4 of 9"), then ✓. With the largest
   text sizes the figure moves under the name (the card's top becomes one column).
-- **Details:** address, access notes, customer notes. Each line starts with a 15 pt symbol in a
-  20 pt column so the text lines up: `mappin.and.ellipse`, `key.fill`, `note.text`.
+- **Details:** address, access notes, cleanings due, customer notes. Each line starts with a
+  15 pt symbol in a 20 pt column so the text lines up: `mappin.and.ellipse`, `key.fill`, the
+  first cleaning's symbol, `note.text`.
+- **Cleanings due** (owner, 2026-10-20: "The filter/salt cell cleaning alert needs to be on the
+  new Today tile and the live activity"): the visit's filter and salt cell cleanings as an icon
+  and a short label each ("Filter Overdue · Salt cell 2 weeks" reads as 🧽 Overdue · 🧂 2 weeks),
+  soonest first, 15 pt medium white. The first icon sits in the symbol column; the others sit
+  before their labels. Overdue is a white pill with water-blue semibold text, so it stands out
+  without a new color. VoiceOver reads each one in full ("Clean filter due in 3 days"). Shown
+  until the stop is done, never on a done card or the day-done card. The Live Activity shows
+  the same badges, and its spoken sentence ends with them.
 - **Not on the map** is only a warning symbol (`exclamationmark.triangle.fill`, 17 pt) right
   after the address, read aloud as "Not found on the map" (owner, 2026-10-20: "just put a little
   error symbol next to the address. Don't waste space with text"). The same symbol, alone, after
   the address on Today's rows and Schedule's cards; the job page keeps its full explanation.
 - **Customer notes** (owner, 2026-10-20: "you have to have customer notes there"): the
   customer's notes, then the pool's, joined with " · ", two lines at most.
-- **Next line:** "Next: Wayne Gretzky at 9:15 AM", then Message, Call, Directions as 44 pt
+- **Next line:** "Next: Wayne Gretzky" (no time), then Message, Call, Directions as 44 pt
   circles (white at 18%, white 20 pt symbols: `message.fill`, `phone.fill`,
   `location.fill`), 8 apart. Without a next stop, the circles sit alone at the right.
 - **Buttons:** one row, equal widths, 50 pt tall capsules, 10 apart. The main action is white
@@ -77,7 +90,8 @@ Everything else supports it, and there is one main action.
 - **When the moment changes** (On My Way, Start Job, Mark Complete): the figure rolls to its new
   value and the text cross-fades in 0.3 s; with Reduce Motion, it changes without motion.
 - **Owners looking at a tech's day:** no On My Way or Start Job; Message, Call and Directions stay.
-- **Day done:** "All 3 stops done", ✓ as the figure, "Back at the shop by 4:10 PM", no buttons.
+- **Day done:** "All 3 stops done", ✓ as the figure, "Day done" under it, no buttons and no
+  clock times.
 - **Dark mode:** the card keeps water blue (it's the app's signature, like the Live Activity).
 - The card stays a solid color in the content layer, never glass (`liquid-glass.md`).
 

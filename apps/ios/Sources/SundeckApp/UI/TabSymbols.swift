@@ -1,5 +1,6 @@
 #if os(iOS)
     import SwiftUI
+    import SundeckLiveStop
     import UIKit
 
     // The website's tab icons (spec 3.2), drawn to template images so the system tab bar tints

@@ -274,6 +274,15 @@ enum ECMA {
         }
         return 0
     }
+
+    /// `a.localeCompare(b, "en", { sensitivity: "base" })`: letters only, ignoring case and
+    /// accents. Returns -1, 0 or 1.
+    static func localeCompareBase(_ a: String, _ b: String) -> Int {
+        let x = a.unicodeScalars.flatMap { collationKey($0).primary }
+        let y = b.unicodeScalars.flatMap { collationKey($0).primary }
+        if x == y { return 0 }
+        return x.lexicographicallyPrecedes(y) ? -1 : 1
+    }
 }
 
 private struct CollationKey {

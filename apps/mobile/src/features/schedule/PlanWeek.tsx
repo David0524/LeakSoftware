@@ -6,6 +6,8 @@ import {
   EVERYONE,
   PLAN_WEEK_HELP,
   PLAN_WEEK_UNDONE,
+  planForLabel,
+  togglePlanTech,
   type WeekPlanOutcome,
 } from "../../lib/weekPlan";
 import { Button, Group, ListRow, SwitchControl, T } from "../../ui/components";
@@ -33,35 +35,41 @@ export function PlanWeek({
   defaultTech: string | null;
   /** Jobs in Needs a Time with nobody on them that may be placed this week. */
   waiting: number;
-  /** Plans and saves the week; the outcome's `undo` puts it back. */
-  onPlan: (tech: string, tray: boolean) => WeekPlanOutcome;
+  /** Plans and saves the week for these techs; the outcome's `undo` puts it back. */
+  onPlan: (techs: string[], tray: boolean) => WeekPlanOutcome;
   /** Writes the saved rows back; an error, or null when it worked. */
   onUndo: (rows: JobChange[]) => string | null;
   /** Shows the result (with Undo) in the banner at the top of the screen. */
   onResult: (note: BannerNote) => void;
 }) {
-  const fallback = defaultTech && techs.some((t) => t.id === defaultTech) ? defaultTech : EVERYONE;
+  // Several techs may be picked (owner, 2026-10-20: "select multiple techs when planning a week.
+  // Then it should split the open jobs up evenly"); at least one.
+  const fallback = (): string[] =>
+    defaultTech && techs.some((t) => t.id === defaultTech) ? [defaultTech] : techs.map((t) => t.id);
   const [open, setOpen] = useState(false);
-  const [tech, setTech] = useState(fallback);
+  const [picked, setPicked] = useState<string[]>(fallback);
+  const label = planForLabel(picked, techs);
   const [withTray, setWithTray] = useState(true);
   const [busy, setBusy] = useState(false);
 
   function plan() {
     setOpen(false);
     setBusy(true);
-    const forTech = tech;
+    if (!picked.length) return;
+    const forTechs = picked.length === techs.length && techs.length > 1 ? [EVERYONE] : picked;
     const tray = waiting > 0 && withTray;
     // After the sheet has gone and "Planning…" shows, so the tap never freezes.
     requestAnimationFrame(() => {
       void InteractionManager.runAfterInteractions(() =>
         setTimeout(() => {
           try {
-            const r = onPlan(forTech, tray);
+            const r = onPlan(forTechs, tray);
             if (r.error) return onResult({ tone: "error", message: r.error });
             const rows = r.undo;
             onResult({
               tone: "success",
               message: r.message ?? "Week planned",
+              detail: r.detail,
               undo: rows.length ? () => putBack(rows) : undefined,
             });
           } finally {
@@ -80,12 +88,15 @@ export function PlanWeek({
   }
 
   const row = (value: string, label: string) => {
-    const on = tech === value;
+    const on =
+      value === EVERYONE
+        ? techs.length > 0 && techs.every((t) => picked.includes(t.id))
+        : picked.includes(value);
     return (
       <ListRow
         key={value}
         accessibilityLabel={`${label}${on ? ", selected" : ""}`}
-        onPress={() => setTech(value)}
+        onPress={() => setPicked(togglePlanTech(picked, value, techs))}
         chevron={false}
         trailing={
           <View style={!on && { opacity: 0 }}>
@@ -106,22 +117,24 @@ export function PlanWeek({
         loading={busy}
         wide
         onPress={() => {
-          // The sheet starts from the tech the schedule shows.
-          setTech(fallback);
+          // The sheet starts from the tech the schedule shows, else everyone.
+          setPicked(fallback());
           setWithTray(true);
           setOpen(true);
         }}
       />
       <ModalSheet visible={open} onClose={() => setOpen(false)} title="Plan Week">
-        {/* Who to plan for, as an iOS checklist: Everyone, then each tech. */}
-        <View
-          style={{ gap: space["2"] }}
-          accessibilityRole="radiogroup"
-          accessibilityLabel="Plan for"
-        >
-          <T variant="secondary" muted style={styles.label}>
-            Plan for
-          </T>
+        {/* Who to plan for, as an iOS checklist with checkmarks: Everyone selects or clears all,
+            then each tech. */}
+        <View style={{ gap: space["2"] }} accessibilityLabel="Plan for">
+          <View style={styles.labelRow}>
+            <T variant="secondary" muted>
+              Plan for
+            </T>
+            <T variant="secondary" muted>
+              {label || "Pick a tech"}
+            </T>
+          </View>
           <Group>{[row(EVERYONE, "Everyone")]}</Group>
         </View>
         <Group>{techs.map((t) => row(t.id, t.name))}</Group>
@@ -146,7 +159,7 @@ export function PlanWeek({
         <T variant="secondary" muted style={styles.label}>
           {PLAN_WEEK_HELP}
         </T>
-        <Button title="Plan Week" wide onPress={plan} />
+        <Button title="Plan Week" wide onPress={plan} disabled={picked.length === 0} />
       </ModalSheet>
     </View>
   );
@@ -154,6 +167,11 @@ export function PlanWeek({
 
 const styles = StyleSheet.create({
   label: { paddingHorizontal: space["4"] },
+  labelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: space["4"],
+  },
   switchRow: {
     flexDirection: "row",
     alignItems: "center",

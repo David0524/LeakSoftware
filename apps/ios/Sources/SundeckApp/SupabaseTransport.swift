@@ -43,6 +43,14 @@ public struct SupabaseTransport: SyncTransport {
         return try await call("sync_pull", arguments).decode(PullPage.self)
     }
 
+    /// Rows per table this user would download from the start (public.sync_pull_count,
+    /// migration 7700), for the first download's progress. Nil on an older server.
+    public func pullCount() async throws -> [String: Int]? {
+        let value = try await call("sync_pull_count", [:])
+        guard case .object(let counts) = value else { return nil }
+        return counts.compactMapValues { v in v.number.map { Int($0) } }
+    }
+
     public func scope() async throws -> String? {
         let value = try await call("sync_scope", [:])
         if case .string(let text) = value { return text }

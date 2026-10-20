@@ -702,3 +702,27 @@ Built on the website first; `docs/plans/owner-list-2026-10-19.md` has each chang
 - **Scope goes beyond the MVP:** add simple scheduling, reminders, review requests, light warranty tracking, basic owner dashboard, and shop signup with LeakBook billing. Insurance template, partner portal, and QuickBooks wait. Dispatch/routing, payroll, inventory, and accounting are out.
 - **Logo:** drop-pin mark, concepted in ChatGPT and rebuilt as exact geometry (`brand/scripts/build_logo.py`).
 - **Brand:** name LeakBook; "Work Truck" palette (navy, water blue, safety orange); Barlow Semi Condensed + Public Sans. Primary buttons use navy text on orange for contrast in sun.
+
+## 2026-10-20: owner list f (after TestFlight 1010)
+
+Spec: `docs/design/2026-10-20-gestures.md`.
+- **Cleaning alerts:** filter and salt-cell cleanings due show on Today's card and the Live
+  Activity / Android ongoing notification.
+- **Today's card:**
+  - It swipes between the day's stops, its segments are tappable, and Back to Now returns to the
+    current stop.
+  - A finished stop's card offers only its undo.
+  - Mark Complete moves straight to the next stop, with an Undo banner. There is no 60 s hold.
+- **On My Way** lives in Message: on the tech's own stop before arriving, Message starts as the
+  On My Way text, and the tech can edit it. There's no car button.
+- **No clock times** on the Live Activity or the card.
+- **Live Activity switch** in Notifications, on unless turned off.
+- **Gestures:**
+  - swipe between a job's pages, an owner's techs on Today, and Schedule's days;
+  - pull to refresh;
+  - swipe actions on Today's rows;
+  - the Findings title doesn't collapse when the page fits.
+- **Plan Week** takes several techs and splits the open jobs evenly by minutes of work.
+- **Jobs** sort like Invoices.
+- **The first download** shows real progress (`sync_pull_count`) as a pool that fills, and uses
+  bigger, overlapping pages.

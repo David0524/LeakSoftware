@@ -114,6 +114,7 @@ export default function Customers() {
             last={index === rows.length - 1}
             onPress={() => router.push(`/customers/${c.id}`)}
             value={value ? <T muted>{value}</T> : undefined}
+            phone={c.phone}
           >
             <Text
               numberOfLines={2}

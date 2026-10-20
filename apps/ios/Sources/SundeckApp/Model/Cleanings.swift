@@ -89,6 +89,34 @@ public func stopCleanings(_ cleanings: [PlanCleaningRow], onVisit: Set<String>, 
     }
 }
 
+/// Each of a day's stops' plan cleanings on its checklist, with their countdown (website
+/// `dueAt`), by job: what Today's rows, its card and the Live Activity show. A plan whose
+/// cleanings aren't on this phone yet shows the visit's checklist ones. Only maintenance visits.
+public func dayCleanings(_ store: LocalStore, companyId: String, stops: [ScheduleJob], today: String)
+    -> [String: [VisitCleaning]]
+{
+    let stops = stops.filter { $0.type == .maintenance }
+    guard !stops.isEmpty else { return [:] }
+    let config = InspectionConfig(store, companyId: companyId)
+    let plans = planCleanings(store, companyId: companyId, planIds: Set(stops.compactMap(\.servicePlanId)))
+    var out: [String: [VisitCleaning]] = [:]
+    for job in stops {
+        let day = job.planDate ?? today
+        let inspection = JobInspection(store, jobId: job.id)
+        let found =
+            plans.contains { $0.planId == job.servicePlanId }
+            ? stopCleanings(plans, onVisit: Set(inspection.components.compactMap(\.planCleaningId)), visitDay: day)
+            : visitCleanings(inspection, config, day: day)
+        if !found.isEmpty { out[job.id] = found }
+    }
+    return out
+}
+
+/// A visit's cleanings as the card and the Live Activity take them (core `StopCleaning`).
+public func heroCleanings(_ list: [VisitCleaning]) -> [StopCleaning] {
+    list.map { StopCleaning(name: $0.name, kind: $0.kind, days: $0.due.days, weeks: $0.due.weeks) }
+}
+
 /// A cleaning a plan put on a visit's checklist, for Schedule (owner, 2026-10-20: "The
 /// filter/salt cells don't show up on the dates they're due").
 public struct ScheduledCleaning: Equatable, Sendable {
@@ -216,26 +244,5 @@ public func visitCleanings(_ insp: JobInspection, _ config: InspectionConfig, da
         let type = config.componentTypeById[c.componentTypeId]
         let name = type?.name ?? (c.label.isEmpty ? "Cleaning" : c.label)
         return VisitCleaning(id: c.id, name: name, kind: cleaningKind(key: type?.key, name: name), due: due)
-    }
-}
-
-/// The cleaning icons from the website (apps/web/src/components/icons.tsx), in a 24-unit box
-/// with a 1.8 stroke: a pleated cartridge for filters, a tube with a spark for salt cells, two
-/// arrows in a circle for anything else. Rounded rectangles as (x, y, width, height, radius).
-public struct CleaningGlyph: Equatable, Sendable {
-    public var rects: [[Double]]
-    public var paths: [String]
-
-    public static func of(_ kind: CleaningKind) -> CleaningGlyph {
-        switch kind {
-        case .filter: CleaningGlyph(rects: [[6, 3, 12, 18, 3]], paths: ["M10 7v10M14 7v10"])
-        // A new cartridge with an arrow going in (NewFilterIcon).
-        case .filterReplace:
-            CleaningGlyph(rects: [[9, 6, 10, 15, 2.5]], paths: ["M12.5 10v7M15.5 10v7M3 4h6M6 1v6"])
-        case .saltCell: CleaningGlyph(rects: [[2.5, 8, 19, 8, 4]], paths: ["m13 9.5-2.5 3h3L11 15"])
-        case .other:
-            CleaningGlyph(
-                rects: [], paths: ["M20 11a8 8 0 0 0-14.5-4.5M4 13a8 8 0 0 0 14.5 4.5", "M5 3v4h4M19 21v-4h-4"])
-        }
     }
 }

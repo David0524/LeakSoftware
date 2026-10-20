@@ -13,6 +13,7 @@ import { mapAlt, mapUrl, missingNote, stopsLabel } from "../../lib/dayMap";
 import { getServices } from "../../lib/services";
 import { Group, T, useReduceMotion } from "../../ui/components";
 import { ModalSheet } from "../../ui/ModalSheet";
+import { useNoSwipe } from "../../ui/SwipeNav";
 import {
   appearance,
   color,
@@ -150,6 +151,8 @@ export function DayMap({
 }) {
   const token = useToken();
   const reduceMotion = useReduceMotion();
+  // A swipe never starts on the map (gestures spec section 4).
+  const noSwipe = useNoSwipe();
   const [open, setOpen] = useState(readOpen);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const [enlarged, setEnlarged] = useState(false);
@@ -167,7 +170,7 @@ export function DayMap({
   };
 
   return (
-    <View>
+    <View {...noSwipe}>
       {shown ? (
         <Pressable
           accessibilityRole="button"

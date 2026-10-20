@@ -61,4 +61,10 @@ export interface SyncTransport {
    * away from them, the engine pulls everything again and drops what is no longer theirs.
    */
   scope?(): Promise<string>;
+  /**
+   * How many rows this user will download, per table (public.sync_pull_count), for the first
+   * download's progress. Null when the server can't say (an older server, offline): the download
+   * goes on without a number.
+   */
+  count?(): Promise<Record<string, number> | null>;
 }

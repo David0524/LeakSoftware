@@ -25,6 +25,9 @@ public struct SyncStatus: Equatable, Sendable {
     /// Since when changes or files have waited without a break, or nil when nothing waits. The
     /// sync bar says so only after `syncNoteDelay` of it (`syncBarStatus`).
     public var waitingSince: Date?
+    /// The first download's progress (rows per table against the server's count), for Getting
+    /// Ready; nil outside a first download.
+    public var download: PullProgress?
 
     public init() {}
 }
@@ -35,7 +38,16 @@ public struct SyncStatus: Equatable, Sendable {
 /// Port of apps/mobile/src/lib/sync-service.ts.
 @MainActor @Observable
 public final class SyncService {
-    public private(set) var status = SyncStatus()
+    public private(set) var status = SyncStatus() {
+        didSet {
+            let running = !status.initialSyncDone && status.phase == .syncing
+            if firstSyncRunning != running { firstSyncRunning = running }
+        }
+    }
+    /// The first download is running (no company on the phone yet). Its own property, so a screen
+    /// that only needs this (Today's skeleton) doesn't redraw on every status change (gestures
+    /// spec section 6).
+    public private(set) var firstSyncRunning = false
     /// Changes whenever local data changes (a write, a pull, a sign-out), so screens re-read.
     public private(set) var revision = 0
     /// Bumped when a held-back "waiting" note comes due, so the sync bar looks again.
@@ -52,6 +64,7 @@ public final class SyncService {
     @ObservationIgnored private let auth: any AuthBackend
     @ObservationIgnored private let now: @Sendable () -> Date
     @ObservationIgnored private var started = false
+    @ObservationIgnored private var progressWired = false
     @ObservationIgnored private var online = true
     @ObservationIgnored private var timer: Task<Void, Never>?
     @ObservationIgnored private var soon: Task<Void, Never>?
@@ -140,6 +153,12 @@ public final class SyncService {
         }
         if status.phase == .signedOut, await auth.currentSession() == nil { return }
         status.phase = .syncing
+        if !progressWired {
+            progressWired = true
+            await engine.setProgressHandler { [weak self] progress in
+                Task { @MainActor in self?.status.download = progress }
+            }
+        }
         var summary = await engine.sync()
         if summary.authFailed {
             // An expired token: refresh once, then try again.

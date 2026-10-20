@@ -23,6 +23,12 @@
         /// Complete Job on a visit whose report goes out by itself asks first (owner, 2026-10-20).
         @State private var askingSend = false
         @State private var keyboardShown = false
+        /// Where the page is scrolled, and where each section was left (gestures spec section 4:
+        /// "The pages keep their scroll position").
+        @State private var scroll = ScrollPosition(edge: .top)
+        @State private var offsets: [JobPageSection: CGFloat] = [:]
+        /// A section change is moving the page: its scroll isn't the new section's yet.
+        @State private var restoring = false
         /// The Photos section's capture (Attach to, camera, library), shared with the Next Step
         /// bar's Add Photo and Add Video.
         @State private var capture: CaptureController
@@ -75,7 +81,7 @@
         private func content(_ job: JobView, _ company: CompanyContext) -> some View {
             let sections = JobPageSection.sections(for: job.type)
             let current = currentSection(job)
-            return ScrollViewReader { proxy in
+            return Group {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
                         header(job, company)
@@ -101,6 +107,16 @@
                         }
                     }
                 }
+                .scrollPosition($scroll)
+                // A page whose content fits doesn't scroll, so the large title never collapses onto
+                // a short page's tile (owner, 2026-10-20: "it doesn't make sense for the nav bar to
+                // shrink on scroll since it's sitting on a tile"; Findings, short Tests or Photos).
+                .scrollBounceBehavior(.basedOnSize, axes: .vertical)
+                .onScrollGeometryChange(for: CGFloat.self) { geo in
+                    geo.contentOffset.y + geo.contentInsets.top
+                } action: { _, y in
+                    if !restoring { offsets[current] = y }
+                }
                 .scrollDismissesKeyboard(.interactively)
                 .refreshable { await sync.syncNow() }
                 .background(Color.bg)
@@ -110,8 +126,14 @@
                 .safeAreaInset(edge: .bottom, spacing: 0) { nextStepBar(job, current, company) }
                 .trackingKeyboard($keyboardShown)
                 .mediaViewer(jobId: jobId)
-                .onChange(of: section) { _, _ in
-                    proxy.scrollTo("top", anchor: .top)
+                .onChange(of: section) { _, next in
+                    // Each section comes back where it was left; a new one opens at the top.
+                    restoring = true
+                    if let next, let y = offsets[next] { scroll.scrollTo(y: y) } else { scroll.scrollTo(edge: .top) }
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(400))
+                        restoring = false
+                    }
                 }
             }
             .alert(CompleteSendPrompt.title, isPresented: $askingSend) {
@@ -249,7 +271,8 @@
             case .findings:
                 VStack(alignment: .leading, spacing: 32) {
                     // The pool's drawing first, as on the website (owner, 2026-10-19).
-                    if job.property != nil { PoolDiagramSection(job: job) }
+                    // A page swipe never starts on the drawing.
+                    if job.property != nil { PoolDiagramSection(job: job).keepsHorizontalDrags() }
                     TestsTab(job: job)
                     FindingsTab(job: job)
                 }
@@ -270,6 +293,7 @@
         }
 
         private func choose(_ next: JobPageSection) {
+            restoring = true
             withAnimation(Motion.smooth) { section = next }
             JobSectionMemory.remember(next, for: jobId)
         }
@@ -303,7 +327,7 @@
 
         private func reload() {
             guard let company = session.company,
-                let found = (try? jobViews(sync.store, companyId: company.id))?.first(where: { $0.id == jobId })
+                let found = (try? jobView(sync.store, companyId: company.id, jobId: jobId)) ?? nil
             else {
                 job = nil
                 return

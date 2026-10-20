@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { JOB_TYPE_LABELS, formatAddress, formatSchedule, type JobStatus } from "@leakbook/core";
+import {
+  JOB_SORTS,
+  JOB_TYPE_LABELS,
+  formatAddress,
+  formatSchedule,
+  jobSort,
+  type JobStatus,
+} from "@leakbook/core";
 import {
   Button,
   ButtonLink,
@@ -18,6 +25,7 @@ import { JobsTabs } from "@/components/jobs-tabs";
 import { NavPlus } from "@/components/nav-bar";
 import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
+import { SortMenu } from "@/components/sort-menu";
 
 export const metadata: Metadata = { title: "Jobs · Sundeck Pro" };
 
@@ -43,19 +51,25 @@ const FILTERS: { key: string; label: string; statuses: JobStatus[] | null }[] = 
 export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
   const office = await getOffice();
   const canAdd = await mayMakeJobs(office);
-  const { status, q, show } = await searchParams;
+  const { status, q, show, sort: sortParam } = await searchParams;
+  // The order, as Invoices sorts (owner, 2026-10-20); Scheduled Date isn't written in the address.
+  const sort = jobSort(sortParam);
   const filter = FILTERS.find((f) => f.key === status) ?? FILTERS[0]!;
   const search = typeof q === "string" ? q.trim() : "";
   const limit = Math.min(Math.max(Number(show) || PAGE, PAGE), 500);
-  const found = await listJobs(office, filter.statuses, { limit, search });
+  const found = await listJobs(office, filter.statuses, { limit, search, sort });
   const more = found.length > limit;
   const jobs = more ? found.slice(0, limit) : found;
   const link = (params: Record<string, string>) => {
     const next = new URLSearchParams({
       ...(filter.key !== "open" ? { status: filter.key } : {}),
       ...(search ? { q: search } : {}),
+      ...(sort !== "scheduled" ? { sort } : {}),
       ...params,
     });
+    if (next.get("status") === "open") next.delete("status");
+    if (next.get("sort") === "scheduled") next.delete("sort");
+    if (!next.get("q")) next.delete("q");
     return `/jobs${next.size ? `?${next}` : ""}`;
   };
   const now = new Date();
@@ -81,7 +95,7 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
         {FILTERS.map((f) => (
           <Link
             key={f.key}
-            href={`/jobs${f.key === "open" ? "" : `?status=${f.key}`}${search ? `${f.key === "open" ? "?" : "&"}q=${encodeURIComponent(search)}` : ""}`}
+            href={link({ status: f.key })}
             aria-current={f === filter ? "page" : undefined}
             className={pillClass(f === filter)}
           >
@@ -90,23 +104,31 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
         ))}
       </nav>
 
-      <form action="/jobs" className="mb-5 flex gap-2" role="search">
-        {filter.key !== "open" ? <input type="hidden" name="status" value={filter.key} /> : null}
-        <label htmlFor="q" className="sr-only">
-          Search jobs
-        </label>
-        <input
-          id="q"
-          name="q"
-          type="search"
-          defaultValue={search}
-          placeholder="Customer name or job number"
-          className="min-h-11 min-w-0 flex-1 rounded-[10px] border border-control-border bg-surface px-3 focus:outline-3 focus:outline-focus"
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <form action="/jobs" className="flex min-w-0 flex-1 gap-2" role="search">
+          {filter.key !== "open" ? <input type="hidden" name="status" value={filter.key} /> : null}
+          {sort !== "scheduled" ? <input type="hidden" name="sort" value={sort} /> : null}
+          <label htmlFor="q" className="sr-only">
+            Search jobs
+          </label>
+          <input
+            id="q"
+            name="q"
+            type="search"
+            defaultValue={search}
+            placeholder="Customer name or job number"
+            className="min-h-11 min-w-0 flex-1 rounded-[10px] border border-control-border bg-surface px-3 focus:outline-3 focus:outline-focus"
+          />
+          <Button type="submit" kind="secondary">
+            Search
+          </Button>
+        </form>
+        <SortMenu
+          options={JOB_SORTS}
+          value={sort}
+          hrefFor={Object.fromEntries(JOB_SORTS.map((x) => [x.key, link({ sort: x.key })]))}
         />
-        <Button type="submit" kind="secondary">
-          Search
-        </Button>
-      </form>
+      </div>
 
       {jobs.length === 0 ? (
         <Empty>

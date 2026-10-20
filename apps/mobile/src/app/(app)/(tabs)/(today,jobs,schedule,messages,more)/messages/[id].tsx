@@ -14,6 +14,8 @@ import {
 import { useTeam } from "../../../../../data/schedule";
 import { Composer, useTabBarTop } from "../../../../../features/messages/Composer";
 import { Thread } from "../../../../../features/messages/Thread";
+import { recordOnMyWay } from "../../../../../features/today/OnMyWay";
+import { readOnMyWayDraft } from "../../../../../lib/heroMessage";
 import { getServices } from "../../../../../lib/services";
 import { useCompany } from "../../../../../state/session";
 import {
@@ -32,7 +34,15 @@ import { color, space, type } from "../../../../../ui/theme";
  * phone first, then connect from the company number. Opening it marks it read for the team.
  */
 export default function Conversation() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{
+    id: string;
+    omw?: string;
+    drive?: string;
+    body?: string;
+  }>();
+  const { id } = params;
+  // Today's Message before arriving: the On My Way text, filled in (owner, 2026-10-20).
+  const [draft, setDraft] = useState(() => readOnMyWayDraft(params));
   const company = useCompany();
   const line = useLine(company.id);
   const conversation = useConversations(company.id).find((c) => c.id === id);
@@ -136,7 +146,13 @@ export default function Conversation() {
         conversationId: id,
         body,
         picture: picture ? { companyId: company.id, ...picture } : undefined,
+        ...(draft ? { jobId: draft.jobId } : null),
       });
+      // Sending it is On My Way: the card and the notification switch to "On the way". Once.
+      if (draft) {
+        recordOnMyWay(draft.jobId, company.id, draft.driveMin);
+        setDraft(null);
+      }
       return true;
     } catch (e) {
       Alert.alert("Not Sent", e instanceof Error ? e.message : String(e));
@@ -171,7 +187,7 @@ export default function Conversation() {
         {composer}
       </Animated.ScrollView>
       {active && !conversation.opted_out ? (
-        <Composer pictures={line.pictures} onSend={send} />
+        <Composer pictures={line.pictures} onSend={send} initialBody={draft?.body} />
       ) : null}
     </View>
   );

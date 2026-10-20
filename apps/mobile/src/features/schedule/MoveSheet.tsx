@@ -29,10 +29,12 @@ function ValueRow({
       android_ripple={{ color: color.ripple }}
       style={({ pressed }) => [styles.row, pressed && { backgroundColor: color.rowPressed }]}
     >
-      <T>{label}</T>
+      <T style={styles.label}>{label}</T>
+      {/* A long value ("After Lebron James (8:00 AM)", a long name, large text) wraps to two
+          lines and the row grows to fit it, never clipped (owner, 2026-10-20). */}
       <View style={styles.value}>
         <Text
-          numberOfLines={1}
+          numberOfLines={2}
           style={[type.body, { color: color.link, flexShrink: 1, textAlign: "right" }]}
           maxFontSizeMultiplier={MAX_TEXT_SCALE}
         >
@@ -266,8 +268,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: space["3"],
     paddingHorizontal: space["4"],
-    paddingVertical: 6,
+    // A grouped row's own padding, so a two-line value has room above and below.
+    paddingVertical: 11,
   },
+  label: { flexShrink: 1 },
   value: {
     flexDirection: "row",
     alignItems: "center",

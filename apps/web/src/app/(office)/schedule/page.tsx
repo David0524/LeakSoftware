@@ -318,7 +318,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
         <ScreenTip screen="schedule" />
       </Suspense>
       {/* Swipe sideways for the previous or next day, week, or month (owner, 2026-10-20). */}
-      <SwipeHrefs prev={href(move(-1))} next={href(move(1))}>
+      <SwipeHrefs page={href(date)} scope="schedule" prev={href(move(-1))} next={href(move(1))}>
         {/* One row: previous, the date, next, and Day / Week / Month at the far right. */}
         <div className={cx("mb-3 flex items-center gap-2", views.length > 3 && "max-sm:flex-wrap")}>
           <Link

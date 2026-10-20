@@ -262,3 +262,85 @@ extension ECMA {
     }
 
 }
+
+// MARK: - Sorting the Jobs list (owner, 2026-10-20: "Add sorting on the jobs page just like invoices")
+
+/// The Jobs list's sort (`JobSort`), in the menu's order (`JOB_SORTS`). Scheduled Date first, as
+/// the page opens.
+public enum JobSort: String, CaseIterable, Codable, Sendable {
+    case scheduled, newest, oldest, customer, number
+
+    public var label: String {
+        switch self {
+        case .scheduled: "Scheduled Date"
+        case .newest: "Newest"
+        case .oldest: "Oldest"
+        case .customer: "Customer"
+        case .number: "Job Number"
+        }
+    }
+}
+
+/// A sort key from a saved choice; Scheduled Date when it isn't one (`jobSort`).
+public func jobSort(_ key: String?) -> JobSort { key.flatMap(JobSort.init(rawValue:)) ?? .scheduled }
+
+/// What the sort reads from a job (`JobSortItem`).
+public struct JobSortItem: Equatable, Sendable {
+    public var number: Int?
+    public var scheduledStart: String?
+    public var createdAt: String?
+    public var customer: String?
+
+    public init(number: Int?, scheduledStart: String?, createdAt: String?, customer: String?) {
+        self.number = number
+        self.scheduledStart = scheduledStart
+        self.createdAt = createdAt
+        self.customer = customer
+    }
+}
+
+/// The jobs in a sort's order (`sortJobs`):
+/// - Scheduled Date: soonest first, jobs without a date last.
+/// - Newest and Oldest: by when the job was made.
+/// - Customer: A to Z, ignoring case and accents; no name last.
+/// - Job Number: highest first.
+/// Ties go to the highest job number, then keep the list's order.
+public func sortJobs<T>(_ jobs: [T], sort: JobSort, item: (T) -> JobSortItem) -> [T] {
+    func time(_ v: String?) -> Double? {
+        guard let v, !v.isEmpty else { return nil }
+        guard let ms = ECMA.parseDate(v), !ms.isNaN else { return 0 }
+        return ms
+    }
+    func name(_ v: String?) -> String? {
+        let t = ECMA.trim(v ?? "")
+        return t.isEmpty ? nil : t
+    }
+    func by(_ a: JobSortItem, _ b: JobSortItem) -> Double {
+        switch sort {
+        case .scheduled:
+            let x = time(a.scheduledStart)
+            let y = time(b.scheduledStart)
+            guard let x else { return y == nil ? 0 : 1 }
+            guard let y else { return -1 }
+            return x - y
+        case .newest: return (time(b.createdAt) ?? 0) - (time(a.createdAt) ?? 0)
+        case .oldest: return (time(a.createdAt) ?? 0) - (time(b.createdAt) ?? 0)
+        case .customer:
+            switch (name(a.customer), name(b.customer)) {
+            case (nil, nil): return 0
+            case (nil, _): return 1
+            case (_, nil): return -1
+            case (let x?, let y?): return Double(ECMA.localeCompareBase(x, y))
+            }
+        case .number: return 0
+        }
+    }
+    let items = jobs.map(item)
+    return jobs.indices.sorted { i, j in
+        let r = by(items[i], items[j])
+        if r != 0 { return r < 0 }
+        let n = (items[j].number ?? 0) - (items[i].number ?? 0)
+        if n != 0 { return n < 0 }
+        return i < j
+    }.map { jobs[$0] }
+}

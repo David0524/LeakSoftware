@@ -452,11 +452,12 @@ export function ScheduleScreen() {
   }
 
   /** Plan Week, worked out on the phone and saved in one go; its undo rows put it back. */
-  function planTheWeek(forTech: string, withTray: boolean) {
+  function planTheWeek(forTechs: string[], withTray: boolean) {
     const r = buildWeekPlan({
       ctx: live(),
       dates: weekDates,
-      tech: forTech,
+      techs: forTechs,
+      name: (id) => movers.find((m) => m.id === id)?.name ?? "A tech",
       tray: withTray,
       team,
       dayJobs: dayJobsOf,

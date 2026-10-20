@@ -21,15 +21,24 @@
         @State private var day: TodayDay?
         @State private var weather: Weather?
         @State private var drive = DriveTimes()
-        /// The card's stop just completed: shown done, with On My Way to the next one, for a minute
-        /// (as the Live Activity does).
-        @State private var justDone: String?
+        /// The stop the tech swiped or tapped to on the card (nil: the one the day is on). Back to
+        /// now when the app opens again, the day changes, or a stop is started or completed.
+        @State private var viewing: String?
+        /// The stop just completed: drawn done with its check for a moment, then the card slides
+        /// on (owner, 2026-10-20: no minute's hold; gestures spec section 9).
+        @State private var flash: String?
+        /// "Derek Jeter done", with Undo (the stop's Reopen Visit or Mark Not Complete).
+        @State private var banner: ResultBanner?
+        @State private var undoJob: String?
         /// Whether the "N done" row is open.
         @State private var showDone = false
+        @Environment(\.scenePhase) private var scenePhase
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         var body: some View {
             ScreenScroll {
-                let firstSync = !sync.status.initialSyncDone && sync.status.phase == .syncing
+                // Only this flag, not the whole sync status: Today doesn't redraw on every sync.
+                let firstSync = sync.firstSyncRunning
                 if session.company != nil && (day == nil || (firstSync && day?.route == nil)) {
                     // The first read, or the first sync still bringing the day down: the shapes
                     // of the day, not "Nothing on your route today" (loading.md).
@@ -41,13 +50,21 @@
                     if day.ctx.isManager && GettingStartedCard.enabled { GettingStartedCard(company: company) }
                     if day.ctx.isManager && day.techs.count > 1 {
                         FilterPills(
-                            selection: Binding(get: { day.techId }, set: { techId = $0 }),
+                            selection: Binding(get: { day.techId }, set: { pickTech($0) }),
                             options: day.techs.map(\.id), label: { id in id == day.ctx.userId ? "Me" : day.name(id) }
                         )
                         .padding(.horizontal, -16)
+                        .keepsHorizontalDrags()
                         .accessibilityLabel("Whose day")
                     }
                     route(day)
+                        // Owners and admins: swipe sideways for the teammate before or after, in
+                        // the Whose Day order, stopping at either end (gestures spec section 4).
+                        .contentShape(Rectangle())
+                        .pageSwipe(
+                            enabled: day.ctx.isManager && day.techs.count > 1,
+                            previous: neighbor(day, -1).map { id in { pickTech(id) } },
+                            next: neighbor(day, 1).map { id in { pickTech(id) } })
                     // The tip comes after the stops, so the first stop's buttons are on screen at
                     // launch (owner, 2026-10-20).
                     if let tip = tipFor(
@@ -76,19 +93,50 @@
             .task(id: "\(sync.revision)|\(session.company?.id ?? "")|\(techId ?? "")|\(drive.known.count)") {
                 await reload()
             }
-            .task(id: justDone) {
-                guard justDone != nil else { return }
-                try? await Task.sleep(for: .seconds(liveStopDoneLingerSeconds))
-                justDone = nil
+            .task(id: flash) {
+                guard flash != nil else { return }
+                try? await Task.sleep(for: .seconds(0.6))
+                flash = nil
+            }
+            .resultBanner($banner, onUndo: { undoCompleted() })
+            .onChange(of: scenePhase) { _, phase in
+                // Back to the stop the day is on when the app opens again.
+                if phase == .active { viewing = nil }
             }
             .task(id: session.company?.id) {
                 guard let company = session.company, let user = session.user else { return }
-                let ctx = scheduleContext(sync.store, company: company, userId: user.id)
-                async let w = app.api.weather(zip: ctx.shopZip)
-                let jobs = scheduleJobs(sync.store, companyId: company.id)
-                drive = await cachedDriveTimes(app, companyId: company.id, keys: routePoints(jobs, depot: ctx.depot))
+                // Read off the main thread: every job's row, for the drive times' points.
+                let store = sync.store
+                let (zip, keys) = await Task.detached(priority: .utility) {
+                    let ctx = scheduleContext(store, company: company, userId: user.id)
+                    return (ctx.shopZip, routePoints(scheduleJobs(store, companyId: company.id), depot: ctx.depot))
+                }.value
+                async let w = app.api.weather(zip: zip)
+                drive = await cachedDriveTimes(app, companyId: company.id, keys: keys)
                 weather = await w
             }
+        }
+
+        /// Whose day: a teammate's, a cross-fade of the list, and the card back to their now.
+        private func pickTech(_ id: String) {
+            viewing = nil
+            techId = id
+        }
+
+        /// The teammate before (-1) or after (1) in the Whose Day order; nil at either end.
+        private func neighbor(_ day: TodayDay, _ step: Int) -> String? {
+            guard let at = day.techs.firstIndex(where: { $0.id == day.techId }) else { return nil }
+            let i = at + step
+            return day.techs.indices.contains(i) ? day.techs[i].id : nil
+        }
+
+        /// Undo on the "done" banner: the stop's Reopen Visit or Mark Not Complete.
+        private func undoCompleted() {
+            guard let id = undoJob, let company = session.company, let day else { return }
+            undoJob = nil
+            _ = try? StopWrites.mark(
+                sync, companyId: company.id, settings: company.settings, jobId: id, complete: false,
+                day: day.ctx.today, visitReports: app.visitReports)
         }
 
         private var title: String {
@@ -114,23 +162,24 @@
                 let done = stops.filter { $0.element.doneOn(day.ctx.today) }
                 let left = stops.filter { !$0.element.doneOn(day.ctx.today) }
                 let now = day.next?.id
-                VStack(alignment: .leading, spacing: 4) {
+                // Rows are built as they scroll on (gestures spec section 6: long lists virtualized).
+                LazyVStack(alignment: .leading, spacing: 4) {
                     Text(day.summaryText)
                         .textRole(.body)
                         .foregroundStyle(Color.textMuted)
                         .monospacedDigit()
                         .contentTransition(.numericText())
                         .padding(.bottom, 12)
-                    if let hero = day.hero(justDone: justDone) {
-                        TodayHeroCard(hero: hero, day: day).padding(.bottom, 20)
-                    }
+                    TodayHeroPager(day: day, viewing: $viewing, flash: flash).padding(.bottom, 20)
                     if !done.isEmpty {
                         TodayDoneRow(count: done.count, open: $showDone)
                         if showDone {
                             ForEach(done, id: \.element.id) { i, job in
                                 TodayStopCard(
                                     number: i + 1, job: job, day: day, leg: route.summary.legs[routeIndex: i] ?? 0,
-                                    isNext: false)
+                                    isNext: false
+                                )
+                                .equatable()
                             }
                         }
                     }
@@ -140,7 +189,9 @@
                             short: route.summary.short[routeIndex: i] ?? 0, inset: 16)
                         TodayStopCard(
                             number: i + 1, job: job, day: day, leg: route.summary.legs[routeIndex: i] ?? 0,
-                            isNext: job.id == now)
+                            isNext: job.id == now
+                        )
+                        .equatable()
                     }
                     LegLine(minutes: route.summary.backLegMin, label: "back to the shop", short: 0, inset: 16)
                 }
@@ -162,18 +213,35 @@
                 TodayDay(store: store, kv: kv, company: company, userId: user.id, wanted: wanted, drive: drive)
             }.value
             guard !Task.isCancelled else { return }
-            withAnimation(before == nil ? nil : Motion.snappy) { day = next }
+            // The stop the day was on, now done (here, on the job page, on the Lock Screen, or on
+            // another phone): the card moves straight on, with its check for a moment, and the
+            // banner offers Undo (owner, 2026-10-20: gestures spec section 9).
+            let completed = before.flatMap { b -> ScheduleJob? in
+                guard b.techId == next.techId, b.ctx.today == next.ctx.today, let id = b.hero()?.currentId,
+                    b.route?.jobs.first(where: { $0.id == id })?.doneOn(b.ctx.today) == false
+                else { return nil }
+                return next.route?.jobs.first { $0.id == id && $0.doneOn(next.ctx.today) }
+            }
+            // Back to now when the day changes, or a stop is started or completed.
+            let reset =
+                before.map { b in
+                    b.techId != next.techId || b.ctx.today != next.ctx.today
+                        || b.heroStops.map { "\($0.id)|\($0.status)|\($0.stopDoneOn ?? "")" }
+                            != next.heroStops.map { "\($0.id)|\($0.status)|\($0.stopDoneOn ?? "")" }
+                } ?? false
+            withAnimation(before == nil ? nil : Motion.snappy) {
+                day = next
+                if reset { viewing = nil }
+                if let completed, !reduceMotion { flash = completed.id }
+            }
+            if let completed {
+                undoJob = next.mine && todayUndo(completed, day: next.ctx.today) != nil ? completed.id : nil
+                banner = ResultBanner(
+                    kind: .success, title: "\(completed.customerName) done", undoable: undoJob != nil)
+            }
             // Pools on today's stops never looked up on the map: ask for them in the background.
             MissingPins.find(
                 next.route?.jobs ?? [], companyId: company.id, queue: app.locate, api: app.api, sync: sync)
-            // The card's stop just done (here, on the Lock Screen, or on another phone): shown done
-            // for a minute, with On My Way to the next one.
-            if let before, let day, before.techId == day.techId,
-                let shown = before.hero(justDone: justDone), shown.moment != .done, let id = shown.stopId,
-                day.route?.jobs.first(where: { $0.id == id })?.doneOn(day.ctx.today) == true
-            {
-                justDone = id
-            }
             // A Live Activity button for a stop not on my route today: its job page instead.
             if let request = app.stopRequest, let day, day.mine,
                 !(day.route?.jobs.contains { $0.id == request.jobId } ?? false)
@@ -186,7 +254,10 @@
 
     /// What Today shows for one person's day, worked out once when the data changes (off the
     /// main thread), never in a view's body.
-    struct TodayDay: Sendable {
+    struct TodayDay: Sendable, Equatable {
+        /// Each read of the day is a new value; views compare this, not every field, so a row
+        /// redraws only when the day was read again (gestures spec section 6).
+        let token = UUID()
         var ctx: ScheduleContext
         var techs: [TeamMember]
         var techId: String
@@ -199,7 +270,7 @@
         var routing = false
         /// The stops as Today's card reads them (core `todayHero`, owner 2026-10-20).
         var heroStops: [HeroStop] = []
-        /// The card with no stop just completed, worked out once (`hero(justDone:)`).
+        /// The card for the stop the day is on, worked out once (`hero(viewing:)`).
         private var restingHero: TodayHero?
 
         init(
@@ -214,39 +285,27 @@
             let pick = wanted ?? userId
             techId = ctx.isManager && techs.contains { $0.id == pick } ? pick : userId
             route = loaded.routes[routeKey(techId, ctx.today)]
-            // Each stop's plan cleanings on its checklist, with their countdown (website `dueAt`);
-            // a plan whose cleanings aren't on this phone yet shows the visit's checklist ones.
-            let config = InspectionConfig(store, companyId: company.id)
-            let stops = (route?.jobs ?? []).filter { $0.type == .maintenance }
-            let plans = planCleanings(
-                store, companyId: company.id, planIds: Set(stops.compactMap(\.servicePlanId)))
-            for job in stops {
-                let day = job.planDate ?? ctx.today
-                let inspection = JobInspection(store, jobId: job.id)
-                let found =
-                    plans.contains { $0.planId == job.servicePlanId }
-                    ? stopCleanings(
-                        plans, onVisit: Set(inspection.components.compactMap(\.planCleaningId)), visitDay: day)
-                    : visitCleanings(inspection, config, day: day)
-                if !found.isEmpty { cleanings[job.id] = found }
-            }
+            cleanings = dayCleanings(store, companyId: company.id, stops: route?.jobs ?? [], today: ctx.today)
             mapsApp = MapsApp(kv)
             lineActive = companyLine(store, companyId: company.id)?.status == "active"
             routing = MapLookups.on(kv, company: try? store.get("company", company.id))
-            heroStops = dayHeroStops(store, companyId: company.id, stops: route?.jobs ?? [])
-            restingHero = try? todayHero(stops: heroStops, today: ctx.today, timeZone: ctx.timeZone, justDone: nil)
+            heroStops = dayHeroStops(store, companyId: company.id, stops: route?.jobs ?? [], cleanings: cleanings)
+            restingHero = try? todayHero(stops: heroStops, today: ctx.today, timeZone: ctx.timeZone)
         }
+
+        static func == (a: TodayDay, b: TodayDay) -> Bool { a.token == b.token }
 
         func name(_ id: String) -> String { techs.first { $0.id == id }?.name ?? "Teammate" }
 
         var mine: Bool { techId == ctx.userId }
 
         /// The card at the top (owner, 2026-10-20; docs/plans/today-hero.md): the Live Activity's
-        /// rule, so the Lock Screen and the card pick the same stop. `justDone` is a stop completed
-        /// in the last minute, shown done with On My Way to the next one.
-        func hero(justDone: String? = nil) -> TodayHero? {
-            guard let justDone else { return restingHero }
-            return try? todayHero(stops: heroStops, today: ctx.today, timeZone: ctx.timeZone, justDone: justDone)
+        /// rule, so the Lock Screen and the card pick the same stop. `viewing` is a stop the tech
+        /// swiped or tapped to (only the card changes; the Now row and the Live Activity follow
+        /// the stop the day is on).
+        func hero(viewing: String? = nil) -> TodayHero? {
+            guard let viewing, viewing != restingHero?.stopId else { return restingHero }
+            return try? todayHero(stops: heroStops, today: ctx.today, timeZone: ctx.timeZone, viewing: viewing)
         }
 
         /// The stop you're on: the card's (Mark Complete moves it on).
@@ -284,22 +343,103 @@
     /// is ringed and marked Now, and starts closed, since the card above shows it (2026-10-20). A
     /// Live Activity button opens its stop here and does it.
     /// Website components/today-stop.tsx.
-    struct TodayStopCard: View {
+    struct TodayStopCard: View, Equatable {
         var number: Int
         var job: ScheduleJob
         var day: TodayDay
         var leg: Int
         var isNext: Bool
+
+        /// A row redraws only when its own stop, its place, or the day it was read from changes.
+        nonisolated static func == (a: TodayStopCard, b: TodayStopCard) -> Bool {
+            a.number == b.number && a.job == b.job && a.leg == b.leg && a.isNext == b.isNext && a.day == b.day
+        }
         @State private var open: Bool?
         @Environment(AppEnvironment.self) private var app
         @Environment(\.openRoute) private var openRoute
         @Environment(\.openURL) private var openURL
+        @Environment(SyncService.self) private var sync
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         var body: some View {
             let shape = RoundedRectangle(cornerRadius: CGFloat(Radius.card), style: .continuous)
             let done = job.doneOn(day.ctx.today)
             let expanded = open ?? false
+            SwipeActionsRow(actions: trailingActions(done: done), leading: leadingActions(done: done), menu: false) {
+                rowContent(done: done, expanded: expanded)
+            }
+            .clipShape(shape)
+            .card(padding: 0)
+            .overlay { if isNext { shape.strokeBorder(Color.link, lineWidth: 2) } }
+            .background {
+                // The Live Activity's On My Way for this stop (nothing on screen; owner, 2026-10-20).
+                if day.mine && !done { OnMyWayTrigger(job: job, day: day, leg: leg) }
+            }
+            // Touch and hold: Call, Message, Directions, Open (gestures spec section 5).
+            .contextMenu { menu(done: done) }
+            .onChange(of: app.stopRequest, initial: true) { _, request in
+                guard let request, request.jobId == job.id else { return }
+                open = true
+                // Its button does it; when it isn't there (done, or not my day), it's done with.
+                let done = job.doneOn(day.ctx.today)
+                let handled =
+                    request.action == .onMyWay
+                    ? !done && day.mine : !done && markStopTitle(job, day: day.ctx.today) != nil
+                if !handled { app.stopRequest = nil }
+            }
+            .zoomSource(job.id)
+            // Cards ease in as they scroll onto the screen.
+            .scrollTransition(.animated(.smooth)) { card, phase in
+                card.opacity(phase.isIdentity ? 1 : 0.6).scaleEffect(phase.isIdentity ? 1 : 0.96)
+            }
+        }
+
+        /// Swipe right: Complete, on my own day's stops not done (it opens the row and presses its
+        /// Mark Complete, with the same checks). The row's Mark Complete stays the visible way.
+        private func leadingActions(done: Bool) -> [SwipeAction] {
+            guard day.mine, !done, markStopTitle(job, day: day.ctx.today) != nil else { return [] }
+            return [
+                SwipeAction(title: "Complete", systemImage: "checkmark", tint: Color.pass) {
+                    app.stopRequest = StopRequest(jobId: job.id, action: .markComplete)
+                }
+            ]
+        }
+
+        /// Swipe left: Call and Directions (the row's call button and address stay visible).
+        private func trailingActions(done: Bool) -> [SwipeAction] {
+            var list: [SwipeAction] = []
+            if let phone = job.customerPhone {
+                list.append(SwipeAction(title: "Call", systemImage: "phone.fill", tint: Color.pass) { call(phone) })
+            }
+            if !job.address.isEmpty {
+                list.append(
+                    SwipeAction(title: "Directions", systemImage: "location.fill", tint: Color.link) { directions() })
+            }
+            return list
+        }
+
+        @ViewBuilder private func menu(done: Bool) -> some View {
+            if let phone = job.customerPhone {
+                Button("Call", systemImage: "phone") { call(phone) }
+                Button("Message", systemImage: "message") {
+                    if let url = OnMyWay.smsURL(phone, body: nil) { openURL(url) }
+                }
+            }
+            if !job.address.isEmpty {
+                Button("Directions", systemImage: "location") { directions() }
+            }
+            Button("Open Job", systemImage: "arrow.up.right") { openRoute(.job(job.id)) }
+        }
+
+        private func call(_ phone: String) {
+            if let url = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") { openURL(url) }
+        }
+
+        private func directions() {
+            if let url = directionsURL(job.place, app: MapsApp(sync.kv)) { openURL(url) }
+        }
+
+        private func rowContent(done: Bool, expanded: Bool) -> some View {
             VStack(alignment: .leading, spacing: 0) {
                 // The row (number, time, chevron) opens and closes the card; the customer's name is
                 // the link to the job, open or closed (owner, 2026-10-20; no Open Job button).
@@ -348,23 +488,6 @@
                     .padding(.bottom, 12)
                     .transition(.opacity)
                 }
-            }
-            .card(padding: 0)
-            .overlay { if isNext { shape.strokeBorder(Color.link, lineWidth: 2) } }
-            .onChange(of: app.stopRequest, initial: true) { _, request in
-                guard let request, request.jobId == job.id else { return }
-                open = true
-                // Its button does it; when it isn't there (done, or not my day), it's done with.
-                let done = job.doneOn(day.ctx.today)
-                let handled =
-                    request.action == .onMyWay
-                    ? !done && day.mine : !done && markStopTitle(job, day: day.ctx.today) != nil
-                if !handled { app.stopRequest = nil }
-            }
-            .zoomSource(job.id)
-            // Cards ease in as they scroll onto the screen.
-            .scrollTransition(.animated(.smooth)) { card, phase in
-                card.opacity(phase.isIdentity ? 1 : 0.6).scaleEffect(phase.isIdentity ? 1 : 0.96)
             }
         }
 
@@ -440,7 +563,7 @@
                 Spacer(minLength: 0)
                 if !done {
                     // On My Way as a round car, first (owner, 2026-10-20: "just be an icon").
-                    if day.mine { OnMyWayButton(job: job, day: day, leg: leg) }
+
                     if let phone = job.customerPhone {
                         RoundIconButton(systemImage: "phone", label: "Call \(job.customerName), \(phone)") {
                             if let url = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") {
@@ -598,137 +721,6 @@
             }
             .padding(.leading, inset)
             .padding(.vertical, 2)
-        }
-    }
-
-    /// On My Way (spec 5.1): texts the customer an arrival time. From the company number when the
-    /// shop sends that way and it works; otherwise the Messages app, else the share sheet. Its
-    /// label says what happened for 3 seconds.
-    struct OnMyWayButton: View {
-        var job: ScheduleJob
-        var day: TodayDay
-        var leg: Int
-        /// On Today's card: a round button on the Next line, white at 18% behind a white car; the
-        /// list's row does the Live Activity's On My Way (so it's sent once).
-        var onCard = false
-        @Environment(SyncService.self) private var sync
-        @Environment(AppEnvironment.self) private var app
-        @Environment(Session.self) private var session
-        @Environment(\.openURL) private var openURL
-        @State private var done: String?
-        @State private var asking = false
-
-        var body: some View {
-            styled
-                .onChange(of: app.stopRequest, initial: true) { _, request in
-                    // The Live Activity's On My Way, done here (owner, 2026-10-20).
-                    guard !onCard, let request, request.jobId == job.id, request.action == .onMyWay else { return }
-                    app.stopRequest = nil
-                    send()
-                }
-                .confirmationDialog(
-                    "On My Way goes out from your company number, which isn’t working yet.", isPresented: $asking,
-                    titleVisibility: .visible
-                ) {
-                    Button("Send From My Phone") { fromPhone() }
-                    Button("Cancel", role: .cancel) {}
-                } message: {
-                    Text(
-                        day.ctx.isManager
-                            ? "Set it up in Settings › Phone and Texting. You can send this one from your phone."
-                            : "Ask an owner to set it up. You can send this one from your phone.")
-                }
-                .task(id: done) {
-                    guard done != nil, done != "Sending…" else { return }
-                    try? await Task.sleep(for: .seconds(3))
-                    done = nil
-                }
-                .accessibilityLabel(done ?? "On My Way to \(job.customerName)")
-                .help(HeroAction.onMyWay.label)
-        }
-
-        /// A round 44 pt car, never words (owner, 2026-10-20: "make the 'on my way' text to just be
-        /// an icon"), with a checkmark for a few seconds once it's sent. Its state is spoken.
-        @ViewBuilder private var styled: some View {
-            let symbol =
-                switch done {
-                case nil: "car.fill"
-                case "Sending…"?: "ellipsis"
-                case "Not Sent"?: "exclamationmark.triangle.fill"
-                default: "checkmark"
-                }
-            if onCard {
-                HeroRoundButton(systemImage: symbol, label: done ?? "On My Way to \(job.customerName)", action: send)
-                    .disabled(done == "Sending…")
-            } else {
-                RoundIconButton(systemImage: symbol, label: done ?? "On My Way to \(job.customerName)", action: send)
-                    .disabled(done == "Sending…")
-            }
-        }
-
-        private var text: String {
-            let me = day.techs.first { $0.id == day.ctx.userId }?.name
-            return onMyWayText(
-                customer: job.customerName == "Customer" ? nil : job.customerName,
-                tech: me == "Teammate" || me == nil ? "your tech" : me!, shop: day.ctx.shopName,
-                arriveMin: localMinutes(Date(), timeZone: day.ctx.timeZone) + max(5, leg),
-                windowMin: day.ctx.settings.windowMin)
-        }
-
-        private func send() {
-            let viaCompany = !day.ctx.onMyWayFromPhone
-            if job.customerPhone != nil && viaCompany && !day.lineActive {
-                asking = true
-                return
-            }
-            if job.customerPhone != nil && viaCompany {
-                done = "Sending…"
-                let body = text
-                Task {
-                    do {
-                        _ = try await TextingServer(sync: sync, api: app.api).send(
-                            customerId: job.customerId, body: body, jobId: job.id)
-                        // Kept on the job once it's on its way to the customer, as on the website.
-                        startLiveStop()
-                        done = "Texted ✓"
-                    } catch {
-                        done = "Not Sent"
-                    }
-                }
-                return
-            }
-            fromPhone()
-        }
-
-        /// On My Way kept on the job (owner, 2026-10-20: Today's card, the website, the office and a
-        /// second phone show it), then the Lock Screen's Live Activity for this stop, arriving at the
-        /// time the text gives.
-        private func startLiveStop() {
-            if let company = session.company {
-                try? StopWrites.recordOnMyWay(sync, companyId: company.id, jobId: job.id, driveMinutes: leg)
-            }
-            app.liveStop.start(
-                jobId: job.id, eta: liveStopETA(now: Date(), timeZone: day.ctx.timeZone, driveMinutes: leg))
-        }
-
-        private func fromPhone() {
-            startLiveStop()
-            let body = text
-            if let phone = job.customerPhone {
-                let digits = phone.filter { $0.isNumber || $0 == "+" }
-                let encoded = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? body
-                if let url = URL(string: "sms:\(digits)&body=\(encoded)") {
-                    openURL(url)
-                    done = "Texted ✓"
-                    return
-                }
-            }
-            if presentShareSheet(body) {
-                done = "Shared ✓"
-            } else {
-                UIPasteboard.general.string = body
-                done = "Copied ✓"
-            }
         }
     }
 

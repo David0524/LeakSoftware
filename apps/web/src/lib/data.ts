@@ -25,7 +25,10 @@ import {
   checklistTally,
   cleaningKind,
   inspectionProgress,
+  jobSort,
+  sortJobs,
   type CleaningKind,
+  type JobSort,
 } from "@leakbook/core";
 import type { Office } from "./auth";
 import { createClient } from "./supabase/server";
@@ -188,20 +191,14 @@ export const OPEN_STATUSES: JobStatus[] = [
 export async function listJobs(
   office: Office,
   statuses: JobStatus[] | null,
-  opts: { limit?: number; search?: string } = {},
+  opts: { limit?: number; search?: string; sort?: JobSort } = {},
 ): Promise<JobRow[]> {
   const supabase = await db();
   preloadTeam(office);
   const limit = Math.min(opts.limit ?? 50, 500);
-  let q = supabase
-    .from("job")
-    .select(JOB_SELECT)
-    .eq("company_id", office.company.id)
-    .is("deleted_at", null)
-    .order("scheduled_start", { ascending: true, nullsFirst: false })
-    .order("number", { ascending: false })
-    .limit(limit + 1);
-  if (statuses) q = q.in("status", statuses);
+  const sort = jobSort(opts.sort);
+  // The search, as filters on job (customers by name, their pools, or a job number).
+  let terms: string[] | null = null;
   const search = opts.search?.trim();
   if (search) {
     const number = /^#?\d+$/.test(search) ? Number(search.replace("#", "")) : null;
@@ -216,15 +213,96 @@ export async function listJobs(
     const { data: pools } = ids.length
       ? await supabase.from("property").select("id").in("customer_id", ids)
       : { data: [] };
-    const terms = [
+    terms = [
       ids.length ? `bill_to_customer_id.in.(${ids.join(",")})` : null,
       pools?.length ? `property_id.in.(${pools.map((p) => p.id).join(",")})` : null,
       number ? `number.eq.${number}` : null,
-    ].filter(Boolean);
+    ].filter((t): t is string => !!t);
     if (terms.length === 0) return [];
-    q = q.or(terms.join(","));
   }
-  return attach(office, must(await q) as EmbeddedJob[]);
+  const filtered = <Q>(q: Q): Q => {
+    // Typed loosely: the same filters on two selects.
+    let r = (q as unknown as JobQuery).eq("company_id", office.company.id).is("deleted_at", null);
+    if (statuses) r = r.in("status", statuses);
+    if (terms) r = r.or(terms.join(","));
+    return r as unknown as Q;
+  };
+
+  // Jobs sort in the database, so Show More pages stay in order (owner, 2026-10-20: "Add
+  // sorting on the jobs page just like invoices"); ties go to the highest job number.
+  if (sort === "customer") {
+    // A job's customer is its bill-to, else its pool's owner: two embeds the database can't
+    // order by together. The matching jobs' names come first (small rows), sorted here, then
+    // that page's jobs in full.
+    const names = must(
+      await filtered(
+        supabase
+          .from("job")
+          .select(
+            "id, number, bill_to:customer!job_bill_to_customer_id_company_id_fkey(name), property:property!job_property_id_company_id_fkey(owner:customer!property_customer_id_company_id_fkey(name))",
+          ),
+      ).limit(5000),
+    ) as unknown as {
+      id: string;
+      number: number | null;
+      bill_to: { name: string } | null;
+      property: { owner: { name: string } | null } | null;
+    }[];
+    const page = sortJobs(
+      names.map((n) => ({
+        id: n.id,
+        number: n.number,
+        customer: n.bill_to?.name ?? n.property?.owner?.name ?? null,
+      })),
+      "customer",
+    ).slice(0, limit + 1);
+    if (!page.length) return [];
+    const rows = must(
+      await supabase
+        .from("job")
+        .select(JOB_SELECT)
+        .eq("company_id", office.company.id)
+        .in(
+          "id",
+          page.map((p) => p.id),
+        ),
+    ) as EmbeddedJob[];
+    const at = new Map(page.map((p, i) => [p.id, i]));
+    return attach(
+      office,
+      rows.sort((a, b) => (at.get(a.id) ?? 0) - (at.get(b.id) ?? 0)),
+    );
+  }
+  let q = filtered(supabase.from("job").select(JOB_SELECT));
+  q =
+    sort === "newest"
+      ? q.order("created_at", { ascending: false })
+      : sort === "oldest"
+        ? q.order("created_at", { ascending: true })
+        : sort === "number"
+          ? q
+          : q.order("scheduled_start", { ascending: true, nullsFirst: false });
+  q = q.order("number", { ascending: false }).limit(limit + 1);
+  const jobs = await attach(office, must(await q) as EmbeddedJob[]);
+  // The same order with the apps' tie-breaking (core sortJobs).
+  return sortJobs(
+    jobs.map((job) => ({
+      job,
+      number: job.number,
+      scheduled_start: job.scheduled_start,
+      created_at: job.created_at,
+      customer: job.customer?.name ?? null,
+    })),
+    sort,
+  ).map((k) => k.job);
+}
+
+/** The filters listJobs puts on its selects. */
+interface JobQuery {
+  eq(column: string, value: unknown): JobQuery;
+  is(column: string, value: null): JobQuery;
+  in(column: string, values: readonly unknown[]): JobQuery;
+  or(filters: string): JobQuery;
 }
 
 export async function jobsBetween(office: Office, fromIso: string, toIso: string) {

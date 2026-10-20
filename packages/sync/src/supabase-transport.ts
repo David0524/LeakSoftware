@@ -12,7 +12,10 @@ export interface RpcClient {
   }>;
 }
 
-/** Sync over Supabase RPC: public.sync_push, public.sync_pull, and public.sync_scope. */
+/**
+ * Sync over Supabase RPC: public.sync_push, public.sync_pull, public.sync_scope, and
+ * public.sync_pull_count (the first download's progress).
+ */
 export class SupabaseTransport implements SyncTransport {
   constructor(private readonly client: RpcClient) {}
 
@@ -26,6 +29,22 @@ export class SupabaseTransport implements SyncTransport {
     const { data, error } = await this.client.rpc("sync_pull", { cursor, page_size: pageSize });
     if (error) throw failure(error);
     return data as PullPage;
+  }
+
+  /** Rows per table this user will download; null on any failure (never fails a sync). */
+  async count(): Promise<Record<string, number> | null> {
+    try {
+      const { data, error } = await this.client.rpc("sync_pull_count", {});
+      if (error || !data || typeof data !== "object" || Array.isArray(data)) return null;
+      const totals: Record<string, number> = {};
+      for (const [table, n] of Object.entries(data as Record<string, unknown>)) {
+        const v = Number(n);
+        if (Number.isFinite(v) && v >= 0) totals[table] = v;
+      }
+      return totals;
+    } catch {
+      return null;
+    }
   }
 
   async scope(): Promise<string> {

@@ -165,9 +165,9 @@
             }
             .sheet(isPresented: $planningWeek) {
                 if let board {
-                    PlanWeekSheet(board: board) { tech, tray in
+                    PlanWeekSheet(board: board) { techs, tray in
                         planningWeek = false
-                        planWeek(tech: tech, tray: tray, board)
+                        planWeek(techs: techs, tray: tray, board)
                     }
                 }
             }
@@ -336,7 +336,7 @@
 
         /// Plan Week, on the phone: core `planWeek` on the synced jobs, off the main thread, every
         /// change saved through the sync layer in one transaction, then its result with Undo.
-        private func planWeek(tech: String, tray: Bool, _ board: Board) {
+        private func planWeek(techs: [String], tray: Bool, _ board: Board) {
             guard !planningRun else { return }
             planningRun = true
             let dates = planWeekDates(board.days, today: board.ctx.today)
@@ -345,7 +345,7 @@
                 let outcome = await Task.detached(priority: .userInitiated) {
                     Result {
                         try planTheWeek(
-                            dates: dates, tech: tech, tray: tray, jobs: jobs, ctx: ctx, team: team, drive: drive)
+                            dates: dates, techs: techs, tray: tray, jobs: jobs, ctx: ctx, team: team, drive: drive)
                     }
                 }.value
                 planningRun = false
@@ -353,7 +353,8 @@
                 case .success(let week):
                     let undo = week.undo.isEmpty ? nil : week.undo
                     save(
-                        week.updates, ResultBanner(kind: .success, title: week.message, undoable: undo != nil),
+                        week.updates,
+                        ResultBanner(kind: .success, title: week.message, detail: week.detail, undoable: undo != nil),
                         undo: undo)
                 case .failure(let error):
                     fail(error)
@@ -1335,6 +1336,28 @@
     /// Move {Customer} (spec 6.3): tech, day, and place in the route; Move or Take Off Schedule.
     /// From the job (Schedule Job, Change Schedule) it's the job's schedule: titled Schedule, with
     /// its Lock (owner, 2026-10-20: None · Day · Time · Both) and Save Schedule.
+    /// A menu's value in a grouped row, as the system's menu picker draws it (the tint and the
+    /// up-down chevron), but wrapping onto more lines so the row grows to fit its text instead of
+    /// being cut off (owner, 2026-10-20, of the Move sheet's "Place in the route").
+    struct MenuValue: View {
+        var text: String
+
+        var body: some View {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(text)
+                    .multilineTextAlignment(.trailing)
+                    .fixedSize(horizontal: false, vertical: true)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.footnote.weight(.semibold))
+                    .accessibilityHidden(true)
+            }
+            .textRole(.body)
+            .foregroundStyle(Color.link)
+            .frame(minHeight: minTarget, alignment: .trailing)
+            .contentShape(Rectangle())
+        }
+    }
+
     struct MoveSheet: View {
         var target: MoveTarget
         var board: Board
@@ -1361,6 +1384,19 @@
         /// on every render: it lays out the whole day).
         @State private var others: [ScheduleJob] = []
 
+        /// The Tech row's value: the tech's name, or Nobody yet.
+        private var techLabel: String {
+            tech.flatMap { id in movers.first { $0.id == id }?.name } ?? "Nobody yet (waits in Needs a Time)"
+        }
+
+        /// "First stop", or "After Lebron James (8:00 AM)".
+        private func placeLabel(_ index: Int) -> String {
+            guard index > 0, others.indices.contains(index - 1) else { return "First stop" }
+            let s = others[index - 1]
+            return "After \(s.customerName)"
+                + (s.scheduledStart.map { " (\(formatTime($0, timeZone: board.ctx.timeZone)))" } ?? "")
+        }
+
         private func otherStops(_ tech: String?, _ day: String) -> [ScheduleJob] {
             guard let tech else { return [] }
             return loadRoutes(board.jobs, ctx: board.ctx, dates: [day], team: board.team, drive: DriveTimes())
@@ -1375,12 +1411,21 @@
                             .multilineTextAlignment(.center)
                         Grouped {
                             ListRow("Tech") {
-                                Picker("Tech", selection: $tech) {
-                                    if movers.count > 1 { Text("Nobody yet (waits in Needs a Time)").tag(String?.none) }
-                                    ForEach(movers) { Text($0.name).tag(Optional($0.id)) }
+                                // A menu whose label wraps, so a long name grows the row instead of
+                                // being cut off (owner, 2026-10-20: "Make place in the route taller").
+                                Menu {
+                                    Picker("Tech", selection: $tech) {
+                                        if movers.count > 1 {
+                                            Text("Nobody yet (waits in Needs a Time)").tag(String?.none)
+                                        }
+                                        ForEach(movers) { Text($0.name).tag(Optional($0.id)) }
+                                    }
+                                    .pickerStyle(.inline)
+                                } label: {
+                                    MenuValue(text: techLabel)
                                 }
-                                .labelsHidden()
-                                .tint(Color.link)
+                                .accessibilityLabel("Tech")
+                                .accessibilityValue(techLabel)
                             }
                             ListRow("Day") {
                                 DatePicker(
@@ -1394,20 +1439,19 @@
                             }
                             if tech != nil && !others.isEmpty {
                                 ListRow("Place in the route") {
-                                    Picker("Place in the route", selection: $place) {
-                                        Text("First stop").tag(0)
-                                        ForEach(Array(others.enumerated()), id: \.element.id) { i, s in
-                                            Text(
-                                                "After \(s.customerName)"
-                                                    + (s.scheduledStart.map {
-                                                        " (\(formatTime($0, timeZone: board.ctx.timeZone)))"
-                                                    } ?? "")
-                                            )
-                                            .tag(i + 1)
+                                    Menu {
+                                        Picker("Place in the route", selection: $place) {
+                                            Text("First stop").tag(0)
+                                            ForEach(Array(others.enumerated()), id: \.element.id) { i, s in
+                                                Text(placeLabel(i + 1)).tag(i + 1)
+                                            }
                                         }
+                                        .pickerStyle(.inline)
+                                    } label: {
+                                        MenuValue(text: placeLabel(place))
                                     }
-                                    .labelsHidden()
-                                    .tint(Color.link)
+                                    .accessibilityLabel("Place in the route")
+                                    .accessibilityValue(placeLabel(place))
                                 }
                             }
                         }

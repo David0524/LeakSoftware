@@ -9,6 +9,7 @@ import {
   SupabaseTransport,
   SyncEngine,
   UploadQueue,
+  type DownloadState,
   type JsonValue,
   type OutboxProblem,
   type Row,
@@ -39,6 +40,11 @@ export interface SyncStatus {
    * waits. The sync bar shows "waiting" only after 8 seconds of it (lib/syncNote.ts).
    */
   waitingSince: number | null;
+  /**
+   * The first download's progress (Getting Ready, gestures spec section 11): rows saved per
+   * table and the server's count per table. Null outside the first download.
+   */
+  download: DownloadState | null;
 }
 
 /** Below this much free space the app warns before saves start failing. */
@@ -93,7 +99,14 @@ export class SyncService {
     uploader: Uploader,
   ) {
     this.store = store;
-    this.engine = new SyncEngine(store, new SupabaseTransport(supabase));
+    this.engine = new SyncEngine(store, new SupabaseTransport(supabase), {
+      // The first download reports its progress page by page, and an interrupted one resumes
+      // as a first download (big pages, progress).
+      onDownload: (download) => {
+        if (!this.statusValue.initialSyncDone) this.setStatus({ download });
+      },
+      firstDownload: () => !this.statusValue.initialSyncDone,
+    });
     this.uploadQueue = new UploadQueue(store, uploader);
     this.statusValue = {
       phase: "idle",
@@ -105,6 +118,7 @@ export class SyncService {
       uploads: this.uploadStatus(),
       storageLow: freeSpaceLow(),
       waitingSince: null,
+      download: null,
     };
     this.statusValue = withWaitingSince(this.statusValue, null);
   }
@@ -366,6 +380,7 @@ export class SyncService {
       lastSyncedAt: now,
       initialSyncDone: true,
       error: summary.readOnly ?? null,
+      download: null,
     });
     this.emit(summary.pulled > 0 || summary.pushed > 0);
     await this.runUploads();
@@ -493,6 +508,7 @@ export class SyncService {
       uploads: { waiting: 0, allPhotos: true, lastError: null },
       storageLow: false,
       waitingSince: null,
+      download: null,
     };
     this.emit(true);
   }

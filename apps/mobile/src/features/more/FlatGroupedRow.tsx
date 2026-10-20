@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { Linking, Platform, Pressable, StyleSheet, View } from "react-native";
+import { SwipeActions } from "../../ui/SwipeRow";
 import { Chevron } from "../../ui/components";
 import { color, shape, space } from "../../ui/theme";
 
@@ -14,6 +15,7 @@ export function FlatGroupedRow({
   onPress,
   label,
   value,
+  phone,
   children,
 }: {
   first: boolean;
@@ -22,9 +24,12 @@ export function FlatGroupedRow({
   label?: string;
   /** The value at the right, before the chevron. */
   value?: ReactNode;
+  /** Swipe left to call this number (gestures spec section 5), also offered to TalkBack. */
+  phone?: string | null;
   children: ReactNode;
 }) {
-  return (
+  const call = phone ? () => void Linking.openURL(`tel:${phone}`) : null;
+  const row = (
     <View
       style={[
         styles.box,
@@ -37,6 +42,8 @@ export function FlatGroupedRow({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
+        accessibilityActions={call ? [{ name: "call", label: "Call" }] : undefined}
+        onAccessibilityAction={(e) => e.nativeEvent.actionName === "call" && call?.()}
         onPress={onPress}
         android_ripple={{ color: color.ripple }}
         style={({ pressed }) => [
@@ -49,6 +56,13 @@ export function FlatGroupedRow({
         <Chevron />
       </Pressable>
     </View>
+  );
+  return call ? (
+    <SwipeActions trailing={[{ label: "Call", tint: color.link, onPress: call }]}>
+      {row}
+    </SwipeActions>
+  ) : (
+    row
   );
 }
 

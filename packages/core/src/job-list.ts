@@ -82,3 +82,61 @@ export function formatSchedule(
   }).format(d);
   return `${date}, ${time}`;
 }
+
+// ---------------------------------------------------------------------------
+// Sorting the Jobs list (owner, 2026-10-20: "Add sorting on the jobs page just like invoices")
+// ---------------------------------------------------------------------------
+
+export type JobSort = "scheduled" | "newest" | "oldest" | "customer" | "number";
+
+/** The sort menu, in order. Scheduled Date first, as the page opens. */
+export const JOB_SORTS: { key: JobSort; label: string }[] = [
+  { key: "scheduled", label: "Scheduled Date" },
+  { key: "newest", label: "Newest" },
+  { key: "oldest", label: "Oldest" },
+  { key: "customer", label: "Customer" },
+  { key: "number", label: "Job Number" },
+];
+
+/** A sort key from a page's address or a saved choice; Scheduled Date when it isn't one. */
+export function jobSort(key: unknown): JobSort {
+  return JOB_SORTS.find((s) => s.key === key)?.key ?? "scheduled";
+}
+
+export interface JobSortItem {
+  number?: number | null;
+  scheduled_start?: string | null;
+  created_at?: string | null;
+  customer?: string | null;
+}
+
+/**
+ * The jobs in a sort's order:
+ * - Scheduled Date: soonest first, jobs without a date last.
+ * - Newest and Oldest: by when the job was made.
+ * - Customer: A to Z.
+ * - Job Number: highest first.
+ * Ties go to the highest job number, then keep the list's order.
+ */
+export function sortJobs<T extends JobSortItem>(jobs: T[], sort: unknown): T[] {
+  const s = jobSort(sort);
+  const time = (v: string | null | undefined) => (v ? Date.parse(v) || 0 : null);
+  const by: Record<JobSort, (a: T, b: T) => number> = {
+    scheduled: (a, b) => {
+      const x = time(a.scheduled_start);
+      const y = time(b.scheduled_start);
+      return x == null ? (y == null ? 0 : 1) : y == null ? -1 : x - y;
+    },
+    newest: (a, b) => (time(b.created_at) ?? 0) - (time(a.created_at) ?? 0),
+    oldest: (a, b) => (time(a.created_at) ?? 0) - (time(b.created_at) ?? 0),
+    customer: (a, b) =>
+      (a.customer?.trim() || "￿").localeCompare(b.customer?.trim() || "￿", "en", {
+        sensitivity: "base",
+      }),
+    number: () => 0,
+  };
+  return jobs
+    .map((j, n) => ({ j, n }))
+    .sort((x, y) => by[s](x.j, y.j) || (y.j.number ?? 0) - (x.j.number ?? 0) || x.n - y.n)
+    .map((x) => x.j);
+}

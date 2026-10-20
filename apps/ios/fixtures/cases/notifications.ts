@@ -47,6 +47,22 @@ const stops: LiveStopInput[] = (["ahead", "driving", "on_site", "done"] as const
     { ...base, phase, scheduled: "9:00 AM" },
     { ...base, phase, scheduled: "" },
     { ...base, phase, scheduled: "1:15 pm" },
+    {
+      ...base,
+      phase,
+      access: "Gate 4821",
+      cleanings: [
+        { name: "Clean salt cell", kind: "salt_cell" as const, days: 14, weeks: 2 },
+        { name: "Clean filter", kind: "filter" as const, days: -2, weeks: 0 },
+        { name: "Replace filter", kind: "filter_replace" as const, days: 0, weeks: 0 },
+      ],
+    },
+    {
+      ...base,
+      phase,
+      cleanings: [{ name: "Clean filter", kind: "filter" as const, days: 1, weeks: 0 }],
+    },
+    { ...base, phase, cleanings: [] },
   ],
 );
 

@@ -1,4 +1,12 @@
-import { stopDone, type HeroStop, type Job, type TodayHero } from "@leakbook/core";
+import {
+  stopDone,
+  type CleaningKind,
+  type HeroStop,
+  type Job,
+  type LiveStopContent,
+  type StopCleaning,
+  type TodayHero,
+} from "@leakbook/core";
 
 // Today's card for the stop you're on (owner, 2026-10-20; docs/plans/today-hero.md), the parts
 // with no React: the card and Android's current-stop notification both feed core todayHero
@@ -21,11 +29,13 @@ export interface ChecklistCount {
 
 /**
  * The day's stops (route order) for todayHero. Only the card's stop needs its checklist count,
- * so the rest read 0 of 0, as the website does.
+ * so the rest read 0 of 0, as the website does. `cleanings` are each stop's plan cleanings on
+ * its visit (features/maintenance useStopCleanings, what Today's rows show).
  */
 export function heroStops(
   stops: HeroSource[],
   counts: ReadonlyMap<string, ChecklistCount> = new Map(),
+  cleanings: ReadonlyMap<string, StopCleaning[]> = new Map(),
 ): HeroStop[] {
   return stops.map((j) => ({
     id: j.id,
@@ -38,6 +48,7 @@ export function heroStops(
     customer: j.customer?.name ?? "Customer",
     address: j.property?.address_line1 ?? null,
     access: j.property?.access_notes ?? null,
+    cleanings: cleanings.get(j.id) ?? [],
     checklistDone: counts.get(j.id)?.done ?? 0,
     checklistTotal: counts.get(j.id)?.total ?? 0,
   }));
@@ -91,15 +102,80 @@ export function startJobValues(
 
 /**
  * The list under the card: done stops folded into one "N done" row, the rest in route order,
- * and the card's stop marked Now (none while the card shows a stop just done, or the day done).
+ * and the stop the day is on marked Now (none while the card shows a stop just done, or the day
+ * done), even while the tech browses the card to another stop.
  */
 export function todayList<S extends HeroSource>(
   stops: S[],
   today: string,
-  hero: Pick<TodayHero, "moment" | "stopId"> | null,
+  hero:
+    | (Pick<TodayHero, "moment" | "stopId"> & Partial<Pick<TodayHero, "currentId" | "browsing">>)
+    | null,
 ): { done: S[]; rest: S[]; nowId: string | null } {
   const done = stops.filter((s) => stopDone(s, today));
   const rest = stops.filter((s) => !stopDone(s, today));
-  const nowId = hero && hero.moment !== "done" && hero.moment !== "day_done" ? hero.stopId : null;
+  // While the tech browses the card, Now stays on the stop the day is on (gestures spec 1).
+  const nowId = hero?.browsing
+    ? rest.some((s) => s.id === hero.currentId)
+      ? (hero.currentId ?? null)
+      : null
+    : hero && hero.moment !== "done" && hero.moment !== "day_done"
+      ? hero.stopId
+      : null;
   return { done, rest, nowId };
+}
+
+/**
+ * A cleaning in a word or two for the current-stop notification's text, which has no icons:
+ * "Filter", "New filter", "Salt cell", else the checklist item's own name.
+ */
+export function cleaningWord(c: { kind: CleaningKind; name: string }): string {
+  switch (c.kind) {
+    case "filter":
+      return "Filter";
+    case "filter_replace":
+      return "New filter";
+    case "salt_cell":
+      return "Salt cell";
+    default:
+      return c.name;
+  }
+}
+
+/**
+ * The cleanings on one line, soonest first: "Filter overdue · Salt cell 2 weeks" (owner,
+ * 2026-10-20: the filter and salt cell alert on the Live Activity). Words from the stop's
+ * cleanings, how soon from core's badges (none once the stop is done).
+ */
+export function cleaningsLine(
+  badges: LiveStopContent["cleanings"],
+  cleanings: readonly StopCleaning[],
+): string | null {
+  if (!badges.length) return null;
+  // The same order as core's badges (soonest first, a stable sort).
+  const sorted = [...cleanings].sort((a, b) => a.days - b.days);
+  return badges
+    .map((b, i) => {
+      const c = sorted[i];
+      const word =
+        c && c.kind === b.kind ? cleaningWord(c) : cleaningWord({ ...b, name: "Cleaning" });
+      return `${word} ${b.label.toLowerCase()}`;
+    })
+    .join(" · ");
+}
+
+/**
+ * The current-stop notification's text: the figure with its label (the collapsed line), then,
+ * expanded, the access notes, the cleanings, the stop and address, and the next stop.
+ */
+export function liveStopBody(c: LiveStopContent, cleanings: readonly StopCleaning[] = []): string {
+  return [
+    [c.figureLabel, c.figure].filter(Boolean).join(" "),
+    c.access ? `Access: ${c.access}` : null,
+    cleaningsLine(c.cleanings, cleanings),
+    c.detail,
+    c.next,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }

@@ -1,5 +1,6 @@
 #if os(iOS)
     import SundeckCore
+    import SundeckLiveStop
     import SwiftUI
 
     /// A scheduled cleaning's icon, drawn from the website's (icons.tsx): 1.8 stroke in a
@@ -8,29 +9,7 @@
         var kind: CleaningKind
         var size: CGFloat = 20
 
-        var body: some View {
-            CleaningGlyphShape(glyph: .of(kind))
-                .stroke(style: StrokeStyle(lineWidth: 1.8 * size / 24, lineCap: .round, lineJoin: .round))
-                .frame(width: size, height: size)
-                .accessibilityHidden(true)
-        }
-    }
-
-    private struct CleaningGlyphShape: Shape {
-        var glyph: CleaningGlyph
-
-        func path(in rect: CGRect) -> Path {
-            let k = min(rect.width, rect.height) / 24
-            var path = Path()
-            for r in glyph.rects where r.count == 5 {
-                path.addRoundedRect(
-                    in: CGRect(x: rect.minX + r[0] * k, y: rect.minY + r[1] * k, width: r[2] * k, height: r[3] * k),
-                    cornerSize: CGSize(width: r[4] * k, height: r[4] * k), style: .circular)
-            }
-            let transform = CGAffineTransform(translationX: rect.minX, y: rect.minY).scaledBy(x: k, y: k)
-            for d in glyph.paths { path.addPath(Path(cgPath(svg: d)), transform: transform) }
-            return path
-        }
+        var body: some View { CleaningGlyphIcon(kind: kind, size: size) }
     }
 
     /// "Regular cleanings" under the Chemical button on a visit's checklist: each of the plan's

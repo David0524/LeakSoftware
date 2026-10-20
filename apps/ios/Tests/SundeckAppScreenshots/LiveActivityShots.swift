@@ -35,13 +35,18 @@
             LiveStopInput(
                 phase: .driving, customer: "Grace Holloway", address: "2 Palm Ct, Mesa", stop: 3, stops: 7,
                 eta: "9:42 AM", checklistDone: 0, checklistTotal: 0, next: next,
-                access: "Side gate code 4821. Dog in yard.")
+                access: "Side gate code 4821. Dog in yard.",
+                cleanings: [
+                    StopCleaning(name: "Clean filter", kind: .filter, days: -2, weeks: 0),
+                    StopCleaning(name: "Clean salt cell", kind: .saltCell, days: 14, weeks: 2),
+                ])
         ),
         (
             "on-site",
             LiveStopInput(
                 phase: .onSite, customer: "Grace Holloway", address: "2 Palm Ct, Mesa", stop: 3, stops: 7, eta: nil,
-                checklistDone: 4, checklistTotal: 9, next: next)
+                checklistDone: 4, checklistTotal: 9, next: next,
+                cleanings: [StopCleaning(name: "Replace filter", kind: .filterReplace, days: 0, weeks: 0)])
         ),
         (
             "done",

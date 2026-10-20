@@ -26,6 +26,8 @@ import Testing
             "inspectionAnswerText", "inspectionAnswerValues", "toggleChoice", "inspectionTone", "foldedItems",
             "isGate", "inspectionProgress", "inspectionProgressText", "intakeQuestionsFor", "optionsToText",
             "optionsFromText",
+            // Sorting the Jobs list.
+            "JOB_SORTS", "jobSort", "sortJobs",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -175,6 +177,25 @@ import Testing
             return Ids(
                 today: g.today.map(\.id), upcoming: g.upcoming.map(\.id), unscheduled: g.unscheduled.map(\.id),
                 recent: g.recent.map(\.id))
+        }
+        checkRule(module, "JOB_SORTS") { _ in JobSort.allCases.map { ["key": $0.rawValue, "label": $0.label] } }
+        checkRule(module, "jobSort") { c in jobSort(try c.arg(0, as: String?.self)).rawValue }
+        checkRule(module, "sortJobs") { c in
+            func field(_ j: JSONValue, _ k: String) -> JSONValue? {
+                if case .object(let o) = j { return o[k] }
+                return nil
+            }
+            func text(_ v: JSONValue?) -> String? {
+                if case .string(let s)? = v { return s }
+                return nil
+            }
+            return sortJobs(try c.arg(0, as: [JSONValue].self), sort: jobSort(try c.arg(1, as: String?.self))) { j in
+                var number: Int?
+                if case .number(let n)? = field(j, "number") { number = Int(n) }
+                return JobSortItem(
+                    number: number, scheduledStart: text(field(j, "scheduled_start")),
+                    createdAt: text(field(j, "created_at")), customer: text(field(j, "customer")))
+            }
         }
         checkRule(module, "formatSchedule") { c in
             try formatSchedule(c.arg(0, as: String?.self), instant(c.arg(1)), c.arg(2))

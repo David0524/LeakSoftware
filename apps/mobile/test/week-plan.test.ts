@@ -9,7 +9,10 @@ import {
   EVERYONE,
   buildWeekPlan,
   planDates,
+  planForLabel,
+  planTechs,
   planWaitingCount,
+  togglePlanTech,
   type WeekPlanJob,
 } from "../src/lib/weekPlan";
 import { dayMap, lockTag, mapAlt, mapUrl, missingNote, weekdayName } from "../src/lib/dayMap";
@@ -59,7 +62,8 @@ function run(jobs: WeekPlanJob[], over: { tech?: string; tray?: boolean } = {}) 
   return buildWeekPlan({
     ctx,
     dates: week,
-    tech: over.tech ?? "t1",
+    techs: [over.tech ?? "t1"],
+    name: (id) => ({ t1: "Ana", t2: "Ben" })[id] ?? id,
     tray: over.tray ?? true,
     team,
     dayJobs: (techId, date) =>
@@ -81,7 +85,7 @@ describe("Plan Week on the phone", () => {
       buildWeekPlan({
         ctx,
         dates: ["2026-10-18", "2026-10-19"],
-        tech: "t1",
+        techs: ["t1"],
         tray: true,
         team,
         dayJobs: () => [],
@@ -214,5 +218,52 @@ describe("day maps on the phone", () => {
     });
     expect(lockTag({ ...base, status: "in_progress", lock_day: true })).toBeNull();
     expect(lockTag(base)).toBeNull();
+  });
+});
+
+// Plan Week for several techs, split evenly (owner, 2026-10-20; gestures spec section 7).
+describe("Plan Week for several techs", () => {
+  const techs = [
+    { id: "t1", name: "Ana" },
+    { id: "t2", name: "Ben" },
+  ];
+
+  it("reads Everyone, the tech's name, or how many when closed", () => {
+    expect(planForLabel(["t1", "t2"], techs)).toBe("Everyone");
+    expect(planForLabel([EVERYONE], techs)).toBe("Everyone");
+    expect(planForLabel(["t2"], techs)).toBe("Ben");
+    expect(planForLabel([], techs)).toBe("");
+    const three = [...techs, { id: "t3", name: "Cy" }];
+    expect(planForLabel(["t1", "t3"], three)).toBe("2 Techs");
+  });
+
+  it("Everyone selects or clears all; a tech's row turns them on or off", () => {
+    expect(togglePlanTech(["t1"], EVERYONE, techs)).toEqual(["t1", "t2"]);
+    expect(togglePlanTech(["t1", "t2"], EVERYONE, techs)).toEqual([]);
+    expect(togglePlanTech(["t1"], "t2", techs)).toEqual(["t1", "t2"]);
+    expect(togglePlanTech(["t1", "t2"], "t1", techs)).toEqual(["t2"]);
+    expect(togglePlanTech([EVERYONE], "t2", techs)).toEqual(["t1"]);
+  });
+
+  it("plans the picked techs, or every active one for Everyone", () => {
+    const team = [
+      { user_id: "t1", status: "active" },
+      { user_id: "t2", status: "active" },
+      { user_id: "t3", status: "inactive" },
+    ];
+    expect(planTechs([EVERYONE], team)).toEqual(["t1", "t2"]);
+    expect(planTechs(["t2", "t2", "nobody"], team)).toEqual(["t2"]);
+  });
+
+  it("splits open jobs evenly between two techs, with the split for the banner", () => {
+    const open = Array.from({ length: 6 }, (_, i) => job({ property: north(i) }));
+    const r = run(open, { tech: EVERYONE });
+    expect(r.error).toBeUndefined();
+    const count = (t: string) =>
+      r.updates.filter((u) => open.some((j) => j.id === u.id) && u.assigned_user_id === t).length;
+    expect(Math.abs(count("t1") - count("t2"))).toBeLessThanOrEqual(1);
+    expect(r.detail).toMatch(/^Ana \d+ jobs? · Ben \d+ jobs?$/);
+    // One tech: no split line.
+    expect(run(open, { tech: "t1" }).detail).toBeUndefined();
   });
 });

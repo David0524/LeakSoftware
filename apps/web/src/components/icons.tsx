@@ -25,6 +25,13 @@ export const PhoneIcon = ({ className }: { className?: string }) => (
   </Icon>
 );
 
+/** Directions: the arrow (location.fill), as Today's card draws it. */
+export const DirectionsIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M3 11l18-8-8 18-2-8z" />
+  </Icon>
+);
+
 export const PinIcon = ({ className }: { className?: string }) => (
   <Icon className={className}>
     <path d="M12 21s-6-5.3-6-11a6 6 0 0 1 12 0c0 5.7-6 11-6 11z" />

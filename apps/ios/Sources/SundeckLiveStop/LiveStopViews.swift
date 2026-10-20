@@ -8,7 +8,8 @@
     // The Live Activity's views (owner, 2026-10-19: "Make the live notification look beautiful
     // please. Include our logo." and "Do not include a timer or stop watch"): drawn by the widget
     // extension, and by the screenshot tests straight from here. Everything they show comes from
-    // `liveStopContent`: an arrival time of day, the checklist, or the next stop, never a
+    // `liveStopContent`: the stop's place in the day ("2 of 5"), the checklist, or the next
+    // stop, never a clock time (owner, 2026-10-20: "I don't like times in the live activity") or a
     // countdown, so nothing on them ticks. Text is 15 pt or larger and scales with Dynamic Type,
     // and On My Way and Mark Complete open the app on the stop and do it there (owner, 2026-10-20).
 
@@ -142,6 +143,39 @@
         }
     }
 
+    /// The visit's cleanings (owner, 2026-10-20: "The filter/salt cell cleaning alert needs to be
+    /// on the new Today tile and the live activity"): each one's icon and a few words ("Overdue",
+    /// "Today", "3 days"), soonest first, on one line; overdue is a white pill with water-blue
+    /// text, like Today's card, so no new color. VoiceOver hears them in `content.spoken`.
+    public struct LiveStopCleanings: View {
+        public var cleanings: [CleaningBadge]
+
+        public init(cleanings: [CleaningBadge]) { self.cleanings = cleanings }
+
+        public var body: some View {
+            HStack(spacing: 10) {
+                ForEach(Array(cleanings.enumerated()), id: \.offset) { _, badge in
+                    HStack(spacing: 4) {
+                        CleaningGlyphIcon(kind: badge.kind, size: 16)
+                            .foregroundStyle(LiveStopStyle.text)
+                        Text(badge.label)
+                            .font(LiveStopStyle.small(badge.overdue ? .semibold : .medium))
+                            .foregroundStyle(badge.overdue ? LiveStopStyle.background : LiveStopStyle.text)
+                            .lineLimit(1)
+                            .padding(.horizontal, badge.overdue ? 7 : 0)
+                            .padding(.vertical, badge.overdue ? 1 : 0)
+                            .background {
+                                if badge.overdue { Capsule().fill(Color.white) }
+                            }
+                    }
+                    .fixedSize()
+                }
+            }
+            .lineLimit(1)
+            .accessibilityHidden(true)
+        }
+    }
+
     /// The large figure ("9:42 AM", "4 of 9", or the check) over its small label.
     public struct LiveStopFigure: View {
         public var content: LiveStopContent
@@ -154,10 +188,8 @@
             self.alignment = alignment
         }
 
-        /// The ahead phase's symbol: a clock by its scheduled time, a calendar for "Today".
-        var symbol: String? {
-            content.figureLabel == "Scheduled" ? "clock" : content.figure == "Today" ? "calendar" : nil
-        }
+        /// A calendar for "Today" (a day without its place); never a clock (no clock times).
+        var symbol: String? { content.figure == "Today" ? "calendar" : nil }
 
         public var body: some View {
             VStack(alignment: alignment, spacing: 0) {
@@ -176,7 +208,6 @@
                 }
                 if !content.figureLabel.isEmpty || symbol != nil {
                     HStack(spacing: 3) {
-                        // Before On My Way: a clock beside "Scheduled" (a time of day, not a countdown).
                         if let symbol { Image(systemName: symbol) }
                         if !content.figureLabel.isEmpty { Text(content.figureLabel) }
                     }
@@ -259,6 +290,7 @@
                                 .lineLimit(1)
                         }
                         if let access = content.access { LiveStopAccess(text: access) }
+                        if !content.cleanings.isEmpty { LiveStopCleanings(cleanings: content.cleanings) }
                     }
                     Spacer(minLength: 4)
                     LiveStopFigure(content: content)
@@ -293,9 +325,9 @@
                 .minimumScaleFactor(0.75)
         }
 
-        /// Bottom: the stop, the next stop and the progress, then Call and On My Way and Mark
-        /// Complete (owner, 2026-10-20); Open Job when there are no actions (the island's tap opens
-        /// the job too).
+        /// Bottom: the stop, the next stop, the access notes and the cleanings due, and the
+        /// progress, then Call and On My Way and Mark Complete (owner, 2026-10-20); Open Job when
+        /// there are no actions (the island's tap opens the job too).
         public static func bottom(
             _ content: LiveStopContent, call: URL?, open: URL?, actions: [LiveStopActionLink] = []
         ) -> some View {
@@ -307,6 +339,7 @@
                             .lineLimit(1)
                     }
                     if let access = content.access { LiveStopAccess(text: access) }
+                    if !content.cleanings.isEmpty { LiveStopCleanings(cleanings: content.cleanings) }
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(content.spoken)

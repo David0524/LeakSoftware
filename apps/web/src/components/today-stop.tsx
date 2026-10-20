@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { KeyIcon } from "./icons";
+import { SwipeRow } from "./swipe-row";
 import { cx } from "./ui";
 
 /**
@@ -22,8 +23,14 @@ export function TodayStop({
   extra,
   access,
   startOpen = current,
+  swipe,
   children,
 }: {
+  /**
+   * Swipe actions on the row (touch; gestures.md section 5): leading Mark Complete, trailing
+   * Call and Directions. The same buttons are in the open card.
+   */
+  swipe?: { leading?: ReactNode; trailing?: ReactNode };
   label: string;
   /** Open at first; the stop you're on, unless Today's card already shows it. */
   startOpen?: boolean;
@@ -56,87 +63,92 @@ export function TodayStop({
           its button for keyboards and screen readers. The name is a link to the job instead of
           an Open Job button (owner, 2026-10-20: "We're wasting space by keeping as a new
           button"). */}
-      <div
-        onClick={() => setOpen(!open)}
-        className="flex min-h-14 w-full cursor-pointer items-center gap-2 px-3 py-2 text-left"
-      >
-        <span
-          aria-hidden="true"
-          className={cx(
-            "grid size-8 shrink-0 place-items-center rounded-full font-display font-bold",
-            done ? "bg-status-pass text-on-status" : current ? "bg-link text-bg" : "bg-bg",
-          )}
+      <SwipeRowMaybe swipe={swipe}>
+        <div
+          onClick={() => setOpen(!open)}
+          className="flex min-h-14 w-full cursor-pointer items-center gap-2 px-3 py-2 text-left"
         >
-          {done ? (
-            <svg
-              viewBox="0 0 24 24"
-              className="size-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M5 12.5l4.5 4.5L19 7.5" />
-            </svg>
-          ) : (
-            number
-          )}
-        </span>
-        <span
-          className={cx("flex min-w-0 flex-1 flex-wrap items-center gap-x-2", done && "opacity-70")}
-        >
-          <span className="font-display text-[1.0625rem] font-bold">{time}</span>
-          {/* The name opens the job, open or closed (owner, 2026-10-20). */}
-          <Link
-            href={href}
-            onClick={(e) => e.stopPropagation()}
-            className="-my-2 flex min-h-11 min-w-0 flex-1 items-center gap-0.5 font-semibold text-link"
+          <span
+            aria-hidden="true"
+            className={cx(
+              "grid size-8 shrink-0 place-items-center rounded-full font-display font-bold",
+              done ? "bg-status-pass text-on-status" : current ? "bg-link text-bg" : "bg-bg",
+            )}
           >
-            <span className="truncate">{name}</span>
+            {done ? (
+              <svg
+                viewBox="0 0 24 24"
+                className="size-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12.5l4.5 4.5L19 7.5" />
+              </svg>
+            ) : (
+              number
+            )}
+          </span>
+          <span
+            className={cx(
+              "flex min-w-0 flex-1 flex-wrap items-center gap-x-2",
+              done && "opacity-70",
+            )}
+          >
+            <span className="font-display text-[1.0625rem] font-bold">{time}</span>
+            {/* The name opens the job, open or closed (owner, 2026-10-20). */}
+            <Link
+              href={href}
+              onClick={(e) => e.stopPropagation()}
+              className="-my-2 flex min-h-11 min-w-0 flex-1 items-center gap-0.5 font-semibold text-link"
+            >
+              <span className="truncate">{name}</span>
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                className="size-4 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9 6l6 6-6 6" />
+              </svg>
+            </Link>
+            {extra}
+          </span>
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls={body}
+            aria-label={open ? `Hide ${name}` : `Show ${name}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(!open);
+            }}
+            className="-mr-2 grid size-11 shrink-0 place-items-center rounded-full"
+          >
             <svg
               viewBox="0 0 24 24"
               aria-hidden="true"
-              className="size-4 shrink-0"
+              className={cx(
+                "size-5 text-text-muted transition-transform motion-reduce:transition-none",
+                open && "rotate-180",
+              )}
               fill="none"
               stroke="currentColor"
-              strokeWidth="2.4"
+              strokeWidth="2.2"
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <path d="M9 6l6 6-6 6" />
+              <path d="M6 9l6 6 6-6" />
             </svg>
-          </Link>
-          {extra}
-        </span>
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-controls={body}
-          aria-label={open ? `Hide ${name}` : `Show ${name}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            setOpen(!open);
-          }}
-          className="-mr-2 grid size-11 shrink-0 place-items-center rounded-full"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-            className={cx(
-              "size-5 text-text-muted transition-transform motion-reduce:transition-none",
-              open && "rotate-180",
-            )}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </button>
-      </div>
+          </button>
+        </div>
+      </SwipeRowMaybe>
       {access?.trim() && !done ? (
         <p className="-mt-1 flex items-start gap-1.5 px-3 pb-2 pl-[3.25rem] text-[0.9375rem] font-medium text-text">
           <KeyIcon className="mt-0.5 size-[1.125rem] shrink-0 text-status-warning" />
@@ -152,5 +164,20 @@ export function TodayStop({
         </div>
       ) : null}
     </section>
+  );
+}
+
+function SwipeRowMaybe({
+  swipe,
+  children,
+}: {
+  swipe?: { leading?: ReactNode; trailing?: ReactNode };
+  children: ReactNode;
+}) {
+  if (!swipe || (!swipe.leading && !swipe.trailing)) return <>{children}</>;
+  return (
+    <SwipeRow leading={swipe.leading} trailing={swipe.trailing}>
+      {children}
+    </SwipeRow>
   );
 }

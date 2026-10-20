@@ -79,6 +79,8 @@
         @State private var mode = JobsMode.jobs
         @State private var reportFilter = ReportFilter.all
         @State private var search = ""
+        /// The list's order (owner, 2026-10-20: "Add sorting on the jobs page just like invoices").
+        @State private var sort = JobSort.scheduled
         @State private var rows: [JobListRow] = []
         @State private var reports: [ReportListRow] = []
 
@@ -117,9 +119,24 @@
             .sensoryFeedback(.impact(weight: .light), trigger: sync.status.phase == .syncing)
             .navigationTitle(mode.title)
             .toolbar {
-                if mode == .jobs { NewJobToolbar(back: "Jobs") }
+                if mode == .jobs {
+                    // Sort, as Invoices has it: a menu in the navigation bar, applied at once,
+                    // with the status filter and the search.
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu {
+                            Picker("Sort", selection: $sort) {
+                                ForEach(JobSort.allCases, id: \.self) { Text($0.label).tag($0) }
+                            }
+                        } label: {
+                            Image(systemName: "arrow.up.arrow.down")
+                                .frame(width: minTarget, height: minTarget)
+                        }
+                        .accessibilityLabel("Sort, \(sort.label)")
+                    }
+                    NewJobToolbar(back: "Jobs")
+                }
             }
-            .task(id: "\(sync.revision)|\(company?.id ?? "")|\(filter)|\(reportFilter)|\(search)|\(mode)") {
+            .task(id: "\(sync.revision)|\(company?.id ?? "")|\(filter)|\(reportFilter)|\(search)|\(mode)|\(sort)") {
                 reload()
             }
         }
@@ -193,7 +210,7 @@
                     uniquingKeysWith: { a, _ in a })
                 rows = jobList(
                     views, filter: filter, search: search, now: Date(), timeZone: company.timeZone, userId: user.id,
-                    seesAll: seesAllJobs(company.role, company.settings), names: names)
+                    seesAll: seesAllJobs(company.role, company.settings), names: names, sort: sort)
             } else {
                 reports = reportList(
                     sync.store, companyId: company.id, filter: reportFilter, timeZone: company.timeZone)

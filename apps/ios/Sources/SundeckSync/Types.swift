@@ -111,4 +111,25 @@ public protocol SyncTransport: Sendable {
     /// changes, for example a job was taken away from them, the engine pulls everything again
     /// and drops what is no longer theirs.
     func scope() async throws -> String?
+    /// Rows per table this user would download from the start (public.sync_pull_count), for the
+    /// first download's progress; nil when the transport can't tell.
+    func pullCount() async throws -> [String: Int]?
+}
+
+extension SyncTransport {
+    public func pullCount() async throws -> [String: Int]? { nil }
+}
+
+/// How far the first download has come (owner, 2026-10-20: "Give a more interesting loading
+/// bar"): rows applied per table, against the server's count per table (nil when unknown).
+public struct PullProgress: Equatable, Sendable {
+    public var totals: [String: Int]?
+    public var pulled: [String: Int]
+    public var finished: Bool
+
+    public init(totals: [String: Int]?, pulled: [String: Int] = [:], finished: Bool = false) {
+        self.totals = totals
+        self.pulled = pulled
+        self.finished = finished
+    }
 }

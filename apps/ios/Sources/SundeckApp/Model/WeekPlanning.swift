@@ -62,6 +62,36 @@ public struct WeekPlanOutcome: Sendable {
     public var updates: [JobUpdate]
     public var message: String
     public var undo: [WeekUndoRow]
+    /// How the jobs were split between several techs ("Ana 6 jobs · Ben 5 jobs"), the banner's
+    /// second line; nil for one tech.
+    public var detail: String? = nil
+}
+
+/// The techs a plan covers, in the team's order (owner, 2026-10-20: "select multiple techs when
+/// planning a week"): every active tech for "all", else the picked ones on the team, never twice.
+public func planTechs(_ picked: [String], team: [TeamMember]) -> [String] {
+    if picked.contains("all") { return team.filter(\.active).map(\.id) }
+    let want = Set(picked)
+    return team.filter { want.contains($0.id) }.map(\.id)
+}
+
+/// What Plan Week's "Plan for" reads closed: "Everyone" when every tech is picked, the tech's name
+/// for one, else "2 Techs". Empty when none is picked.
+public func planForLabel(_ picked: [String], techs: [TeamMember]) -> String {
+    let chosen = techs.filter { picked.contains("all") || picked.contains($0.id) }
+    if chosen.isEmpty { return "" }
+    if chosen.count == techs.count && techs.count > 1 { return "Everyone" }
+    if chosen.count == 1 { return chosen[0].name }
+    return "\(chosen.count) Techs"
+}
+
+/// A tap on a row of the "Plan for" checklist: Everyone selects every tech, or clears them all
+/// when all are on; a tech's row turns that tech on or off. The list never holds "all".
+public func togglePlanTech(_ picked: [String], _ value: String, techs: [TeamMember]) -> [String] {
+    let ids = techs.map(\.id)
+    let now = picked.contains("all") ? ids : picked.filter { ids.contains($0) }
+    if value == "all" { return now.count == ids.count ? [] : ids }
+    return now.contains(value) ? now.filter { $0 != value } : ids.filter { $0 == value || now.contains($0) }
 }
 
 /// The days Plan Week may use: the week's days from today on (the Plan Week button shows only
@@ -87,20 +117,18 @@ public func planWeekWaiting(_ tray: [ScheduleJob], dates: [String], timeZone: St
 /// clock time. A job given to a tech stays that tech's. `tray`: also place the jobs in Needs a
 /// Time that nobody has yet; off, only the planned techs' own jobs move.
 public func weekPlanInput(
-    dates input: [String], tech: String, tray: Bool, jobs all: [ScheduleJob], ctx: ScheduleContext,
+    dates input: [String], techs picked: [String], tray: Bool, jobs all: [ScheduleJob], ctx: ScheduleContext,
     team: [TeamMember], drive: DriveTimes
 ) throws -> WeekPlanInput {
-    let everyone = tech == "all"
     let dates = Array(Set(input)).filter { d in
         d >= ctx.today && weekday(d).map { ctx.settings.workDays.contains($0) } == true
     }.sorted()
     if dates.isEmpty { throw ScheduleProblem("No working days left this week to plan.") }
     let routes = loadRoutes(all, ctx: ctx, dates: dates, team: team, drive: drive).routes
-    let techs =
-        everyone
-        ? team.filter(\.active).map(\.id)
-        : team.contains(where: { $0.id == tech }) ? [tech] : []
+    let techs = planTechs(picked, team: team)
     if techs.isEmpty { throw ScheduleProblem("Pick a week and a tech.") }
+    // Several techs: a job may go to any of them, split evenly.
+    let several = techs.count > 1
 
     var before: [String: WeekUndoRow] = [:]
     var days: [WeekDay] = []
@@ -126,7 +154,7 @@ public func weekPlanInput(
                         WeekJob(
                             id: j.id, location: j.location, durationMin: jobMinutes(j, ctx.settings),
                             timeMin: lock == .time ? try localMin(j.scheduledStart) : nil, techId: techId, date: date,
-                            techs: everyone ? techs : [techId]))
+                            techs: several ? techs : [techId]))
                     continue
                 }
                 let stop = try stopFor(
@@ -210,14 +238,23 @@ public func weekPlanOutcome(_ plan: WeekPlan, _ input: WeekPlanInput, ctx: Sched
 }
 
 /// Plan Week: the whole run, from the phone's jobs to the rows to save.
+/// With two or more techs, the open jobs are split evenly by minutes of work (core `planWeek`
+/// `even`), and the outcome's `detail` says how ("Ana 6 jobs · Ben 5 jobs").
 public func planTheWeek(
-    dates: [String], tech: String, tray: Bool, jobs: [ScheduleJob], ctx: ScheduleContext, team: [TeamMember],
+    dates: [String], techs: [String], tray: Bool, jobs: [ScheduleJob], ctx: ScheduleContext, team: [TeamMember],
     drive: DriveTimes
 ) throws -> WeekPlanOutcome {
     let input = try weekPlanInput(
-        dates: dates, tech: tech, tray: tray, jobs: jobs, ctx: ctx, team: team, drive: drive)
-    let plan = planWeek(days: input.days, jobs: input.jobs, depot: ctx.depot, day: ctx.workDay, drive: drive.drive)
-    return try weekPlanOutcome(plan, input, ctx: ctx)
+        dates: dates, techs: techs, tray: tray, jobs: jobs, ctx: ctx, team: team, drive: drive)
+    let several = input.techs.count > 1
+    let plan = planWeek(
+        days: input.days, jobs: input.jobs, depot: ctx.depot, day: ctx.workDay, drive: drive.drive, even: several)
+    var outcome = try weekPlanOutcome(plan, input, ctx: ctx)
+    if several {
+        let split = planWeekSplit(plan) { id in team.first { $0.id == id }?.name ?? id }
+        outcome.detail = split.isEmpty ? nil : split
+    }
+    return outcome
 }
 
 /// Undo Plan Week: each job back as it was.

@@ -47,13 +47,16 @@ export function Composer({
   onSend,
   docked = true,
   autoFocus = false,
+  initialBody,
 }: {
   pictures: boolean;
   onSend: (body: string, picture: { uri: string; type: string } | null) => Promise<boolean>;
   docked?: boolean;
   autoFocus?: boolean;
+  /** Text already filled in (Today's Message with On My Way, owner 2026-10-20); editable. */
+  initialBody?: string;
 }) {
-  const [body, setBody] = useState("");
+  const [body, setBody] = useState(initialBody ?? "");
   const [picture, setPicture] = useState<{ uri: string; type: string } | null>(null);
   const [sending, setSending] = useState(false);
   const barTop = useTabBarTop();

@@ -14,6 +14,7 @@ import {
   type Job,
   type JobComponent,
   type PlanCleaning,
+  type StopCleaning,
 } from "@leakbook/core";
 import { useJobRows, useRows } from "../../data/hooks";
 import { useInspectionConfig } from "../../data/inspection";
@@ -88,6 +89,22 @@ function visitDay(job: Job, timezone: string): string {
  * `plan_cleaning_id`), with how they stand against their due date: what Today shows (owner,
  * 2026-10-20: what Today shows is what the checklist has; the website's Today dueAt).
  */
+function cleaningsOnVisit(
+  job: Pick<Job, "service_plan_id">,
+  byPlan: Map<string, PlanCleaning[]>,
+  here: ReadonlySet<string | null | undefined>,
+  typeById: ReadonlyMap<string, ComponentType>,
+  day: string,
+): VisitCleaning[] {
+  return (job.service_plan_id ? (byPlan.get(job.service_plan_id) ?? []) : [])
+    .filter((c) => here.has(c.id))
+    .map((c) => ({
+      id: c.id,
+      ...cleaningType(typeById.get(c.component_type_id)),
+      due: cleaningCountdown(c.next_due, day),
+    }));
+}
+
 export function useCleaningsDue(job: Job): VisitCleaning[] {
   const company = useCompany();
   const config = useInspectionConfig(job.company_id);
@@ -104,14 +121,50 @@ export function useCleaningsDue(job: Job): VisitCleaning[] {
         .filter((c) => c.job_id === job.id && !c.deleted_at && c.plan_cleaning_id)
         .map((c) => c.plan_cleaning_id),
     );
-    return (job.service_plan_id ? (byPlan.get(job.service_plan_id) ?? []) : [])
-      .filter((c) => here.has(c.id))
-      .map((c) => ({
-        id: c.id,
-        ...cleaningType(config.componentTypeById.get(c.component_type_id)),
-        due: cleaningCountdown(c.next_due, day),
-      }));
+    const plan = { service_plan_id: job.service_plan_id };
+    return cleaningsOnVisit(plan, byPlan, here, config.componentTypeById, day);
   }, [byPlan, components, config.componentTypeById, job.id, job.service_plan_id, day]);
+}
+
+/**
+ * The same for each of a day's stops, by job (owner, 2026-10-20: the filter and salt cell
+ * cleanings on Today's card and the current-stop notification): what each stop's row shows, as
+ * core todayHero reads it (name, kind, days and weeks until due).
+ */
+export function useStopCleanings(
+  companyId: string,
+  stops: Job[],
+): ReadonlyMap<string, StopCleaning[]> {
+  const company = useCompany();
+  const config = useInspectionConfig(companyId);
+  const byPlan = usePlanCleanings(companyId);
+  const rows = useRows<JobComponent & { deleted_at?: string | null }>("job_component", companyId);
+  return useMemo(() => {
+    const ids = new Set(stops.map((s) => s.id));
+    const here = new Map<string, Set<string>>();
+    for (const r of rows) {
+      if (!r.plan_cleaning_id || r.deleted_at || !ids.has(r.job_id)) continue;
+      const set = here.get(r.job_id) ?? new Set<string>();
+      set.add(r.plan_cleaning_id);
+      here.set(r.job_id, set);
+    }
+    const out = new Map<string, StopCleaning[]>();
+    for (const s of stops) {
+      const list = cleaningsOnVisit(
+        s,
+        byPlan,
+        here.get(s.id) ?? new Set(),
+        config.componentTypeById,
+        visitDay(s, company.timezone),
+      );
+      if (list.length)
+        out.set(
+          s.id,
+          list.map((c) => ({ name: c.name, kind: c.kind, days: c.due.days, weeks: c.due.weeks })),
+        );
+    }
+    return out;
+  }, [stops, rows, byPlan, config.componentTypeById, company.timezone]);
 }
 
 /**

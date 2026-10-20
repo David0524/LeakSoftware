@@ -3,13 +3,15 @@ import { AppState, Platform } from "react-native";
 import {
   liveStopRuns,
   localDate,
+  notificationOn,
   localMinutes,
   stopDone,
-  todayHero,
   type LiveStopContent,
   type LiveStopPhase,
+  type StopCleaning,
 } from "@leakbook/core";
 import { useSyncStatus } from "../../data/hooks";
+import { useNotificationPrefs } from "../../data/notificationPrefs";
 import { inRouteOrderViews, useJobViews, type JobView } from "../../data/jobs";
 import {
   LIVE_STOP_ID,
@@ -18,12 +20,10 @@ import {
   hideLiveStop,
   liveDismissedOn,
   liveForegrounds,
-  liveJustDone,
-  setLiveJustDone,
   useLiveStopVersion,
 } from "../../lib/liveStop";
 import { liveStopPhase } from "../../lib/liveStopRule";
-import { heroStops } from "../../lib/todayHero";
+import { liveStopBody } from "../../lib/todayHero";
 import { NOTIFICATION_COLOR, Notifications, STOP_CATEGORY, STOP_CHANNEL } from "../../lib/push";
 import { useCompany, useSession } from "../../state/session";
 import { useTodayHero } from "./useTodayHero";
@@ -34,7 +34,8 @@ import { useTodayHero } from "./useTodayHero";
 // channel, from core liveStopContent, as the iPhone's Live Activity. It starts by itself when
 // core liveStopRuns says the tech's day has begun, on the first stop not done ("ahead" with its
 // time, or at the pool once started); On My Way puts that stop on the way; after Mark Complete
-// it shows the stop done for a minute, then moves to the next; it ends after the last stop.
+// it goes straight to the next stop (owner, 2026-10-20, gestures spec section 9: nothing waits
+// on a timer); it ends after the last stop.
 // Swiped away, it stays away while the app stays in the background; whenever the app is opened
 // or comes to the front during the working day, it's shown again if it isn't up (owner,
 // 2026-10-20: "It should run anytime you have the app open during the work day"). Timers and
@@ -43,8 +44,6 @@ import { useTodayHero } from "./useTodayHero";
 // Which stop and moment come from core todayHero (owner, 2026-10-20), as Today's card, and On
 // My Way is read from the job (job.on_my_way_at, arrive_at), so a second phone agrees.
 
-/** How long a done stop shows before the next one (or the end of the day). */
-const DONE_MS = 60_000;
 const MINUTE = 60_000;
 
 /** Mounted once while signed in. */
@@ -57,6 +56,8 @@ interface Shown {
   job: JobView;
   phase: LiveStopPhase;
   content: LiveStopContent;
+  /** The stop's plan cleanings, for their words ("Filter overdue · Salt cell 2 weeks"). */
+  cleanings: StopCleaning[];
 }
 
 function LiveStopDay() {
@@ -66,6 +67,10 @@ function LiveStopDay() {
   const jobs = useJobViews(company.id);
   const sync = useSyncStatus();
   useLiveStopVersion();
+  // Settings › Notifications › Live Activity (owner, 2026-10-20): off takes the notification
+  // down and keeps it down; on again shows it at once during the workday.
+  const { prefs } = useNotificationPrefs();
+  const liveOn = !prefs || notificationOn(prefs, "live");
 
   // "Now", moved on each minute while the app is open and when it comes back to the front.
   const [now, setNow] = useState(() => new Date());
@@ -115,34 +120,11 @@ function LiveStopDay() {
   );
   const left = stops.filter((s) => !stopDone(s, today));
 
-  // The stop on the way (On My Way today), else one already started, else the first not done:
-  // core todayHero, as Today's card.
-  const target = useMemo(
-    () => todayHero({ stops: heroStops(stops), today, timeZone: tz })?.stopId ?? null,
-    [stops, today, tz],
-  );
-  // Mark Complete: the stop shows done for a minute, then the next one (or the day ends). Today's
-  // card shows the same minute (lib/liveStop).
-  const justDone = liveJustDone();
-  const last = useRef<string | null>(null);
-  useEffect(() => {
-    const was = last.current ? stops.find((s) => s.id === last.current) : undefined;
-    if (was && stopDone(was, today)) setLiveJustDone(was.id);
-    last.current = target;
-  }, [target, stops, today]);
-  useEffect(() => {
-    if (!justDone) return;
-    // Not a timer on screen: when the minute is up, the next stop takes its place.
-    const t = setTimeout(() => setLiveJustDone(null), DONE_MS);
-    return () => clearTimeout(t);
-  }, [justDone]);
-
-  const { hero, job } = useTodayHero({
+  const { hero, job, cleanings } = useTodayHero({
     companyId: company.id,
     stops,
     today,
     timeZone: tz,
-    justDone,
   });
 
   const runs = liveStopRuns({
@@ -157,7 +139,8 @@ function LiveStopDay() {
     dismissedOn: liveDismissedOn(),
     today,
   });
-  const shown: Shown | null = phase && hero && job ? { job, phase, content: hero.content } : null;
+  const shown: Shown | null =
+    liveOn && phase && hero && job ? { job, phase, content: hero.content, cleanings } : null;
 
   // Swiped away: once it was up, it's gone from the tray without us taking it down. A done
   // card swiped away only ends that card; the stop card swiped away stays away for the day.
@@ -168,8 +151,7 @@ function LiveStopDay() {
         if (!up.current || list.some((n) => n.request.identifier === LIVE_STOP_ID)) return;
         const phase = up.current;
         up.current = null;
-        if (phase === "done") setLiveJustDone(null);
-        else dismissLiveStopFor(today);
+        if (phase !== "done") dismissLiveStopFor(today);
       })
       .catch(() => undefined);
   }, [now, sync.phase, sync.lastSyncedAt, today]);
@@ -209,15 +191,10 @@ function StopCard({
   const c = shown.content;
   // Title: the headline. Text: the figure with its label, then the detail and next lines for
   // the expanded view. Never a timer or a stopwatch (owner, 2026-10-19).
-  // Access notes (gate code, dogs) right under it, until the stop is done (owner, 2026-10-20).
-  const body = [
-    [c.figureLabel, c.figure].filter(Boolean).join(" "),
-    c.access ? `Access: ${c.access}` : null,
-    c.detail,
-    c.next,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  // Access notes (gate code, dogs) right under it, then the visit's cleanings ("Filter overdue ·
+  // Salt cell 2 weeks"), until the stop is done (owner, 2026-10-20). The collapsed line stays
+  // the figure.
+  const body = liveStopBody(c, shown.cleanings);
   const phone = job.customer?.phone ?? null;
   const key = JSON.stringify([c.headline, body, phone]);
 

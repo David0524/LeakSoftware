@@ -111,6 +111,42 @@ test("owner views the M4 sample job", async ({ page }) => {
   await expect(timeline.getByText("Show Less")).toBeVisible();
 });
 
+test("Jobs sorts as Invoices does, and keeps the sort with the filter and search", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await signIn(page, OWNER);
+  await page.goto("/jobs?status=all");
+  const sort = page.getByRole("combobox", { name: "Sort" });
+  await expect(sort).toHaveValue("scheduled");
+  await sort.selectOption("number");
+  await expect(page).toHaveURL(/[?&]sort=number/);
+  await expect(page).toHaveURL(/[?&]status=all/);
+  // Job Number: highest first.
+  const numbers = (await page.locator("table tbody tr td:first-child a").allInnerTexts())
+    .map((t) => Number(t.replace(/\D/g, "")))
+    .filter((n) => n > 0);
+  expect(numbers.length).toBeGreaterThan(1);
+  expect([...numbers].sort((a, b) => b - a)).toEqual(numbers);
+  // The filter pills and the search keep it.
+  await expect(page.getByRole("link", { name: "Open", exact: true })).toHaveAttribute(
+    "href",
+    /sort=number/,
+  );
+  await expect(page.locator('form[role="search"] input[name="sort"]')).toHaveValue("number");
+  // Customer: A to Z.
+  await sort.selectOption("customer");
+  await expect(page).toHaveURL(/[?&]sort=customer/);
+  const names = await page
+    .locator("table tbody tr td:nth-child(2) > div:first-child")
+    .allInnerTexts();
+  expect(names.length).toBeGreaterThan(1);
+  const sorted = [...names].sort((a, b) =>
+    a.localeCompare(b, "en", { sensitivity: "base", ignorePunctuation: false }),
+  );
+  expect(names.map((n) => n.toLowerCase())).toEqual(sorted.map((n) => n.toLowerCase()));
+});
+
 test("owner edits the price book", async ({ page }) => {
   await signIn(page, OWNER, "/settings/price-book");
   const name = `E2E fitting ${RUN}`;

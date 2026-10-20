@@ -10,6 +10,7 @@ import {
   localDate,
   localMinutes,
   planWeek as planTheWeek,
+  planWeekSplit,
   planWeekSummary,
   propertyLocation,
   stopFor,
@@ -42,26 +43,38 @@ export interface WeekUndoRow {
 export interface WeekPlanResult {
   error?: string;
   message?: string;
+  /** The banner's second line: how the jobs were split between several techs. */
+  detail?: string;
   undo?: WeekUndoRow[];
 }
 
 type Row = Omit<WeekUndoRow, "id">;
 
 /**
- * Plan these days (the week on screen) for one tech or every tech. Started and finished jobs,
- * day locks, two-tech jobs and maintenance visits stay on their days; time locks keep their
- * clock time. A job given to a tech stays that tech's. `tray` (default on): also place the
- * jobs in Needs a Time that nobody has yet; off, only the planned techs' own jobs move.
- * Owners and admins.
+ * Plan these days (the week on screen) for some techs or every tech ("all"). Started and
+ * finished jobs, day locks, two-tech jobs and maintenance visits stay on their days; time locks
+ * keep their clock time. A job given to a tech stays that tech's. With two or more techs the
+ * open jobs are split evenly by minutes of work (owner, 2026-10-20; gestures.md section 7).
+ * `tray` (default on): also place the jobs in Needs a Time that nobody has yet; off, only the
+ * planned techs' own jobs move. Owners and admins.
  */
 export async function planWeek(input: {
   dates: string[];
-  tech: string;
+  /** Tech ids, or "all" (alone or in the list) for every active tech. */
+  techs: string[] | "all";
   tray?: boolean;
 }): Promise<WeekPlanResult> {
   const tray = input.tray !== false;
-  const all = input.tech === "all";
-  if ((!all && !UUID.test(input.tech)) || !Array.isArray(input.dates) || input.dates.length > 7)
+  const picked = input.techs === "all" ? ["all"] : input.techs;
+  const all = Array.isArray(picked) && picked.includes("all");
+  if (
+    !Array.isArray(picked) ||
+    !picked.length ||
+    picked.length > 100 ||
+    (!all && !picked.every((t) => typeof t === "string" && UUID.test(t))) ||
+    !Array.isArray(input.dates) ||
+    input.dates.length > 7
+  )
     return { error: "Pick a week and a tech." };
   if (!input.dates.every(isDateString)) return { error: "Pick a week and a tech." };
   const office = await requireManager();
@@ -75,12 +88,12 @@ export async function planWeek(input: {
     loadRoutes(office, ctx, dates),
     needsScheduling(office),
   ]);
-  const techs = all
-    ? team.filter((t) => t.status === "active").map((t) => t.user_id)
-    : team.some((t) => t.user_id === input.tech)
-      ? [input.tech]
-      : [];
-  if (!techs.length) return { error: "Pick a week and a tech." };
+  // Only the shop's active techs, each once.
+  const active = team.filter((t) => t.status === "active").map((t) => t.user_id);
+  const techs = all ? active : active.filter((id) => picked.includes(id));
+  if (!techs.length || (!all && techs.length !== new Set(picked).size))
+    return { error: "Pick a week and a tech." };
+  const names = new Map(team.map((t) => [t.user_id, t.name]));
 
   const before = new Map<string, Row>();
   const remember = (j: {
@@ -137,7 +150,8 @@ export async function planWeek(input: {
                 : null,
             techId,
             date,
-            techs: all ? techs : [techId],
+            // A job given to a tech stays that tech's when the week is split (section 7).
+            techs: techs.length > 1 ? [techId] : techs,
           });
           continue;
         }
@@ -188,7 +202,14 @@ export async function planWeek(input: {
     (a, b) => (a.date ? 0 : 1) - (b.date ? 0 : 1) || (a.date ? 0 : a.id.localeCompare(b.id)),
   );
 
-  const plan = planTheWeek({ days, jobs, depot: ctx.depot, day: workDay(ctx.settings), drive });
+  const plan = planTheWeek({
+    days,
+    jobs,
+    depot: ctx.depot,
+    day: workDay(ctx.settings),
+    drive,
+    even: techs.length > 1,
+  });
   const moving = new Set(jobs.map((j) => j.id));
   const updates: (Partial<Row> & { id: string })[] = [];
   for (const d of plan.days) {
@@ -237,6 +258,7 @@ export async function planWeek(input: {
     message:
       planWeekSummary(plan, durationLabel) +
       (unlocated ? ` · ${unlocated} without a map location left in Needs a Time` : ""),
+    detail: planWeekSplit(plan, (id) => names.get(id) ?? "Teammate") || undefined,
     undo: changed,
   };
 }

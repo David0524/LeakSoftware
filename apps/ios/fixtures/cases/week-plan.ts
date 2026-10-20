@@ -2,6 +2,7 @@ import {
   durationLabel,
   PLAN_WEEK_LIMIT,
   planWeek,
+  planWeekSplit,
   planWeekSummary,
   type LatLng,
   type WeekDay,
@@ -32,7 +33,16 @@ const job = (id: string, location: LatLng | null, o: Partial<WeekJob> = {}): Wee
 const days = (dates: string[], stays: Record<string, WeekDay["stays"]> = {}): WeekDay[] =>
   dates.map((date) => ({ techId: "t1", date, stays: stays[date] ?? [] }));
 
-type Input = { days: WeekDay[]; jobs: WeekJob[]; depot: LatLng | null; day: WorkDay };
+type Input = {
+  days: WeekDay[];
+  jobs: WeekJob[];
+  depot: LatLng | null;
+  day: WorkDay;
+  even?: boolean;
+};
+const crew = (techs: string[], dates: string[]): WeekDay[] =>
+  techs.flatMap((techId) => dates.map((date) => ({ techId, date, stays: [] })));
+const three = ["t1", "t2", "t3"];
 
 export const weekPlan: ModuleCases = {
   PLAN_WEEK_LIMIT: rule(() => PLAN_WEEK_LIMIT, [[]]),
@@ -42,6 +52,34 @@ export const weekPlan: ModuleCases = {
     [
       // Nothing to plan.
       [{ days: [], jobs: [], depot: DEPOT, day: DAY }],
+      // Several techs, split evenly (owner, 2026-10-20), and the same without `even`.
+      ...[true, false].map(
+        (even) =>
+          [
+            {
+              days: crew(three, ["2026-10-26", "2026-10-27"]),
+              jobs: [0, 1, 2, 3, 4, 5, 6, 7].map((i) => job(`n${i}`, north(i), { techs: three })),
+              depot: DEPOT,
+              day: DAY,
+              even,
+            },
+          ] as [Input],
+      ),
+      // A job given to one tech stays theirs; long jobs balance by minutes.
+      [
+        {
+          days: crew(["t1", "t2"], ["2026-10-26"]),
+          jobs: [
+            job("x", south(0), { techs: ["t2"], durationMin: 120 }),
+            ...[0, 1, 2, 3].map((i) =>
+              job(`e${i}`, east(i), { techs: ["t1", "t2"], durationMin: 60 }),
+            ),
+          ],
+          depot: DEPOT,
+          day: DAY,
+          even: true,
+        },
+      ],
       [{ days: days(["2026-10-26"]), jobs: [], depot: DEPOT, day: DAY }],
       // Each area on its own day when both don't fit in one.
       [
@@ -176,6 +214,21 @@ export const weekPlan: ModuleCases = {
           depot: DEPOT,
           day: DAY,
         },
+      ],
+    ],
+  ),
+  planWeekSplit: rule(
+    (split: { techId: string; jobs: number; minutes: number }[]) =>
+      planWeekSplit({ split }, (t) => ({ t1: "Ana", t2: "Ben" })[t] ?? "Tech"),
+    [
+      [[]],
+      [[{ techId: "t1", jobs: 3, minutes: 90 }]],
+      [
+        [
+          { techId: "t1", jobs: 1, minutes: 30 },
+          { techId: "t2", jobs: 4, minutes: 120 },
+          { techId: "t9", jobs: 0, minutes: 0 },
+        ],
       ],
     ],
   ),

@@ -6,6 +6,7 @@ import {
   localDate,
   localMinutes,
   planWeek,
+  planWeekSplit,
   planWeekSummary,
   propertyLocation,
   stopFor,
@@ -47,6 +48,9 @@ type Row = Required<Pick<JobChange, "status" | "assigned_user_id" | "route_order
 export interface WeekPlanOutcome {
   error?: string;
   message?: string;
+  /** How the jobs were split between several techs ("Ana 6 jobs · Ben 5 jobs"), for the banner's
+   *  second line. */
+  detail?: string;
   /** The rows to save (only what changed). */
   updates: JobChange[];
   /** The same jobs as they were, for Undo. */
@@ -77,7 +81,10 @@ export function planWaitingCount(
 }
 
 /**
- * Plan these days for one tech or everyone (`tech` = EVERYONE). Started and finished jobs, day
+ * Plan these days for the techs picked (owner, 2026-10-20: "select multiple techs when planning a
+ * week. Then it should split the open jobs up evenly"); EVERYONE among them means every active
+ * tech. With two or more, the open jobs are split evenly by minutes of work (core planWeek
+ * `even`). Started and finished jobs, day
  * locks, two-tech jobs and maintenance visits stay on their days; time locks keep their clock
  * time. A job given to a tech stays that tech's. `tray`: also place the jobs in Needs a Time
  * that nobody has yet; off, only the planned techs' own jobs move.
@@ -86,8 +93,11 @@ export function buildWeekPlan(input: {
   ctx: PlanContext;
   /** The week on screen. */
   dates: string[];
-  tech: string;
+  /** The techs picked; EVERYONE means every active tech. */
+  techs: string[];
   tray: boolean;
+  /** A tech's name, for the split line. */
+  name?: (techId: string) => string;
   team: { user_id: string; status: string }[];
   /** A tech's day in route order (their own jobs and those they're second tech on). */
   dayJobs: (techId: string, date: string) => WeekPlanJob[];
@@ -96,16 +106,13 @@ export function buildWeekPlan(input: {
   drive: DriveFn;
 }): WeekPlanOutcome {
   const { ctx, tray, drive } = input;
-  const all = input.tech === EVERYONE;
   const none = (error: string): WeekPlanOutcome => ({ error, updates: [], undo: [] });
   const dates = planDates(ctx, input.dates);
   if (!dates.length) return none("No working days left this week to plan.");
-  const techs = all
-    ? input.team.filter((t) => t.status === "active").map((t) => t.user_id)
-    : input.team.some((t) => t.user_id === input.tech)
-      ? [input.tech]
-      : [];
+  const techs = planTechs(input.techs, input.team);
   if (!techs.length) return none("Pick a week and a tech.");
+  // Several techs: a job may go to any of them, split evenly.
+  const several = techs.length > 1;
 
   const before = new Map<string, Row>();
   const remember = (j: WeekPlanJob) =>
@@ -154,7 +161,7 @@ export function buildWeekPlan(input: {
                 : null,
             techId,
             date,
-            techs: all ? techs : [techId],
+            techs: several ? techs : [techId],
           });
           continue;
         }
@@ -203,7 +210,14 @@ export function buildWeekPlan(input: {
     (a, b) => (a.date ? 0 : 1) - (b.date ? 0 : 1) || (a.date ? 0 : a.id.localeCompare(b.id)),
   );
 
-  const plan = planWeek({ days, jobs, depot: ctx.depot, day: workDay(ctx.settings), drive });
+  const plan = planWeek({
+    days,
+    jobs,
+    depot: ctx.depot,
+    day: workDay(ctx.settings),
+    drive,
+    even: several,
+  });
   const moving = new Set(jobs.map((j) => j.id));
   const updates: JobChange[] = [];
   const undo: JobChange[] = [];
@@ -239,9 +253,56 @@ export function buildWeekPlan(input: {
     message:
       planWeekSummary(plan, durationLabel) +
       (unlocated ? ` · ${unlocated} without a map location left in Needs a Time` : ""),
+    ...(several ? { detail: planWeekSplit(plan, input.name ?? ((id) => id)) || undefined } : null),
     updates,
     undo,
   };
+}
+
+/**
+ * The techs a plan covers, in the team's order: every active tech for EVERYONE, else the picked
+ * ones on the team (never twice).
+ */
+export function planTechs(
+  picked: readonly string[],
+  team: readonly { user_id: string; status: string }[],
+): string[] {
+  if (picked.includes(EVERYONE))
+    return team.filter((t) => t.status === "active").map((t) => t.user_id);
+  const want = new Set(picked);
+  return team.filter((t) => want.has(t.user_id)).map((t) => t.user_id);
+}
+
+/**
+ * What Plan Week's "Plan for" row reads closed: "Everyone" when every tech is picked, the
+ * tech's name for one, else "2 Techs". Empty when none is picked.
+ */
+export function planForLabel(
+  picked: readonly string[],
+  techs: readonly { id: string; name: string }[],
+): string {
+  const chosen = techs.filter((t) => picked.includes(EVERYONE) || picked.includes(t.id));
+  if (!chosen.length) return "";
+  if (chosen.length === techs.length && techs.length > 1) return "Everyone";
+  if (chosen.length === 1) return chosen[0]!.name;
+  return `${chosen.length} Techs`;
+}
+
+/**
+ * Tapping a row of the "Plan for" checklist: Everyone selects every tech, or clears them all
+ * when all are on; a tech's row turns that tech on or off. The picked list never holds EVERYONE.
+ */
+export function togglePlanTech(
+  picked: readonly string[],
+  value: string,
+  techs: readonly { id: string }[],
+): string[] {
+  const ids = techs.map((t) => t.id);
+  const now = picked.includes(EVERYONE) ? ids : picked.filter((id) => ids.includes(id));
+  if (value === EVERYONE) return now.length === ids.length ? [] : ids;
+  return now.includes(value)
+    ? now.filter((id) => id !== value)
+    : ids.filter((id) => id === value || now.includes(id));
 }
 
 /** Equal values, times compared as instants (the database writes them its own way). */

@@ -122,6 +122,13 @@ public final class LocalStore: @unchecked Sendable {
         ).first.map { try decodeRow($0["data"]) }
     }
 
+    /// A row by id, left out when deleted (as `list` leaves deleted rows out).
+    public func getLive(_ table: String, _ id: String) throws -> Row? {
+        try database.query(
+            "select data from sync_records where table_name = ? and id = ? and deleted = 0", [.text(table), .text(id)]
+        ).first.map { try decodeRow($0["data"]) }
+    }
+
     public func list(_ table: String, companyId: String? = nil, jobId: String? = nil, includeDeleted: Bool = false)
         throws -> [Row]
     {

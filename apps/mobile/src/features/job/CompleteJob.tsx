@@ -73,6 +73,23 @@ export function confirmCompleteVisit(
 }
 
 /**
+ * A done stop's undo, as Today offers it (core todayUndo): Reopen Visit (back to in progress,
+ * as the job page's status change) or Mark Not Complete. False when the stop has none.
+ */
+export function undoStopDone(job: Job, day: string): boolean {
+  const undo = todayUndo(job, day);
+  if (!undo) return false;
+  const sync = getServices().sync;
+  if (undo.reopen)
+    sync.write("job", job.id, job.company_id, {
+      status: "in_progress",
+      ...(job.started_at ? {} : { started_at: new Date().toISOString() }),
+    });
+  else sync.write("job", job.id, job.company_id, { stop_done_on: null });
+  return true;
+}
+
+/**
  * Mark Complete on a Today stop (owner, 2026-10-19: every stop on the day's route), as the
  * website's TodayComplete. A maintenance visit is completed (with the shop's checklist and
  * photo rules: blocked, it says why with Open Job); a leak or repair job keeps its pipeline and
@@ -87,6 +104,8 @@ export function TodayComplete({
   day,
   done,
   trigger,
+  pressNonce,
+  onPressHandled,
   onWater = false,
 }: {
   job: Job;
@@ -101,6 +120,10 @@ export function TodayComplete({
   trigger?: number;
   /** Beside the main button on Today's water-blue card (owner, 2026-10-20). */
   onWater?: boolean;
+  /** Set when the row's swipe action asks for Mark Complete (gestures spec section 5). */
+  pressNonce?: number;
+  /** Called once that request is handled, so it isn't pressed again. */
+  onPressHandled?: () => void;
 }) {
   const company = useCompany();
   const blocker = useCompleteJobBlocker(job);
@@ -111,15 +134,7 @@ export function TodayComplete({
   function press() {
     const sync = getServices().sync;
     if (done) {
-      if (!undo) return;
-      if (undo.reopen) {
-        // Reopen Visit: back to in progress, as the job page's status change.
-        sync.write("job", job.id, job.company_id, {
-          status: "in_progress",
-          ...(job.started_at ? {} : { started_at: new Date().toISOString() }),
-        });
-      } else sync.write("job", job.id, job.company_id, { stop_done_on: null });
-      haptics.light();
+      if (undoStopDone(job, day)) haptics.light();
       return;
     }
     if (job.type === "maintenance" && blocker) return setAsked(true);
@@ -144,6 +159,14 @@ export function TodayComplete({
     // Only a new request presses; `done` is read when it arrives.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trigger]);
+  // The row's swipe Complete: pressed here, with the same questions and checks as the button.
+  useEffect(() => {
+    if (!pressNonce) return;
+    onPressHandled?.();
+    if (!done) latest.current();
+    // Only a new request presses.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pressNonce]);
 
   if (done && !undo) return null;
   return (

@@ -4,9 +4,10 @@
  * pushes) and both apps (which show them and the Live Activity) say the same thing.
  */
 
+import { cleaningDueSpoken, cleaningShortLabel, type CleaningKind } from "./maintenance";
 import { routingSettings, weekday, workDay } from "./route-plan";
 
-export type NotificationKind = "text" | "job" | "quote" | "payment" | "report";
+export type NotificationKind = "text" | "job" | "quote" | "payment" | "report" | "live";
 
 /** Each kind a person can turn off in More › Notifications or Settings › Notifications. */
 export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint: string }[] = [
@@ -15,6 +16,14 @@ export const NOTIFICATION_KINDS: { key: NotificationKind; label: string; hint: s
   { key: "quote", label: "Accepted quotes", hint: "A customer accepts a quote." },
   { key: "payment", label: "Payments", hint: "A customer pays a deposit or an invoice." },
   { key: "report", label: "Signed reports", hint: "A customer signs a report." },
+  // Owner, 2026-10-20: "Add a Live Activities toggle in the notifications setting." The stop
+  // you're on, on the Lock Screen during the workday (iPhone's Live Activity, Android's ongoing
+  // notification).
+  {
+    key: "live",
+    label: "Live Activity",
+    hint: "Your current stop on the Lock Screen during the workday.",
+  },
 ];
 
 /** Whether a person gets a kind: on unless their profile.notification_prefs turns it off. */
@@ -100,6 +109,26 @@ export interface LiveStopInput {
   next: { customer: string; time: string | null } | null;
   /** The pool's access notes: gate code, which gate, dogs (property.access_notes). */
   access?: string | null;
+  /** The plan's cleanings on this visit (filter, salt cell), with how soon each is due. */
+  cleanings?: StopCleaning[];
+}
+
+/** A cleaning on a stop's visit: its name, its kind (for the icon) and how soon it's due. */
+export interface StopCleaning {
+  name: string;
+  kind: CleaningKind;
+  days: number;
+  weeks: number;
+}
+
+/** A cleaning as the card and the Live Activity show it: its icon, a few words, and aloud. */
+export interface CleaningBadge {
+  kind: CleaningKind;
+  /** "Overdue", "Today", "3 days", "2 weeks". */
+  label: string;
+  /** "Clean filter due in 3 days". */
+  spoken: string;
+  overdue: boolean;
 }
 
 export interface LiveStopContent {
@@ -125,6 +154,23 @@ export interface LiveStopContent {
    * gate", "has dogs" belong on the Live Activity). Null when there are none.
    */
   access: string | null;
+  /**
+   * The cleanings on this visit (owner, 2026-10-20: "The filter/salt cell cleaning alert needs
+   * to be on the new Today tile and the live activity"), soonest first, until the stop is done.
+   */
+  cleanings: CleaningBadge[];
+}
+
+/** A visit's cleanings as badges, soonest first. */
+export function cleaningBadges(list: StopCleaning[] | null | undefined): CleaningBadge[] {
+  return [...(list ?? [])]
+    .sort((a, b) => a.days - b.days)
+    .map((c) => ({
+      kind: c.kind,
+      label: cleaningShortLabel(c),
+      spoken: cleaningDueSpoken(c.name, c),
+      overdue: c.days < 0,
+    }));
 }
 
 /** Access notes as one short line: spaces and line breaks collapsed, at most 90 characters. */
@@ -137,46 +183,52 @@ export function accessLine(notes: string | null | undefined): string | null {
 export function liveStopContent(s: LiveStopInput): LiveStopContent {
   const base = liveStopBase(s);
   const access = s.phase === "done" ? null : accessLine(s.access);
-  return {
-    ...base,
-    access,
-    spoken: access ? `${base.spoken} Access: ${access}` : base.spoken,
-  };
+  const cleanings = s.phase === "done" ? [] : cleaningBadges(s.cleanings);
+  const spoken = [
+    base.spoken,
+    access ? `Access: ${access}` : null,
+    cleanings.length ? `${cleanings.map((c) => c.spoken).join(", ")}.` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  return { ...base, access, cleanings, spoken };
 }
 
-function liveStopBase(s: LiveStopInput): Omit<LiveStopContent, "access"> {
+function liveStopBase(s: LiveStopInput): Omit<LiveStopContent, "access" | "cleanings"> {
+  // No clock times (owner, 2026-10-20: "I don't like times in the live activity. Pool Jobs
+  // aren't really scheduled for a certain time"): before arriving, the figure is the stop's place
+  // in the day, and the next stop is named without a time. `eta` and `scheduled` are ignored.
   const of = `Stop ${s.stop} of ${s.stops}`;
   const detail = [of, s.address].filter(Boolean).join(" · ");
-  const next = s.next ? `Next: ${s.next.customer}${s.next.time ? ` at ${s.next.time}` : ""}` : null;
+  const next = s.next ? `Next: ${s.next.customer}` : null;
   const doneStops = s.phase === "done" ? s.stop : s.stop - 1;
   const progress =
     s.stops > 0
       ? Math.min(1, Math.max(0, (doneStops + (s.phase === "on_site" ? 0.5 : 0)) / s.stops))
       : 0;
+  const place = s.stops > 0 ? `${s.stop} of ${s.stops}` : "";
   if (s.phase === "ahead") {
-    const at = s.scheduled ?? "";
     return {
       headline: `Up next: ${s.customer}`,
-      figure: at || "Today",
-      figureLabel: at ? "Scheduled" : "",
+      figure: place || "Today",
+      figureLabel: place ? "Stop" : "",
       detail,
       next,
       progress,
-      compact: at.replace(/\s?[AP]M$/i, "") || "…",
-      spoken: `Up next: ${s.customer}${at ? ` at ${at}` : ""}. ${of}.`,
+      compact: place ? `${s.stop}/${s.stops}` : "…",
+      spoken: `Up next: ${s.customer}. ${of}.`,
     };
   }
   if (s.phase === "driving") {
-    const eta = s.eta ?? "";
     return {
       headline: `On the way to ${s.customer}`,
-      figure: eta || "On the way",
-      figureLabel: eta ? "Arriving" : "",
+      figure: place || "On the way",
+      figureLabel: place ? "Stop" : "",
       detail,
       next,
       progress,
-      compact: eta.replace(/\s?[AP]M$/i, "") || "…",
-      spoken: `On the way to ${s.customer}${eta ? `, arriving at ${eta}` : ""}. ${of}.`,
+      compact: place ? `${s.stop}/${s.stops}` : "…",
+      spoken: `On the way to ${s.customer}. ${of}.`,
     };
   }
   if (s.phase === "on_site") {

@@ -54,7 +54,7 @@ export default async function MorePage() {
                   ? "Some"
                   : "Off"
             }
-            detail="Texts, new jobs, quotes, payments, and reports"
+            detail="Texts, new jobs, quotes, payments, reports, and Live Activity"
           />
           <Row
             href="/more/two-step"

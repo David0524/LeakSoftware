@@ -434,3 +434,14 @@ input[type="time"]::-webkit-date-and-time-value {
     animation: none;
   }
 }
+/* Today's card: the finished stop's checkmark draws on (0.6 s), before the next stop slides in. */
+.hero-check {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: hero-check-draw 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes hero-check-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}

@@ -46,11 +46,13 @@ public func checklistCount(_ store: LocalStore, companyId: String, job: Schedule
 }
 
 /// A day's stops as the card and the Live Activity read them (core `HeroStop`). Only started
-/// jobs need their checklist counted (the figure shows it at the pool). Reads only the store, so
-/// Today builds it off the main thread.
-public func dayHeroStops(_ store: LocalStore, companyId: String, stops: [ScheduleJob], counted: String? = nil)
-    -> [HeroStop]
-{
+/// jobs need their checklist counted (the figure shows it at the pool). Each stop carries its
+/// cleanings (`dayCleanings`, owner 2026-10-20), the same ones Today's rows show. Reads only the
+/// store, so Today builds it off the main thread.
+public func dayHeroStops(
+    _ store: LocalStore, companyId: String, stops: [ScheduleJob], counted: String? = nil,
+    cleanings: [String: [VisitCleaning]]
+) -> [HeroStop] {
     stops.map { job in
         let count =
             job.status == .inProgress || job.id == counted
@@ -59,7 +61,7 @@ public func dayHeroStops(_ store: LocalStore, companyId: String, stops: [Schedul
             id: job.id, type: job.type.rawValue, status: job.status.rawValue, stopDoneOn: job.stopDoneOn,
             scheduledStart: job.scheduledStart, onMyWayAt: job.onMyWayAt, arriveAt: job.arriveAt,
             customer: job.customerName, address: job.address.isEmpty ? nil : job.address, access: job.accessNotes,
-            checklistDone: count.done, checklistTotal: count.total)
+            cleanings: cleanings[job.id].map(heroCleanings), checklistDone: count.done, checklistTotal: count.total)
     }
 }
 
@@ -73,9 +75,10 @@ public struct LiveStopDay: Sendable {
     public var heroStops: [HeroStop] = []
     public var runs: Bool
 
-    /// The card for the day (core `todayHero`), with `justDone` shown done for its minute.
-    public func hero(justDone: String? = nil) -> TodayHero? {
-        try? todayHero(stops: heroStops, today: today, timeZone: timeZone, justDone: justDone)
+    /// The card for the day (core `todayHero`): a done stop moves straight on (owner, 2026-10-20:
+    /// no minute's hold).
+    public func hero() -> TodayHero? {
+        try? todayHero(stops: heroStops, today: today, timeZone: timeZone)
     }
 
     /// The stop the day is on (Today's card's): the one on the way, else one started, else the
@@ -108,7 +111,9 @@ public func liveStopDay(
     let left = stops.filter { !$0.doneOn(ctx.today) }.count
     return LiveStopDay(
         today: ctx.today, timeZone: ctx.timeZone, stops: stops,
-        heroStops: dayHeroStops(store, companyId: company.id, stops: stops),
+        heroStops: dayHeroStops(
+            store, companyId: company.id, stops: stops,
+            cleanings: dayCleanings(store, companyId: company.id, stops: stops, today: ctx.today)),
         runs: liveStopRuns(settings: company.settings, date: ctx.today, nowMin: ctx.nowMin, stopsLeft: left))
 }
 
@@ -119,9 +124,9 @@ public func liveStopETA(now: Date, timeZone: String, driveMinutes: Int) -> Strin
 
 /// What the activity shows for its stop now (`LiveStopInput`), from the shared rule
 /// (`todayHero`) over the route the job is on: the same stop, words and figure as Today's card.
-/// A job done for today shows done (with the next stop) for its minute. Nil when the job isn't on
-/// this phone, or when the day has moved on to another stop (the controller then shows that
-/// one). A job off today's route is stop 1 of 1.
+/// Nil when the job isn't on this phone, or when the day has moved on to another stop (done, or
+/// On My Way or Start elsewhere): the controller then shows that one straight away (owner,
+/// 2026-10-20: no minute's hold on a done stop). A job off today's route is stop 1 of 1.
 @MainActor
 public func liveStopInput(
     _ store: LocalStore, kv: KeyValue, company: CompanyContext, userId: String, target: LiveStopTarget,
@@ -137,13 +142,19 @@ public func liveStopInput(
         ?? routes.values.first { r in r.jobs.contains { $0.id == job.id } }
     let stops = route?.jobs ?? [job]
     let hero = try? todayHero(
-        stops: dayHeroStops(store, companyId: company.id, stops: stops, counted: job.id), today: ctx.today,
-        timeZone: ctx.timeZone, justDone: job.doneOn(ctx.today) ? job.id : nil)
+        stops: dayHeroStops(
+            store, companyId: company.id, stops: stops, counted: job.id,
+            cleanings: dayCleanings(store, companyId: company.id, stops: stops, today: ctx.today)),
+        today: ctx.today,
+        timeZone: ctx.timeZone)
     guard let hero, hero.stopId == job.id, var input = hero.input else { return nil }
     // On the way from an activity started before the job kept its arrival time.
     if input.phase == .driving && (input.eta ?? "").isEmpty { input.eta = target.eta }
     return input
 }
 
-/// How long the activity stays on the Lock Screen after the stop is done.
-public let liveStopDoneLingerSeconds: TimeInterval = 60
+/// The alert the Live Activity's update carries when a stop is done and it moves on (owner,
+/// 2026-10-20): "Derek Jeter done. Next: Wayne Gretzky", or "Derek Jeter done." after the last.
+public func liveStopDoneAlert(customer: String, next: String?) -> String {
+    "\(customer) done." + (next.map { " Next: \($0)" } ?? "")
+}

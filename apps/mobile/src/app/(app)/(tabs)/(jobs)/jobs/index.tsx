@@ -1,11 +1,14 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
-import { Animated, Pressable, RefreshControl, StyleSheet, View } from "react-native";
+import { Animated, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import {
+  JOB_SORTS,
   JOB_TYPE_LABELS,
   canMakeJobs,
   formatAddress,
   formatSchedule,
+  jobSort,
+  sortJobs,
   type JobStatus,
 } from "@leakbook/core";
 import { useRows } from "../../../../../data/hooks";
@@ -24,9 +27,12 @@ import {
   useScreenChrome,
 } from "../../../../../ui/components";
 import { haptics } from "../../../../../ui/haptics";
+import { useMenu } from "../../../../../ui/Select";
+import { SwipeActions } from "../../../../../ui/SwipeRow";
+import { WebIcon } from "../../../../../ui/WebIcon";
 import { SyncBar } from "../../../../../ui/SyncBar";
 import { ScreenTip } from "../../../../../ui/Tip";
-import { color, shape, space } from "../../../../../ui/theme";
+import { color, face, MAX_TEXT_SCALE, minTap, shape, space, type } from "../../../../../ui/theme";
 
 const OPEN: JobStatus[] = [
   "unscheduled",
@@ -54,6 +60,9 @@ const FILTERS: { value: string; label: string; statuses: JobStatus[] | null }[] 
   { value: "canceled", label: "Canceled", statuses: ["canceled"] },
   { value: "all", label: "All", statuses: null },
 ];
+
+/** The Sort picked, kept while the app runs (as the section a job opens on). */
+let lastSort: string = "scheduled";
 
 const REPORT_FILTERS = [
   { value: "all", label: "All" },
@@ -87,13 +96,22 @@ export default function Jobs() {
   }
   const [reportFilter, setReportFilter] = useState("all");
   const [search, setSearch] = useState("");
+  // Sort, as Invoices sorts (owner, 2026-10-20: "Add sorting on the jobs page just like
+  // invoices"): Scheduled Date first, kept while the app runs.
+  const [sort, setSortState] = useState(() => jobSort(lastSort));
+  const setSort = (v: string) => {
+    lastSort = v;
+    setSortState(jobSort(v));
+  };
+  const sortLabel = JOB_SORTS.find((x) => x.key === sort)?.label ?? "Scheduled Date";
+  const menu = useMenu();
   const [refreshing, setRefreshing] = useState(false);
   const now = new Date();
 
   const shown = useMemo(() => {
     const statuses = FILTERS.find((f) => f.value === filter)?.statuses;
     const q = search.trim().toLowerCase().replace(/^#/, "");
-    return jobs
+    const matched = jobs
       .filter((j) => !j.deleted_at)
       .filter((j) => !statuses || statuses.includes(j.status))
       .filter(
@@ -101,13 +119,17 @@ export default function Jobs() {
           !q ||
           String(j.number ?? "").includes(q) ||
           (j.customer?.name ?? "").toLowerCase().includes(q),
-      )
-      .sort(
-        (a, b) =>
-          (Date.parse(a.scheduled_start ?? "") || Infinity) -
-            (Date.parse(b.scheduled_start ?? "") || Infinity) || (b.number ?? 0) - (a.number ?? 0),
       );
-  }, [jobs, filter, search]);
+    // core sortJobs, as the website: the customer's name as `customer`.
+    const keyed = matched.map((j) => ({
+      job: j,
+      number: j.number,
+      scheduled_start: j.scheduled_start,
+      created_at: (j as { created_at?: string | null }).created_at ?? null,
+      customer: j.customer?.name ?? null,
+    }));
+    return sortJobs(keyed, sort).map((k) => k.job);
+  }, [jobs, filter, search, sort]);
 
   const reportRows = useMemo(() => {
     const byId = new Map(jobs.map((j) => [j.id, j]));
@@ -159,11 +181,39 @@ export default function Jobs() {
         <>
           <ScreenTip screen="jobs" />
           <FilterPills label="Status" options={FILTERS} value={filter} onChange={setFilter} />
-          <SearchField
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Customer name or job number"
-          />
+          <View style={styles.searchRow}>
+            <View style={{ flex: 1 }}>
+              <SearchField
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Customer name or job number"
+              />
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Sort, ${sortLabel}`}
+              onPress={() =>
+                menu.open({
+                  title: "Sort",
+                  items: JOB_SORTS.map((x) => ({
+                    label: x.label,
+                    checked: x.key === sort,
+                    onPress: () => setSort(x.key),
+                  })),
+                })
+              }
+              style={({ pressed }) => [styles.sort, pressed && { opacity: 0.5 }]}
+            >
+              <Text
+                style={[type.secondary, face.semiBold, { color: color.link }]}
+                maxFontSizeMultiplier={MAX_TEXT_SCALE}
+              >
+                {sortLabel}
+              </Text>
+              <WebIcon name="updown" size={16} color={color.link} strokeWidth={2} />
+            </Pressable>
+          </View>
+          {menu.element}
         </>
       ) : (
         <FilterPills
@@ -239,12 +289,17 @@ function GroupedRow({
   last,
   onPress,
   label,
+  actions,
+  onAction,
   children,
 }: {
   first: boolean;
   last: boolean;
   onPress: () => void;
   label?: string;
+  /** The row's swipe actions, for TalkBack and VoiceOver. */
+  actions?: { name: string; label: string }[];
+  onAction?: (name: string) => void;
   children: React.ReactNode;
 }) {
   return (
@@ -260,6 +315,8 @@ function GroupedRow({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
+        accessibilityActions={actions?.length ? actions : undefined}
+        onAccessibilityAction={(e) => onAction?.(e.nativeEvent.actionName)}
         onPress={onPress}
         android_ripple={{ color: color.ripple }}
         style={({ pressed }) => [styles.row, pressed && { backgroundColor: color.rowPressed }]}
@@ -284,8 +341,18 @@ function JobRow({
   first: boolean;
   last: boolean;
 }) {
-  return (
-    <GroupedRow first={first} last={last} onPress={() => router.push(`/jobs/${job.id}`)}>
+  const phone = job.customer?.phone;
+  // Swipe left to call (gestures spec section 5); the job's page keeps its Call button.
+  const row = (
+    <GroupedRow
+      first={first}
+      last={last}
+      onPress={() => router.push(`/jobs/${job.id}`)}
+      actions={
+        phone ? [{ name: "call", label: `Call ${job.customer?.name ?? "the customer"}` }] : []
+      }
+      onAction={() => phone && void Linking.openURL(`tel:${phone}`)}
+    >
       <View style={styles.rowBody}>
         <T variant="bodyEmphasis" numberOfLines={1}>
           {job.customer?.name ?? "Customer"}
@@ -304,6 +371,17 @@ function JobRow({
       </View>
       <StatusChip status={job.status} style={{ alignSelf: "center" }} />
     </GroupedRow>
+  );
+  return phone ? (
+    <SwipeActions
+      trailing={[
+        { label: "Call", tint: color.link, onPress: () => void Linking.openURL(`tel:${phone}`) },
+      ]}
+    >
+      {row}
+    </SwipeActions>
+  ) : (
+    row
   );
 }
 
@@ -365,4 +443,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: space["4"],
   },
   rowBody: { flex: 1, gap: 2 },
+  searchRow: { flexDirection: "row", alignItems: "center", gap: space["3"] },
+  sort: { minHeight: minTap, flexDirection: "row", alignItems: "center", gap: 4 },
 });

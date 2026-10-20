@@ -10,6 +10,29 @@ import { getJson } from "./weather";
 type Prefs = Record<string, unknown>;
 let cached: Prefs | null = null;
 const listeners = new Set<(p: Prefs) => void>();
+/** The last choices seen, kept on this phone so the Live Activity switch holds offline. */
+const KV_KEY = "notification_prefs";
+
+function remembered(): Prefs | null {
+  if (cached) return cached;
+  try {
+    const raw = getServices().kv.get(KV_KEY);
+    cached = raw ? (JSON.parse(raw) as Prefs) : null;
+  } catch {
+    cached = null;
+  }
+  return cached;
+}
+
+function remember(p: Prefs) {
+  cached = p;
+  try {
+    getServices().kv.set(KV_KEY, JSON.stringify(p));
+  } catch {
+    // Kept in memory only.
+  }
+  listeners.forEach((l) => l(p));
+}
 
 /** "On", "Some", or "Off", as the website's More row. */
 export function notificationSummary(prefs: Prefs | null): string | undefined {
@@ -20,14 +43,13 @@ export function notificationSummary(prefs: Prefs | null): string | undefined {
 
 /** The person's choices (null until loaded, or offline), and turning one kind on or off. */
 export function useNotificationPrefs() {
-  const [prefs, setPrefs] = useState<Prefs | null>(cached);
+  const [prefs, setPrefs] = useState<Prefs | null>(remembered);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     listeners.add(setPrefs);
     void getJson<{ prefs: Prefs }>("/api/push/preferences").then((r) => {
       if (!r) return;
-      cached = r.prefs ?? {};
-      listeners.forEach((l) => l(cached!));
+      remember(r.prefs ?? {});
     });
     return () => {
       listeners.delete(setPrefs);
@@ -40,8 +62,7 @@ export function useNotificationPrefs() {
         NOTIFICATION_KINDS.map((k) => [k.key, k.key === kind ? on : notificationOn(prefs, k.key)]),
       );
       const before = prefs;
-      cached = next;
-      listeners.forEach((l) => l(next));
+      remember(next);
       setError(null);
       try {
         const token = await getServices().sync.accessToken();
@@ -52,8 +73,7 @@ export function useNotificationPrefs() {
         });
         if (!res.ok) throw new Error(`The server said ${res.status}.`);
       } catch {
-        cached = before;
-        listeners.forEach((l) => l(before));
+        remember(before);
         setError("Couldn’t save. Try again when you have signal.");
       }
     },

@@ -5,6 +5,7 @@ import {
   lockColumns,
   lockReason,
   planWeek,
+  planWeekSplit,
   planWeekSummary,
   durationLabel,
   type WeekDay,
@@ -153,5 +154,57 @@ describe("planWeek", () => {
       drive: estimateDriveMinutes,
     };
     expect(planWeek(input)).toEqual(planWeek(input));
+  });
+});
+
+describe("planWeek with several techs (owner, 2026-10-20)", () => {
+  const dates = ["2026-10-26", "2026-10-27"];
+  const crew = (techs: string[]): WeekDay[] =>
+    techs.flatMap((techId) => dates.map((date) => ({ techId, date, stays: [] })));
+  // Eight open jobs, all in the north: least driving alone would favor one tech's route.
+  const open = [0, 1, 2, 3, 4, 5, 6, 7].map((i) =>
+    job(`n${i}`, north(i), { techs: ["t1", "t2", "t3"] }),
+  );
+
+  it("splits the open jobs evenly when asked", () => {
+    const p = planWeek({
+      days: crew(["t1", "t2", "t3"]),
+      jobs: open,
+      depot,
+      day,
+      drive: estimateDriveMinutes,
+      even: true,
+    });
+    const counts = p.split.map((s) => s.jobs);
+    expect(counts.reduce((a, b) => a + b, 0)).toBe(8);
+    expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(1);
+    expect(planWeekSplit(p, (t) => ({ t1: "Ana", t2: "Ben", t3: "Cy" })[t]!)).toMatch(
+      /^Ana \d jobs · Ben \d jobs · Cy \d jobs$/,
+    );
+  });
+
+  it("keeps a job given to one tech with that tech", () => {
+    const mine = job("x", south(0), { techs: ["t3"] });
+    const p = planWeek({
+      days: crew(["t1", "t2", "t3"]),
+      jobs: [...open, mine],
+      depot,
+      day,
+      drive: estimateDriveMinutes,
+      even: true,
+    });
+    expect(p.placed.find((x) => x.id === "x")!.techId).toBe("t3");
+  });
+
+  it("says nothing about the split for one tech", () => {
+    const p = planWeek({
+      days: crew(["t1"]),
+      jobs: open.map((j) => ({ ...j, techs: ["t1"] })),
+      depot,
+      day,
+      drive: estimateDriveMinutes,
+      even: true,
+    });
+    expect(planWeekSplit(p, () => "Ana")).toBe("");
   });
 });

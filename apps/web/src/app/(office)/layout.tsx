@@ -5,6 +5,7 @@ import { Logo } from "@/components/logo";
 import { DesktopNav, TabBar } from "@/components/nav-links";
 import { AccountMenu } from "@/components/account-menu";
 import { BannerHost } from "@/components/top-banner";
+import { PullToRefresh } from "@/components/pull-to-refresh";
 import { accessNotice } from "@leakbook/core";
 import { cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
@@ -57,6 +58,10 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
       {/* Results (Optimize, moves, Plan Week) as a short banner under the navigation bar. */}
       <Suspense fallback={null}>
         <BannerHost />
+      </Suspense>
+      {/* Pull down at the top of a list to refresh it (Home Screen app only). */}
+      <Suspense fallback={null}>
+        <PullToRefresh />
       </Suspense>
       {/* Room for the phone navigation bar above and the tab bar below. */}
       <main

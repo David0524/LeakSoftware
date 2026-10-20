@@ -5,6 +5,8 @@ import { Alert } from "react-native";
 import { useRow } from "../../../../../data/hooks";
 import { sendCompanyText, useLine } from "../../../../../data/texting";
 import { Composer } from "../../../../../features/messages/Composer";
+import { recordOnMyWay } from "../../../../../features/today/OnMyWay";
+import { readOnMyWayDraft } from "../../../../../lib/heroMessage";
 import { useCompany } from "../../../../../state/session";
 import { Field, Notice, Screen } from "../../../../../ui/components";
 
@@ -14,7 +16,16 @@ import { Field, Notice, Screen } from "../../../../../ui/components";
  * place.
  */
 export default function NewMessage() {
-  const { customer: customerId, job } = useLocalSearchParams<{ customer?: string; job?: string }>();
+  const params = useLocalSearchParams<{
+    customer?: string;
+    job?: string;
+    omw?: string;
+    drive?: string;
+    body?: string;
+  }>();
+  const { customer: customerId, job } = params;
+  // Today's Message before arriving: the On My Way text, filled in (owner, 2026-10-20).
+  const [draft] = useState(() => readOnMyWayDraft(params));
   const company = useCompany();
   const line = useLine(company.id);
   const customer = useRow<{ id: string; name: string; phone: string | null }>(
@@ -34,9 +45,11 @@ export default function NewMessage() {
       const sent = await sendCompanyText({
         ...(customer ? { customerId: customer.id } : { phone: to, companyId: company.id }),
         body,
-        jobId: job,
+        jobId: draft?.jobId ?? job,
         picture: picture ? { companyId: company.id, ...picture } : undefined,
       });
+      // Sending it is On My Way: the card and the notification switch to "On the way".
+      if (draft) recordOnMyWay(draft.jobId, company.id, draft.driveMin);
       router.replace(`/messages/${sent.conversationId}`);
       return true;
     } catch (e) {
@@ -73,6 +86,7 @@ export default function NewMessage() {
           onSend={send}
           docked={false}
           autoFocus={Boolean(customer)}
+          initialBody={draft?.body}
         />
       ) : (
         <Notice>Texting is off until the company number is working.</Notice>
