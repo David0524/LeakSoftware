@@ -1030,9 +1030,9 @@ export async function getPlanCleanings(office: Office, planIds: string[]) {
 
 /**
  * The scheduled cleanings on these visits (filter, salt cell, filter replacement: the
- * checklist items a plan's cleaning put there, `plan_cleaning_id`), by job, so Schedule shows them on the date they're due (owner,
- * 2026-10-20: "The filter/salt cells don't show up on the dates they're due"). The database
- * puts each one on the first visit on or after its due date.
+ * checklist items a plan's cleaning put there, `plan_cleaning_id`), by job, so Schedule shows
+ * them on the date they're due (owner, 2026-10-20: "The filter/salt cells don't show up on the
+ * dates they're due"). The database puts each one on the first visit on or after its due date.
  */
 export async function visitCleanings(
   office: Office,
@@ -1044,7 +1044,7 @@ export async function visitCleanings(
   const { data } = await supabase
     .from("job_component")
     .select(
-      "job_id, type:component_type!job_component_component_type_id_company_id_fkey(key, name)",
+      "job_id, plan_cleaning_id, type:component_type!job_component_component_type_id_company_id_fkey(key, name)",
     )
     .eq("company_id", office.company.id)
     .in("job_id", jobIds)
