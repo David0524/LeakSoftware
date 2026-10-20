@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   INVOICE_FILTERS,
   INVOICE_SORTS,
@@ -55,7 +55,11 @@ export default function Invoices() {
   const tz = company.timezone;
   // The shop's today (YYYY-MM-DD), for Overdue.
   const [today] = useState(() => dateFormat("en-CA", { timeZone: tz }).format(new Date()));
-  const [filter, setFilter] = useState("all");
+  // Opened from the Dashboard's Owed to You (`/invoices?filter=open`).
+  const { filter: asked } = useLocalSearchParams<{ filter?: string }>();
+  const [filter, setFilter] = useState(() =>
+    INVOICE_FILTERS.some((f) => f.key === asked) ? asked! : "all",
+  );
   const [sort, setSort] = useState("newest");
   const [search, setSearch] = useState("");
   const q = search.trim();

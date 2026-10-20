@@ -26,7 +26,7 @@ export const NATIVE_PAGES = [
   "exclusions",
 ];
 
-const LEAK_ONLY = ["tests", "severities", "exclusions", "reports"];
+const LEAK_ONLY = ["tests", "severities", "exclusions"];
 
 export function settingsGroups(settings: unknown) {
   const leak = offersLeak(settings);
@@ -64,7 +64,7 @@ export function settingsGroups(settings: unknown) {
     { title: "Your shop", pages: ["company", "team", "import", "scheduling", "phone"] },
     { title: "Money", pages: ["price-book", "payments"] },
     {
-      title: leak ? "Checklists and reports" : "Checklists",
+      title: "Checklists and reports",
       pages: ["components", "tests", "severities", "exclusions", "reports"],
     },
   ];

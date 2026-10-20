@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { Animated, Pressable, RefreshControl, StyleSheet, View } from "react-native";
 import {
@@ -75,6 +75,16 @@ export default function Jobs() {
   const reports = useRows<ReportRecord>("report", company.id);
   const [view, setView] = useState<View_>("jobs");
   const [filter, setFilter] = useState("open");
+  // Opened from the Dashboard on a status (`/jobs?status=paid`): show that filter.
+  const { status: asked } = useLocalSearchParams<{ status?: string }>();
+  const [seenStatus, setSeenStatus] = useState<string | undefined>(undefined);
+  if (asked !== seenStatus) {
+    setSeenStatus(asked);
+    if (asked && FILTERS.some((f) => f.value === asked)) {
+      setFilter(asked);
+      setView("jobs");
+    }
+  }
   const [reportFilter, setReportFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);

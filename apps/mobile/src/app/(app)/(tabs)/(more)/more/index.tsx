@@ -81,6 +81,8 @@ export default function More() {
   return (
     <Screen title="More" subtitle={me?.full_name ?? user?.email ?? undefined}>
       <Group>
+        {/* Owners and admins (owner, 2026-10-20: "Dashboard should be in the apps"). */}
+        {manager ? <ListRow title="Dashboard" onPress={() => router.push("/dashboard")} /> : null}
         <ListRow title="Customers" onPress={() => router.push("/customers")} />
         <ListRow title="Invoices" onPress={() => router.push("/invoices")} />
         {company && offersPool(company.settings) ? (

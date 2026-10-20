@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 import {
   SAVED_REPORT_SECTIONS,
   VISIT_REPORT_MODES,
+  offersLeak,
   offersPool,
   savedReportSections,
   visitReportMode,
@@ -71,6 +72,8 @@ function TemplatesPage() {
     .filter((t) => t.key !== "partner" && !t.deleted_at)
     .sort((a, b) => ORDER.indexOf(a.key) - ORDER.indexOf(b.key));
   const sheet = useEditSheet<Template>();
+  // A pool-only shop has no leak reports: only its visit reports are set here.
+  const leak = offersLeak(company.settings);
   const saved = useSavedReports(company.id);
   const savedSheet = useEditSheet<SavedReport>();
   const removeSaved = (r: SavedReport) =>
@@ -87,54 +90,69 @@ function TemplatesPage() {
     <>
       <SettingsList
         title="Report Templates"
-        subtitle="Which reports techs can send, and what they’re called. Each report is written from the job’s checklist, tests, and findings."
+        subtitle={
+          leak
+            ? "Which reports techs can send, and what they’re called. Each report is written from the job’s checklist, tests, and findings."
+            : "What goes to the customer after each maintenance visit."
+        }
         notice={sheet.notice ?? savedSheet.notice}
       >
-        <Group>
-          {templates.map((t) =>
-            t.key === "insurance" ? (
-              <ListRow key={t.id} title={t.name} subtitle={ABOUT.insurance} detail="Coming soon" />
-            ) : (
-              <ListRow
-                key={t.id}
-                title={t.name}
-                subtitle={ABOUT.homeowner}
-                detail={t.enabled ? "On" : "Off"}
-                onPress={() => sheet.open(t)}
-              />
-            ),
-          )}
-        </Group>
+        {leak ? (
+          <Group>
+            {templates.map((t) =>
+              t.key === "insurance" ? (
+                <ListRow
+                  key={t.id}
+                  title={t.name}
+                  subtitle={ABOUT.insurance}
+                  detail="Coming soon"
+                />
+              ) : (
+                <ListRow
+                  key={t.id}
+                  title={t.name}
+                  subtitle={ABOUT.homeowner}
+                  detail={t.enabled ? "On" : "Off"}
+                  onPress={() => sheet.open(t)}
+                />
+              ),
+            )}
+          </Group>
+        ) : null}
 
         {offersPool(company.settings) ? <VisitReportsSetting /> : null}
 
         {/* Saved reports (owner, 2026-10-20): the shop's own wording, used word for word. */}
-        <Section
-          title="Saved reports"
-          footer="Text you use again and again. On a report, Use Saved Report puts it in word for word."
-        >
-          {saved.length ? (
-            <Group>
-              {saved.map((r) => (
-                <ListRow
-                  key={r.id}
-                  title={r.name}
-                  subtitle={savedReportPreview(r)}
-                  onPress={() => savedSheet.open(r)}
-                  deleteLabel="Delete"
-                  onDelete={() => removeSaved(r)}
-                />
-              ))}
-            </Group>
-          ) : (
-            <Notice>None yet. Add one, or save a report draft as one.</Notice>
-          )}
-        </Section>
-        <Button
-          title="+ Add Saved Report"
-          kind="secondary"
-          onPress={() => savedSheet.open("new")}
-        />
+        {leak ? (
+          <>
+            <Section
+              title="Saved reports"
+              footer="Text you use again and again. On a report, Use Saved Report puts it in word for word."
+            >
+              {saved.length ? (
+                <Group>
+                  {saved.map((r) => (
+                    <ListRow
+                      key={r.id}
+                      title={r.name}
+                      subtitle={savedReportPreview(r)}
+                      onPress={() => savedSheet.open(r)}
+                      deleteLabel="Delete"
+                      onDelete={() => removeSaved(r)}
+                    />
+                  ))}
+                </Group>
+              ) : (
+                <Notice>None yet. Add one, or save a report draft as one.</Notice>
+              )}
+            </Section>
+            <Button
+              title="+ Add Saved Report"
+              kind="secondary"
+              onPress={() => savedSheet.open("new")}
+            />
+          </>
+        ) : null}
       </SettingsList>
       <EditSheet
         open={savedSheet.editing != null}
