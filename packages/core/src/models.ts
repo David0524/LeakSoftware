@@ -154,12 +154,18 @@ export function jobFeeLabel(type: JobType | string | null | undefined): string {
 }
 
 /**
- * The jobs New Job offers: the package's own (Leak Detection, Pool Service, or both), then
- * Repair, which every shop gets (owner, 2026-10-18).
+ * The jobs New Job offers: the package's own (Leak Detection and Pool Inspection, Pool Service,
+ * or all three), then Repair, which every shop gets (owner, 2026-10-18; Pool Inspection
+ * 2026-10-20).
  */
 export function newJobTypes(services: Services): { value: JobType; label: string }[] {
   return [
-    ...(services !== "pool" ? [{ value: "detection" as const, label: "Leak Detection" }] : []),
+    ...(services !== "pool"
+      ? [
+          { value: "detection" as const, label: "Leak Detection" },
+          { value: "inspection" as const, label: "Pool Inspection" },
+        ]
+      : []),
     ...(services !== "leak" ? [{ value: "maintenance" as const, label: "Pool Service" }] : []),
     { value: "repair", label: "Repair" },
   ];

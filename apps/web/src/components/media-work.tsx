@@ -150,6 +150,21 @@ async function uploadMedia(
   if (!done.ok) throw new Error(done.error);
 }
 
+/** Photos for one checklist item (a pool inspection question's camera button). */
+export async function uploadItemPhotos(jobId: string, componentId: string, files: File[]) {
+  for (const file of files) {
+    const photo = await preparePhoto(file);
+    await uploadMedia(
+      jobId,
+      "photo",
+      photo.blob,
+      baseMime(photo.mime),
+      { width: photo.width, height: photo.height, durationMs: null },
+      `component:${componentId}`,
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Capture
 // ---------------------------------------------------------------------------

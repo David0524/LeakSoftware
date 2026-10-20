@@ -74,6 +74,10 @@ export default async function NewJobPage() {
           .filter((p) => p.active && !p.deleted_at && p.category === "Detection")
           .map((p) => ({ id: p.id, name: p.name, cents: p.price_cents }))}
         questions={settings.intake_questions ?? []}
+        inspectionFee={
+          prices.find((p) => p.active && !p.deleted_at && p.category === "Inspection")
+            ?.price_cents ?? null
+        }
         repairItems={repairCallItems(prices)}
       />
     </>

@@ -342,7 +342,7 @@ export interface InspectionReportSection {
  * attention lists the flagged answers first. Recommendations are the form's banners, word for
  * word, for the sections that were answered.
  */
-export function inspectionReport(s: ReportSnapshot): {
+export function inspectionReport(s: Pick<ReportSnapshot, "components">): {
   needsAttention: InspectionReportRow[];
   sections: InspectionReportSection[];
   recommendations: string[];

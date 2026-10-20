@@ -12,6 +12,7 @@ import {
 import {
   CHECKLIST_SECTION_LABELS,
   FINDING_STATUS_LABELS,
+  INSPECTION_SECTIONS,
   jobActionLabel,
   jobFeeLabel,
   calculate,
@@ -50,6 +51,7 @@ import {
   setPoolSpa,
   setVerdict,
 } from "@/app/actions/inspection";
+import { InspectionChecklist } from "./inspection-checklist";
 import { DiagramShapes } from "./pool-diagram";
 import { Segmented } from "./segmented";
 import { ShapePicker } from "./shape-picker";
@@ -62,7 +64,7 @@ import { Button, Checkbox, Chip, Select, buttonClass, cx } from "./ui";
 type Action = (state: FormState, form: FormData) => Promise<FormState>;
 
 /** Run a server action from a button, outside a form. Shows the error, if any. */
-function useRun() {
+export function useRun() {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   function run(action: Action, fields: Record<string, string>, before?: () => void) {
@@ -77,7 +79,7 @@ function useRun() {
   return { pending, error, run };
 }
 
-function ErrorText({ error }: { error: string | null }) {
+export function ErrorText({ error }: { error: string | null }) {
   return error ? (
     <p role="alert" className="text-[0.9375rem] text-status-fail">
       {error}
@@ -273,12 +275,24 @@ export function JobDetailsForm({
 export interface ChecklistRow {
   id: string;
   label: string;
-  type: Pick<ComponentType, "id" | "name" | "answer" | "allows_multiple" | "section">;
+  type: Pick<
+    ComponentType,
+    "id" | "name" | "answer" | "allows_multiple" | "section" | "group_label" | "options" | "notice"
+  >;
   /** Put on this visit by the plan's scheduled cleaning. */
   fromPlan?: boolean;
+  /** Photos attached to the item (pool inspection questions show the count). */
+  photos?: number;
   result: Pick<
     ChecklistItemResult,
-    "id" | "status" | "outcome" | "location_text" | "method" | "exclusion_reason" | "notes"
+    | "id"
+    | "status"
+    | "outcome"
+    | "location_text"
+    | "method"
+    | "exclusion_reason"
+    | "notes"
+    | "value"
   > | null;
 }
 
@@ -305,7 +319,10 @@ export function ChecklistEditor({
   const [adding, setAdding] = useState("");
   // Edit, as in an iOS list: every item gets Remove (owner, 2026-10-19).
   const [editing, setEditing] = useState(false);
+  // A pool inspection's eight sections have their own rows (inspection-checklist.tsx).
+  const inspection = rows.some((r) => INSPECTION_SECTIONS.includes(r.type.section ?? "other"));
   const sections = (Object.keys(CHECKLIST_SECTION_LABELS) as ChecklistSection[])
+    .filter((section) => !INSPECTION_SECTIONS.includes(section))
     .map((section) => ({ section, items: rows.filter((r) => r.type.section === section) }))
     .filter((s) => s.items.length > 0);
   // Types that can repeat ("+ Add Another Return"), once each.
@@ -326,6 +343,7 @@ export function ChecklistEditor({
           </button>
         </div>
       ) : null}
+      {inspection ? <InspectionChecklist jobId={jobId} rows={rows} editing={editing} /> : null}
       {sections.map(({ section, items }) => (
         <ChecklistGroup
           key={section}

@@ -6,6 +6,8 @@ import {
   leaksNoted,
   narrativeTemplate,
   reportChecklist,
+  reportTitle,
+  inspectionReport,
   snapshotTally,
   testSummary,
   parseMarkup,
@@ -54,6 +56,90 @@ const TONE_COLOR: Record<VerdictTone, string> = {
   not_applicable: STATUS.excluded,
   pending: NEUTRAL["500"],
 };
+
+/**
+ * A pool inspection's answers (2026-10-20): Needs attention first, then each section as compact
+ * question and answer rows with notes under the answer, then the form's recommendations.
+ */
+function InspectionCoverage({ report }: { report: ReturnType<typeof inspectionReport> }) {
+  return (
+    <>
+      <Block title="Needs attention">
+        {report.needsAttention.length ? (
+          <ul>
+            {report.needsAttention.map((r) => (
+              <li
+                key={r.id}
+                className="flex items-start justify-between gap-3 border-b py-2 break-inside-avoid"
+                style={{ borderColor: NEUTRAL["200"] }}
+              >
+                <span>
+                  {r.group ? (
+                    <span className="block text-[0.9375rem] text-text-muted">{r.group}</span>
+                  ) : null}
+                  {r.question}
+                  {r.notes ? (
+                    <span className="block text-[0.9375rem] text-text-muted">{r.notes}</span>
+                  ) : null}
+                </span>
+                <Badge tone={r.tone}>{r.answer}</Badge>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>Nothing we inspected needs attention.</p>
+        )}
+      </Block>
+      <Block title="What we inspected">
+        <div className="report-checklist">
+          {report.sections.map((sec) => (
+            <div key={sec.section} className="mt-5 first:mt-0">
+              <h3 className="font-display text-xl font-bold break-after-avoid">{sec.title}</h3>
+              {sec.groups.map((g, i) => (
+                <div key={`${g.label ?? ""}-${i}`} className="mt-2">
+                  {g.label ? (
+                    <p className="mt-3 text-[0.8125rem] font-semibold text-text-muted uppercase">
+                      {g.label}
+                      {g.notPresent ? " · Not present" : ""}
+                    </p>
+                  ) : null}
+                  <ul className="sm:grid sm:grid-cols-2 sm:gap-x-8">
+                    {g.rows.map((r) => (
+                      <li
+                        key={r.id}
+                        className="flex items-start justify-between gap-3 border-b py-2 break-inside-avoid"
+                        style={{ borderColor: NEUTRAL["200"] }}
+                      >
+                        <span>
+                          {r.question}
+                          {r.notes ? (
+                            <span className="block text-[0.9375rem] text-text-muted">
+                              {r.notes}
+                            </span>
+                          ) : null}
+                        </span>
+                        <Badge tone={r.tone}>{r.answer}</Badge>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </Block>
+      {report.recommendations.length ? (
+        <Block title="Recommendations">
+          <ul className="list-disc space-y-1 pl-6">
+            {report.recommendations.map((r) => (
+              <li key={r}>{r}</li>
+            ))}
+          </ul>
+        </Block>
+      ) : null}
+    </>
+  );
+}
 
 /** A light wash of a status color, for tile and badge backgrounds (prints with color-adjust). */
 function tint(color: string, pct = 12) {
@@ -142,8 +228,10 @@ export function ReportView(p: ReportViewProps) {
   const inspected = s.components.filter((c) => c.status === "inspected");
   const excluded = s.components.filter((c) => c.status === "excluded");
   const photos = s.media.filter((m) => m.kind === "photo" && p.urls.has(m.storage_path));
+  // A pool inspection has its own report: answers by section, what needs attention first.
+  const inspection = s.job.type === "inspection" ? inspectionReport(s) : null;
   const title =
-    p.templateKey === "partner" ? "Leak Detection Report (Technical)" : "Leak Detection Report";
+    p.templateKey === "partner" ? "Leak Detection Report (Technical)" : reportTitle(s.job.type);
 
   const render: Record<string, () => ReactNode> = {
     header: () => (
@@ -254,7 +342,9 @@ export function ReportView(p: ReportViewProps) {
           ) : null}
           {s.job.fee_cents != null ? (
             <div className={PHONE_ROW}>
-              <dt className={cx("text-text-muted", PHONE_LABEL)}>Leak detection fee</dt>
+              <dt className={cx("text-text-muted", PHONE_LABEL)}>
+                {inspection ? "Price" : "Leak detection fee"}
+              </dt>
               <dd className={PHONE_VALUE}>{formatCents(s.job.fee_cents)}</dd>
             </div>
           ) : null}
@@ -374,7 +464,9 @@ export function ReportView(p: ReportViewProps) {
         </Block>
       ) : null,
     coverage: () =>
-      checklist ? (
+      inspection ? (
+        <InspectionCoverage report={inspection} />
+      ) : checklist ? (
         <Block title="What we checked">
           <div className="report-checklist">
             {checklist.map((sec) => (

@@ -16,6 +16,9 @@ import {
   visitReportMode,
   savedReportFrom,
   savedReportSections,
+  INSPECTION_SECTIONS,
+  optionsFromText,
+  type ChecklistSection,
 } from "@leakbook/core";
 import { OWNER_ONLY, requireManager, requireOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -486,6 +489,7 @@ export async function saveComponentType(_: FormState, form: FormData): Promise<F
   // Pool visit items are tasks (Done, Needs Attention, Skipped) in the Service section; leak
   // inspection items take a verdict in the section the owner picks (owner, 2026-10-16: an
   // item a pool shop added used to land on the leak checklist).
+  if (text(form, "job_type") === "inspection") return saveInspectionQuestion(form, id, name);
   const visit = text(form, "job_type") === "maintenance";
   const section = ["visual", "plumbing", "bond_beam", "other"].includes(text(form, "section"))
     ? text(form, "section")
@@ -519,6 +523,50 @@ export async function saveComponentType(_: FormState, form: FormData): Promise<F
           job_type: visit ? "maintenance" : "detection",
           section: visit ? "service" : section,
           answer: visit ? "done" : "leak",
+        },
+  );
+  if (error) return failed(error);
+  return done("/settings/components", id ? "Saved." : `Added ${name}.`);
+}
+
+/** A pool inspection question (2026-10-20): its section, group, answers, and banner. */
+async function saveInspectionQuestion(
+  form: FormData,
+  id: string,
+  name: string,
+): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const section = INSPECTION_SECTIONS.includes(text(form, "section") as ChecklistSection)
+    ? text(form, "section")
+    : "insp_equipment";
+  const answer = ["choice", "multi", "text"].includes(text(form, "answer"))
+    ? text(form, "answer")
+    : "choice";
+  const options = answer === "text" ? null : optionsFromText(String(form.get("options") ?? ""));
+  if (options && options.length < 2) return { fields: { options: "Enter at least two choices." } };
+  const values = {
+    name,
+    section,
+    answer,
+    options,
+    group_label: text(form, "group_label") || null,
+    notice: text(form, "notice") || null,
+    sort_order: int(form, "sort_order"),
+    active: id ? checked(form, "active") : true,
+  };
+  const { error } = await upsert(
+    supabase,
+    "component_type",
+    office.company.id,
+    id,
+    values,
+    id
+      ? {}
+      : {
+          key: configKey(name, await takenKeys(supabase, "component_type", office.company.id)),
+          job_type: "inspection",
+          applies_to: "both",
+          methods: ["Visual"],
         },
   );
   if (error) return failed(error);

@@ -213,7 +213,7 @@ where key = 'component_type';
 -- One price on the job, like the detection fee (a starting price; shops set their own).
 update app.config_default
 set rows = rows || $json$[
-  {"package": "leak", "name": "Pool inspection", "category": "Detection", "component_type_key": null, "unit": "each", "price_cents": 49500, "taxable": false, "warranty_months": null, "sort_order": 30}
+  {"package": "leak", "name": "Pool inspection", "category": "Inspection", "component_type_key": null, "unit": "each", "price_cents": 49500, "taxable": false, "warranty_months": null, "sort_order": 30}
 ]$json$::jsonb
 where key = 'price_book_item';
 

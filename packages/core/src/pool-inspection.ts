@@ -242,3 +242,48 @@ export function intakeQuestionsFor<T extends IntakeQuestion>(questions: T[], typ
     (q.job_types?.length ? q.job_types : ["detection"]).includes(type),
   );
 }
+
+const FLAG_WORDS: Record<NonNullable<ChoiceOption["flag"]>, string> = {
+  attention: "needs attention",
+  leaking: "leaking",
+  ok: "ok",
+  na: "not applicable",
+};
+const FOLD_WORDS = "folds the group";
+
+/**
+ * A question's options as text for Settings, one per line, with what each means in brackets:
+ * "No (needs attention)", "Not applicable (not applicable)", "No (folds the group)".
+ */
+export function optionsToText(raw: unknown): string {
+  return choiceOptions(raw)
+    .map((o) => {
+      const notes = [
+        o.flag && o.flag !== "ok" ? FLAG_WORDS[o.flag] : null,
+        o.fold ? FOLD_WORDS : null,
+      ].filter(Boolean);
+      return notes.length ? `${o.label} (${notes.join(", ")})` : o.label;
+    })
+    .join("\n");
+}
+
+/**
+ * Options typed in Settings, read back: each line a choice, its brackets saying whether it needs
+ * attention, is leaking, is not applicable, or folds the group. Blank and repeated lines drop.
+ */
+export function optionsFromText(text: string): ChoiceOption[] {
+  const seen = new Set<string>();
+  return text.split("\n").flatMap((line): ChoiceOption[] => {
+    const m = /^(.*?)\s*\(([^()]*)\)\s*$/.exec(line.trim());
+    const label = (m ? m[1]! : line).trim();
+    if (!label || seen.has(label) || label.length > 120) return [];
+    seen.add(label);
+    const notes = (m?.[2] ?? "").split(",").map((w) => w.trim().toLowerCase());
+    const flag = (Object.keys(FLAG_WORDS) as NonNullable<ChoiceOption["flag"]>[]).find(
+      (f) => f !== "ok" && notes.includes(FLAG_WORDS[f]),
+    );
+    return [
+      { label, ...(flag ? { flag } : {}), ...(notes.includes(FOLD_WORDS) ? { fold: true } : {}) },
+    ];
+  });
+}

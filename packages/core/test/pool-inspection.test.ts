@@ -9,6 +9,9 @@ import {
   inspectionReport,
   intakeQuestionsFor,
   isGate,
+  newJobTypes,
+  optionsFromText,
+  optionsToText,
   plainNarrative,
   reportShareText,
   reportTitle,
@@ -169,6 +172,21 @@ describe("gates fold their group", () => {
 });
 
 describe("pool inspection jobs", () => {
+  it("leak shops offer Pool Inspection after Leak Detection", () => {
+    expect(newJobTypes("leak").map((t) => t.label)).toEqual([
+      "Leak Detection",
+      "Pool Inspection",
+      "Repair",
+    ]);
+    expect(newJobTypes("pool").map((t) => t.value)).toEqual(["maintenance", "repair"]);
+    expect(newJobTypes("both").map((t) => t.value)).toEqual([
+      "detection",
+      "inspection",
+      "maintenance",
+      "repair",
+    ]);
+  });
+
   it("From the Customer asks each job type its own questions", () => {
     const qs: IntakeQuestion[] = [
       { key: "reason", label: "Why they called", type: "multi" },
@@ -351,5 +369,33 @@ describe("the pool inspection report", () => {
     expect(draft.sections[0]!.paragraphs[0]!.text).toMatch(/Nothing needs attention\.$/);
     expect(draft.sections[1]!.paragraphs[0]!.text).toBe("Everything we inspected was in order.");
     expect(validateNarrative(draft, fine)).toEqual([]);
+  });
+});
+
+describe("options in Settings", () => {
+  it("writes each option on a line with what it means", () => {
+    expect(
+      optionsToText([
+        { label: "Yes", flag: "ok" },
+        { label: "No", flag: "attention", fold: true },
+        { label: "Leaking", flag: "leaking" },
+        { label: "Not applicable", flag: "na" },
+      ]),
+    ).toBe(
+      "Yes\nNo (needs attention, folds the group)\nLeaking (leaking)\nNot applicable (not applicable)",
+    );
+  });
+
+  it("reads them back, dropping blanks and repeats", () => {
+    expect(
+      optionsFromText(
+        "Yes\n\nNo (Needs attention, folds the group)\nYes\nSand / media\nN/A (not applicable)",
+      ),
+    ).toEqual([
+      { label: "Yes" },
+      { label: "No", flag: "attention", fold: true },
+      { label: "Sand / media" },
+      { label: "N/A", flag: "na" },
+    ]);
   });
 });

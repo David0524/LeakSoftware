@@ -82,7 +82,9 @@ function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardSto
           ? "Repair"
           : j.type === "maintenance"
             ? "Maintenance"
-            : null,
+            : j.type === "inspection"
+              ? "Pool inspection"
+              : null,
   };
 }
 

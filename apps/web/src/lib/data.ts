@@ -958,6 +958,7 @@ export interface ReportListRow {
   updated_at: string;
   job: {
     number: number | null;
+    type?: string;
     bill_to: { name: string } | null;
     property: { address_line1: string | null } | null;
   } | null;
@@ -973,7 +974,7 @@ export async function listReports(
   let q = supabase
     .from("report")
     .select(
-      "id, job_id, template_key, version, status, sent_at, updated_at, job:job!report_job_id_company_id_fkey(number, bill_to:customer!job_bill_to_customer_id_company_id_fkey(name), property:property!job_property_id_company_id_fkey(address_line1))",
+      "id, job_id, template_key, version, status, sent_at, updated_at, job:job!report_job_id_company_id_fkey(number, type, bill_to:customer!job_bill_to_customer_id_company_id_fkey(name), property:property!job_property_id_company_id_fkey(address_line1))",
     )
     .eq("company_id", office.company.id)
     .is("deleted_at", null)
