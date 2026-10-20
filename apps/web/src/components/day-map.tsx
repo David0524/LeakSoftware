@@ -12,8 +12,11 @@ import {
 } from "react";
 import { decodePins } from "@leakbook/core";
 import { mapAlt, mapSrc, missingNote } from "@/lib/day-map";
+import { preloadMapKit } from "@/lib/mapkit";
+import { AppleMap } from "./apple-map";
 import { ExpandIcon } from "./icons";
 import { InteractiveMap } from "./interactive-map";
+import { useMapProvider } from "./map-provider-scope";
 import { Sheet } from "./sheet";
 import { cx, iconButtonClass } from "./ui";
 
@@ -134,8 +137,9 @@ function MapImage({
 const LIVE_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
 /**
- * The large map and the day's stops beside it (below it on phones). With a browser token the
- * map is live (pan, zoom, tap a pin); without one, a larger image.
+ * The large map and the day's stops beside it (below it on phones). On Apple Maps the map is
+ * live through MapKit JS (docs/plans/apple-maps.md); if MapKit can't load or its token is
+ * refused, the Mapbox map with a browser token, else a larger image.
  */
 function EnlargeSheet({
   open,
@@ -158,10 +162,14 @@ function EnlargeSheet({
 }) {
   const [failed, setFailed] = useState(false);
   const [liveFailed, setLiveFailed] = useState(false);
+  const [appleFailed, setAppleFailed] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const fail = useCallback(() => setFailed(true), []);
   const liveFail = useCallback(() => setLiveFailed(true), []);
-  const live = useMemo(() => (LIVE_TOKEN ? decodePins(pins) : null), [pins]);
+  const appleFail = useCallback(() => setAppleFailed(true), []);
+  const apple = useMapProvider() === "apple" && !appleFailed;
+  const live = useMemo(() => (apple || LIVE_TOKEN ? decodePins(pins) : null), [apple, pins]);
+  const liveShown = !!live && (apple || !liveFailed);
   const list = useRef<HTMLOListElement>(null);
   const note = missingNote(missing);
   const alt = mapAlt(tech, day, stops.length);
@@ -179,17 +187,28 @@ function EnlargeSheet({
     <Sheet open={open} onClose={closeSheet} title={`${tech} · ${day}`} wide>
       <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_16rem]">
         <div>
-          {live && !liveFailed ? (
+          {live && liveShown ? (
             <div className="relative aspect-[4/3] overflow-hidden rounded-[1.25rem] bg-fill md:aspect-auto md:h-[min(32rem,70dvh)]">
-              <InteractiveMap
-                company={company}
-                token={LIVE_TOKEN}
-                pins={live}
-                selected={selected}
-                onSelect={pick}
-                onFail={liveFail}
-                label={alt}
-              />
+              {apple ? (
+                <AppleMap
+                  company={company}
+                  pins={live}
+                  selected={selected}
+                  onSelect={pick}
+                  onFail={appleFail}
+                  label={alt}
+                />
+              ) : (
+                <InteractiveMap
+                  company={company}
+                  token={LIVE_TOKEN}
+                  pins={live}
+                  selected={selected}
+                  onSelect={pick}
+                  onFail={liveFail}
+                  label={alt}
+                />
+              )}
             </div>
           ) : failed ? (
             <p className="text-[0.9375rem] text-text-muted">The map couldn’t be drawn right now.</p>
@@ -218,7 +237,7 @@ function EnlargeSheet({
               <li key={s.id} data-stop={label}>
                 <button
                   type="button"
-                  aria-pressed={live && !liveFailed ? on : undefined}
+                  aria-pressed={liveShown ? on : undefined}
                   onClick={() => setSelected(on ? null : label)}
                   className={cx(
                     "flex min-h-11 w-full items-center gap-3 px-4 py-2 text-left transition-colors",
@@ -319,6 +338,11 @@ export function DayMap({
 }) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const [enlarged, setEnlarged] = useState(false);
+  // On Apple Maps, MapKit JS loads once the page is drawn and idle, so Enlarge opens quickly.
+  const provider = useMapProvider();
+  useEffect(() => {
+    if (provider === "apple" && pins) preloadMapKit();
+  }, [provider, pins]);
   // Every day map on the page opens and closes together, as one setting.
   const open = useSyncExternalStore(subscribeOpen, readOpen, () => true);
   const boxId = useId();

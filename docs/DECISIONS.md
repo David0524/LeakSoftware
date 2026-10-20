@@ -2,6 +2,22 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-20 (owner: "Yes do your suggestion"; Apple Maps on the website)
+
+Plan: `docs/plans/apple-maps.md`.
+- **Apple for maps, map images, address search and desktop directions; Mapbox for drive times
+  only.** The website's live maps use MapKit JS, day-map images come from Apple Snapshots (days
+  with 10 or more stops stay on Mapbox, since an Apple pin's number is one character), address
+  suggestions come from Apple's autocomplete, and "Open in Maps" on a computer opens
+  maps.apple.com. Drive times for Plan Route, Plan Week and Routes stay on the Mapbox matrix.
+- **Apple's free allowance is guarded in `app.mapbox_budget`** for every shop together:
+  `apple_snapshot` 22,500 a month, `apple_service` 600,000 a month and 22,500 a day,
+  `apple_map_view` 6,000,000 a month and 225,000 a day (a new `daily_limit`, counted in
+  `app.mapbox_usage_daily`). Apple never bills; past its limit it refuses, and Mapbox takes over.
+- **`MAP_PROVIDER`:** `apple` by default once `APPLE_MAPS_TEAM_ID`, `APPLE_MAPS_KEY_ID` and
+  `APPLE_MAPS_PRIVATE_KEY` are set, `mapbox` without them; `MAP_PROVIDER=mapbox` forces Mapbox.
+  Until the keys exist nothing changes, desktop directions links included.
+
 ## 2026-10-20: owner list f (after TestFlight 1010)
 
 Spec: `docs/design/2026-10-20-gestures.md`.

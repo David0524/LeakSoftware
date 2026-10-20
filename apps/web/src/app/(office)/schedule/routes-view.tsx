@@ -1,6 +1,8 @@
 import { workDay } from "@leakbook/core";
 import { loadRouteCustomers } from "@/app/actions/service-days";
+import { MapProviderScope } from "@/components/map-provider-scope";
 import { ServiceRoutes } from "@/components/service-routes";
+import { mapsConfigured, resolveMapProvider } from "@/lib/map-provider";
 import type { Office } from "@/lib/auth";
 import { getTeam } from "@/lib/data";
 import { routeContext } from "@/server/route-days";
@@ -21,14 +23,16 @@ export async function RoutesView({ office, tech }: { office: Office; tech: strin
     .sort((a, b) => Number(b.user_id === office.user.id) - Number(a.user_id === office.user.id))
     .map((t) => ({ id: t.user_id, name: t.name }));
   return (
-    <ServiceRoutes
-      plans={plans}
-      techs={techs}
-      workDays={ctx.settings.workDays}
-      workDay={workDay(ctx.settings)}
-      depot={ctx.depot}
-      maps={process.env.MAPBOX_TOKEN ? { company: office.company.id } : null}
-      initialTech={tech}
-    />
+    <MapProviderScope provider={resolveMapProvider()}>
+      <ServiceRoutes
+        plans={plans}
+        techs={techs}
+        workDays={ctx.settings.workDays}
+        workDay={workDay(ctx.settings)}
+        depot={ctx.depot}
+        maps={mapsConfigured() ? { company: office.company.id } : null}
+        initialTech={tech}
+      />
+    </MapProviderScope>
   );
 }

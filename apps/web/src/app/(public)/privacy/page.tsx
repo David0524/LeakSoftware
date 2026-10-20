@@ -69,6 +69,7 @@ export default function PrivacyPage() {
           <li>Resend: sending report, quote, and invoice emails.</li>
           <li>Deepgram: turning voice notes into text.</li>
           <li>Twilio: the shop’s phone number, texts, calls, and voicemail.</li>
+          <li>Apple Maps: showing maps and suggesting addresses as you type them.</li>
           <li>Mapbox: placing pool addresses on the map and planning routes.</li>
           <li>Sentry: error reports.</li>
         </ul>

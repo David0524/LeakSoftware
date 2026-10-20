@@ -2,7 +2,9 @@ import { decodePins } from "@leakbook/core";
 import { createClient as cookieClient } from "@/lib/supabase/server";
 import { bearerSession, jsonError } from "@/server/bearer";
 import { memberRole } from "@/server/bearer-member";
-import { staticMapUrl } from "@/server/map-image";
+import { mapsConfigured, resolveMapProvider } from "@/lib/map-provider";
+import { appleKeys } from "@/server/apple-maps";
+import { drawMapImage } from "@/server/map-draw";
 import { mapboxBudget } from "@/server/routing";
 
 /** Map images each shop may draw per day (MAP_DAILY_LIMIT, default 1500). */
@@ -15,10 +17,12 @@ function mapLimit(): number {
  * GET ?company=…&pins=…&w=…&h=…[&theme=dark]: a map image of a day's stops (owner, 2026-10-20,
  * docs/plans/route-maps.md), for the website (signed in) and Android (Authorization: Bearer).
  * The pins come from core's dayMapPins and encodePins. Kept by the browser for a day.
+ * On Apple Maps (docs/plans/apple-maps.md) the image is an Apple Snapshot; Mapbox draws it when
+ * Apple's allowance is used, Apple answers with an error, or the day has 10 stops or more (an
+ * Apple pin's number is one character).
  */
 export async function GET(request: Request) {
-  const token = process.env.MAPBOX_TOKEN;
-  if (!token) return jsonError("Maps aren’t set up.", 503);
+  if (!mapsConfigured()) return jsonError("Maps aren’t set up.", 503);
   const url = new URL(request.url);
   const companyId = url.searchParams.get("company");
   const pins = decodePins(url.searchParams.get("pins") ?? "");
@@ -45,19 +49,26 @@ export async function GET(request: Request) {
     day_limit: mapLimit(),
   });
   if (error || ok !== true) return jsonError("Today’s maps are used up. Try again tomorrow.", 429);
-  // Mapbox's monthly free tier, shared by every shop: never billed.
-  if (!(await mapboxBudget(db, companyId!, "static_image", 1)))
-    return jsonError("This month’s maps are used up.", 429);
 
   const w = Number(url.searchParams.get("w")) || 600;
   const h = Number(url.searchParams.get("h")) || 300;
-  // Dark mode gets Mapbox's dark map rather than a dimmed street map.
+  // Dark mode gets a dark map rather than a dimmed street map.
   const theme = url.searchParams.get("theme") === "dark" ? "dark" : "light";
-  const res = await fetch(staticMapUrl(pins, { w, h }, token, theme));
-  if (!res.ok) {
-    console.error(`Map image: Mapbox ${res.status}`);
-    return jsonError("The map couldn’t be drawn.", 502);
-  }
+
+  const drawn = await drawMapImage({
+    pins,
+    size: { w, h },
+    theme,
+    apple: resolveMapProvider() === "apple" ? appleKeys() : null,
+    mapboxToken: process.env.MAPBOX_TOKEN,
+    take: (kind) => mapboxBudget(db, companyId!, kind, 1),
+  });
+  if (!drawn.ok) return jsonError(drawn.message, drawn.status);
+  return image(drawn.res);
+}
+
+/** The drawn image, kept by the browser for a day (the same cache for either service). */
+function image(res: Response): Response {
   return new Response(res.body, {
     headers: {
       "content-type": res.headers.get("content-type") ?? "image/png",

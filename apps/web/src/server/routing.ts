@@ -7,6 +7,8 @@ import {
   type DriveFn,
   type LatLng,
 } from "@leakbook/core";
+import { resolveMapProvider } from "@/lib/map-provider";
+import { appleKeys, appleSuggester } from "./apple-maps";
 
 // Routing (owner request, 2026-10-13; docs/ROUTE_OPTIMIZATION_HANDOFF.md). Every call to a
 // routing service goes through this file, so switching from Mapbox to another provider is a
@@ -247,6 +249,27 @@ function routingProvider(): RoutingProvider | null {
   return { ...m, geocode: freeGeocoder().geocode, paidGeocode: m.geocode };
 }
 
+/** The kinds in app.mapbox_budget: Mapbox's, and Apple's (docs/plans/apple-maps.md). */
+export type MapBudgetKind =
+  | "static_image"
+  | "geocode_temp"
+  | "matrix_element"
+  | "map_load"
+  | "geocode_paid"
+  | "apple_snapshot"
+  | "apple_service"
+  | "apple_map_view";
+
+/** Apple's address autocomplete as a suggester, when the website is on Apple Maps. */
+export type AppleSuggest = (text: string, near: LatLng | null) => Promise<AddressSuggestion[]>;
+
+function appleSuggestFor(db: SupabaseClient, companyId: string): AppleSuggest | null {
+  const keys = resolveMapProvider() === "apple" ? appleKeys() : null;
+  if (!keys) return null;
+  // Every call to Apple (its access token included) is one service call in the budget.
+  return appleSuggester(keys, fetch, () => mapboxBudget(db, companyId, "apple_service", 1));
+}
+
 /**
  * Take from Mapbox's monthly free tier, shared by every shop (app.mapbox_budget): false past
  * about 90% of it, so the account is never billed. Callers fall back as they do with no key.
@@ -254,7 +277,7 @@ function routingProvider(): RoutingProvider | null {
 export async function mapboxBudget(
   db: SupabaseClient,
   companyId: string,
-  api: "static_image" | "geocode_temp" | "matrix_element" | "map_load" | "geocode_paid",
+  api: MapBudgetKind,
   units: number,
 ): Promise<boolean> {
   const { data, error } = await db.rpc("mapbox_take", {
@@ -305,10 +328,12 @@ export async function suggestAddresses(
   provider: RoutingProvider | null = routingProvider(),
   /** Told why nothing came back: no key, the day's allowance, or the service's error. */
   onProblem: (problem: string) => void = () => {},
+  /** Apple's autocomplete, tried first on Apple Maps (docs/plans/apple-maps.md). */
+  apple: AppleSuggest | null = appleSuggestFor(db, companyId),
 ): Promise<AddressSuggestion[]> {
   const q = text.trim().slice(0, 120);
   if (q.length < 4) return [];
-  if (!provider) {
+  if (!provider && !apple) {
     onProblem("No routing key");
     return [];
   }
@@ -322,6 +347,20 @@ export async function suggestAddresses(
     onProblem(error ? `Allowance check: ${error.message}` : "Day's allowance used");
     return [];
   }
+  if (apple) {
+    // Apple first; past its free allowance or on its error, Mapbox's suggestions as before.
+    try {
+      return await apple(q, near);
+    } catch (e) {
+      const problem = e instanceof Error ? e.message : String(e);
+      console.error(`Address suggestions (Apple): ${problem}`);
+      if (!provider) {
+        onProblem(problem);
+        return [];
+      }
+    }
+  }
+  if (!provider) return [];
   if (!(await mapboxBudget(db, companyId, "geocode_temp", 1))) {
     onProblem("This month's free suggestions are used");
     return [];

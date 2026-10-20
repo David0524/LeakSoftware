@@ -48,6 +48,8 @@ import {
 } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { mapsAppForRequest } from "@/lib/maps";
+import { mapsConfigured, resolveMapProvider } from "@/lib/map-provider";
+import { MapProviderScope } from "@/components/map-provider-scope";
 import { mayMakeJobs, visitCleanings, type JobRow } from "@/lib/data";
 import { CleaningIcon } from "@/components/icons";
 import {
@@ -276,7 +278,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   const phoneColumns = columns.filter((c) => !c.phoneHidden);
   const unlocated = columns.some((c) => c.stops.some((s) => !s.location));
   // Day maps, when the shop's maps are set up (owner, 2026-10-20, docs/plans/route-maps.md).
-  const maps = process.env.MAPBOX_TOKEN ? { company: office.company.id, depot: ctx.depot } : null;
+  // Apple Maps once its keys are set, else Mapbox (docs/plans/apple-maps.md).
+  const maps = mapsConfigured() ? { company: office.company.id, depot: ctx.depot } : null;
   // Plan Week: owners and admins, for the days of the week still to come.
   const planDates = view === "week" && office.isManager ? days.filter((d) => d >= ctx.today) : [];
   // Needs a Time jobs with nobody on them that Plan Week may place this week.
@@ -323,7 +326,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
     );
 
   return (
-    <>
+    <MapProviderScope provider={resolveMapProvider()}>
       <PageHeader
         title="Schedule"
         navAction={canAdd ? <NavPlus href="/jobs/new" label="New Job" /> : undefined}
@@ -546,7 +549,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           </p>
         ) : null}
       </SwipeHrefs>
-    </>
+    </MapProviderScope>
   );
 }
 

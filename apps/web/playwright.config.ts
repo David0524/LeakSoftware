@@ -1,3 +1,4 @@
+import { generateKeyPairSync } from "node:crypto";
 import { defineConfig, devices } from "@playwright/test";
 import { E2E_CRON_SECRET, E2E_TWILIO_TOKEN, E2E_WEBHOOK_SECRET } from "./e2e/backend";
 import { OUTBOX } from "./e2e/outbox";
@@ -14,6 +15,36 @@ import { OUTBOX } from "./e2e/outbox";
  */
 const port = 3200;
 const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${port}`;
+/** A second app on Apple Maps for e2e/apple-maps.spec.ts (APPLE_E2E_BASE_URL to use your own). */
+const applePort = 3201;
+
+const serverEnv = {
+  NEXT_TELEMETRY_DISABLED: "1",
+  EMAIL_OUTBOX_DIR: OUTBOX,
+  // Never send real email from tests.
+  RESEND_API_KEY: "",
+  // Webhooks are signed by the tests themselves; no Stripe account is called.
+  STRIPE_WEBHOOK_SECRET: E2E_WEBHOOK_SECRET,
+  CRON_SECRET: E2E_CRON_SECRET,
+  STRIPE_CONNECT_WEBHOOK_SECRET: "",
+  STRIPE_SECRET_KEY: "",
+  // Twilio's webhooks are signed by the tests; with no account, texts aren't sent.
+  TWILIO_ACCOUNT_SID: "",
+  TWILIO_AUTH_TOKEN: E2E_TWILIO_TOKEN,
+  TWILIO_MESSAGING_SERVICE_SID: "",
+  // The main app has no Apple keys, so it stays on Mapbox.
+  APPLE_MAPS_TEAM_ID: "",
+  APPLE_MAPS_KEY_ID: "",
+  APPLE_MAPS_PRIVATE_KEY: "",
+  MAP_PROVIDER: "",
+  ...(process.env.PW_CHROMIUM_PATH ? { CHROMIUM_PATH: process.env.PW_CHROMIUM_PATH } : {}),
+};
+
+// The Apple app signs MapKit tokens with a throwaway P-256 key made here, never a real Apple key:
+// Apple would refuse its tokens, so the spec stubs MapKit JS and the map images in the browser.
+const throwawayKey = generateKeyPairSync("ec", { namedCurve: "P-256" })
+  .privateKey.export({ type: "pkcs8", format: "pem" })
+  .toString();
 
 export default defineConfig({
   testDir: "e2e",
@@ -37,26 +68,30 @@ export default defineConfig({
   },
   webServer: process.env.E2E_BASE_URL
     ? undefined
-    : {
-        command: `pnpm exec next start -p ${port}`,
-        url: baseURL,
-        reuseExistingServer: !process.env.CI,
-        timeout: 120_000,
-        env: {
-          NEXT_TELEMETRY_DISABLED: "1",
-          EMAIL_OUTBOX_DIR: OUTBOX,
-          // Never send real email from tests.
-          RESEND_API_KEY: "",
-          // Webhooks are signed by the tests themselves; no Stripe account is called.
-          STRIPE_WEBHOOK_SECRET: E2E_WEBHOOK_SECRET,
-          CRON_SECRET: E2E_CRON_SECRET,
-          STRIPE_CONNECT_WEBHOOK_SECRET: "",
-          STRIPE_SECRET_KEY: "",
-          // Twilio's webhooks are signed by the tests; with no account, texts aren't sent.
-          TWILIO_ACCOUNT_SID: "",
-          TWILIO_AUTH_TOKEN: E2E_TWILIO_TOKEN,
-          TWILIO_MESSAGING_SERVICE_SID: "",
-          ...(process.env.PW_CHROMIUM_PATH ? { CHROMIUM_PATH: process.env.PW_CHROMIUM_PATH } : {}),
+    : [
+        {
+          command: `pnpm exec next start -p ${port}`,
+          url: baseURL,
+          reuseExistingServer: !process.env.CI,
+          timeout: 120_000,
+          env: serverEnv,
         },
-      },
+        // The same build on Apple Maps (docs/plans/apple-maps.md), for e2e/apple-maps.spec.ts.
+        {
+          command: `pnpm exec next start -p ${applePort}`,
+          url: `http://localhost:${applePort}`,
+          reuseExistingServer: !process.env.CI,
+          timeout: 120_000,
+          env: {
+            ...serverEnv,
+            APPLE_MAPS_TEAM_ID: "E2ETEAM000",
+            APPLE_MAPS_KEY_ID: "E2EKEY0000",
+            APPLE_MAPS_PRIVATE_KEY: throwawayKey,
+            MAP_PROVIDER: "apple",
+            // Mapbox has no key here either, so a refused MapKit falls back to the map image.
+            MAPBOX_TOKEN: "",
+            NEXT_PUBLIC_MAPBOX_TOKEN: "",
+          },
+        },
+      ],
 });
