@@ -292,3 +292,68 @@ import Testing
         #expect(!model.isDirty)
     }
 }
+
+/// The website's limits on edge inputs (apps/web/src/lib/limits.ts), same rules and words.
+@Suite struct WebsiteLimitsTests {
+    @Test func jobDatesAreRealAndBetween2000And2100() {
+        #expect(Limits.jobDateError("2026-10-20") == nil)
+        #expect(Limits.jobDateError("2000-01-01") == nil && Limits.jobDateError("2100-12-31") == nil)
+        #expect(Limits.jobDateError("1999-12-31") == "Pick a date between 2000 and 2100.")
+        #expect(Limits.jobDateError("2101-01-01") == "Pick a date between 2000 and 2100.")
+        #expect(Limits.jobDateError("0001-01-01") == "Pick a date between 2000 and 2100.")
+        #expect(Limits.jobDateError("2026-02-30") == "Pick a date.")
+        #expect(Limits.jobDateError("2027-02-29") == "Pick a date." && Limits.jobDateError("2028-02-29") == nil)
+        #expect(
+            Limits.jobDateError("2026-13-01") == "Pick a date." && Limits.jobDateError("2026-00-10") == "Pick a date.")
+        #expect(Limits.jobDateError("") == "Pick a date." && Limits.jobDateError("2026-1-5") == "Pick a date.")
+    }
+
+    @Test func discountsAndDescriptions() {
+        #expect(Limits.discountTooLarge(45_001, subtotal: 45_000) == "The discount can’t be more than the subtotal.")
+        #expect(Limits.discountTooLarge(45_000, subtotal: 45_000) == nil)
+        #expect(Limits.discountTooLarge(0, subtotal: 0) == nil)
+        #expect(Limits.lineDescriptionError("  ") == "Describe the work.")
+        #expect(Limits.lineDescriptionError(String(repeating: "a", count: 500)) == nil)
+        #expect(
+            Limits.lineDescriptionError(String(repeating: "a", count: 501))
+                == "Keep the description under 500 characters.")
+        // Counted as the website counts (UTF-16): 250 emoji are 500.
+        #expect(Limits.lineDescriptionError(String(repeating: "😀", count: 251)) != nil)
+    }
+
+    @Test func reviewLinksAreWebPagesOnly() {
+        #expect(Limits.isWebURL("https://g.page/r/abc/review"))
+        #expect(Limits.isWebURL("http://yelp.com/biz/shop"))
+        #expect(!Limits.isWebURL("javascript:alert(1)"))
+        #expect(!Limits.isWebURL("data:text/html,hi"))
+        #expect(!Limits.isWebURL("g.page/r/abc") && !Limits.isWebURL("ftp://x.com") && !Limits.isWebURL("https://"))
+        var form = CompanyProfileForm()
+        form.name = "Shop"
+        form.timeZone = "America/Phoenix"
+        form.reviewURL = "javascript:alert(1)"
+        #expect(form.errors["review_url"] == "Enter a web address that starts with https://.")
+        form.reviewURL = ""
+        #expect(form.errors["review_url"] == nil)
+        form.reviewURL = "https://g.page/r/abc/review"
+        #expect(form.errors["review_url"] == nil)
+    }
+
+    @Test func signerNamesAndPriceBookItems() {
+        var signature = SignatureForm(.review, settings: nil, customerName: nil)
+        signature.purpose = .inspectionAck
+        signature.nameText = String(repeating: "N", count: 201)
+        #expect(signature.problem == "Keep the name under 200 characters.")
+        signature.nameText = String(repeating: "N", count: 200)
+        #expect(signature.problem != "Keep the name under 200 characters.")
+
+        var item = PriceItemForm()
+        item.name = String(repeating: "n", count: 201)
+        item.price = "10"
+        #expect(item.error == "Keep the name under 200 characters.")
+        item.name = "Skimmer lid"
+        item.unit = String(repeating: "u", count: 41)
+        #expect(item.error == "Keep the unit short, like each or hour.")
+        item.unit = "hour"
+        #expect(item.error == nil)
+    }
+}

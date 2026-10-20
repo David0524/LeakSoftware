@@ -403,7 +403,11 @@ public final class NewJobForm {
             planErrors = problems.fields.filter { $0.key != "price" }
         }
         if when == .scheduled && !isPlan {
-            if checked.scheduleDate.isEmpty { e["scheduleDate"] = "Pick a date." }
+            if checked.scheduleDate.isEmpty {
+                e["scheduleDate"] = "Pick a date."
+            } else if let bad = Limits.jobDateError(checked.scheduleDate) {
+                e["scheduleDate"] = bad
+            }
             if hoursValue == nil { e["hours"] = "Enter 0.5 to 24 hours." }
         }
         if !seesAll && techId != userId { e["tech"] = "Book the job for yourself." }

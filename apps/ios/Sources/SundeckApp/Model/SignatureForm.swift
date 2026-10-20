@@ -95,6 +95,7 @@ public struct SignatureForm: Equatable, Sendable {
         if purpose == nil { return "Choose what this signature is for." }
         let review = kind == .review
         if signer.isEmpty { return review ? "Enter your name." : "Enter the signer’s name." }
+        if let tooLong = Limits.signerNameError(signer) { return tooLong }
         if inkLength(strokes) < minInk {
             return review ? "Sign in the box with your finger." : "Ask them to sign in the box."
         }

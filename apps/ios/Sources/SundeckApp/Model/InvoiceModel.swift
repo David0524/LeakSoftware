@@ -219,7 +219,7 @@ public enum InvoiceWrites {
         try requireDraft(invoice)
         let text = description.trimmingCharacters(in: .whitespacesAndNewlines)
         let n = invoiceLineQuantity(quantity)
-        if text.isEmpty { throw Problem(field: "description", description: "Describe the work.") }
+        if let problem = Limits.lineDescriptionError(text) { throw Problem(field: "description", description: problem) }
         guard let n else {
             throw Problem(field: "quantity", description: "Enter a quantity like 1 or 2.5.")
         }
@@ -251,6 +251,10 @@ public enum InvoiceWrites {
         let cents = trimmed.isEmpty ? 0 : parseDollars(trimmed)
         guard let cents, cents >= 0 else {
             throw Problem(field: "discount", description: "Enter an amount like 50, or leave it empty.")
+        }
+        let subtotal = invoiceTotals(invoice.lines, 0, 0).subtotalCents
+        if let tooLarge = Limits.discountTooLarge(cents, subtotal: subtotal) {
+            throw Problem(field: "discount", description: tooLarge)
         }
         if let dueDate, dueDate.wholeMatch(of: /\d{4}-\d{2}-\d{2}/) == nil {
             throw Problem(field: "due_date", description: "Pick a date.")

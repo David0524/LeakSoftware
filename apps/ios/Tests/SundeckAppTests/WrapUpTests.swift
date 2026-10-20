@@ -255,6 +255,14 @@ private func sentQuote(_ status: String, accepted: Bool = false) -> [(String, JS
         #expect(flow.error == "Enter a price like 125 or 125.50.")
         flow.updateLine(try #require(line.id), in: id, description: "")
         #expect(flow.error == "Describe the work.")
+        flow.updateLine(try #require(line.id), in: id, description: String(repeating: "a", count: 501))
+        #expect(flow.error == "Keep the description under 500 characters.")
+        #expect(!flow.addCustom(description: String(repeating: "a", count: 501), price: "10", to: id))
+        #expect(flow.error == "Keep the description under 500 characters.")
+        // Exactly 500 is fine.
+        #expect(flow.addCustom(description: String(repeating: "a", count: 500), price: "10", to: id))
+        flow.removeLine(
+            try #require(s.quotes().builder?.lines.first { $0.description?.count == 500 }?.id), from: id)
         flow.updateLine(try #require(line.id), in: id, quantity: "2,5")
         #expect(flow.error == nil)
         line = try #require(s.quotes().builder?.lines.first)
@@ -282,6 +290,9 @@ private func sentQuote(_ status: String, accepted: Bool = false) -> [(String, JS
         #expect(tech.quotes().builder?.totalRows[1].value == "−$45.00")
         flow.setDiscount("abc", on: id)
         #expect(flow.error == "Enter a discount like 50 or 50.00.")
+        // More than the $450 subtotal: refused before the tech limit, as on the website.
+        flow.setDiscount("450.01", on: id)
+        #expect(flow.error == "The discount can’t be more than the subtotal.")
         flow.setDiscount("", on: id)
         #expect(tech.quotes().builder?.discountText == "")
 
@@ -291,6 +302,9 @@ private func sentQuote(_ status: String, accepted: Bool = false) -> [(String, JS
             let mid = try #require(mflow.start())
             #expect(mflow.addCustom(description: "Patch", price: "450", to: mid))
             #expect(manager.quotes().builder?.discountHint == nil)
+            // Owners too can't take off more than the subtotal.
+            mflow.setDiscount("451", on: mid)
+            #expect(mflow.error == "The discount can’t be more than the subtotal.")
             mflow.setDiscount("200", on: mid)
             #expect(mflow.error == nil)
             #expect(manager.quotes().builder?.totals.discountCents == 20000)
@@ -470,6 +484,23 @@ private func invoiceRows(status: String, paid: Int = 0) -> [(String, JSONValue)]
         ) {
             try InvoiceWrites.saveDetails(
                 s.sync, companyId: "c1", invoice: invoice, discount: "-5", dueDate: nil, notes: "")
+        }
+        // The website's limits (apps/web/src/lib/limits.ts): no discount over the $750 subtotal, and
+        // descriptions up to 500 characters.
+        #expect(
+            throws: InvoiceWrites.Problem(
+                field: "discount", description: "The discount can’t be more than the subtotal.")
+        ) {
+            try InvoiceWrites.saveDetails(
+                s.sync, companyId: "c1", invoice: invoice, discount: "750.01", dueDate: nil, notes: "")
+        }
+        #expect(
+            throws: InvoiceWrites.Problem(
+                field: "description", description: "Keep the description under 500 characters.")
+        ) {
+            try InvoiceWrites.addLine(
+                s.sync, companyId: "c1", invoice: invoice, description: String(repeating: "x", count: 501),
+                quantity: "1", price: "5", taxable: true)
         }
         card = try #require(s.card)
         // The new line takes the next item number, as on the website.

@@ -212,7 +212,7 @@
         // MARK: Saves
 
         private func saveProfile() {
-            if let e = firstError(profile.errors, ["name", "timezone"]) {
+            if let e = firstError(profile.errors, ["name", "timezone", "review_url"]) {
                 results["profile"] = (e, true)
                 return
             }

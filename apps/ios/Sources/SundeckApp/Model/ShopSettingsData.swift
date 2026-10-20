@@ -252,8 +252,11 @@ public struct PriceItemForm: Equatable, Sendable {
 
     /// Why it can't be saved, or nil.
     public var error: String? {
-        if name.trimmingCharacters(in: .whitespaces).isEmpty { return "Enter a name." }
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        if trimmed.isEmpty { return "Enter a name." }
+        if trimmed.utf16.count > Limits.itemNameMax { return Limits.itemNameText }
         if parseDollars(price) == nil { return "Enter a price." }
+        if unit.trimmingCharacters(in: .whitespaces).utf16.count > Limits.itemUnitMax { return Limits.itemUnitText }
         return nil
     }
 
