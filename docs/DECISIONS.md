@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-20 (owner: "Dashboard should be in the apps"; "On invoices tab add some filtering and sorting"; visit reports)
+- **The Dashboard is in both apps**, first in More, for owners and admins: the website's numbers (collected, owed, quotes accepted, invoiced, collected by month, jobs by status) as phone cards and a bar chart, from the same `owner_dashboard`. Replaces decision 12 of the native-apps spec ("Dashboard is left out of the apps").
+- **Invoices filter, search, and sort** on every platform: All, Unpaid, Overdue, Drafts, Paid, Void (with counts); customer, invoice, or job number; Newest, Oldest, Due Date, Amount Owed, Total, Customer. An unpaid invoice past its due date reads "Overdue".
+- **Maintenance visit reports:** the water test (each reading against its range), what was done, notes, and photos, at the customer link. Send by email or text; in shops that choose Automatic, sent once by itself when a visit is completed (and by the daily catch-up). Settings › Report Templates › Visit reports: Automatic, By Hand (the default), or Off. Pool care shops now get the Report Templates page for this.
+- **Saved reports:** a shop's own wording by report section, used word for word with Use Saved Report.
+
 ## 2026-10-20 (owner: Liquid Glass sliders, gestures, addresses, no website links, texting, the steps, job titles, Today)
 - **Segmented controls are the system's on iOS 26** (Day/Week/Month, the job tabs, Light/Dark): the real Liquid Glass control, which can be held and dragged; our own stays for iOS 18. On the website and Android, the thumb of every segmented control, the job tabs and Day/Week/Month included, can be held and dragged.
 - **Gestures:** swipe sideways across a job for its next or previous part, and across Schedule for the next or previous day, week, or month. Swipes that start on a drawing, slider, map, or sideways scroller are left to them. Swipe actions on list rows have a visible alternative.

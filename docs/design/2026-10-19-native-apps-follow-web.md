@@ -72,7 +72,7 @@ These were ambiguous. Each is resolved the way listed; the owner can change any 
 11. **The sync bar stays**, though the website has none: the apps are offline-first and techs must
     see unsent work. It sits under the large title on Today and Jobs, and on the job page
     (section 3.17).
-12. **Dashboard is left out of the apps' More.** It is a computer page (charts and tables). Owners
+12. **(Replaced 2026-10-20: the Dashboard is in both apps, first in More, for owners and admins.)** **Dashboard is left out of the apps' More.** It is a computer page (charts and tables). Owners
     and admins open it on the website. Sundeck Pro Billing is left out of the apps' Settings for
     App Store and Google Play payment rules (section 8.4).
 13. **Messages' New Message is an icon in the navigation bar** (compose icon, right side), like New

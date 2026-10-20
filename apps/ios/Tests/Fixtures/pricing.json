@@ -35421,5 +35421,127 @@
         3
       ]
     }
+  ],
+  "monthLabel": [
+    {
+      "args": [
+        "2026-01",
+        false
+      ],
+      "result": "Jan 2026"
+    },
+    {
+      "args": [
+        "2026-01",
+        true
+      ],
+      "result": "January 2026"
+    },
+    {
+      "args": [
+        "2026-10",
+        false
+      ],
+      "result": "Oct 2026"
+    },
+    {
+      "args": [
+        "2026-10",
+        true
+      ],
+      "result": "October 2026"
+    },
+    {
+      "args": [
+        "2025-12",
+        false
+      ],
+      "result": "Dec 2025"
+    },
+    {
+      "args": [
+        "2025-12",
+        true
+      ],
+      "result": "December 2025"
+    }
+  ],
+  "acceptanceRate": [
+    {
+      "args": [
+        0,
+        0
+      ],
+      "result": "–"
+    },
+    {
+      "args": [
+        3,
+        2
+      ],
+      "result": "67%"
+    },
+    {
+      "args": [
+        3,
+        3
+      ],
+      "result": "100%"
+    },
+    {
+      "args": [
+        7,
+        1
+      ],
+      "result": "14%"
+    },
+    {
+      "args": [
+        1,
+        0
+      ],
+      "result": "0%"
+    }
+  ],
+  "dashboardTotals": [
+    {
+      "args": [
+        []
+      ],
+      "result": {
+        "quotes_sent": 0,
+        "quotes_accepted": 0,
+        "invoiced_cents": 0,
+        "collected_cents": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "month": "2026-09",
+            "quotes_sent": 3,
+            "quotes_accepted": 2,
+            "invoiced_cents": 50000,
+            "outstanding_cents": 1000,
+            "collected_cents": 40000
+          },
+          {
+            "month": "2026-10",
+            "quotes_sent": 1,
+            "quotes_accepted": 0,
+            "invoiced_cents": 0,
+            "outstanding_cents": 0,
+            "collected_cents": 12500
+          }
+        ]
+      ],
+      "result": {
+        "quotes_sent": 4,
+        "quotes_accepted": 2,
+        "invoiced_cents": 50000,
+        "collected_cents": 52500
+      }
+    }
   ]
 }

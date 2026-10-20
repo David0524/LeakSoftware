@@ -1,4 +1,8 @@
 import {
+  acceptanceRate,
+  dashboardTotals,
+  monthLabel,
+  type DashboardMonth,
   INVOICE_FILTERS,
   INVOICE_SORTS,
   filterInvoices,
@@ -600,5 +604,52 @@ export const pricing: ModuleCases = {
         ["", "sam", "#3", "1102", " ann "].map((q) => [f, s, q] as [string, string, string]),
       ),
     ),
+  ),
+  // The Dashboard, in the apps too (owner, 2026-10-20: "Dashboard should be in the apps").
+  monthLabel: rule(
+    (month: string, long: boolean) => monthLabel(month, long),
+    ["2026-01", "2026-10", "2025-12"].flatMap(
+      (m) =>
+        [
+          [m, false],
+          [m, true],
+        ] as [string, boolean][],
+    ),
+  ),
+  acceptanceRate: rule(
+    (sent: number, accepted: number) => acceptanceRate(sent, accepted),
+    [
+      [0, 0],
+      [3, 2],
+      [3, 3],
+      [7, 1],
+      [1, 0],
+    ],
+  ),
+  dashboardTotals: rule(
+    (months: DashboardMonth[]) => dashboardTotals(months),
+    [
+      [[]],
+      [
+        [
+          {
+            month: "2026-09",
+            quotes_sent: 3,
+            quotes_accepted: 2,
+            invoiced_cents: 50000,
+            outstanding_cents: 1000,
+            collected_cents: 40000,
+          },
+          {
+            month: "2026-10",
+            quotes_sent: 1,
+            quotes_accepted: 0,
+            invoiced_cents: 0,
+            outstanding_cents: 0,
+            collected_cents: 12500,
+          },
+        ],
+      ],
+    ],
   ),
 };
