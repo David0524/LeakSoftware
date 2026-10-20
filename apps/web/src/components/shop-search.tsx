@@ -11,6 +11,7 @@ import {
   useState,
   type KeyboardEvent,
   type ReactNode,
+  type Ref,
 } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -324,7 +325,7 @@ function SearchInput({
   onChange: (v: string) => void;
   onFocus?: () => void;
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
-  inputRef?: React.Ref<HTMLInputElement>;
+  inputRef?: Ref<HTMLInputElement>;
   autoFocus?: boolean;
   activeId?: string;
   listId: string;
