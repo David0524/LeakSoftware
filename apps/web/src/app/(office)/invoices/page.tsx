@@ -1,8 +1,18 @@
 import { offersPool } from "@leakbook/core";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { INVOICE_STATUS_LABELS, formatCents, invoiceBalance, dateFormat } from "@leakbook/core";
-import { ButtonLink, Empty, Grouped, PageHeader, Row } from "@/components/ui";
+import {
+  INVOICE_FILTERS,
+  INVOICE_SORTS,
+  INVOICE_STATUS_LABELS,
+  filterInvoices,
+  formatCents,
+  invoiceBalance,
+  invoiceOverdue,
+  dateFormat,
+} from "@leakbook/core";
+import { SortMenu } from "@/components/sort-menu";
+import { Button, ButtonLink, Empty, Grouped, PageHeader, Row, pillClass } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listInvoices, unbilledMaintenance, getCompany } from "@/lib/data";
 import { MonthlyBilling } from "@/components/monthly-billing";
@@ -11,16 +21,37 @@ import { ScreenTip } from "@/components/screen-tip";
 
 export const metadata: Metadata = { title: "Invoices · Sundeck Pro" };
 
-export default async function InvoicesPage() {
+export default async function InvoicesPage({ searchParams }: PageProps<"/invoices">) {
   const office = await getOffice();
-  const [invoices, unbilled, company] = await Promise.all([
+  const params = await searchParams;
+  const one = (k: string) => (typeof params[k] === "string" ? (params[k] as string) : "");
+  const [all, unbilled, company] = await Promise.all([
     listInvoices(office),
     unbilledMaintenance(office),
     getCompany(office),
   ]);
-  const open = invoices.filter((i) => i.status === "sent" || i.status === "partially_paid");
+  const open = all.filter((i) => i.status === "sent" || i.status === "partially_paid");
   const owed = open.reduce((sum, i) => sum + invoiceBalance(i), 0);
   const tz = office.company.timezone;
+  const today = dateFormat("en-CA", { timeZone: tz }).format(new Date());
+  // Filter, search, and sort (owner, 2026-10-20: "add some filtering and sorting"), kept in
+  // the address so Back and a shared link keep them.
+  const filter = INVOICE_FILTERS.find((f) => f.key === one("filter"))?.key ?? "all";
+  const sort = INVOICE_SORTS.find((x) => x.key === one("sort"))?.key ?? "newest";
+  const q = one("q").trim();
+  const invoices = filterInvoices(all, { filter, sort, q, today });
+  const href = (next: { filter?: string; sort?: string; q?: string }) => {
+    const p = new URLSearchParams();
+    const f = next.filter ?? filter;
+    const so = next.sort ?? sort;
+    const qq = next.q ?? q;
+    if (f !== "all") p.set("filter", f);
+    if (so !== "newest") p.set("sort", so);
+    if (qq) p.set("q", qq);
+    return `/invoices${p.size ? `?${p}` : ""}`;
+  };
+  const count = (key: string) =>
+    key === "all" ? all.length : filterInvoices(all, { filter: key, today }).length;
   const thisMonth = `${dateFormat("en-CA", { year: "numeric", month: "2-digit", timeZone: tz }).format(new Date())}-01`;
   const monthLabel = (month: string) =>
     dateFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(
@@ -61,8 +92,59 @@ export default async function InvoicesPage() {
       {offersPool(company.settings) ? (
         <MonthlyBilling months={unbilled} thisMonth={thisMonth} />
       ) : null}
-      {invoices.length === 0 ? (
+      {all.length ? (
+        <>
+          <nav
+            aria-label="Filter invoices"
+            className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 whitespace-nowrap sm:mx-0 sm:flex-wrap sm:px-0"
+          >
+            {INVOICE_FILTERS.map((f) => (
+              <Link
+                key={f.key}
+                href={href({ filter: f.key })}
+                aria-current={f.key === filter ? "page" : undefined}
+                className={pillClass(f.key === filter)}
+              >
+                {f.label} <span className="tabular-nums opacity-70">{count(f.key)}</span>
+              </Link>
+            ))}
+          </nav>
+          <div className="mb-5 flex flex-wrap items-center gap-3">
+            <form action="/invoices" role="search" className="flex min-w-0 flex-1 gap-2">
+              {filter !== "all" ? <input type="hidden" name="filter" value={filter} /> : null}
+              {sort !== "newest" ? <input type="hidden" name="sort" value={sort} /> : null}
+              <label htmlFor="invoice-q" className="sr-only">
+                Search invoices
+              </label>
+              <input
+                id="invoice-q"
+                name="q"
+                type="search"
+                defaultValue={q}
+                placeholder="Customer, invoice, or job number"
+                className="min-h-11 min-w-0 flex-1 rounded-[10px] border border-control-border bg-surface px-3 focus:outline-3 focus:outline-focus"
+              />
+              <Button type="submit" kind="secondary">
+                Search
+              </Button>
+            </form>
+            <SortMenu
+              options={INVOICE_SORTS}
+              value={sort}
+              hrefFor={Object.fromEntries(INVOICE_SORTS.map((x) => [x.key, href({ sort: x.key })]))}
+            />
+          </div>
+        </>
+      ) : null}
+      {all.length === 0 ? (
         <Empty>No invoices yet. Create one from a job once the work is done.</Empty>
+      ) : invoices.length === 0 ? (
+        <Empty>
+          {q ? `No invoices match “${q}”.` : "No invoices here."}{" "}
+          <Link href="/invoices" className="font-semibold text-link">
+            Show All
+          </Link>
+        </Empty>
       ) : (
         <>
           {/* Phones: an inset grouped list, a row per invoice. */}
@@ -83,7 +165,7 @@ export default async function InvoicesPage() {
                           : ""}
                     </span>
                     <span className="block">
-                      {INVOICE_STATUS_LABELS[i.status]}
+                      {invoiceOverdue(i, today) ? "Overdue" : INVOICE_STATUS_LABELS[i.status]}
                       {i.sent_at ? ` · sent ${day(i.sent_at)}` : ""}
                       {i.status === "sent" || i.status === "partially_paid"
                         ? ` · ${formatCents(invoiceBalance(i))} due`
@@ -140,7 +222,13 @@ export default async function InvoicesPage() {
                       </Link>
                     </td>
                     <td className="px-4 py-3">{i.customer}</td>
-                    <td className="px-4 py-3">{INVOICE_STATUS_LABELS[i.status]}</td>
+                    <td className="px-4 py-3">
+                      {invoiceOverdue(i, today) ? (
+                        <span className="font-semibold text-status-fail">Overdue</span>
+                      ) : (
+                        INVOICE_STATUS_LABELS[i.status]
+                      )}
+                    </td>
                     <td className="px-4 py-3 whitespace-nowrap">{day(i.sent_at)}</td>
                     <td className="px-4 py-3 text-right tabular-nums">
                       {formatCents(i.total_cents)}

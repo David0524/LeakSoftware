@@ -191,6 +191,20 @@ test("owners see every invoice and export them as CSV", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Invoices" })).toBeVisible();
   await expect(page.getByRole("row").filter({ hasText: "Void" }).first()).toBeVisible();
 
+  // Filter, search, and sort (owner, 2026-10-20), kept in the address.
+  const filters = page.getByRole("navigation", { name: "Filter invoices" });
+  await filters.getByRole("link", { name: /^Void \d+$/ }).click();
+  await expect(page).toHaveURL(/filter=void/);
+  const rows = page.locator("tbody tr");
+  await expect(rows.first()).toBeVisible();
+  for (const status of await rows.locator("td:nth-child(3)").allInnerTexts())
+    expect(status).toBe("Void");
+  await page.getByLabel("Sort").selectOption("total");
+  await expect(page).toHaveURL(/filter=void&sort=total/);
+  await page.getByRole("searchbox", { name: "Search invoices" }).fill("nobody at all");
+  await page.getByRole("button", { name: "Search" }).click();
+  await expect(page.getByText("No invoices match “nobody at all”.")).toBeVisible();
+
   const invoices = await page.request.get("/invoices/export?kind=invoices");
   expect(invoices.status()).toBe(200);
   expect(invoices.headers()["content-type"]).toContain("text/csv");

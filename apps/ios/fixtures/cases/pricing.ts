@@ -1,4 +1,9 @@
 import {
+  INVOICE_FILTERS,
+  INVOICE_SORTS,
+  filterInvoices,
+  invoiceOverdue,
+  type InvoiceListItem,
   waterTestRows,
   ACID_PRODUCTS,
   CHLORINE_PRODUCTS,
@@ -243,6 +248,60 @@ tipCases.push(
 );
 
 // quote.ts, invoice.ts, chemistry.ts and walkthrough.ts.
+/** Newest first, as the list comes from the server. */
+const invoiceList: InvoiceListItem[] = [
+  {
+    number: 5,
+    status: "draft",
+    total_cents: 9000,
+    amount_paid_cents: 0,
+    due_date: null,
+    sent_at: null,
+    customer: "Cole Izhaky",
+    jobNumber: 1105,
+  },
+  {
+    number: 4,
+    status: "sent",
+    total_cents: 20000,
+    amount_paid_cents: 0,
+    due_date: "2026-10-10",
+    sent_at: "2026-10-01",
+    customer: "Sam Sample",
+    jobNumber: 1104,
+  },
+  {
+    number: 3,
+    status: "partially_paid",
+    total_cents: 50000,
+    amount_paid_cents: 45000,
+    due_date: "2026-10-30",
+    sent_at: "2026-09-30",
+    customer: "Ann Lee",
+    jobNumber: 1103,
+  },
+  {
+    number: 2,
+    status: "paid",
+    total_cents: 30000,
+    amount_paid_cents: 30000,
+    due_date: "2026-09-01",
+    sent_at: "2026-08-20",
+    customer: "Bo Diaz",
+    jobNumber: 1102,
+  },
+  {
+    number: 1,
+    status: "void",
+    total_cents: 1000,
+    amount_paid_cents: 0,
+    due_date: null,
+    sent_at: null,
+    customer: null,
+    jobNumber: null,
+  },
+];
+
 export const pricing: ModuleCases = {
   QUOTE_STATUS_LABELS: rule(() => QUOTE_STATUS_LABELS, [[]]),
   lineTotal: rule(
@@ -525,5 +584,21 @@ export const pricing: ModuleCases = {
       [{ fc: 9, ph: 8.2, ta: 60, ch: 500, cya: 100, salt: 2500 }],
       [{ ph: null, cya: 0 }],
     ],
+  ),
+  // The Invoices list (owner, 2026-10-20).
+  INVOICE_FILTERS: rule(() => INVOICE_FILTERS, [[]]),
+  INVOICE_SORTS: rule(() => INVOICE_SORTS, [[]]),
+  invoiceOverdue: rule(
+    (i: InvoiceListItem, today: string) => invoiceOverdue(i, today),
+    invoiceList.map((i) => [i, "2026-10-20"] as [InvoiceListItem, string]),
+  ),
+  filterInvoices: rule(
+    (filter: string, sort: string, q: string) =>
+      filterInvoices(invoiceList, { filter, sort, q, today: "2026-10-20" }).map((i) => i.number),
+    ["all", "open", "overdue", "draft", "paid", "void", "x"].flatMap((f) =>
+      ["newest", "oldest", "due", "balance", "total", "customer", "x"].flatMap((s) =>
+        ["", "sam", "#3", "1102", " ann "].map((q) => [f, s, q] as [string, string, string]),
+      ),
+    ),
   ),
 };
