@@ -13,6 +13,8 @@ import {
   type ReportSnapshot,
   type ReportTemplateKey,
 } from "@leakbook/core";
+import { after } from "next/server";
+import { siteOrigin } from "@/lib/origin";
 import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase/config";
 import { adminClient } from "./admin";
 import { EmailNotConfigured, emailConfigured, fromAddress, sendEmail } from "./email";
@@ -123,14 +125,35 @@ export async function finishReport(
   reportId: string,
   unsignedReason: string | null = null,
 ): Promise<string> {
-  const { data: report } = await db.from("report").select("job_id").eq("id", reportId).single();
+  const { data: report } = await db
+    .from("report")
+    .select("job_id, company_id")
+    .eq("id", reportId)
+    .single();
   if (report) await requireFinishPhoto(db, report.job_id as string);
   const { data, error } = await db.rpc("send_report", {
     target_report: reportId,
     unsigned_reason: unsignedReason,
   });
   if (error) throw new Error(error.message);
-  return (data as { token: string }).token;
+  const token = (data as { token: string }).token;
+  // Make the PDF now, after the reply, so opening it later is instant instead of a white
+  // screen while it renders (owner, 2026-10-20: "a long white screen when loading").
+  if (report) {
+    const origin = await siteOrigin();
+    after(async () => {
+      try {
+        await reportPdf(origin, token, {
+          companyId: report.company_id as string,
+          jobId: report.job_id as string,
+          reportId,
+        });
+      } catch {
+        // Not made now: it's made the first time someone opens it, as before.
+      }
+    });
+  }
+  return token;
 }
 
 /**

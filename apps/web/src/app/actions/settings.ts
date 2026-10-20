@@ -12,6 +12,9 @@ import {
   CARD_FEE_MAX_BPS,
   uuidv7,
   type TestFieldSchema,
+  SAVED_REPORT_SECTIONS,
+  savedReportFrom,
+  savedReportSections,
 } from "@leakbook/core";
 import { OWNER_ONLY, requireManager, requireOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -381,6 +384,7 @@ const ARCHIVABLE = new Set([
   "test_type",
   "exclusion_reason",
   "severity_level",
+  "saved_report",
 ]);
 
 export async function removeConfigRow(_: FormState, form: FormData): Promise<FormState> {
@@ -605,6 +609,35 @@ export async function saveSeverity(_: FormState, form: FormData): Promise<FormSt
   );
   if (error) return failed(error);
   return done("/settings/severities", id ? "Saved." : `Added ${name}.`);
+}
+
+/**
+ * A saved report (owner, 2026-10-20: "a copy/paste essentially that the tech uses each time"):
+ * its name and its text for each section, word for word. From Settings › Report Templates, or
+ * Save as Saved Report on a draft (the draft's own text, sent as key/text pairs).
+ */
+export async function saveSavedReport(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const id = text(form, "id");
+  const name = text(form, "name");
+  if (!name) return { fields: { name: "Enter a name." } };
+  if (name.length > 80) return { fields: { name: "Keep it under 80 letters." } };
+  const keys = form.getAll("key").map(String);
+  const sections = keys.length
+    ? savedReportFrom(
+        keys.map((key, i) => ({ key, title: key, text: String(form.getAll("text")[i] ?? "") })),
+      )
+    : savedReportSections(
+        Object.fromEntries(SAVED_REPORT_SECTIONS.map((s) => [s.key, text(form, s.key)])),
+      );
+  if (!Object.keys(sections).length) return { error: "Add some text to save." };
+  const { error } = await upsert(supabase, "saved_report", office.company.id, id, {
+    name,
+    sections,
+  });
+  if (error) return failed(error);
+  revalidatePath("/jobs", "layout");
+  return done("/settings/reports", id ? "Saved." : "Saved report added.");
 }
 
 export async function saveReportTemplate(_: FormState, form: FormData): Promise<FormState> {

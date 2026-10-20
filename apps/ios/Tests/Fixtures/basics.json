@@ -3524,5 +3524,283 @@
         5
       ]
     }
+  ],
+  "SAVED_REPORT_SECTIONS": [
+    {
+      "args": [],
+      "result": [
+        {
+          "key": "summary",
+          "title": "Summary"
+        },
+        {
+          "key": "findings",
+          "title": "What we found"
+        },
+        {
+          "key": "next_steps",
+          "title": "What happens next"
+        }
+      ]
+    }
+  ],
+  "savedReportSections": [
+    {
+      "args": [
+        null
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        [
+          "x"
+        ]
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "summary": " Hi ",
+          "findings": "  ",
+          "other": "x",
+          "next_steps": 4
+        }
+      ],
+      "result": {
+        "summary": "Hi"
+      }
+    },
+    {
+      "args": [
+        {
+          "summary": "A",
+          "findings": "B",
+          "next_steps": "C"
+        }
+      ],
+      "result": {
+        "summary": "A",
+        "findings": "B",
+        "next_steps": "C"
+      }
+    }
+  ],
+  "applySavedReport": [
+    {
+      "args": [
+        [
+          {
+            "key": "summary",
+            "title": "Summary",
+            "text": "We found a leak."
+          },
+          {
+            "key": "findings",
+            "title": "What we found",
+            "text": ""
+          },
+          {
+            "key": "next_steps",
+            "title": "What happens next",
+            "text": "Call us."
+          }
+        ],
+        {
+          "summary": "No leak found.",
+          "findings": "Held pressure.",
+          "next_steps": "Call us."
+        }
+      ],
+      "result": {
+        "sections": [
+          {
+            "key": "summary",
+            "title": "Summary",
+            "text": "No leak found."
+          },
+          {
+            "key": "findings",
+            "title": "What we found",
+            "text": "Held pressure."
+          },
+          {
+            "key": "next_steps",
+            "title": "What happens next",
+            "text": "Call us."
+          }
+        ],
+        "replaces": [
+          "Summary"
+        ]
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "key": "summary",
+            "title": "Summary",
+            "text": "We found a leak."
+          },
+          {
+            "key": "findings",
+            "title": "What we found",
+            "text": ""
+          },
+          {
+            "key": "next_steps",
+            "title": "What happens next",
+            "text": "Call us."
+          }
+        ],
+        {}
+      ],
+      "result": {
+        "sections": [
+          {
+            "key": "summary",
+            "title": "Summary",
+            "text": "We found a leak."
+          },
+          {
+            "key": "findings",
+            "title": "What we found",
+            "text": ""
+          },
+          {
+            "key": "next_steps",
+            "title": "What happens next",
+            "text": "Call us."
+          }
+        ],
+        "replaces": []
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "key": "summary",
+            "title": "Summary",
+            "text": "We found a leak."
+          },
+          {
+            "key": "findings",
+            "title": "What we found",
+            "text": ""
+          },
+          {
+            "key": "next_steps",
+            "title": "What happens next",
+            "text": "Call us."
+          }
+        ],
+        {
+          "findings": "  Only this.  "
+        }
+      ],
+      "result": {
+        "sections": [
+          {
+            "key": "summary",
+            "title": "Summary",
+            "text": "We found a leak."
+          },
+          {
+            "key": "findings",
+            "title": "What we found",
+            "text": "Only this."
+          },
+          {
+            "key": "next_steps",
+            "title": "What happens next",
+            "text": "Call us."
+          }
+        ],
+        "replaces": []
+      }
+    },
+    {
+      "args": [
+        [],
+        {
+          "summary": "x"
+        }
+      ],
+      "result": {
+        "sections": [],
+        "replaces": []
+      }
+    }
+  ],
+  "replaceSavedReportQuestion": [
+    {
+      "args": [
+        []
+      ],
+      "result": "Replace the text in ?"
+    },
+    {
+      "args": [
+        [
+          "Summary"
+        ]
+      ],
+      "result": "Replace the text in Summary?"
+    },
+    {
+      "args": [
+        [
+          "Summary",
+          "What we found"
+        ]
+      ],
+      "result": "Replace the text in Summary and What we found?"
+    },
+    {
+      "args": [
+        [
+          "A",
+          "B",
+          "C"
+        ]
+      ],
+      "result": "Replace the text in A, B and C?"
+    }
+  ],
+  "savedReportFrom": [
+    {
+      "args": [
+        [
+          {
+            "key": "summary",
+            "title": "Summary",
+            "text": "We found a leak."
+          },
+          {
+            "key": "findings",
+            "title": "What we found",
+            "text": ""
+          },
+          {
+            "key": "next_steps",
+            "title": "What happens next",
+            "text": "Call us."
+          }
+        ]
+      ],
+      "result": {
+        "summary": "We found a leak.",
+        "next_steps": "Call us."
+      }
+    },
+    {
+      "args": [
+        []
+      ],
+      "result": {}
+    }
   ]
 }

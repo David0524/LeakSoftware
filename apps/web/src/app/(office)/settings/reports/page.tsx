@@ -1,7 +1,19 @@
 import type { Metadata } from "next";
-import { saveReportTemplate } from "@/app/actions/settings";
-import { SField, SSwitch, SettingsFields, SettingsForm } from "@/components/settings-forms";
-import { SettingsListPage, SheetRow } from "@/components/settings-list";
+import { SAVED_REPORT_SECTIONS, savedReportSections } from "@leakbook/core";
+import { removeConfigRow, saveReportTemplate, saveSavedReport } from "@/app/actions/settings";
+import {
+  SField,
+  SSwitch,
+  STextArea,
+  SettingsFields,
+  SettingsForm,
+} from "@/components/settings-forms";
+import {
+  SettingsAddRow,
+  SettingsListPage,
+  SheetDanger,
+  SheetRow,
+} from "@/components/settings-list";
 import { Grouped } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { listConfig } from "@/lib/data";
@@ -21,9 +33,50 @@ const ABOUT: Record<Exclude<Template["key"], "partner">, string> = {
   insurance: "For insurance claims.",
 };
 
+interface SavedReport {
+  id: string;
+  name: string;
+  sections: unknown;
+}
+
+/** A saved report's name and its text for each section. */
+function SavedReportFields({ saved }: { saved?: SavedReport }) {
+  const text = savedReportSections(saved?.sections);
+  const id = saved?.id ?? "new";
+  return (
+    <>
+      <SettingsFields labelWidth="5rem">
+        <SField
+          label="Name"
+          name="name"
+          id={`saved-name-${id}`}
+          defaultValue={saved?.name}
+          placeholder="No leak found"
+          required
+        />
+      </SettingsFields>
+      {SAVED_REPORT_SECTIONS.map((s) => (
+        <SettingsFields key={s.key}>
+          <STextArea
+            label={s.title}
+            name={s.key}
+            id={`saved-${s.key}-${id}`}
+            rows={4}
+            maxLength={4000}
+            defaultValue={text[s.key] ?? ""}
+          />
+        </SettingsFields>
+      ))}
+    </>
+  );
+}
+
 export default async function ReportTemplatesPage() {
   const office = await getOffice();
-  const templates = await listConfig<Template>(office, "report_template");
+  const [templates, saved] = await Promise.all([
+    listConfig<Template>(office, "report_template"),
+    listConfig<SavedReport>(office, "saved_report"),
+  ]);
   const order = ["homeowner", "insurance"];
   // The partner report is gone (owner, 2026-10-18); its sent reports still open.
   const shown = templates
@@ -33,6 +86,15 @@ export default async function ReportTemplatesPage() {
     <SettingsListPage
       title="Report Templates"
       subtitle="Which reports techs can send, and what they’re called. Each report is written from the job’s checklist, tests, and findings."
+      add={{
+        label: "Add Saved Report",
+        inList: true,
+        form: (
+          <SettingsForm action={saveSavedReport} submit="Add Saved Report" primary full>
+            <SavedReportFields />
+          </SettingsForm>
+        ),
+      }}
     >
       <Grouped>
         {shown.map((t) =>
@@ -69,6 +131,44 @@ export default async function ReportTemplatesPage() {
             </SheetRow>
           ),
         )}
+      </Grouped>
+
+      {/* Your own wording, used word for word (owner, 2026-10-20: "Not like AI prompts, but a
+          copy/paste essentially that the tech uses each time"). */}
+      <Grouped
+        title="Saved reports"
+        className="mt-8"
+        footer="Text you use again and again. On a report, Use Saved Report puts it in word for word."
+      >
+        {saved.map((r) => (
+          <SheetRow
+            key={r.id}
+            title={r.name}
+            label={r.name}
+            detail={SAVED_REPORT_SECTIONS.filter((s) => savedReportSections(r.sections)[s.key])
+              .map((s) => s.title)
+              .join(", ")}
+          >
+            <SettingsForm action={saveSavedReport} primary full>
+              <input type="hidden" name="id" value={r.id} />
+              <SavedReportFields saved={r} />
+            </SettingsForm>
+            <SheetDanger>
+              <SettingsForm
+                action={removeConfigRow}
+                submit="Delete"
+                danger
+                full
+                confirm="Delete this saved report?"
+              >
+                <input type="hidden" name="table" value="saved_report" />
+                <input type="hidden" name="id" value={r.id} />
+                <input type="hidden" name="path" value="/settings/reports" />
+              </SettingsForm>
+            </SheetDanger>
+          </SheetRow>
+        ))}
+        <SettingsAddRow label="Add Saved Report" />
       </Grouped>
     </SettingsListPage>
   );

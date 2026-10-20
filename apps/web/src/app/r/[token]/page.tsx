@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import type { FinalSection, ReportSnapshot, ReportTemplateKey } from "@leakbook/core";
 import { Banner, DOC_PAGE } from "@/components/doc-ui";
+import { ReportLoading } from "@/components/report-loading";
 import { ReportView } from "@/components/report-view";
 import { publicClient } from "@/server/reports";
 
@@ -26,7 +27,7 @@ interface TokenReport {
 export default function CustomerReportPage({ params, searchParams }: PageProps<"/r/[token]">) {
   return (
     <main className={DOC_PAGE}>
-      <Suspense fallback={<p className="p-8 text-center text-neutral-500">Loading your report…</p>}>
+      <Suspense fallback={<ReportLoading />}>
         <Report params={params} searchParams={searchParams} />
       </Suspense>
     </main>

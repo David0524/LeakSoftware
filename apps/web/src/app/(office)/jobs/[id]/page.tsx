@@ -799,7 +799,10 @@ async function Signatures({ detail, tz }: { detail: JobDetail; tz: string }) {
 
 async function Reports({ detail }: { detail: JobDetail }) {
   const office = await getOffice();
-  const { reports, templates } = await getReports(office, detail.job.id);
+  const [{ reports, templates }, saved] = await Promise.all([
+    getReports(office, detail.job.id),
+    listConfig<{ id: string; name: string; sections: unknown }>(office, "saved_report"),
+  ]);
   // One report, the homeowner's (owner, 2026-10-18: "Partner report should be gone").
   const key = "homeowner";
   if (templates.find((t) => t.key === key)?.enabled === false) return null;
@@ -817,6 +820,8 @@ async function Reports({ detail }: { detail: JobDetail }) {
         sent={reports.filter((r) => r.template_key === key && r.status !== "draft")}
         customerEmail={detail.job.customer?.email ?? null}
         emailReady={emailConfigured()}
+        saved={saved}
+        canSave={office.isManager}
       />
     </div>
   );

@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/reports";
 import { reviewWithCustomer } from "@/app/actions/sign-off";
 import type { ReportRow } from "@/lib/data";
+import { SavedReportActions, type SavedReportOption } from "./saved-reports";
 import { CopyLink } from "./settings-forms";
 import { useConfirm } from "./sheet";
 import { Button, Notice, buttonClass, cx } from "./ui";
@@ -28,6 +29,8 @@ export function ReportPanel({
   sent,
   customerEmail,
   emailReady,
+  saved = [],
+  canSave = false,
 }: {
   jobId: string;
   template: "homeowner" | "partner";
@@ -36,6 +39,9 @@ export function ReportPanel({
   sent: ReportRow[];
   customerEmail: string | null;
   emailReady: boolean;
+  /** The shop's saved reports, and whether this person may add one (owners and admins). */
+  saved?: SavedReportOption[];
+  canSave?: boolean;
 }) {
   const [draftState, draftAction, drafting] = useActionState(writeDraft, {});
   const [saveState, saveAction, saving] = useActionState(saveText, {});
@@ -55,6 +61,8 @@ export function ReportPanel({
   const [confirm, confirmSheet] = useConfirm();
   const writeForm = useRef<HTMLFormElement>(null);
   const confirmed = useRef(false);
+  const draftForm = useRef<HTMLFormElement>(null);
+  const saveButton = useRef<HTMLButtonElement>(null);
 
   return (
     <section
@@ -155,8 +163,16 @@ export function ReportPanel({
               </Notice>
             </div>
           ) : null}
+          <div className="mt-4">
+            <SavedReportActions
+              form={draftForm}
+              saved={saved}
+              canSave={canSave}
+              onUsed={() => draftForm.current?.requestSubmit(saveButton.current)}
+            />
+          </div>
           {/* One form: Save and Send both take the text on screen, so no edit is left behind. */}
-          <form className="mt-4 space-y-4">
+          <form ref={draftForm} className="mt-4 space-y-4">
             <input type="hidden" name="job" value={jobId} />
             <input type="hidden" name="report" value={draft.id} />
             {draft.final_sections.map((s) => (
@@ -176,7 +192,13 @@ export function ReportPanel({
               </div>
             ))}
             <div className="flex flex-wrap items-center gap-3">
-              <Button type="submit" formAction={saveAction} kind="secondary" disabled={saving}>
+              <Button
+                ref={saveButton}
+                type="submit"
+                formAction={saveAction}
+                kind="secondary"
+                disabled={saving}
+              >
                 {saving ? "Saving…" : "Save Text"}
               </Button>
               <span

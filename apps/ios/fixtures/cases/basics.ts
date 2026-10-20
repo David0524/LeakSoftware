@@ -1,4 +1,9 @@
 import {
+  SAVED_REPORT_SECTIONS,
+  applySavedReport,
+  replaceSavedReportQuestion,
+  savedReportFrom,
+  savedReportSections,
   JOB_STATUSES,
   JOB_STATUS_LABELS,
   POOL_TYPE_LABELS,
@@ -328,6 +333,65 @@ export const basics: ModuleCases = {
       ["1, x"],
       ["1000"],
       ["  5  "],
+    ],
+  ),
+  // Saved reports (owner, 2026-10-20).
+  SAVED_REPORT_SECTIONS: rule(() => SAVED_REPORT_SECTIONS, [[]]),
+  savedReportSections: rule(
+    (raw: unknown) => savedReportSections(raw),
+    [
+      [null],
+      [["x"]],
+      [{ summary: " Hi ", findings: "  ", other: "x", next_steps: 4 }],
+      [{ summary: "A", findings: "B", next_steps: "C" }],
+    ],
+  ),
+  applySavedReport: rule(
+    (sections: { key: string; title: string; text: string }[], saved: unknown) =>
+      applySavedReport(sections, saved),
+    [
+      [
+        [
+          { key: "summary", title: "Summary", text: "We found a leak." },
+          { key: "findings", title: "What we found", text: "" },
+          { key: "next_steps", title: "What happens next", text: "Call us." },
+        ],
+        { summary: "No leak found.", findings: "Held pressure.", next_steps: "Call us." },
+      ],
+      [
+        [
+          { key: "summary", title: "Summary", text: "We found a leak." },
+          { key: "findings", title: "What we found", text: "" },
+          { key: "next_steps", title: "What happens next", text: "Call us." },
+        ],
+        {},
+      ],
+      [
+        [
+          { key: "summary", title: "Summary", text: "We found a leak." },
+          { key: "findings", title: "What we found", text: "" },
+          { key: "next_steps", title: "What happens next", text: "Call us." },
+        ],
+        { findings: "  Only this.  " },
+      ],
+      [[], { summary: "x" }],
+    ],
+  ),
+  replaceSavedReportQuestion: rule(
+    (titles: string[]) => replaceSavedReportQuestion(titles),
+    [[[]], [["Summary"]], [["Summary", "What we found"]], [["A", "B", "C"]]],
+  ),
+  savedReportFrom: rule(
+    (sections: { key: string; title: string; text: string }[]) => savedReportFrom(sections),
+    [
+      [
+        [
+          { key: "summary", title: "Summary", text: "We found a leak." },
+          { key: "findings", title: "What we found", text: "" },
+          { key: "next_steps", title: "What happens next", text: "Call us." },
+        ],
+      ],
+      [[]],
     ],
   ),
 };

@@ -704,3 +704,57 @@ export function testOutcomeLabel(outcome: string | null | undefined): {
   if (outcome === "inconclusive") return { label: "Unclear", tone: "attention" };
   return { label: "Recorded", tone: "pending" };
 }
+
+// ---------------------------------------------------------------------------
+// Saved reports (owner, 2026-10-20: "a copy/paste essentially that the tech uses each time")
+// ---------------------------------------------------------------------------
+
+/** The report sections a saved report can hold text for, in report order. */
+export const SAVED_REPORT_SECTIONS = NARRATIVE_SECTIONS.homeowner.map((s) => ({
+  key: s.key,
+  title: s.title,
+}));
+
+/** A saved report's text by section key, from its stored `sections` (unknown keys and blanks dropped). */
+export function savedReportSections(raw: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  for (const { key } of SAVED_REPORT_SECTIONS) {
+    const v = (raw as Record<string, unknown>)[key];
+    if (typeof v === "string" && v.trim()) out[key] = v.trim();
+  }
+  return out;
+}
+
+/**
+ * Use Saved Report: the draft's sections with the saved text in place, word for word, and the
+ * titles of the sections whose own different text it replaces (asked about first).
+ */
+export function applySavedReport(
+  sections: FinalSection[],
+  saved: unknown,
+): { sections: FinalSection[]; replaces: string[] } {
+  const text = savedReportSections(saved);
+  const replaces: string[] = [];
+  const next = sections.map((s) => {
+    const t = text[s.key];
+    if (t === undefined) return s;
+    if (s.text.trim() && s.text.trim() !== t) replaces.push(s.title);
+    return { ...s, text: t };
+  });
+  return { sections: next, replaces };
+}
+
+/** "Replace the text in Summary and What we found?" */
+export function replaceSavedReportQuestion(titles: string[]): string {
+  const list =
+    titles.length <= 1
+      ? (titles[0] ?? "")
+      : `${titles.slice(0, -1).join(", ")} and ${titles[titles.length - 1]}`;
+  return `Replace the text in ${list}?`;
+}
+
+/** Save as Saved Report: the draft's text by section, blanks left out. */
+export function savedReportFrom(sections: FinalSection[]): Record<string, string> {
+  return savedReportSections(Object.fromEntries(sections.map((s) => [s.key, s.text])));
+}
