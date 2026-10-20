@@ -22,6 +22,8 @@ export function SortMenu({
       Sort
       <select
         name="sort"
+        // Named "Sort" alone, not "Sort" plus every option's text.
+        aria-label="Sort"
         value={value}
         onChange={(e) => router.push(hrefFor[e.target.value] ?? "")}
         className="min-h-11 rounded-[10px] border border-control-border bg-surface px-3 text-[1.0625rem] text-text"
