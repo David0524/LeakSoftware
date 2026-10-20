@@ -1,0 +1,1987 @@
+{
+  "todayHero": [
+    {
+      "args": [
+        [],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 1,
+        "content": {
+          "headline": "Up next: Customer a",
+          "figure": "9:00 AM",
+          "figureLabel": "Scheduled",
+          "detail": "Stop 1 of 1 · a Palm Ln",
+          "next": null,
+          "progress": 0,
+          "compact": "9:00",
+          "spoken": "Up next: Customer a at 9:00 AM. Stop 1 of 1.",
+          "access": null
+        },
+        "segments": [
+          "current"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "stop_done_on": "2026-10-20"
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "access": "Gate 4821"
+          },
+          {
+            "id": "c",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer c",
+            "address": "c Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "b",
+        "stop": 2,
+        "stops": 3,
+        "content": {
+          "headline": "Up next: Customer b",
+          "figure": "9:00 AM",
+          "figureLabel": "Scheduled",
+          "detail": "Stop 2 of 3 · b Palm Ln",
+          "next": "Next: Customer c at 9:00 AM",
+          "progress": 0.3333333333333333,
+          "compact": "9:00",
+          "spoken": "Up next: Customer b at 9:00 AM. Stop 2 of 3. Access: Gate 4821",
+          "access": "Gate 4821"
+        },
+        "segments": [
+          "done",
+          "current",
+          "todo"
+        ],
+        "doneCount": 1
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "on_my_way_at": "2026-10-20T16:30:00Z",
+            "arrive_at": "2026-10-20T16:52:00Z"
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "driving",
+        "stopId": "b",
+        "stop": 2,
+        "stops": 2,
+        "content": {
+          "headline": "On the way to Customer b",
+          "figure": "9:52 AM",
+          "figureLabel": "Arriving",
+          "detail": "Stop 2 of 2 · b Palm Ln",
+          "next": null,
+          "progress": 0.5,
+          "compact": "9:52",
+          "spoken": "On the way to Customer b, arriving at 9:52 AM. Stop 2 of 2.",
+          "access": null
+        },
+        "segments": [
+          "todo",
+          "current"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "on_my_way_at": "2026-10-20T16:30:00Z",
+            "arrive_at": "2026-10-20T16:52:00Z"
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "on_my_way_at": "2026-10-20T16:30:00Z",
+            "arrive_at": "2026-10-20T16:52:00Z"
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "driving",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 2,
+        "content": {
+          "headline": "On the way to Customer a",
+          "figure": "9:52 AM",
+          "figureLabel": "Arriving",
+          "detail": "Stop 1 of 2 · a Palm Ln",
+          "next": "Next: Customer b at 9:00 AM",
+          "progress": 0,
+          "compact": "9:52",
+          "spoken": "On the way to Customer a, arriving at 9:52 AM. Stop 1 of 2.",
+          "access": null
+        },
+        "segments": [
+          "current",
+          "todo"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "on_my_way_at": "2026-10-20T16:30:00Z",
+            "arrive_at": null
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "driving",
+        "stopId": "b",
+        "stop": 2,
+        "stops": 2,
+        "content": {
+          "headline": "On the way to Customer b",
+          "figure": "On the way",
+          "figureLabel": "",
+          "detail": "Stop 2 of 2 · b Palm Ln",
+          "next": null,
+          "progress": 0.5,
+          "compact": "…",
+          "spoken": "On the way to Customer b. Stop 2 of 2.",
+          "access": null
+        },
+        "segments": [
+          "todo",
+          "current"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "on_my_way_at": "2026-10-20T16:30:00Z",
+            "arrive_at": ""
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "driving",
+        "stopId": "b",
+        "stop": 2,
+        "stops": 2,
+        "content": {
+          "headline": "On the way to Customer b",
+          "figure": "On the way",
+          "figureLabel": "",
+          "detail": "Stop 2 of 2 · b Palm Ln",
+          "next": null,
+          "progress": 0.5,
+          "compact": "…",
+          "spoken": "On the way to Customer b. Stop 2 of 2.",
+          "access": null
+        },
+        "segments": [
+          "todo",
+          "current"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "on_my_way_at": "2026-10-19T16:30:00Z"
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 1,
+        "content": {
+          "headline": "Up next: Customer a",
+          "figure": "9:00 AM",
+          "figureLabel": "Scheduled",
+          "detail": "Stop 1 of 1 · a Palm Ln",
+          "next": null,
+          "progress": 0,
+          "compact": "9:00",
+          "spoken": "Up next: Customer a at 9:00 AM. Stop 1 of 1.",
+          "access": null
+        },
+        "segments": [
+          "current"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "on_my_way_at": ""
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 1,
+        "content": {
+          "headline": "Up next: Customer a",
+          "figure": "9:00 AM",
+          "figureLabel": "Scheduled",
+          "detail": "Stop 1 of 1 · a Palm Ln",
+          "next": null,
+          "progress": 0,
+          "compact": "9:00",
+          "spoken": "Up next: Customer a at 9:00 AM. Stop 1 of 1.",
+          "access": null
+        },
+        "segments": [
+          "current"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "on_my_way_at": "2026-10-20T06:00:00Z"
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 1,
+        "content": {
+          "headline": "Up next: Customer a",
+          "figure": "9:00 AM",
+          "figureLabel": "Scheduled",
+          "detail": "Stop 1 of 1 · a Palm Ln",
+          "next": null,
+          "progress": 0,
+          "compact": "9:00",
+          "spoken": "Up next: Customer a at 9:00 AM. Stop 1 of 1.",
+          "access": null
+        },
+        "segments": [
+          "current"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "on_my_way_at": "2026-10-20T06:00:00Z"
+          }
+        ],
+        "2026-10-20",
+        "UTC",
+        null
+      ],
+      "result": {
+        "moment": "driving",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 1,
+        "content": {
+          "headline": "On the way to Customer a",
+          "figure": "On the way",
+          "figureLabel": "",
+          "detail": "Stop 1 of 1 · a Palm Ln",
+          "next": null,
+          "progress": 0,
+          "compact": "…",
+          "spoken": "On the way to Customer a. Stop 1 of 1.",
+          "access": null
+        },
+        "segments": [
+          "current"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "in_progress",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 4,
+            "checklistTotal": 9
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "on_site",
+        "stopId": "b",
+        "stop": 2,
+        "stops": 2,
+        "content": {
+          "headline": "At Customer b",
+          "figure": "4 of 9",
+          "figureLabel": "Checklist",
+          "detail": "Stop 2 of 2 · b Palm Ln",
+          "next": null,
+          "progress": 0.75,
+          "compact": "4/9",
+          "spoken": "At Customer b. Checklist 4 of 9. Stop 2 of 2.",
+          "access": null
+        },
+        "segments": [
+          "todo",
+          "current"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "in_progress",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "on_my_way_at": "2026-10-20T16:30:00Z",
+            "arrive_at": "2026-10-20T16:52:00Z"
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "driving",
+        "stopId": "b",
+        "stop": 2,
+        "stops": 2,
+        "content": {
+          "headline": "On the way to Customer b",
+          "figure": "9:52 AM",
+          "figureLabel": "Arriving",
+          "detail": "Stop 2 of 2 · b Palm Ln",
+          "next": null,
+          "progress": 0.5,
+          "compact": "9:52",
+          "spoken": "On the way to Customer b, arriving at 9:52 AM. Stop 2 of 2.",
+          "access": null
+        },
+        "segments": [
+          "todo",
+          "current"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "in_progress",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "on_my_way_at": "2026-10-20T16:30:00Z",
+            "arrive_at": "2026-10-20T16:52:00Z"
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "on_site",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 1,
+        "content": {
+          "headline": "At Customer a",
+          "figure": "On site",
+          "figureLabel": "",
+          "detail": "Stop 1 of 1 · a Palm Ln",
+          "next": null,
+          "progress": 0.5,
+          "compact": "•",
+          "spoken": "At Customer a. Stop 1 of 1.",
+          "access": null
+        },
+        "segments": [
+          "current"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "on_my_way_at": "2026-10-20T16:30:00Z",
+            "arrive_at": "2026-10-20T16:52:00Z",
+            "stop_done_on": "2026-10-20"
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "b",
+        "stop": 2,
+        "stops": 2,
+        "content": {
+          "headline": "Up next: Customer b",
+          "figure": "9:00 AM",
+          "figureLabel": "Scheduled",
+          "detail": "Stop 2 of 2 · b Palm Ln",
+          "next": null,
+          "progress": 0.5,
+          "compact": "9:00",
+          "spoken": "Up next: Customer b at 9:00 AM. Stop 2 of 2.",
+          "access": null
+        },
+        "segments": [
+          "done",
+          "current"
+        ],
+        "doneCount": 1
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "maintenance",
+            "status": "done",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        "a"
+      ],
+      "result": {
+        "moment": "done",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 2,
+        "content": {
+          "headline": "Customer a done",
+          "figure": "✓",
+          "figureLabel": "Next stop",
+          "detail": "Stop 1 of 2",
+          "next": "Next: Customer b at 9:00 AM",
+          "progress": 0.5,
+          "compact": "✓",
+          "spoken": "Customer a done. Next: Customer b at 9:00 AM.",
+          "access": null
+        },
+        "segments": [
+          "done",
+          "todo"
+        ],
+        "doneCount": 1
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "maintenance",
+            "status": "done",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        ""
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "b",
+        "stop": 2,
+        "stops": 2,
+        "content": {
+          "headline": "Up next: Customer b",
+          "figure": "9:00 AM",
+          "figureLabel": "Scheduled",
+          "detail": "Stop 2 of 2 · b Palm Ln",
+          "next": null,
+          "progress": 0.5,
+          "compact": "9:00",
+          "spoken": "Up next: Customer b at 9:00 AM. Stop 2 of 2.",
+          "access": null
+        },
+        "segments": [
+          "done",
+          "current"
+        ],
+        "doneCount": 1
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        "a"
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 2,
+        "content": {
+          "headline": "Up next: Customer a",
+          "figure": "9:00 AM",
+          "figureLabel": "Scheduled",
+          "detail": "Stop 1 of 2 · a Palm Ln",
+          "next": "Next: Customer b at 9:00 AM",
+          "progress": 0,
+          "compact": "9:00",
+          "spoken": "Up next: Customer a at 9:00 AM. Stop 1 of 2.",
+          "access": null
+        },
+        "segments": [
+          "current",
+          "todo"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 9,
+            "checklistTotal": 9,
+            "stop_done_on": "2026-10-20"
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        "a"
+      ],
+      "result": {
+        "moment": "done",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 1,
+        "content": {
+          "headline": "Customer a done",
+          "figure": "✓",
+          "figureLabel": "Last stop",
+          "detail": "Stop 1 of 1",
+          "next": "That was the last stop today.",
+          "progress": 1,
+          "compact": "✓",
+          "spoken": "Customer a done. That was the last stop today.",
+          "access": null
+        },
+        "segments": [
+          "done"
+        ],
+        "doneCount": 1
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "stop_done_on": "2026-10-20"
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "report_sent",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "day_done",
+        "stopId": null,
+        "stop": 2,
+        "stops": 2,
+        "content": {
+          "headline": "All 2 stops done",
+          "figure": "✓",
+          "figureLabel": "Day done",
+          "detail": "",
+          "next": null,
+          "progress": 1,
+          "compact": "✓",
+          "spoken": "All 2 stops done today.",
+          "access": null
+        },
+        "segments": [
+          "done",
+          "done"
+        ],
+        "doneCount": 2
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "canceled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "day_done",
+        "stopId": null,
+        "stop": 1,
+        "stops": 1,
+        "content": {
+          "headline": "The stop is done",
+          "figure": "✓",
+          "figureLabel": "Day done",
+          "detail": "",
+          "next": null,
+          "progress": 1,
+          "compact": "✓",
+          "spoken": "All 1 stop done today.",
+          "access": null
+        },
+        "segments": [
+          "done"
+        ],
+        "doneCount": 1
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "stop_done_on": "2026-10-19"
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 2,
+        "content": {
+          "headline": "Up next: Customer a",
+          "figure": "9:00 AM",
+          "figureLabel": "Scheduled",
+          "detail": "Stop 1 of 2 · a Palm Ln",
+          "next": "Next: Customer b at 9:00 AM",
+          "progress": 0,
+          "compact": "9:00",
+          "spoken": "Up next: Customer a at 9:00 AM. Stop 1 of 2.",
+          "access": null
+        },
+        "segments": [
+          "current",
+          "todo"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "done",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": null,
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "c",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer c",
+            "address": "c Palm Ln",
+            "scheduled_start": "",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "d",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer d",
+            "address": "d Palm Ln",
+            "scheduled_start": "2026-10-20T20:15:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "b",
+        "stop": 2,
+        "stops": 4,
+        "content": {
+          "headline": "Up next: Customer b",
+          "figure": "Today",
+          "figureLabel": "",
+          "detail": "Stop 2 of 4 · b Palm Ln",
+          "next": "Next: Customer c",
+          "progress": 0.25,
+          "compact": "…",
+          "spoken": "Up next: Customer b. Stop 2 of 4.",
+          "access": null
+        },
+        "segments": [
+          "done",
+          "current",
+          "todo",
+          "todo"
+        ],
+        "doneCount": 1
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": null,
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": null,
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 2,
+        "content": {
+          "headline": "Up next: Customer a",
+          "figure": "Today",
+          "figureLabel": "",
+          "detail": "Stop 1 of 2 · a Palm Ln",
+          "next": "Next: Customer b at 9:00 AM",
+          "progress": 0,
+          "compact": "…",
+          "spoken": "Up next: Customer a. Stop 1 of 2.",
+          "access": null
+        },
+        "segments": [
+          "current",
+          "todo"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": null,
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "access": "  Side gate.\n Dog.  "
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 2,
+        "content": {
+          "headline": "Up next: Customer a",
+          "figure": "9:00 AM",
+          "figureLabel": "Scheduled",
+          "detail": "Stop 1 of 2",
+          "next": "Next: Customer b at 9:00 AM",
+          "progress": 0,
+          "compact": "9:00",
+          "spoken": "Up next: Customer a at 9:00 AM. Stop 1 of 2.",
+          "access": null
+        },
+        "segments": [
+          "current",
+          "todo"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "access": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 1,
+        "content": {
+          "headline": "Up next: Customer a",
+          "figure": "9:00 AM",
+          "figureLabel": "Scheduled",
+          "detail": "Stop 1 of 1 · a Palm Ln",
+          "next": null,
+          "progress": 0,
+          "compact": "9:00",
+          "spoken": "Up next: Customer a at 9:00 AM. Stop 1 of 1. Access: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…",
+          "access": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…"
+        },
+        "segments": [
+          "current"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "done",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "access": "Gate"
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "access": "Gate"
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        "a"
+      ],
+      "result": {
+        "moment": "done",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 2,
+        "content": {
+          "headline": "Customer a done",
+          "figure": "✓",
+          "figureLabel": "Next stop",
+          "detail": "Stop 1 of 2",
+          "next": "Next: Customer b at 9:00 AM",
+          "progress": 0.5,
+          "compact": "✓",
+          "spoken": "Customer a done. Next: Customer b at 9:00 AM.",
+          "access": null
+        },
+        "segments": [
+          "done",
+          "todo"
+        ],
+        "doneCount": 1
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "in_progress",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "access": "Gate"
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "on_site",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 1,
+        "content": {
+          "headline": "At Customer a",
+          "figure": "On site",
+          "figureLabel": "",
+          "detail": "Stop 1 of 1 · a Palm Ln",
+          "next": null,
+          "progress": 0.5,
+          "compact": "•",
+          "spoken": "At Customer a. Stop 1 of 1. Access: Gate",
+          "access": "Gate"
+        },
+        "segments": [
+          "current"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "on_my_way_at": "not a date"
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "throws": "Invalid time value"
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "not a date",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "throws": "Invalid time value"
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0,
+            "on_my_way_at": "2026-10-20T16:30:00Z",
+            "arrive_at": "2026-10-20T16:52:00Z"
+          },
+          {
+            "id": "c",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer c",
+            "address": "c Palm Ln",
+            "scheduled_start": "2026-10-21T01:30:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/Phoenix",
+        null
+      ],
+      "result": {
+        "moment": "driving",
+        "stopId": "b",
+        "stop": 2,
+        "stops": 3,
+        "content": {
+          "headline": "On the way to Customer b",
+          "figure": "9:52 AM",
+          "figureLabel": "Arriving",
+          "detail": "Stop 2 of 3 · b Palm Ln",
+          "next": "Next: Customer c at 6:30 PM",
+          "progress": 0.3333333333333333,
+          "compact": "9:52",
+          "spoken": "On the way to Customer b, arriving at 9:52 AM. Stop 2 of 3.",
+          "access": null
+        },
+        "segments": [
+          "todo",
+          "current",
+          "todo"
+        ],
+        "doneCount": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer a",
+            "address": "a Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "b",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer b",
+            "address": "b Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          },
+          {
+            "id": "c",
+            "type": "detection",
+            "status": "scheduled",
+            "customer": "Customer c",
+            "address": "c Palm Ln",
+            "scheduled_start": "2026-10-20T16:00:00Z",
+            "checklistDone": 0,
+            "checklistTotal": 0
+          }
+        ],
+        "2026-10-20",
+        "America/New_York",
+        null
+      ],
+      "result": {
+        "moment": "ahead",
+        "stopId": "a",
+        "stop": 1,
+        "stops": 3,
+        "content": {
+          "headline": "Up next: Customer a",
+          "figure": "12:00 PM",
+          "figureLabel": "Scheduled",
+          "detail": "Stop 1 of 3 · a Palm Ln",
+          "next": "Next: Customer b at 12:00 PM",
+          "progress": 0,
+          "compact": "12:00",
+          "spoken": "Up next: Customer a at 12:00 PM. Stop 1 of 3.",
+          "access": null
+        },
+        "segments": [
+          "current",
+          "todo",
+          "todo"
+        ],
+        "doneCount": 0
+      }
+    }
+  ],
+  "onTheWay": [
+    {
+      "args": [
+        {
+          "id": "a",
+          "type": "detection",
+          "status": "scheduled",
+          "customer": "Customer a",
+          "address": "a Palm Ln",
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "checklistDone": 0,
+          "checklistTotal": 0
+        },
+        "2026-10-20",
+        "America/Phoenix"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "type": "detection",
+          "status": "scheduled",
+          "customer": "Customer a",
+          "address": "a Palm Ln",
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "checklistDone": 0,
+          "checklistTotal": 0,
+          "on_my_way_at": "2026-10-20T16:30:00Z",
+          "arrive_at": "2026-10-20T16:52:00Z"
+        },
+        "2026-10-20",
+        "America/Phoenix"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "type": "detection",
+          "status": "scheduled",
+          "customer": "Customer a",
+          "address": "a Palm Ln",
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "checklistDone": 0,
+          "checklistTotal": 0,
+          "on_my_way_at": "2026-10-20T16:30:00Z",
+          "arrive_at": "2026-10-20T16:52:00Z"
+        },
+        "2026-10-21",
+        "America/Phoenix"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "type": "detection",
+          "status": "in_progress",
+          "customer": "Customer a",
+          "address": "a Palm Ln",
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "checklistDone": 0,
+          "checklistTotal": 0,
+          "on_my_way_at": "2026-10-20T16:30:00Z",
+          "arrive_at": "2026-10-20T16:52:00Z"
+        },
+        "2026-10-20",
+        "America/Phoenix"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "type": "detection",
+          "status": "scheduled",
+          "customer": "Customer a",
+          "address": "a Palm Ln",
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "checklistDone": 0,
+          "checklistTotal": 0,
+          "on_my_way_at": "2026-10-20T16:30:00Z",
+          "arrive_at": "2026-10-20T16:52:00Z",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20",
+        "America/Phoenix"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "type": "detection",
+          "status": "done",
+          "customer": "Customer a",
+          "address": "a Palm Ln",
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "checklistDone": 0,
+          "checklistTotal": 0,
+          "on_my_way_at": "2026-10-20T16:30:00Z",
+          "arrive_at": "2026-10-20T16:52:00Z"
+        },
+        "2026-10-20",
+        "America/Phoenix"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "type": "detection",
+          "status": "scheduled",
+          "customer": "Customer a",
+          "address": "a Palm Ln",
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "checklistDone": 0,
+          "checklistTotal": 0,
+          "on_my_way_at": ""
+        },
+        "2026-10-20",
+        "America/Phoenix"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "type": "detection",
+          "status": "scheduled",
+          "customer": "Customer a",
+          "address": "a Palm Ln",
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "checklistDone": 0,
+          "checklistTotal": 0,
+          "on_my_way_at": "2026-10-20T06:00:00Z"
+        },
+        "2026-10-20",
+        "America/Phoenix"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "type": "detection",
+          "status": "scheduled",
+          "customer": "Customer a",
+          "address": "a Palm Ln",
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "checklistDone": 0,
+          "checklistTotal": 0,
+          "on_my_way_at": "2026-10-20T06:00:00Z"
+        },
+        "2026-10-20",
+        "UTC"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "id": "a",
+          "type": "detection",
+          "status": "scheduled",
+          "customer": "Customer a",
+          "address": "a Palm Ln",
+          "scheduled_start": "2026-10-20T16:00:00Z",
+          "checklistDone": 0,
+          "checklistTotal": 0,
+          "on_my_way_at": "nope"
+        },
+        "2026-10-20",
+        "America/Phoenix"
+      ],
+      "throws": "Invalid time value"
+    }
+  ],
+  "heroActions": [
+    {
+      "args": [
+        "ahead",
+        true
+      ],
+      "result": {
+        "primary": "on_my_way",
+        "complete": false
+      }
+    },
+    {
+      "args": [
+        "ahead",
+        false
+      ],
+      "result": {
+        "primary": null,
+        "complete": false
+      }
+    },
+    {
+      "args": [
+        "driving",
+        true
+      ],
+      "result": {
+        "primary": "start_job",
+        "complete": false
+      }
+    },
+    {
+      "args": [
+        "driving",
+        false
+      ],
+      "result": {
+        "primary": null,
+        "complete": false
+      }
+    },
+    {
+      "args": [
+        "on_site",
+        true
+      ],
+      "result": {
+        "primary": "open_checklist",
+        "complete": true
+      }
+    },
+    {
+      "args": [
+        "on_site",
+        false
+      ],
+      "result": {
+        "primary": "open_checklist",
+        "complete": true
+      }
+    },
+    {
+      "args": [
+        "done",
+        true
+      ],
+      "result": {
+        "primary": "on_my_way",
+        "complete": false
+      }
+    },
+    {
+      "args": [
+        "done",
+        false
+      ],
+      "result": {
+        "primary": null,
+        "complete": false
+      }
+    },
+    {
+      "args": [
+        "day_done",
+        true
+      ],
+      "result": {
+        "primary": null,
+        "complete": false
+      }
+    },
+    {
+      "args": [
+        "day_done",
+        false
+      ],
+      "result": {
+        "primary": null,
+        "complete": false
+      }
+    }
+  ],
+  "HERO_ACTION_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "on_my_way": "On My Way",
+        "start_job": "Start Job",
+        "open_checklist": "Open Checklist"
+      }
+    }
+  ],
+  "heroSubtitle": [
+    {
+      "args": [
+        "Leak detection",
+        3,
+        7,
+        "ahead"
+      ],
+      "result": "Leak detection · Stop 3 of 7"
+    },
+    {
+      "args": [
+        "Maintenance",
+        1,
+        1,
+        "on_site"
+      ],
+      "result": "Maintenance · Stop 1 of 1"
+    },
+    {
+      "args": [
+        "Repair",
+        2,
+        2,
+        "done"
+      ],
+      "result": "Repair · Stop 2 of 2"
+    },
+    {
+      "args": [
+        "Pool inspection",
+        4,
+        4,
+        "day_done"
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        "",
+        1,
+        3,
+        "driving"
+      ],
+      "result": " · Stop 1 of 3"
+    }
+  ],
+  "heroDrive": [
+    {
+      "args": [
+        "ahead",
+        14
+      ],
+      "result": "14 min drive"
+    },
+    {
+      "args": [
+        "ahead",
+        1
+      ],
+      "result": "1 min drive"
+    },
+    {
+      "args": [
+        "ahead",
+        59
+      ],
+      "result": "59 min drive"
+    },
+    {
+      "args": [
+        "ahead",
+        60
+      ],
+      "result": "1 hr drive"
+    },
+    {
+      "args": [
+        "ahead",
+        75
+      ],
+      "result": "1 hr 15 min drive"
+    },
+    {
+      "args": [
+        "ahead",
+        120
+      ],
+      "result": "2 hr drive"
+    },
+    {
+      "args": [
+        "ahead",
+        185
+      ],
+      "result": "3 hr 5 min drive"
+    },
+    {
+      "args": [
+        "ahead",
+        0
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "ahead",
+        -5
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "ahead",
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "driving",
+        14
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "on_site",
+        14
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "done",
+        14
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "day_done",
+        14
+      ],
+      "result": null
+    }
+  ],
+  "heroSegmentsSpoken": [
+    {
+      "args": [
+        0,
+        1
+      ],
+      "result": "0 of 1 stop done"
+    },
+    {
+      "args": [
+        1,
+        1
+      ],
+      "result": "1 of 1 stop done"
+    },
+    {
+      "args": [
+        2,
+        7
+      ],
+      "result": "2 of 7 stops done"
+    },
+    {
+      "args": [
+        0,
+        0
+      ],
+      "result": "0 of 0 stops done"
+    }
+  ]
+}

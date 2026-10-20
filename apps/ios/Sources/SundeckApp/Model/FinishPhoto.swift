@@ -125,4 +125,22 @@ public enum StopWrites {
             complete ? markCompleteValues(type: type, day: day) : ["stop_done_on": .null])
         return nil
     }
+
+    /// On My Way, kept on the job (owner, 2026-10-20: Today's card; website `recordOnMyWay`):
+    /// when it was sent and the arrival it promised (now plus the drive, at least 5 minutes),
+    /// through the sync layer, so the website, the office and a second phone show "On the way,
+    /// arriving 9:42".
+    public static func recordOnMyWay(
+        _ sync: SyncService, companyId: String, jobId: String, driveMinutes: Int, now: Date = Date()
+    ) throws {
+        try sync.write("job", id: jobId, companyId: companyId, onMyWayValues(now: now, driveMinutes: driveMinutes))
+    }
+}
+
+/// The job's On My Way columns: sent now, arriving after the drive (at least 5 minutes).
+public func onMyWayValues(now: Date, driveMinutes: Int) -> Row {
+    [
+        "on_my_way_at": .string(isoString(now)),
+        "arrive_at": .string(isoString(now.addingTimeInterval(TimeInterval(max(5, driveMinutes) * 60)))),
+    ]
 }

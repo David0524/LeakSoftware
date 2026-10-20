@@ -5,23 +5,62 @@ import SundeckSync
 // The Live Activity for the stop a tech is on (owner, 2026-10-19; docs/plans/
 // live-activities-and-notifications.md): what it shows, worked out from the phone's own rows so
 // it updates offline. It begins by itself at the start of the workday ("Live Activity should
-// begin at the beginning of the workday") on the first stop not done, with its scheduled time;
-// On My Way turns it to the drive; Start Job, the checklist and Mark Complete change it (the
-// phase comes from the job itself); a done stop moves it on to the next one, and it ends after
-// the last. The app's ActivityKit controller sends it.
+// begin at the beginning of the workday") on the stop Today's card shows, with its scheduled
+// time; On My Way (kept on the job) turns it to the drive; Start Job, the checklist and Mark
+// Complete change it; a done stop moves it on to the next one, and it ends after the last. Which
+// stop, and what it says, is core `todayHero` (owner, 2026-10-20), so the Lock Screen and the
+// card always agree. The app's ActivityKit controller sends it.
 
-/// The stop the activity is for, kept while it runs: the job, and the arrival time On My Way
-/// gave (a time of day; nothing counts down). No arrival time: not on the way yet.
+/// The stop the activity is for, kept while it runs: the job. Which stop and how far along it
+/// is come from the shared rule (`todayHero`, owner 2026-10-20), so the Lock Screen and Today's
+/// card always pick the same stop; On My Way is read from the job (`on_my_way_at`, `arrive_at`).
+/// `eta` is kept for activities started before the job recorded it.
 public struct LiveStopTarget: Codable, Equatable, Sendable {
     public var jobId: String
     public var eta: String?
     /// The shop's local date it's for ("2026-10-20").
     public var day: String?
 
-    public init(jobId: String, eta: String?, day: String? = nil) {
+    public init(jobId: String, eta: String? = nil, day: String? = nil) {
         self.jobId = jobId
         self.eta = eta
         self.day = day
+    }
+}
+
+/// How far a job's checklist is, as the Live Activity counts it: answered items of all, and for
+/// a pool inspection only the questions its gates leave open (2026-10-20). Website
+/// `checklistCount`.
+@MainActor
+public func checklistCount(_ store: LocalStore, companyId: String, job: ScheduleJob) -> (done: Int, total: Int) {
+    let inspection = JobInspection(store, jobId: job.id)
+    if job.type == .inspection {
+        let progress = InspectionChecklist(
+            config: InspectionConfig(store, companyId: companyId), inspection: inspection
+        )
+        .progress
+        return (progress.total - progress.toDo, progress.total)
+    }
+    let tally = checklistTally(inspection.components, inspection.results)
+    let total = tally.pass + tally.attention + tally.leaking + tally.notApplicable + tally.pending
+    return (total - tally.pending, total)
+}
+
+/// A day's stops as the card and the Live Activity read them (core `HeroStop`). Only started
+/// jobs need their checklist counted (the figure shows it at the pool).
+@MainActor
+public func dayHeroStops(_ store: LocalStore, companyId: String, stops: [ScheduleJob], counted: String? = nil)
+    -> [HeroStop]
+{
+    stops.map { job in
+        let count =
+            job.status == .inProgress || job.id == counted
+            ? checklistCount(store, companyId: companyId, job: job) : (done: 0, total: 0)
+        return HeroStop(
+            id: job.id, type: job.type.rawValue, status: job.status.rawValue, stopDoneOn: job.stopDoneOn,
+            scheduledStart: job.scheduledStart, onMyWayAt: job.onMyWayAt, arriveAt: job.arriveAt,
+            customer: job.customerName, address: job.address.isEmpty ? nil : job.address, access: job.accessNotes,
+            checklistDone: count.done, checklistTotal: count.total)
     }
 }
 
@@ -30,14 +69,21 @@ public struct LiveStopTarget: Codable, Equatable, Sendable {
 /// stop not done).
 public struct LiveStopDay: Sendable {
     public var today: String
+    public var timeZone: String = "UTC"
     public var stops: [ScheduleJob]
+    public var heroStops: [HeroStop] = []
     public var runs: Bool
 
-    /// The first stop not done today, or the first one after `jobId` that isn't.
-    public func open(after jobId: String? = nil) -> ScheduleJob? {
-        let start = jobId.flatMap { id in stops.firstIndex { $0.id == id }.map { $0 + 1 } } ?? 0
-        return stops.dropFirst(start).first { !$0.doneOn(today) }
-            ?? (jobId == nil ? nil : stops.first { $0.id != jobId && !$0.doneOn(today) })
+    /// The card for the day (core `todayHero`), with `justDone` shown done for its minute.
+    public func hero(justDone: String? = nil) -> TodayHero? {
+        try? todayHero(stops: heroStops, today: today, timeZone: timeZone, justDone: justDone)
+    }
+
+    /// The stop the day is on (Today's card's): the one on the way, else one started, else the
+    /// first not done; nil when every stop is done.
+    public func open() -> ScheduleJob? {
+        guard let id = hero()?.stopId else { return nil }
+        return stops.first { $0.id == id }
     }
 }
 
@@ -52,7 +98,8 @@ public func liveStopDay(
     let stops = routes[routeKey(userId, ctx.today)]?.jobs ?? []
     let left = stops.filter { !$0.doneOn(ctx.today) }.count
     return LiveStopDay(
-        today: ctx.today, stops: stops,
+        today: ctx.today, timeZone: ctx.timeZone, stops: stops,
+        heroStops: dayHeroStops(store, companyId: company.id, stops: stops),
         runs: liveStopRuns(settings: company.settings, date: ctx.today, nowMin: ctx.nowMin, stopsLeft: left))
 }
 
@@ -61,10 +108,11 @@ public func liveStopETA(now: Date, timeZone: String, driveMinutes: Int) -> Strin
     minutesLabel(localMinutes(now, timeZone: timeZone) + max(5, driveMinutes))
 }
 
-/// What the activity shows for a stop now (`LiveStopInput`), or nil when the job isn't on this
-/// phone. The phase follows the job: done for today (Mark Complete, Complete Job), in progress
-/// (Start Job), on the way once On My Way gave an arrival time, else ahead at its scheduled time. Stop n of m and the next stop come from the tech's route
-/// today; a job off today's route is stop 1 of 1.
+/// What the activity shows for its stop now (`LiveStopInput`), from the shared rule
+/// (`todayHero`) over the route the job is on: the same stop, words and figure as Today's card.
+/// A job done for today shows done (with the next stop) for its minute. Nil when the job isn't on
+/// this phone, or when the day has moved on to another stop (the controller then shows that
+/// one). A job off today's route is stop 1 of 1.
 @MainActor
 public func liveStopInput(
     _ store: LocalStore, kv: KeyValue, company: CompanyContext, userId: String, target: LiveStopTarget,
@@ -79,32 +127,13 @@ public func liveStopInput(
         routes.values.first { r in r.techId == (job.assignedUserId ?? userId) && r.jobs.contains { $0.id == job.id } }
         ?? routes.values.first { r in r.jobs.contains { $0.id == job.id } }
     let stops = route?.jobs ?? [job]
-    let index = stops.firstIndex { $0.id == job.id } ?? 0
-    let next = stops.dropFirst(index + 1).first { !$0.doneOn(ctx.today) }
-    let inspection = JobInspection(store, jobId: job.id)
-    let tally = checklistTally(inspection.components, inspection.results)
-    var total = tally.pass + tally.attention + tally.leaking + tally.notApplicable + tally.pending
-    var toDo = tally.pending
-    // A pool inspection counts only the questions its gates leave open (2026-10-20).
-    if job.type == .inspection {
-        let progress = InspectionChecklist(
-            config: InspectionConfig(store, companyId: company.id), inspection: inspection
-        ).progress
-        (total, toDo) = (progress.total, progress.toDo)
-    }
-    let phase: LiveStopPhase =
-        job.doneOn(ctx.today)
-        ? .done : job.status == .inProgress ? .onSite : target.eta != nil ? .driving : .ahead
-    let scheduled = formatTime(job.scheduledStart, timeZone: ctx.timeZone)
-    return LiveStopInput(
-        phase: phase, customer: job.customerName, address: job.address.isEmpty ? nil : job.address,
-        stop: index + 1, stops: stops.count, eta: phase == .driving ? target.eta : nil,
-        scheduled: phase == .ahead && !scheduled.isEmpty ? scheduled : nil,
-        checklistDone: total - toDo, checklistTotal: total,
-        next: next.map {
-            let time = formatTime($0.scheduledStart, timeZone: ctx.timeZone)
-            return LiveStopNext(customer: $0.customerName, time: time.isEmpty ? nil : time)
-        }, access: job.accessNotes)
+    let hero = try? todayHero(
+        stops: dayHeroStops(store, companyId: company.id, stops: stops, counted: job.id), today: ctx.today,
+        timeZone: ctx.timeZone, justDone: job.doneOn(ctx.today) ? job.id : nil)
+    guard let hero, hero.stopId == job.id, var input = hero.input else { return nil }
+    // On the way from an activity started before the job kept its arrival time.
+    if input.phase == .driving && (input.eta ?? "").isEmpty { input.eta = target.eta }
+    return input
 }
 
 /// How long the activity stays on the Lock Screen after the stop is done.

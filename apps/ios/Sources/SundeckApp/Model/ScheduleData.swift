@@ -109,6 +109,9 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
     public var planDate: String?
     /// Today's Mark Complete on a leak or repair job: the shop-local day its stop was done.
     public var stopDoneOn: String?
+    /// On My Way: when it was sent, and the arrival it promised (synced, owner 2026-10-20).
+    public var onMyWayAt: String?
+    public var arriveAt: String?
     /// Its pool has an address with no map location for it (core `mapStatus` "missing"), shown as
     /// "Not on map" once the server looks addresses up (`MapLookups`).
     public var mapMissing = false
@@ -117,6 +120,8 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
         let j = v.job
         stopDoneOn = j["stop_done_on"]?.string.map { String($0.prefix(10)) }
         servicePlanId = j["service_plan_id"]?.string
+        onMyWayAt = j["on_my_way_at"]?.string
+        arriveAt = j["arrive_at"]?.string
         planDate = j["plan_date"]?.string
         id = v.id
         number = v.number

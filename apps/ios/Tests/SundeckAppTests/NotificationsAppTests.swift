@@ -138,7 +138,24 @@ import Testing
     @Test func liveStopFollowsTheJob() throws {
         let s = try ScheduleDataTests()
         let first = s.id(2)  // Grace Holloway, 9:00 AM, then Riley Rivera at 11:00 AM.
-        let target = LiveStopTarget(jobId: first, eta: "8:25 AM")
+        let target = LiveStopTarget(jobId: first, eta: nil)
+        // Before On My Way: up next, at its scheduled time.
+        let before = try #require(
+            liveStopInput(
+                s.sync.store, kv: s.sync.kv, company: s.company, userId: ScheduleDataTests.me, target: target,
+                now: ScheduleDataTests.now))
+        #expect(before.phase == .ahead && before.scheduled == "9:00 AM")
+        // On My Way is kept on the job (owner, 2026-10-20), through the sync layer, so a second
+        // phone sees it too: sent now, arriving after the drive (at least 5 minutes).
+        try StopWrites.recordOnMyWay(
+            s.sync, companyId: ScheduleDataTests.company, jobId: first, driveMinutes: 25, now: ScheduleDataTests.now)
+        let row = try #require(try s.sync.store.get("job", first))
+        #expect(row["on_my_way_at"]?.string == "2026-10-20T15:00:00.000Z")
+        #expect(row["arrive_at"]?.string == "2026-10-20T15:25:00.000Z")
+        #expect(try s.sync.store.pendingCount() > 0)
+        #expect(
+            onMyWayValues(now: ScheduleDataTests.now, driveMinutes: 2)["arrive_at"]?.string
+                == "2026-10-20T15:05:00.000Z")
         let driving = try #require(
             liveStopInput(
                 s.sync.store, kv: s.sync.kv, company: s.company, userId: ScheduleDataTests.me, target: target,
@@ -205,9 +222,20 @@ import Testing
         #expect(day.today == "2026-10-20" && day.runs)
         #expect(day.stops.map(\.id) == [s.id(2), s.id(1)])
         #expect(day.open()?.id == s.id(2))
-        #expect(day.open(after: s.id(2))?.id == s.id(1))
-        // After the last stop, one skipped earlier is next.
-        #expect(day.open(after: s.id(1))?.id == s.id(2))
+        #expect(day.hero()?.moment == .ahead && day.hero()?.stop == 1)
+        // On My Way to the second stop: the day is on it (Today's card agrees: `todayHero`).
+        try StopWrites.recordOnMyWay(
+            s.sync, companyId: ScheduleDataTests.company, jobId: s.id(1), driveMinutes: 10, now: ScheduleDataTests.now)
+        let driving = liveStopDay(
+            s.sync.store, kv: s.sync.kv, company: s.company, userId: me, now: ScheduleDataTests.now)
+        #expect(driving.open()?.id == s.id(1) && driving.hero()?.moment == .driving)
+        #expect(driving.hero()?.content.figure == "8:10 AM")
+        // The first stop done: shown done for its minute, then the next stop.
+        try setStatus(s, s.id(2), "completed")
+        let moved = liveStopDay(s.sync.store, kv: s.sync.kv, company: s.company, userId: me, now: ScheduleDataTests.now)
+        #expect(moved.hero(justDone: s.id(2))?.moment == .done)
+        #expect(moved.hero(justDone: s.id(2))?.content.next == "Next: Riley Rivera at 11:00 AM")
+        #expect(moved.open()?.id == s.id(1))
         // Before the day starts: not yet.
         let early = liveStopDay(
             s.sync.store, kv: s.sync.kv, company: s.company, userId: me,
@@ -217,7 +245,7 @@ import Testing
         try setStatus(s, s.id(2), "completed")
         try setStatus(s, s.id(1), "completed")
         let after = liveStopDay(s.sync.store, kv: s.sync.kv, company: s.company, userId: me, now: ScheduleDataTests.now)
-        #expect(!after.runs && after.open() == nil && after.open(after: s.id(2)) == nil)
+        #expect(!after.runs && after.open() == nil && after.hero()?.moment == .dayDone)
         // Sam has no stops today.
         #expect(
             !liveStopDay(
