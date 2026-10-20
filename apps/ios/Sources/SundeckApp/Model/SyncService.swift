@@ -22,6 +22,9 @@ public struct SyncStatus: Equatable, Sendable {
     public var uploadsAllPhotos = true
     public var lastUploadError: String?
     public var storageLow = false
+    /// Since when changes or files have waited without a break, or nil when nothing waits. The
+    /// sync bar says so only after `syncNoteDelay` of it (`syncBarStatus`).
+    public var waitingSince: Date?
 
     public init() {}
 }
@@ -35,6 +38,8 @@ public final class SyncService {
     public private(set) var status = SyncStatus()
     /// Changes whenever local data changes (a write, a pull, a sign-out), so screens re-read.
     public private(set) var revision = 0
+    /// Bumped when a held-back "waiting" note comes due, so the sync bar looks again.
+    private var noteTick = 0
     public let store: LocalStore
     public let kv: KeyValue
 
@@ -50,6 +55,7 @@ public final class SyncService {
     @ObservationIgnored private var online = true
     @ObservationIgnored private var timer: Task<Void, Never>?
     @ObservationIgnored private var soon: Task<Void, Never>?
+    @ObservationIgnored private var noteTimer: Task<Void, Never>?
     /// Runs after each successful sync (teammates' names).
     @ObservationIgnored public var afterSync: (@MainActor () async -> Void)?
     /// Runs for each voice note whose file just uploaded (asks the server for a transcript).
@@ -294,6 +300,27 @@ public final class SyncService {
         }
     }
 
+    /// What the sync bar shows now: waiting changes and files only once they've waited 8
+    /// seconds (owner, 2026-10-20). `status` is the real state (More › Sync).
+    public var barStatus: SyncStatus {
+        _ = noteTick
+        return syncBarStatus(status, now: now())
+    }
+
+    /// Keeps `waitingSince` and looks again when a held-back note comes due.
+    private func updateWaiting() {
+        let since = waitingSince(status, previous: status.waitingSince, now: now())
+        if status.waitingSince != since { status.waitingSince = since }
+        noteTimer?.cancel()
+        guard let due = syncNoteDueAt(status, now: now()) else { return }
+        let delay = max(0, due.timeIntervalSince(now()))
+        noteTimer = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(delay))
+            guard !Task.isCancelled else { return }
+            self?.noteTick += 1
+        }
+    }
+
     private func refreshCounts() {
         status.pending = (try? store.pendingCount()) ?? 0
         status.problems = (try? store.problems().count) ?? 0
@@ -308,6 +335,7 @@ public final class SyncService {
         status.uploadsWaiting = rows.count
         status.uploadsAllPhotos = rows.allSatisfy { sqlText($0["kind"]) == "photo" }
         status.lastUploadError = rows.lazy.compactMap { sqlText($0["last_error"]) }.first
+        updateWaiting()
     }
 }
 

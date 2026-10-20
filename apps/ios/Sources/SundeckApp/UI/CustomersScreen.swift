@@ -231,10 +231,22 @@
                 Button {
                     editingPool = pool
                 } label: {
-                    ListRow(
-                        title: pool.address.isEmpty ? "Address" : pool.address, detail: pool.detail, emphasized: true
-                    ) {
-                        Text("Edit").textRole(.body).foregroundStyle(Color.link)
+                    VStack(alignment: .leading, spacing: 0) {
+                        ListRow(
+                            title: pool.address.isEmpty ? "Address" : pool.address, detail: pool.detail,
+                            emphasized: true
+                        ) {
+                            Text("Edit").textRole(.body).foregroundStyle(Color.link)
+                        }
+                        // Its address wasn't found on the map (owner, 2026-10-20).
+                        if propertyMapStatus(pool.row, routing: MapLookups.on(sync, companyId: session.company?.id))
+                            == .missing
+                        {
+                            NotOnMapTag()
+                                .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                                .padding(.top, -4)
+                                .padding(.bottom, CGFloat(Spacing.rowVertical))
+                        }
                     }
                 }
                 .buttonStyle(.row)
@@ -405,6 +417,9 @@
         @Environment(AppEnvironment.self) private var app
         @Environment(\.dismiss) private var dismiss
         @State private var street = ""
+        /// Address suggestions under Street (owner, 2026-10-20).
+        @State private var suggester = AddressSuggester()
+        @State private var streetFocused = false
         @State private var unit = ""
         @State private var city = ""
         @State private var state = ""
@@ -421,7 +436,17 @@
         var body: some View {
             FormSheet(title: "Pool Details", dirty: !original.isEmpty && current != original) {
                 Grouped {
-                    LabeledFieldRow(label: "Street", text: $street, contentType: .streetAddressLine1)
+                    LabeledFieldRow(
+                        label: "Street", text: $street, contentType: .streetAddressLine1,
+                        onFocusChange: { streetFocused = $0 }
+                    )
+                    .addressLookup(suggester, text: street, focused: streetFocused)
+                    AddressSuggestionRows(suggester: suggester) { s in
+                        street = s.line1
+                        city = s.city
+                        state = s.state
+                        zip = s.postalCode
+                    }
                     LabeledFieldRow(label: "Unit", text: $unit, placeholder: "Optional")
                     LabeledFieldRow(label: "City", text: $city, contentType: .addressCity)
                     LabeledFieldRow(label: "State", text: $state, contentType: .addressState)

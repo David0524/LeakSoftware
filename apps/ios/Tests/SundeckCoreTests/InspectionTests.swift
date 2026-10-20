@@ -14,7 +14,8 @@ import Testing
             "validateNewJob", "formatAddress", "newJobRecords", "localDate", "groupJobs", "formatSchedule",
             "propertyLocation", "nativeMapsUrl", "instanceLabel", "FINDING_STATUS_LABELS", "verdictLabel",
             "verdictOptions", "currentVerdict", "verdictValues", "checklistSectionSummary", "markRemainingLabel",
-            "SPA_SIZES", "SPA_SHAPES", "mirrorPath", "parseDiagramLayout", "removeItemConfirm", "LANDMARKS",
+            "SPA_SIZES", "SPA_SHAPES", "mirrorPath", "offsetPath", "centerLayout", "POOL_CENTER_OFFSET",
+            "parseDiagramLayout", "removeItemConfirm", "LANDMARKS",
             "DRAWING_MAX",
             "LANDMARKS_MAX", "LANDMARK_SIZE", "LANDMARK_MIN", "LANDMARK_MAX", "LINE_SNAP_DEGREES", "clampLandmarkSize",
             "SPA_R_MIN", "SPA_R_MAX", "CLEARED_DIAGRAM", "isDiagramShape",
@@ -114,6 +115,9 @@ import Testing
                 try c.arg(2, as: DiagramLayout?.self))
         }
         checkRule(module, "mirrorPath") { c in mirrorPath(try c.arg(0)) }
+        checkRule(module, "POOL_CENTER_OFFSET") { _ in poolCenterOffset }
+        checkRule(module, "offsetPath") { c in offsetPath(try c.arg(0), try c.arg(1)) }
+        checkRule(module, "centerLayout") { c in centerLayout(try c.arg(0, as: DiagramLayout.self)) }
         checkRule(module, "parseDiagramLayout") { c in parseDiagramLayout(try c.arg(0, as: JSONValue?.self)) }
     }
 

@@ -9,7 +9,8 @@ import Testing
     @Test func everyRuleIsChecked() {
         let checked: Set<String> = [
             "formatCents", "parseDollars", "uuidv7TimePrefix", "userTransitions", "JOB_STATUS_LABELS", "toE164",
-            "formatPhone", "companyServices", "offersPool", "newJobTypes", "seesAllJobs", "canMakeJobs", "roleLabel",
+            "formatPhone", "formatPhoneTyping", "phoneCaret", "todayUndo", "jobReschedulable", "companyServices",
+            "offersPool", "newJobTypes", "seesAllJobs", "canMakeJobs", "roleLabel",
             "isManagerRole", "splitEmails", "POOL_TYPE_LABELS", "jobOnPhones", "requiresFinishPhoto",
             "FINISH_PHOTO_MESSAGE", "REPAIR_ITEM_KEY", "REPAIR_ITEM_LABEL", "jobActionLabel", "jobFeeLabel",
             "parseGallons", "requiresFinishedChecklist", "FINISH_CHECKLIST_MESSAGE", "completeJobBlocker",
@@ -76,6 +77,8 @@ import Testing
     @Test func phones() {
         checkRule(module, "toE164") { c in toE164(try c.arg(0, as: String?.self)) }
         checkRule(module, "formatPhone") { c in formatPhone(try c.arg(0)) }
+        checkRule(module, "formatPhoneTyping") { c in formatPhoneTyping(try c.arg(0)) }
+        checkRule(module, "phoneCaret") { c in phoneCaret(try c.arg(0), try c.arg(1)) }
     }
 
     @Test func servicesAndRoles() {
@@ -99,6 +102,16 @@ import Testing
         }
         checkRule(module, "markCompleteValues") { c in
             markCompleteValues(type: try c.arg(0, as: JSONValue.self)["type"]?.string ?? "", day: try c.arg(1))
+        }
+        checkRule(module, "jobReschedulable") { c in
+            let job = try c.arg(0, as: JSONValue.self)
+            return jobReschedulable(type: job["type"]?.string ?? "", status: job["status"]?.string ?? "")
+        }
+        checkRule(module, "todayUndo") { c in
+            let job = try c.arg(0, as: JSONValue.self)
+            return todayUndo(
+                type: job["type"]?.string ?? "", status: job["status"]?.string ?? "",
+                stopDoneOn: job["stop_done_on"]?.string, day: try c.arg(1))
         }
         checkRule(module, "jobHasWrapUp") { c in jobHasWrapUp(try c.arg(0, as: String?.self)) }
         checkRule(module, "REPAIR_ITEM_KEY") { _ in repairItemKey }

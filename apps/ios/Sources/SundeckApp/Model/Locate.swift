@@ -62,8 +62,11 @@ public final class LocateQueue {
         for request in pending {
             do {
                 _ = try await api.post("api/locate", request.body)
+                MapLookups.answered(kv, status: 200)
             } catch let failure as WebAPI.Failure where failure.offline {
                 return
+            } catch let failure as WebAPI.Failure {
+                MapLookups.answered(kv, status: failure.status)
             } catch {}
             kv.setJSON(Self.key, pending.filter { $0 != request })
         }
@@ -81,4 +84,39 @@ extension CustomerWrites {
         try sync.write("property", id: propertyId, companyId: companyId, row)
         if moved { locate?.add(LocateRequest(companyId: companyId, propertyId: propertyId)) }
     }
+}
+
+// MARK: - Not found on the map (owner, 2026-10-20: "we need an indicator for when address
+// doesn't register")
+
+/// Whether the server looks addresses up (the website's `routingConfigured`, which the phone
+/// can't see): on when the shop has a map location, or once /api/locate answered with anything
+/// but 503 ("Address lookup isn't set up"). Until then the warnings stay hidden.
+public enum MapLookups {
+    static let key = "routing:lookups"
+
+    /// Remembers what /api/locate said: 503 means lookups aren't set up.
+    public static func answered(_ kv: KeyValue, status: Int) {
+        guard status != 0 else { return }
+        kv.set(key, status == 503 ? "off" : "on")
+    }
+
+    public static func on(_ kv: KeyValue, company: Row?) -> Bool {
+        if kv.get(key) == "off" { return false }
+        if company?["latitude"]?.number != nil && company?["longitude"]?.number != nil { return true }
+        return kv.get(key) == "on"
+    }
+
+    /// For the signed-in shop.
+    @MainActor
+    public static func on(_ sync: SyncService, companyId: String?) -> Bool {
+        on(sync.kv, company: companyId.flatMap { try? sync.store.get("company", $0) })
+    }
+}
+
+/// `mapStatus` for a synced pool row: found, missing (an address with no map location for it),
+/// or nil (no address, or lookups not set up).
+public func propertyMapStatus(_ row: Row?, routing: Bool) -> MapStatus? {
+    guard let row, let p = decodeProperty(row) else { return nil }
+    return mapStatus(p, geocodedAddress: row["geocoded_address"]?.string, routing: routing)
 }

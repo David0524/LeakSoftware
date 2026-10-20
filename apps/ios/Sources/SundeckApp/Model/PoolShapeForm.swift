@@ -79,11 +79,12 @@ public struct PoolShapeForm: Equatable, Sendable {
     /// VoiceOver's name for a selected landmark's delete action: "Delete Tree".
     public static func deleteTitle(_ kind: LandmarkKind) -> String { "Delete \(kind.label)" }
 
-    /// The form for a property as it is now.
+    /// The form for a property as it is now, opened on the centered pool with what's placed on
+    /// it moved along (owner, 2026-10-20; core `centerLayout`).
     public init(property: Row?) {
         shape = diagramShape(of: property)
         hasSpa = property?["has_spa"]?.bool ?? false
-        let layout = diagramLayout(of: property)
+        let layout = centerLayout(diagramLayout(of: property))
         mirror = layout.mirror == true
         spa = layout.spa.map {
             PlacedSpa(
@@ -99,16 +100,16 @@ public struct PoolShapeForm: Equatable, Sendable {
     public var spaNow: PlacedSpa? {
         guard hasSpa else { return nil }
         if let spa { return spa }
-        return poolDiagram(shape, true, DiagramLayout(mirror: mirror ? true : nil)).spa.map {
+        return poolDiagram(shape, true, DiagramLayout(mirror: mirror ? true : nil, centered: true)).spa.map {
             PlacedSpa(x: $0.cx / 160, y: $0.cy / 100, r: $0.r, shape: .round)
         }
     }
 
-    /// The layout Save writes (the website's `next`): the spa only once it was moved, reshaped
-    /// or resized, so an untouched one stays the old corner drawing.
+    /// The layout Save writes (the website's `next`): always centered, and the spa only once it
+    /// was moved, reshaped or resized, so an untouched one stays the corner drawing.
     public var layout: DiagramLayout {
         DiagramLayout(
-            mirror: mirror ? true : nil,
+            mirror: mirror ? true : nil, centered: true,
             spa: hasSpa
                 ? spa.map { .init(x: $0.x, y: $0.y, size: spaSizeFor($0.r), shape: $0.shape, r: $0.r) } : nil,
             drawing: drawing.isEmpty ? nil : drawing, landmarks: landmarks.isEmpty ? nil : landmarks)
@@ -269,11 +270,12 @@ public struct PoolShapeForm: Equatable, Sendable {
         .compactMap { $0 }.joined(separator: ", ")
     }
 
-    /// `property.diagram_layout` as the website writes it (`parseDiagramLayout` of `next`), or
-    /// null when it's the plain drawing.
+    /// `property.diagram_layout` as the website writes it (`parseDiagramLayout` of `next`):
+    /// always centered (owner, 2026-10-20).
     public var layoutJSON: JSONValue {
         let l = layout
         var object: [String: JSONValue] = [:]
+        if l.centered == true { object["centered"] = .bool(true) }
         if l.mirror == true { object["mirror"] = .bool(true) }
         if let spa = l.spa {
             object["spa"] = .object([

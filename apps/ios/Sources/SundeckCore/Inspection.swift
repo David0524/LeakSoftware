@@ -763,14 +763,23 @@ public struct DiagramLayout: Codable, Equatable, Sendable {
 
     /// True or absent (TypeScript leaves the key out unless it's true).
     public var mirror: Bool?
+    /// The pool is drawn in the middle of the diagram (owner, 2026-10-20: "Pool shapes are not
+    /// centered"). Pools saved before sat 10 units left, to leave room for the spa; their spa,
+    /// landmarks, drawing and finding pins were placed against that, so they keep it until the
+    /// shape is saved again (`centerLayout`). True or absent.
+    public var centered: Bool?
     public var spa: Spa?
     /// Lines, circles, and freehand strokes drawn on the diagram (Draw), 0..1 of it.
     public var drawing: [DrawnShape]?
     /// Trees, rocks, a waterfall, and so on, placed around the pool (Landmarks).
     public var landmarks: [Landmark]?
 
-    public init(mirror: Bool? = nil, spa: Spa? = nil, drawing: [DrawnShape]? = nil, landmarks: [Landmark]? = nil) {
+    public init(
+        mirror: Bool? = nil, centered: Bool? = nil, spa: Spa? = nil, drawing: [DrawnShape]? = nil,
+        landmarks: [Landmark]? = nil
+    ) {
         self.mirror = mirror
+        self.centered = centered
         self.spa = spa
         self.drawing = drawing
         self.landmarks = landmarks
@@ -998,8 +1007,10 @@ public struct PoolDiagram: Codable, Equatable, Sendable {
 
 private let diagramWidth = 160.0
 private let diagramHeight = 100.0
-/// Pools are drawn in x 8..132; mirroring flips them about the middle of that.
+/// The paths are drawn in x 8..132; mirroring flips them about the middle of that.
 private let mirrorAxis = 140.0
+/// How far right a centered pool is drawn: x 18..142, the middle of the 160-wide diagram.
+public let poolCenterOffset = 10.0
 
 /// The tokens of `/[A-Za-z]|-?\d*\.?\d+/g` in order; anything else is skipped.
 private func pathTokens(_ path: String) -> [String] {
@@ -1058,11 +1069,61 @@ public func mirrorPath(_ path: String) -> String {
     return out.joined(separator: " ")
 }
 
+/// Moves a pool path right by dx (absolute M, L, H, V, Q, C, and Z only, as `mirrorPath`).
+public func offsetPath(_ path: String, _ dx: Double) -> String {
+    if dx == 0 || dx.isNaN || path.isEmpty { return path }
+    var out: [String] = []
+    var command = ""
+    var index = 0
+    for token in pathTokens(path) {
+        if let first = token.unicodeScalars.first, ("A"..."Z").contains(first) || ("a"..."z").contains(first) {
+            command = token
+            index = 0
+            out.append(token)
+            continue
+        }
+        let n = ECMA.number(token)
+        let isX = command == "H" || (command != "V" && index % 2 == 0)
+        out.append(ECMA.numberString(isX ? n + dx : n))
+        index += 1
+    }
+    return out.joined(separator: " ")
+}
+
+/// A layout moved to the centered pool: the spa, landmarks and drawing move right with it, so
+/// they stay where they were against the outline. The shape editor opens with this, and saves
+/// it.
+public func centerLayout(_ layout: DiagramLayout) -> DiagramLayout {
+    if layout.centered == true { return layout }
+    let dx = poolCenterOffset / diagramWidth
+    func x(_ v: Double) -> Double { ECMA.round(min(1, max(0, v + dx)) * 10_000) / 10_000 }
+    var out = layout
+    out.centered = true
+    if var spa = layout.spa {
+        spa.x = x(spa.x)
+        out.spa = spa
+    }
+    out.landmarks = layout.landmarks?.map { l in
+        var l = l
+        l.x = x(l.x)
+        return l
+    }
+    out.drawing = layout.drawing?.map { d in
+        switch d {
+        case .line(let x1, let y1, let x2, let y2): .line(x1: x(x1), y1: y1, x2: x(x2), y2: y2)
+        case .circle(let cx, let cy, let rx, let ry): .circle(cx: x(cx), cy: cy, rx: rx, ry: ry)
+        case .pen(let points): .pen(points: points.map { p in p.count >= 2 ? [x(p[0]), p[1]] : p })
+        }
+    }
+    return out
+}
+
 /// Read a layout from a synced row. Anything unrecognized is dropped, never thrown.
 public func parseDiagramLayout(_ value: JSONValue?) -> DiagramLayout {
     guard let value else { return DiagramLayout() }
     var layout = DiagramLayout()
     if value["mirror"] == .bool(true) { layout.mirror = true }
+    if value["centered"] == .bool(true) { layout.centered = true }
     func unit(_ v: JSONValue?) -> Double? {
         if case .number(let n) = v, n >= 0, n <= 1 { return n }
         return nil
@@ -1227,10 +1288,12 @@ public let clearedDiagram: (shape: DiagramShape, hasSpa: Bool, layout: DiagramLa
 public func poolDiagram(_ shape: DiagramShape?, _ hasSpa: Bool, _ layout: DiagramLayout? = nil) -> PoolDiagram {
     let path = (shape ?? .rectangle).path
     let mirror = layout?.mirror == true
+    let dx = layout?.centered == true ? poolCenterOffset : 0
     let placed = layout?.spa
     let r = placed?.r ?? (placed?.size ?? .medium).r
     return PoolDiagram(
-        width: diagramWidth, height: diagramHeight, pool: mirror && !path.isEmpty ? mirrorPath(path) : path,
+        width: diagramWidth, height: diagramHeight,
+        pool: offsetPath(mirror && !path.isEmpty ? mirrorPath(path) : path, dx),
         spa: hasSpa
             ? .init(
                 cx: placed.map { $0.x * diagramWidth } ?? (mirror ? diagramWidth - 145 : 145),

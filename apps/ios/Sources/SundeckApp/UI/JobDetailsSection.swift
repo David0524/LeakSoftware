@@ -261,6 +261,11 @@
                 }
                 .buttonStyle(.row)
                 .accessibilityHint("Opens directions")
+                if propertyMapStatus(job.property, routing: MapLookups.on(sync, companyId: session.company?.id))
+                    == .missing
+                {
+                    NotOnMapRow()
+                }
                 if let access = details.accessNotes {
                     StackedRow(caption: "Access", value: access)
                 }

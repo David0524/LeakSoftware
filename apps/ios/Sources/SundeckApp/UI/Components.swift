@@ -437,7 +437,7 @@
 
         var body: some View {
             VStack(spacing: 0) {
-                if let message = syncBarMessage(sync.status) {
+                if let message = syncBarMessage(sync.barStatus) {
                     SyncBar(message: message) {
                         if let open { open() } else { openRoute(.sync) }
                     }
@@ -446,7 +446,7 @@
                 }
             }
             // Slides away once everything is sent.
-            .animation(Motion.smooth, value: syncBarMessage(sync.status) == nil)
+            .animation(Motion.smooth, value: syncBarMessage(sync.barStatus) == nil)
         }
     }
 

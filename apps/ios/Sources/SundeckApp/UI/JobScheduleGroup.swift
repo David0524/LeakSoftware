@@ -5,7 +5,8 @@
 
     /// Job › Details › Schedule (spec 5.4; the website's `JobSchedule`): the tech and time, whether
     /// the time was promised, then Schedule Job / Change Schedule (the Schedule tab's Move sheet)
-    /// and Suggest Times. Shown for repair jobs and jobs not yet started.
+    /// and Suggest Times. Shown until the job's work is done, started jobs included (owner,
+    /// 2026-10-20: core `jobReschedulable`); repairs always.
     struct JobScheduleGroup: View {
         var job: JobView
         @Environment(Session.self) private var session
@@ -18,12 +19,15 @@
         @State private var result: (text: String, failed: Bool)?
 
         static func shows(_ job: JobView) -> Bool {
-            job.type == .repair || job.status == .scheduled || job.status == .unscheduled
+            jobReschedulable(type: job.type.rawValue, status: job.status.rawValue)
         }
 
         var body: some View {
             VStack(alignment: .leading, spacing: 8) {
-                if let board, let item = board.jobs.first(where: { $0.id == job.id }) {
+                // The job as the schedule sees it; one not on any board yet (no time, nobody) is
+                // read from the job itself, so it still gets Schedule Job.
+                if let board {
+                    let item = board.jobs.first(where: { $0.id == job.id }) ?? ScheduleJob(job)
                     Grouped(label: "Schedule") {
                         ListRow(
                             "Tech",

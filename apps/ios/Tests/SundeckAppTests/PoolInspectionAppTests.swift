@@ -130,7 +130,7 @@ import Testing
 
     @Test func newJobOffersPoolInspectionWithItsPriceAndQuestions() throws {
         let f = form()
-        #expect(f.jobTypes.map(\.label) == ["Leak Detection", "Pool Inspection", "Repair"])
+        #expect(f.jobTypes.map(\.label) == ["Repair", "Leak", "Inspection"])
         #expect(f.questions.map(\.key) == ["reason"])
         f.setAnswer("reason", "Leaking")
         f.jobType = .inspection
@@ -170,7 +170,7 @@ import Testing
         #expect(!form(services: "pool").jobTypes.contains { $0.value == .inspection })
         #expect(
             form(services: "both").jobTypes.map(\.label) == [
-                "Leak Detection", "Pool Inspection", "Pool Service", "Repair",
+                "Service", "Repair", "Leak", "Inspection",
             ])
     }
 

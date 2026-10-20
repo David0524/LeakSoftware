@@ -48,6 +48,9 @@ import {
   SPA_SHAPES,
   SPA_SIZES,
   mirrorPath,
+  offsetPath,
+  centerLayout,
+  POOL_CENTER_OFFSET,
   parseDiagramLayout,
   calculate,
   checklistTally,
@@ -717,6 +720,12 @@ export const inspection: ModuleCases = {
       ["oval", false, { mirror: true, spa: { x: 0.5, y: 0.5, size: "large" } }],
       // A pinched spa, a drawn pool, drawing and landmarks (owner, 2026-10-19).
       ["oval", true, { spa: { x: 0.5, y: 0.5, size: "large", r: 21.5 } }],
+      // Centered (owner, 2026-10-20): the pool moves right 10; the spa stays where placed.
+      ["rectangle", false, { centered: true }],
+      ["kidney", true, { centered: true }],
+      ["kidney", true, { centered: true, mirror: true }],
+      ["figure_eight", true, { centered: true, spa: { x: 0.85, y: 0.2 } }],
+      ["custom", false, { centered: true }],
       ["custom", false],
       ["custom", true, { mirror: true }],
       [
@@ -740,6 +749,54 @@ export const inspection: ModuleCases = {
             { kind: "rock", x: 0.5, y: 0.5 },
             { kind: "waterfall", x: 0, y: 1, s: 40, flip: true },
             { kind: "steps", x: 0.9, y: 0.1, s: 12 },
+          ],
+        },
+      ],
+    ],
+  ),
+
+  // Centered pools (owner, 2026-10-20).
+  POOL_CENTER_OFFSET: rule(() => POOL_CENTER_OFFSET, [[]]),
+  offsetPath: rule(
+    (path: string, dx: number) => offsetPath(path, dx),
+    [
+      ["M16 18 H124 Q130 18 130 24 V76 Q130 82 124 82 H16 Q10 82 10 76 V24 Q10 18 16 18 Z", 10],
+      ["M26 18 H114 L130 34 V66 L114 82 H26 L10 66 V34 Z", 10],
+      ["M1.5 2 L-3 .5 C1,2 3,4 5,6 V7 H8 Z", 10],
+      ["M0.1 0 L0.2 0.3 Z", 0.2],
+      ["M16 18 H124 Z", 0],
+      ["M16 18 H124 Z", -10],
+      ["12 13 M 1 2", 10],
+      ["", 10],
+      ["Z", 10],
+    ],
+  ),
+  centerLayout: rule(
+    (layout: DiagramLayout) => centerLayout(layout),
+    [
+      [{}],
+      [{ mirror: true }],
+      [{ centered: true, spa: { x: 0.5, y: 0.5 } }],
+      [{ spa: { x: 0.85, y: 0.2, size: "large", shape: "square", r: 21.5 } }],
+      [{ spa: { x: 0.95, y: 0.2 } }],
+      [{ mirror: true, spa: { x: 0.1234, y: 0.8 } }],
+      [
+        {
+          drawing: [
+            { type: "line", x1: 0.1, y1: 0.2, x2: 0.9, y2: 0.8 },
+            { type: "circle", cx: 0.5, cy: 0.5, rx: 0.25, ry: 0.3 },
+            {
+              type: "pen",
+              points: [
+                [0.1, 0.1],
+                [0.99, 0.3],
+              ],
+            },
+          ],
+          landmarks: [
+            { kind: "tree", x: 0, y: 0 },
+            { kind: "house", x: 1, y: 1 },
+            { kind: "waterfall", x: 0.33333, y: 1, s: 40, flip: true },
           ],
         },
       ],
@@ -774,6 +831,9 @@ export const inspection: ModuleCases = {
       [{ mirror: "true" }],
       [{ mirror: false }],
       [{ mirror: 1 }],
+      [{ centered: true }],
+      [{ centered: "true" }],
+      [{ centered: false, mirror: true }],
       [{ spa: { x: 0.85, y: 0.2, size: "large", shape: "square" } }],
       [{ mirror: true, spa: { x: 0, y: 1 } }],
       [{ spa: { x: 0.5, y: 0.5, size: "huge", shape: "triangle" } }],

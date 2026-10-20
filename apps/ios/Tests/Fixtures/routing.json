@@ -1,4 +1,167 @@
 {
+  "NOT_ON_MAP": [
+    {
+      "args": [],
+      "result": {
+        "title": "Not found on the map",
+        "detail": "Routes and drive times leave this stop out until its address is found. Check the address, pick one of the suggestions as you type it, or mark the spot at the pool.",
+        "short": "Not on map"
+      }
+    }
+  ],
+  "mapStatus": [
+    {
+      "args": [
+        null,
+        true
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "address_line1": "1 Main St",
+          "city": "Mesa",
+          "state": "AZ",
+          "postal_code": "85201"
+        },
+        true
+      ],
+      "result": "missing"
+    },
+    {
+      "args": [
+        {
+          "address_line1": "1 Main St",
+          "city": "Mesa",
+          "state": "AZ",
+          "postal_code": "85201"
+        },
+        false
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "address_line1": "1 Main St",
+          "city": "Mesa",
+          "state": "AZ",
+          "postal_code": "85201",
+          "latitude": 33.4,
+          "longitude": -111.8
+        },
+        true
+      ],
+      "result": "found"
+    },
+    {
+      "args": [
+        {
+          "address_line1": "1 Main St",
+          "city": "Mesa",
+          "state": "AZ",
+          "postal_code": "85201",
+          "latitude": 33.4,
+          "longitude": -111.8
+        },
+        false
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "address_line1": "1 Main St",
+          "city": "Mesa",
+          "state": "AZ",
+          "postal_code": "85201",
+          "latitude": 33.4,
+          "longitude": -111.8,
+          "geocoded_address": "1 Main St, Mesa, AZ 85201"
+        },
+        true
+      ],
+      "result": "found"
+    },
+    {
+      "args": [
+        {
+          "address_line1": "1 Main St",
+          "city": "Mesa",
+          "state": "AZ",
+          "postal_code": "85201",
+          "latitude": 33.4,
+          "longitude": -111.8,
+          "geocoded_address": "9 Old Rd, Mesa, AZ 85201"
+        },
+        true
+      ],
+      "result": "missing"
+    },
+    {
+      "args": [
+        {
+          "address_line1": "1 Main St",
+          "city": null,
+          "state": null,
+          "postal_code": null,
+          "latitude": 0,
+          "longitude": 0
+        },
+        true
+      ],
+      "result": "found"
+    },
+    {
+      "args": [
+        {
+          "address_line1": "1 Main St",
+          "latitude": 33.4,
+          "longitude": null
+        },
+        true
+      ],
+      "result": "missing"
+    },
+    {
+      "args": [
+        {
+          "address_line1": "",
+          "city": "Mesa",
+          "state": "AZ",
+          "postal_code": "85201"
+        },
+        true
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "address_line1": "   ",
+          "city": "Mesa",
+          "latitude": 33.4,
+          "longitude": -111.8
+        },
+        true
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "address_line1": "1 Main St",
+          "city": "Mesa",
+          "state": "AZ",
+          "postal_code": "85201",
+          "geocoded_address": "1 Main St, Mesa, AZ 85201"
+        },
+        true
+      ],
+      "result": "missing"
+    }
+  ],
   "haversineMeters": [
     {
       "args": [

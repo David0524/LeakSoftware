@@ -305,6 +305,8 @@
         /// Each visit's plan cleanings on its checklist (owner, 2026-10-20: "The filter/salt
         /// cells don't show up on the dates they're due").
         var cleanings: [String: [ScheduledCleaning]] = [:]
+        /// The server looks addresses up, so "Not on map" can show (`MapLookups`).
+        var routing = false
 
         init(
             store: LocalStore, kv: KeyValue, company: CompanyContext, userId: String, view: ScheduleView, date: String?,
@@ -334,6 +336,7 @@
             }
             tray = ctx.isManager ? needsATime(jobs, ctx: ctx) : []
             mapsApp = MapsApp(kv)
+            routing = MapLookups.on(kv, company: try? store.get("company", company.id))
             let shown = Set(
                 loaded.routes.values.flatMap { $0.jobs.map(\.id) } + loaded.unassigned.values.flatMap { $0.map(\.id) })
             cleanings = scheduledCleanings(store, companyId: company.id, jobIds: shown)
@@ -539,7 +542,8 @@
             let booked = j.start.map {
                 "No tech yet · booked \(formatDay(localDay($0, timeZone: board.ctx.timeZone))) at \(formatTime(j.scheduledStart, timeZone: board.ctx.timeZone))"
             }
-            return [j.address, booked, stopNote(j, routeTech: nil, names: board.names)].compactMap { $0 }
+            return [j.address, booked, stopNote(j, routeTech: nil, names: board.names, routing: board.routing)]
+                .compactMap { $0 }
                 .filter { !$0.isEmpty }.joined(separator: " · ")
         }
     }
@@ -633,7 +637,7 @@
                             minutes: route.summary.legs[routeIndex: i] ?? 0, label: "drive",
                             short: route.summary.short[routeIndex: i] ?? 0)
                         StopWell(
-                            job: j, note: stopNote(j, routeTech: tech.id, names: board.names),
+                            job: j, note: stopNote(j, routeTech: tech.id, names: board.names, routing: board.routing),
                             timeZone: board.ctx.timeZone, cleanings: board.cleanings[j.id] ?? []
                         ) { onMove(j, routeKey(tech.id, board.date)) }
                     }
@@ -692,11 +696,13 @@
                 ScheduledCleaningsRow(cleanings: cleanings)
                 if let note { Text(note).textRole(.secondary).foregroundStyle(Color.textMuted) }
                 let lock = job.lock.flatMap { $0 == .started ? nil : $0 }
-                if job.status != .scheduled || lock != nil || job.location == nil {
+                // "Not on map" is in the note when lookups are on; otherwise the plain label.
+                let noLocation = job.location == nil && !(note ?? "").hasSuffix(NotOnMap.short)
+                if job.status != .scheduled || lock != nil || noLocation {
                     HStack(spacing: 8) {
                         if job.status != .scheduled { StatusChip(status: job.status) }
                         if let lock { LockLabel(lock.label) }
-                        if job.location == nil {
+                        if noLocation {
                             Text("No map location").textRole(.footnote).foregroundStyle(Color.warning)
                         }
                     }

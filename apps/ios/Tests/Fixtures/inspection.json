@@ -15947,6 +15947,111 @@
     },
     {
       "args": [
+        "rectangle",
+        false,
+        {
+          "centered": true
+        }
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M 26 18 H 134 Q 140 18 140 24 V 76 Q 140 82 134 82 H 26 Q 20 82 20 76 V 24 Q 20 18 26 18 Z",
+        "spa": null,
+        "drawing": [],
+        "landmarks": []
+      }
+    },
+    {
+      "args": [
+        "kidney",
+        true,
+        {
+          "centered": true
+        }
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M 40 16 C 66 12 80 30 94 28 C 110 25 116 14 128 18 C 144 24 142 48 136 62 C 126 84 98 86 74 84 C 48 82 22 78 20 54 C 18 32 24 19 40 16 Z",
+        "spa": {
+          "cx": 145,
+          "cy": 22,
+          "r": 13,
+          "square": false
+        },
+        "drawing": [],
+        "landmarks": []
+      }
+    },
+    {
+      "args": [
+        "kidney",
+        true,
+        {
+          "centered": true,
+          "mirror": true
+        }
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M 120 16 C 94 12 80 30 66 28 C 50 25 44 14 32 18 C 16 24 18 48 24 62 C 34 84 62 86 86 84 C 112 82 138 78 140 54 C 142 32 136 19 120 16 Z",
+        "spa": {
+          "cx": 15,
+          "cy": 22,
+          "r": 13,
+          "square": false
+        },
+        "drawing": [],
+        "landmarks": []
+      }
+    },
+    {
+      "args": [
+        "figure_eight",
+        true,
+        {
+          "centered": true,
+          "spa": {
+            "x": 0.85,
+            "y": 0.2
+          }
+        }
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M 50 16 C 68 16 74 28 80 34 C 86 28 92 16 110 16 C 130 16 142 32 142 50 C 142 68 130 84 110 84 C 92 84 86 72 80 66 C 74 72 68 84 50 84 C 30 84 18 68 18 50 C 18 32 30 16 50 16 Z",
+        "spa": {
+          "cx": 136,
+          "cy": 20,
+          "r": 13,
+          "square": false
+        },
+        "drawing": [],
+        "landmarks": []
+      }
+    },
+    {
+      "args": [
+        "custom",
+        false,
+        {
+          "centered": true
+        }
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "",
+        "spa": null,
+        "drawing": [],
+        "landmarks": []
+      }
+    },
+    {
+      "args": [
         "custom",
         false
       ],
@@ -16172,6 +16277,280 @@
       }
     }
   ],
+  "POOL_CENTER_OFFSET": [
+    {
+      "args": [],
+      "result": 10
+    }
+  ],
+  "offsetPath": [
+    {
+      "args": [
+        "M16 18 H124 Q130 18 130 24 V76 Q130 82 124 82 H16 Q10 82 10 76 V24 Q10 18 16 18 Z",
+        10
+      ],
+      "result": "M 26 18 H 134 Q 140 18 140 24 V 76 Q 140 82 134 82 H 26 Q 20 82 20 76 V 24 Q 20 18 26 18 Z"
+    },
+    {
+      "args": [
+        "M26 18 H114 L130 34 V66 L114 82 H26 L10 66 V34 Z",
+        10
+      ],
+      "result": "M 36 18 H 124 L 140 34 V 66 L 124 82 H 36 L 20 66 V 34 Z"
+    },
+    {
+      "args": [
+        "M1.5 2 L-3 .5 C1,2 3,4 5,6 V7 H8 Z",
+        10
+      ],
+      "result": "M 11.5 2 L 7 0.5 C 11 2 13 4 15 6 V 7 H 18 Z"
+    },
+    {
+      "args": [
+        "M0.1 0 L0.2 0.3 Z",
+        0.2
+      ],
+      "result": "M 0.30000000000000004 0 L 0.4 0.3 Z"
+    },
+    {
+      "args": [
+        "M16 18 H124 Z",
+        0
+      ],
+      "result": "M16 18 H124 Z"
+    },
+    {
+      "args": [
+        "M16 18 H124 Z",
+        -10
+      ],
+      "result": "M 6 18 H 114 Z"
+    },
+    {
+      "args": [
+        "12 13 M 1 2",
+        10
+      ],
+      "result": "22 13 M 11 2"
+    },
+    {
+      "args": [
+        "",
+        10
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        "Z",
+        10
+      ],
+      "result": "Z"
+    }
+  ],
+  "centerLayout": [
+    {
+      "args": [
+        {}
+      ],
+      "result": {
+        "centered": true
+      }
+    },
+    {
+      "args": [
+        {
+          "mirror": true
+        }
+      ],
+      "result": {
+        "mirror": true,
+        "centered": true
+      }
+    },
+    {
+      "args": [
+        {
+          "centered": true,
+          "spa": {
+            "x": 0.5,
+            "y": 0.5
+          }
+        }
+      ],
+      "result": {
+        "centered": true,
+        "spa": {
+          "x": 0.5,
+          "y": 0.5
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "spa": {
+            "x": 0.85,
+            "y": 0.2,
+            "size": "large",
+            "shape": "square",
+            "r": 21.5
+          }
+        }
+      ],
+      "result": {
+        "spa": {
+          "x": 0.9125,
+          "y": 0.2,
+          "size": "large",
+          "shape": "square",
+          "r": 21.5
+        },
+        "centered": true
+      }
+    },
+    {
+      "args": [
+        {
+          "spa": {
+            "x": 0.95,
+            "y": 0.2
+          }
+        }
+      ],
+      "result": {
+        "spa": {
+          "x": 1,
+          "y": 0.2
+        },
+        "centered": true
+      }
+    },
+    {
+      "args": [
+        {
+          "mirror": true,
+          "spa": {
+            "x": 0.1234,
+            "y": 0.8
+          }
+        }
+      ],
+      "result": {
+        "mirror": true,
+        "spa": {
+          "x": 0.1859,
+          "y": 0.8
+        },
+        "centered": true
+      }
+    },
+    {
+      "args": [
+        {
+          "drawing": [
+            {
+              "type": "line",
+              "x1": 0.1,
+              "y1": 0.2,
+              "x2": 0.9,
+              "y2": 0.8
+            },
+            {
+              "type": "circle",
+              "cx": 0.5,
+              "cy": 0.5,
+              "rx": 0.25,
+              "ry": 0.3
+            },
+            {
+              "type": "pen",
+              "points": [
+                [
+                  0.1,
+                  0.1
+                ],
+                [
+                  0.99,
+                  0.3
+                ]
+              ]
+            }
+          ],
+          "landmarks": [
+            {
+              "kind": "tree",
+              "x": 0,
+              "y": 0
+            },
+            {
+              "kind": "house",
+              "x": 1,
+              "y": 1
+            },
+            {
+              "kind": "waterfall",
+              "x": 0.33333,
+              "y": 1,
+              "s": 40,
+              "flip": true
+            }
+          ]
+        }
+      ],
+      "result": {
+        "drawing": [
+          {
+            "type": "line",
+            "x1": 0.1625,
+            "y1": 0.2,
+            "x2": 0.9625,
+            "y2": 0.8
+          },
+          {
+            "type": "circle",
+            "cx": 0.5625,
+            "cy": 0.5,
+            "rx": 0.25,
+            "ry": 0.3
+          },
+          {
+            "type": "pen",
+            "points": [
+              [
+                0.1625,
+                0.1
+              ],
+              [
+                1,
+                0.3
+              ]
+            ]
+          }
+        ],
+        "landmarks": [
+          {
+            "kind": "tree",
+            "x": 0.0625,
+            "y": 0
+          },
+          {
+            "kind": "house",
+            "x": 1,
+            "y": 1
+          },
+          {
+            "kind": "waterfall",
+            "x": 0.3958,
+            "y": 1,
+            "s": 40,
+            "flip": true
+          }
+        ],
+        "centered": true
+      }
+    }
+  ],
   "mirrorPath": [
     {
       "args": [
@@ -16296,6 +16675,35 @@
         }
       ],
       "result": {}
+    },
+    {
+      "args": [
+        {
+          "centered": true
+        }
+      ],
+      "result": {
+        "centered": true
+      }
+    },
+    {
+      "args": [
+        {
+          "centered": "true"
+        }
+      ],
+      "result": {}
+    },
+    {
+      "args": [
+        {
+          "centered": false,
+          "mirror": true
+        }
+      ],
+      "result": {
+        "mirror": true
+      }
     },
     {
       "args": [

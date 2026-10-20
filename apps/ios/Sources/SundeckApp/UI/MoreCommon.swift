@@ -113,6 +113,9 @@
         var labelWidth: CGFloat = 104
         var multiline = false
         var contentType: UITextContentType?
+        /// Told when the field gets or lets go of the keyboard (address suggestions).
+        var onFocusChange: ((Bool) -> Void)? = nil
+        @FocusState private var focused: Bool
 
         var body: some View {
             HStack(alignment: multiline ? .top : .center, spacing: 12) {
@@ -129,6 +132,10 @@
                 .foregroundStyle(Color.text)
                 .keyboardType(keyboard)
                 .textContentType(contentType)
+                .focused($focused)
+                // Phone numbers format as they're typed (owner, 2026-10-20).
+                .phoneTyping($text, active: keyboard == .phonePad && focused)
+                .onChange(of: focused) { _, now in onFocusChange?(now) }
                 .accessibilityLabel(label)
             }
             .padding(.horizontal, CGFloat(Spacing.rowHorizontal))

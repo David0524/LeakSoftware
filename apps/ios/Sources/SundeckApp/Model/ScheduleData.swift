@@ -109,6 +109,9 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
     public var planDate: String?
     /// Today's Mark Complete on a leak or repair job: the shop-local day its stop was done.
     public var stopDoneOn: String?
+    /// Its pool has an address with no map location for it (core `mapStatus` "missing"), shown as
+    /// "Not on map" once the server looks addresses up (`MapLookups`).
+    public var mapMissing = false
 
     public init(_ v: JobView) {
         let j = v.job
@@ -133,6 +136,7 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
         if let lat = v.property?["latitude"]?.number, let lng = v.property?["longitude"]?.number {
             location = LatLng(lat: lat, lng: lng)
         }
+        mapMissing = propertyMapStatus(v.property, routing: true) == .missing
         accessNotes = v.property?["access_notes"]?.string.flatMap {
             $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0
         }
@@ -249,18 +253,24 @@ public func routePoints(_ jobs: [ScheduleJob], depot: LatLng?) -> [String] {
     return keys
 }
 
-/// The note on a stop: "Second tech, with Tony", "With Sam", "Repair", "Maintenance", "Pool inspection".
-public func stopNote(_ j: ScheduleJob, routeTech: String?, names: [String: String]) -> String? {
-    if let routeTech, j.assignedUserId != routeTech {
-        return "Second tech, with \(j.assignedUserId.flatMap { names[$0] } ?? "the main tech")"
-    }
-    if let second = j.secondTechId { return "With \(names[second] ?? "Teammate")" }
-    switch j.type {
-    case .repair: return "Repair"
-    case .maintenance: return "Maintenance"
-    case .inspection: return "Pool inspection"
-    case .detection: return nil
-    }
+/// The note on a stop: "Second tech, with Tony", "With Sam", "Repair", "Maintenance", "Pool inspection",
+/// then " · Not on map" when its address wasn't found and the server looks addresses up (owner,
+/// 2026-10-20: it's left out of drive times until it is).
+public func stopNote(_ j: ScheduleJob, routeTech: String?, names: [String: String], routing: Bool = false) -> String? {
+    let note: String? = {
+        if let routeTech, j.assignedUserId != routeTech {
+            return "Second tech, with \(j.assignedUserId.flatMap { names[$0] } ?? "the main tech")"
+        }
+        if let second = j.secondTechId { return "With \(names[second] ?? "Teammate")" }
+        switch j.type {
+        case .repair: return "Repair"
+        case .maintenance: return "Maintenance"
+        case .inspection: return "Pool inspection"
+        case .detection: return nil
+        }
+    }()
+    let parts = [note, routing && j.mapMissing ? NotOnMap.short : nil].compactMap { $0 }
+    return parts.isEmpty ? nil : parts.joined(separator: " · ")
 }
 
 // MARK: - Planning writes

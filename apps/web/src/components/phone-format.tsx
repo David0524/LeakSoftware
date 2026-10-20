@@ -20,8 +20,10 @@ export function PhoneFormatting() {
       let before = raw.slice(0, caret).replace(/\D/g, "").length;
       const deleting = (e as InputEvent).inputType === "deleteContentBackward";
       const formatted = formatPhoneTyping(raw);
-      if (deleting && formatted.replace(/\D/g, "") === raw.replace(/\D/g, "")) {
-        const old = el.dataset.phoneLast ?? "";
+      const old = el.dataset.phoneLast ?? "";
+      // Only a number this field formatted, so a "+44 …" number keeps its own spacing.
+      const ours = /^(\(|\+1 )/.test(old);
+      if (deleting && ours && formatted.replace(/\D/g, "") === raw.replace(/\D/g, "")) {
         // A mark was deleted: the number is unchanged, so take away the digit before the caret.
         if (old.replace(/\D/g, "").length === raw.replace(/\D/g, "").length && before > 0) {
           const digits = raw.replace(/\D/g, "");

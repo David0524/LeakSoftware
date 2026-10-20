@@ -21,6 +21,12 @@ public struct WebAPI: Sendable {
         public let description: String
         /// Form errors by field name (a 400 reply's `fields`).
         public var fields: [String: String] = [:]
+        /// The HTTP status (0 when there was no answer). Not part of equality: the message is.
+        public var status = 0
+
+        public static func == (a: Failure, b: Failure) -> Bool {
+            a.description == b.description && a.fields == b.fields
+        }
 
         public static let noConnection = "No connection. Try again when you have signal."
 
@@ -76,7 +82,7 @@ public struct WebAPI: Sendable {
             if case .object(let f)? = reply["fields"] { for (k, v) in f { fields[k] = v.string } }
             throw Failure(
                 description: reply["error"]?.string ?? fields.values.sorted().first ?? "The server said \(status).",
-                fields: fields)
+                fields: fields, status: status)
         }
         return reply
     }

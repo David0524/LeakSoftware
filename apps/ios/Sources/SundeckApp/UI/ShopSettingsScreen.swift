@@ -71,6 +71,9 @@
         @Environment(SyncService.self) private var sync
         @State private var groups: [(title: String?, items: [ConfigItem])] = []
         @State private var team: [SettingsTeamMember] = []
+        /// Settings › Team › Profiles (owners and admins).
+        @State private var profiles: [ProfileListRow] = []
+        @State private var editingProfile: ProfileSheetTarget?
         /// Which checklist Checklist Components shows (pool visits, leak or pool inspections).
         @State private var list: ChecklistList = .leak
         @State private var editing: ConfigSheetTarget?
@@ -110,6 +113,7 @@
                         Text("Invite people, change roles, and turn people off on the website.")
                             .textRole(.footnote).foregroundStyle(Color.textMuted)
                     }
+                    if manager { profilesGroup }
                     if manager, let company { completingAJob(company) }
                     Section {
                         ActionRow("Open Team on the Website") { browser = .site(page.webPath) }
@@ -165,9 +169,35 @@
                     ConfigItemSheet(page: page, item: target.item, poolChecklist: list == .pool) { notice = $0 }
                 }
             }
+            .sheet(item: $editingProfile) { target in
+                PersonProfileSheet(target: target) { notice = $0 }
+            }
             .browserSheet($browser)
             .task(id: "\(sync.revision)|\(company?.id ?? "")|\(list.rawValue)") { reload() }
             .onAppear { if !loaded { list = ChecklistList.lists(services).first ?? .leak } }
+        }
+
+        /// Profiles (owner, 2026-10-20): one row per team member, then people without the app, and
+        /// Add Person. Each opens the profile in a sheet.
+        private var profilesGroup: some View {
+            Section {
+                ForEach(profiles) { row in
+                    Button {
+                        editingProfile = .row(row)
+                    } label: {
+                        ListRow(row.title, detail: row.detail, value: row.value, chevron: true)
+                    }
+                    .buttonStyle(.row)
+                    .surfaceRow()
+                    .listRowInsets(EdgeInsets())
+                }
+                ActionRow(ProfileText.addPerson) { editingProfile = .addPerson }
+                    .surfaceRow().listRowInsets(EdgeInsets())
+            } header: {
+                SectionLabel(ProfileText.title)
+            } footer: {
+                Text(ProfileText.footer).textRole(.footnote).foregroundStyle(Color.textMuted)
+            }
         }
 
         /// Completing a job (owners and admins, 2026-10-19): what Complete Job waits for.
@@ -207,9 +237,110 @@
             case .exclusions: groups = [(nil, exclusionItems(store, companyId: company.id))]
             case .team:
                 team = teamMembers(store, kv: sync.kv, companyId: company.id, me: session.user?.id)
+                profiles = profileRows(personProfiles(store, companyId: company.id), team: team)
             default: groups = []
             }
             loaded = true
+        }
+    }
+
+    /// Which profile the profile sheet edits: a row of the Profiles group, or Add Person.
+    enum ProfileSheetTarget: Identifiable {
+        case row(ProfileListRow)
+        case addPerson
+
+        var id: String {
+            switch self {
+            case .row(let row): row.id
+            case .addPerson: "add-person"
+            }
+        }
+    }
+
+    /// A person's profile (owner, 2026-10-20; website settings/team `ProfileFields`): Name, Phone,
+    /// Email and Address, the emergency contact's Name and Phone, and Notes; Save (Save Profile
+    /// for a new one) and Delete Profile. Written through the sync layer.
+    struct PersonProfileSheet: View {
+        var target: ProfileSheetTarget
+        var done: (String) -> Void
+        @Environment(Session.self) private var session
+        @Environment(SyncService.self) private var sync
+        @Environment(\.dismiss) private var dismiss
+        @State private var form = PersonProfileForm()
+        @State private var original = PersonProfileForm()
+        @State private var error: String?
+        @State private var confirmDelete = false
+        @State private var loaded = false
+
+        private var row: ProfileListRow? {
+            if case .row(let row) = target { return row }
+            return nil
+        }
+        private var profile: PersonProfile? { row?.profile }
+
+        var body: some View {
+            FormSheet(title: row?.title ?? ProfileText.addPerson, dirty: form != original) {
+                if row == nil {
+                    Text(ProfileText.addPersonHint).textRole(.secondary).foregroundStyle(Color.textMuted)
+                }
+                Grouped {
+                    LabeledFieldRow(label: "Name", text: $form.name, labelWidth: 96)
+                    LabeledFieldRow(label: "Phone", text: $form.phone, keyboard: .phonePad, labelWidth: 96)
+                    LabeledFieldRow(label: "Email", text: $form.email, keyboard: .emailAddress, labelWidth: 96)
+                    LabeledFieldRow(label: "Address", text: $form.address, labelWidth: 96)
+                }
+                Grouped(label: ProfileText.emergency) {
+                    LabeledFieldRow(label: "Name", text: $form.emergencyName, labelWidth: 96)
+                    LabeledFieldRow(label: "Phone", text: $form.emergencyPhone, keyboard: .phonePad, labelWidth: 96)
+                }
+                Grouped {
+                    LabeledFieldRow(label: "Notes", text: $form.notes, labelWidth: 96, multiline: true)
+                }
+                if let error { Notice(kind: .error, text: error) }
+                Button(profile == nil ? ProfileText.saveNew : ProfileText.save) { save() }
+                    .buttonStyle(.primary(fullWidth: true, size: .field))
+                if profile != nil {
+                    Hairline()
+                    Button(ProfileText.delete, role: .destructive) { confirmDelete = true }
+                        .buttonStyle(.danger(fullWidth: true, size: .field))
+                }
+            }
+            .confirmationDialog(ProfileText.deleteConfirm, isPresented: $confirmDelete, titleVisibility: .visible) {
+                Button(ProfileText.delete, role: .destructive) { delete() }
+            }
+            .onAppear {
+                guard !loaded else { return }
+                loaded = true
+                form = PersonProfileForm(profile: profile, name: row?.memberName, email: row?.memberEmail)
+                original = form
+            }
+        }
+
+        private func save() {
+            if let problem = form.error {
+                error = problem
+                return
+            }
+            guard let company = session.company else { return }
+            do {
+                let said = try ProfileWrites.save(
+                    sync, companyId: company.id, id: profile?.id, userId: profile == nil ? row?.userId : nil, form)
+                done(said)
+                dismiss()
+            } catch {
+                self.error = String(describing: error)
+            }
+        }
+
+        private func delete() {
+            guard let profile else { return }
+            do {
+                try ProfileWrites.delete(sync, id: profile.id)
+                done("Removed.")
+                dismiss()
+            } catch {
+                self.error = String(describing: error)
+            }
         }
     }
 

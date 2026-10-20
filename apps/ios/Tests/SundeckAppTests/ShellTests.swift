@@ -381,3 +381,67 @@ struct Shell {
         #expect(!Walkthrough(s.sync.kv).launchSeen)
     }
 }
+
+/// The "waiting to sync" note shows only after 8 seconds of changes waiting (owner, 2026-10-20).
+@Suite struct SyncNoteDelayTests {
+    let start = Date(timeIntervalSince1970: 1_760_000_000)
+
+    func waiting(pending: Int = 1, uploads: Int = 0, since: Date?) -> SyncStatus {
+        var s = SyncStatus()
+        s.lastSyncedAt = start
+        s.pending = pending
+        s.uploadsWaiting = uploads
+        s.waitingSince = since
+        return s
+    }
+
+    @Test func waitingStartsOnceAndEndsWhenNothingWaits() {
+        let later = start.addingTimeInterval(5)
+        #expect(waitingSince(waiting(since: nil), previous: nil, now: start) == start)
+        #expect(waitingSince(waiting(pending: 3, since: start), previous: start, now: later) == start)
+        #expect(waitingSince(waiting(pending: 0, uploads: 2, since: start), previous: start, now: later) == start)
+        #expect(waitingSince(waiting(pending: 0, since: start), previous: start, now: later) == nil)
+    }
+
+    @Test func theNoteIsHeldBackForEightSeconds() {
+        let s = waiting(pending: 2, since: start)
+        #expect(syncBarMessage(syncBarStatus(s, now: start)) == nil)
+        #expect(syncBarMessage(syncBarStatus(s, now: start.addingTimeInterval(7.9))) == nil)
+        #expect(syncNoteDueAt(s, now: start.addingTimeInterval(3)) == start.addingTimeInterval(8))
+        #expect(syncBarMessage(syncBarStatus(s, now: start.addingTimeInterval(8)))?.text == "2 changes waiting to sync")
+        #expect(syncNoteDueAt(s, now: start.addingTimeInterval(8)) == nil)
+        let files = waiting(pending: 0, uploads: 1, since: start)
+        #expect(syncBarMessage(syncBarStatus(files, now: start.addingTimeInterval(1))) == nil)
+        #expect(syncBarMessage(syncBarStatus(files, now: start.addingTimeInterval(9)))?.text != nil)
+        // Nothing waiting: nothing held, nothing due.
+        #expect(syncNoteDueAt(waiting(pending: 0, since: nil), now: start) == nil)
+    }
+
+    @Test func problemsAndOfflineStillShowAtOnce() {
+        var s = waiting(pending: 1, since: start)
+        s.problems = 1
+        #expect(syncBarMessage(syncBarStatus(s, now: start))?.text == "1 change could not be saved · tap for details")
+        var offline = waiting(pending: 1, since: start)
+        offline.phase = .offline
+        #expect(syncBarMessage(syncBarStatus(offline, now: start))?.text == "Offline · working from this phone")
+    }
+
+    @MainActor @Test func theServiceKeepsWhenChangesStartedWaiting() throws {
+        let clock = TestClock()
+        clock.now = start
+        let path = FileManager.default.temporaryDirectory.appendingPathComponent("note-\(UUID()).db").path
+        let db = try Database(path: path, key: String(repeating: "cd", count: 32))
+        let sync = SyncService(
+            store: try LocalStore.open(db), kv: try KeyValue(db), transport: FakeTransport(), auth: FakeAuth(),
+            now: { clock.now })
+        #expect(sync.status.waitingSince == nil)
+        _ = try sync.insert("customer", companyId: "c1", ["name": "Maria"])
+        #expect(sync.status.waitingSince == start && sync.status.pending == 1)
+        #expect(sync.barStatus.pending == 0)
+        clock.now = start.addingTimeInterval(4)
+        _ = try sync.insert("customer", companyId: "c1", ["name": "Ana"])
+        #expect(sync.status.waitingSince == start && sync.barStatus.pending == 0)
+        clock.now = start.addingTimeInterval(8)
+        #expect(sync.barStatus.pending == 2)
+    }
+}

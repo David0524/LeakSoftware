@@ -130,7 +130,8 @@ import Testing
         row = try #require(try store.get("job", "j3"))
         let undone = try stop("j3")
         #expect(row["stop_done_on"] == .null && markStopTitle(undone, day: day) == "Mark Complete")
-        // A visit waits for its photo, then completes; done, it shows no Mark Complete.
+        // A visit waits for its photo, then completes; done, it offers Reopen Visit (owner,
+        // 2026-10-20), which puts it back in progress.
         #expect(
             try StopWrites.mark(s.sync, companyId: "c1", settings: rules, jobId: "j1", complete: true, day: day)
                 == finishPhotoMessage)
@@ -139,11 +140,16 @@ import Testing
             try StopWrites.mark(s.sync, companyId: "c1", settings: rules, jobId: "j2", complete: true, day: day) == nil)
         #expect(try store.get("job", "j2")?["status"] == "done")
         let visit = try stop("j2")
-        #expect(markStopTitle(visit, day: day) == nil)
+        #expect(markStopTitle(visit, day: day) == "Reopen Visit")
+        #expect(todayUndo(visit, day: day) == TodayUndo(label: "Reopen Visit", reopen: true))
         #expect(
             try StopWrites.mark(s.sync, companyId: "c1", settings: rules, jobId: "j2", complete: false, day: day)
-                == "Reopen the visit from its page.")
-        #expect(MarkStopText.spoken(false, "Maria Lopez") == "Mark Complete for Maria Lopez")
+                == nil)
+        #expect(try store.get("job", "j2")?["status"] == "in_progress")
+        let reopened = try stop("j2")
+        #expect(!reopened.doneOn(day) && markStopTitle(reopened, day: day) == "Mark Complete")
+        #expect(MarkStopText.spoken("Mark Complete", "Maria Lopez") == "Mark Complete for Maria Lopez")
+        #expect(MarkStopText.spoken("Reopen Visit", "Maria Lopez") == "Reopen Visit for Maria Lopez")
     }
 
     @Test func theRuleIsOffUnlessTheShopTurnsItOn() throws {

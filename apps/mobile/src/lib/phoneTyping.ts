@@ -33,8 +33,10 @@ export function phoneEdit(
   }
   let text = raw;
   let before = digitCount(raw.slice(0, at));
-  // A mark was deleted (fewer characters, the same digits): take away the digit before it.
-  if (raw.length < prev.length && digitCount(raw) === digitCount(prev) && before > 0) {
+  // A mark was deleted (fewer characters, the same digits): take away the digit before it. Only
+  // in a number this field formatted, so a "+44 …" number keeps its own spacing.
+  const ours = /^(\(|\+1 )/.test(prev);
+  if (ours && raw.length < prev.length && digitCount(raw) === digitCount(prev) && before > 0) {
     const formatted = formatPhoneTyping(raw);
     if (digitCount(formatted) === digitCount(raw)) {
       const digits = raw.replace(/\D/g, "");

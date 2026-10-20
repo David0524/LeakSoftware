@@ -503,10 +503,10 @@ private struct Inspection {
         #expect(form.shape == nil)
     }
 
-    @Test func aPlainPoolWritesNoLayout() throws {
+    @Test func aPlainPoolWritesOnlyCentered() throws {
         let form = PoolShapeForm(property: ["id": "p1", "has_spa": false])
         #expect(form.shape == nil && !form.hasSpa && !form.mirror && form.spa == nil)
-        #expect(form.layout == DiagramLayout() && form.layoutJSON == .null)
+        #expect(form.layout == DiagramLayout(centered: true) && form.layoutJSON == ["centered": true])
         #expect(form.spaNow == nil && form.drawingLabel == "Pool drawing")
     }
 
@@ -514,16 +514,17 @@ private struct Inspection {
         var form = PoolShapeForm(property: ["id": "p1", "diagram_shape": "kidney", "has_spa": true])
         // The default spa sits in the corner and writes nothing until it's touched.
         #expect(form.spaNow == PlacedSpa(x: 145.0 / 160, y: 0.22, r: 13, shape: .round))
-        #expect(form.layoutJSON == .null)
+        #expect(form.layoutJSON == ["centered": true])
         form.mirror = true
-        #expect(form.layoutJSON == ["mirror": true])
+        #expect(form.layoutJSON == ["centered": true, "mirror": true])
         #expect(form.spaNow?.x == 15.0 / 160)
         // A tap on the spa makes it square, where it's drawn now.
         #expect(form.onSpa(x: 15.0 / 160, y: 0.22) && !form.onSpa(x: 0.5, y: 0.5))
         form.toggleSpaShape()
         #expect(
             form.layoutJSON == [
-                "mirror": true, "spa": ["x": 0.09375, "y": 0.22, "size": "medium", "shape": "square", "r": 13],
+                "centered": true, "mirror": true,
+                "spa": ["x": 0.09375, "y": 0.22, "size": "medium", "shape": "square", "r": 13],
             ])
         // Drag it, then drag its corner handle; the size written is the nearest preset.
         form.moveSpa(x: 0.85, y: 0.2)
@@ -544,7 +545,7 @@ private struct Inspection {
         #expect(form.spa?.x == 1 && form.spa?.y == 0)
         // No spa: none in the layout.
         form.hasSpa = false
-        #expect(form.layoutJSON == ["mirror": true] && form.spaNow == nil)
+        #expect(form.layoutJSON == ["centered": true, "mirror": true] && form.spaNow == nil)
     }
 
     @Test func drawingAndLandmarksGoInTheLayout() throws {
@@ -561,6 +562,7 @@ private struct Inspection {
         form.moveLandmark(1, x: 0.6, y: 0.95)
         #expect(
             form.layoutJSON == [
+                "centered": true,
                 "drawing": [["type": "line", "x1": 0.1, "y1": 0.2, "x2": 0.9, "y2": 0.8]],
                 "landmarks": [["kind": "tree", "x": 0.05, "y": 0.05], ["kind": "house", "x": 0.6, "y": 0.95]],
             ])
@@ -593,6 +595,27 @@ private struct Inspection {
         #expect(form.landmarks.count == landmarksMax)
     }
 
+    /// Pools are drawn centered (owner, 2026-10-20): a pool saved before opens moved right 10,
+    /// with its spa, landmarks and drawing moved along, and its tiles draw centered.
+    @Test func anOlderPoolOpensCenteredWithWhatsPlacedOnIt() throws {
+        let property: Row = [
+            "id": "p1", "diagram_shape": "rectangle", "has_spa": true,
+            "diagram_layout": [
+                "spa": ["x": 0.8, "y": 0.2, "size": "medium", "shape": "round", "r": 13],
+                "landmarks": [["kind": "tree", "x": 0.1, "y": 0.5]],
+                "drawing": [["type": "line", "x1": 0.1, "y1": 0.2, "x2": 0.5, "y2": 0.8]],
+            ],
+        ]
+        // Untouched, it still draws where it was until it's saved.
+        #expect(poolDiagram(.rectangle, true, diagramLayout(of: property)).pool.hasPrefix("M16 18"))
+        let form = PoolShapeForm(property: property)
+        #expect(form.spa?.x == 0.8625 && form.landmarks.first?.x == 0.1625)
+        #expect(form.drawing == [.line(x1: 0.1625, y1: 0.2, x2: 0.5625, y2: 0.8)])
+        #expect(form.diagram.pool.hasPrefix("M 26 18 H 134") && form.layout.centered == true)
+        #expect(form.layoutJSON["centered"] == true)
+        #expect(poolDiagram(.rectangle, false, DiagramLayout(centered: true)).pool.hasPrefix("M 26 18 H 134"))
+    }
+
     @Test func clearEmptiesTheDiagram() throws {
         var form = PoolShapeForm(property: ["id": "p1", "diagram_shape": "kidney", "has_spa": true])
         form.mirror = true
@@ -601,7 +624,7 @@ private struct Inspection {
         form.placeLandmark(.steps, x: 0.3, y: 0.3)
         form.clear()
         #expect(form.shape == .custom && !form.hasSpa && !form.mirror && form.spa == nil)
-        #expect(form.drawing.isEmpty && form.landmarks.isEmpty && form.layoutJSON == .null)
+        #expect(form.drawing.isEmpty && form.landmarks.isEmpty && form.layoutJSON == ["centered": true])
         #expect(form.diagram.pool.isEmpty)
         #expect(PoolShapeForm.clearTitle == "Clear the pool diagram?" && PoolShapeForm.clearButton == "Clear Diagram")
     }
@@ -622,7 +645,8 @@ private struct Inspection {
         #expect(row["diagram_shape"] == "figure_eight" && row["has_spa"] == true)
         #expect(
             row["diagram_layout"] == [
-                "mirror": true, "spa": ["x": 0.2, "y": 0.8, "size": "large", "shape": "round", "r": 17.3],
+                "centered": true, "mirror": true,
+                "spa": ["x": 0.2, "y": 0.8, "size": "large", "shape": "round", "r": 17.3],
                 "drawing": [["type": "circle", "cx": 0.3, "cy": 0.4, "rx": 0.1, "ry": 0.2]],
                 "landmarks": [["kind": "waterfall", "x": 0.9, "y": 0.1]],
             ])
@@ -630,13 +654,14 @@ private struct Inspection {
         // What the diagram then draws, and the sheet reopens to the same choices.
         #expect(diagramLayout(of: row) == form.layout)
         #expect(PoolShapeForm(property: row) == form)
-        // A cleared pool writes the drawn shape and no layout.
+        // A cleared pool writes the drawn shape and only that it's centered.
         var plain = PoolShapeForm(property: row)
         plain.clear()
         try InspectionWrites.savePoolShape(s.sync, propertyId: "p1", companyId: "c1", plain)
         let cleared = try #require(try s.store.get("property", "p1"))
         #expect(
-            cleared["diagram_shape"] == "custom" && cleared["has_spa"] == false && cleared["diagram_layout"] == .null)
+            cleared["diagram_shape"] == "custom" && cleared["has_spa"] == false
+                && cleared["diagram_layout"] == ["centered": true])
         #expect(PoolShapeForm.title == "Pool Shape" && PoolShapeForm.save == "Save Pool Shape")
         #expect(PoolShapeForm.mirrorLabel == "Mirror (flip left to right)")
     }
