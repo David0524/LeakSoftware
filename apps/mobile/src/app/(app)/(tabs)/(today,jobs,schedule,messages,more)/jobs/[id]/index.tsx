@@ -8,6 +8,7 @@ import {
   POOL_TYPE_LABELS,
   intakeQuestionsFor,
   formatAddress,
+  mapStatus,
   formatCents,
   formatSchedule,
   jobActionLabel,
@@ -70,6 +71,8 @@ import {
 import { KeyboardAvoider } from "../../../../../../ui/keyboard";
 import { SwipeNav, useNoSwipe } from "../../../../../../ui/SwipeNav";
 import { usePinnedSyncBar } from "../../../../../../ui/SyncBar";
+import { NotOnMapRow } from "../../../../../../ui/NotOnMap";
+import { useRoutingOn } from "../../../../../../lib/routing";
 import { ScreenTip } from "../../../../../../ui/Tip";
 import {
   color,
@@ -472,6 +475,7 @@ function Details({
   const line = useLine(company.id);
   const conversations = useConversations(company.id);
   const [choice] = useDirectionsChoice();
+  const routing = useRoutingOn();
   // Typing never changes the job section (owner, 2026-10-20).
   const noSwipe = useNoSwipe();
   const [notes, setNotes] = useState<string | null>(null);
@@ -641,6 +645,7 @@ function Details({
           ) : (
             <ListRow subtitle="Address not on this phone yet." />
           )}
+          {mapStatus(property, routing) === "missing" ? <NotOnMapRow /> : null}
           {property?.access_notes ? (
             <ListRow>
               <T variant="secondary" muted>

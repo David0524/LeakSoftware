@@ -18,6 +18,7 @@ import {
 import { API_URL } from "./config";
 import type { KeyValue } from "./database";
 import { deleteAllMedia } from "./media";
+import { withWaitingSince } from "./syncNote";
 
 export type SyncPhase = "idle" | "syncing" | "offline" | "signed_out" | "error" | "read_only";
 
@@ -33,6 +34,11 @@ export interface SyncStatus {
   uploads: UploadStatus;
   /** The phone is (nearly) out of storage: new work may not save (M11). */
   storageLow: boolean;
+  /**
+   * Since when changes or files have been waiting without a break (ms), or null when nothing
+   * waits. The sync bar shows "waiting" only after 8 seconds of it (lib/syncNote.ts).
+   */
+  waitingSince: number | null;
 }
 
 /** Below this much free space the app warns before saves start failing. */
@@ -98,7 +104,9 @@ export class SyncService {
       error: null,
       uploads: this.uploadStatus(),
       storageLow: freeSpaceLow(),
+      waitingSince: null,
     };
+    this.statusValue = withWaitingSince(this.statusValue, null);
   }
 
   // ---------------------------------------------------------------------------
@@ -125,13 +133,16 @@ export class SyncService {
 
   private emit(dataChanged: boolean) {
     if (dataChanged) this.dataVersion += 1;
-    this.statusValue = {
-      ...this.statusValue,
-      pending: this.store.pendingCount(),
-      problems: this.store.problems(),
-      uploads: this.uploadStatus(),
-      storageLow: freeSpaceLow(),
-    };
+    this.statusValue = withWaitingSince(
+      {
+        ...this.statusValue,
+        pending: this.store.pendingCount(),
+        problems: this.store.problems(),
+        uploads: this.uploadStatus(),
+        storageLow: freeSpaceLow(),
+      },
+      this.statusValue,
+    );
     for (const fn of this.listeners) fn();
   }
 
@@ -149,7 +160,7 @@ export class SyncService {
   }
 
   private setStatus(patch: Partial<SyncStatus>) {
-    this.statusValue = { ...this.statusValue, ...patch };
+    this.statusValue = withWaitingSince({ ...this.statusValue, ...patch }, this.statusValue);
     for (const fn of this.listeners) fn();
   }
 
@@ -481,6 +492,7 @@ export class SyncService {
       error: null,
       uploads: { waiting: 0, allPhotos: true, lastError: null },
       storageLow: false,
+      waitingSince: null,
     };
     this.emit(true);
   }

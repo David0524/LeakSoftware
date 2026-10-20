@@ -5,6 +5,7 @@ import {
   FINISH_PHOTO_MESSAGE,
   completeJobBlocker,
   markCompleteValues,
+  todayUndo,
   visitReportMode,
   type Job,
 } from "@leakbook/core";
@@ -75,7 +76,9 @@ export function confirmCompleteVisit(
  * Mark Complete on a Today stop (owner, 2026-10-19: every stop on the day's route), as the
  * website's TodayComplete. A maintenance visit is completed (with the shop's checklist and
  * photo rules: blocked, it says why with Open Job); a leak or repair job keeps its pipeline and
- * its stop is done for the day (job.stop_done_on), with Mark Not Complete to undo it.
+ * its stop is done for the day (job.stop_done_on), with Mark Not Complete to undo it. A
+ * completed visit has Reopen Visit, back to in progress as on its page (owner, 2026-10-20:
+ * core todayUndo).
  */
 export function TodayComplete({
   job,
@@ -99,13 +102,20 @@ export function TodayComplete({
   const company = useCompany();
   const blocker = useCompleteJobBlocker(job);
   const [asked, setAsked] = useState(false);
-  // Done only for the day (a leak or repair stop), so it can be undone here.
-  const undoable = job.type !== "maintenance" && job.stop_done_on === day;
-  const label = done ? "Mark Not Complete" : "Mark Complete";
+  // What a done stop offers here: Reopen Visit, Mark Not Complete, or nothing.
+  const undo = todayUndo(job, day);
+  const label = done ? (undo?.label ?? "Mark Not Complete") : "Mark Complete";
   function press() {
     const sync = getServices().sync;
     if (done) {
-      sync.write("job", job.id, job.company_id, { stop_done_on: null });
+      if (!undo) return;
+      if (undo.reopen) {
+        // Reopen Visit: back to in progress, as the job page's status change.
+        sync.write("job", job.id, job.company_id, {
+          status: "in_progress",
+          ...(job.started_at ? {} : { started_at: new Date().toISOString() }),
+        });
+      } else sync.write("job", job.id, job.company_id, { stop_done_on: null });
       haptics.light();
       return;
     }
@@ -130,7 +140,7 @@ export function TodayComplete({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trigger]);
 
-  if (done && !undoable) return null;
+  if (done && !undo) return null;
   return (
     <View style={{ gap: space["1"] }}>
       <Button

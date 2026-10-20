@@ -4,6 +4,7 @@ import { Image, StyleSheet, View } from "react-native";
 import { isHexColor, offersLeak, parseReminderDays, type Job } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useRows } from "../../data/hooks";
+import { useAddressSuggestions } from "../address/AddressSuggestions";
 import { locateAfterSync } from "../../lib/locate";
 import { getServices } from "../../lib/services";
 import { useCompany } from "../../state/session";
@@ -94,6 +95,16 @@ function Profile({ row, onSaved }: { row: Row; onSaved: Said }) {
   });
   const [error, setError] = useState<string | undefined>();
   const set = (k: keyof typeof f) => (v: string) => setF((x) => ({ ...x, [k]: v }));
+  // Real addresses as the street is typed (owner, 2026-10-20); picking one fills the rest.
+  const suggestions = useAddressSuggestions(f.address_line1, (s) =>
+    setF((x) => ({
+      ...x,
+      address_line1: s.line1,
+      city: s.city,
+      state: s.state,
+      postal_code: s.postal_code,
+    })),
+  );
   const zones = US_ZONES.includes(company.timezone) ? US_ZONES : [company.timezone, ...US_ZONES];
 
   function save() {
@@ -155,6 +166,7 @@ function Profile({ row, onSaved }: { row: Row; onSaved: Said }) {
           value={f.address_line1}
           onChangeText={set("address_line1")}
         />
+        {suggestions}
         <FieldRow
           label="Address line 2"
           value={f.address_line2}

@@ -8,6 +8,7 @@ import {
   daySummary,
   durationLabel,
   formatAddress,
+  mapStatus,
   formatDay,
   formatTime,
   isManagerRole,
@@ -50,6 +51,8 @@ import {
 } from "../../../../ui/components";
 import { haptics } from "../../../../ui/haptics";
 import { usePinnedSyncBar } from "../../../../ui/SyncBar";
+import { NotOnMapTag } from "../../../../ui/NotOnMap";
+import { useRoutingOn } from "../../../../lib/routing";
 import { ScreenTip } from "../../../../ui/Tip";
 import { WebIcon } from "../../../../ui/WebIcon";
 import {
@@ -351,6 +354,7 @@ function Stop({
   action: { action: StopAction; nonce: number } | null;
 }) {
   const done = stopDone(job, day);
+  const routing = useRoutingOn();
   const [opened, setExpanded] = useState(next);
   // Asked from the notification: open, and its buttons act as they appear.
   const expanded = opened || action !== null;
@@ -471,6 +475,7 @@ function Stop({
               {formatAddress(job.property)}
             </Text>
           ) : null}
+          {mapStatus(job.property, routing) === "missing" ? <NotOnMapTag /> : null}
           {/* Just the icon and how soon (owner, 2026-10-19), as the website. */}
           {done ? null : <CleaningsDue job={job} />}
           <View style={styles.buttons}>

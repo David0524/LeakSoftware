@@ -33,6 +33,7 @@ import {
   type PlanRepeat as Repeat,
 } from "@leakbook/core";
 import { useRows, useSyncStatus } from "../../../../../data/hooks";
+import { AddressSuggestions } from "../../../../../features/address/AddressSuggestions";
 import { locateAfterSync } from "../../../../../lib/locate";
 import { useTeam } from "../../../../../data/schedule";
 import {
@@ -457,6 +458,7 @@ function NewJobForm() {
     router.replace(`/jobs/${jobId}`);
   }
 
+  const jobTypes = newJobTypes(offered);
   return (
     <Screen
       title="New Job"
@@ -466,7 +468,15 @@ function NewJobForm() {
           : "Accepted quotes make their own repair jobs."
       }
     >
-      <Segmented label="Job" value={jobType} onChange={setJobType} options={newJobTypes(offered)} />
+      {/* Service, Repair, Leak, Inspection (owner, 2026-10-20: "Repair is cut off"): short
+          labels with tight sides, so all four fit across a phone. */}
+      <Segmented
+        label="Job"
+        value={jobType}
+        onChange={setJobType}
+        options={jobTypes}
+        compact={jobTypes.length > 3}
+      />
       <Section title="Customer">
         {selectedCustomer ? (
           <Card>
@@ -660,6 +670,18 @@ function NewJobForm() {
               value={form.addressLine1}
               onChangeText={set("addressLine1")}
               error={errors.addressLine1}
+            />
+            <AddressSuggestions
+              street={form.addressLine1}
+              onPick={(s) =>
+                setForm((f) => ({
+                  ...f,
+                  addressLine1: s.line1,
+                  city: s.city,
+                  state: s.state,
+                  postalCode: s.postal_code,
+                }))
+              }
             />
             <View style={styles.cols}>
               <View style={{ flex: 2 }}>
