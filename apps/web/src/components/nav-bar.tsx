@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 // Local helper: ui.tsx renders NavBar, so importing from it here would be circular.
 const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(" ");
@@ -10,6 +10,12 @@ const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boo
  * Phones: the iOS navigation bar (toolbars.md › large titles). The page's large title sits in
  * the content; once it scrolls under the bar, a small centered title fades in on a frosted
  * bar. Back sits on the left ("‹ Jobs") and the page's main action on the right.
+ *
+ * Without Back (the tab roots), the large title sits in the bar's row, left of the action, as
+ * in Apple's App Store and Music (owner, 2026-10-20: "push up towards where the plus button
+ * is"). The bar sets `--nav-action` on the title to the action's width, so a long or enlarged
+ * title wraps between words before it reaches the "+"; when one of its words is wider than the
+ * room left (very large text), the title moves to its own row under the bar instead.
  */
 export function NavBar({
   title,
@@ -24,15 +30,49 @@ export function NavBar({
   action?: ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const actionRef = useRef<HTMLDivElement>(null);
+  // Beside the action, unless a word of the title can't fit there (very large text): then it
+  // takes its own row under the bar, as with Back.
+  const [stacked, setStacked] = useState(false);
+  const inline = !back && !stacked;
   useEffect(() => {
     const el = document.getElementById(titleId);
     if (!el) return;
-    const io = new IntersectionObserver(([e]) => setCollapsed(!e!.isIntersecting), {
-      rootMargin: "-52px 0px 0px 0px",
-    });
+    // Under the bar, the title has gone once it passes under it; in the bar's row, once half
+    // of it has scrolled off the top.
+    const io = new IntersectionObserver(
+      ([e]) => setCollapsed(inline ? e!.intersectionRatio < 0.5 : !e!.isIntersecting),
+      inline ? { threshold: [0, 0.5, 1] } : { rootMargin: "-52px 0px 0px 0px" },
+    );
     io.observe(el);
     return () => io.disconnect();
-  }, [titleId]);
+  }, [titleId, inline]);
+  useEffect(() => {
+    const el = document.getElementById(titleId);
+    const row = el?.closest<HTMLElement>("[data-page-header]");
+    const action = actionRef.current;
+    if (back || !el || !row || !action) return;
+    const measure = () => {
+      const room = (el.parentElement ?? el).clientWidth - action.getBoundingClientRect().width;
+      const words = [...el.children].map((w) => w.getBoundingClientRect().width);
+      const stack = Math.max(0, ...words) > room;
+      setStacked(stack);
+      row.toggleAttribute("data-stacked", stack);
+      el.style.setProperty(
+        "--nav-action",
+        stack ? "0px" : `${action.getBoundingClientRect().width}px`,
+      );
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(action);
+    ro.observe(el);
+    ro.observe(row);
+    return () => {
+      ro.disconnect();
+      row.removeAttribute("data-stacked");
+      el.style.removeProperty("--nav-action");
+    };
+  }, [titleId, back]);
 
   return (
     <div
@@ -80,7 +120,9 @@ export function NavBar({
         >
           {title}
         </p>
-        <div className="flex items-center gap-1 justify-self-end">{action}</div>
+        <div ref={actionRef} className="flex items-center gap-1 justify-self-end">
+          {action}
+        </div>
       </div>
     </div>
   );

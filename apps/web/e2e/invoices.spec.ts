@@ -202,7 +202,7 @@ test("owners see every invoice and export them as CSV", async ({ page }) => {
   await page.getByLabel("Sort").selectOption("total");
   await expect(page).toHaveURL(/filter=void&sort=total/);
   await page.getByRole("searchbox", { name: "Search invoices" }).fill("nobody at all");
-  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByRole("button", { name: "Search", exact: true }).click();
   await expect(page.getByText("No invoices match “nobody at all”.")).toBeVisible();
 
   const invoices = await page.request.get("/invoices/export?kind=invoices");

@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-20 (owner, from a screenshot of the iPhone app's Today: "The page titles sit a little low. Let's push up towards where the plus button is.")
+- **Tab roots put the large title in the bar's row**, left of the bar's buttons (the "+"), as in the App Store and Music; the page rises with it. Screens with Back keep the title under the Back row. Scrolled, the small centered title shows in the bar as before. With very large text the title wraps before the buttons, and when a word can't fit beside them it takes its own row under the bar. All four platforms (spec 3.1).
+
 ## 2026-10-20 (owner, route maps plan `docs/plans/route-maps.md`: "1. Cool by me. 2. Ok 3. Yeah. There needs to be locks for jobs whether that's day, time, or both. 4. Yes. 5. Yes")
 - **Maps by Mapbox** on the website and Android, Apple Maps on the iPhone: a map for each day on Schedule with numbered pins, Enlarge, and Plan Route.
 - **Plan Week** places a week's jobs on days and in order for the least driving, across techs when asked, with one Undo; up to 150 jobs a run.

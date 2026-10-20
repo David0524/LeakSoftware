@@ -26,6 +26,15 @@ function Badge({ count, className }: { count?: number; className?: string }) {
   );
 }
 
+/** Something new (Activity), as iOS marks it: a small dot in the tint color, read as "New". */
+export function Dot({ className, label = "New" }: { className?: string; label?: string }) {
+  return (
+    <span className={cx("inline-block size-2.5 shrink-0 rounded-full bg-primary", className)}>
+      <span className="sr-only">{label}</span>
+    </span>
+  );
+}
+
 interface Icon {
   /** The outline drawn when the tab isn't selected (and in the desktop lists). */
   line: ReactNode;
@@ -85,6 +94,9 @@ const ICONS: Record<string, Icon> = {
     cut: "M9 8h6M9 12h6M9 16h3",
   },
   "/dashboard": { line: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /> },
+  "/activity": {
+    line: <path d="M3 12h4l3-8 4 16 3-8h4" />,
+  },
   "/more": {
     line: (
       <>
@@ -146,7 +158,7 @@ export function TabBar({ links: all }: { links: OfficeLink[] }) {
   const path = usePathname();
   const overflow = all.length > 5 ? all.slice(4) : [];
   const links: OfficeLink[] = overflow.length
-    ? [...all.slice(0, 4), { href: "/more", label: "More" }]
+    ? [...all.slice(0, 4), { href: "/more", label: "More", dot: overflow.some((o) => o.dot) }]
     : all;
   return (
     // The full-width layer under the floating bar catches taps that miss it (the margins
@@ -184,6 +196,9 @@ export function TabBar({ links: all }: { links: OfficeLink[] }) {
                       count={l.badge}
                       className="absolute -top-1 left-4 bg-primary text-on-primary"
                     />
+                    {l.dot && !l.badge ? (
+                      <Dot className="absolute -top-0.5 -right-1" label="New activity" />
+                    ) : null}
                   </span>
                   <span className="max-w-full truncate px-0.5 @max-[44px]:sr-only">{l.label}</span>
                 </Link>
@@ -276,6 +291,7 @@ export function DesktopNav({
             className={barLink(moreActive || open)}
           >
             More
+            {more.some((l) => l.dot) ? <Dot label="New activity" /> : null}
             <svg
               viewBox="0 0 24 24"
               className={cx("size-4 transition-transform", open && "rotate-180")}
@@ -310,7 +326,8 @@ export function DesktopNav({
                       <span className="text-text-muted [&_svg]:size-6">
                         <TabIcon href={l.href} selected={false} />
                       </span>
-                      {l.label}
+                      <span className="flex-1">{l.label}</span>
+                      {l.dot ? <Dot /> : null}
                     </Link>
                   </li>
                 );

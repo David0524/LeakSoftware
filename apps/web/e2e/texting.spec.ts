@@ -46,7 +46,7 @@ test("customers text and call the company number, and the team answers", async (
   // The owner takes a number.
   await signIn(page, OWNER, "/settings/phone");
   await page.getByLabel("Area code").fill("602");
-  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByRole("button", { name: "Search", exact: true }).click();
   await page.getByRole("button", { name: "Use This Number" }).first().click();
   await expect(page.getByText("Working. Texts and calls show up in Messages.")).toBeVisible();
   const { data: line } = await admin

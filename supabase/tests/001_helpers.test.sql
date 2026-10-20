@@ -89,6 +89,10 @@ begin
   insert into signature (company_id, job_id, purpose, signer_name, signed_at)
     values (c, j, 'inspection_ack', 'Customer ' || label, now());
   insert into share_link (company_id, job_id, report_id) values (c, j, rep);
+  -- Activity is written by triggers (the job above, given to the tech, already made one); this
+  -- one is on the tech's job, so everyone in the shop sees it.
+  insert into activity (company_id, kind, job_id, subject_id, customer_name)
+    values (c, 'report_sent', j, rep, 'Customer ' || label);
   insert into message (company_id, job_id, channel, recipient, template)
     values (c, j, 'email', 'c@example.com', 'report');
   -- Paused, so it makes no visits here (200_maintenance tests the visits).

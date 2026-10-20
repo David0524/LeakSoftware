@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import {
   HERO_ACTION_LABELS,
   NOT_ON_MAP,
@@ -52,8 +52,14 @@ export function TodayHeroCard({
   next,
   mine,
   onMyWay,
+  doLater = null,
 }: {
   hero: TodayHero;
+  /**
+   * Do Later beside Call and Directions in the Up next and On the way moments (owner,
+   * 2026-10-20; docs/plans/today-reorder.md), when the person viewing may change the order.
+   */
+  doLater?: ReactNode;
   job: HeroJob | null;
   /** The next stop, for On My Way from a done card. */
   next: HeroJob | null;
@@ -149,7 +155,8 @@ export function TodayHeroCard({
             />
           ) : null}
           {target && hero.moment !== "done" ? (
-            <span className="ml-auto flex gap-2">
+            <span className="ml-auto flex flex-wrap items-start justify-end gap-2">
+              {doLater}
               {target.phone ? (
                 <a
                   href={`tel:${target.phone}`}

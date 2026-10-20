@@ -103,8 +103,29 @@ for (const [name, viewport, fontSize] of [
     for (const path of ["/today", "/schedule", "/jobs"]) {
       await page.goto(path);
       if (fontSize) await page.addStyleTag({ content: `html { font-size: ${fontSize}; }` });
-      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      const h1 = page.getByRole("heading", { level: 1 });
+      await expect(h1).toBeVisible();
       expect(await sideways(page), `${path} scrolls sideways`).toBeLessThanOrEqual(0);
+      // No Back here, so the large title sits in the bar's row (owner, 2026-10-20): it wraps
+      // before it reaches the "+", or takes its own row under the bar when a word can't fit.
+      const plus = page.locator(".nav-main").getByRole("link", { name: "New Job" });
+      if (await plus.count()) {
+        const plusBox = (await plus.boundingBox())!;
+        // The text itself: the heading's box runs under the "+" as its padding.
+        const text = await h1.evaluate((el) => {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          const r = range.getBoundingClientRect();
+          return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+        });
+        const plusEdges = {
+          left: plusBox.x,
+          right: plusBox.x + plusBox.width,
+          top: plusBox.y,
+          bottom: plusBox.y + plusBox.height,
+        };
+        expect(intersects(plusEdges, text), `${path}: the title overlaps +`).toBe(false);
+      }
     }
     await phone.close();
   });

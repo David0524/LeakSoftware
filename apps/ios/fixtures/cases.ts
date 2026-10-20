@@ -1,4 +1,5 @@
 import type { ModuleCases } from "./case";
+import { activity } from "./cases/activity";
 import { basics } from "./cases/basics";
 import { inspection } from "./cases/inspection";
 import { maintenance } from "./cases/maintenance";
@@ -7,10 +8,12 @@ import { notifications } from "./cases/notifications";
 import { pricing } from "./cases/pricing";
 import { routing } from "./cases/routing";
 import { schedule } from "./cases/schedule";
+import { search } from "./cases/search";
 import { todayHeroCases } from "./cases/today-hero";
 
 /** One fixture file per entry: apps/ios/Tests/Fixtures/<name>.json. */
 export const modules: Record<string, ModuleCases> = {
+  activity,
   basics,
   inspection,
   maintenance,
@@ -19,5 +22,6 @@ export const modules: Record<string, ModuleCases> = {
   pricing,
   routing,
   schedule,
+  search,
   "today-hero": todayHeroCases,
 };

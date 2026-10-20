@@ -20,6 +20,8 @@ import {
   visitReportMode,
   mapStatus,
   todayHero,
+  todayMoves,
+  todayStopLock,
   JOB_TYPE_LABELS,
 } from "@leakbook/core";
 import { TodayHeroCard, type HeroJob } from "@/components/today-hero";
@@ -31,6 +33,14 @@ import { CleaningIcon, PhoneIcon } from "@/components/icons";
 import { OnMyWay } from "@/components/on-my-way";
 import { TodayComplete } from "@/components/today-complete";
 import { TodayStop } from "@/components/today-stop";
+import {
+  DoLaterButton,
+  HideWhileReordering,
+  ReorderStatus,
+  ReorderToggle,
+  TodayReorderProvider,
+  type StopMoves,
+} from "@/components/today-reorder";
 import { WeatherBadge } from "@/components/weather-badge";
 import { AddressLink, OpenRouteInMaps } from "@/components/open-in-maps";
 import { Empty, PageHeader, StatusBadge, cx, iconButtonClass, pillClass } from "@/components/ui";
@@ -158,6 +168,27 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
     };
   };
   const doneJobs = jobs.filter((j) => stopDone(j, ctx.today));
+  // Changing the order of stops (owner, 2026-10-20; docs/plans/today-reorder.md): techs on
+  // their own day, owners and admins on any tech's day they're viewing.
+  const canReorder = mine || office.isManager;
+  const moveStops = jobs.map((j) => {
+    const done = stopDone(j, ctx.today);
+    return {
+      id: j.id,
+      done,
+      lock: todayStopLock(j, ctx.timeZone),
+      started: !done && j.status === "in_progress",
+    };
+  });
+  const moveable = todayMoves(moveStops);
+  const movesFor = (j: (typeof jobs)[number]): StopMoves | undefined => {
+    const s = moveStops[jobs.indexOf(j)]!;
+    const m = moveable.get(j.id)!;
+    return canReorder && !s.done
+      ? { jobId: j.id, customer: j.customer?.name ?? "Customer", lock: s.lock, ...m }
+      : undefined;
+  };
+  const anyMoves = canReorder && [...moveable.values()].some((m) => m.up || m.down);
   const dueAt = (j: (typeof jobs)[number]) => {
     const here = new Set((onVisits.get(j.id) ?? []).map((x) => x.planCleaningId));
     return cleanings
@@ -177,6 +208,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
     const leg = route!.summary.legs[i] ?? 0;
     const isNext = j.id === next?.id;
     const done = stopDone(j, ctx.today);
+    const moves = movesFor(j);
     return (
       <li key={j.id}>
         {withLeg ? (
@@ -201,6 +233,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
           name={j.customer?.name ?? "Customer"}
           href={`/jobs/${j.id}`}
           access={j.property?.access_notes ?? null}
+          moves={moves}
           extra={
             <>
               {isNext ? (
@@ -255,6 +288,13 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                 customer: j.customer?.name,
               })}
             />
+            {moves ? (
+              <DoLaterButton
+                jobId={j.id}
+                customer={j.customer?.name ?? "this stop"}
+                show={moves.later}
+              />
+            ) : null}
             {done ? null : (
               <span className="ml-auto flex max-w-full min-w-0 gap-2">
                 {j.customer?.phone ? (
@@ -334,30 +374,44 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
           .
         </Empty>
       ) : (
-        <>
+        <TodayReorderProvider tech={techId}>
           <p className="mb-4 text-text-muted" data-testid="today-summary">
             {jobs.length} {jobs.length === 1 ? "stop" : "stops"} ·{" "}
             {durationLabel(route!.summary.driveMin)} driving
             {route!.summary.backMin != null
               ? ` · back by ${minutesLabel(route!.summary.backMin)}`
               : ""}
+            {anyMoves ? <ReorderToggle /> : null}
           </p>
+          <ReorderStatus />
           {hero ? (
-            <TodayHeroCard
-              hero={hero}
-              job={heroJob(next)}
-              next={null}
-              mine={mine}
-              onMyWay={{
-                tech: office.user.name ?? tech?.name ?? "your tech",
-                shop: ctx.shopName,
-                windowMin: ctx.settings.windowMin,
-                timeZone: ctx.timeZone,
-                via: onMyWayVia(company.settings),
-                lineActive: line?.status === "active",
-                isOwner: office.isManager,
-              }}
-            />
+            <HideWhileReordering>
+              <TodayHeroCard
+                hero={hero}
+                job={heroJob(next)}
+                next={null}
+                mine={mine}
+                onMyWay={{
+                  tech: office.user.name ?? tech?.name ?? "your tech",
+                  shop: ctx.shopName,
+                  windowMin: ctx.settings.windowMin,
+                  timeZone: ctx.timeZone,
+                  via: onMyWayVia(company.settings),
+                  lineActive: line?.status === "active",
+                  isOwner: office.isManager,
+                }}
+                doLater={
+                  next && canReorder && (hero.moment === "ahead" || hero.moment === "driving") ? (
+                    <DoLaterButton
+                      jobId={next.id}
+                      customer={next.customer?.name ?? "this stop"}
+                      show={!!moveable.get(next.id)?.later && !todayStopLock(next, ctx.timeZone)}
+                      onWater
+                    />
+                  ) : null
+                }
+              />
+            </HideWhileReordering>
           ) : null}
           <ol className="space-y-1">
             {doneJobs.length ? (
@@ -390,7 +444,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
               </p>
             </li>
           </ol>
-        </>
+        </TodayReorderProvider>
       )}
       {/* After the stops, so the first stop's buttons are on screen at launch (owner,
           2026-10-20). */}

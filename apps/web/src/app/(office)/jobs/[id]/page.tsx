@@ -1,3 +1,4 @@
+import { RememberRecent } from "@/components/remember-recent";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -149,6 +150,17 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
 
   return (
     <>
+      {/* First under Recent in search (docs/plans/search-and-activity.md). */}
+      <RememberRecent
+        userId={office.user.id}
+        item={{
+          kind: "job",
+          id: job.id,
+          title: `${job.number ? `Job #${job.number}` : "New job"} · ${JOB_TYPE_LABELS[job.type] ?? "Job"}`,
+          detail: job.customer?.name ?? null,
+          open: { screen: "job", id: job.id },
+        }}
+      />
       <PageHeader
         back={{ href: "/jobs", label: "Jobs" }}
         // The customer's name on top, the job number smaller below (owner, 2026-10-20).

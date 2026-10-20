@@ -1,3 +1,4 @@
+import { RememberRecent } from "@/components/remember-recent";
 import { mapStatus, offersLeak, offersPool } from "@leakbook/core";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -126,6 +127,17 @@ export default async function CustomerPage({ params }: PageProps<"/customers/[id
   // edited in a sheet ("There is no way to change a homeowner's address").
   return (
     <SheetNotices>
+      {/* First under Recent in search (docs/plans/search-and-activity.md). */}
+      <RememberRecent
+        userId={office.user.id}
+        item={{
+          kind: "customer",
+          id: customer.id,
+          title: customer.name,
+          detail: customer.phone?.trim() || customer.email?.trim() || null,
+          open: { screen: "customer", id: customer.id },
+        }}
+      />
       <PageHeader
         title={customer.name}
         back={{ href: "/customers", label: "Customers" }}

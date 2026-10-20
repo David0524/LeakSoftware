@@ -9,6 +9,8 @@ import { cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getAccess, getCompany, mayMakeJobs } from "@/lib/data";
 import { unreadCount } from "@/lib/messages";
+import { activityUnread } from "@/lib/activity";
+import { DesktopSearch } from "@/components/shop-search";
 import { desktopNav, officeLinks } from "@/lib/nav";
 import { onboardingAvailable } from "@/server/billing";
 
@@ -67,8 +69,12 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
 
 async function PhoneTabs() {
   const office = await getOffice();
-  const [company, unread] = await Promise.all([getCompany(office), unreadCount(office)]);
-  return <TabBar links={officeLinks(office.isManager, company.settings, unread)} />;
+  const [company, unread, dot] = await Promise.all([
+    getCompany(office),
+    unreadCount(office),
+    activityUnread(office),
+  ]);
+  return <TabBar links={officeLinks(office.isManager, company.settings, unread, dot)} />;
 }
 
 /** Trial ending, payment failed, or read-only (M10 billing). */
@@ -104,12 +110,13 @@ async function AccessBanner() {
 
 async function OfficeNav() {
   const office = await getOffice();
-  const [company, unread, newJob] = await Promise.all([
+  const [company, unread, newJob, dot] = await Promise.all([
     getCompany(office),
     unreadCount(office),
     mayMakeJobs(office),
+    activityUnread(office),
   ]);
-  const links = officeLinks(office.isManager, company.settings, unread);
+  const links = officeLinks(office.isManager, company.settings, unread, dot);
   // On a computer the Dashboard leads for owners (owner, 2026-10-16); phones keep Today first.
   const dashboard = links.find((l) => l.href === "/dashboard");
   const desktop = dashboard ? [dashboard, ...links.filter((l) => l !== dashboard)] : links;
@@ -119,29 +126,33 @@ async function OfficeNav() {
       <DesktopNav
         {...desktopNav(desktop)}
         action={
-          newJob ? (
-            <Link
-              href="/jobs/new"
-              className="inline-flex min-h-11 items-center"
-              aria-label="New Job"
-              title="New Job"
-            >
-              <span className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-3.5 text-[0.9375rem] font-semibold text-on-primary max-lg:px-2.5">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="size-4"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.6"
-                  strokeLinecap="round"
-                  aria-hidden="true"
-                >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                <span className="max-lg:sr-only">New Job</span>
-              </span>
-            </Link>
-          ) : null
+          <>
+            {/* Search across the shop, before New Job; ⌘K or Ctrl+K opens it anywhere. */}
+            <DesktopSearch userId={office.user.id} />
+            {newJob ? (
+              <Link
+                href="/jobs/new"
+                className="inline-flex min-h-11 items-center"
+                aria-label="New Job"
+                title="New Job"
+              >
+                <span className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-3.5 text-[0.9375rem] font-semibold text-on-primary max-lg:px-2.5">
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="size-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.6"
+                    strokeLinecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  <span className="max-lg:sr-only">New Job</span>
+                </span>
+              </Link>
+            ) : null}
+          </>
         }
       />
       <AccountMenu

@@ -16,6 +16,17 @@ import { createClient } from "@/lib/supabase/server";
 import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
 import { GettingStarted } from "@/components/getting-started";
+import { ActivityItem } from "@/components/activity-rows";
+import { Dot } from "@/components/nav-links";
+import { activityPage, activityUnread } from "@/lib/activity";
+import {
+  ACTIVITY_DASHBOARD_COUNT,
+  ACTIVITY_EMPTY,
+  ACTIVITY_OFFLINE,
+  ACTIVITY_TITLE,
+  SEARCH_WORDS,
+  activityRow,
+} from "@leakbook/core";
 
 export const metadata: Metadata = { title: "Dashboard · Sundeck Pro" };
 
@@ -95,6 +106,10 @@ export default async function DashboardPage() {
           note={`${MONTHS} months`}
         />
       </dl>
+
+      <Suspense fallback={null}>
+        <LatestActivity />
+      </Suspense>
 
       <div className="mt-6 grid items-start gap-5 lg:grid-cols-2">
         <Card aria-labelledby="collected-title">
@@ -261,5 +276,47 @@ function Stat({ label, value, note }: { label: string; value: string; note: Reac
       <dd className="font-display text-3xl font-extrabold tabular-nums">{value}</dd>
       <dd className="text-[0.9375rem] text-text-muted">{note}</dd>
     </div>
+  );
+}
+
+/** The latest few events, then See All (owner, 2026-10-20: "a shortcut to it on the owner's
+ * dashboard page"), with the dot when there is something new. */
+async function LatestActivity() {
+  const office = await getOffice();
+  const [page, dot] = await Promise.all([
+    activityPage(office, null, ACTIVITY_DASHBOARD_COUNT).catch(() => null),
+    activityUnread(office),
+  ]);
+  const now = new Date();
+  return (
+    <section aria-labelledby="activity-title" className="mt-6 max-w-2xl">
+      <div className="mb-2 flex items-end justify-between gap-3 px-4">
+        <h2
+          id="activity-title"
+          className="flex items-center gap-2 text-[0.8125rem] text-text-muted uppercase"
+        >
+          {ACTIVITY_TITLE}
+          {dot ? <Dot label="New activity" /> : null}
+        </h2>
+        <Link
+          href="/activity"
+          className="-my-3 inline-flex min-h-11 items-center text-[0.9375rem] text-link"
+          aria-label={`${SEARCH_WORDS.seeAll} ${ACTIVITY_TITLE}`}
+        >
+          {SEARCH_WORDS.seeAll}
+        </Link>
+      </div>
+      {!page ? (
+        <Empty>{ACTIVITY_OFFLINE}</Empty>
+      ) : page.events.length === 0 ? (
+        <Empty>{ACTIVITY_EMPTY}</Empty>
+      ) : (
+        <ul className="grouped">
+          {page.events.map((e) => (
+            <ActivityItem key={e.id} row={activityRow(e, now, office.company.timezone)} />
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
