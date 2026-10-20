@@ -63,20 +63,25 @@ and the camera (or library) opens. Save then works as before.
   sheet does the same on back instead of ignoring it.
 - Review: Cancel with a signature drawn asks the same.
 
-## 5. Undo after completing
+## 5. Ask before completing sends the report; Undo after Mark Remaining
 
-**Mark Complete** (Today), **Complete Job** (job page and the Next Step bar) and
-**Mark N Remaining …** (checklist) stay one tap. Afterwards, in the place of the button, for 5
-seconds: "Completed" (Mark Remaining: "Marked N") in secondary text and an **Undo** pill. Not a
-toast or snackbar; it sits where the button was.
+Owner, 2026-10-20: "maybe when you press complete it prompts you with 'are you ready to send'".
 
-- The change is saved straight away (nothing is held back), so leaving the screen never loses it.
-- Undo puts things back: a completed visit goes back to In progress (the existing Reopen Visit
-  move), a leak or repair stop is marked not complete, and Mark Remaining clears the items it
-  marked (back to To do).
-- The automatic visit report (shops set to Automatic) is not sent until the 5 seconds pass
-  without Undo. If the screen is left sooner, it is sent then. If it can't be sent (closed
-  browser tab, no signal), the existing queue and daily catch-up send it.
+- **Mark Complete** (Today) and **Complete Job** (job page and the Next Step bar) on a
+  maintenance visit, in a shop whose visit reports are set to Automatic, ask first with an alert
+  (iOS alert, centered; not an action sheet):
+  - Title: "Ready to send the visit report?"
+  - Message: "Completing this visit sends its report to {customer name}." ("to the customer" when
+    there is no name.)
+  - Buttons: **Cancel** and **Complete and Send** (the default, bold).
+  - Complete and Send completes the visit exactly as before (the report is sent the way it is
+    today: straight away, or queued when offline).
+- When completing sends nothing (shops set to By Hand or Off, and leak or repair stops on Today),
+  there is no prompt: still one tap.
+- **Mark N Remaining …** (checklist) stays one tap. Afterwards, in the place of the button, for 5
+  seconds: "Marked N" in secondary text and an **Undo** pill (not a toast or snackbar; it sits
+  where the button was). The change is saved straight away; Undo clears the items it marked
+  (back to To do).
 
 ## 6. Report and sign-off
 
