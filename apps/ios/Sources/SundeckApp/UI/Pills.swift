@@ -12,6 +12,8 @@
     struct Pill: View {
         var title: String
         var selected: Bool
+        /// Something dragged is over it (the Schedule's tech pills take a dropped stop).
+        var targeted = false
         var action: () -> Void
 
         var body: some View {
@@ -22,7 +24,8 @@
                     .foregroundStyle(selected ? Color.onPrimary : Color.text)
                     .padding(.horizontal, 16)
                     .frame(minHeight: minTarget)
-                    .background(Capsule().fill(selected ? Color.brandPrimary : Color.fill))
+                    .background(Capsule().fill(selected ? Color.brandPrimary : targeted ? Color.tinted : Color.fill))
+                    .overlay { if targeted { Capsule().strokeBorder(Color.link, lineWidth: 2) } }
                     .contentShape(Capsule())
             }
             .buttonStyle(.plain)
@@ -34,12 +37,30 @@
         @Binding var selection: Value
         var options: [Value]
         var label: (Value) -> String
+        /// Takes a dragged item's text on an option's pill (true when it's used); nil for none.
+        /// Hovering a pill with it chooses that pill (spring loading).
+        var canDrop: (Value) -> Bool = { _ in false }
+        var onDrop: ((Value, String) -> Bool)?
+        @State private var targeted: Value?
 
         var body: some View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(options, id: \.self) { option in
-                        Pill(title: label(option), selected: option == selection) { selection = option }
+                        let pill = Pill(
+                            title: label(option), selected: option == selection, targeted: targeted == option
+                        ) { selection = option }
+                        if let onDrop, canDrop(option) {
+                            pill
+                                .springLoadingBehavior(.enabled)
+                                .dropDestination(for: String.self) { items, _ in
+                                    items.first.map { onDrop(option, $0) } ?? false
+                                } isTargeted: { over in
+                                    if over { targeted = option } else if targeted == option { targeted = nil }
+                                }
+                        } else {
+                            pill
+                        }
                     }
                 }
             }

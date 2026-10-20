@@ -92,6 +92,9 @@
     /// `List`, use `.swipeActions` instead.
     struct SwipeActionsRow<Content: View>: View {
         var actions: [SwipeAction]
+        /// The context menu with the same actions; off where touch and hold drags the row instead
+        /// (the Schedule's stops).
+        var menu = true
         @ViewBuilder var content: Content
         @State private var offset: CGFloat = 0
         @State private var start: CGFloat = 0
@@ -154,9 +157,7 @@
                         start = offset
                     }
             )
-            .contextMenu {
-                ForEach(actions) { a in Button(a.title, systemImage: a.systemImage, action: a.action) }
-            }
+            .modifier(ActionsMenu(actions: actions, on: menu))
             .accessibilityActions {
                 ForEach(actions) { a in Button(a.title, action: a.action) }
             }
@@ -165,6 +166,22 @@
         private func close() {
             withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { offset = 0 }
             start = 0
+        }
+    }
+
+    /// The row's actions in its context menu, when it has one.
+    private struct ActionsMenu: ViewModifier {
+        var actions: [SwipeAction]
+        var on: Bool
+
+        @ViewBuilder func body(content: Content) -> some View {
+            if on {
+                content.contextMenu {
+                    ForEach(actions) { a in Button(a.title, systemImage: a.systemImage, action: a.action) }
+                }
+            } else {
+                content
+            }
         }
     }
 #endif

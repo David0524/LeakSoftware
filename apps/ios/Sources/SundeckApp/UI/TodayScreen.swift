@@ -538,9 +538,11 @@
         }
     }
 
-    /// An address in `link`, opening directions in the chosen maps app.
+    /// An address in `link` (or muted, on the Schedule's stops), opening directions in the chosen
+    /// maps app.
     struct AddressButton: View {
         var place: MapPlace
+        var muted = false
         @Environment(\.openURL) private var openURL
         @Environment(SyncService.self) private var sync
 
@@ -550,7 +552,7 @@
             } label: {
                 Text(place.address.isEmpty ? "Address" : place.address)
                     .textRole(.secondary)
-                    .foregroundStyle(Color.link)
+                    .foregroundStyle(muted ? Color.textMuted : Color.link)
                     .lineLimit(1)
                     .frame(minHeight: 28, alignment: .leading)
             }

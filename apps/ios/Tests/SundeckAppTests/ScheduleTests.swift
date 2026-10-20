@@ -334,6 +334,61 @@ import Testing
         }
     }
 
+    @Test func draggingAStopMovesItLikeMove() throws {
+        func drop(_ n: Int, _ target: ScheduleDrop) throws -> (updates: [JobUpdate], message: String)? {
+            try dropJob(id(n), on: target, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+        }
+        // Today's route is Grace (first) then Riley. Riley onto Grace's place goes first.
+        let first = try #require(try drop(1, .route(tech: Self.me, date: "2026-10-20", index: 0)))
+        #expect(first.message.hasPrefix("Moved to "))
+        #expect(first.updates[0].id == id(1) && first.updates[0]["route_order"] == 1)
+        // Dropped where it already is: nothing to do.
+        #expect(try drop(2, .route(tech: Self.me, date: "2026-10-20", index: 0)) == nil)
+        #expect(try drop(1, .route(tech: Self.me, date: "2026-10-20", index: nil)) == nil)
+        #expect(try drop(2, .day("2026-10-20")) == nil)
+        #expect(try drop(4, .needsATime) == nil)
+        #expect(try drop(5, .needsATime) == nil)
+
+        // Onto another tech's day, and onto a day in the week strip (keeps its tech, goes last).
+        let sams = try #require(try drop(2, .route(tech: Self.sam, date: "2026-10-21", index: 0)))
+        #expect(sams.updates[0]["assigned_user_id"] == .string(Self.sam))
+        let tomorrow = try #require(try drop(2, .day("2026-10-21")))
+        #expect(tomorrow.updates[0]["assigned_user_id"] == .string(Self.me))
+        #expect(tomorrow.updates[0]["scheduled_start"]?.string?.hasPrefix("2026-10-21") == true)
+        // Needs a Time onto a route gets a tech and a time.
+        let booked = try #require(try drop(4, .route(tech: Self.me, date: "2026-10-21", index: nil)))
+        #expect(booked.updates[0]["status"] == "scheduled")
+
+        // Onto Needs a Time: off the schedule.
+        let off = try #require(try drop(2, .needsATime))
+        #expect(off.message == "Taken off the schedule.")
+
+        // Past days refuse, as the website does.
+        #expect(throws: ScheduleProblem("Pick today or a later day.")) { try drop(2, .day("2026-10-19")) }
+        #expect(throws: ScheduleProblem("Pick today or a later day.")) {
+            try drop(2, .route(tech: Self.me, date: "2026-10-19", index: nil))
+        }
+        // A canceled job stays put.
+        #expect(throws: ScheduleProblem("This job was canceled, so it stays off the schedule.")) {
+            try drop(6, .day("2026-10-21"))
+        }
+    }
+
+    @Test func aStartedStopKeepsItsStatusAndStaysOnTheSchedule() throws {
+        try sync.write("job", id: id(1), companyId: Self.company, ["status": "in_progress"])
+        let moved = try #require(
+            try dropJob(id(1), on: .day("2026-10-21"), jobs: jobs, ctx: ctx, team: team, drive: DriveTimes()))
+        #expect(moved.updates[0]["status"] == "in_progress")
+        #expect(
+            throws: ScheduleProblem(
+                "This job has started, so it stays on the schedule. Move it to another day instead.")
+        ) {
+            try dropJob(id(1), on: .needsATime, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+        }
+        #expect(!isFinished(.inProgress) && !isFinished(.scheduled) && !isFinished(.canceled))
+        #expect(isFinished(.done) && isFinished(.reportSent) && isFinished(.paid))
+    }
+
     @Test func aLimitedTechMovesOnlyTheirOwnJobs() {
         var limited = ctx
         limited.seesAll = false
