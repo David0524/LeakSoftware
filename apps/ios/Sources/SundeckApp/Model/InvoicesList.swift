@@ -18,6 +18,34 @@ public struct InvoiceListItem: Identifiable, Equatable, Sendable {
     public var open: Bool { invoice.status == .sent || invoice.status == .partiallyPaid }
 }
 
+extension InvoiceListItem {
+    /// What core's filters and sorts read.
+    public var filterItem: InvoiceFilterItem {
+        InvoiceFilterItem(
+            number: invoice.number, status: invoice.status, totalCents: invoice.totalCents,
+            amountPaidCents: invoice.amountPaidCents, dueDate: invoice.dueDate, sentAt: invoice.sentAt,
+            customer: customer, jobNumber: jobNumber)
+    }
+}
+
+/// The list a filter, search and sort show (core `filterInvoices`).
+public func shownInvoices(
+    _ list: [InvoiceListItem], filter: InvoiceFilter, sort: InvoiceSort, q: String, today: String
+) -> [InvoiceListItem] {
+    filterInvoices(list, item: \.filterItem, filter: filter.rawValue, sort: sort.rawValue, q: q, today: today)
+}
+
+/// "Unpaid 3": each filter's count, as the website's pills.
+public func invoiceFilterCount(_ list: [InvoiceListItem], _ filter: InvoiceFilter, today: String) -> Int {
+    filter == .all ? list.count : shownInvoices(list, filter: filter, sort: .newest, q: "", today: today).count
+}
+
+/// No invoices for a filter or search: `No invoices match “…”.` or "No invoices here."
+public func invoicesEmptyText(_ q: String) -> String {
+    let t = q.trimmingCharacters(in: .whitespaces)
+    return t.isEmpty ? "No invoices here." : "No invoices match “\(t)”."
+}
+
 /// The company's invoices, newest first, with each job's number and customer.
 public func invoiceList(_ store: LocalStore, companyId: String) -> [InvoiceListItem] {
     let jobs = Dictionary(
@@ -59,7 +87,7 @@ func mediumDay(_ iso: String, timeZone: String) -> String {
 
 /// The row's two detail lines: "#1026 · Job #1072" (or "· Maintenance, October 2026") and
 /// "Sent · sent Oct 17, 2026 · $375.00 due".
-public func invoiceRowLines(_ item: InvoiceListItem, timeZone: String) -> (String, String) {
+public func invoiceRowLines(_ item: InvoiceListItem, timeZone: String, today: String? = nil) -> (String, String) {
     let i = item.invoice
     var first = i.number.map { "#\($0)" } ?? "Draft"
     if let month = item.periodMonth {
@@ -67,7 +95,7 @@ public func invoiceRowLines(_ item: InvoiceListItem, timeZone: String) -> (Strin
     } else if let job = item.jobNumber {
         first += " · Job #\(job)"
     }
-    var second = i.status.label
+    var second = today.map { invoiceOverdue(item.filterItem, $0) } == true ? "Overdue" : i.status.label
     if let sent = i.sentAt { second += " · sent \(mediumDay(sent, timeZone: timeZone))" }
     if item.open { second += " · \(formatCents(i.balanceCents)) due" }
     return (first, second)

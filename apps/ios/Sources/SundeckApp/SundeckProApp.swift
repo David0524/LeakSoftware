@@ -56,6 +56,8 @@
         let push: PushRegistration
         /// Map pins to find again after an address change (POST /api/locate after a sync).
         let locate: LocateQueue
+        /// Completed visits whose report may go out by itself (POST visit-report after a sync).
+        let visitReports: VisitReportQueue
         /// The Live Activity for the stop the tech is on.
         let liveStop: LiveStopController
         /// Where a tapped notification or the Live Activity's Open Job goes (MainView opens it).
@@ -69,6 +71,7 @@
             appearance = AppearanceSetting(session.sync.kv)
             push = PushRegistration(kv: session.sync.kv)
             locate = LocateQueue(kv: session.sync.kv)
+            visitReports = VisitReportQueue(kv: session.sync.kv)
             liveStop = LiveStopController(session: session)
             signer = MediaURLSigner { path, seconds in
                 try await client.storage.from("media").createSignedURL(path: path, expiresIn: seconds)
@@ -151,6 +154,11 @@
         /// After each sync: the company list, and teammates' names for offline use.
         private func afterSync() async {
             session.reloadCompanies()
+            if !visitReports.pending.isEmpty, session.sync.status.pending == 0 {
+                let before = visitReports.pending.count
+                await visitReports.flush(api)
+                if visitReports.pending.count < before { session.sync.syncSoon(2) }  // bring the sent report down
+            }
             let waiting = locate.pending.count
             if waiting > 0, session.sync.status.pending == 0 {
                 await locate.flush(api)

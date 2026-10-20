@@ -403,3 +403,38 @@ public func cleaningDueSpoken(_ name: String, days: Int, weeks: Int) -> String {
 public func cleaningDueSpoken(_ name: String, _ due: CleaningCountdown) -> String {
     cleaningDueSpoken(name, days: due.days, weeks: due.weeks)
 }
+
+// MARK: - Visit reports (owner, 2026-10-20)
+
+/// Whether a maintenance visit's report goes out by itself, by hand, or not at all.
+public enum VisitReportMode: String, Codable, CaseIterable, Sendable {
+    case auto, manual, off
+
+    /// `VISIT_REPORT_MODES`' label.
+    public var label: String {
+        switch self {
+        case .auto: "Automatic"
+        case .manual: "By Hand"
+        case .off: "Off"
+        }
+    }
+
+    public var hint: String {
+        switch self {
+        case .auto: "Each visit’s report goes to the customer when the visit is completed."
+        case .manual: "Techs send it with Send Visit Report."
+        case .off: "No visit reports."
+        }
+    }
+}
+
+/// `VISIT_REPORT_MODES`, in the website's order.
+public let visitReportModes: [VisitReportMode] = [.auto, .manual, .off]
+
+/// The shop's choice (company.settings.visit_reports); by hand when unset.
+public func visitReportMode(_ settings: JSONValue?) -> VisitReportMode {
+    guard case .string(let v)? = settings?["visit_reports"], let mode = VisitReportMode(rawValue: v) else {
+        return .manual
+    }
+    return mode
+}

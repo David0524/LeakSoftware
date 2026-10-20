@@ -12,6 +12,7 @@
         var jobId: String
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
+        @Environment(AppEnvironment.self) private var app
         @State private var job: JobView?
         @State private var section: JobPageSection?
         @State private var toDo = 0
@@ -197,6 +198,10 @@
             }
             do {
                 try sync.write("job", id: jobId, companyId: company.id, jobStatusValues(to, job: job.job))
+                // A completed visit's report goes out by itself in shops that chose Automatic.
+                if to == .done {
+                    app.visitReports.completed(jobType: job.type, jobId: jobId, settings: company.settings)
+                }
                 blocked = nil
                 changes += 1
             } catch {

@@ -296,4 +296,125 @@ import Testing
             userId: ScheduleDataTests.me, seesAll: true, names: [:])
         #expect(rows.first?.phone == "(602) 555-0100" && rows.first?.customerId != nil)
     }
+
+    // MARK: - Visit reports (owner, 2026-10-20)
+
+    func visitShell(mode: String?) throws -> Shell {
+        let s = try Shell()
+        try s.seedCompany(
+            userId: "u1", role: "owner",
+            settings: mode.map { ["services": "pool", "visit_reports": .string($0)] } ?? ["services": "pool"])
+        try s.sync.store.applyPage(
+            PullPage(
+                rows: [
+                    PulledRow(
+                        table: "customer", xid: "3",
+                        row: ["id": "cu1", "company_id": "c1", "name": "Pat Doe", "email": "pat@home.test"]),
+                    PulledRow(
+                        table: "property", xid: "3",
+                        row: ["id": "p1", "company_id": "c1", "customer_id": "cu1", "address_line1": "1 Main St"]),
+                    PulledRow(
+                        table: "job", xid: "3",
+                        row: [
+                            "id": "j1", "company_id": "c1", "property_id": "p1", "type": "maintenance",
+                            "status": "in_progress",
+                        ]),
+                    PulledRow(
+                        table: "report", xid: "3",
+                        row: [
+                            "id": "v1", "company_id": "c1", "job_id": "j1", "template_key": "maintenance",
+                            "version": 1, "status": "superseded", "sent_at": "2026-10-19T16:00:00Z",
+                        ]),
+                    PulledRow(
+                        table: "report", xid: "3",
+                        row: [
+                            "id": "v2", "company_id": "c1", "job_id": "j1", "template_key": "maintenance",
+                            "version": 2, "status": "sent", "sent_at": "2026-10-20T16:42:00Z",
+                        ]),
+                    PulledRow(
+                        table: "share_link", xid: "3",
+                        row: ["id": "l2", "company_id": "c1", "job_id": "j1", "report_id": "v2", "token": "tok2"]),
+                ], done: true, cursor: [:], serverHLC: "1760000000003-0000-srv"))
+        s.session.reloadCompanies()
+        return s
+    }
+
+    @Test func visitReportVersionsAndStatus() throws {
+        let s = try visitShell(mode: nil)
+        let versions = visitReportVersions(s.sync.store, jobId: "j1")
+        #expect(versions.map(\.id) == ["v2", "v1"] && versions[0].current && versions[0].token == "tok2")
+        // The homeowner report list never sees them.
+        #expect(jobReports(s.sync.store, jobId: "j1").isEmpty)
+        #expect(
+            visitReportStatus(versions, mode: .manual, done: false, timeZone: "America/Phoenix")
+                == "Sent Oct 20, 2026, 9:42 AM · version 2.")
+        #expect(
+            visitReportStatus([], mode: .auto, done: false, timeZone: "America/Phoenix")
+                == "Goes to the customer by itself when this visit is completed.")
+        #expect(
+            visitReportStatus([], mode: .manual, done: true, timeZone: "America/Phoenix")
+                == "The water test, the checklist and cleanings, and photos from this visit.")
+        #expect(
+            visitReportVersionLabel(versions[1], timeZone: "America/Phoenix") == "Version 1 · Oct 19, 2026, 9:00 AM")
+        let settings = try s.sync.store.get("company", "c1")?["settings"]
+        try VisitReportSettingsWrites.setMode(s.sync, companyId: "c1", settings: settings, .off)
+        let saved = try s.sync.store.get("company", "c1")?["settings"]
+        #expect(visitReportMode(saved) == .off && saved?["services"] == "pool")
+    }
+
+    @Test func completingAVisitQueuesTheAutomaticReport() async throws {
+        let s = try visitShell(mode: "auto")
+        let queue = VisitReportQueue(kv: s.sync.kv)
+        let blocked = try StopWrites.mark(
+            s.sync, companyId: "c1", settings: try s.sync.store.get("company", "c1")?["settings"], jobId: "j1",
+            complete: true,
+            day: "2026-10-20", visitReports: queue)
+        #expect(blocked == nil && queue.pending == ["j1"])
+        // By hand: nothing queued; a leak job never is.
+        let manual = VisitReportQueue(kv: s.sync.kv)
+        manual.completed(jobType: .maintenance, jobId: "j2", settings: ["visit_reports": "manual"])
+        manual.completed(jobType: .detection, jobId: "j3", settings: ["visit_reports": "auto"])
+        #expect(manual.pending == ["j1"])
+
+        let host = host()
+        await queue.flush(api(host, offline: true))
+        #expect(queue.pending == ["j1"])
+        StubServer.set(host, "/api/jobs/j1/visit-report", 200, ["skipped": "not_auto"])
+        await queue.flush(api(host))
+        #expect(queue.pending.isEmpty && StubServer.calls(host).last?.body == ["automatic": true])
+    }
+
+    @Test func sendVisitReportByHand() async throws {
+        let s = try visitShell(mode: nil)
+        let host = host()
+        await #expect(throws: WebAPI.Failure(description: VisitReportText.enterEmail)) {
+            _ = try await VisitReportServer.send(
+                sync: s.sync, api: self.api(host), jobId: "j1", channel: .email, to: "pat")
+        }
+        StubServer.set(
+            host, "/api/jobs/j1/visit-report", 200,
+            [
+                "token": "tok3", "link": "https://sundeck.test/r/tok3", "message": "Shop: https://sundeck.test/r/tok3",
+                "delivered": "email",
+            ])
+        var steps: [Int] = []
+        let sent = try await VisitReportServer.send(
+            sync: s.sync, api: api(host), jobId: "j1", channel: .email, to: " pat@home.test ",
+            onStep: { steps.append($0) })
+        #expect(sent.message == "Visit report emailed." && sent.share == nil && steps == [0, 1, 2])
+        #expect(StubServer.calls(host).last?.body == ["channel": "email", "to": "pat@home.test"])
+        StubServer.set(
+            host, "/api/jobs/j1/visit-report", 200,
+            ["token": "tok3", "link": "https://sundeck.test/r/tok3", "message": "Shop: link", "delivered": .null])
+        let link = try await VisitReportServer.send(
+            sync: s.sync, api: api(host), jobId: "j1", channel: .smsDevice, to: nil)
+        #expect(link.message == VisitReportText.ready && link.share == "Shop: link")
+        #expect(StubServer.calls(host).last?.body == ["channel": "sms_device"])
+        StubServer.set(
+            host, "/api/jobs/j1/visit-report", 400, ["error": "Email isn’t set up on this server. Text the link."])
+        await #expect(throws: WebAPI.Failure(description: "Email isn’t set up on this server. Text the link.")) {
+            _ = try await VisitReportServer.send(
+                sync: s.sync, api: self.api(host), jobId: "j1", channel: .email, to: "pat@home.test")
+        }
+    }
 }

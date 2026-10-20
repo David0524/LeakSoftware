@@ -356,6 +356,7 @@
         var job: ScheduleJob
         var day: TodayDay
         @Environment(Session.self) private var session
+        @Environment(AppEnvironment.self) private var app
         @Environment(SyncService.self) private var sync
         @Environment(\.openRoute) private var openRoute
         @State private var blocked: String?
@@ -387,7 +388,7 @@
             do {
                 blocked = try StopWrites.mark(
                     sync, companyId: company.id, settings: company.settings, jobId: job.id, complete: complete,
-                    day: day.ctx.today)
+                    day: day.ctx.today, visitReports: app.visitReports)
                 if let blocked { AccessibilityNotification.Announcement(blocked).post() } else { marked += 1 }
             } catch {
                 blocked = String(describing: error)

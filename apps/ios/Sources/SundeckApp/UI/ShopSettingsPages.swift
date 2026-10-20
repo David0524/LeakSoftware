@@ -528,6 +528,7 @@
                         .disabled(!item.editable)
                     }
                 }
+                VisitReportSettingGroup()
                 SavedReportsGroup()
             }
             .refreshable { await sync.syncNow() }

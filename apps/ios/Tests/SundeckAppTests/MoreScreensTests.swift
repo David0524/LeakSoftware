@@ -270,6 +270,28 @@ import Testing
         #expect(csvText([["a,b", "c\"d"]]) == "\"a,b\",\"c\"\"d\"\r\n")
     }
 
+    /// Filters, search and sort on Invoices (owner, 2026-10-20: "add some filtering and sorting").
+    @Test func invoicesFilterSearchAndSort() throws {
+        let s = try seeded()
+        let list = invoiceList(s.sync.store, companyId: "c1")
+        let due = list[0].invoice.dueDate
+        // Before its due date: unpaid, not overdue; after it: Overdue, in its status line too.
+        let before = "2026-10-01"
+        #expect(invoiceFilterCount(list, .open, today: before) == 1)
+        #expect(invoiceFilterCount(list, .all, today: before) == list.count)
+        if let due {
+            let after = "9999-12-31"
+            #expect(due < after && invoiceFilterCount(list, .overdue, today: after) == 1)
+            #expect(invoiceRowLines(list[0], timeZone: "America/Phoenix", today: after).1.hasPrefix("Overdue"))
+        }
+        #expect(shownInvoices(list, filter: .all, sort: .newest, q: "alicia", today: before).count == 1)
+        #expect(shownInvoices(list, filter: .all, sort: .newest, q: "#1026", today: before).count == 1)
+        #expect(shownInvoices(list, filter: .all, sort: .newest, q: "1072", today: before).count == 1)
+        #expect(shownInvoices(list, filter: .paid, sort: .total, q: "", today: before).isEmpty)
+        #expect(invoicesEmptyText(" zed ") == "No invoices match “zed”.")
+        #expect(invoicesEmptyText("") == "No invoices here.")
+    }
+
     @Test func settingsListsReadSyncedRows() throws {
         let s = try seeded()
         try s.sync.store.applyPage(

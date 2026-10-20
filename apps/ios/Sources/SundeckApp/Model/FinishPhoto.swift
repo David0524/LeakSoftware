@@ -94,7 +94,8 @@ public enum StopWrites {
     /// (core `markCompleteValues`), or cleared. Returns why it was stopped, or nil.
     @discardableResult
     public static func mark(
-        _ sync: SyncService, companyId: String, settings: JSONValue?, jobId: String, complete: Bool, day: String
+        _ sync: SyncService, companyId: String, settings: JSONValue?, jobId: String, complete: Bool, day: String,
+        visitReports: VisitReportQueue? = nil
     ) throws -> String? {
         guard let row = try sync.store.get("job", jobId) else { return "Job not found." }
         let type = row["type"]?.string ?? "detection"
@@ -102,6 +103,7 @@ public enum StopWrites {
             if !complete { return MarkStopText.reopenVisit }
             if let block = statusChangeBlock(.done, sync.store, settings: settings, jobId: jobId) { return block }
             try sync.write("job", id: jobId, companyId: companyId, jobStatusValues(.done, job: row))
+            visitReports?.completed(jobType: .maintenance, jobId: jobId, settings: settings)
             return nil
         }
         try sync.write(

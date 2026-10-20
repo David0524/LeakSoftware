@@ -605,3 +605,32 @@ private func toFixed1(_ n: Double) -> String {
     }
     return String(format: "%.1f", n)
 }
+
+// MARK: - A visit report's water test (owner, 2026-10-20)
+
+public struct WaterTestRow: Codable, Equatable, Sendable {
+    public var key: ReadingKey
+    public var label: String
+    public var value: Double
+    /// "7.4–7.6"
+    public var range: String
+    /// low, ok or high.
+    public var status: String
+    /// "In range", "Low", "High"
+    public var statusLabel: String
+}
+
+/// Each reading taken, in the calculator's order, against its range (`waterTestRows`).
+public func waterTestRows(_ r: Readings) -> [WaterTestRow] {
+    let t = targets(r.cya)
+    let order: [ReadingKey] = [.fc, .ph, .ta, .ch, .cya, .salt]
+    return order.compactMap { k in
+        guard let value = r[k], value.isFinite else { return nil }
+        let range = t[k]
+        let status = value < range.low ? "low" : value > range.high ? "high" : "ok"
+        return WaterTestRow(
+            key: k, label: k.label, value: value,
+            range: "\(ECMA.numberString(range.low))–\(ECMA.numberString(range.high))", status: status,
+            statusLabel: status == "ok" ? "In range" : status == "low" ? "Low" : "High")
+    }
+}

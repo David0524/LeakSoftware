@@ -13,6 +13,7 @@ import Testing
             "CHLORINE_PRODUCTS", "ACID_PRODUCTS", "targets", "fluidAmount", "gallonMeasure", "dryMeasure",
             "weightAmount", "saturationIndex", "calculateChemistry", "doseSummary", "launchCards", "seenTips",
             "tipFor", "gettingStarted", "READING_LABELS", "READING_LIMITS", "readingSummary",
+            "waterTestRows", "INVOICE_FILTERS", "INVOICE_SORTS", "invoiceOverdue", "filterInvoices",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -56,6 +57,40 @@ import Testing
             Dictionary(uniqueKeysWithValues: ReadingKey.allCases.map { ($0.rawValue, $0.limit) })
         }
         checkRule(module, "readingSummary") { c in readingSummary(try c.arg(0)) }
+        checkRule(module, "waterTestRows") { c in waterTestRows(try c.arg(0)) }
+    }
+
+    /// pricing.ts' `invoiceList`.
+    static let invoiceList: [InvoiceFilterItem] = [
+        .init(
+            number: 5, status: .draft, totalCents: 9000, amountPaidCents: 0, dueDate: nil, sentAt: nil,
+            customer: "Cole Izhaky", jobNumber: 1105),
+        .init(
+            number: 4, status: .sent, totalCents: 20000, amountPaidCents: 0, dueDate: "2026-10-10",
+            sentAt: "2026-10-01", customer: "Sam Sample", jobNumber: 1104),
+        .init(
+            number: 3, status: .partiallyPaid, totalCents: 50000, amountPaidCents: 45000, dueDate: "2026-10-30",
+            sentAt: "2026-09-30", customer: "Ann Lee", jobNumber: 1103),
+        .init(
+            number: 2, status: .paid, totalCents: 30000, amountPaidCents: 30000, dueDate: "2026-09-01",
+            sentAt: "2026-08-20", customer: "Bo Diaz", jobNumber: 1102),
+        .init(
+            number: 1, status: .void, totalCents: 1000, amountPaidCents: 0, dueDate: nil, sentAt: nil, customer: nil,
+            jobNumber: nil),
+    ]
+
+    @Test func invoiceFilters() {
+        checkRule(module, "INVOICE_FILTERS") { _ in
+            InvoiceFilter.allCases.map { ["key": $0.rawValue, "label": $0.label] }
+        }
+        checkRule(module, "INVOICE_SORTS") { _ in InvoiceSort.allCases.map { ["key": $0.rawValue, "label": $0.label] } }
+        checkRule(module, "invoiceOverdue") { c in invoiceOverdue(try c.arg(0), try c.arg(1)) }
+        checkRule(module, "filterInvoices") { c in
+            filterInvoices(
+                Self.invoiceList, filter: try c.arg(0), sort: try c.arg(1), q: try c.arg(2), today: "2026-10-20"
+            )
+            .map(\.number)
+        }
         checkRule(module, "targets") { c in targets(try c.arg(0, as: Double?.self)) }
         checkRule(module, "fluidAmount") { c in fluidAmount(try c.arg(0)) }
         checkRule(module, "gallonMeasure") { c in gallonMeasure(try c.arg(0)) }

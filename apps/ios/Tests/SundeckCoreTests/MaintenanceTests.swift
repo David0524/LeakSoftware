@@ -12,8 +12,15 @@ import Testing
                 "maintenanceSettings", "planRepeat", "cadenceLabel", "planSummary", "upcomingVisitDates",
                 "CLEANING_MONTHS", "CLEANING_DUE_SOON_DAYS", "cleaningMonthsLabel", "cleaningKind",
                 "cleaningCountdown", "cleaningShortLabel", "cleaningDueSpoken", "cleaningCadence", "cleaningSummary",
-                "FILTER_REPLACE_KEY", "cleaningDefaultMonths", "filterAge",
+                "FILTER_REPLACE_KEY", "cleaningDefaultMonths", "filterAge", "VISIT_REPORT_MODES", "visitReportMode",
             ])
+    }
+
+    @Test func visitReports() {
+        checkRule(module, "VISIT_REPORT_MODES") { _ in
+            visitReportModes.map { ["value": $0.rawValue, "label": $0.label, "hint": $0.hint] }
+        }
+        checkRule(module, "visitReportMode") { c in visitReportMode(try c.arg(0, as: JSONValue?.self)).rawValue }
     }
 
     struct SummaryCleaning: Decodable {
