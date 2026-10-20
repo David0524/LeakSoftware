@@ -13,7 +13,8 @@
     /// More › Dashboard (owners and admins; owner, 2026-10-20: "Dashboard should be in the apps";
     /// website app/(office)/dashboard): four stat cards, collected by month as a chart, jobs by
     /// status (each opens Jobs on it), and each month in a grouped list. From the
-    /// `owner_dashboard` RPC, so it needs a connection.
+    /// `owner_dashboard` RPC, so it needs a connection. Under the stat cards, the latest Activity
+    /// with See All (owner, 2026-10-20: "a shortcut to it on the owner's dashboard page").
     struct DashboardScreen: View {
         @Environment(Session.self) private var session
         @Environment(AppEnvironment.self) private var app
@@ -21,6 +22,9 @@
         @State private var loading = false
         @State private var step = 0
         @State private var failed: String?
+        /// The latest few events (`activity_feed`), or whether they couldn't load.
+        @State private var activity: ActivityPage?
+        @State private var activityFailed = false
         private let preview: Bool
 
         /// `data` shows those numbers without asking the server (screenshots).
@@ -40,10 +44,27 @@
                     ProgressSteps(steps: DashboardText.steps, current: step).card()
                 }
             }
-            .refreshable { await load() }
+            .refreshable {
+                await load()
+                await loadActivity()
+            }
             .navigationTitle(DashboardText.title)
             .navigationBarTitleDisplayMode(.large)
-            .task(id: session.company?.id) { await load() }
+            .task(id: session.company?.id) {
+                await load()
+                await loadActivity()
+            }
+        }
+
+        private func loadActivity() async {
+            guard let company = session.company, !preview else { return }
+            do {
+                activity = try await ActivityServer.page(
+                    app.client, company: company.id, size: ActivityText.dashboardCount)
+                activityFailed = false
+            } catch {
+                if activity == nil { activityFailed = true }
+            }
         }
 
         private struct Params: Encodable {
@@ -101,6 +122,7 @@
                         note: "\(DashboardText.months) months")
                 }
             }
+            if !preview { LatestActivity(page: activity, failed: activityFailed) }
             collectedChart(d)
             jobsByStatus(d)
             Grouped(label: DashboardText.byMonth) {

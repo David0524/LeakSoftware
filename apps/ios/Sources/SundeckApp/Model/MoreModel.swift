@@ -10,13 +10,14 @@ import SundeckSync
 
 /// The sections under More (website `officeLinks(...).slice(4)`, minus Dashboard: decision 12).
 public enum MoreLink: String, CaseIterable, Hashable, Sendable {
-    case dashboard, customers, invoices, chemicals, settings
+    case dashboard, customers, invoices, activity, chemicals, settings
 
     public var title: String {
         switch self {
         case .dashboard: "Dashboard"
         case .customers: "Customers"
         case .invoices: "Invoices"
+        case .activity: ActivityText.title
         case .chemicals: "Chemicals"
         case .settings: "Settings"
         }
@@ -24,10 +25,11 @@ public enum MoreLink: String, CaseIterable, Hashable, Sendable {
 }
 
 /// Dashboard first for managers (owner, 2026-10-20: "Dashboard should be in the apps"),
-/// Customers and Invoices for everyone, Chemicals for pool shops, Settings for managers.
+/// Customers, Invoices and Activity for everyone (owner, 2026-10-20: "Throw an activity feed in
+/// More"), Chemicals for pool shops, Settings for managers.
 public func moreLinks(role: String?, services: Services) -> [MoreLink] {
     var links: [MoreLink] = isManagerRole(role) ? [.dashboard] : []
-    links += [.customers, .invoices]
+    links += [.customers, .invoices, .activity]
     if services != .leak { links.append(.chemicals) }
     if isManagerRole(role) { links.append(.settings) }
     return links

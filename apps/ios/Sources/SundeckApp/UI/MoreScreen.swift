@@ -17,6 +17,8 @@
         case myPhone
         case notifications
         case dashboard
+        /// What happened in the shop (owner, 2026-10-20; ActivityScreen.swift).
+        case activity
         /// Jobs on one filter (the dashboard's status rows).
         case jobs(JobFilter)
         /// Invoices on one filter (the dashboard's Owed to you).
@@ -44,6 +46,7 @@
             case .myPhone: MyPhoneScreen()
             case .notifications: NotificationsScreen()
             case .dashboard: DashboardScreen()
+            case .activity: ActivityScreen()
             case .jobs(let filter): JobsView(filter: filter)
             case .invoicesFiltered(let filter): InvoicesScreen(filter: filter)
             }
@@ -71,6 +74,7 @@
         @Environment(SyncService.self) private var sync
         @Environment(AppEnvironment.self) private var app
         @Environment(\.openURL) private var openURL
+        @Environment(ActivityBadge.self) private var activity: ActivityBadge?
         @State private var profile: MyProfile?
         /// Notifications' value: On, Some or Off (the phone's copy until the server answers).
         @State private var notifications: String?
@@ -83,13 +87,19 @@
             let company = session.company
             List {
                 Section {
+                    RootLargeTitle(stackSpacing: 0).plainListRow()
                     PageHeader(subtitle: displayName).plainListRow()
                 }
                 Section {
                     ForEach(moreLinks(role: company?.role, services: company?.services ?? .both), id: \.self) { link in
-                        NavigationLink(value: route(link)) { ListRow(link.title) }
-                            .surfaceRow()
-                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 16))
+                        NavigationLink(value: route(link)) {
+                            // Activity: what it covers, and the dot when there's something new.
+                            ListRow(title: link.title, detail: link == .activity ? ActivityText.detail : nil) {
+                                if link == .activity, activity?.unread == true { ActivityDot() }
+                            }
+                        }
+                        .surfaceRow()
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 16))
                     }
                 }
                 account
@@ -136,8 +146,8 @@
                 }
             }
             .groupedList()
-            .navigationTitle("More")
-            .navigationBarTitleDisplayMode(.large)
+            .rootTitleScroll()
+            .rootTitle("More", trailingButtons: 0)
             .browserSheet($browser)
             .sheet(isPresented: $requesting) { FeatureRequestSheet() }
             .confirmationDialog("Sign out?", isPresented: $confirmSignOut, titleVisibility: .visible) {
@@ -164,6 +174,7 @@
             case .dashboard: .dashboard
             case .customers: .customers
             case .invoices: .invoices
+            case .activity: .activity
             case .chemicals: .chemicals(nil)
             case .settings: .settings
             }

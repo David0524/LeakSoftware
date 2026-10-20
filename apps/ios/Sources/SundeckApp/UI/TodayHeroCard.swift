@@ -14,6 +14,8 @@
     struct TodayHeroCard: View {
         var hero: TodayHero
         var day: TodayDay
+        /// Do Later and its Undo (docs/plans/today-reorder.md).
+        var moves: StopMoves? = nil
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
         @Environment(\.openRoute) private var openRoute
@@ -41,7 +43,7 @@
                         .foregroundStyle(LiveStopStyle.muted)
                         .padding(.top, 8)
                 }
-                if target != nil || actions.complete { buttons(actions) }
+                if target != nil || actions.complete || moves?.shown(for: .card) != nil { buttons(actions) }
                 progress.padding(.top, 20)
             }
             .padding(20)
@@ -125,28 +127,55 @@
             .padding(.top, 8)
         }
 
+        /// Do Later on the card's stop, Up next and On the way (docs/plans/today-reorder.md): the
+        /// stop can move and isn't last already.
+        private var laterJob: ScheduleJob? {
+            guard moves != nil, hero.moment == .ahead || hero.moment == .driving, let job,
+                day.canPlace(job, .later)
+            else { return nil }
+            return job
+        }
+
         /// The moment's main button (white on the water blue), Mark Complete at the pool, then
-        /// round Call and Directions.
+        /// round Call and Directions. With Do Later, the main button has its own row and Do Later
+        /// sits beside Call and Directions; for 5 seconds after it, "Moved to 2:15 PM" and Undo.
         private func buttons(_ actions: HeroActions) -> some View {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
-                    if let primary = actions.primary, let target { primaryButton(primary, target) }
-                    if actions.complete, let job { TodayMarkButton(job: job, day: day, onCard: true) }
-                    Spacer(minLength: 0)
-                    if let target, hero.moment != .done {
-                        if let phone = target.customerPhone {
-                            HeroRoundButton(systemImage: "phone.fill", label: "Call \(target.customerName), \(phone)") {
-                                if let url = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") {
-                                    openURL(url)
+            let undo = moves?.shown(for: .card)
+            let later = undo == nil ? laterJob : nil
+            return VStack(alignment: .leading, spacing: 6) {
+                if later != nil || undo != nil {
+                    HStack(spacing: 8) {
+                        mainButtons(actions)
+                        Spacer(minLength: 0)
+                    }
+                    HStack(spacing: 8) {
+                        if let undo, let moves {
+                            Text(undo.text)
+                                .font(LiveStopStyle.small(.semibold))
+                                .foregroundStyle(LiveStopStyle.text)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Button(TodayReorderText.undo) { moves.undoMove(undo) }
+                                .buttonStyle(HeroButtonStyle(filled: false))
+                                .accessibilityHint("Puts it back as it was")
+                                .onAppear {
+                                    AccessibilityNotification.Announcement(
+                                        "\(undo.text). \(TodayReorderText.undo) available."
+                                    ).post()
                                 }
-                            }
+                        } else if let later, let moves {
+                            Button(TodayReorderText.doLater) { moves.doLater(later, .card) }
+                                .buttonStyle(HeroButtonStyle(filled: false))
+                                .accessibilityLabel("\(TodayReorderText.doLater), \(later.customerName)")
+                                .accessibilityHint("Moves the stop after the last one")
                         }
-                        if !target.address.isEmpty {
-                            HeroRoundButton(systemImage: "location.fill", label: "Directions to \(target.customerName)")
-                            {
-                                if let url = directionsURL(target.place, app: MapsApp(sync.kv)) { openURL(url) }
-                            }
-                        }
+                        Spacer(minLength: 0)
+                        contactButtons
+                    }
+                } else {
+                    HStack(spacing: 8) {
+                        mainButtons(actions)
+                        Spacer(minLength: 0)
+                        contactButtons
                     }
                 }
                 if let startError {
@@ -156,6 +185,29 @@
                 }
             }
             .padding(.top, 16)
+        }
+
+        @ViewBuilder private func mainButtons(_ actions: HeroActions) -> some View {
+            if let primary = actions.primary, let target { primaryButton(primary, target) }
+            if actions.complete, let job { TodayMarkButton(job: job, day: day, onCard: true) }
+        }
+
+        /// Round Call and Directions for the stop the buttons are for.
+        @ViewBuilder private var contactButtons: some View {
+            if let target, hero.moment != .done {
+                if let phone = target.customerPhone {
+                    HeroRoundButton(systemImage: "phone.fill", label: "Call \(target.customerName), \(phone)") {
+                        if let url = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") {
+                            openURL(url)
+                        }
+                    }
+                }
+                if !target.address.isEmpty {
+                    HeroRoundButton(systemImage: "location.fill", label: "Directions to \(target.customerName)") {
+                        if let url = directionsURL(target.place, app: MapsApp(sync.kv)) { openURL(url) }
+                    }
+                }
+            }
         }
 
         @ViewBuilder private func primaryButton(_ action: HeroAction, _ target: ScheduleJob) -> some View {

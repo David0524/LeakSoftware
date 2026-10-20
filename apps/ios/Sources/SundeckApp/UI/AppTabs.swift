@@ -43,6 +43,8 @@
         @State private var askNotifications = false
         /// Unread conversations, the Messages tab's badge.
         @State private var unread = 0
+        /// Activity since this person last opened it: the dot on More (ActivityScreen.swift).
+        @State private var activity = ActivityBadge()
         /// Job rows and stop cards zoom into the job page.
         @Namespace private var zoom
         @Environment(SyncService.self) private var sync
@@ -79,9 +81,15 @@
             .tint(Color.link)
             .modifier(MinimizingTabBar())
             .environment(\.zoomNamespace, zoom)
+            .environment(activity)
             .task(id: "\(sync.revision)|\(session.company?.id ?? "")") {
                 guard let company = session.company else { return }
                 unread = conversations(sync.store, companyId: company.id).filter(\.unread).count
+            }
+            // Asked of the server after each sync (online only; offline the dot stays as it was).
+            .task(id: "\(sync.revision)|\(session.company?.id ?? "")|activity") {
+                guard let company = session.company else { return }
+                if let now = await ActivityServer.unread(app.client, company: company.id) { activity.unread = now }
             }
             .environment(\.openRoute) { paths[tab, default: NavigationPath()].append($0) }
             .environment(\.replaceRoute) { route in
@@ -173,11 +181,20 @@
             Label {
                 Text(item.title)
             } icon: {
-                Image(uiImage: item.symbol.image(filled: tab == item))
+                Image(uiImage: tabIcon(item))
             }
             .accessibilityLabel(
-                [item.title, item == .messages ? unreadAccessibilityText(unread) : nil].compactMap { $0 }
+                [
+                    item.title, item == .messages ? unreadAccessibilityText(unread) : nil,
+                    item == .more && activity.unread ? activityDotLabel : nil,
+                ].compactMap { $0 }
                     .joined(separator: ", "))
+        }
+
+        /// The tab's drawing; More with a dot while there is new activity.
+        private func tabIcon(_ item: AppTab) -> UIImage {
+            let image = item.symbol.image(filled: tab == item)
+            return item == .more && activity.unread ? DottedTabIcon.image(image, filled: tab == item) : image
         }
 
         /// A tab's navigation stack, with every screen a tab can push: the app's routes, and the

@@ -34,6 +34,7 @@
 
         var body: some View {
             ScreenScroll(spacing: 16) {
+                RootLargeTitle(stackSpacing: 16)
                 if let board, let company = session.company {
                     PageHeader {
                         Text(board.title)
@@ -102,7 +103,8 @@
                 }
             }
             .refreshable { await sync.syncNow() }
-            .navigationTitle("Schedule")
+            .rootTitleScroll()
+            .rootTitle("Schedule")
             .toolbar { NewJobToolbar(back: "Schedule") }
             .sensoryFeedback(.success, trigger: saved)
             .sensoryFeedback(.error, trigger: failed)

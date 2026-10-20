@@ -67,8 +67,10 @@
         var title: String { self == .jobs ? "Jobs" : "Reports" }
     }
 
-    /// Jobs (spec 5.2) and Reports (5.3) in one screen: the segmented control, the sync bar, the
-    /// tip, filter pills, the search field, and the list. Port of apps/web/src/app/(office)/jobs.
+    /// Jobs (spec 5.2) and Reports (5.3) in one screen: the search field, the segmented control,
+    /// the sync bar, the tip, filter pills, and the list. Port of apps/web/src/app/(office)/jobs.
+    /// The search field under the title searches the whole shop on this phone (owner, 2026-10-20;
+    /// docs/plans/search-and-activity.md); while it is in use its results take the list's place.
     struct JobsView: View {
         @Environment(Session.self) private var session
         @Environment(SyncService.self) private var sync
@@ -78,9 +80,15 @@
         @State private var filter: JobFilter
         @State private var mode = JobsMode.jobs
         @State private var reportFilter = ReportFilter.all
-        @State private var search = ""
         @State private var rows: [JobListRow] = []
         @State private var reports: [ReportListRow] = []
+        // Search (ShopSearchViews.swift).
+        @State private var query = ""
+        @State private var searchActive = false
+        @FocusState private var searchFocused: Bool
+        @State private var searchGroup: SearchGroupKey?
+        @State private var results: SearchResults?
+        @State private var recent: [RecentItem] = []
 
         /// `filter` opens on a status (the dashboard's rows); Open by default.
         init(filter: JobFilter = .open) { _filter = State(initialValue: filter) }
@@ -89,24 +97,23 @@
             let company = session.company
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 20) {
-                    Segmented(
-                        selection: $mode, options: JobsMode.allCases, label: \.title, title: "Jobs and Reports",
-                        minSegmentWidth: 112
-                    )
-                    .padding(.horizontal, 16)
-                    SyncBarRow().padding(.horizontal, 16)
-                    if mode == .jobs, let company, let tip = tip(company) {
-                        TipCard(title: tip.title, message: tip.message) { app.walkthrough.dismiss(tip.id) }
+                    RootLargeTitle().padding(.horizontal, 16)
+                    if mode == .jobs {
+                        ShopSearchField(text: $query, focused: $searchFocused, active: searching) { cancelSearch() }
                             .padding(.horizontal, 16)
                     }
-                    if mode == .jobs {
-                        FilterPills(selection: $filter, options: JobFilter.allCases, label: \.title)
-                        SearchField(text: $search, placeholder: "Customer name or job number")
-                            .padding(.horizontal, 16)
-                        jobsList.padding(.horizontal, 16)
+                    if searching {
+                        ShopSearchResults(
+                            query: query, results: results, recent: recent, group: $searchGroup,
+                            onOpenHit: { openHit($0) }, onOpenRecent: { openRecent($0) },
+                            onClearRecent: {
+                                RecentSearches(kv: sync.kv).clear()
+                                recent = []
+                            }
+                        )
+                        .padding(.horizontal, 16)
                     } else {
-                        FilterPills(selection: $reportFilter, options: ReportFilter.allCases, label: \.title)
-                        reportsList.padding(.horizontal, 16)
+                        jobsAndReports(company)
                     }
                 }
                 .padding(.bottom, 24)
@@ -115,12 +122,93 @@
             .scrollDismissesKeyboard(.immediately)
             .refreshable { await sync.syncNow() }
             .sensoryFeedback(.impact(weight: .light), trigger: sync.status.phase == .syncing)
-            .navigationTitle(mode.title)
+            .rootTitleScroll()
+            .rootTitle(mode.title, trailingButtons: mode == .jobs ? 1 : 0)
             .toolbar {
                 if mode == .jobs { NewJobToolbar(back: "Jobs") }
             }
-            .task(id: "\(sync.revision)|\(company?.id ?? "")|\(filter)|\(reportFilter)|\(search)|\(mode)") {
+            .task(id: "\(sync.revision)|\(company?.id ?? "")|\(filter)|\(reportFilter)|\(mode)") {
                 reload()
+            }
+            .task(id: "\(query)|\(searchGroup?.rawValue ?? "")|\(sync.revision)|\(company?.id ?? "")") {
+                await runSearch()
+            }
+            .onChange(of: searchFocused) { _, focused in
+                if focused { searchActive = true }
+            }
+            .onChange(of: query) { _, _ in searchGroup = nil }
+            .onChange(of: searching, initial: true) { _, now in
+                if now { recent = RecentSearches(kv: sync.kv).load() }
+            }
+        }
+
+        /// The list's part of the page: Jobs | Reports, the sync bar, the tip, filters, the list.
+        @ViewBuilder private func jobsAndReports(_ company: CompanyContext?) -> some View {
+            Segmented(
+                selection: $mode, options: JobsMode.allCases, label: \.title, title: "Jobs and Reports",
+                minSegmentWidth: 112
+            )
+            .padding(.horizontal, 16)
+            SyncBarRow().padding(.horizontal, 16)
+            if mode == .jobs, let company, let tip = tip(company) {
+                TipCard(title: tip.title, message: tip.message) { app.walkthrough.dismiss(tip.id) }
+                    .padding(.horizontal, 16)
+            }
+            if mode == .jobs {
+                FilterPills(selection: $filter, options: JobFilter.allCases, label: \.title)
+                jobsList.padding(.horizontal, 16)
+            } else {
+                FilterPills(selection: $reportFilter, options: ReportFilter.allCases, label: \.title)
+                reportsList.padding(.horizontal, 16)
+            }
+        }
+
+        /// Searching: the field is in use or has text. Cancel (or opening a result with the field
+        /// empty) returns to the list.
+        private var searching: Bool { mode == .jobs && (searchActive || !query.isEmpty) }
+
+        private func cancelSearch() {
+            query = ""
+            searchGroup = nil
+            results = nil
+            searchActive = false
+            searchFocused = false
+        }
+
+        /// The shop's records on this phone, searched with the shared rule 200 ms after the last
+        /// keystroke (and again after a sync).
+        private func runSearch() async {
+            guard normalizeSearch(query).ready else {
+                results = nil
+                return
+            }
+            try? await Task.sleep(for: .milliseconds(SearchText.debounceMs))
+            guard !Task.isCancelled, let company = session.company, let user = session.user else { return }
+            let records = searchRecords(
+                sync.store, companyId: company.id, userId: user.id, seesAll: seesAllJobs(company.role, company.settings)
+            )
+            results = try? searchShop(
+                query, records, now: Date(), timeZone: company.timeZone,
+                limit: searchGroup == nil ? SearchText.groupLimit : .max, group: searchGroup)
+        }
+
+        private func openHit(_ hit: SearchHit) {
+            if let item = recentFromHit(hit) { recent = RecentSearches(kv: sync.kv).remember(item) }
+            if let target = hit.open { go(to: SearchDestination(target)) }
+        }
+
+        private func openRecent(_ item: RecentItem) {
+            recent = RecentSearches(kv: sync.kv).remember(item)
+            go(to: SearchDestination(item.open))
+        }
+
+        private func go(to destination: SearchDestination) {
+            searchActive = false
+            searchFocused = false
+            switch destination {
+            case .customer(let id): openRoute(.more(.customer(id)))
+            case .job(let id): openRoute(.job(id))
+            case .jobSection(let id, let section): openRoute(.jobSection(id, section))
             }
         }
 
@@ -133,10 +221,8 @@
         }
 
         @ViewBuilder private var jobsList: some View {
-            let q = search.trimmingCharacters(in: .whitespaces)
             if rows.isEmpty {
-                EmptyState(
-                    text: q.isEmpty ? "No jobs here. Add one with New Job, or on the phone." : "No jobs match “\(q)”.")
+                EmptyState(text: "No jobs here. Add one with New Job, or on the phone.")
             } else {
                 GroupedRows(rows) { row in
                     // Swipe left (or touch and hold) for Call and Text; the job page has both too.
@@ -192,7 +278,7 @@
                     },
                     uniquingKeysWith: { a, _ in a })
                 rows = jobList(
-                    views, filter: filter, search: search, now: Date(), timeZone: company.timeZone, userId: user.id,
+                    views, filter: filter, search: "", now: Date(), timeZone: company.timeZone, userId: user.id,
                     seesAll: seesAllJobs(company.role, company.settings), names: names)
             } else {
                 reports = reportList(
