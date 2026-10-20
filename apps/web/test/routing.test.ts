@@ -1,15 +1,24 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 import { estimateDriveMinutes } from "@leakbook/core";
-import { driveTimes, geocodeAddress, mapbox, type RoutingProvider } from "../src/server/routing";
+import {
+  addressKey,
+  census,
+  driveTimes,
+  geocodeAddress,
+  mapbox,
+  nominatim,
+  type RoutingProvider,
+} from "../src/server/routing";
 
 const SHOP = { lat: 33.44879, lng: -112.07711 };
 const ZOO = { lat: 33.44962, lng: -111.94637 };
 const TEMPE = { lat: 33.39148, lng: -111.92805 };
 
 /** A fake database: the usage cap and the drive-time cache. */
-function fakeDb(cap = 10) {
+function fakeDb(cap = 10, budget: Record<string, number> = { matrix_element: 1000 }) {
   let used = 0;
+  const month: Record<string, number> = {};
   const cache = new Map<string, number>();
   const calls: string[] = [];
   const db = {
@@ -19,6 +28,13 @@ function fakeDb(cap = 10) {
         const n = args.how_many as number;
         if (used + n > cap) return { data: false, error: null };
         used += n;
+        return { data: true, error: null };
+      }
+      if (fn === "mapbox_take") {
+        const api = args.api_kind as string;
+        const n = args.how_many as number;
+        if ((month[api] ?? 0) + n > (budget[api] ?? 0)) return { data: false, error: null };
+        month[api] = (month[api] ?? 0) + n;
         return { data: true, error: null };
       }
       if (fn === "cached_drive_times") {
@@ -36,7 +52,7 @@ function fakeDb(cap = 10) {
       return { data: null, error: null };
     },
   };
-  return { db: db as unknown as SupabaseClient, calls, cache, used: () => used };
+  return { db: db as unknown as SupabaseClient, calls, cache, used: () => used, month };
 }
 
 function fakeProvider(): RoutingProvider & { matrixCalls: number } {
@@ -57,6 +73,89 @@ function fakeProvider(): RoutingProvider & { matrixCalls: number } {
   };
   return p;
 }
+
+describe("Mapbox's free tier", () => {
+  it("counts drive times by element and stops at the month's budget", async () => {
+    const f = fakeDb(10, { matrix_element: 9 });
+    const provider = fakeProvider();
+    await driveTimes(f.db, "co", [SHOP, ZOO, TEMPE], { provider });
+    expect(f.month.matrix_element).toBe(9);
+    // The budget is used: a new point is estimated, never asked of Mapbox.
+    const far = { lat: 33.6, lng: -112.2 };
+    const drive = await driveTimes(f.db, "co", [SHOP, far], { provider });
+    expect(provider.matrixCalls).toBe(1);
+    expect(drive(SHOP, far)).toBe(estimateDriveMinutes(SHOP, far));
+  });
+
+  it("looks pools up with the Census geocoder, not Mapbox", async () => {
+    let asked = "";
+    const fetchImpl = (async (url: URL) => {
+      asked = String(url);
+      return new Response(
+        JSON.stringify({
+          result: {
+            addressMatches: [
+              {
+                matchedAddress: "455 N GALVIN PKWY, PHOENIX, AZ, 85008",
+                coordinates: { x: -111.95429, y: 33.4535 },
+              },
+            ],
+          },
+        }),
+      );
+    }) as unknown as typeof fetch;
+    expect(await census(fetchImpl).geocode("455 N Galvin Pkwy, Phoenix, AZ")).toEqual({
+      lat: 33.4535,
+      lng: -111.95429,
+    });
+    expect(asked).toMatch(
+      /^https:\/\/geocoding\.geo\.census\.gov\/geocoder\/locations\/onelineaddress\?/,
+    );
+    const none = (async () =>
+      new Response(JSON.stringify({ result: { addressMatches: [] } }))) as unknown as typeof fetch;
+    expect(await census(none).geocode("Nowhere")).toBeNull();
+  });
+
+  it("never takes another house: 1000 E for 1000 W, or a street's middle", async () => {
+    const east = (async () =>
+      new Response(
+        JSON.stringify({
+          result: {
+            addressMatches: [
+              {
+                matchedAddress: "1000 E CHARLESTON BLVD, LAS VEGAS, NV, 89104",
+                coordinates: { x: 1, y: 2 },
+              },
+            ],
+          },
+        }),
+      )) as unknown as typeof fetch;
+    expect(await census(east).geocode("1000 W Charleston Blvd, Las Vegas, NV")).toBeNull();
+    const street = (async () =>
+      new Response(
+        JSON.stringify([
+          { lat: "36.15", lon: "-115.27", address: { road: "West Charleston Boulevard" } },
+        ]),
+      )) as unknown as typeof fetch;
+    expect(await nominatim(street).geocode("1000 W Charleston Blvd, Las Vegas, NV")).toBeNull();
+    const house = (async () =>
+      new Response(
+        JSON.stringify([
+          {
+            lat: "36.15",
+            lon: "-115.27",
+            address: { house_number: "1000", road: "West Charleston Boulevard" },
+          },
+        ]),
+      )) as unknown as typeof fetch;
+    expect(await nominatim(house).geocode("1000 W Charleston Blvd, Las Vegas, NV")).toEqual({
+      lat: 36.15,
+      lng: -115.27,
+    });
+    expect(addressKey("455 North Galvin Pkwy")).toEqual({ number: "455", direction: "N" });
+    expect(addressKey("Galvin Pkwy")).toEqual({ number: null, direction: null });
+  });
+});
 
 describe("drive times", () => {
   it("asks the routing service once, then uses the cache", async () => {
