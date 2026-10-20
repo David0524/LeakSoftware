@@ -43,6 +43,11 @@ Newest first. Each entry: date, decision, reason.
 - **The inspection report uses the homeowner report's draft, sign-off, and send**, titled Pool Inspection Report, rather than a separate report template.
 - **An inspection's report can be signed and sent before every question is answered** (unlike a leak detection, which waits for its whole checklist): the report lists the questions answered, and Needs attention lists the flagged ones. Write Draft doesn't check an inspection's text for leak checklist names ("Main drain", "Pool"), since its questions use those words.
 
+## 2026-10-20 (owner: navigation compared with other SaaS apps)
+- **Search across the shop** on every platform (`docs/plans/search-and-activity.md`): customers, pools, jobs, quotes and invoices by name, phone, address or number; at the top of Jobs on phones (offline, from the phone's data), a header field and ⌘K on desktop; Recent when empty. It follows the existing visibility rules.
+- **Activity** in More on every platform, with a card on the owner's Dashboard: quotes accepted, payments, reports signed and sent, jobs completed, assigned or moved, customer texts. Recorded by the database; techs see only events about jobs and conversations they can see.
+- **Kept as is:** no create-anything "+" (customers are added through jobs); Customers and Invoices stay under More (jobs drive them).
+
 ## 2026-10-20 (owner: "Job numbers should never have commas to separate digits")
 - **Job, quote and invoice numbers never have thousands separators** on any platform ("Job #1038", not "#1,038"). On iPhone a number put in a SwiftUI `Text` literal is formatted with them, so document numbers use `Text(verbatim:)` or a `String`; `DocumentNumberTests` fails on a `#\(…)` inside a Text literal.
 
