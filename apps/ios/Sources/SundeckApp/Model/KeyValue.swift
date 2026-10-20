@@ -52,10 +52,13 @@ public enum KVKey {
     /// Live Activity is for.
     public static let notificationPrefs = "push:prefs"
     public static let liveStopTarget = "live_stop:target"
+    /// The day the tech removed the Live Activity, and when the current one began.
+    public static let liveStopDismissed = "live_stop:dismissed_on"
+    public static let liveStopStarted = "live_stop:started_at"
 
     /// Cleared when someone signs out (the device id and clock stay in the store).
     public static let signOutClears = [
         activeCompany, lastSyncedAt, initialSyncDone, teamProfiles, tipsSeen, launchSeen, gettingStartedHidden,
-        notificationPrefs, liveStopTarget,
+        notificationPrefs, liveStopTarget, liveStopDismissed, liveStopStarted,
     ]
 }

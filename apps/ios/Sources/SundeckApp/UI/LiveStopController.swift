@@ -23,7 +23,7 @@
         /// A new activity is being asked for (it isn't in `activities` yet).
         private var requesting = false
         private static let targetKey = KVKey.liveStopTarget
-        static let dismissedKey = "live_stop:dismissed_on"
+        static let dismissedKey = KVKey.liveStopDismissed
 
         init(session: Session) {
             self.session = session
@@ -72,10 +72,12 @@
             }
             let current = target.flatMap { $0.day == day.today ? $0 : nil }
             guard !requesting else { return }
+            watchAll()
             guard let running, running.day == day.today else {
-                // Not running today: it was ended from the Lock Screen (we had a target and none
-                // runs), or it begins now. An earlier day's activity is ended (`show` ends others).
-                if current != nil && running == nil { dismissedOn = day.today }
+                // Not running today. With a target still set (we didn't end it), either the tech
+                // removed it or iOS ended it at its time limit; only the first keeps it off today.
+                // Otherwise it begins now. Older activities are ended (`show` ends others).
+                if current != nil && running == nil && removedByTech(day: day.today) { dismissedOn = day.today }
                 cancelLinger()
                 target = nil
                 guard dismissedOn != day.today, day.runs, let first = day.open() else {
@@ -129,7 +131,91 @@
             guard Self.available else { return }
             cancelLinger()
             target = nil
+            markOurs()
             Task { await Self.endAll() }
+        }
+
+        // MARK: - Removed by the tech, or ended by iOS
+
+        /// iOS ends a Live Activity on its own after about 8 hours; one gone at least this long
+        /// after it began was ended by iOS, not removed by the tech.
+        static let systemLimit: TimeInterval = 8 * 3600 - 5 * 60
+        static let startedKey = KVKey.liveStopStarted
+        /// Activities this app ended (their later `.ended` and `.dismissed` aren't the tech's).
+        private var endedByUs: Set<String> = []
+        /// Activities iOS ended (seen `.ended` first), and the ones being watched.
+        private var endedBySystem: Set<String> = []
+        private var watching: Set<String> = []
+
+        private var startedAt: Date? {
+            get { kv.get(Self.startedKey).flatMap(Double.init).map { Date(timeIntervalSince1970: $0) } }
+            set {
+                if let newValue {
+                    kv.set(Self.startedKey, String(newValue.timeIntervalSince1970))
+                } else {
+                    kv.remove(Self.startedKey)
+                }
+            }
+        }
+
+        private func markOurs() {
+            for activity in Activity<StopAttributes>.activities { endedByUs.insert(activity.id) }
+        }
+
+        /// Whether today's activity, gone while we still had a target, was removed by the tech:
+        /// its last state (`.dismissed` after `.active`) when the phone still lists it, else its
+        /// age (gone before iOS's limit). An `.ended` one is iOS's, and a fresh one starts.
+        private func removedByTech(day: String) -> Bool {
+            let today = Activity<StopAttributes>.activities.filter { $0.attributes.day == day }
+            if today.contains(where: { $0.activityState == .ended }) { return false }
+            if let gone = today.first(where: { $0.activityState == .dismissed }) {
+                return !endedByUs.contains(gone.id) && !endedBySystem.contains(gone.id) && !pastSystemLimit
+            }
+            return !pastSystemLimit
+        }
+
+        private var pastSystemLimit: Bool {
+            guard let startedAt else { return false }
+            return Date().timeIntervalSince(startedAt) >= Self.systemLimit
+        }
+
+        /// Follows each activity's state while the app runs (`activityStateUpdates`).
+        private func watchAll() {
+            for activity in Activity<StopAttributes>.activities where !watching.contains(activity.id) {
+                watch(activity.id)
+            }
+        }
+
+        private func watch(_ id: String) {
+            guard watching.insert(id).inserted else { return }
+            weak let weakSelf = self
+            Task {
+                await Self.observe(id) { @MainActor state in weakSelf?.stateChanged(id, state) }
+                weakSelf?.watching.remove(id)
+            }
+        }
+
+        private func stateChanged(_ id: String, _ state: ActivityState) {
+            switch state {
+            case .ended:
+                // Not ours: iOS's time limit. The next check starts a fresh one.
+                if !endedByUs.contains(id) { endedBySystem.insert(id) }
+            case .dismissed:
+                guard !endedByUs.contains(id), !endedBySystem.contains(id), let day = target?.day else { return }
+                // The tech removed it: off until the next work day.
+                dismissedOn = day
+                cancelLinger()
+                target = nil
+            default:
+                break
+            }
+        }
+
+        private nonisolated static func observe(
+            _ id: String, _ changed: @escaping @Sendable (ActivityState) async -> Void
+        ) async {
+            guard let activity = Activity<StopAttributes>.activities.first(where: { $0.id == id }) else { return }
+            for await state in activity.activityStateUpdates { await changed(state) }
         }
 
         private func cancelLinger() {
@@ -146,11 +232,14 @@
             Task { [weak self] in
                 defer { self?.requesting = false }
                 if await Self.update(content, day: day) { return }
+                self?.markOurs()
                 await Self.endAll()
                 do {
-                    _ = try Activity.request(
+                    let activity = try Activity.request(
                         attributes: StopAttributes(day: day),
                         content: ActivityContent(state: content, staleDate: nil), pushType: nil)
+                    self?.startedAt = Date()
+                    self?.watch(activity.id)
                 } catch {
                     // Not allowed now (Live Activities off): try again on the next check.
                     if self?.target == next { self?.target = nil }
