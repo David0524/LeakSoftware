@@ -274,8 +274,9 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       </Suspense>
       {/* Swipe sideways for the previous or next day, week, or month (owner, 2026-10-20). */}
       <SwipeHrefs prev={href(move(-1))} next={href(move(1))}>
-        {/* One row: previous, the date, next, and Day / Week / Month at the far right. */}
-        <div className="mb-3 flex items-center gap-2">
+        {/* One row: previous, the date, next, and Day / Week / Month at the far right. With
+            large text Day / Week / Month moves to its own row instead of off the screen. */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
           <Link
             href={href(move(-1))}
             className={buttonClass("secondary", "min-w-11 shrink-0 px-3")}
@@ -293,7 +294,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           </Link>
           <SegmentedLinks
             label="View"
-            className={cx(SEGMENT_TRACK, "ml-auto shrink-0 flex-nowrap")}
+            className={cx(SEGMENT_TRACK, "ml-auto")}
             items={(["day", "week", "month"] as const).map((v) => ({
               href: href(date, v),
               label: VIEW_NAMES[v],

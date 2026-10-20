@@ -489,7 +489,7 @@ function ChecklistGroup({
           aria-expanded={open}
           aria-controls={panel}
           onClick={() => setOpen(!folded)}
-          className="flex min-h-14 w-full items-center gap-3 px-4 text-left"
+          className="flex min-h-14 w-full flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-1 text-left"
         >
           <svg
             viewBox="0 0 24 24"
@@ -506,10 +506,13 @@ function ChecklistGroup({
           >
             <path d="M9 6l6 6-6 6" />
           </svg>
-          <span className="flex-1 font-sans text-[1.0625rem] font-semibold">{title}</span>
+          {/* Large text: the summary drops under the title rather than past the edge. */}
+          <span className="min-w-0 flex-1 font-sans text-[1.0625rem] font-semibold break-words">
+            {title}
+          </span>
           <span
             className={cx(
-              "text-[0.9375rem] font-medium",
+              "ml-auto text-[0.9375rem] font-medium",
               toDo.length ? "text-text-muted" : leaking ? "text-status-fail" : "text-status-pass",
             )}
           >

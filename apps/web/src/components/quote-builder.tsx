@@ -188,7 +188,7 @@ export function QuoteBuilder({
         </div>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,10rem)_auto] sm:items-end">
         <Field
           label="Custom line"
           name={`custom-${quote.id}`}
@@ -242,7 +242,7 @@ export function QuoteBuilder({
 
       <ErrorText error={error} />
 
-      <dl className="grid max-w-sm grid-cols-[1fr_auto] gap-x-6 gap-y-1 tabular-nums">
+      <dl className="grid max-w-sm grid-cols-[minmax(0,1fr)_auto] gap-x-6 gap-y-1 tabular-nums break-words">
         <dt className="text-text-muted">Subtotal</dt>
         <dd className="text-right">{formatCents(totals.subtotal_cents)}</dd>
         {totals.discount_cents ? (
@@ -310,7 +310,7 @@ function QuoteLineRow({
         onChange={set("description")}
         onBlur={commit}
       />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-[8rem_10rem_1fr] sm:items-end">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,8rem)_minmax(0,10rem)_1fr] sm:items-end">
         <Field
           label="Qty"
           name={`qty-${line.id}`}
@@ -327,7 +327,7 @@ function QuoteLineRow({
           onChange={set("price")}
           onBlur={commit}
         />
-        <div className="col-span-2 flex items-center justify-between gap-3 sm:col-span-1">
+        <div className="col-span-2 flex flex-wrap items-center justify-between gap-x-3 sm:col-span-1">
           <span className="font-semibold tabular-nums">
             {formatCents(
               lineTotal({

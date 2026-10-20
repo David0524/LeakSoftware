@@ -92,8 +92,9 @@ export function DrawnHeader({ back, options, route, navigation }: NativeStackHea
                 hitSlop={4}
               >
                 <WebIcon name="back" size={20} color={color.link} strokeWidth={2.6} />
+                {/* Large text: the label shrinks and truncates before it can reach the title. */}
                 <Text
-                  style={[type.body, { color: color.link }]}
+                  style={[type.body, styles.backLabel, { color: color.link }]}
                   numberOfLines={1}
                   maxFontSizeMultiplier={1.6}
                 >
@@ -151,7 +152,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 8,
   },
-  side: { flex: 1, flexDirection: "row", alignItems: "center" },
+  side: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center" },
   right: { justifyContent: "flex-end" },
   titleBox: { maxWidth: "55%", alignItems: "center" },
   back: {
@@ -163,6 +164,7 @@ const styles = StyleSheet.create({
     maxWidth: "100%",
     ...(Platform.OS === "web" ? { cursor: "pointer" } : null),
   },
+  backLabel: { flexShrink: 1 },
   iconButton: {
     width: minTap,
     height: minTap,

@@ -199,7 +199,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
               <>
                 {/* iOS Settings-style groups: customer, pool, and who's on it (two columns
                     on wide screens), then the On Site form. */}
-                <div className="grid items-start gap-x-6 gap-y-6 lg:grid-cols-2">
+                <div className="grid grid-cols-1 items-start gap-x-6 gap-y-6 lg:grid-cols-2">
                   <div className="space-y-6">
                     <Grouped title="Customer">
                       {job.customer ? (
@@ -741,7 +741,7 @@ async function Gallery({ detail, tz }: { detail: JobDetail; tz: string }) {
       {detail.media.length === 0 ? (
         <Empty>No photos or recordings yet.</Empty>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {detail.media.map((m) => {
             const url = m.storage_path ? urls.get(m.storage_path) : undefined;
             const markup = parseMarkup(m.markup).shapes;
@@ -830,7 +830,7 @@ async function Signatures({ detail, tz }: { detail: JobDetail; tz: string }) {
           Customer.
         </p>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {signatures.map((s) => {
             const url = s.image_path ? urls.get(s.image_path) : undefined;
             return (
@@ -884,7 +884,7 @@ async function Reports({ detail }: { detail: JobDetail }) {
   const key = "homeowner";
   if (templates.find((t) => t.key === key)?.enabled === false) return null;
   return (
-    <div className="grid max-w-3xl gap-5">
+    <div className="grid max-w-3xl grid-cols-1 gap-5">
       <p className="text-[0.9375rem] text-text-muted">
         Write Draft fills in the report from this job’s checklist, tests, and findings. Read and
         edit it before sending.
@@ -1057,7 +1057,7 @@ async function Quotes({ detail }: { detail: JobDetail }) {
       ) : null}
       {!hasDraft && !hasAccepted ? <StartQuote jobId={detail.job.id} /> : null}
       {quotes.length ? (
-        <div className="grid gap-5 xl:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
           {quotes.map((q) => (
             <QuotePanel key={q.id} quote={q} jobId={detail.job.id} origin={origin}>
               {q.status === "draft" ? (

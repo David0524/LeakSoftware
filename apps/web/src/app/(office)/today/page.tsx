@@ -243,7 +243,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                         })}
                       />
                       {done ? null : (
-                        <span className="ml-auto flex shrink-0 gap-2">
+                        <span className="ml-auto flex max-w-full min-w-0 gap-2">
                           {j.customer?.phone ? (
                             <a
                               href={`tel:${j.customer.phone}`}

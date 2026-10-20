@@ -362,21 +362,25 @@ function DayColumn({
       ) : null}
       {/* Planning and driving the route are what this card is for: they lead. */}
       {c.techId && stops.length ? (
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {c.open ? (
-            <Button
-              type="button"
-              kind="secondary"
-              disabled={busy}
-              onClick={onPlan}
-              className="px-2"
-            >
-              Plan Route
-            </Button>
-          ) : null}
-          {c.routeHref ? (
-            <OpenRouteInMaps href={c.routeHref} app={c.routeApp} compact className="px-2" />
-          ) : null}
+        // Two side by side; with large text (the column under 14 of its letters wide) one
+        // above the other, so neither label runs past its pill.
+        <div className="mt-3 @container">
+          <div className="grid grid-cols-1 gap-2 @min-[14em]:grid-cols-2">
+            {c.open ? (
+              <Button
+                type="button"
+                kind="secondary"
+                disabled={busy}
+                onClick={onPlan}
+                className="px-2"
+              >
+                Plan Route
+              </Button>
+            ) : null}
+            {c.routeHref ? (
+              <OpenRouteInMaps href={c.routeHref} app={c.routeApp} compact className="px-2" />
+            ) : null}
+          </div>
         </div>
       ) : null}
       <SortableContext
@@ -636,7 +640,9 @@ function WeekGrid({
 }) {
   const rows = [...new Map(columns.map((c) => [c.techId, c.title])).entries()];
   return (
-    <div className="overflow-x-auto card">
+    // relative: the screen-reader-only Move buttons are positioned, and would otherwise
+    // widen the page past this scroller on a narrow window (or at 200% zoom).
+    <div className="relative overflow-x-auto card">
       <table className="w-full min-w-[880px] table-fixed text-left">
         <thead className="border-b border-border">
           <tr>

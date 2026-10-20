@@ -46,11 +46,11 @@ export function QuotePanel({
         <ul className="mt-3 space-y-1 text-[0.9375rem]">
           {quote.lines.map((l) => (
             <li key={l.id} className="flex justify-between gap-4">
-              <span>
+              <span className="min-w-0 break-words">
                 {l.description}
                 {Number(l.quantity) !== 1 ? ` × ${Number(l.quantity)}` : ""}
               </span>
-              <span className="tabular-nums">
+              <span className="shrink-0 tabular-nums">
                 {formatCents(
                   lineTotal({ quantity: Number(l.quantity), unit_price_cents: l.unit_price_cents }),
                 )}

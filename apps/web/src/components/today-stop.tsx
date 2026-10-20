@@ -81,20 +81,27 @@ export function TodayStop({
           )}
         </span>
         <span
-          className={cx("flex min-w-0 flex-1 flex-wrap items-center gap-x-2", done && "opacity-70")}
+          className={cx(
+            "@container flex min-w-0 flex-1 flex-wrap items-center gap-x-2",
+            done && "opacity-70",
+          )}
         >
-          <span className="font-display text-[1.0625rem] font-bold">{time}</span>
-          {/* The name opens the job, open or closed (owner, 2026-10-20). */}
+          <span className="font-display text-[1.0625rem] font-bold whitespace-nowrap">{time}</span>
+          {/* The name opens the job, open or closed (owner, 2026-10-20). With large text (the
+              row under 9 of its letters wide) it takes its own line under the time and wraps,
+              without its chevron, rather than shrinking to a letter or two. */}
           <Link
             href={href}
             onClick={(e) => e.stopPropagation()}
-            className="-my-2 flex min-h-11 min-w-0 flex-1 items-center gap-0.5 font-semibold text-link"
+            className="-my-2 flex min-h-11 min-w-0 flex-1 items-center gap-0.5 font-semibold text-link @max-[9em]:my-0 @max-[9em]:basis-full"
           >
-            <span className="truncate">{name}</span>
+            <span className="truncate @max-[9em]:break-words @max-[9em]:whitespace-normal">
+              {name}
+            </span>
             <svg
               viewBox="0 0 24 24"
               aria-hidden="true"
-              className="size-4 shrink-0"
+              className="size-4 shrink-0 @max-[9em]:hidden"
               fill="none"
               stroke="currentColor"
               strokeWidth="2.4"

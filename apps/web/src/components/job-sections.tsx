@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore, type ReactNode } from "react";
-import { SwipePages, useSegmentDrag } from "./gestures";
+import { SwipePages, useSegmentDrag, useTrackOverflow } from "./gestures";
 import { NextStepBar, type NextStepJob } from "./next-step-bar";
 import { cx } from "./ui";
 
@@ -42,6 +42,7 @@ export function JobSections({
   // gestures").
   const { held, handlers } = useSegmentDrag(index, (i) => choose(sections[i]!.id));
   const shown = held ?? index;
+  const track = useTrackOverflow<HTMLDivElement>(index);
   const go = (step: number) => {
     // Wider screens show every part on one page.
     if (!matchMedia("(max-width: 639.98px)").matches) return;
@@ -62,10 +63,14 @@ export function JobSections({
           the navigation bar on the same frosted bar, one hairline below both (no floating
           card). */}
       <div className="nav-accessory glass-bar sticky top-[calc(2.75rem+env(safe-area-inset-top))] z-20 -mx-4 mb-4 px-4 py-2 sm:hidden">
+        {/* Five equal segments; a label that needs more room gets its own width, and with
+            large text the row scrolls inside the track (useTrackOverflow) instead of the
+            labels running into each other. */}
         <div
+          ref={track}
           role="tablist"
           aria-label="Job sections"
-          className="grid grid-cols-5 gap-0.5 rounded-full bg-fill p-0.5 touch-pan-y select-none"
+          className="segment-scroll grid auto-cols-[minmax(max-content,1fr)] grid-flow-col gap-0.5 rounded-full bg-fill p-0.5 touch-pan-y select-none"
           {...handlers}
         >
           {sections.map((s, i) => (
@@ -80,7 +85,8 @@ export function JobSections({
               onClick={() => choose(s.id)}
               // The iOS segmented control: the chosen part on a raised white thumb.
               className={cx(
-                "relative min-h-11 rounded-full px-1 text-[0.8125rem]",
+                // The side padding grows only once the text is larger than usual.
+                "relative min-h-11 rounded-full px-[max(0.25rem,calc(0.75rem-8px))] text-[0.8125rem] whitespace-nowrap",
                 "transition-[color,background-color,transform] duration-200 motion-reduce:transition-none",
                 held === i && "scale-[1.06] shadow-lg",
                 shown === i

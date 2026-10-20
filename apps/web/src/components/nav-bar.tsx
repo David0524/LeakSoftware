@@ -41,12 +41,18 @@ export function NavBar({
         collapsed ? "glass-bar" : "bg-transparent",
       )}
     >
-      <div className="grid h-11 grid-cols-[1fr_auto_1fr] items-center px-2">
-        <div className="min-w-0 justify-self-start">
+      {/* Large text (owner, 2026-10-20), as iOS does: the bar grows in height with the text,
+          the title truncates, and the back label gives way before it collides: truncated
+          first, then only the chevron (the cell is a container, so the label hides once its
+          column is under about 3.5 of its own letters wide). The action column keeps its
+          button's width; the title's column shrinks instead. */}
+      <div className="grid min-h-11 grid-cols-[minmax(2.75rem,1fr)_minmax(0,auto)_minmax(2.75rem,1fr)] items-center px-2">
+        <div className="@container min-w-0">
           {back ? (
             <Link
               href={back.href}
-              className="flex min-h-11 items-center gap-0.5 rounded-full pr-2 text-link"
+              aria-label={back.label}
+              className="inline-flex min-h-11 max-w-full min-w-11 items-center gap-0.5 rounded-full pr-2 text-link"
             >
               <svg
                 viewBox="0 0 12 20"
@@ -60,20 +66,21 @@ export function NavBar({
               >
                 <path d="M10 2 2 10l8 8" />
               </svg>
-              <span className="truncate">{back.label}</span>
+              <span className="truncate @max-[3.5em]:hidden">{back.label}</span>
             </Link>
           ) : null}
         </div>
         <p
           aria-hidden={!collapsed}
           className={cx(
-            "max-w-[55vw] truncate text-[1.0625rem] font-semibold transition-opacity",
-            collapsed ? "opacity-100" : "opacity-0",
+            "truncate text-[1.0625rem] font-semibold transition-opacity",
+            // Hidden, it takes no room, so "‹ Jobs" shows in full above the large title.
+            collapsed ? "max-w-[55vw] opacity-100" : "max-w-0 opacity-0",
           )}
         >
           {title}
         </p>
-        <div className="flex min-w-0 items-center gap-1 justify-self-end">{action}</div>
+        <div className="flex items-center gap-1 justify-self-end">{action}</div>
       </div>
     </div>
   );

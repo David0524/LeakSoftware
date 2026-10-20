@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useTrackOverflow } from "./gestures";
 import { SEGMENT_TRACK, cx, segmentClass } from "./ui";
 
 /**
@@ -6,8 +9,14 @@ import { SEGMENT_TRACK, cx, segmentClass } from "./ui";
  * segmented control of links as on iOS.
  */
 export function JobsTabs({ current }: { current: "jobs" | "reports" }) {
+  // Large text: the two segments scroll inside the track rather than past the page's edge.
+  const track = useTrackOverflow<HTMLElement>(current === "jobs" ? 0 : 1);
   return (
-    <nav aria-label="Jobs and Reports" className={cx(SEGMENT_TRACK, "mb-5 flex-nowrap")}>
+    <nav
+      ref={track}
+      aria-label="Jobs and Reports"
+      className={cx(SEGMENT_TRACK, "segment-scroll mb-5")}
+    >
       {(
         [
           { key: "jobs", href: "/jobs", label: "Jobs" },
@@ -17,6 +26,7 @@ export function JobsTabs({ current }: { current: "jobs" | "reports" }) {
         <Link
           key={o.key}
           href={o.href}
+          data-segment
           aria-current={o.key === current ? "page" : undefined}
           className={segmentClass(o.key === current, "min-w-28")}
         >

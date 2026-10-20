@@ -38,7 +38,7 @@ export function NextStepBar({ section, job }: { section: string; job: NextStepJo
         role="toolbar"
         aria-label="Next step"
         hidden={typing}
-        className="fixed inset-x-0 bottom-[calc(4.125rem+max(0.75rem,env(safe-area-inset-bottom)))] z-30 px-3 sm:hidden"
+        className="fixed inset-x-0 bottom-[calc(var(--tab-bar-top)+var(--tab-bar-row)+2px+var(--tab-bar-bottom))] z-30 px-3 sm:hidden"
       >
         <div className="glass flex gap-2 rounded-[28px] p-2">
           {buttons.map((step, i) =>

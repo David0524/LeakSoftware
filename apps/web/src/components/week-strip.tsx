@@ -131,7 +131,8 @@ export function WeekStrip({ date, today, tech }: { date: string; today: string; 
                   aria-current={d === selected ? "date" : undefined}
                   aria-label={formatDay(d, "long")}
                   className={cx(
-                    "flex min-h-14 min-w-12 flex-1 flex-col items-center justify-center rounded-xl text-[0.8125rem] font-medium",
+                    // Large text: the days stay seven across (capped at 1.5 times, as a fixed strip).
+                    "@container flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center rounded-xl text-[min(0.8125rem,19.5px)] font-medium",
                     d === selected
                       ? "bg-text text-bg"
                       : d === today
@@ -139,8 +140,12 @@ export function WeekStrip({ date, today, tech }: { date: string; today: string; 
                         : "hover:bg-surface",
                   )}
                 >
-                  {weekday.format(at)}
-                  <span className="font-display text-xl font-bold">{at.getUTCDate()}</span>
+                  {/* Too narrow for "Mon" (zoomed in): "M", as iOS Calendar does. */}
+                  <span className="@max-[2.2em]:hidden">{weekday.format(at)}</span>
+                  <span className="hidden @max-[2.2em]:inline">{weekday.format(at)[0]}</span>
+                  <span className="font-display text-[min(1.25rem,30px)] leading-[1.4] font-bold">
+                    {at.getUTCDate()}
+                  </span>
                 </Link>
               );
             })}

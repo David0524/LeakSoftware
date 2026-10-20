@@ -111,7 +111,7 @@ function TabIcon({ href, selected }: { href: string; selected: boolean }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="size-7"
+      className="size-[min(1.75rem,42px)]"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
@@ -155,8 +155,13 @@ export function TabBar({ links: all }: { links: OfficeLink[] }) {
     // page is still scrolling or the browser's toolbar is moving.
     <div
       data-testid="tab-bar-layer"
-      className="fixed inset-x-0 bottom-0 z-30 transform-gpu touch-manipulation px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 transform-gpu touch-manipulation px-3 pt-(--tab-bar-top) pb-(--tab-bar-bottom) sm:hidden"
     >
+      {/* Large text (owner, 2026-10-20): the bar grows with the text, its labels up to 13 px
+          and its symbols and height up to one and a half times, then stops, as
+          iOS keeps its tab bar compact at accessibility sizes. A label that still doesn't fit
+          is cut short, and on a very narrow screen the tabs show only their symbols (each
+          keeps its name for VoiceOver). */}
       <nav aria-label="Main" className="glass rounded-[28px] px-1">
         <ul className="flex">
           {links.map((l) => {
@@ -164,12 +169,12 @@ export function TabBar({ links: all }: { links: OfficeLink[] }) {
               inSection(path, l) ||
               (l.href === "/more" && overflow.some((o) => inSection(path, o)));
             return (
-              <li key={l.href} className="flex-1">
+              <li key={l.href} className="@container min-w-0 flex-1">
                 <Link
                   href={l.href}
                   aria-current={active ? "page" : undefined}
                   className={cx(
-                    "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-3xl text-[0.6875rem] font-medium",
+                    "flex min-h-(--tab-bar-row) flex-col items-center justify-center gap-0.5 rounded-3xl text-[min(0.6875rem,13px)] font-medium",
                     active ? "text-link" : "text-text-muted",
                   )}
                 >
@@ -180,7 +185,7 @@ export function TabBar({ links: all }: { links: OfficeLink[] }) {
                       className="absolute -top-1 left-4 bg-primary text-on-primary"
                     />
                   </span>
-                  {l.label}
+                  <span className="max-w-full truncate px-0.5 @max-[44px]:sr-only">{l.label}</span>
                 </Link>
               </li>
             );

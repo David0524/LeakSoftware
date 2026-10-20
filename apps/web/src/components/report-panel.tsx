@@ -442,7 +442,7 @@ function SendControls({
   return (
     <>
       <div className="mt-3 flex flex-wrap items-end gap-3">
-        <div className="min-w-64 flex-1 space-y-1">
+        <div className="min-w-[min(16rem,100%)] flex-1 space-y-1">
           <label htmlFor={`${id}-to`} className="block font-medium">
             Customer email
           </label>

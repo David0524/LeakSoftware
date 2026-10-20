@@ -4,6 +4,14 @@
 /* dark: follows the appearance setting (data-theme, set before paint by lib/theme.ts). */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+/* The phone tab bar's padding and row (components/nav-links.tsx), shared with the Next Step
+   bar that sits on top of it: they grow with large text up to 1.5 times, then stop. */
+:root {
+  --tab-bar-top: min(0.5rem, 12px);
+  --tab-bar-row: min(3.5rem, 84px);
+  --tab-bar-bottom: max(min(0.75rem, 18px), env(safe-area-inset-bottom));
+}
+
 body {
   background: var(--lb-bg);
   color: var(--lb-text);
@@ -131,6 +139,21 @@ header:not(.glass-bar) :focus-visible {
    hairline, under the accessory, not between the two. */
 body:has(.nav-accessory) .nav-main.glass-bar {
   box-shadow: none;
+}
+/* Segmented controls that scroll inside their track once large text no longer fits them
+   (useTrackOverflow in components/gestures.tsx): one row always, never two; the track only
+   becomes a scroller while it overflows, so normal sizes keep the thumb's shadow. */
+.segment-scroll {
+  flex-wrap: nowrap;
+}
+.segment-scroll[data-overflow] {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  touch-action: pan-x pan-y;
+}
+.segment-scroll[data-overflow]::-webkit-scrollbar {
+  display: none;
 }
 /* Action sheet groups: the frosted panel iOS draws them on. */
 .glass-sheet {
