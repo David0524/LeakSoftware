@@ -113,7 +113,23 @@
                 app.link = nil
                 // The same link twice at once (URL and restore at a cold start) is done once.
                 guard app.linkGate.accept(link) else { return }
-                open(link)
+                // Unsaved changes open: "Discard changes?" first (owner, 2026-10-20).
+                if let now = app.unsavedEdits.arrive(link) { open(now) }
+            }
+            .onChange(of: app.unsavedEdits.released) { _, _ in
+                if let link = app.unsavedEdits.takeReleased() { open(link) }
+            }
+            // Asked here when the unsaved editor is a screen, not a sheet (a sheet asks itself).
+            .confirmationDialog(
+                DiscardText.title,
+                isPresented: Binding(
+                    get: { app.unsavedEdits.heldLink != nil && !app.unsavedEdits.anySheet },
+                    // Closed without a choice (after the buttons have run): keep editing.
+                    set: { if !$0 { Task { @MainActor in app.unsavedEdits.keepEditing() } } }),
+                titleVisibility: .visible
+            ) {
+                Button(DiscardText.discard, role: .destructive) { app.unsavedEdits.discardForLink() }
+                Button(DiscardText.keepEditing, role: .cancel) { app.unsavedEdits.keepEditing() }
             }
             .task(id: showWelcome) {
                 guard !showWelcome else { return }

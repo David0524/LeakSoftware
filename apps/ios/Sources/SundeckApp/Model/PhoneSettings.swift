@@ -97,6 +97,23 @@ public final class PhoneSettingsModel {
     public var rings: Set<String> = []
     public var myPhone = ""
 
+    /// The line settings and my mobile number as the server last sent them.
+    private var saved = Saved()
+
+    private struct Saved: Equatable {
+        var pictures = true
+        var greeting = ""
+        var rings: Set<String> = []
+        var myPhone = ""
+    }
+
+    /// Changed here and not saved yet: leaving the page asks first (owner, 2026-10-20).
+    public var isDirty: Bool {
+        loaded
+            && (pictures != saved.pictures || textChanged(greeting, from: saved.greeting) || rings != saved.rings
+                || textChanged(myPhone, from: saved.myPhone))
+    }
+
     private let api: WebAPI
     private let companyId: String
 
@@ -140,6 +157,7 @@ public final class PhoneSettingsModel {
         rings = Set(team.filter(\.rings).map(\.id))
         let mine = reply["my_phone"]?.string ?? ""
         myPhone = mine.isEmpty ? "" : formatPhone(toE164(mine) ?? mine)
+        saved = Saved(pictures: pictures, greeting: greeting, rings: rings, myPhone: myPhone)
     }
 
     /// Area code search: three digits, 2 to 9 first.

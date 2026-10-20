@@ -44,6 +44,7 @@
             }
             .navigationTitle("Signature")
             .navigationBarTitleDisplayMode(.inline)
+            .discardOnBack(dirty: (form?.isDirty ?? false) && !saving)
             .toolbar(.hidden, for: .tabBar)
             .task(id: sync.revision) { load() }
             .sensoryFeedback(.success, trigger: saved)

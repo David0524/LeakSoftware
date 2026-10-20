@@ -48,6 +48,19 @@
         @State private var busy: String?
         @State private var choosingLogo = false
         @State private var logo: UIImage?
+        /// Each part as loaded or last saved: Back asks while any part has changes not saved.
+        @State private var savedProfile = CompanyProfileForm()
+        @State private var savedFollowups = FollowupsForm(nil)
+        @State private var savedBranding = BrandingForm(nil)
+        @State private var savedDisclaimer = ""
+        @State private var savedNextNumber = ""
+
+        private var dirty: Bool {
+            loaded
+                && (profile != savedProfile || followups != savedFollowups || branding != savedBranding
+                    || textChanged(disclaimer, from: savedDisclaimer) || textChanged(nextNumber, from: savedNextNumber)
+                    || pendingLogo != nil)
+        }
 
         var body: some View {
             ScreenScroll {
@@ -60,6 +73,7 @@
             }
             .navigationTitle(SettingsPage.company.title)
             .navigationBarTitleDisplayMode(.large)
+            .discardOnBack(dirty: dirty)
             .onAppear(perform: load)
             .sheet(isPresented: $choosingLogo) {
                 LibraryPicker(kind: .photo) { result in
@@ -83,6 +97,11 @@
             disclaimer = row?["report_disclaimer"]?.string ?? ""
             lastNumber = lastJobNumber(sync.store, companyId: company.id)
             nextNumber = String(lastNumber + 1)
+            savedProfile = profile
+            savedFollowups = followups
+            savedBranding = branding
+            savedDisclaimer = disclaimer
+            savedNextNumber = nextNumber
             loaded = true
         }
 
@@ -200,6 +219,7 @@
             do {
                 try ShopSettingsWrites.saveProfile(sync, companyId: companyId, profile, locate: app.locate)
                 session.reloadCompanies()
+                savedProfile = profile
                 results["profile"] = ("Saved.", false)
             } catch {
                 results["profile"] = (String(describing: error), true)
@@ -215,6 +235,7 @@
                 try ShopSettingsWrites.saveSettings(
                     sync, companyId: companyId, followups.settings(session.company?.settings))
                 session.reloadCompanies()
+                savedFollowups = followups
                 results["followups"] = ("Saved.", false)
             } catch {
                 results["followups"] = (String(describing: error), true)
@@ -228,6 +249,7 @@
             }
             do {
                 try ShopSettingsWrites.saveDisclaimer(sync, companyId: companyId, disclaimer)
+                savedDisclaimer = disclaimer
                 results["terms"] = ("Saved.", false)
             } catch {
                 results["terms"] = (String(describing: error), true)
@@ -257,6 +279,7 @@
                 try await app.client.rpc(
                     "set_next_job_number", params: NextNumber(targetCompany: companyId, nextNumber: n)
                 ).execute()
+                savedNextNumber = nextNumber
                 results["number"] = ("The next job will be #\(n).", false)
             } catch {
                 let message = String(describing: error)
@@ -325,6 +348,7 @@
         private func write(logoPath: String?) {
             do {
                 try ShopSettingsWrites.saveBranding(sync, companyId: companyId, branding, logoPath: logoPath)
+                savedBranding = branding
                 results["branding"] = ("Saved.", false)
             } catch {
                 results["branding"] = (String(describing: error), true)
@@ -340,6 +364,8 @@
         @Environment(AppEnvironment.self) private var app
         @Environment(\.openRoute) private var openRoute
         @State private var form = SchedulingForm(nil)
+        /// As loaded or last saved: Back asks while the form differs.
+        @State private var savedForm = SchedulingForm(nil)
         @State private var loaded = false
         @State private var result: (text: String, error: Bool)?
         @State private var locateResult: (text: String, error: Bool)?
@@ -434,9 +460,11 @@
             }
             .navigationTitle(SettingsPage.scheduling.title)
             .navigationBarTitleDisplayMode(.large)
+            .discardOnBack(dirty: loaded && form != savedForm)
             .onAppear {
                 if !loaded {
                     form = SchedulingForm(session.company?.settings)
+                    savedForm = form
                     loaded = true
                 }
             }
@@ -457,6 +485,7 @@
             do {
                 try ShopSettingsWrites.saveSettings(sync, companyId: company.id, form.settings(company.settings))
                 session.reloadCompanies()
+                savedForm = form
                 result = ("Saved.", false)
             } catch {
                 result = (String(describing: error), true)
@@ -637,6 +666,7 @@
             .refreshable { await model?.load() }
             .navigationTitle(PhoneText.title)
             .navigationBarTitleDisplayMode(.large)
+            .discardOnBack(dirty: model?.isDirty ?? false)
             .task(id: session.company?.id) {
                 guard let company = session.company else { return }
                 onMyWay = OnMyWayChoice(company.settings)

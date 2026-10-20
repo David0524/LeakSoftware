@@ -99,10 +99,7 @@
             }
             .interactiveDismissDisabled()
             .tint(Color.link)
-            .confirmationDialog("Discard changes?", isPresented: $confirmDiscard, titleVisibility: .visible) {
-                Button("Discard Changes", role: .destructive) { dismiss() }
-                Button("Keep Editing", role: .cancel) {}
-            }
+            .discardPrompt(dirty: dirty, isPresented: $confirmDiscard)
             .alert(
                 "Couldn’t Save", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })
             ) {

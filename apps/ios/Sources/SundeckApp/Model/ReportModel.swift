@@ -430,6 +430,18 @@ public final class ReportFlow {
                     message = "Sent to \(email)."
                 }
             }
+        } catch let failure as WebAPI.Failure
+            where failure.description == ReportSendText.uploadsPending && action != .draft && sends != nil
+        {
+            // Photos still uploading: it waits on the phone and goes once they're up (apps/mobile).
+            if let id = reportId ?? draft?.id {
+                let to =
+                    action == .email
+                    ? (self.to ?? customer?["email"]?.string ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                    : action == .text ? customer?["phone"]?.string : nil
+                keep(action == .finish ? .finish : action == .email ? .email : .text, reportId: id, to: to)
+                message = ReportSendText.willSendAfterUploads
+            }
         } catch {
             let text = (error as? WebAPI.Failure)?.description ?? String(describing: error)
             self.error = Failure(at: action == .draft ? .draft : action == .finish ? .finish : .send, text: text)

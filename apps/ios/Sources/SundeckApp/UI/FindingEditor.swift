@@ -58,11 +58,7 @@
             .sheetPresentation(dirty: form?.isDirty ?? false)
             .task(id: sync.revision) { load() }
             .sensoryFeedback(.success, trigger: saves)
-            .confirmationDialog(
-                form?.discardTitle ?? "Discard changes?", isPresented: $confirmDiscard, titleVisibility: .visible
-            ) {
-                Button("Discard Changes", role: .destructive) { dismiss() }
-            }
+            .discardPrompt(dirty: form?.isDirty ?? false, isPresented: $confirmDiscard)
             .confirmationDialog(form?.deleteTitle ?? "", isPresented: $confirmDelete, titleVisibility: .visible) {
                 Button("Delete Finding", role: .destructive) { delete() }
             }

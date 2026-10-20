@@ -228,6 +228,12 @@ public struct ChemicalForm: Equatable, Sendable {
     }
 
     public var readingValues: Readings { values(readings) }
+    /// Readings typed and not submitted since (`submitted`, the readings last submitted): leaving
+    /// asks "Discard changes?" first (owner, 2026-10-20).
+    public func hasUnsubmittedReadings(since submitted: [ReadingKey: String]) -> Bool {
+        let typed = readings.filter { !$0.value.trimmingCharacters(in: .whitespaces).isEmpty }
+        return !typed.isEmpty && typed != submitted.filter { !$0.value.trimmingCharacters(in: .whitespaces).isEmpty }
+    }
     public var recommended: ChemistryTargets { targets(readingValues.cya) }
     public var anyGoal: Bool { goals.values.contains { chemicalNumber($0) != nil } }
     /// The chosen levels, as stored on the phone.

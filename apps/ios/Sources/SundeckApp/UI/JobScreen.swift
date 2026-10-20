@@ -61,6 +61,8 @@
             // The customer's name on top, the job number smaller below (owner, 2026-10-20).
             .navigationTitle(job.map(jobPageTitle) ?? "New Job")
             .navigationBarTitleDisplayMode(.large)
+            // An invoice or quote line typed but not added: Back asks first (owner, 2026-10-20).
+            .discardOnBack(dirty: app.unsavedEdits.any(under: "job:\(jobId)"))
             .task(id: sync.revision) { reload() }
             .sensoryFeedback(.success, trigger: changes)
             .alert(

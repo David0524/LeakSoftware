@@ -40,6 +40,7 @@
                 }
             }
             .navigationTitle("Review and Sign")
+            .discardOnBack(dirty: (form?.isDirty ?? false) && busy == nil)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .tabBar)
             .task(id: sync.revision) { load() }

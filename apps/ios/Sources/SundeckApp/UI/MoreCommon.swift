@@ -95,11 +95,9 @@
                         Button(cancelTitle) { if dirty { confirm = true } else { dismiss() } }
                     }
                 }
-                .confirmationDialog("Discard changes?", isPresented: $confirm, titleVisibility: .visible) {
-                    Button("Discard Changes", role: .destructive) { dismiss() }
-                }
             }
             .sheetPresentation(dirty: dirty)
+            .discardPrompt(dirty: dirty, isPresented: $confirm)
         }
     }
 

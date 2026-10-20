@@ -110,6 +110,9 @@
                 }
             }
             .card()
+            // A line typed but not added, or details not saved: leaving the job asks first (owner,
+            // 2026-10-20).
+            .tracksUnsaved("job:\(flow.jobId)", dirty: card.isDraft && unsaved)
             .onAppear(perform: resetDetails)
             .onChange(of: card.invoice.invoice) { resetDetails() }
             .confirmationDialog(
@@ -324,6 +327,14 @@
                     .buttonStyle(.danger)
                     .disabled(flow.busy != nil)
             }
+        }
+
+        private var unsaved: Bool {
+            let dueNow = hasDue ? isoDay(due) : nil
+            let dueSaved = card.dueDate.map { String($0.prefix(10)) }
+            return textChanged(description, from: "") || textChanged(price, from: "")
+                || textChanged(quantity, from: "1") || textChanged(discount, from: card.discountText)
+                || textChanged(notes, from: card.notes) || dueNow != dueSaved
         }
 
         private func resetDetails() {

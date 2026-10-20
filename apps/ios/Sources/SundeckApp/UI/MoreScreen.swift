@@ -340,6 +340,8 @@
         @Environment(Session.self) private var session
         @Environment(AppEnvironment.self) private var app
         @State private var phone = ""
+        /// The number as loaded or last saved: Back asks when what's typed differs.
+        @State private var savedPhone = ""
         @State private var saving = false
         @State private var result: (text: String, error: Bool)?
 
@@ -360,6 +362,7 @@
             }
             .navigationTitle("My Mobile Number")
             .navigationBarTitleDisplayMode(.large)
+            .discardOnBack(dirty: textChanged(phone, from: savedPhone))
             .task {
                 guard let id = session.user?.id,
                     let rows: [MyProfile] = try? await app.client.from("profile").select("phone, two_step")
@@ -367,6 +370,7 @@
                     let saved = rows.first?.phone, phone.isEmpty
                 else { return }
                 phone = formatPhone(toE164(saved) ?? saved)
+                savedPhone = phone
             }
         }
 
@@ -381,6 +385,7 @@
             do {
                 try await app.client.from("profile").update(["phone": e164]).eq("id", value: id).execute()
                 phone = formatPhone(e164)
+                savedPhone = phone
                 result = ("Saved. Calls you place from Messages ring this number first.", false)
             } catch {
                 result = ("Couldn’t save. Try again when you’re online.", true)

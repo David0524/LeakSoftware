@@ -734,6 +734,35 @@ private func signature(_ id: String, _ name: String, purpose: String = "inspecti
         #expect(queue.pending.isEmpty)
     }
 
+    @Test func aSendWaitsWhileTheJobsPhotosAreUploading() async throws {
+        // Online, but a photo of the job is still uploading: the report would miss it, so the
+        // send waits on the phone (apps/mobile UploadsPendingError).
+        let s = try ReportJob(rows: [report("r1", version: 1, status: "sent", sections: twoSections)])
+        try s.sync.write("media", id: "m1", companyId: "c1", ["job_id": "j1", "kind": "photo"])
+        _ = try s.store.database.query(
+            "insert into upload_queue (media_id, company_id, local_path, storage_path, mime_type, record_table) values ('m1', 'c1', 'media/m1.jpg', 'c1/j1/m1.jpg', 'image/jpeg', 'media')"
+        )
+        #expect(s.sync.hasPendingUploads(jobId: "j1") && !s.sync.hasPendingUploads(jobId: "j2"))
+        let queue = ReportSendQueue(kv: s.sync.kv)
+        let f = ReportFlow(sync: s.sync, companyId: "c1", jobId: "j1", sends: queue)
+        f.to = "pat@home.test"
+        StubServer.set(s.host, "/api/reports/r1/send", 200, ["emailed": true])
+        await f.run(.email, reportId: "r1", server: s.server)
+        #expect(f.error == nil && f.message == "Will send when the photos finish uploading.")
+        #expect(queue.pending == [ReportSendRequest(jobId: "j1", reportId: "r1", action: .email, to: "pat@home.test")])
+        #expect(StubServer.calls(s.host).isEmpty)
+        // The queue waits for them too, then goes once they're up.
+        await queue.flush(api(s.host)) { s.sync.hasPendingUploads(jobId: $0) }
+        #expect(queue.pending.count == 1 && StubServer.calls(s.host).isEmpty)
+        let visits = VisitReportQueue(kv: s.sync.kv)
+        visits.add("j1")
+        await visits.flush(api(s.host)) { s.sync.hasPendingUploads(jobId: $0) }
+        #expect(visits.pending == ["j1"])
+        _ = try s.store.database.query("delete from upload_queue")
+        await queue.flush(api(s.host)) { s.sync.hasPendingUploads(jobId: $0) }
+        #expect(queue.pending.isEmpty && StubServer.calls(s.host).count == 1)
+    }
+
     @Test func aQueuedTextWaitsWhileTheAppIsInTheBackground() async throws {
         // The phone sends the text itself; run in the background it would count as sent with
         // nobody there to send it.

@@ -79,6 +79,8 @@ public struct SignatureForm: Equatable, Sendable {
     public var signer: String { nameText.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     public var canClear: Bool { !strokes.isEmpty }
+    /// A signature drawn and not saved: leaving asks "Discard changes?" first (owner, 2026-10-20).
+    public var isDirty: Bool { !strokes.isEmpty }
 
     /// A stroke ended: the pad's strokes so far. Clears the message.
     public mutating func draw(_ strokes: [SignatureStroke]) {

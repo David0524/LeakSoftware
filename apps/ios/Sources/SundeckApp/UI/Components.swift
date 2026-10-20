@@ -88,6 +88,179 @@
         }
     }
 
+    // MARK: - Discard changes (owner, 2026-10-20: "should apply everywhere")
+
+    extension View {
+        /// "Discard changes?" on an editor with unsaved changes (`dirty`): shown when
+        /// `isPresented` is set (Cancel, Back) and when a sheet is swiped down while dirty (keep
+        /// `sheetPresentation(dirty:)` on it, which holds the sheet). Discard Changes runs
+        /// `onDiscard` (closing the sheet or screen by default); Keep Editing stays. The editor is
+        /// recorded in `UnsavedEdits`, so a notification or Live Activity link asks first too.
+        func discardPrompt(dirty: Bool, isPresented: Binding<Bool>, onDiscard: (() -> Void)? = nil) -> some View {
+            modifier(DiscardPrompt(dirty: dirty, isPresented: isPresented, onDiscard: onDiscard))
+        }
+
+        /// A pushed editor (a form screen): while it has unsaved changes the Back button (and the
+        /// edge swipe) is replaced by one that asks "Discard changes?" first.
+        func discardOnBack(dirty: Bool, back: String = "Back") -> some View {
+            modifier(DiscardOnBack(dirty: dirty, back: back))
+        }
+
+        /// Records a part of a screen with unsaved changes (a line typed but not added on the job
+        /// page) under `scope` ("job:<id>"), so the screen's Back and links ask first.
+        func tracksUnsaved(_ scope: String, dirty: Bool) -> some View {
+            modifier(UnsavedTracker(scope: scope, dirty: dirty))
+        }
+    }
+
+    private struct UnsavedTracker: ViewModifier {
+        var scope = "editor"
+        var dirty: Bool
+        var sheet = false
+        @State private var id = UUID().uuidString
+        @Environment(UnsavedEdits.self) private var edits: UnsavedEdits?
+
+        private var key: String { "\(scope):\(id)" }
+
+        func body(content: Content) -> some View {
+            content
+                .onChange(of: dirty, initial: true) { _, now in edits?.set(key, dirty: now, sheet: sheet) }
+                .onAppear { edits?.set(key, dirty: dirty, sheet: sheet) }
+                .onDisappear { edits?.set(key, dirty: false) }
+        }
+    }
+
+    private struct DiscardPrompt: ViewModifier {
+        var dirty: Bool
+        @Binding var isPresented: Bool
+        var onDiscard: (() -> Void)?
+        @Environment(\.dismiss) private var dismiss
+        @Environment(UnsavedEdits.self) private var edits: UnsavedEdits?
+
+        func body(content: Content) -> some View {
+            content
+                .background(DismissAttemptHook(active: dirty) { isPresented = true })
+                .confirmationDialog(DiscardText.title, isPresented: $isPresented, titleVisibility: .visible) {
+                    Button(DiscardText.discard, role: .destructive) {
+                        if let onDiscard { onDiscard() } else { dismiss() }
+                    }
+                    Button(DiscardText.keepEditing, role: .cancel) {}
+                }
+                .modifier(UnsavedTracker(dirty: dirty, sheet: true))
+                // A notification or Live Activity link while this sheet has changes: asked here,
+                // since nothing under a sheet can ask.
+                .confirmationDialog(
+                    DiscardText.title,
+                    isPresented: Binding(
+                        get: { dirty && edits?.heldLink != nil },
+                        // Closed without a choice (after the buttons have run): keep editing.
+                        set: { if !$0 { Task { @MainActor in edits?.keepEditing() } } }),
+                    titleVisibility: .visible
+                ) {
+                    Button(DiscardText.discard, role: .destructive) { edits?.discardForLink() }
+                    Button(DiscardText.keepEditing, role: .cancel) { edits?.keepEditing() }
+                }
+                // Discarded for a link: this editor closes.
+                .onChange(of: edits?.discarded ?? 0) { _, _ in
+                    if dirty { if let onDiscard { onDiscard() } else { dismiss() } }
+                }
+        }
+    }
+
+    private struct DiscardOnBack: ViewModifier {
+        var dirty: Bool
+        var back: String
+        @State private var asking = false
+        @Environment(\.dismiss) private var dismiss
+
+        func body(content: Content) -> some View {
+            content
+                .navigationBarBackButtonHidden(dirty)
+                .toolbar {
+                    if dirty {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button {
+                                asking = true
+                            } label: {
+                                HStack(spacing: 2) {
+                                    Image(systemName: "chevron.left").font(.system(size: 17, weight: .semibold))
+                                    Text(back)
+                                }
+                            }
+                            .accessibilityLabel(back == "Back" ? "Back" : "Back to \(back)")
+                        }
+                    }
+                }
+                .modifier(UnsavedTracker(dirty: dirty))
+                .confirmationDialog(DiscardText.title, isPresented: $asking, titleVisibility: .visible) {
+                    Button(DiscardText.discard, role: .destructive) { dismiss() }
+                    Button(DiscardText.keepEditing, role: .cancel) {}
+                }
+        }
+    }
+
+    /// Hears a swipe-down on a sheet that `interactiveDismissDisabled` is holding, so the editor
+    /// can ask "Discard changes?" instead of ignoring it. It stands in as the sheet's
+    /// presentation delegate and passes everything on to SwiftUI's own.
+    private struct DismissAttemptHook: UIViewControllerRepresentable {
+        var active: Bool
+        var onAttempt: () -> Void
+
+        func makeUIViewController(context: Context) -> HookController { HookController() }
+
+        func updateUIViewController(_ controller: HookController, context: Context) {
+            controller.onAttempt = active ? onAttempt : nil
+            controller.attach()
+        }
+
+        final class HookController: UIViewController, UIAdaptivePresentationControllerDelegate {
+            var onAttempt: (() -> Void)?
+            private weak var previous: UIAdaptivePresentationControllerDelegate?
+
+            override func viewDidAppear(_ animated: Bool) {
+                super.viewDidAppear(animated)
+                attach()
+            }
+
+            /// Only on a presented sheet; never on a pushed screen or the app's root.
+            func attach() {
+                var top: UIViewController = self
+                while let parent = top.parent { top = parent }
+                guard top.presentingViewController != nil, let controller = top.presentationController,
+                    controller.delegate !== self
+                else { return }
+                previous = controller.delegate
+                controller.delegate = self
+            }
+
+            func presentationControllerShouldDismiss(_ controller: UIPresentationController) -> Bool {
+                previous?.presentationControllerShouldDismiss?(controller) ?? true
+            }
+
+            func presentationControllerWillDismiss(_ controller: UIPresentationController) {
+                previous?.presentationControllerWillDismiss?(controller)
+            }
+
+            func presentationControllerDidDismiss(_ controller: UIPresentationController) {
+                previous?.presentationControllerDidDismiss?(controller)
+            }
+
+            func presentationControllerDidAttemptToDismiss(_ controller: UIPresentationController) {
+                previous?.presentationControllerDidAttemptToDismiss?(controller)
+                onAttempt?()
+            }
+
+            // Anything else SwiftUI's delegate answers (adaptive styles) still goes to it.
+            override func responds(to selector: Selector!) -> Bool {
+                super.responds(to: selector) || (previous?.responds(to: selector) ?? false)
+            }
+
+            override func forwardingTarget(for selector: Selector!) -> Any? {
+                previous?.responds(to: selector) == true ? previous : super.forwardingTarget(for: selector)
+            }
+        }
+    }
+
     /// A sheet's background: on iOS 26 a half-height sheet (Move, Suggested Times) is Liquid
     /// Glass with the system's rounded corners, and a full one (forms) keeps the grouped gray;
     /// before iOS 26 always the gray with 20 corners.

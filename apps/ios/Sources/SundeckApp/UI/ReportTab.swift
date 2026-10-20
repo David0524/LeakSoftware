@@ -118,8 +118,13 @@
                     Hairline().padding(.vertical, 4)
                 }
                 // Waiting for signal, or the server's answer to a request that waited.
-                if !app.reportSends.pending(jobId: job.id).isEmpty, flow.message != ReportSendText.willSend {
-                    Notice(kind: .info, text: ReportSendText.willSend)
+                if !app.reportSends.pending(jobId: job.id).isEmpty, flow.message != ReportSendText.willSend,
+                    flow.message != ReportSendText.willSendAfterUploads
+                {
+                    Notice(
+                        kind: .info,
+                        text: sync.hasPendingUploads(jobId: job.id)
+                            ? ReportSendText.willSendAfterUploads : ReportSendText.willSend)
                 }
                 if let failed = app.reportSends.failure(jobId: job.id) { Notice(kind: .error, text: failed) }
                 if !model.online {

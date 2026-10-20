@@ -155,6 +155,7 @@ public struct ReportServer {
         if sync.hasPendingWrites("report", reportId) {
             throw WebAPI.Failure(description: "Your edits haven’t reached the server yet. Try again with signal.")
         }
+        try requireUploaded(reportId)
         onStep?(1)
         let reply = try await api.post(
             "api/reports/\(reportId)/send",
@@ -164,6 +165,15 @@ public struct ReportServer {
         return Sent(
             link: reply["link"]?.string ?? "", message: reply["message"]?.string ?? "",
             emailed: reply["emailed"]?.bool ?? false)
+    }
+
+    /// A photo, video or signature image of the report's job still uploading: the report would
+    /// miss it, so it waits (apps/mobile `requireUploaded`).
+    private func requireUploaded(_ reportId: String) throws {
+        guard let jobId = (try? sync.store.get("report", reportId))??["job_id"]?.string,
+            sync.hasPendingUploads(jobId: jobId)
+        else { return }
+        throw WebAPI.Failure(description: ReportSendText.uploadsPending)
     }
 
     /// Finishes a report after the customer signed on this phone (or with Customer Not Here).
@@ -176,6 +186,7 @@ public struct ReportServer {
                 description:
                     "The signature or your edits haven’t reached the server yet. Finish when you have signal.")
         }
+        try requireUploaded(reportId)
         onStep?(1)
         let reply = try await api.post("api/reports/\(reportId)/finish", ["customerAway": .bool(customerAway)])
         onStep?(2)

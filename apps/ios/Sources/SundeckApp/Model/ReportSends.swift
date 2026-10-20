@@ -10,6 +10,11 @@ import SundeckSync
 
 public enum ReportSendText {
     public static let willSend = "Will send when you’re back online."
+    /// Online, but a photo or the signature is still uploading: it waits for them (apps/mobile
+    /// `UPLOADS_QUEUED_MESSAGE`).
+    public static let willSendAfterUploads = "Will send when the photos finish uploading."
+    /// The server call refused on the phone while the job's files are still uploading.
+    public static let uploadsPending = "The photos haven’t finished uploading yet. Try again in a moment."
 }
 
 /// One report request kept on the phone until it can run.
@@ -90,12 +95,14 @@ public final class ReportSendQueue {
     /// sign-in, the server busy or at fault). Only one run at a time, so two syncs finishing
     /// together never send twice. A text runs only with the app in front (`canText`), since the
     /// tech sends it from the phone; in the background it waits.
-    public func flush(_ api: WebAPI, canText: Bool = true) async {
+    /// A job whose files are still uploading (`uploading`) waits, so its report has them.
+    public func flush(_ api: WebAPI, canText: Bool = true, uploading: (String) -> Bool = { _ in false }) async {
         guard !running else { return }
         running = true
         defer { running = false }
         for request in pending {
             if request.action == .text && !canText { continue }
+            if uploading(request.jobId) { continue }
             do {
                 switch request.action {
                 case .finish:
