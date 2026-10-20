@@ -169,6 +169,21 @@ describe("moveJobChange", () => {
     );
     expect(r.updates[0]!.scheduled_start).toBe(at("2026-10-22", "13:00"));
   });
+
+  it("a time lock keeps its time on the new day; a day lock alone doesn't", () => {
+    const timed = {
+      scheduled_start: at("2026-10-20", "13:00"),
+      scheduled_end: at("2026-10-20", "14:00"),
+    };
+    const move = (j: Parameters<typeof job>[0]) =>
+      moveJobChange(
+        ctx,
+        { ...base, job: job(j), tech: "tony", date: "2026-10-22", index: 0 },
+        estimateDriveMinutes,
+      ).updates[0]!.scheduled_start;
+    expect(move({ id: "t", lock_time: true, ...timed })).toBe(at("2026-10-22", "13:00"));
+    expect(move({ id: "d", lock_day: true, ...timed })).not.toBe(at("2026-10-22", "13:00"));
+  });
 });
 
 describe("renumberDay", () => {

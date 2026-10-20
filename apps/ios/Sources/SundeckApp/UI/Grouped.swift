@@ -80,6 +80,8 @@
         var icon: String?
         /// A drawn icon in place of a symbol (`withLeading(_:)`), in `link`, 28 wide.
         var leading: AnyView? = nil
+        /// Follows the title on its line (the not-on-map symbol after a pool's address).
+        var titleMark: Text? = nil
         @ViewBuilder var trailing: Trailing
         @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -100,7 +102,7 @@
                     : AnyLayout(HStackLayout(alignment: .center, spacing: CGFloat(Spacing.rowItems)))
                 layout {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(title)
+                        (Text(title) + (titleMark ?? Text("")))
                             .textRole(emphasized ? .bodyEmphasis : .body)
                             .foregroundStyle(Color.text)
                         if let detail {

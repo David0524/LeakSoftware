@@ -264,6 +264,32 @@ export const schedule: ModuleCases = {
       ],
       // The day the clocks go back in New York.
       [NY, "t1", "2026-11-01", NY_JOBS],
+      // Locks: a time lock keeps its time; a day lock alone may move within the day.
+      [
+        ctx(),
+        "t1",
+        "2026-10-21",
+        [
+          planJob("a", {
+            property: at(FAR),
+            lock_day: true,
+            scheduled_start: "2026-10-21T15:00:00Z",
+            scheduled_end: "2026-10-21T16:00:00Z",
+          }),
+          planJob("b", {
+            property: at(NEAR),
+            lock_time: true,
+            scheduled_start: "2026-10-21T17:00:00Z",
+            scheduled_end: "2026-10-21T18:00:00Z",
+          }),
+          planJob("c", {
+            property: at(EAST),
+            lock_day: true,
+            lock_time: true,
+            scheduled_start: "2026-10-21T19:00:00Z",
+          }),
+        ],
+      ],
     ],
   ),
   renumberDay: rule(
@@ -361,6 +387,35 @@ export const schedule: ModuleCases = {
             scheduled_end: "2026-10-21T16:30:00Z",
           }),
           index: 4,
+          targetDay: DAY_JOBS,
+        }),
+      ],
+      // A time lock alone keeps its clock time on the new day; a day lock alone doesn't.
+      [
+        CTX,
+        move({
+          job: planJob("tl", {
+            assigned_user_id: "u2",
+            lock_time: true,
+            property: at(NORTH),
+            scheduled_start: "2026-10-21T20:00:00Z",
+            scheduled_end: "2026-10-21T21:00:00Z",
+          }),
+          index: 0,
+          targetDay: DAY_JOBS,
+        }),
+      ],
+      [
+        CTX,
+        move({
+          job: planJob("dl", {
+            assigned_user_id: "u2",
+            lock_day: true,
+            property: at(NORTH),
+            scheduled_start: "2026-10-21T20:00:00Z",
+            scheduled_end: "2026-10-21T21:00:00Z",
+          }),
+          index: 0,
           targetDay: DAY_JOBS,
         }),
       ],

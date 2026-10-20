@@ -25,6 +25,27 @@ export const PhoneIcon = ({ className }: { className?: string }) => (
   </Icon>
 );
 
+export const PinIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M12 21s-6-5.3-6-11a6 6 0 0 1 12 0c0 5.7-6 11-6 11z" />
+    <circle cx="12" cy="10" r="2.2" />
+  </Icon>
+);
+
+export const NoteIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M5 4h14a1 1 0 0 1 1 1v10l-5 5H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" />
+    <path d="M15 20v-5h5M8 9h8M8 13h5" />
+  </Icon>
+);
+
+export const WarningIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M12 4 2.8 19.5h18.4z" />
+    <path d="M12 10v4.5M12 17v.01" />
+  </Icon>
+);
+
 export const MessageIcon = ({ className }: { className?: string }) => (
   <Icon className={className}>
     <path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z" />
@@ -58,6 +79,21 @@ export const KeyIcon = ({ className }: { className?: string }) => (
   <Icon className={className}>
     <circle cx="8" cy="15" r="4" />
     <path d="M11 12l8-8M16 7l2 2M14 9l2 2" />
+  </Icon>
+);
+
+/** A padlock: a job locked to its day, its time, or both (owner, 2026-10-20). */
+export const LockIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <rect x="5" y="11" width="14" height="10" rx="2.5" />
+    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+  </Icon>
+);
+
+/** Two corner arrows pointing out: open a bigger view (Enlarge a day map). */
+export const ExpandIcon = ({ className }: { className?: string }) => (
+  <Icon className={className}>
+    <path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" />
   </Icon>
 );
 

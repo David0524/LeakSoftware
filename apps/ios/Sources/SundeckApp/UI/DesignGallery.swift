@@ -112,7 +112,7 @@
                     OutcomeChip(outcome: .pass)
                     OutcomeChip(outcome: .fail)
                     OutcomeChip(outcome: .inconclusive)
-                    LockLabel("Fixed time")
+                    LockLabel("Time locked")
                     CountBadge(text: "3")
                     CountBadge(text: "99+")
                     CountBadge(text: "2", tone: .warning)

@@ -231,22 +231,15 @@
                 Button {
                     editingPool = pool
                 } label: {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ListRow(
-                            title: pool.address.isEmpty ? "Address" : pool.address, detail: pool.detail,
-                            emphasized: true
-                        ) {
-                            Text("Edit").textRole(.body).foregroundStyle(Color.link)
-                        }
-                        // Its address wasn't found on the map (owner, 2026-10-20).
-                        if propertyMapStatus(pool.row, routing: MapLookups.on(sync, companyId: session.company?.id))
-                            == .missing
-                        {
-                            NotOnMapTag()
-                                .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
-                                .padding(.top, -4)
-                                .padding(.bottom, CGFloat(Spacing.rowVertical))
-                        }
+                    // Its address wasn't found on the map: the symbol right after it (owner, 2026-10-20).
+                    let missing =
+                        propertyMapStatus(pool.row, routing: MapLookups.on(sync, companyId: session.company?.id))
+                        == .missing
+                    ListRow(
+                        title: pool.address.isEmpty ? "Address" : pool.address, detail: pool.detail,
+                        emphasized: true, titleMark: missing ? NotOnMapTag.text() : nil
+                    ) {
+                        Text("Edit").textRole(.body).foregroundStyle(Color.link)
                     }
                 }
                 .buttonStyle(.row)

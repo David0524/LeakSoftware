@@ -68,7 +68,7 @@ public struct RouteStop: Codable, Equatable, Sendable {
     public var id: String
     public var location: LatLng?
     public var durationMin: Int
-    /// The customer was told this time: the stop can't move.
+    /// It keeps this time (a time lock, or a job that started): the stop can't move.
     public var fixedStartMin: Int?
     /// Can't start before this (for example, now on today's route).
     public var earliestMin: Int?
@@ -641,7 +641,11 @@ public protocol PlanJobFields {
     var scheduledStart: String? { get }
     var scheduledEnd: String? { get }
     var routeOrder: Int? { get }
+    /// Kept equal to both locks for old builds; a job saved before locks with it is locked both ways.
     var arrivalFixed: Bool { get }
+    /// Locks (owner, 2026-10-20): stays on its day / keeps its clock time.
+    var lockDay: Bool { get }
+    var lockTime: Bool { get }
     /// The pool's point (`propertyLocation(job.property)`).
     var location: LatLng? { get }
     /// The customer's name, for "after Grace Holloway" in suggestions.
@@ -667,6 +671,8 @@ public struct PlanJob: PlanJobFields, Codable, Equatable, Sendable {
     public var scheduledEnd: String?
     public var routeOrder: Int?
     public var arrivalFixed: Bool
+    public var lockDay: Bool
+    public var lockTime: Bool
     public var property: Located?
     public var label: String?
 
@@ -683,6 +689,8 @@ public struct PlanJob: PlanJobFields, Codable, Equatable, Sendable {
         case scheduledEnd = "scheduled_end"
         case routeOrder = "route_order"
         case arrivalFixed = "arrival_fixed"
+        case lockDay = "lock_day"
+        case lockTime = "lock_time"
     }
 
     public init(from decoder: Decoder) throws {
@@ -695,23 +703,102 @@ public struct PlanJob: PlanJobFields, Codable, Equatable, Sendable {
         scheduledEnd = try c.decodeIfPresent(String.self, forKey: .scheduledEnd)
         routeOrder = try c.decodeIfPresent(Int.self, forKey: .routeOrder)
         arrivalFixed = try c.decodeIfPresent(Bool.self, forKey: .arrivalFixed) ?? false
+        lockDay = try c.decodeIfPresent(Bool.self, forKey: .lockDay) ?? false
+        lockTime = try c.decodeIfPresent(Bool.self, forKey: .lockTime) ?? false
         property = try c.decodeIfPresent(Located.self, forKey: .property)
         label = try c.decodeIfPresent(String.self, forKey: .label)
     }
 }
 
 public enum LockReason: String, Codable, CaseIterable, Sendable {
-    case fixed, started
+    case fixed, time, started
     case twoTechs = "two_techs"
 
     /// `LOCK_LABELS`
     public var label: String {
         switch self {
-        case .fixed: "Fixed time"
+        case .fixed: "Locked"
+        case .time: "Time locked"
         case .started: "Started"
         case .twoTechs: "Two techs"
         }
     }
+}
+
+/// A job's locks (owner, 2026-10-20: "locks for jobs whether that's day, time, or both").
+public enum JobLock: String, Codable, CaseIterable, Sendable {
+    case none, day, time, both
+
+    /// `JOB_LOCK_LABELS[lock].segment`: the lock picker's segment.
+    public var segment: String {
+        switch self {
+        case .none: "None"
+        case .day: "Day"
+        case .time: "Time"
+        case .both: "Both"
+        }
+    }
+
+    /// `JOB_LOCK_LABELS[lock].tag`: what a locked card says (nil when it isn't locked).
+    public var tag: String? {
+        switch self {
+        case .none: nil
+        case .day: "Day locked"
+        case .time: "Time locked"
+        case .both: "Locked"
+        }
+    }
+
+    /// `JOB_LOCK_HELP`: what each lock keeps, for the picker's footnote.
+    public var help: String {
+        switch self {
+        case .none: "Planning may move it to another day and time."
+        case .day: "Stays on its day. Planning may change its time that day."
+        case .time: "Keeps its time. Planning may move it to another day at that time."
+        case .both: "Stays on its day and time."
+        }
+    }
+
+    /// It keeps its clock time (a time lock or both).
+    public var keepsTime: Bool { self == .time || self == .both }
+}
+
+/// `JOB_LOCKS`, in the picker's order.
+public let jobLocks: [JobLock] = [.none, .day, .time, .both]
+
+/// Which lock a job has. A job saved before locks with a fixed time is locked both ways.
+public func jobLock(lockDay: Bool, lockTime: Bool, arrivalFixed: Bool) -> JobLock {
+    let day = lockDay || arrivalFixed
+    let time = lockTime || arrivalFixed
+    return day && time ? .both : day ? .day : time ? .time : .none
+}
+
+public func jobLock<J: PlanJobFields>(_ job: J) -> JobLock {
+    jobLock(lockDay: job.lockDay, lockTime: job.lockTime, arrivalFixed: job.arrivalFixed)
+}
+
+/// The columns a lock sets (`lockColumns`).
+public struct LockColumns: Codable, Equatable, Sendable {
+    public var lockDay: Bool
+    public var lockTime: Bool
+    public var arrivalFixed: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case lockDay = "lock_day"
+        case lockTime = "lock_time"
+        case arrivalFixed = "arrival_fixed"
+    }
+
+    /// The row's new values, by column.
+    public var values: [String: JSONValue] {
+        ["lock_day": .bool(lockDay), "lock_time": .bool(lockTime), "arrival_fixed": .bool(arrivalFixed)]
+    }
+}
+
+public func lockColumns(_ lock: JobLock) -> LockColumns {
+    let day = lock == .day || lock == .both
+    let time = lock == .time || lock == .both
+    return LockColumns(lockDay: day, lockTime: time, arrivalFixed: day && time)
 }
 
 /// Whether someone may drag this job to another day or tech by hand: any job but a canceled one
@@ -723,12 +810,17 @@ public func canUnschedule(_ status: JobStatus) -> Bool { status == .scheduled ||
 
 private func present(_ s: String?) -> Bool { !(s ?? "").isEmpty }
 
-/// Why planning keeps this job where it is, or nil when it may move. A started or finished job
-/// has happened; a fixed time was promised; a two-tech job is in two routes, so moving it in one
-/// would strand the other tech (move it by hand to change both).
+/// Why planning a day keeps this job's time, or nil when it may move. A started or finished job
+/// has happened; a time lock was promised; a two-tech job is in two routes, so moving it in one
+/// would strand the other tech (move it by hand to change both). A day lock alone doesn't hold a
+/// time within the day, so it's not a reason here (Plan Week keeps it on its day).
 public func lockReason<J: PlanJobFields>(_ job: J) -> LockReason? {
     if job.status != .scheduled && job.status != .unscheduled { return .started }
-    if job.arrivalFixed { return .fixed }
+    switch jobLock(job) {
+    case .both: return .fixed
+    case .time: return .time
+    case .none, .day: break
+    }
     if present(job.secondTechId) { return .twoTechs }
     return nil
 }

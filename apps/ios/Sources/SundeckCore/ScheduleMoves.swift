@@ -2,9 +2,9 @@ import Foundation
 
 // Planning a day, moving a job, and suggesting times, worked out on the phone (spec 5.6 and 6.3:
 // the native apps plan from their own database and save through the sync layer). Port of
-// schedule-moves.ts: promised times never move, started jobs stay on the schedule, and stops
-// after a moved job move later only when they must. Pure: callers load the jobs and drive times
-// and save the rows.
+// schedule-moves.ts: time-locked jobs keep their clock time (`jobLock`, as the website's moveJob
+// does), started jobs stay on the schedule, and stops after a moved job move later only when
+// they must. Pure: callers load the jobs and drive times and save the rows.
 
 public struct PlanContext: Codable, Sendable {
     public var timeZone: String
@@ -157,8 +157,10 @@ public func moveJobChange<J: PlanJobFields>(_ ctx: PlanContext, _ input: MoveInp
     }
 
     let duration = jobMinutes(job, ctx.settings)
+    // A time lock keeps its clock time on the new day (owner, 2026-10-20).
     let fixedMin =
-        job.arrivalFixed && present(job.scheduledStart) ? try localMinutes(job.scheduledStart!, ctx.timeZone) : nil
+        jobLock(job).keepsTime && present(job.scheduledStart)
+        ? try localMinutes(job.scheduledStart!, ctx.timeZone) : nil
 
     guard let tech else {
         let startMin =

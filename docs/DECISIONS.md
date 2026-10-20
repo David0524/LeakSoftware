@@ -2,6 +2,27 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-20 (route maps built: day maps, Plan Week, locks, Routes)
+- **Day maps:** the small map is a preview (an image on the website and Android, a muted Apple map on the iPhone that doesn't take drags, so the Schedule still scrolls); tapping it or Enlarge opens a map you can pan and zoom (Mapbox GL on the website, Apple Maps on the iPhone; Android shows a larger image until an interactive one is added). On phones the selected tech's map leads the day, under the tech chips. Dark mode gets Mapbox's dark map.
+- **Plan Week's sheet has "Place Jobs from Needs a Time"** (on by default, with the count waiting), so one tap never silently fills the week with every waiting job. A waiting job given to a tech stays theirs; unassigned ones are placed only with the switch on. Scheduled jobs come first, then the oldest waiting, up to 150.
+- **Locks are set on the job's schedule** with None · Day · Time · Both; cards show a padlock and "Day locked", "Time locked" or "Locked". Moving a time-locked job by hand keeps its clock time on every platform.
+- **Routes** is a fourth Schedule segment for owners and admins (Day · Week · Month · Routes), as designed in `docs/plans/route-maps.md`. Its drive times are estimates (no Mapbox calls), said as "about … driving".
+
+## 2026-10-20 (owner: "For the address error, just put a little error symbol next to the address. Don't waste space with text"; "On the today hero, you have to have customer notes there")
+- **"Not on map" is a warning symbol right after the address** on Today's card and rows and on Schedule's cards, every platform, read aloud as "Not found on the map". The job page keeps its full explanation, where it's fixed.
+- **Today's card shows the customer's notes**, then the pool's, two lines at most, with a note symbol.
+
+## 2026-10-20 (owner: "I added a payment method to Mapbox. Please ensure I do not surpass the free tier")
+- **One monthly Mapbox budget for every shop together** (`app.mapbox_budget`, `public.mapbox_take`), at about 90% of each free tier (mapbox.com/pricing, checked 2026-10-20): map images 45,000 of 50,000; address suggestions 90,000 of 100,000; drive times 90,000 of 100,000 matrix elements (Mapbox bills origins × destinations, so a 25-stop day is 625); interactive map loads 45,000 of 50,000. Past it, each falls back as it does without a key: estimated drive times, no map image, typed addresses, the map image instead of the interactive map. The per-shop daily limits stay as well.
+- **Pools are looked up for free, not with Mapbox.** Mapbox's permanent geocoding (the kind that may be stored) has no free tier: $5 per 1,000 from the first. Lookups use the US Census Bureau's geocoder, then OpenStreetMap's Nominatim (at most one a second, per its policy), and a match counts only when its house number and street direction are the ones typed (Census offered 1000 E Charleston for 1000 W). Suggestions as you type stay Mapbox's temporary geocoding, shown and never stored.
+- The iPhone draws its maps with Apple Maps (free).
+
+## 2026-10-20 (owner, Today's card from TestFlight: "get rid of this button now. It exists on the card"; "find a better place for the call/direction icon … so we can shorten the card"; "Add a text icon too"; "consider iOS and Swift principles. As if designed by Apple")
+- **Today's card follows `docs/design/2026-10-20-today-card.md`** on every platform, reviewed against Apple's guidelines: the top line names the moment and the stop ("At the pool · Stop 2 of 3"), the name leads, the figure is smaller, the address is plain text that opens directions, details line up behind their symbols, and the two buttons share the row at equal widths. Secondary text is white at 92% (4.8:1; 85% was 4.3:1, under the 4.5:1 text needs). Numbers roll and text cross-fades when the moment changes, without motion under Reduce Motion.
+- **Message, Call and Directions** are round buttons on the card's Next line. Message opens the company number's conversation when there is one, else the phone's own texts.
+- **"Next Stop in Apple Maps" / "Open Route in Maps" is gone from Today**: the card's Directions does it. Schedule keeps its route buttons.
+- **The Now row in Today's list** shows only "Now", not the job's state, so the name has room.
+
 ## 2026-10-20 (owner, route maps plan `docs/plans/route-maps.md`: "1. Cool by me. 2. Ok 3. Yeah. There needs to be locks for jobs whether that's day, time, or both. 4. Yes. 5. Yes")
 - **Maps by Mapbox** on the website and Android, Apple Maps on the iPhone: a map for each day on Schedule with numbered pins, Enlarge, and Plan Route.
 - **Plan Week** places a week's jobs on days and in order for the least driving, across techs when asked, with one Undo; up to 150 jobs a run.

@@ -40,6 +40,7 @@ import {
   jobFeeLabel,
   jobHasWrapUp,
   readingSummary,
+  jobLock,
 } from "@leakbook/core";
 import { CustomerLinks } from "@/components/customer-links";
 import { DiagramPanel } from "@/components/diagram-work";
@@ -922,7 +923,7 @@ async function Schedule({ detail, tz }: { detail: JobDetail; tz: string }) {
     <JobSchedule
       tech={job.techName ?? "Nobody yet"}
       when={job.scheduled_start ? formatSchedule(job.scheduled_start, new Date(), tz) : null}
-      fixed={job.arrival_fixed ?? false}
+      lock={jobLock(job)}
       jobId={job.id}
       techs={team
         .filter((m) => m.status === "active" && (seesAll || m.user_id === office.user.id))
@@ -933,7 +934,7 @@ async function Schedule({ detail, tz }: { detail: JobDetail; tz: string }) {
         date: start.date,
         time: start.time,
         hours,
-        fixed: job.arrival_fixed ?? false,
+        lock: jobLock(job),
       }}
       canSuggest={job.status === "scheduled" || job.status === "unscheduled"}
     />

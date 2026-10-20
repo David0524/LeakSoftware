@@ -1954,6 +1954,43 @@
       "result": null
     }
   ],
+  "heroHeadline": [
+    {
+      "args": [
+        "ahead",
+        "All 6 stops done"
+      ],
+      "result": "Up next"
+    },
+    {
+      "args": [
+        "driving",
+        "All 6 stops done"
+      ],
+      "result": "On the way"
+    },
+    {
+      "args": [
+        "on_site",
+        "All 6 stops done"
+      ],
+      "result": "At the pool"
+    },
+    {
+      "args": [
+        "done",
+        "All 6 stops done"
+      ],
+      "result": "Done"
+    },
+    {
+      "args": [
+        "day_done",
+        "All 6 stops done"
+      ],
+      "result": "All 6 stops done"
+    }
+  ],
   "heroSegmentsSpoken": [
     {
       "args": [

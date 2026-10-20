@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  LOCK_LABELS,
   durationLabel,
   formatAddress,
   formatDay,
   formatTime,
-  lockReason,
   minutesLabel,
   propertyLocation,
-  dayDirections,
   onMyWayVia,
   cleaningCountdown,
   cleaningDueSpoken,
@@ -24,6 +21,8 @@ import {
 } from "@leakbook/core";
 import { TodayHeroCard, type HeroJob } from "@/components/today-hero";
 import { NotOnMapTag } from "@/components/not-on-map";
+import { LockTag } from "@/components/lock-tag";
+import { lockTag } from "@/lib/day-map";
 import { routingConfigured } from "@/server/routing";
 import { completeSendPrompt } from "@/lib/next-step";
 import { Suspense } from "react";
@@ -32,7 +31,7 @@ import { OnMyWay } from "@/components/on-my-way";
 import { TodayComplete } from "@/components/today-complete";
 import { TodayStop } from "@/components/today-stop";
 import { WeatherBadge } from "@/components/weather-badge";
-import { AddressLink, OpenRouteInMaps } from "@/components/open-in-maps";
+import { AddressLink } from "@/components/open-in-maps";
 import { Empty, PageHeader, StatusBadge, cx, iconButtonClass, pillClass } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import {
@@ -44,7 +43,6 @@ import {
   mayMakeJobs,
 } from "@/lib/data";
 import { getLine } from "@/lib/messages";
-import { mapsAppForRequest } from "@/lib/maps";
 import { loadRoutes, routeContext, routeKey, shopToday } from "@/server/route-days";
 import { NavPlus } from "@/components/nav-bar";
 import { ScreenTip } from "@/components/screen-tip";
@@ -79,17 +77,6 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   const tech = team.find((t) => t.user_id === techId);
   const route = routes.get(routeKey(techId, ctx.today));
   const jobs = route?.jobs ?? [];
-  const origin =
-    ctx.depot || ctx.depotAddress ? { address: ctx.depotAddress, location: ctx.depot } : null;
-  const directions = dayDirections(
-    await mapsAppForRequest(),
-    origin,
-    jobs.map((j) => ({
-      address: j.property ? formatAddress(j.property) : "",
-      location: propertyLocation(j.property),
-      done: stopDone(j, ctx.today),
-    })),
-  );
   const legs = route?.summary.legs.reduce((a, b) => a + b, 0) ?? 0;
   const backLeg = route ? route.summary.driveMin - legs : 0;
   const mine = techId === office.user.id;
@@ -151,6 +138,16 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
       location: propertyLocation(j.property),
       notOnMap: mapStatus(j.property, routing) === "missing",
       phone: j.customer?.phone ?? null,
+      notes:
+        [j.customer?.notes, j.property?.notes]
+          .map((n) => n?.trim())
+          .filter(Boolean)
+          .join(" · ") || null,
+      textHref: j.customer?.phone
+        ? line?.status === "active" && j.customer.id
+          ? `/messages/new?customer=${j.customer.id}&job=${j.id}`
+          : `sms:${j.customer.phone.replace(/[^\d+]/g, "")}`
+        : null,
       driveMin: route?.summary.legs[i] ?? null,
       done: stopDone(j, ctx.today),
       undo: todayUndo(j, ctx.today)?.label ?? null,
@@ -173,7 +170,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   const stopRow = (j: (typeof jobs)[number], withLeg: boolean) => {
     const i = jobs.indexOf(j);
     const address = j.property ? formatAddress(j.property) : "";
-    const lock = lockReason(j);
+    const lock = lockTag(j);
     const leg = route!.summary.legs[i] ?? 0;
     const isNext = j.id === next?.id;
     const done = stopDone(j, ctx.today);
@@ -209,19 +206,17 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                 </span>
               ) : null}
               {/* Most stops are scheduled; the badge shows other states. */}
-              {j.status !== "scheduled" ? <StatusBadge status={j.status} /> : null}
-              {lock && lock !== "started" ? (
-                <span className="text-[0.8125rem] font-semibold text-text-muted">
-                  {LOCK_LABELS[lock]}
-                </span>
-              ) : null}
+              {/* The Now row leaves its state to the card, so the name has room. */}
+              {j.status !== "scheduled" && !isNext ? <StatusBadge status={j.status} /> : null}
+              {lock ? <LockTag lock={lock} /> : null}
             </>
           }
         >
-          <p className="w-fit max-w-full text-[0.9375rem]">
+          <p className="flex w-fit max-w-full items-center gap-1.5 text-[0.9375rem]">
             <AddressLink address={address} location={propertyLocation(j.property)} />
+            {mapStatus(j.property, routing) === "missing" ? <NotOnMapTag /> : null}
           </p>
-          {mapStatus(j.property, routing) === "missing" ? <NotOnMapTag /> : null}
+
           {!done && dueAt(j).length ? (
             // Just the icon and how soon (owner, 2026-10-19: "Don't make it too
             // wordy"); read aloud with the cleaning's name.
@@ -302,9 +297,6 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
               <WeatherBadge zip={ctx.shopZip} />
             </Suspense>
           </span>
-        }
-        actions={
-          directions ? <OpenRouteInMaps href={directions.href} app={directions.app} /> : null
         }
       />
       <Suspense fallback={null}>

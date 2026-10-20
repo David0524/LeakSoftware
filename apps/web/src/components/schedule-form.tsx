@@ -5,7 +5,10 @@ import { scheduleJob } from "@/app/actions/jobs";
 import { moveJob, type RouteResult } from "@/app/actions/routes";
 import { Suggestions } from "./route-board";
 import { Sheet } from "./sheet";
-import { Button, Checkbox, Field, Notice, Select } from "./ui";
+import { JOB_LOCKS, JOB_LOCK_HELP, JOB_LOCK_LABELS, type JobLock } from "@leakbook/core";
+import { LockIcon } from "./icons";
+import { Segmented } from "./segmented";
+import { Button, Field, Notice, Select } from "./ui";
 
 type ScheduleFormProps = Parameters<typeof ScheduleForm>[0];
 
@@ -16,13 +19,13 @@ type ScheduleFormProps = Parameters<typeof ScheduleForm>[0];
 export function JobSchedule({
   tech,
   when,
-  fixed,
+  lock,
   ...form
 }: Omit<ScheduleFormProps, "onSaved"> & {
   /** Already formatted on the server. */
   tech: string;
   when: string | null;
-  fixed: boolean;
+  lock: JobLock;
 }) {
   const [open, setOpen] = useState(false);
   const [done, setDone] = useState<string | null>(null);
@@ -39,10 +42,13 @@ export function JobSchedule({
           <span className="flex-1">When</span>
           <span className="text-right text-text-muted">{when ?? "Not scheduled"}</span>
         </li>
-        {fixed ? (
+        {JOB_LOCK_LABELS[lock].tag ? (
           <li className={row}>
-            <span className="flex-1">Time promised to the customer</span>
-            <span className="text-right text-text-muted">Yes</span>
+            <span className="flex-1">Lock</span>
+            <span className="inline-flex items-center gap-1.5 text-right text-text-muted">
+              <LockIcon className="size-4" />
+              {JOB_LOCK_LABELS[lock].tag}
+            </span>
           </li>
         ) : null}
         <li>
@@ -90,7 +96,7 @@ function ScheduleForm({
 }: {
   jobId: string;
   techs: { value: string; label: string }[];
-  defaults: { tech: string; date: string; time: string; hours: string; fixed?: boolean };
+  defaults: { tech: string; date: string; time: string; hours: string; lock?: JobLock };
   canSuggest?: boolean;
   /** False for a tech who sees only their own jobs: unassigning would hide it from them. */
   allowNobody?: boolean;
@@ -100,6 +106,7 @@ function ScheduleForm({
   const [state, action, pending] = useActionState(scheduleJob, {});
   const [picked, setPicked] = useState<RouteResult>({});
   const [placing, start] = useTransition();
+  const [lock, setLock] = useState<JobLock>(defaults.lock ?? "none");
   const saved = useRef(onSaved);
   useEffect(() => {
     saved.current = onSaved;
@@ -161,11 +168,21 @@ function ScheduleForm({
             error={state.fields?.hours}
           />
         </div>
-        <Checkbox
-          name="fixed"
-          label="The customer was told this time (planning won’t move it)"
-          defaultChecked={defaults.fixed}
-        />
+        {/* Locks (owner, 2026-10-20): what Plan Route and Plan Week leave alone. */}
+        <div>
+          <Segmented
+            label="Lock"
+            name="lock"
+            value={lock}
+            options={JOB_LOCKS.map((l) => ({ value: l, label: JOB_LOCK_LABELS[l].segment }))}
+            onChange={setLock}
+            fit
+            segmentClassName="min-h-11"
+          />
+          <p id="lock-help" aria-live="polite" className="mt-1.5 text-[0.9375rem] text-text-muted">
+            {JOB_LOCK_HELP[lock]}
+          </p>
+        </div>
         {state.error ? <Notice tone="error">{state.error}</Notice> : null}
         <div className="flex items-center gap-3">
           <Button type="submit" kind="secondary" disabled={pending}>

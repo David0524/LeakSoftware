@@ -9,7 +9,7 @@ import Testing
     @Test func everyRuleIsChecked() {
         let checked: Set<String> = [
             "todayHero", "onTheWay", "heroActions", "HERO_ACTION_LABELS", "heroSubtitle", "heroDrive",
-            "heroSegmentsSpoken",
+            "heroSegmentsSpoken", "heroHeadline",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -25,6 +25,10 @@ import Testing
     }
 
     @Test func buttonsAndLines() {
+        checkRule(module, "heroHeadline") { c in
+            guard let moment = HeroMoment(rawValue: try c.arg(0)) else { throw NotRepresentable() }
+            return heroHeadline(moment, headline: try c.arg(1))
+        }
         checkRule(module, "heroActions") { c in
             guard let moment = HeroMoment(rawValue: try c.arg(0)) else { throw NotRepresentable() }
             return heroActions(moment, mine: try c.arg(1))

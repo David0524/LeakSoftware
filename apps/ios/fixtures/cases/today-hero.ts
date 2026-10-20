@@ -2,6 +2,7 @@ import {
   HERO_ACTION_LABELS,
   heroActions,
   heroDrive,
+  heroHeadline,
   heroSegmentsSpoken,
   heroSubtitle,
   onTheWay,
@@ -154,6 +155,11 @@ export const todayHeroCases: ModuleCases = {
       ["done", 14],
       ["day_done", 14],
     ],
+  ),
+  heroHeadline: rule(
+    (moment: HeroMoment, headline: string) =>
+      heroHeadline({ moment, content: { headline } as never }),
+    moments.map((m) => [m, "All 6 stops done"] as [HeroMoment, string]),
   ),
   heroSegmentsSpoken: rule(
     (doneCount: number, stops: number) => heroSegmentsSpoken({ doneCount, stops }),

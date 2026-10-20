@@ -219,7 +219,7 @@
         }
     }
 
-    /// A lock label on a schedule stop ("Fixed time", "Two techs"): `fill` with `text`.
+    /// A lock label on a schedule stop ("Locked", "Time locked", "Two techs"): `fill` with `text`.
     struct LockLabel: View {
         var text: String
 

@@ -220,3 +220,18 @@ public func heroDrive(_ moment: HeroMoment, _ driveMin: Int?) -> String? {
 public func heroSegmentsSpoken(doneCount: Int, stops: Int) -> String {
     "\(doneCount) of \(stops) \(stops == 1 ? "stop" : "stops") done"
 }
+
+/// The card's headline: the moment, since the customer's name is right under it (owner,
+/// 2026-10-20: "At Derek Jeter" over "Derek Jeter" said it twice). The Lock Screen keeps
+/// `content.headline`, which has the name. Day done keeps its own ("All 6 stops done").
+public func heroHeadline(_ moment: HeroMoment, headline: String) -> String {
+    switch moment {
+    case .ahead: "Up next"
+    case .driving: "On the way"
+    case .onSite: "At the pool"
+    case .done: "Done"
+    case .dayDone: headline
+    }
+}
+
+public func heroHeadline(_ hero: TodayHero) -> String { heroHeadline(hero.moment, headline: hero.content.headline) }

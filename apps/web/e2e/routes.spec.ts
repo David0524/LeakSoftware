@@ -379,5 +379,6 @@ test("Today shows a tech's route with directions", async ({ page }) => {
   await expect(stop.getByRole("button", { name: /^Mark Complete for/ })).toBeVisible();
   const href = (await stop.getByTestId("address-link").getAttribute("href"))!;
   expect(await mapsTarget(page, href)).toMatch(/destination=33\.4919%2C-111\.9236/);
-  await expect(page.getByRole("link", { name: "Open Route in Google Maps" })).toBeVisible();
+  // The card's Directions replaces the day's route button (owner, 2026-10-20).
+  await expect(hero.getByRole("link", { name: /^Directions to / })).toBeVisible();
 });

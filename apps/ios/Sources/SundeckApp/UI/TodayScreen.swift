@@ -97,18 +97,8 @@
                     Text(formatDay(day.ctx.today, long: true)).foregroundStyle(Color.textMuted)
                     if let weather { WeatherBadge(weather: weather) }
                 }
-            } actions: {
-                if let link = day.directions {
-                    Button {
-                        openURL(link)
-                    } label: {
-                        Label(
-                            day.mapsApp == .google ? "Open Route in Google Maps" : "Next Stop in Apple Maps",
-                            systemImage: "mappin.and.ellipse")
-                    }
-                    .buttonStyle(.secondary)
-                }
             }
+            // No "Next Stop in Apple Maps" here: the card's Directions does it (owner, 2026-10-20).
         }
 
         /// The summary, the card for the stop you're on (owner, 2026-10-20), then the stops: the
@@ -326,9 +316,7 @@
                 }
                 if expanded {
                     VStack(alignment: .leading, spacing: 4) {
-                        AddressButton(place: job.place)
-                        // Left out of drive times until its address is found (owner, 2026-10-20).
-                        if day.routing && job.mapMissing { NotOnMapTag() }
+                        AddressButton(place: job.place, notOnMap: day.routing && job.mapMissing)
                         if !done, let cleanings = day.cleanings[job.id] {
                             FlowRow(spacing: 16) { ForEach(cleanings) { CleaningDueLabel(cleaning: $0) } }
                                 .accessibilityElement(children: .contain)
@@ -403,11 +391,10 @@
                     .buttonStyle(.plain)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     if isNext { NowPill() }
-                    // Most stops are scheduled; the chip shows other states.
-                    if job.status != .scheduled { StatusChip(status: job.status) }
-                    if let lock = job.lock, lock != .started {
-                        Text(lock.label).font(.role(.footnote).weight(.semibold)).foregroundStyle(Color.textMuted)
-                    }
+                    // Most stops are scheduled; the chip shows other states. The Now row shows only
+                    // "Now": the card above says the rest (docs/design/2026-10-20-today-card.md).
+                    if !isNext && job.status != .scheduled { StatusChip(status: job.status) }
+                    if !isNext, let tag = lockTag(job) { LockTagLabel(tag: tag) }
                 }
                 .opacity(done ? 0.7 : 1)
                 Image(systemName: "chevron.down")
@@ -539,10 +526,11 @@
     }
 
     /// An address in `link` (or muted, on the Schedule's stops), opening directions in the chosen
-    /// maps app.
+    /// maps app, with the warning symbol right after it when it wasn't found on the map.
     struct AddressButton: View {
         var place: MapPlace
         var muted = false
+        var notOnMap = false
         @Environment(\.openURL) private var openURL
         @Environment(SyncService.self) private var sync
 
@@ -550,14 +538,19 @@
             Button {
                 if let url = directionsURL(place, app: MapsApp(sync.kv)) { openURL(url) }
             } label: {
-                Text(place.address.isEmpty ? "Address" : place.address)
-                    .textRole(.secondary)
-                    .foregroundStyle(muted ? Color.textMuted : Color.link)
-                    .lineLimit(1)
-                    .frame(minHeight: 28, alignment: .leading)
+                HStack(spacing: 4) {
+                    Text(place.address.isEmpty ? "Address" : place.address)
+                        .foregroundStyle(muted ? Color.textMuted : Color.link)
+                        .lineLimit(1)
+                    // Left out of drive times until its address is found (owner, 2026-10-20).
+                    if notOnMap { NotOnMapTag() }
+                }
+                .textRole(.secondary)
+                .frame(minHeight: 28, alignment: .leading)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("\(place.address), directions in Maps")
+            .accessibilityLabel(
+                "\(place.address)\(notOnMap ? ", \(NotOnMap.title.lowercased())" : ""), directions in Maps")
         }
     }
 

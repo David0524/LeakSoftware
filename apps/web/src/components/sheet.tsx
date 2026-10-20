@@ -23,12 +23,15 @@ export function Sheet({
   title,
   children,
   cancelLabel = "Cancel",
+  wide = false,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
   cancelLabel?: string;
+  /** Wider screens: a large dialog (a map beside its list) instead of the narrow one. */
+  wide?: boolean;
 }) {
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
@@ -85,7 +88,8 @@ export function Sheet({
         style={drag ? { transform: `translateY(${drag}px)` } : undefined}
         className={cx(
           "relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[1.25rem] bg-bg pb-[env(safe-area-inset-bottom)] shadow-2xl outline-none",
-          "motion-safe:animate-[sheet-up_0.28s_cubic-bezier(0.32,0.72,0,1)] sm:max-w-lg sm:rounded-[1.25rem] sm:pb-0",
+          "motion-safe:animate-[sheet-up_0.28s_cubic-bezier(0.32,0.72,0,1)] sm:rounded-[1.25rem] sm:pb-0",
+          wide ? "sm:max-w-4xl" : "sm:max-w-lg",
         )}
       >
         <div

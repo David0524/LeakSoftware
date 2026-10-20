@@ -10,6 +10,7 @@ import {
   durationLabel,
   formatAddress,
   isDateString,
+  jobLock,
   jobMinutes,
   localDate,
   localMinutes,
@@ -141,7 +142,7 @@ async function loadJob(db: Db, office: Office, id: string): Promise<MovedJob | n
   const { data } = await db
     .from("job")
     .select(
-      "id, status, property_id, assigned_user_id, second_tech_id, scheduled_start, scheduled_end, route_order, arrival_fixed",
+      "id, status, property_id, assigned_user_id, second_tech_id, scheduled_start, scheduled_end, route_order, arrival_fixed, lock_day, lock_time",
     )
     .eq("id", id)
     .eq("company_id", office.company.id)
@@ -226,8 +227,10 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
   }
 
   const duration = jobMinutes(job, ctx.settings);
+  // A time lock keeps its clock time on the new day (owner, 2026-10-20).
+  const lock = jobLock(job);
   const fixedMin =
-    job.arrival_fixed && job.scheduled_start
+    (lock === "time" || lock === "both") && job.scheduled_start
       ? localMinutes(job.scheduled_start, ctx.timeZone)
       : null;
 

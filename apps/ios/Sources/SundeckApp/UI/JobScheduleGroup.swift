@@ -3,8 +3,8 @@
     import SundeckSync
     import SwiftUI
 
-    /// Job › Details › Schedule (spec 5.4; the website's `JobSchedule`): the tech and time, whether
-    /// the time was promised, then Schedule Job / Change Schedule (the Schedule tab's Move sheet)
+    /// Job › Details › Schedule (spec 5.4; the website's `JobSchedule`): the tech and time, its lock
+    /// (with a padlock), then Schedule Job / Change Schedule (the Schedule tab's Move sheet)
     /// and Suggest Times. Shown until the job's work is done, started jobs included (owner,
     /// 2026-10-20: core `jobReschedulable`); repairs always.
     struct JobScheduleGroup: View {
@@ -37,7 +37,13 @@
                             "When",
                             value: item.scheduledStart.flatMap { try? formatSchedule($0, Date(), board.ctx.timeZone) }
                                 ?? "Not scheduled")
-                        if item.arrivalFixed { ListRow("Time promised to the customer", value: "Yes") }
+                        if let tag = jobLock(item).tag {
+                            ListRow("Lock") {
+                                Label(tag, systemImage: "lock.fill")
+                                    .textRole(.body)
+                                    .foregroundStyle(Color.textMuted)
+                            }
+                        }
                         ActionRow(item.scheduledStart == nil ? "Schedule Job" : "Change Schedule") {
                             moving = MoveTarget(job: item, from: from(item, board))
                         }
@@ -63,14 +69,29 @@
             }
             .sheet(item: $moving) { target in
                 if let board {
-                    MoveSheet(target: target, board: board) { tech, day, index in
-                        moving = nil
-                        apply {
-                            try moveJob(
-                                target.job.id, tech: tech, date: day, index: index, jobs: board.jobs, ctx: board.ctx,
-                                team: board.team, drive: drive)
-                        }
-                    }
+                    MoveSheet(
+                        target: target, board: board,
+                        onMove: { tech, day, index in
+                            // Take Off Schedule.
+                            moving = nil
+                            apply {
+                                try moveJob(
+                                    target.job.id, tech: tech, date: day, index: index, jobs: board.jobs,
+                                    ctx: board.ctx, team: board.team, drive: drive)
+                            }
+                        }, lock: jobLock(target.job),
+                        onSave: { tech, day, index, lock, lockOnly in
+                            moving = nil
+                            apply {
+                                // Only the lock changed: save it alone, so the day isn't re-timed.
+                                if lockOnly { return lockOnlyChange(lock, jobId: target.job.id) }
+                                return try scheduleWithLock(lock, jobId: target.job.id, jobs: board.jobs) { jobs in
+                                    try moveJob(
+                                        target.job.id, tech: tech, date: day, index: index, jobs: jobs,
+                                        ctx: board.ctx, team: board.team, drive: drive)
+                                }
+                            }
+                        })
                 }
             }
             .sheet(item: $suggesting) { item in

@@ -1,0 +1,1885 @@
+{
+  "PLAN_WEEK_LIMIT": [
+    {
+      "args": [],
+      "result": 150
+    }
+  ],
+  "planWeek": [
+    {
+      "args": [
+        {
+          "days": [],
+          "jobs": [],
+          "depot": {
+            "lat": 33.45,
+            "lng": -112.07
+          },
+          "day": {
+            "startMin": 480,
+            "endMin": 1020
+          }
+        }
+      ],
+      "result": {
+        "placed": [],
+        "unplaced": [],
+        "skipped": [],
+        "days": [],
+        "driveBefore": 0,
+        "driveAfter": 0,
+        "moved": 0
+      }
+    },
+    {
+      "args": [
+        {
+          "days": [
+            {
+              "techId": "t1",
+              "date": "2026-10-26",
+              "stays": []
+            }
+          ],
+          "jobs": [],
+          "depot": {
+            "lat": 33.45,
+            "lng": -112.07
+          },
+          "day": {
+            "startMin": 480,
+            "endMin": 1020
+          }
+        }
+      ],
+      "result": {
+        "placed": [],
+        "unplaced": [],
+        "skipped": [],
+        "days": [],
+        "driveBefore": 0,
+        "driveAfter": 0,
+        "moved": 0
+      }
+    },
+    {
+      "args": [
+        {
+          "days": [
+            {
+              "techId": "t1",
+              "date": "2026-10-26",
+              "stays": []
+            },
+            {
+              "techId": "t1",
+              "date": "2026-10-27",
+              "stays": []
+            }
+          ],
+          "jobs": [
+            {
+              "id": "n0",
+              "location": {
+                "lat": 33.65,
+                "lng": -112.07
+              },
+              "durationMin": 120,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1"
+              ]
+            },
+            {
+              "id": "s0",
+              "location": {
+                "lat": 33.25,
+                "lng": -112.07
+              },
+              "durationMin": 120,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1"
+              ]
+            },
+            {
+              "id": "n1",
+              "location": {
+                "lat": 33.652,
+                "lng": -112.07
+              },
+              "durationMin": 120,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1"
+              ]
+            },
+            {
+              "id": "s1",
+              "location": {
+                "lat": 33.248,
+                "lng": -112.07
+              },
+              "durationMin": 120,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1"
+              ]
+            },
+            {
+              "id": "n2",
+              "location": {
+                "lat": 33.653999999999996,
+                "lng": -112.07
+              },
+              "durationMin": 120,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1"
+              ]
+            },
+            {
+              "id": "s2",
+              "location": {
+                "lat": 33.246,
+                "lng": -112.07
+              },
+              "durationMin": 120,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1"
+              ]
+            }
+          ],
+          "depot": {
+            "lat": 33.45,
+            "lng": -112.07
+          },
+          "day": {
+            "startMin": 480,
+            "endMin": 1020
+          }
+        }
+      ],
+      "result": {
+        "placed": [
+          {
+            "id": "n0",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "n1",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "n2",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "s0",
+            "techId": "t1",
+            "date": "2026-10-27"
+          },
+          {
+            "id": "s1",
+            "techId": "t1",
+            "date": "2026-10-27"
+          },
+          {
+            "id": "s2",
+            "techId": "t1",
+            "date": "2026-10-27"
+          }
+        ],
+        "unplaced": [],
+        "skipped": [],
+        "days": [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "n2",
+                "location": {
+                  "lat": 33.653999999999996,
+                  "lng": -112.07
+                },
+                "durationMin": 120,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "n1",
+                "location": {
+                  "lat": 33.652,
+                  "lng": -112.07
+                },
+                "durationMin": 120,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "n0",
+                "location": {
+                  "lat": 33.65,
+                  "lng": -112.07
+                },
+                "durationMin": 120,
+                "fixedStartMin": null,
+                "earliestMin": null
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "n2",
+                  "driveMin": 34,
+                  "arriveMin": 514,
+                  "startMin": 514,
+                  "endMin": 634,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "n1",
+                  "driveMin": 3,
+                  "arriveMin": 637,
+                  "startMin": 637,
+                  "endMin": 757,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "n0",
+                  "driveMin": 3,
+                  "arriveMin": 760,
+                  "startMin": 760,
+                  "endMin": 880,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 74,
+              "backMin": 914,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          },
+          {
+            "techId": "t1",
+            "date": "2026-10-27",
+            "stops": [
+              {
+                "id": "s2",
+                "location": {
+                  "lat": 33.246,
+                  "lng": -112.07
+                },
+                "durationMin": 120,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "s1",
+                "location": {
+                  "lat": 33.248,
+                  "lng": -112.07
+                },
+                "durationMin": 120,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "s0",
+                "location": {
+                  "lat": 33.25,
+                  "lng": -112.07
+                },
+                "durationMin": 120,
+                "fixedStartMin": null,
+                "earliestMin": null
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "s2",
+                  "driveMin": 34,
+                  "arriveMin": 514,
+                  "startMin": 514,
+                  "endMin": 634,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "s1",
+                  "driveMin": 3,
+                  "arriveMin": 637,
+                  "startMin": 637,
+                  "endMin": 757,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "s0",
+                  "driveMin": 3,
+                  "arriveMin": 760,
+                  "startMin": 760,
+                  "endMin": 880,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 74,
+              "backMin": 914,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          }
+        ],
+        "driveBefore": 0,
+        "driveAfter": 148,
+        "moved": 6
+      }
+    },
+    {
+      "args": [
+        {
+          "days": [
+            {
+              "techId": "t1",
+              "date": "2026-10-27",
+              "stays": []
+            },
+            {
+              "techId": "t1",
+              "date": "2026-10-26",
+              "stays": []
+            }
+          ],
+          "jobs": [
+            {
+              "id": "a",
+              "location": {
+                "lat": 33.65,
+                "lng": -112.07
+              },
+              "durationMin": 30,
+              "techId": "t1",
+              "date": "2026-10-26",
+              "techs": [
+                "t1"
+              ]
+            },
+            {
+              "id": "b",
+              "location": {
+                "lat": 33.25,
+                "lng": -112.07
+              },
+              "durationMin": 30,
+              "techId": "t1",
+              "date": "2026-10-26",
+              "techs": [
+                "t1"
+              ]
+            },
+            {
+              "id": "c",
+              "location": {
+                "lat": 33.652,
+                "lng": -112.07
+              },
+              "durationMin": 30,
+              "techId": "t1",
+              "date": "2026-10-27",
+              "techs": [
+                "t1"
+              ]
+            },
+            {
+              "id": "d",
+              "location": {
+                "lat": 33.248,
+                "lng": -112.07
+              },
+              "durationMin": 30,
+              "techId": "t1",
+              "date": "2026-10-27",
+              "techs": [
+                "t1"
+              ]
+            }
+          ],
+          "depot": {
+            "lat": 33.45,
+            "lng": -112.07
+          },
+          "day": {
+            "startMin": 480,
+            "endMin": 1020
+          }
+        }
+      ],
+      "result": {
+        "placed": [
+          {
+            "id": "a",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "b",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "c",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "d",
+            "techId": "t1",
+            "date": "2026-10-26"
+          }
+        ],
+        "unplaced": [],
+        "skipped": [],
+        "days": [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "d",
+                "location": {
+                  "lat": 33.248,
+                  "lng": -112.07
+                },
+                "durationMin": 30,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "b",
+                "location": {
+                  "lat": 33.25,
+                  "lng": -112.07
+                },
+                "durationMin": 30,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "c",
+                "location": {
+                  "lat": 33.652,
+                  "lng": -112.07
+                },
+                "durationMin": 30,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "a",
+                "location": {
+                  "lat": 33.65,
+                  "lng": -112.07
+                },
+                "durationMin": 30,
+                "fixedStartMin": null,
+                "earliestMin": null
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "d",
+                  "driveMin": 34,
+                  "arriveMin": 514,
+                  "startMin": 514,
+                  "endMin": 544,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "b",
+                  "driveMin": 3,
+                  "arriveMin": 547,
+                  "startMin": 547,
+                  "endMin": 577,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "c",
+                  "driveMin": 58,
+                  "arriveMin": 635,
+                  "startMin": 635,
+                  "endMin": 665,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "a",
+                  "driveMin": 3,
+                  "arriveMin": 668,
+                  "startMin": 668,
+                  "endMin": 698,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 132,
+              "backMin": 732,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          }
+        ],
+        "driveBefore": 253,
+        "driveAfter": 132,
+        "moved": 2
+      }
+    },
+    {
+      "args": [
+        {
+          "days": [
+            {
+              "techId": "t1",
+              "date": "2026-10-26",
+              "stays": [],
+              "earliestMin": 720
+            },
+            {
+              "techId": "t1",
+              "date": "2026-10-27",
+              "stays": []
+            }
+          ],
+          "jobs": [
+            {
+              "id": "a",
+              "location": {
+                "lat": 33.65,
+                "lng": -112.07
+              },
+              "durationMin": 30,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1"
+              ],
+              "timeMin": 780
+            },
+            {
+              "id": "b",
+              "location": {
+                "lat": 33.652,
+                "lng": -112.07
+              },
+              "durationMin": 30,
+              "techId": "t1",
+              "date": "2026-10-26",
+              "techs": [
+                "t1"
+              ],
+              "timeMin": 540
+            },
+            {
+              "id": "c",
+              "location": {
+                "lat": 33.45,
+                "lng": -111.85
+              },
+              "durationMin": 30,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1"
+              ]
+            }
+          ],
+          "depot": {
+            "lat": 33.45,
+            "lng": -112.07
+          },
+          "day": {
+            "startMin": 480,
+            "endMin": 1020
+          }
+        }
+      ],
+      "result": {
+        "placed": [
+          {
+            "id": "a",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "b",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "c",
+            "techId": "t1",
+            "date": "2026-10-26"
+          }
+        ],
+        "unplaced": [],
+        "skipped": [],
+        "days": [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "b",
+                "location": {
+                  "lat": 33.652,
+                  "lng": -112.07
+                },
+                "durationMin": 30,
+                "fixedStartMin": 540,
+                "earliestMin": null
+              },
+              {
+                "id": "a",
+                "location": {
+                  "lat": 33.65,
+                  "lng": -112.07
+                },
+                "durationMin": 30,
+                "fixedStartMin": 780,
+                "earliestMin": null
+              },
+              {
+                "id": "c",
+                "location": {
+                  "lat": 33.45,
+                  "lng": -111.85
+                },
+                "durationMin": 30,
+                "fixedStartMin": null,
+                "earliestMin": 720
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "b",
+                  "driveMin": 34,
+                  "arriveMin": 514,
+                  "startMin": 540,
+                  "endMin": 570,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "a",
+                  "driveMin": 3,
+                  "arriveMin": 573,
+                  "startMin": 780,
+                  "endMin": 810,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "c",
+                  "driveMin": 43,
+                  "arriveMin": 853,
+                  "startMin": 853,
+                  "endMin": 883,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 112,
+              "backMin": 915,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          }
+        ],
+        "driveBefore": 68,
+        "driveAfter": 112,
+        "moved": 2
+      }
+    },
+    {
+      "args": [
+        {
+          "days": [
+            {
+              "techId": "t1",
+              "date": "2026-10-26",
+              "stays": []
+            }
+          ],
+          "jobs": [
+            {
+              "id": "a",
+              "location": {
+                "lat": 33.65,
+                "lng": -112.07
+              },
+              "durationMin": 300,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1"
+              ]
+            },
+            {
+              "id": "b",
+              "location": {
+                "lat": 33.65,
+                "lng": -112.07
+              },
+              "durationMin": 300,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1"
+              ]
+            },
+            {
+              "id": "x",
+              "location": {
+                "lat": 33.65,
+                "lng": -112.07
+              },
+              "durationMin": 30,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t2"
+              ]
+            }
+          ],
+          "depot": {
+            "lat": 33.45,
+            "lng": -112.07
+          },
+          "day": {
+            "startMin": 480,
+            "endMin": 1020
+          }
+        }
+      ],
+      "result": {
+        "placed": [
+          {
+            "id": "a",
+            "techId": "t1",
+            "date": "2026-10-26"
+          }
+        ],
+        "unplaced": [
+          "b",
+          "x"
+        ],
+        "skipped": [],
+        "days": [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "a",
+                "location": {
+                  "lat": 33.65,
+                  "lng": -112.07
+                },
+                "durationMin": 300,
+                "fixedStartMin": null,
+                "earliestMin": null
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "a",
+                  "driveMin": 34,
+                  "arriveMin": 514,
+                  "startMin": 514,
+                  "endMin": 814,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 68,
+              "backMin": 848,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          }
+        ],
+        "driveBefore": 0,
+        "driveAfter": 68,
+        "moved": 1
+      }
+    },
+    {
+      "args": [
+        {
+          "days": [
+            {
+              "techId": "t1",
+              "date": "2026-10-26",
+              "stays": [
+                {
+                  "id": "big",
+                  "location": {
+                    "lat": 33.65,
+                    "lng": -112.07
+                  },
+                  "durationMin": 520,
+                  "fixedStartMin": 480
+                }
+              ]
+            }
+          ],
+          "jobs": [
+            {
+              "id": "a",
+              "location": {
+                "lat": 33.25,
+                "lng": -112.07
+              },
+              "durationMin": 30,
+              "techId": "t1",
+              "date": "2026-10-26",
+              "techs": [
+                "t1"
+              ]
+            }
+          ],
+          "depot": {
+            "lat": 33.45,
+            "lng": -112.07
+          },
+          "day": {
+            "startMin": 480,
+            "endMin": 1020
+          }
+        }
+      ],
+      "result": {
+        "placed": [
+          {
+            "id": "a",
+            "techId": "t1",
+            "date": "2026-10-26"
+          }
+        ],
+        "unplaced": [],
+        "skipped": [],
+        "days": [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "big",
+                "location": {
+                  "lat": 33.65,
+                  "lng": -112.07
+                },
+                "durationMin": 520,
+                "fixedStartMin": 480
+              },
+              {
+                "id": "a",
+                "location": {
+                  "lat": 33.25,
+                  "lng": -112.07
+                },
+                "durationMin": 30,
+                "fixedStartMin": null,
+                "earliestMin": null
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "big",
+                  "driveMin": 34,
+                  "arriveMin": 514,
+                  "startMin": 514,
+                  "endMin": 1034,
+                  "lateMin": 34,
+                  "unlocated": false
+                },
+                {
+                  "id": "a",
+                  "driveMin": 58,
+                  "arriveMin": 1092,
+                  "startMin": 1092,
+                  "endMin": 1122,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 126,
+              "backMin": 1156,
+              "overtimeMin": 136,
+              "lateMin": 34
+            }
+          }
+        ],
+        "driveBefore": 126,
+        "driveAfter": 126,
+        "moved": 0
+      }
+    },
+    {
+      "args": [
+        {
+          "days": [
+            {
+              "techId": "t2",
+              "date": "2026-10-26",
+              "stays": [
+                {
+                  "id": "st",
+                  "location": {
+                    "lat": 33.45,
+                    "lng": -111.848
+                  },
+                  "durationMin": 60
+                }
+              ]
+            },
+            {
+              "techId": "t1",
+              "date": "2026-10-26",
+              "stays": []
+            },
+            {
+              "techId": "t1",
+              "date": "2026-10-27",
+              "stays": [
+                {
+                  "id": "fx",
+                  "location": {
+                    "lat": 33.246,
+                    "lng": -112.07
+                  },
+                  "durationMin": 60,
+                  "fixedStartMin": 600
+                }
+              ]
+            }
+          ],
+          "jobs": [
+            {
+              "id": "j3",
+              "location": null,
+              "durationMin": 30,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1",
+                "t2"
+              ]
+            },
+            {
+              "id": "j1",
+              "location": {
+                "lat": 33.45,
+                "lng": -111.84599999999999
+              },
+              "durationMin": 30,
+              "techId": "t1",
+              "date": "2026-10-27",
+              "techs": [
+                "t1",
+                "t2"
+              ]
+            },
+            {
+              "id": "j2",
+              "location": {
+                "lat": 33.248,
+                "lng": -112.07
+              },
+              "durationMin": 90,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1",
+                "t2"
+              ]
+            },
+            {
+              "id": "j10",
+              "location": {
+                "lat": 33.656,
+                "lng": -112.07
+              },
+              "durationMin": 45,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1",
+                "t2"
+              ]
+            },
+            {
+              "id": "J0",
+              "location": {
+                "lat": 33.658,
+                "lng": -112.07
+              },
+              "durationMin": 30,
+              "techId": "t2",
+              "date": "2026-10-26",
+              "techs": [
+                "t2"
+              ]
+            }
+          ],
+          "depot": null,
+          "day": {
+            "startMin": 480,
+            "endMin": 720
+          }
+        }
+      ],
+      "result": {
+        "placed": [
+          {
+            "id": "J0",
+            "techId": "t2",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "j1",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "j10",
+            "techId": "t2",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "j2",
+            "techId": "t1",
+            "date": "2026-10-27"
+          },
+          {
+            "id": "j3",
+            "techId": "t1",
+            "date": "2026-10-26"
+          }
+        ],
+        "unplaced": [],
+        "skipped": [],
+        "days": [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "j3",
+                "location": null,
+                "durationMin": 30,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "j1",
+                "location": {
+                  "lat": 33.45,
+                  "lng": -111.84599999999999
+                },
+                "durationMin": 30,
+                "fixedStartMin": null,
+                "earliestMin": null
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "j3",
+                  "driveMin": 0,
+                  "arriveMin": 480,
+                  "startMin": 480,
+                  "endMin": 510,
+                  "lateMin": 0,
+                  "unlocated": true
+                },
+                {
+                  "id": "j1",
+                  "driveMin": 0,
+                  "arriveMin": 510,
+                  "startMin": 510,
+                  "endMin": 540,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 0,
+              "backMin": 540,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          },
+          {
+            "techId": "t2",
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "j10",
+                "location": {
+                  "lat": 33.656,
+                  "lng": -112.07
+                },
+                "durationMin": 45,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "J0",
+                "location": {
+                  "lat": 33.658,
+                  "lng": -112.07
+                },
+                "durationMin": 30,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "st",
+                "location": {
+                  "lat": 33.45,
+                  "lng": -111.848
+                },
+                "durationMin": 60
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "j10",
+                  "driveMin": 0,
+                  "arriveMin": 480,
+                  "startMin": 480,
+                  "endMin": 525,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "J0",
+                  "driveMin": 3,
+                  "arriveMin": 528,
+                  "startMin": 528,
+                  "endMin": 558,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "st",
+                  "driveMin": 43,
+                  "arriveMin": 601,
+                  "startMin": 601,
+                  "endMin": 661,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 46,
+              "backMin": 661,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          },
+          {
+            "techId": "t1",
+            "date": "2026-10-27",
+            "stops": [
+              {
+                "id": "j2",
+                "location": {
+                  "lat": 33.248,
+                  "lng": -112.07
+                },
+                "durationMin": 90,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "fx",
+                "location": {
+                  "lat": 33.246,
+                  "lng": -112.07
+                },
+                "durationMin": 60,
+                "fixedStartMin": 600
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "j2",
+                  "driveMin": 0,
+                  "arriveMin": 480,
+                  "startMin": 480,
+                  "endMin": 570,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "fx",
+                  "driveMin": 3,
+                  "arriveMin": 573,
+                  "startMin": 600,
+                  "endMin": 660,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 3,
+              "backMin": 660,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          }
+        ],
+        "driveBefore": 86,
+        "driveAfter": 49,
+        "moved": 4
+      }
+    },
+    {
+      "args": [
+        {
+          "days": [
+            {
+              "techId": "t2",
+              "date": "2026-10-26",
+              "stays": [
+                {
+                  "id": "st",
+                  "location": {
+                    "lat": 33.45,
+                    "lng": -111.848
+                  },
+                  "durationMin": 60
+                }
+              ]
+            },
+            {
+              "techId": "t1",
+              "date": "2026-10-26",
+              "stays": []
+            }
+          ],
+          "jobs": [
+            {
+              "id": "j1",
+              "location": {
+                "lat": 33.45,
+                "lng": -111.84599999999999
+              },
+              "durationMin": 30,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1",
+                "t2"
+              ]
+            },
+            {
+              "id": "j2",
+              "location": {
+                "lat": 33.248,
+                "lng": -112.07
+              },
+              "durationMin": 90,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1",
+                "t2"
+              ]
+            },
+            {
+              "id": "j10",
+              "location": {
+                "lat": 33.656,
+                "lng": -112.07
+              },
+              "durationMin": 45,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1",
+                "t2"
+              ]
+            }
+          ],
+          "depot": {
+            "lat": 33.45,
+            "lng": -112.07
+          },
+          "day": {
+            "startMin": 480,
+            "endMin": 720
+          }
+        },
+        {
+          "33.4500,-112.0700>33.4500,-111.8460": 2,
+          "33.4500,-111.8460>33.4500,-112.0700": 90
+        }
+      ],
+      "result": {
+        "placed": [
+          {
+            "id": "j1",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "j10",
+            "techId": "t2",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "j2",
+            "techId": "t1",
+            "date": "2026-10-26"
+          }
+        ],
+        "unplaced": [],
+        "skipped": [],
+        "days": [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "j1",
+                "location": {
+                  "lat": 33.45,
+                  "lng": -111.84599999999999
+                },
+                "durationMin": 30,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "j2",
+                "location": {
+                  "lat": 33.248,
+                  "lng": -112.07
+                },
+                "durationMin": 90,
+                "fixedStartMin": null,
+                "earliestMin": null
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "j1",
+                  "driveMin": 2,
+                  "arriveMin": 482,
+                  "startMin": 482,
+                  "endMin": 512,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "j2",
+                  "driveMin": 43,
+                  "arriveMin": 555,
+                  "startMin": 555,
+                  "endMin": 645,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 79,
+              "backMin": 679,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          },
+          {
+            "techId": "t2",
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "j10",
+                "location": {
+                  "lat": 33.656,
+                  "lng": -112.07
+                },
+                "durationMin": 45,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "st",
+                "location": {
+                  "lat": 33.45,
+                  "lng": -111.848
+                },
+                "durationMin": 60
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "j10",
+                  "driveMin": 35,
+                  "arriveMin": 515,
+                  "startMin": 515,
+                  "endMin": 560,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "st",
+                  "driveMin": 43,
+                  "arriveMin": 603,
+                  "startMin": 603,
+                  "endMin": 663,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 110,
+              "backMin": 695,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          }
+        ],
+        "driveBefore": 64,
+        "driveAfter": 189,
+        "moved": 3
+      }
+    },
+    {
+      "args": [
+        {
+          "days": [
+            {
+              "techId": "t1",
+              "date": "2026-10-26",
+              "stays": []
+            },
+            {
+              "techId": "t1",
+              "date": "2026-10-27",
+              "stays": []
+            },
+            {
+              "techId": "t1",
+              "date": "2026-10-28",
+              "stays": []
+            }
+          ],
+          "jobs": [
+            {
+              "id": "j0",
+              "location": {
+                "lat": 33.65,
+                "lng": -112.07
+              },
+              "durationMin": 30,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1"
+              ]
+            },
+            {
+              "id": "j1",
+              "location": {
+                "lat": 33.25,
+                "lng": -112.07
+              },
+              "durationMin": 30,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1"
+              ]
+            },
+            {
+              "id": "j2",
+              "location": {
+                "lat": 33.653999999999996,
+                "lng": -112.07
+              },
+              "durationMin": 30,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1"
+              ]
+            },
+            {
+              "id": "j3",
+              "location": {
+                "lat": 33.244,
+                "lng": -112.07
+              },
+              "durationMin": 30,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1"
+              ]
+            },
+            {
+              "id": "j4",
+              "location": {
+                "lat": 33.658,
+                "lng": -112.07
+              },
+              "durationMin": 30,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1"
+              ]
+            }
+          ],
+          "depot": {
+            "lat": 33.45,
+            "lng": -112.07
+          },
+          "day": {
+            "startMin": 480,
+            "endMin": 1020
+          }
+        },
+        null,
+        3
+      ],
+      "result": {
+        "placed": [
+          {
+            "id": "j0",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "j1",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "j2",
+            "techId": "t1",
+            "date": "2026-10-26"
+          }
+        ],
+        "unplaced": [],
+        "skipped": [
+          "j3",
+          "j4"
+        ],
+        "days": [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "j1",
+                "location": {
+                  "lat": 33.25,
+                  "lng": -112.07
+                },
+                "durationMin": 30,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "j0",
+                "location": {
+                  "lat": 33.65,
+                  "lng": -112.07
+                },
+                "durationMin": 30,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "j2",
+                "location": {
+                  "lat": 33.653999999999996,
+                  "lng": -112.07
+                },
+                "durationMin": 30,
+                "fixedStartMin": null,
+                "earliestMin": null
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "j1",
+                  "driveMin": 34,
+                  "arriveMin": 514,
+                  "startMin": 514,
+                  "endMin": 544,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "j0",
+                  "driveMin": 58,
+                  "arriveMin": 602,
+                  "startMin": 602,
+                  "endMin": 632,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "j2",
+                  "driveMin": 4,
+                  "arriveMin": 636,
+                  "startMin": 636,
+                  "endMin": 666,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 130,
+              "backMin": 700,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          }
+        ],
+        "driveBefore": 0,
+        "driveAfter": 130,
+        "moved": 3
+      }
+    },
+    {
+      "args": [
+        {
+          "days": [
+            {
+              "techId": "t1",
+              "date": "2026-10-26",
+              "stays": []
+            },
+            {
+              "techId": "t1",
+              "date": "2026-10-27",
+              "stays": []
+            },
+            {
+              "techId": "t1",
+              "date": "2026-10-28",
+              "stays": []
+            }
+          ],
+          "jobs": [
+            {
+              "id": "a",
+              "location": {
+                "lat": 33.65,
+                "lng": -112.07
+              },
+              "durationMin": 30,
+              "techId": "t1",
+              "date": "2026-10-28",
+              "techs": [
+                "t1"
+              ]
+            },
+            {
+              "id": "b",
+              "location": {
+                "lat": 33.65,
+                "lng": -112.07
+              },
+              "durationMin": 30,
+              "techId": null,
+              "date": null,
+              "techs": [
+                "t1"
+              ]
+            }
+          ],
+          "depot": {
+            "lat": 33.45,
+            "lng": -112.07
+          },
+          "day": {
+            "startMin": 480,
+            "endMin": 1020
+          }
+        }
+      ],
+      "result": {
+        "placed": [
+          {
+            "id": "a",
+            "techId": "t1",
+            "date": "2026-10-28"
+          },
+          {
+            "id": "b",
+            "techId": "t1",
+            "date": "2026-10-28"
+          }
+        ],
+        "unplaced": [],
+        "skipped": [],
+        "days": [
+          {
+            "techId": "t1",
+            "date": "2026-10-28",
+            "stops": [
+              {
+                "id": "b",
+                "location": {
+                  "lat": 33.65,
+                  "lng": -112.07
+                },
+                "durationMin": 30,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "a",
+                "location": {
+                  "lat": 33.65,
+                  "lng": -112.07
+                },
+                "durationMin": 30,
+                "fixedStartMin": null,
+                "earliestMin": null
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "b",
+                  "driveMin": 34,
+                  "arriveMin": 514,
+                  "startMin": 514,
+                  "endMin": 544,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "a",
+                  "driveMin": 0,
+                  "arriveMin": 544,
+                  "startMin": 544,
+                  "endMin": 574,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 68,
+              "backMin": 608,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          }
+        ],
+        "driveBefore": 68,
+        "driveAfter": 68,
+        "moved": 1
+      }
+    }
+  ],
+  "planWeekSummary": [
+    {
+      "args": [
+        {
+          "moved": 0,
+          "driveBefore": 50,
+          "driveAfter": 50,
+          "unplaced": [],
+          "skipped": []
+        }
+      ],
+      "result": "Nothing to move"
+    },
+    {
+      "args": [
+        {
+          "moved": 1,
+          "driveBefore": 50,
+          "driveAfter": 60,
+          "unplaced": [],
+          "skipped": []
+        }
+      ],
+      "result": "Moved 1 job"
+    },
+    {
+      "args": [
+        {
+          "moved": 9,
+          "driveBefore": 300,
+          "driveAfter": 110,
+          "unplaced": [
+            "a"
+          ],
+          "skipped": []
+        }
+      ],
+      "result": "Moved 9 jobs · 3 hr 10 min less driving · 1 didn’t fit and stays in Needs a Time"
+    },
+    {
+      "args": [
+        {
+          "moved": 2,
+          "driveBefore": 30,
+          "driveAfter": 5,
+          "unplaced": [
+            "a",
+            "b"
+          ],
+          "skipped": [
+            "c"
+          ]
+        }
+      ],
+      "result": "Moved 2 jobs · 25 min less driving · 2 didn’t fit and stay in Needs a Time · 1 left for the next run"
+    },
+    {
+      "args": [
+        {
+          "moved": 0,
+          "driveBefore": 0,
+          "driveAfter": 0,
+          "unplaced": [],
+          "skipped": [
+            "c",
+            "d"
+          ]
+        }
+      ],
+      "result": "Nothing to move · 2 left for the next run"
+    }
+  ]
+}

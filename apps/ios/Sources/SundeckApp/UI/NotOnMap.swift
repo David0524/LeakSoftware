@@ -28,28 +28,24 @@
         }
     }
 
-    /// The short form under a stop's or a pool's address: a warning icon and "Not on map".
+    /// The short form, right after a stop's or a pool's address on its line: just the warning
+    /// symbol (owner, 2026-10-20: "just put a little error symbol next to the address. Don't
+    /// waste space with text"). VoiceOver says "Not found on the map". It takes the font of the
+    /// text it follows, so it's about 1em.
     struct NotOnMapTag: View {
+        var color: Color = .warning
+
         var body: some View {
-            Label {
-                Text(NotOnMap.short)
-            } icon: {
-                Image(systemName: "exclamationmark.triangle")
-            }
-            .labelStyle(TagLabelStyle())
-            .font(.role(.footnote).weight(.semibold))
-            .foregroundStyle(Color.warning)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(NotOnMap.title)
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(color)
+                .accessibilityLabel(NotOnMap.title)
         }
 
-        private struct TagLabelStyle: LabelStyle {
-            func makeBody(configuration: Configuration) -> some View {
-                HStack(spacing: 4) {
-                    configuration.icon
-                    configuration.title
-                }
-            }
+        /// The symbol as text, to follow an address that wraps: " ⚠".
+        static func text(color: Color = .warning) -> Text {
+            Text(" ")
+                + Text(Image(systemName: "exclamationmark.triangle.fill")).foregroundStyle(color)
+                .accessibilityLabel(NotOnMap.title)
         }
     }
 #endif

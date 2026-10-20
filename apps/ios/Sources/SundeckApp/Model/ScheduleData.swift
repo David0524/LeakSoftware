@@ -97,6 +97,9 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
     public var scheduledEnd: String?
     public var routeOrder: Int?
     public var arrivalFixed: Bool
+    /// Locks (core `jobLock`; synced columns, owner 2026-10-20).
+    public var lockDay: Bool
+    public var lockTime: Bool
     public var createdAt: String?
     public var customerId: String?
     public var customerName: String
@@ -104,6 +107,8 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
     public var address: String
     public var location: LatLng?
     public var accessNotes: String?
+    /// The customer's notes, then the pool's, joined with " · " (Today's card, owner 2026-10-20).
+    public var notes: String?
     /// The maintenance plan a visit belongs to, and the plan's day for it (its cleanings).
     public var servicePlanId: String?
     public var planDate: String?
@@ -133,6 +138,8 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
         scheduledEnd = j["scheduled_end"]?.string
         routeOrder = j["route_order"]?.number.map { Int($0) }
         arrivalFixed = j["arrival_fixed"]?.bool ?? false
+        lockDay = j["lock_day"]?.bool ?? false
+        lockTime = j["lock_time"]?.bool ?? false
         createdAt = j["created_at"]?.string
         customerId = v.customer?.id
         customerName = v.customer?["name"]?.string ?? "Customer"
@@ -145,6 +152,11 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
         accessNotes = v.property?["access_notes"]?.string.flatMap {
             $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0
         }
+        let joined = [v.customer?["notes"]?.string, v.property?["notes"]?.string]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " · ")
+        notes = joined.isEmpty ? nil : joined
     }
 
     public var lock: LockReason? { lockReason(self) }
@@ -267,9 +279,9 @@ public func routePoints(_ jobs: [ScheduleJob], depot: LatLng?) -> [String] {
 }
 
 /// The note on a stop: "Second tech, with Tony", "With Sam", "Leak detection", "Repair", "Maintenance"
-/// or "Pool inspection", then " · Not on map" when its address wasn't found and the server looks addresses up (owner,
-/// 2026-10-20: it's left out of drive times until it is).
-public func stopNote(_ j: ScheduleJob, routeTech: String?, names: [String: String], routing: Bool = false) -> String? {
+/// or "Pool inspection". An address not found on the map shows as a symbol after the address
+/// instead (`NotOnMapTag`, owner 2026-10-20: "Don't waste space with text").
+public func stopNote(_ j: ScheduleJob, routeTech: String?, names: [String: String]) -> String? {
     let note: String? = {
         if let routeTech, j.assignedUserId != routeTech {
             return "Second tech, with \(j.assignedUserId.flatMap { names[$0] } ?? "the main tech")"
@@ -282,8 +294,7 @@ public func stopNote(_ j: ScheduleJob, routeTech: String?, names: [String: Strin
         case .detection: return "Leak detection"
         }
     }()
-    let parts = [note, routing && j.mapMissing ? NotOnMap.short : nil].compactMap { $0 }
-    return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    return note
 }
 
 // MARK: - Planning writes

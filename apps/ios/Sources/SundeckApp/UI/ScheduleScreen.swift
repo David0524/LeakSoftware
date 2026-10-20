@@ -28,6 +28,9 @@
         @State private var result: (text: String, error: Bool)?
         @State private var saved = 0
         @State private var failed = 0
+        /// Plan Week's sheet, and the rows that put the week back (Undo on its result).
+        @State private var planningWeek = false
+        @State private var weekUndo: [WeekUndoRow]?
 
         /// `view` opens on Week or Month (the screenshot tests); Day by default.
         init(view: ScheduleView = .day) { _view = State(initialValue: view) }
@@ -70,9 +73,17 @@
                         .padding(.horizontal, -16)
                         .accessibilityLabel("Whose schedule")
                     }
+                    if let route = board.leadRoute {
+                        DayLead(route: route, board: board) { plan(route.techId, board) }
+                    }
                     notices(board)
                     if let result {
-                        Notice(kind: result.error ? .error : .success, text: result.text)
+                        if !result.error, let rows = weekUndo, !rows.isEmpty {
+                            // Plan Week's result with one Undo for the whole change (undo-and-redo.md).
+                            UndoNotice(text: result.text) { undoWeek(rows) }
+                        } else {
+                            Notice(kind: result.error ? .error : .success, text: result.text)
+                        }
                     }
                     if board.ctx.isManager && view != .month {
                         NeedsATimeCard(
@@ -144,6 +155,14 @@
                     }
                 }
             }
+            .sheet(isPresented: $planningWeek) {
+                if let board {
+                    PlanWeekSheet(board: board) { tech, tray in
+                        planningWeek = false
+                        planWeek(tech: tech, tray: tray, board)
+                    }
+                }
+            }
             .sheet(isPresented: $picking) {
                 if let board {
                     DatePickSheet(date: board.date) {
@@ -205,11 +224,18 @@
                 RouteCard(
                     tech: t, board: board, route: board.loaded.routes[routeKey(t.id, board.date)],
                     onPlan: { plan(t.id, board) }, onMove: move,
-                    onDrop: { id, index in drop(id, on: .route(tech: t.id, date: board.date, index: index)) })
+                    onDrop: { id, index in drop(id, on: .route(tech: t.id, date: board.date, index: index)) },
+                    lead: board.leadRoute?.techId == t.id)
             }
         }
 
         @ViewBuilder private func weekView(_ board: Board) -> some View {
+            // Owners and admins: put the week's movable jobs on days for the least driving.
+            if board.ctx.isManager && !planWeekDates(board.days, today: board.ctx.today).isEmpty {
+                Button("Plan Week") { planningWeek = true }
+                    .buttonStyle(.secondary(fullWidth: true))
+                    .accessibilityHint("Opens a sheet to plan this week’s routes")
+            }
             ForEach(board.days, id: \.self) { d in
                 let list = board.weekList(d)
                 VStack(alignment: .leading, spacing: 8) {
@@ -274,6 +300,26 @@
             }
         }
 
+        /// Plan Week, on the phone: core `planWeek` on the synced jobs, every change saved through
+        /// the sync layer in one transaction, then its result with Undo.
+        private func planWeek(tech: String, tray: Bool, _ board: Board) {
+            let dates = planWeekDates(board.days, today: board.ctx.today)
+            var rows: [WeekUndoRow] = []
+            let done = apply {
+                let outcome = try planTheWeek(
+                    dates: dates, tech: tech, tray: tray, jobs: board.jobs, ctx: board.ctx, team: board.team,
+                    drive: drive)
+                rows = outcome.undo
+                return (outcome.updates, outcome.message)
+            }
+            weekUndo = done && !rows.isEmpty ? rows : nil
+        }
+
+        /// Undo Plan Week: every job back as it was.
+        private func undoWeek(_ rows: [WeekUndoRow]) {
+            apply { (undoWeekPlan(rows), weekPlanUndone) }
+        }
+
         /// A stop dropped on the schedule: the same move as Move…, through the sync layer. False
         /// (the stop slides back) when the move is refused, with the reason above the routes.
         private func drop(_ jobId: String, on target: ScheduleDrop) -> Bool {
@@ -288,6 +334,7 @@
         @discardableResult
         private func apply(_ change: () throws -> (updates: [JobUpdate], message: String)?) -> Bool {
             guard let company = session.company else { return false }
+            weekUndo = nil
             do {
                 guard let (updates, message) = try change() else { return true }
                 try saveJobUpdates(sync, companyId: company.id, updates)
@@ -376,6 +423,14 @@
         var names: [String: String] { Dictionary(team.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a }) }
 
         var shownTechs: [TeamMember] { techs.filter { tech == "all" || $0.id == tech } }
+
+        /// Day view with one tech chosen who has stops: their day, whose map leads the screen.
+        var leadRoute: DayRoute? {
+            guard view == .day, tech != "all", let route = loaded.routes[routeKey(tech, date)],
+                !route.jobs.isEmpty
+            else { return nil }
+            return route
+        }
 
         var title: String {
             switch view {
@@ -575,7 +630,8 @@
                             LazyHStack(spacing: 12) {
                                 ForEach(jobs) { j in
                                     TrayCard(
-                                        job: j, note: note(j), onMove: { onMove(j, nil) }, onSuggest: { onSuggest(j) }
+                                        job: j, notOnMap: board.routing && j.mapMissing, note: note(j),
+                                        onMove: { onMove(j, nil) }, onSuggest: { onSuggest(j) }
                                     )
                                     .frame(width: geo.size.width * 0.85)
                                 }
@@ -595,7 +651,7 @@
             let booked = j.start.map {
                 "No tech yet · booked \(formatDay(localDay($0, timeZone: board.ctx.timeZone))) at \(formatTime(j.scheduledStart, timeZone: board.ctx.timeZone))"
             }
-            return [j.address, booked, stopNote(j, routeTech: nil, names: board.names, routing: board.routing)]
+            return [booked, stopNote(j, routeTech: nil, names: board.names)]
                 .compactMap { $0 }
                 .filter { !$0.isEmpty }.joined(separator: " · ")
         }
@@ -603,6 +659,9 @@
 
     struct TrayCard: View {
         var job: ScheduleJob
+        /// Its address wasn't found on the map: the symbol right after the address.
+        var notOnMap = false
+        /// What follows the address: "No tech yet · booked …", the kind of job.
         var note: String
         var onMove: () -> Void
         var onSuggest: () -> Void
@@ -617,7 +676,10 @@
                         (Text(job.customerName).fontWeight(.semibold).foregroundStyle(Color.text)
                             + Text(job.number.map { " · #\($0)" } ?? "").foregroundStyle(Color.textMuted))
                             .textRole(.body).lineLimit(1)
-                        Text(note).textRole(.secondary).foregroundStyle(Color.textMuted).lineLimit(1)
+                        (Text(job.address) + (notOnMap ? NotOnMapTag.text() : Text(""))
+                            + Text(job.address.isEmpty || note.isEmpty ? note : " · \(note)")
+                            + (lockTag(job)?.inline ?? Text("")))
+                            .textRole(.secondary).foregroundStyle(Color.textMuted).lineLimit(1)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -654,7 +716,8 @@
         var onMove: (ScheduleJob, String?) -> Void
         /// A stop dropped on this day (job id, place in the route or nil for last).
         var onDrop: (String, Int?) -> Bool
-        @Environment(\.openURL) private var openURL
+        /// The day's map, facts and buttons are in `DayLead` above Needs a Time.
+        var lead = false
 
         var body: some View {
             let jobs = route?.jobs ?? []
@@ -681,52 +744,100 @@
             .accessibilityLabel(tech.name)
         }
 
-        private func header(jobs: [ScheduleJob], open: Bool) -> some View {
-            VStack(alignment: .leading, spacing: 4) {
+        @ViewBuilder private func header(jobs: [ScheduleJob], open: Bool) -> some View {
+            if lead {
+                // Phones with one tech chosen: the map, the day's facts and the buttons lead the
+                // screen above Needs a Time (DayLead), so the stops start under the tech's name.
                 CardTitle(tech.name)
-                if let route, !jobs.isEmpty {
-                    Text(
-                        "\(jobs.count) \(jobs.count == 1 ? "stop" : "stops") · \(durationLabel(route.summary.driveMin)) driving"
-                            + (route.summary.backMin.map { " · back by \(minutesLabel($0))" } ?? "")
-                    )
-                    .textRole(.secondary).foregroundStyle(Color.textMuted)
-                    if route.summary.overtimeMin > 0 {
-                        Text("Runs \(durationLabel(route.summary.overtimeMin)) past the end of the day.")
-                            .textRole(.secondary).fontWeight(.semibold).foregroundStyle(Color.warning)
-                    }
-                    HStack(spacing: 8) {
-                        if open {
-                            Button("Plan Route", action: onPlan).buttonStyle(.secondary(fullWidth: true))
-                        }
-                        if let link = dayDirections(
-                            app: board.mapsApp, origin: board.ctx.origin,
-                            stops: jobs.map { (place: $0.place, done: $0.done) })
-                        {
-                            Button {
-                                openURL(link)
-                            } label: {
-                                Label(
-                                    board.mapsApp == .google ? "Google Maps" : "Apple Maps",
-                                    systemImage: "mappin.and.ellipse")
-                            }
-                            .buttonStyle(.secondary(fullWidth: true))
-                            .accessibilityLabel(
-                                board.mapsApp == .google ? "Open Route in Google Maps" : "Next Stop in Apple Maps")
-                        }
-                    }
+                    .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
                     .padding(.top, 8)
-                } else {
-                    Text(open ? "Nothing scheduled. Drop a job here." : "Nothing scheduled.")
-                        .textRole(.body).foregroundStyle(Color.textMuted)
-                        .frame(maxWidth: .infinity)
-                        .padding(16)
-                        .background(
-                            RoundedRectangle(cornerRadius: CGFloat(Radius.block), style: .continuous).fill(Color.well)
-                        )
-                        .padding(.top, 8)
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    CardTitle(tech.name)
+                    if let route, !jobs.isEmpty {
+                        RouteFacts(route: route, board: board, onPlan: onPlan)
+                    } else {
+                        Text(open ? "Nothing scheduled. Drop a job here." : "Nothing scheduled.")
+                            .textRole(.body).foregroundStyle(Color.textMuted)
+                            .frame(maxWidth: .infinity)
+                            .padding(16)
+                            .background(
+                                RoundedRectangle(cornerRadius: CGFloat(Radius.block), style: .continuous)
+                                    .fill(Color.well)
+                            )
+                            .padding(.top, 8)
+                    }
                 }
+                .card(padding: 16)
             }
-            .card(padding: 16)
+        }
+    }
+
+    /// A tech's day in numbers, then what to do with it: "5 stops · 1 hr 10 min driving · back by
+    /// 3:40 PM", a warning when it runs past the end of the day, and Plan Route beside the day in
+    /// the maps app.
+    struct RouteFacts: View {
+        var route: DayRoute
+        var board: Board
+        var onPlan: () -> Void
+        @Environment(\.openURL) private var openURL
+
+        var body: some View {
+            let jobs = route.jobs
+            VStack(alignment: .leading, spacing: 4) {
+                Text(
+                    "\(jobs.count) \(jobs.count == 1 ? "stop" : "stops") · \(durationLabel(route.summary.driveMin)) driving"
+                        + (route.summary.backMin.map { " · back by \(minutesLabel($0))" } ?? "")
+                )
+                .textRole(.secondary).foregroundStyle(Color.textMuted)
+                if route.summary.overtimeMin > 0 {
+                    Text("Runs \(durationLabel(route.summary.overtimeMin)) past the end of the day.")
+                        .textRole(.secondary).fontWeight(.semibold).foregroundStyle(Color.warning)
+                }
+                HStack(spacing: 8) {
+                    if board.date >= board.ctx.today {
+                        Button("Plan Route", action: onPlan).buttonStyle(.secondary(fullWidth: true))
+                    }
+                    if let link = dayDirections(
+                        app: board.mapsApp, origin: board.ctx.origin,
+                        stops: jobs.map { (place: $0.place, done: $0.done) })
+                    {
+                        Button {
+                            openURL(link)
+                        } label: {
+                            Label(
+                                board.mapsApp == .google ? "Google Maps" : "Apple Maps",
+                                systemImage: "mappin.and.ellipse")
+                        }
+                        .buttonStyle(.secondary(fullWidth: true))
+                        .accessibilityLabel(
+                            board.mapsApp == .google ? "Open Route in Google Maps" : "Next Stop in Apple Maps")
+                    }
+                }
+                .padding(.top, 8)
+            }
+        }
+    }
+
+    /// Phones, one tech's day (the website's DayLead): the map leads, right under the tech pills
+    /// (owner: "uses the maps all the time"), then the day's facts and the buttons.
+    struct DayLead: View {
+        var route: DayRoute
+        var board: Board
+        var onPlan: () -> Void
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 8) {
+                if let model = dayMapModel(
+                    jobs: route.jobs, depot: board.ctx.depot, date: board.date, today: board.ctx.today,
+                    tech: route.techName, timeZone: board.ctx.timeZone)
+                {
+                    DayMapSection(model: model)
+                }
+                RouteFacts(route: route, board: board, onPlan: onPlan)
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Route")
         }
     }
 
@@ -767,7 +878,7 @@
         }
 
         private var content: some View {
-            let lock = job.lock.flatMap { $0 == .started ? nil : $0 }
+            let lock = lockTag(job)
             return HStack(alignment: .top, spacing: 8) {
                 StopBadge(number: number, status: job.status)
                     .padding(.top, 6)
@@ -809,14 +920,10 @@
                     FlowRow(spacing: 8) {
                         if let note { NotePill(text: note) }
                         if job.status != .scheduled { StatusChip(status: job.status) }
-                        if let lock {
-                            Text(lock.label).font(.role(.footnote).weight(.semibold))
-                                .foregroundStyle(Color.textMuted)
-                        }
-                        // Left out of drive times until its address is found (owner, 2026-10-20).
-                        if routing && job.mapMissing {
-                            NotOnMapTag()
-                        } else if job.location == nil {
+                        if let lock { LockTagLabel(tag: lock) }
+                        // Not found on the map: the symbol after the address below (owner,
+                        // 2026-10-20).
+                        if !(routing && job.mapMissing), job.location == nil {
                             Text("No map location").font(.role(.footnote).weight(.semibold))
                                 .foregroundStyle(Color.warning)
                         }
@@ -825,7 +932,9 @@
                                 .accessibilityLabel("Job \(n)")
                         }
                     }
-                    if !job.address.isEmpty { AddressButton(place: job.place, muted: true) }
+                    if !job.address.isEmpty {
+                        AddressButton(place: job.place, muted: true, notOnMap: routing && job.mapMissing)
+                    }
                     if !job.finished, let notes = job.accessNotes { AccessLine(notes: notes) }
                     ScheduledCleaningsRow(cleanings: cleanings)
                 }
@@ -1113,15 +1222,24 @@
     // MARK: - Sheets
 
     /// Move {Customer} (spec 6.3): tech, day, and place in the route; Move or Take Off Schedule.
+    /// From the job (Schedule Job, Change Schedule) it's the job's schedule: titled Schedule, with
+    /// its Lock (owner, 2026-10-20: None · Day · Time · Both) and Save Schedule.
     struct MoveSheet: View {
         var target: MoveTarget
         var board: Board
         var onMove: (_ tech: String?, _ date: String?, _ index: Int) -> Void
+        /// The job's lock now: shows the Lock picker and saves through `onSave`.
+        var lock: JobLock? = nil
+        /// Save Schedule: the choice, its lock, and whether only the lock changed.
+        var onSave: ((_ tech: String?, _ date: String?, _ index: Int, _ lock: JobLock, _ lockOnly: Bool) -> Void)? = nil
         @Environment(\.dismiss) private var dismiss
         @State private var tech: String?
         @State private var day = Date()
         @State private var place = 0
         @State private var ready = false
+        @State private var chosenLock = JobLock.none
+        /// Where the job was when the sheet opened (tech, day, place), to tell a lock-only change.
+        @State private var start: (tech: String?, day: String, place: Int)?
 
         private var zone: TimeZone { TimeZone(identifier: board.ctx.timeZone) ?? .current }
         private var dayString: String { localDay(day, timeZone: board.ctx.timeZone) }
@@ -1179,9 +1297,22 @@
                                 }
                             }
                         }
+                        if lock != nil { lockPicker }
                         VStack(spacing: 8) {
-                            Button("Move") { onMove(tech, dayString, tech != nil ? min(place, others.count) : 9_999) }
-                                .buttonStyle(.primary(fullWidth: true, size: .field))
+                            Button(lock != nil ? "Save Schedule" : "Move") {
+                                let index = tech != nil ? min(place, others.count) : 9_999
+                                if let onSave {
+                                    let same =
+                                        target.from != nil
+                                        && start.map {
+                                            $0.tech == tech && $0.day == dayString && $0.place == place
+                                        } == true
+                                    onSave(tech, dayString, index, chosenLock, same)
+                                } else {
+                                    onMove(tech, dayString, index)
+                                }
+                            }
+                            .buttonStyle(.primary(fullWidth: true, size: .field))
                             if target.from != nil && canUnschedule(target.job.status) {
                                 Button("Take Off Schedule") { onMove(nil, nil, 0) }
                                     .buttonStyle(.secondary(fullWidth: true, size: .field))
@@ -1191,7 +1322,7 @@
                     .padding(16)
                 }
                 .background(Color.bg)
-                .navigationTitle("Move \(target.job.customerName)")
+                .navigationTitle(lock != nil ? "Schedule" : "Move \(target.job.customerName)")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -1217,7 +1348,25 @@
                 {
                     place = i
                 }
+                chosenLock = lock ?? .none
+                self.start = (tech, dayString, place)
             }
+        }
+
+        /// Lock: None · Day · Time · Both, with what the choice keeps under it.
+        private var lockPicker: some View {
+            VStack(alignment: .leading, spacing: CGFloat(Spacing.labelToGroup)) {
+                SectionLabel("Lock")
+                Segmented(
+                    selection: $chosenLock, options: jobLocks, label: \.segment, title: "Lock", fillsWidth: true)
+                Text(chosenLock.help)
+                    .textRole(.footnote)
+                    .foregroundStyle(Color.textMuted)
+                    .padding(.horizontal, 16)
+                    .contentTransition(.opacity)
+                    .animation(Motion.snappy, value: chosenLock)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 

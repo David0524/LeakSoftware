@@ -37,7 +37,11 @@ import {
   type ReactNode,
 } from "react";
 import { durationLabel, type CleaningKind, type JobStatus, type LatLng } from "@leakbook/core";
+import { DayMap } from "./day-map";
 import { CleaningIcon, KeyIcon } from "./icons";
+import { LockTag } from "./lock-tag";
+import { PlanWeek } from "./plan-week";
+import { dayMap, weekdayName } from "@/lib/day-map";
 import { NotOnMapTag } from "./not-on-map";
 import {
   moveJob,
@@ -48,7 +52,7 @@ import {
 } from "@/app/actions/routes";
 import { AddressLink, OpenRouteInMaps } from "./open-in-maps";
 import { Sheet } from "./sheet";
-import { Button, Notice, StatusBadge, buttonClass, cx } from "./ui";
+import { Button, Notice, StatusBadge, buttonClass, cx, pillClass } from "./ui";
 
 // The schedule as routes (routing, owner request 2026-10-13): each tech's day in order with
 // the driving between stops. Drag a job by its grip to another place, tech, or day (mouse,
@@ -65,8 +69,11 @@ export interface BoardStop {
   /** "8:15 AM", or null with no time. */
   time: string | null;
   status: JobStatus;
-  /** "Fixed time", "Two techs", "Started": planning keeps it where it is. */
-  lock: string | null;
+  /**
+   * What keeps it in place: its lock ("Day locked", "Time locked", "Locked", with a padlock)
+   * or "Two techs".
+   */
+  lock: { label: string; icon: boolean } | null;
   /** Started jobs stay put. */
   draggable: boolean;
   /** Driving in from the stop before (null: not on a route). */
@@ -152,6 +159,10 @@ export function RouteBoard({
   techs,
   today,
   weekDays,
+  maps = null,
+  workDates = [],
+  planDates = null,
+  planWaiting = 0,
 }: {
   mode: "day" | "week";
   columns: BoardColumn[];
@@ -161,6 +172,14 @@ export function RouteBoard({
   today: string;
   /** Week mode: the days across, as [date, label]. */
   weekDays?: [string, string][];
+  /** Day maps (when the shop's maps are set up): whose shop, and where it is. */
+  maps?: { company: string; depot: LatLng | null } | null;
+  /** Week mode: the shop's working days, which get a map even when empty. */
+  workDates?: string[];
+  /** Week mode, owners and admins: Plan Week for these days (today and later). */
+  planDates?: string[] | null;
+  /** Jobs in Needs a Time with nobody on them that Plan Week could place. */
+  planWaiting?: number;
 }) {
   const initial = useMemo(() => {
     const lists: Lists = { [TRAY]: tray ?? [] };
@@ -187,6 +206,13 @@ export function RouteBoard({
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  // Phones showing one tech's day: its map and buttons lead, above Needs a Time.
+  const shownOnPhone = columns.filter((c) => !c.phoneHidden);
+  const lead =
+    mode === "day" && shownOnPhone.length === 1 && (lists[shownOnPhone[0]!.key] ?? []).length
+      ? shownOnPhone[0]!
+      : null;
 
   const where = (id: string) => Object.keys(lists).find((k) => lists[k]!.some((s) => s.id === id));
 
@@ -272,6 +298,17 @@ export function RouteBoard({
         ) : null}
       </div>
 
+      {lead ? (
+        <DayLead
+          column={lead}
+          stops={lists[lead.key] ?? []}
+          busy={pending}
+          onPlan={() => run(null, () => planRoute(lead.techId, lead.date))}
+          maps={maps}
+          today={today}
+        />
+      ) : null}
+
       {tray ? (
         <Tray
           jobs={lists[TRAY] ?? []}
@@ -290,17 +327,34 @@ export function RouteBoard({
               busy={pending}
               onPlan={() => run(null, () => planRoute(c.techId!, c.date))}
               onMove={setMoving}
+              maps={maps}
+              today={today}
+              lead={c.key === lead?.key}
             />
           ))}
         </div>
       ) : (
-        <WeekGrid
-          columns={columns}
-          lists={lists}
-          days={weekDays ?? []}
-          today={today}
-          onMove={setMoving}
-        />
+        <>
+          <WeekMaps
+            columns={columns}
+            lists={lists}
+            days={weekDays ?? []}
+            workDates={workDates}
+            today={today}
+            maps={maps}
+            planDates={planDates}
+            planWaiting={planWaiting}
+            busy={pending}
+            onPlan={(techId, date) => run(null, () => planRoute(techId, date))}
+          />
+          <WeekGrid
+            columns={columns}
+            lists={lists}
+            days={weekDays ?? []}
+            today={today}
+            onMove={setMoving}
+          />
+        </>
       )}
 
       <DragOverlay dropAnimation={null}>
@@ -339,30 +393,127 @@ export function RouteBoard({
 // Day: one column per tech
 // ---------------------------------------------------------------------------
 
+interface DayHeaderProps {
+  column: BoardColumn;
+  stops: BoardStop[];
+  busy: boolean;
+  onPlan: () => void;
+  maps: { company: string; depot: LatLng | null } | null;
+  today: string;
+}
+
+/** "4 stops · 1 hr 29 min driving · back by 5:04 PM". */
+function daySummary(c: BoardColumn, stops: BoardStop[]): string | null {
+  if (!c.techId || !stops.length) return null;
+  return [
+    `${stops.length} ${stops.length === 1 ? "stop" : "stops"}`,
+    `${durationLabel(c.driveMin)} driving`,
+    c.back ? `back by ${c.back}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function DayFacts({ column: c, stops }: { column: BoardColumn; stops: BoardStop[] }) {
+  const summary = daySummary(c, stops);
+  return (
+    <>
+      {summary ? <p className="text-[0.9375rem] text-text-muted">{summary}</p> : null}
+      {c.overtimeMin > 0 ? (
+        <p className="mt-1 text-[0.9375rem] font-semibold text-status-warning">
+          Runs {durationLabel(c.overtimeMin)} past the end of the day.
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+/** Plan Route and the day in the maps app: what a tech's day is for, so they lead. */
+function DayButtons({ column: c, stops, busy, onPlan }: DayHeaderProps) {
+  if (!c.techId || !stops.length) return null;
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-2">
+      {c.open ? (
+        <Button type="button" kind="secondary" disabled={busy} onClick={onPlan} className="px-2">
+          Plan Route
+        </Button>
+      ) : null}
+      {c.routeHref ? (
+        <OpenRouteInMaps href={c.routeHref} app={c.routeApp} compact className="px-2" />
+      ) : null}
+    </div>
+  );
+}
+
+function DayColumnMap({
+  column: c,
+  stops,
+  maps,
+  today,
+  className,
+}: Pick<DayHeaderProps, "column" | "stops" | "maps" | "today"> & { className?: string }) {
+  const map =
+    maps && stops.length ? dayMap({ stops, depot: maps.depot, date: c.date, today }) : null;
+  if (!maps || !map || (!map.pins && !map.missing)) return null;
+  return (
+    <DayMap
+      company={maps.company}
+      pins={map.pins}
+      stops={stops}
+      missing={map.missing}
+      tech={c.title}
+      day={weekdayName(c.date)}
+      className={className}
+    />
+  );
+}
+
+/** A tech's day above its stops: the summary, the buttons, then the map. */
+function DayHeader(props: DayHeaderProps) {
+  return (
+    <>
+      <DayFacts column={props.column} stops={props.stops} />
+      <DayButtons {...props} />
+      <DayColumnMap {...props} />
+    </>
+  );
+}
+
+/**
+ * Phones, one tech's day: the map leads, right under the tech chips (owner: "uses the maps all
+ * the time"), then the summary and the buttons; Needs a Time and the stops follow.
+ */
+function DayLead(props: DayHeaderProps) {
+  return (
+    <section aria-label="Route" className="mb-5 sm:hidden">
+      <DayColumnMap {...props} className="mb-2" />
+      <DayFacts column={props.column} stops={props.stops} />
+      <DayButtons {...props} />
+    </section>
+  );
+}
+
 function DayColumn({
   column: c,
   stops,
   busy,
   onPlan,
   onMove,
+  maps,
+  today,
+  lead = false,
 }: {
   column: BoardColumn;
   stops: BoardStop[];
   busy: boolean;
   onPlan: () => void;
   onMove: (s: BoardStop) => void;
+  maps: { company: string; depot: LatLng | null } | null;
+  today: string;
+  /** Phones: the day's map, summary and buttons are in DayLead above Needs a Time. */
+  lead?: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: c.key, disabled: !c.open });
-  const summary =
-    c.techId && stops.length
-      ? [
-          `${stops.length} ${stops.length === 1 ? "stop" : "stops"}`,
-          `${durationLabel(c.driveMin)} driving`,
-          c.back ? `back by ${c.back}` : null,
-        ]
-          .filter(Boolean)
-          .join(" · ")
-      : null;
   return (
     <section
       aria-label={c.title}
@@ -376,31 +527,10 @@ function DayColumn({
       )}
     >
       <h2 className="font-display text-xl font-bold">{c.title}</h2>
-      {summary ? <p className="text-[0.9375rem] text-text-muted">{summary}</p> : null}
-      {c.overtimeMin > 0 ? (
-        <p className="mt-1 text-[0.9375rem] font-semibold text-status-warning">
-          Runs {durationLabel(c.overtimeMin)} past the end of the day.
-        </p>
-      ) : null}
-      {/* Planning and driving the route are what this card is for: they lead. */}
-      {c.techId && stops.length ? (
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {c.open ? (
-            <Button
-              type="button"
-              kind="secondary"
-              disabled={busy}
-              onClick={onPlan}
-              className="px-2"
-            >
-              Plan Route
-            </Button>
-          ) : null}
-          {c.routeHref ? (
-            <OpenRouteInMaps href={c.routeHref} app={c.routeApp} compact className="px-2" />
-          ) : null}
-        </div>
-      ) : null}
+      {/* Phones with one tech chosen show this above Needs a Time instead (DayLead). */}
+      <div className={lead ? "max-sm:hidden" : undefined}>
+        <DayHeader column={c} stops={stops} busy={busy} onPlan={onPlan} maps={maps} today={today} />
+      </div>
       <SortableContext
         id={c.key}
         items={stops.map((s) => s.id)}
@@ -456,7 +586,7 @@ function Leg({
   );
 }
 
-function Grip(props: Record<string, unknown> & { label: string; className?: string }) {
+export function Grip(props: Record<string, unknown> & { label: string; className?: string }) {
   const { label, className, ...rest } = props;
   return (
     <button
@@ -707,23 +837,19 @@ function StopCard({
                 {s.tag}
               </span>
               {s.status !== "scheduled" ? <StatusBadge status={s.status} /> : null}
-              {s.lock ? (
-                <span className="text-[0.8125rem] font-semibold text-text-muted">{s.lock}</span>
-              ) : null}
-              {s.notOnMap ? (
-                <NotOnMapTag />
-              ) : !s.location ? (
-                <span className="text-[0.8125rem] font-semibold text-status-warning">
-                  No map location
-                </span>
-              ) : null}
+              {s.lock ? <LockTag lock={s.lock} /> : null}
               {s.number ? (
                 <span className="text-[0.8125rem] text-text-muted">#{s.number}</span>
               ) : null}
             </div>
             {s.address ? (
-              <p className="truncate text-[0.9375rem]">
-                <AddressLink address={s.address} location={s.location} muted />
+              // Not found on the map: a small warning symbol right after the address (owner,
+              // 2026-10-20: "Don't waste space with text").
+              <p className="flex min-w-0 items-center gap-1.5 text-[0.9375rem]">
+                <span className="min-w-0 truncate">
+                  <AddressLink address={s.address} location={s.location} muted />
+                </span>
+                {s.notOnMap || !s.location ? <NotOnMapTag /> : null}
               </p>
             ) : null}
             {s.access && !finished(s.status) ? (
@@ -758,6 +884,140 @@ function StopCard({
 // ---------------------------------------------------------------------------
 // Week: techs down, days across
 // ---------------------------------------------------------------------------
+
+/**
+ * The week as a row of day maps for one tech (PayThePoolMan's route screen, owner 2026-10-20):
+ * each day's name, its map, then Enlarge and Plan Route. Pills pick whose week; Plan Week sits at
+ * the row's end for owners and admins.
+ */
+function WeekMaps({
+  columns,
+  lists,
+  days,
+  workDates,
+  today,
+  maps,
+  planDates,
+  planWaiting,
+  busy,
+  onPlan,
+}: {
+  columns: BoardColumn[];
+  lists: Lists;
+  days: [string, string][];
+  workDates: string[];
+  today: string;
+  maps: { company: string; depot: LatLng | null } | null;
+  planDates: string[] | null;
+  planWaiting: number;
+  busy: boolean;
+  onPlan: (techId: string, date: string) => void;
+}) {
+  const techs = useMemo(
+    () => [...new Map(columns.map((c) => [c.techId, c.title])).entries()],
+    [columns],
+  );
+  const busiest =
+    techs.find(([id]) => days.some(([d]) => (lists[`${id}|${d}`] ?? []).length > 0))?.[0] ??
+    techs[0]?.[0] ??
+    null;
+  const [picked, setPicked] = useState<string | null>(null);
+  const tech = picked && techs.some(([id]) => id === picked) ? picked : busiest;
+  const name = techs.find(([id]) => id === tech)?.[1] ?? "";
+  if (!maps && !planDates) return null;
+  const shown = days.filter(
+    ([d]) => workDates.includes(d) || (lists[`${tech}|${d}`] ?? []).length > 0,
+  );
+  return (
+    <section aria-labelledby="week-routes" className="mb-5">
+      {/* The section's title with its one action, then whose week the maps show. */}
+      <div className="mb-2 flex min-h-11 flex-wrap items-center justify-between gap-x-3">
+        <h2 id="week-routes" className="font-display text-xl font-bold">
+          {maps ? (techs.length > 1 ? "Routes" : `${name}’s Routes`) : "This Week"}
+        </h2>
+        {planDates ? (
+          <PlanWeek
+            dates={planDates}
+            waiting={planWaiting}
+            techs={techs.map(([id, title]) => ({ id, name: title }))}
+            defaultTech={maps ? tech : null}
+            className="contents"
+          />
+        ) : null}
+      </div>
+      {maps && techs.length > 1 ? (
+        <nav
+          aria-label="Whose routes"
+          className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]"
+        >
+          {techs.map(([id, title]) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={id === tech}
+              onClick={() => setPicked(id)}
+              className={pillClass(id === tech)}
+            >
+              {title}
+            </button>
+          ))}
+        </nav>
+      ) : null}
+      {maps && tech ? (
+        <ol className="grid grid-cols-[repeat(auto-fill,minmax(11.5rem,1fr))] gap-3">
+          {shown.map(([d]) => {
+            const key = `${tech}|${d}`;
+            const col = columns.find((c) => c.key === key);
+            const stops = lists[key] ?? [];
+            const map = dayMap({ stops, depot: maps.depot, date: d, today });
+            const day = weekdayName(d);
+            return (
+              <li
+                key={d}
+                data-testid="week-map"
+                aria-label={day}
+                className={cx("card p-2", d === today && "ring-2 ring-link")}
+              >
+                <h3 className="flex items-baseline justify-between gap-2 px-1.5 pt-0.5 pb-2">
+                  <span className={cx("font-semibold", d === today && "text-link")}>
+                    {day}
+                    {d === today ? <span className="sr-only">, today</span> : null}
+                  </span>
+                  <span className="text-[0.8125rem] text-text-muted tabular-nums">
+                    {stops.length ? `${stops.length} ${stops.length === 1 ? "stop" : "stops"}` : ""}
+                  </span>
+                </h3>
+                <DayMap
+                  variant="week"
+                  company={maps.company}
+                  pins={map.pins}
+                  stops={stops}
+                  missing={map.missing}
+                  tech={name}
+                  day={day}
+                  action={
+                    stops.length ? (
+                      <Button
+                        type="button"
+                        kind="secondary"
+                        disabled={busy || !col?.open}
+                        onClick={() => onPlan(tech, d)}
+                        aria-label={`Plan ${day}’s Route`}
+                        className="min-w-0 flex-1 px-3 text-[0.9375rem]"
+                      >
+                        Plan Route
+                      </Button>
+                    ) : null
+                  }
+                />
+              </li>
+            );
+          })}
+        </ol>
+      ) : null}
+    </section>
+  );
+}
 
 function WeekGrid({
   columns,
@@ -909,9 +1169,7 @@ function WeekChip({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
         <span className="mt-0.5 line-clamp-1 block text-[0.8125rem] text-text-muted" title={s.tag}>
           {s.tag}
         </span>
-        {s.lock ? (
-          <span className="block text-[0.8125rem] font-semibold text-text-muted">{s.lock}</span>
-        ) : null}
+        {s.lock ? <LockTag lock={s.lock} className="mt-0.5" /> : null}
       </Link>
       {s.draggable ? (
         <>
@@ -1036,8 +1294,16 @@ function TrayCard({
           <span className="font-semibold">{j.customer}</span>
           <span className="text-text-muted">{j.number ? ` · #${j.number}` : ""}</span>
         </span>
-        <span className="block truncate text-[0.9375rem] text-text-muted">
-          {[j.address, j.note].filter(Boolean).join(" · ")}
+        <span className="flex min-w-0 items-center gap-1.5 text-[0.9375rem] text-text-muted">
+          {j.lock ? <LockTag lock={j.lock} className="shrink-0" /> : null}
+          {j.address ? <span className="min-w-0 truncate">{j.address}</span> : null}
+          {j.notOnMap || !j.location ? <NotOnMapTag /> : null}
+          {j.note ? (
+            <span className="min-w-0 truncate">
+              {j.address ? "· " : ""}
+              {j.note}
+            </span>
+          ) : null}
         </span>
       </Link>
       <button

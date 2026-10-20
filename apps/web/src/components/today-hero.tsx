@@ -8,13 +8,13 @@ import {
   directionsHref,
   heroActions,
   heroDrive,
+  heroHeadline,
   heroSegmentsSpoken,
-  heroSubtitle,
   type LatLng,
   type TodayHero,
 } from "@leakbook/core";
 import { changeJobStatus } from "@/app/actions/inspection";
-import { KeyIcon, PhoneIcon } from "./icons";
+import { KeyIcon, MessageIcon, NoteIcon, PhoneIcon, PinIcon, WarningIcon } from "./icons";
 import { OnMyWay } from "./on-my-way";
 import { TodayComplete } from "./today-complete";
 import type { SendPrompt } from "./job-work";
@@ -29,6 +29,10 @@ export interface HeroJob {
   location: LatLng | null;
   notOnMap: boolean;
   phone: string | null;
+  /** The customer's notes, then the pool's (either may be empty). */
+  notes: string | null;
+  /** Where Message goes: the company number's conversation, else the phone's own texts. */
+  textHref: string | null;
   driveMin: number | null;
   done: boolean;
   undo: "Reopen Visit" | "Mark Not Complete" | null;
@@ -37,6 +41,11 @@ export interface HeroJob {
 }
 
 const ON_WATER = "bg-white text-water hover:bg-white/90";
+/** Secondary text on the card: white at 92% is 4.8:1 on water blue (85% was 4.3:1). */
+const SOFT = "text-white/92";
+/** The card's buttons: 50 pt capsules that press in (none with Reduce Motion). */
+const BUTTON =
+  "inline-flex min-h-[3.125rem] w-full items-center justify-center rounded-full px-4 text-[1.0625rem] font-semibold transition active:scale-[0.96] active:opacity-85 motion-reduce:transform-none disabled:opacity-60";
 const ROUND =
   "inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-white/18 text-white transition-colors hover:bg-white/28";
 
@@ -68,7 +77,12 @@ export function TodayHeroCard({
   const actions = heroActions(hero.moment, mine);
   const target = hero.moment === "done" ? next : job;
   const drive = job ? heroDrive(hero.moment, job.driveMin) : null;
-  const subtitle = job ? heroSubtitle(job.typeLabel, hero) : "";
+  // "At the pool · Stop 2 of 3"; under the name, "Leak detection · 14 min drive".
+  const top =
+    hero.moment === "day_done"
+      ? heroHeadline(hero)
+      : `${heroHeadline(hero)} · Stop ${hero.stop} of ${hero.stops}`;
+  const kind = job ? [job.typeLabel, drive].filter(Boolean).join(" · ") : "";
   return (
     <section
       aria-label={c.spoken}
@@ -76,67 +90,91 @@ export function TodayHeroCard({
       data-testid="today-hero"
       data-moment={hero.moment}
     >
-      <div className="flex items-start gap-4">
-        <div className="min-w-0 flex-1">
-          <p className="text-[0.9375rem] font-semibold text-white/85">{c.headline}</p>
+      {/* The top: the moment and the stop count, the name (the card is about them), the type,
+          and the figure; one column at the largest text sizes. */}
+      <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
+        <div className="min-w-0 flex-[1_1_14rem]">
+          <p className={cx("text-[0.9375rem] font-semibold", SOFT)}>{top}</p>
           {job ? (
             <Link
               href={`/jobs/${job.id}`}
-              className="mt-0.5 block font-display text-[1.75rem] leading-tight font-extrabold underline-offset-4 hover:underline"
+              className="mt-0.5 line-clamp-2 font-display text-[1.75rem] leading-tight font-extrabold underline-offset-4 hover:underline"
             >
               {job.customer}
             </Link>
           ) : null}
-          {subtitle ? <p className="mt-0.5 text-[0.9375rem] text-white/85">{subtitle}</p> : null}
+          {kind ? <p className={cx("mt-0.5 text-[0.9375rem]", SOFT)}>{kind}</p> : null}
         </div>
         <div className="shrink-0 text-right">
           <p
+            key={c.figure}
             className={cx(
-              "font-display leading-none font-extrabold tabular-nums",
-              c.figure === "✓" ? "text-[2.5rem]" : "text-[2.25rem]",
+              "font-display leading-none font-bold tabular-nums motion-safe:animate-[fade-in_0.3s_ease-out]",
+              c.figure === "✓" ? "text-[1.75rem]" : "text-[1.375rem]",
             )}
           >
             {c.figure}
           </p>
           {c.figureLabel ? (
-            <p className="mt-1 text-[0.9375rem] text-white/85">{c.figureLabel}</p>
+            <p className={cx("mt-1 text-[0.8125rem]", SOFT)}>{c.figureLabel}</p>
           ) : null}
         </div>
       </div>
 
       {job && hero.moment !== "done" ? (
-        <div className="mt-3 space-y-1.5">
+        <ul className="mt-3 space-y-1.5">
           {job.address ? (
-            <p className="text-[1.0625rem]">
+            <Detail icon={<PinIcon className="size-[0.9375rem]" />}>
+              {/* Plain text that opens directions, as iOS shows a tappable address; a warning
+                  symbol after it when the map can't find it (owner, 2026-10-20). */}
               <a
                 href={directionsHref({ address: job.address, location: job.location })}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`${job.address}, directions in Maps`}
-                className="font-medium underline decoration-white/50 underline-offset-4"
+                className="text-[1.0625rem] font-medium hover:underline"
               >
                 {job.address}
               </a>
-              {drive ? <span className="text-white/85"> · {drive}</span> : null}
-            </p>
-          ) : null}
-          {job.notOnMap ? (
-            <p className="text-[0.9375rem] font-semibold text-white">⚠ {NOT_ON_MAP.title}</p>
+              {job.notOnMap ? (
+                <span title={NOT_ON_MAP.title} className="ml-1.5 inline-flex align-[-0.1em]">
+                  <WarningIcon className="size-[1.0625rem]" />
+                  <span className="sr-only">{NOT_ON_MAP.title}</span>
+                </span>
+              ) : null}
+            </Detail>
           ) : null}
           {c.access ? (
-            <p className="flex items-start gap-2 text-[0.9375rem]">
-              <KeyIcon className="mt-0.5 size-4 shrink-0 text-white" />
-              <span>{c.access}</span>
-            </p>
+            <Detail icon={<KeyIcon className="size-[0.9375rem]" />}>
+              <span className="text-[0.9375rem]">{c.access}</span>
+            </Detail>
           ) : null}
+          {/* The customer's notes (owner, 2026-10-20: "you have to have customer notes
+              there"), two lines at most; the job has the rest. */}
+          {job.notes ? (
+            <Detail icon={<NoteIcon className="size-[0.9375rem]" />}>
+              <span className="line-clamp-2 text-[0.9375rem]">{job.notes}</span>
+            </Detail>
+          ) : null}
+        </ul>
+      ) : null}
+
+      {/* The next stop, with Message, Call and Directions on its line (owner, 2026-10-20: "find
+          a better place for the call/direction icon … so we can shorten the card"). */}
+      {c.next || (target && hero.moment !== "done") ? (
+        <div className="mt-3 flex items-center gap-3">
+          <p className={cx("min-w-0 flex-1 text-[0.9375rem]", SOFT)}>{c.next}</p>
+          {target && hero.moment !== "done" ? <Contact job={target} /> : null}
         </div>
       ) : null}
-      {c.next ? <p className="mt-2 text-[0.9375rem] text-white/85">{c.next}</p> : null}
 
-      {target || actions.complete ? (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+      {/* One row, equal widths: style, not size, marks the main action (buttons.md). */}
+      {(actions.primary && target) || (actions.complete && job) ? (
+        <div className="mt-4 flex gap-2.5 [&>*]:min-w-0 [&>*]:flex-1">
           {actions.primary && target ? (
-            <Primary action={actions.primary} job={target} onMyWay={onMyWay} />
+            <div>
+              <Primary action={actions.primary} job={target} onMyWay={onMyWay} />
+            </div>
           ) : null}
           {actions.complete && job ? (
             <TodayComplete
@@ -145,43 +183,8 @@ export function TodayHeroCard({
               done={job.done}
               undo={job.undo}
               prompt={job.prompt}
-              buttonClassName="inline-flex min-h-11 items-center justify-center rounded-full bg-white/18 px-5 text-[1.0625rem] font-semibold text-white transition-colors hover:bg-white/28 disabled:opacity-60"
+              buttonClassName={cx(BUTTON, "bg-white/18 text-white hover:bg-white/28")}
             />
-          ) : null}
-          {target && hero.moment !== "done" ? (
-            <span className="ml-auto flex gap-2">
-              {target.phone ? (
-                <a
-                  href={`tel:${target.phone}`}
-                  aria-label={`Call ${target.customer}`}
-                  className={ROUND}
-                >
-                  <PhoneIcon />
-                </a>
-              ) : null}
-              {target.address ? (
-                <a
-                  href={directionsHref({ address: target.address, location: target.location })}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Directions to ${target.customer}`}
-                  className={ROUND}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                    className="size-5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M3 11l18-8-8 18-2-8z" />
-                  </svg>
-                </a>
-              ) : null}
-            </span>
           ) : null}
         </div>
       ) : null}
@@ -206,6 +209,58 @@ export function TodayHeroCard({
   );
 }
 
+/** A detail line: its symbol in a fixed column so the text lines up. */
+function Detail({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-2">
+      <span aria-hidden="true" className="mt-[0.2rem] flex w-5 shrink-0 justify-center">
+        {icon}
+      </span>
+      <span className="min-w-0">{children}</span>
+    </li>
+  );
+}
+
+/** Message, Call and Directions as round buttons, each named for screen readers. */
+function Contact({ job }: { job: HeroJob }) {
+  return (
+    <span className="flex shrink-0 gap-2">
+      {job.phone && job.textHref ? (
+        <a href={job.textHref} aria-label={`Text ${job.customer}`} className={ROUND}>
+          <MessageIcon />
+        </a>
+      ) : null}
+      {job.phone ? (
+        <a href={`tel:${job.phone}`} aria-label={`Call ${job.customer}`} className={ROUND}>
+          <PhoneIcon />
+        </a>
+      ) : null}
+      {job.address ? (
+        <a
+          href={directionsHref({ address: job.address, location: job.location })}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Directions to ${job.customer}`}
+          className={ROUND}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            className="size-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M3 11l18-8-8 18-2-8z" />
+          </svg>
+        </a>
+      ) : null}
+    </span>
+  );
+}
+
 function Primary({
   action,
   job,
@@ -220,10 +275,7 @@ function Primary({
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const button = cx(
-    "inline-flex min-h-11 items-center justify-center rounded-full px-6 text-[1.0625rem] font-semibold transition-colors disabled:opacity-60",
-    ON_WATER,
-  );
+  const button = cx(BUTTON, ON_WATER);
   if (action === "on_my_way")
     return (
       <OnMyWay

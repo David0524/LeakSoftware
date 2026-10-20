@@ -71,6 +71,8 @@
         // Brand colors used directly.
         static let water = Color(uiColor: Tokens.Brand.water.uiColor)
         static let navy = Color(uiColor: Tokens.Brand.navy.uiColor)
+        /// Safety orange: the brand accent, and the day map's stop you're on.
+        static let safety = Color(uiColor: Tokens.Brand.safety.uiColor)
 
         // Tints.
         static let tinted = Color(tint: .tinted)

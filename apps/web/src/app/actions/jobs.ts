@@ -19,6 +19,9 @@ import {
   type NewJobInput,
   intakeQuestionsFor,
   parseGallons,
+  JOB_LOCKS,
+  lockColumns,
+  type JobLock,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { getCompany, mayMakeJobs } from "@/lib/data";
@@ -66,7 +69,12 @@ export async function scheduleJob(_: FormState, form: FormData): Promise<FormSta
       assigned_user_id: text(form, "tech") || null,
       scheduled_start: start,
       scheduled_end: end,
-      arrival_fixed: form.get("fixed") === "on",
+      // The lock picker (owner, 2026-10-20): day, time, both, or none.
+      ...lockColumns(
+        (JOB_LOCKS as string[]).includes(text(form, "lock"))
+          ? (text(form, "lock") as JobLock)
+          : "none",
+      ),
       ...(status === "unscheduled" ? { status: "scheduled" } : {}),
     })
     .eq("id", id)

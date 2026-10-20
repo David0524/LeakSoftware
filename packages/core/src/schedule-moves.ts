@@ -9,6 +9,7 @@ import { dateFormat } from "./intl";
 import {
   canMoveJob,
   canUnschedule,
+  jobLock,
   jobMinutes,
   localMinutes,
   propertyLocation,
@@ -182,8 +183,11 @@ export function moveJobChange(ctx: PlanContext, input: MoveInput, drive: DriveFn
   }
 
   const duration = jobMinutes(job, ctx.settings);
+  // A time lock keeps its clock time on the new day (owner, 2026-10-20), as moveJob on the
+  // website does.
+  const lock = jobLock(job);
   const fixedMin =
-    job.arrival_fixed && job.scheduled_start
+    (lock === "time" || lock === "both") && job.scheduled_start
       ? localMinutes(job.scheduled_start, ctx.timeZone)
       : null;
 
