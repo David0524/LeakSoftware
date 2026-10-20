@@ -37,7 +37,7 @@
     ///     PageHeader {
     ///         Text("Monday, October 19 · 72°")
     ///     } actions: {
-    ///         Button("Open Route in Google Maps") { … }.buttonStyle(.secondary)
+    ///         Button("Open Route in Maps") { … }.buttonStyle(.secondary)
     ///     }
     struct PageHeader<Subtitle: View, Actions: View>: View {
         @ViewBuilder var subtitle: Subtitle

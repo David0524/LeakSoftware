@@ -6,6 +6,7 @@ import { Animated, Linking, StyleSheet, TextInput, View } from "react-native";
 import Reanimated, { FadeIn, FadeInLeft, FadeInRight } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
+  MAPS_LABELS,
   JOB_TYPE_LABELS,
   POOL_TYPE_LABELS,
   intakeQuestionsFor,
@@ -75,6 +76,8 @@ import { SwipeNav, useNoSwipe } from "../../../../../../ui/SwipeNav";
 import { usePinnedSyncBar } from "../../../../../../ui/SyncBar";
 import { AddressLine, NotOnMapRow } from "../../../../../../ui/NotOnMap";
 import { ModalSheet } from "../../../../../../ui/ModalSheet";
+import { useTeam } from "../../../../../../data/schedule";
+import { TechValue } from "../../../../../../ui/TechDot";
 import { PoolForm } from "../../../../../../features/pool/PoolForm";
 import { AccessNotesRow } from "../../../../../../features/pool/AccessNotes";
 import { useRoutingOn } from "../../../../../../lib/routing";
@@ -569,6 +572,8 @@ function Details({
   useEffect(() => () => flush.current(), []);
 
   const team = services.sync.team();
+  const members = useTeam(company.id);
+  const colorOf = (uid: string) => members.find((m) => m.user_id === uid)?.color ?? null;
   const nameOf = (uid: string | null | undefined) => {
     if (!uid) return null;
     const p = team.find((t) => t.id === uid);
@@ -723,7 +728,7 @@ function Details({
               </View>
               <RoundButton
                 icon="pin"
-                label="Open in Maps"
+                label={MAPS_LABELS.openInMaps}
                 onPress={() =>
                   openDirections({ address, location: propertyLocation(property) }, choice)
                 }
@@ -749,9 +754,30 @@ function Details({
 
       <Section title="Assigned to">
         <Group>
-          <ListRow title="Tech" detail={nameOf(job.assigned_user_id) ?? "Nobody yet"} />
+          {/* Each tech with their color dot (team and week spec section 3). */}
+          <ListRow
+            title="Tech"
+            detail={
+              job.assigned_user_id ? (
+                <TechValue
+                  name={nameOf(job.assigned_user_id) ?? "Teammate"}
+                  tech={colorOf(job.assigned_user_id)}
+                />
+              ) : (
+                "Nobody yet"
+              )
+            }
+          />
           {job.second_tech_id ? (
-            <ListRow title="With" detail={nameOf(job.second_tech_id) ?? "Teammate"} />
+            <ListRow
+              title="With"
+              detail={
+                <TechValue
+                  name={nameOf(job.second_tech_id) ?? "Teammate"}
+                  tech={colorOf(job.second_tech_id)}
+                />
+              }
+            />
           ) : null}
           {job.fee_cents != null ? (
             <ListRow

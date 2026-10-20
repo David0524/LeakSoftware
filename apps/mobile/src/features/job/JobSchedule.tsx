@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import {
   JOB_LOCKS,
   JOB_LOCK_HELP,
@@ -35,8 +35,10 @@ import { Button, Group, ListRow, Section, Segmented, T } from "../../ui/componen
 import { haptics } from "../../ui/haptics";
 import { ModalSheet } from "../../ui/ModalSheet";
 import { color, space } from "../../ui/theme";
+import { TechValue } from "../../ui/TechDot";
 import { WebIcon } from "../../ui/WebIcon";
 import { MoveSheet, SuggestSheet, type MoveTarget } from "../schedule/MoveSheet";
+import { usePlanMove } from "../schedule/planMove";
 
 /**
  * The Schedule group shows until a job's work is done (owner, 2026-10-20: "You should be able
@@ -52,7 +54,14 @@ export function showsJobSchedule(job: { type: string; status: string }) {
  * Move sheet, core moveJobChange, saved through the sync layer). The Jobs list's Move… uses it
  * too (gestures spec section 12). `onResult` gets what the move says, or why it couldn't.
  */
-export function useJobMove(onResult: (r: { message?: string; error?: string }) => void) {
+export interface MoveResult {
+  message?: string;
+  error?: string;
+  /** Puts a plan visit's move back (Change Schedule or Just This Visit). */
+  undo?: () => void;
+}
+
+export function useJobMove(onResult: (r: MoveResult) => void) {
   const company = useCompany();
   const { membership, user } = useSession();
   const me = user?.id ?? "";
@@ -70,7 +79,7 @@ export function useJobMove(onResult: (r: { message?: string; error?: string }) =
   ]);
   const movers = (
     seesAll ? team.filter((t) => t.status === "active") : team.filter((t) => t.user_id === me)
-  ).map((t) => ({ id: t.user_id, name: t.name }));
+  ).map((t) => ({ id: t.user_id, name: t.name, color: t.color }));
 
   const dayJobsOf = (techId: string, d: string) =>
     (routesFor(jobs, [d], tz).routes.get(routeKey(techId, d)) ?? []).map((j) => ({
@@ -96,24 +105,43 @@ export function useJobMove(onResult: (r: { message?: string; error?: string }) =
     }
   }
 
-  function moveTo(j: JobView, techId: string | null, d: string | null, index: number) {
+  const change = (j: JobView, techId: string | null, d: string | null, index: number) => {
     const fromDate = j.scheduled_start ? localDate(new Date(j.scheduled_start), tz) : null;
-    save(
-      moveJobChange(
-        ctx,
-        {
-          job: { ...j, property: j.property ?? null },
-          tech: techId,
-          date: d,
-          index,
-          targetDay: techId && d ? dayJobsOf(techId, d) : [],
-          fromDay: j.assigned_user_id && fromDate ? dayJobsOf(j.assigned_user_id, fromDate) : [],
-          seesAll,
-          userId: me,
-        },
-        drive,
-      ),
+    return moveJobChange(
+      ctx,
+      {
+        job: { ...j, property: j.property ?? null },
+        tech: techId,
+        date: d,
+        index,
+        targetDay: techId && d ? dayJobsOf(techId, d) : [],
+        fromDay: j.assigned_user_id && fromDate ? dayJobsOf(j.assigned_user_id, fromDate) : [],
+        seesAll,
+        userId: me,
+      },
+      drive,
     );
+  };
+
+  // A plan's visit to another day or tech asks first (team and week spec section 5).
+  const planMove = usePlanMove({
+    companyId: company.id,
+    today: ctx.today,
+    timeZone: tz,
+    team,
+    show: (n) =>
+      onResult(n.tone === "error" ? { error: n.message } : { message: n.message, undo: n.undo }),
+  });
+
+  function moveTo(j: JobView, techId: string | null, d: string | null, index: number) {
+    planMove.move({
+      job: j,
+      to: { tech: techId, date: d },
+      move: () => save(change(j, techId, d, index)),
+      changes: () => change(j, techId, d, index),
+      before: (id) =>
+        jobs.find((x) => x.id === id) as unknown as Record<string, unknown> | undefined,
+    });
   }
 
   function open(job: JobView) {
@@ -133,26 +161,29 @@ export function useJobMove(onResult: (r: { message?: string; error?: string }) =
   }
 
   const element = (
-    <MoveSheet
-      job={moving}
-      techs={movers}
-      manager={manager}
-      today={ctx.today}
-      placesFor={(t, d, id) =>
-        dayJobsOf(t, d)
-          .filter((j) => j.id !== id)
-          .map((j) => ({
-            customer: j.customer?.name ?? "Customer",
-            time: j.scheduled_start ? formatTime(j.scheduled_start, tz) : null,
-          }))
-      }
-      onClose={() => setMoving(null)}
-      onMove={(t, d, index) => {
-        const job = jobs.find((j) => j.id === moving?.id);
-        setMoving(null);
-        if (job) moveTo(job, t, d, index);
-      }}
-    />
+    <>
+      {planMove.element}
+      <MoveSheet
+        job={moving}
+        techs={movers}
+        manager={manager}
+        today={ctx.today}
+        placesFor={(t, d, id) =>
+          dayJobsOf(t, d)
+            .filter((j) => j.id !== id)
+            .map((j) => ({
+              customer: j.customer?.name ?? "Customer",
+              time: j.scheduled_start ? formatTime(j.scheduled_start, tz) : null,
+            }))
+        }
+        onClose={() => setMoving(null)}
+        onMove={(t, d, index) => {
+          const job = jobs.find((j) => j.id === moving?.id);
+          setMoving(null);
+          if (job) moveTo(job, t, d, index);
+        }}
+      />
+    </>
   );
 
   return { open, moveTo, element, ctx, jobs, team, drive, seesAll, me };
@@ -168,7 +199,7 @@ export function JobSchedule({ jobId }: { jobId: string }) {
   const [suggesting, setSuggesting] = useState<{ list: SuggestedTime[]; note?: string } | null>(
     null,
   );
-  const [result, setResult] = useState<{ message?: string; error?: string } | null>(null);
+  const [result, setResult] = useState<MoveResult | null>(null);
   const [locking, setLocking] = useState<JobLock | null>(null);
   const mover = useJobMove(setResult);
   const { ctx, jobs, team, drive, seesAll, me, moveTo } = mover;
@@ -216,7 +247,19 @@ export function JobSchedule({ jobId }: { jobId: string }) {
   return (
     <Section title="Schedule">
       <Group>
-        <ListRow title="Tech" detail={techName} />
+        <ListRow
+          title="Tech"
+          detail={
+            job.assigned_user_id ? (
+              <TechValue
+                name={techName}
+                tech={team.find((t) => t.user_id === job.assigned_user_id)?.color}
+              />
+            ) : (
+              techName
+            )
+          }
+        />
         <ListRow
           title="When"
           detail={
@@ -258,9 +301,22 @@ export function JobSchedule({ jobId }: { jobId: string }) {
         ) : null}
       </Group>
       {result ? (
-        <T variant="secondary" style={{ color: result.error ? color.fail : color.pass }}>
-          {result.error ?? result.message}
-        </T>
+        <View style={styles.result}>
+          <T variant="secondary" style={{ flex: 1, color: result.error ? color.fail : color.pass }}>
+            {result.error ?? result.message}
+          </T>
+          {result.undo ? (
+            <Button
+              kind="quiet"
+              title="Undo"
+              onPress={() => {
+                const undo = result.undo;
+                setResult(null);
+                undo?.();
+              }}
+            />
+          ) : null}
+        </View>
       ) : null}
       {mover.element}
       {/* Locks (owner, 2026-10-20): what Optimize and Plan Week leave alone. */}
@@ -308,3 +364,7 @@ export function JobSchedule({ jobId }: { jobId: string }) {
     </Section>
   );
 }
+
+const styles = StyleSheet.create({
+  result: { flexDirection: "row", alignItems: "center", gap: space["2"] },
+});

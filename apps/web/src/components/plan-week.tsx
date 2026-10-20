@@ -9,11 +9,13 @@ import {
 } from "@/app/actions/week-plan";
 import { Sheet } from "./sheet";
 import { showBanner } from "./top-banner";
+import { TechDot } from "./tech-dot";
 import { Button, cx } from "./ui";
 
 // Plan Week (owner, 2026-10-20, docs/plans/route-maps.md: "build routes from scratch"): puts the
 // week's movable jobs on days for the least driving, for one tech or everyone, with one Undo for
-// the whole change. Owners and admins.
+// the whole change. Owners and admins. Its button reads Optimize Week (owner, 2026-10-20: Week
+// took over Routes, with Optimize for each day and Optimize Week for all of them).
 
 export const PLAN_WEEK_HELP =
   "Puts this week’s movable jobs on days for the least driving. Started, locked, two-tech and maintenance jobs stay where they are.";
@@ -43,7 +45,7 @@ export function PlanWeek({
 }: {
   /** The week on screen. */
   dates: string[];
-  techs: { id: string; name: string }[];
+  techs: { id: string; name: string; color?: string | null }[];
   /** The tech picked for the maps, else Everyone. */
   defaultTech: string | null;
   /** Jobs in Needs a Time with nobody on them (for the switch's detail). */
@@ -128,9 +130,9 @@ export function PlanWeek({
             className="size-4 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none motion-reduce:border-r-current motion-reduce:opacity-60"
           />
         ) : null}
-        {pending ? "Planning…" : "Plan Week"}
+        {pending ? "Optimizing…" : "Optimize Week"}
       </Button>
-      <Sheet open={open} onClose={close} title="Plan Week">
+      <Sheet open={open} onClose={close} title="Optimize Week">
         <div className="space-y-4 pt-1">
           {/* Who to plan for, as an iOS checklist with checkmarks: Everyone (all or none),
               then each tech. */}
@@ -156,6 +158,7 @@ export function PlanWeek({
                 <Check
                   key={t.id}
                   label={t.name}
+                  color={t.color}
                   checked={picked.includes(t.id)}
                   onClick={() => toggle(t.id)}
                 />
@@ -186,7 +189,7 @@ export function PlanWeek({
           ) : null}
           <p className="-mt-2 px-4 text-[0.9375rem] text-text-muted">{PLAN_WEEK_HELP}</p>
           <Button type="button" onClick={plan} disabled={!picked.length} className="w-full">
-            Plan Week
+            Optimize Week
           </Button>
         </div>
       </Sheet>
@@ -197,10 +200,13 @@ export function PlanWeek({
 /** A checklist row: the name, and a checkmark when it's chosen. */
 function Check({
   label,
+  color,
   checked,
   onClick,
 }: {
   label: string;
+  /** A tech's dot before their name. */
+  color?: string | null;
   checked: boolean;
   onClick: () => void;
 }) {
@@ -211,9 +217,10 @@ function Check({
         role="checkbox"
         aria-checked={checked}
         onClick={onClick}
-        className="flex min-h-11 w-full items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-text/[0.03] active:bg-text/[0.06]"
+        className="flex min-h-11 w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-text/[0.03] active:bg-text/[0.06]"
       >
-        <span>{label}</span>
+        {color ? <TechDot color={color} /> : null}
+        <span className="flex-1">{label}</span>
         <svg
           viewBox="0 0 24 24"
           aria-hidden="true"

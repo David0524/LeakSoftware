@@ -210,7 +210,7 @@ test("owner invites a tech, who joins and cannot reach settings", async ({ page,
   const tech = await guest.newPage();
   await tech.goto(new URL(link).pathname);
   await expect(tech.getByText(/invited you to Sundeck Pro as a tech/)).toBeVisible();
-  await tech.getByLabel("Your name").fill("E2E Tech");
+  await tech.getByLabel("Your name").fill(`E2E Tech ${RUN}`);
   await tech.getByLabel("Choose a password").fill("e2e-password-123");
   await tech.getByRole("button", { name: "Create Account and Join" }).click();
   await tech.waitForURL("**/today");
@@ -227,17 +227,35 @@ test("owner invites a tech, who joins and cannot reach settings", async ({ page,
   await expect(tech.getByText("This invite link is no longer valid.")).toBeVisible();
   await guest.close();
 
-  // The owner sees the new tech, then turns their access off (keeps reruns tidy).
+  // The owner sees the new tech in Team's one list (owner, 2026-10-20): their color's dot, name
+  // and role, and the On/Off switch at the row's end. Turning them off asks first (and keeps
+  // reruns tidy); they move under Turned off.
   await page.reload();
-  const person = page.locator("li").filter({ hasText: email });
-  await expect(person).toContainText("E2E Tech");
-  // The person's row opens their role and access in a sheet.
-  await person.getByRole("button").click();
-  const member = page.getByRole("dialog", { name: "E2E Tech" });
-  await member.getByLabel("Access").selectOption("disabled");
-  await member.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
-  await expect(person).toContainText("Turned off");
+  const person = page.getByTestId("member").filter({ hasText: `E2E Tech ${RUN}` });
+  await expect(person).toContainText("Tech");
+  await expect(person.getByTestId("tech-dot")).toBeVisible();
+  const on = person.getByRole("switch", { name: `E2E Tech ${RUN} on` });
+  await expect(on).toBeChecked();
+  await on.click();
+  await page
+    .getByRole("alertdialog", { name: /^Turn off E2E Tech/ })
+    .getByRole("button", { name: "Turn Off" })
+    .click();
+  await expect(page.getByTestId("top-banner")).toContainText("is turned off");
+  await page.reload();
+  await expect(
+    page
+      .locator("section")
+      .filter({ has: page.getByRole("heading", { name: "Turned off" }) })
+      .getByTestId("member")
+      .filter({ hasText: `E2E Tech ${RUN}` }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByTestId("member")
+      .filter({ hasText: `E2E Tech ${RUN}` })
+      .getByRole("switch"),
+  ).not.toBeChecked();
 });
 
 test("on a computer, Settings is a gear and More holds Customers, Invoices, and Chemicals", async ({
@@ -729,7 +747,7 @@ test("an owner invites an admin, who edits the price book but not billing or pay
   const admin = await guest.newPage();
   await admin.goto(new URL(link).pathname);
   await expect(admin.getByText(/invited you to Sundeck Pro as an admin/)).toBeVisible();
-  await admin.getByLabel("Your name").fill("E2E Admin");
+  await admin.getByLabel("Your name").fill(`E2E Admin ${RUN}`);
   await admin.getByLabel("Choose a password").fill("e2e-password-123");
   await admin.getByRole("button", { name: "Create Account and Join" }).click();
   await admin.waitForURL((url) => url.pathname !== new URL(link).pathname);
@@ -755,11 +773,16 @@ test("an owner invites an admin, who edits the price book but not billing or pay
 
   // The owner turns the test admin off again (keeps reruns tidy).
   await page.reload();
-  const person = page.locator("li").filter({ hasText: email });
+  const person = page.getByTestId("member").filter({ hasText: `E2E Admin ${RUN}` });
   await expect(person).toContainText("Admin");
-  await person.getByRole("button").click();
-  const member = page.getByRole("dialog", { name: "E2E Admin" });
-  await member.getByLabel("Access").selectOption("disabled");
-  await member.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Saved." })).toBeVisible();
+  // The profile has the switch too.
+  await person.getByRole("button", { name: new RegExp(`^E2E Admin ${RUN}`) }).click();
+  const member = page.getByRole("dialog", { name: `E2E Admin ${RUN}` });
+  await expect(member.getByRole("radiogroup", { name: `E2E Admin ${RUN}’s color` })).toBeVisible();
+  await member.getByRole("switch").click();
+  await page
+    .getByRole("alertdialog", { name: /^Turn off E2E Admin/ })
+    .getByRole("button", { name: "Turn Off" })
+    .click();
+  await expect(page.getByTestId("top-banner")).toContainText("is turned off");
 });

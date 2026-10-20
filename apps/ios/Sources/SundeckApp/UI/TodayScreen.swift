@@ -51,7 +51,8 @@
                     if day.ctx.isManager && day.techs.count > 1 {
                         FilterPills(
                             selection: Binding(get: { day.techId }, set: { pickTech($0) }),
-                            options: day.techs.map(\.id), label: { id in id == day.ctx.userId ? "Me" : day.name(id) }
+                            options: day.techs.map(\.id), label: { id in id == day.ctx.userId ? "Me" : day.name(id) },
+                            dot: { id in day.techs.first { $0.id == id }?.color }
                         )
                         .padding(.horizontal, -16)
                         .keepsHorizontalDrags()
@@ -151,7 +152,7 @@
                     if let weather { WeatherBadge(weather: weather) }
                 }
             }
-            // No "Next Stop in Apple Maps" here: the card's Directions does it (owner, 2026-10-20).
+            // No "Next Stop in Maps" here: the card's Directions does it (owner, 2026-10-20).
         }
 
         /// The summary, the card for the stop you're on (owner, 2026-10-20), then the stops: the

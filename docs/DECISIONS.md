@@ -18,6 +18,24 @@ Plan: `docs/plans/apple-maps.md`.
   `APPLE_MAPS_PRIVATE_KEY` are set, `mapbox` without them; `MAP_PROVIDER=mapbox` forces Mapbox.
   Until the keys exist nothing changes, desktop directions links included.
 
+## 2026-10-20: owner list g (team colors, Week with routes, the demo)
+
+Spec: `docs/design/2026-10-20-team-week.md`.
+- **Today's card:** the name opens the job only on a clean tap, and the address is plain text
+  (Directions is the round button).
+- **Team:** one list. Active members are A to Z; turned-off members follow, the most recent
+  first ("2. Is perfect"). The On/Off switch is on each row, and the profile holds Role and
+  Color.
+- **Tech colors:** ten palette colors (`color.tech`), one per member (`membership.color`),
+  shown as a dot by the name and a 4 pt stripe on schedule cards.
+- **Maps wording:** buttons say "Maps". The setting reads "Maps (Apple)" and "Maps (Google)".
+- **Moving a weekly visit** to another day or tech asks Change Schedule or Just This Visit
+  (`job.plan_moved`). Taking one off the schedule, or choosing Nobody yet, is a one-off and
+  doesn't ask.
+- **Routes is gone:** its work moved into Week, with a left sidebar on desktop (Needs a Time,
+  then Customers to Add). Desktop cards are one line.
+- **Demo:** `pnpm demo:reset` rebuilds the demo company on the dev project.
+
 ## 2026-10-20: owner list f (after TestFlight 1010)
 
 Spec: `docs/design/2026-10-20-gestures.md`.

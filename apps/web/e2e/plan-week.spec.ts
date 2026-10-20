@@ -152,8 +152,10 @@ test("a day lock set on the job shows on its schedule card", async ({ page }) =>
     .getByRole("region", { name: "Jake Turner" })
     .getByRole("article", { name: `9:00 AM, ${name("zoo")}` });
   // Cards show the lock as an icon, named for screen readers and on hover (owner, 2026-10-20).
-  await expect(card.getByTestId("lock-tag")).toHaveText("Day locked");
-  await expect(card.getByTestId("lock-tag")).toHaveAttribute("title", "Day locked");
+  // On a computer the card is one line (owner, 2026-10-20); the phone's card is hidden.
+  const lockTag = card.getByTestId("lock-tag").filter({ visible: true });
+  await expect(lockTag).toHaveText("Day locked");
+  await expect(lockTag).toHaveAttribute("title", "Day locked");
   await noBrokenMaps(page);
 
   // The week's card too.
@@ -162,11 +164,12 @@ test("a day lock set on the job shows on its schedule card", async ({ page }) =>
     page
       .getByTestId("stop")
       .filter({ hasText: name("zoo") })
-      .getByTestId("lock-tag"),
+      .getByTestId("lock-tag")
+      .filter({ visible: true }),
   ).toHaveText("Day locked");
 });
 
-test("Plan Week places a tech's own waiting jobs on a week ahead, and Undo puts them back", async ({
+test("Optimize Week (Plan Week) places a tech's own waiting jobs on a week ahead, and Undo puts them back", async ({
   page,
 }) => {
   test.setTimeout(180_000);
@@ -200,7 +203,7 @@ test("Plan Week places a tech's own waiting jobs on a week ahead, and Undo puts 
   await page.setViewportSize({ width: 1400, height: 1600 });
   await signIn(page, OWNER, "/jobs");
   await page.goto(`/schedule?view=week&date=${monday}&tech=${jake}`);
-  await expect(page.getByRole("heading", { name: /Routes|This Week/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Maps|This Week/ })).toBeVisible();
   await noBrokenMaps(page);
   // The map address answers without breaking anything: drawn, not set up, or used up.
   const res = await page.request.get(
@@ -208,8 +211,8 @@ test("Plan Week places a tech's own waiting jobs on a week ahead, and Undo puts 
   );
   expect([200, 429, 503]).toContain(res.status());
 
-  await page.getByRole("button", { name: "Plan Week" }).click();
-  const sheet = page.getByRole("dialog", { name: "Plan Week" });
+  await page.getByRole("button", { name: "Optimize Week" }).click();
+  const sheet = page.getByRole("dialog", { name: "Optimize Week" });
   await expect(sheet.getByText(/^Puts this week’s movable jobs on days/)).toBeVisible();
   // Who to plan for is a checklist (owner, 2026-10-20): Everyone selects or clears every tech,
   // and with none chosen Plan Week is dimmed.
@@ -217,7 +220,7 @@ test("Plan Week places a tech's own waiting jobs on a week ahead, and Undo puts 
   if ((await everyone.getAttribute("aria-checked")) !== "true") await everyone.click();
   await expect(sheet.getByText("Everyone", { exact: true }).first()).toBeVisible();
   await everyone.click();
-  await expect(sheet.getByRole("button", { name: "Plan Week" })).toBeDisabled();
+  await expect(sheet.getByRole("button", { name: "Optimize Week" })).toBeDisabled();
   await sheet.getByRole("checkbox", { name: "Jake Turner" }).click();
   await expect(sheet.getByRole("checkbox", { name: "Jake Turner" })).toHaveAttribute(
     "aria-checked",
@@ -226,7 +229,7 @@ test("Plan Week places a tech's own waiting jobs on a week ahead, and Undo puts 
   // Leave other jobs in Needs a Time where they are (the switch shows when any are waiting).
   const fromTray = sheet.getByRole("switch", { name: /Place Jobs from Needs a Time/ });
   if (await fromTray.count()) await fromTray.uncheck();
-  await sheet.getByRole("button", { name: "Plan Week" }).click();
+  await sheet.getByRole("button", { name: "Optimize Week" }).click();
 
   // The result is a banner at the top of the screen, with Undo (owner, 2026-10-20).
   const result = page.getByTestId("top-banner");
@@ -261,8 +264,8 @@ test("Plan Week places a tech's own waiting jobs on a week ahead, and Undo puts 
   expect(await row(other)).toEqual(otherBefore);
 
   // Two techs: the week is split evenly, and the banner's second line says how (section 7).
-  await page.getByRole("button", { name: "Plan Week" }).click();
-  const again = page.getByRole("dialog", { name: "Plan Week" });
+  await page.getByRole("button", { name: "Optimize Week" }).click();
+  const again = page.getByRole("dialog", { name: "Optimize Week" });
   const all = again.getByRole("checkbox", { name: "Everyone" });
   if ((await all.getAttribute("aria-checked")) === "true") await all.click();
   for (const who of ["Jake Turner", "Luis"]) {
@@ -272,7 +275,7 @@ test("Plan Week places a tech's own waiting jobs on a week ahead, and Undo puts 
   await expect(again.getByText("2 Techs")).toBeVisible();
   const tray = again.getByRole("switch", { name: /Place Jobs from Needs a Time/ });
   if (await tray.count()) await tray.uncheck();
-  await again.getByRole("button", { name: "Plan Week" }).click();
+  await again.getByRole("button", { name: "Optimize Week" }).click();
   const split = page.getByTestId("top-banner");
   await expect(split).toContainText(
     /Jake Turner \d+ jobs? · Luis[^·]* \d+ jobs?|Luis[^·]* \d+ jobs? · Jake Turner \d+ jobs?/,

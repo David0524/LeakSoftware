@@ -37,3 +37,4 @@ export * from "./week-plan";
 export * from "./day-map";
 export * from "./service-days";
 export * from "./download";
+export * from "./team";

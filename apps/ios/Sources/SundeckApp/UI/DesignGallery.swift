@@ -138,7 +138,7 @@
                 }
                 HStack(spacing: 8) {
                     Button("Optimize") {}.buttonStyle(.secondary(fullWidth: true))
-                    Button("Apple Maps") {}.buttonStyle(.secondary(fullWidth: true))
+                    Button("Maps") {}.buttonStyle(.secondary(fullWidth: true))
                 }
                 Button {
                 } label: {
@@ -219,7 +219,7 @@
                     ListRow("Directions open in") {
                         CompactSelect(
                             title: "Directions open in", selection: $directions,
-                            options: ["Automatic", "Apple Maps", "Google Maps"], optionLabel: { $0 })
+                            options: ["Automatic", "Maps (Apple)", "Maps (Google)"], optionLabel: { $0 })
                     }
                     SwitchRow("Text the customer", detail: "When you're on your way", isOn: $textCustomer)
                     SwitchRow("Reminders", isOn: $reminders)

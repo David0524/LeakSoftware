@@ -60,8 +60,8 @@ const SETTLE = { duration: 350, dampingRatio: 1 } as const;
 /**
  * Today's card for the stop the tech is on (owner, 2026-10-20; docs/plans/today-hero.md), as
  * the website's today-hero.tsx: the Live Activity (here, Android's current-stop notification)
- * brought into the app, in its water blue. The name opens the job, the address opens
- * directions, and the main button is the moment's (Start, or Open Checklist with Mark
+ * brought into the app, in its water blue. The name opens the job, the address is plain text
+ * (Directions is the round button), and the main button is the moment's (Start, or Open Checklist with Mark
  * Complete). Before leaving and while driving, Start shares one row with the round buttons
  * (Message, Call, Directions); on site they sit on the "Next: …" line (owner, 2026-10-20).
  * On My Way lives in Message (docs/design/2026-10-20-gestures.md section 2), so there's one
@@ -230,11 +230,16 @@ export const TodayHeroCard = memo(function TodayHeroCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shownId]);
 
+  // A swipe is not a tap (team and week spec section 1): the name and the card's buttons are
+  // React Native Pressables, and when this Pan activates (10 pt sideways) gesture handler's root
+  // handler is cancelled, which sends the JS responder a cancel (Android:
+  // RNGestureHandlerRootHelper.RootViewGestureHandler.onCancel → onChildStartedNativeGesture;
+  // iOS: RNRootViewGestureRecognizer), so no Pressable acts on the lift.
   const pan = useMemo(
     () =>
       Gesture.Pan()
         // Sideways only: a drag that goes up or down first is left to the page's scroll.
-        .activeOffsetX([-12, 12])
+        .activeOffsetX([-10, 10])
         .failOffsetY([-12, 12])
         .onUpdate((e) => {
           if (reduceMotion) return;
@@ -402,13 +407,13 @@ export const TodayHeroCard = memo(function TodayHeroCard({
         {details ? (
           <View style={styles.details}>
             {address ? (
-              // Plain text that opens directions, as iOS shows a tappable address; a warning
-              // symbol right after it when the map can't find it (owner, 2026-10-20).
-              <Pressable
-                accessibilityRole="link"
-                accessibilityLabel={`${address}${notOnMap ? `, ${NOT_ON_MAP.title}` : ""}, directions in Maps`}
-                onPress={() => onDirections(job)}
-                style={({ pressed }) => [styles.detail, pressed && { opacity: 0.6 }]}
+              // Plain text, not a link: Directions is the round button (owner, 2026-10-20; team
+              // and week spec section 1). A warning symbol right after it when the map can't
+              // find it.
+              <View
+                accessible
+                accessibilityLabel={`${address}${notOnMap ? `, ${NOT_ON_MAP.title}` : ""}`}
+                style={styles.detail}
               >
                 <DetailIcon name="pin" lineHeight={type.body.lineHeight} />
                 <View style={[styles.detailText, styles.addressLine]}>
@@ -422,7 +427,7 @@ export const TodayHeroCard = memo(function TodayHeroCard({
                     <NotOnMapTag size={17} lineHeight={type.body.lineHeight} onWater />
                   ) : null}
                 </View>
-              </Pressable>
+              </View>
             ) : null}
             {c.access ? (
               <View accessible accessibilityLabel={`Access: ${c.access}`} style={styles.detail}>

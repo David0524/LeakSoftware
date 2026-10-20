@@ -10,7 +10,7 @@
     /// Activity brought into the app, in its water blue, from the same rule (core `todayHero`), so
     /// the Lock Screen and the card always pick the same stop. The top names the moment ("At the
     /// pool · Stop 2 of 3", core `heroHeadline`); the customer's name opens the job; the address
-    /// opens directions. Before leaving and on the way, the Next line is words only and one row
+    /// is plain text (Directions is the round button). Before leaving and on the way, the Next line is words only and one row
     /// holds Start (owner, 2026-10-20: "not every tech is going to use every function all the
     /// time"; "Change 'start job' to 'start'") with Message (the On My Way text when it's the
     /// tech's to send; no car, owner 2026-10-20), Call and Directions after it. On site the round
@@ -247,32 +247,26 @@
             .fixedSize(horizontal: typeSize < .accessibility1, vertical: false)
         }
 
-        /// The address (it opens directions) with the warning symbol after it when it wasn't found
+        /// The address (plain text) with the warning symbol after it when it wasn't found
         /// on the map, the access notes, and the customer's and pool's notes, each after a 15 pt
         /// symbol in a 20 pt column so the text lines up.
         private func details(_ job: ScheduleJob, _ c: LiveStopContent) -> some View {
             VStack(alignment: .leading, spacing: 6) {
                 if !job.address.isEmpty {
-                    Button {
-                        if let url = directionsURL(job.place, app: MapsApp(sync.kv)) { openURL(url) }
-                    } label: {
-                        // Left out of drive times until its address is found: just the symbol
-                        // (owner, 2026-10-20: "Don't waste space with text").
-                        let missing = day.routing && job.mapMissing
-                        detail("mappin.and.ellipse") {
-                            (Text(job.address) + (missing ? NotOnMapTag.text(color: .white) : Text("")))
-                                .textRole(.body)
-                                .fontWeight(.medium)
-                                .foregroundStyle(Color.white)
-                                .multilineTextAlignment(.leading)
-                        }
-                        .frame(minHeight: minTarget, alignment: .leading)
-                        .contentShape(Rectangle())
+                    // Plain text, not a link (owner, 2026-10-20: "The address should no longer be
+                    // clickable on this [tile]"): Directions is the round button. Left out of
+                    // drive times until its address is found: just the symbol (owner, 2026-10-20:
+                    // "Don't waste space with text").
+                    let missing = day.routing && job.mapMissing
+                    detail("mappin.and.ellipse") {
+                        (Text(job.address) + (missing ? NotOnMapTag.text(color: .white) : Text("")))
+                            .textRole(.body)
+                            .fontWeight(.medium)
+                            .foregroundStyle(Color.white)
+                            .multilineTextAlignment(.leading)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(
-                        "\(job.address)\(day.routing && job.mapMissing ? ", \(NotOnMap.title.lowercased())" : ""), directions in Maps"
-                    )
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("\(job.address)\(missing ? ", \(NotOnMap.title.lowercased())" : "")")
                     .accessibilitySortPriority(1)
                 }
                 // Already in the card's sentence for VoiceOver.

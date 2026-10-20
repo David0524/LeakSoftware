@@ -68,6 +68,7 @@ import { SwipeActions, SwipeLeading, SwipeToDelete } from "./SwipeRow";
 import { editRowMenu, type RowMenu } from "./editMenu";
 import type { RowGestures } from "./RowMenu";
 import { useNoSwipe } from "./SwipeNav";
+import { TechDot } from "./TechDot";
 import { FormKeyboardBar, KEYBOARD_BAR_HEIGHT, KeyboardAvoider, useKeyboardOpen } from "./keyboard";
 import { chooseAction } from "./confirm";
 import { phoneEdit } from "../lib/phoneTyping";
@@ -654,7 +655,8 @@ export function FilterPills<V extends string>({
   onChange,
   label,
 }: {
-  options: { value: V; label: string }[];
+  /** `dot`: a tech's color key, drawn as their dot before the name (team and week spec 3). */
+  options: { value: V; label: string; dot?: string | null }[];
   value: V;
   onChange: (v: V) => void;
   /** For screen readers ("Status", "Whose day"). */
@@ -672,6 +674,7 @@ export function FilterPills<V extends string>({
         <PillButton
           key={o.value}
           label={o.label}
+          dot={o.dot}
           selected={o.value === value}
           onPress={() => {
             if (o.value === value) return;
@@ -686,10 +689,12 @@ export function FilterPills<V extends string>({
 
 function PillButton({
   label,
+  dot,
   selected,
   onPress,
 }: {
   label: string;
+  dot?: string | null;
   selected: boolean;
   onPress: () => void;
 }) {
@@ -701,10 +706,14 @@ function PillButton({
       android_ripple={{ color: color.ripple }}
       style={({ pressed }) => [
         styles.pill,
+        dot !== undefined && styles.pillDot,
         { backgroundColor: selected ? color.primary : color.fill },
         pressed && !selected && { opacity: 0.7 },
       ]}
     >
+      {dot !== undefined ? (
+        <TechDot tech={dot} ring={selected ? color.onPrimary : undefined} />
+      ) : null}
       <Text
         style={[type.bodyMedium, { color: selected ? color.onPrimary : color.text }]}
         maxFontSizeMultiplier={MAX_TEXT_SCALE}
@@ -1129,10 +1138,13 @@ export function SwitchControl({
   value,
   onValueChange,
   label,
+  disabled = false,
 }: {
   value: boolean;
   onValueChange: (v: boolean) => void;
   label: string;
+  /** Shown but can't be changed (Team: your own switch). */
+  disabled?: boolean;
 }) {
   const [pos] = useState(() => new Animated.Value(value ? 1 : 0));
   useEffect(() => {
@@ -1143,17 +1155,19 @@ export function SwitchControl({
     return (
       <Switch
         value={value}
+        disabled={disabled}
         onValueChange={onValueChange}
         accessibilityLabel={label}
         accessibilityRole="switch"
-        accessibilityState={{ checked: value }}
+        accessibilityState={{ checked: value, disabled }}
       />
     );
   return (
     <Pressable
       accessibilityRole="switch"
       accessibilityLabel={label}
-      accessibilityState={{ checked: value }}
+      accessibilityState={{ checked: value, disabled }}
+      disabled={disabled}
       onPress={() => {
         haptics.selection();
         onValueChange(!value);
@@ -1962,6 +1976,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     overflow: "hidden",
   },
+  pillDot: { flexDirection: "row", alignItems: "center", gap: space["2"] },
   field: { gap: space["1"] },
   input: {
     minHeight: minTap,

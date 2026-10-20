@@ -29,6 +29,8 @@ import {
   sortJobs,
   type CleaningKind,
   type JobSort,
+  techColor,
+  type TechColor,
 } from "@leakbook/core";
 import type { Office } from "./auth";
 import { createClient } from "./supabase/server";
@@ -54,6 +56,10 @@ export interface TeamMember {
   membership_id: string;
   name: string;
   email: string | null;
+  /** Their color (Settings › Team), a palette key: a dot before their name everywhere. */
+  color: TechColor;
+  /** When they were turned off, for Team's order. */
+  disabled_at: string | null;
 }
 
 /** Cached per request: several parts of a page ask for the team. */
@@ -64,7 +70,7 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
     await supabase
       .from("membership")
       .select(
-        "id, user_id, role, status, profile:profile!membership_user_profile_fkey(id, full_name, email)",
+        "id, user_id, role, status, color, disabled_at, profile:profile!membership_user_profile_fkey(id, full_name, email)",
       )
       .eq("company_id", office.company.id)
       .is("deleted_at", null),
@@ -73,6 +79,8 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
     user_id: string;
     role: "owner" | "admin" | "tech";
     status: "active" | "disabled";
+    color: string | null;
+    disabled_at: string | null;
     profile: { id: string; full_name: string | null; email: string | null } | null;
   }[];
   const profiles = members.flatMap((m) => (m.profile ? [m.profile] : []));
@@ -87,6 +95,8 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
         status: m.status,
         name: p?.full_name || p?.email || "Teammate",
         email: p?.email ?? null,
+        color: techColor(m.color),
+        disabled_at: m.disabled_at ?? null,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -101,6 +111,8 @@ export interface JobRow extends Job {
   customer: Customer | null;
   techName: string | null;
   secondTechName: string | null;
+  /** The tech's color, for the dot before their name. */
+  techColor: TechColor | null;
 }
 
 /**
@@ -125,6 +137,7 @@ async function attach(office: Office, jobs: EmbeddedJob[]): Promise<JobRow[]> {
   if (jobs.every((j) => j.property !== undefined)) {
     const team = await getTeam(office);
     const techById = new Map(team.map((t) => [t.user_id, t.name]));
+    const colorById = new Map(team.map((t) => [t.user_id, t.color]));
     return jobs.map(({ property: embedded, bill_to, ...j }) => {
       const { owner, ...property } = embedded ?? ({} as Property & { owner?: Customer | null });
       return {
@@ -133,6 +146,7 @@ async function attach(office: Office, jobs: EmbeddedJob[]): Promise<JobRow[]> {
         customer: bill_to ?? owner ?? null,
         techName: j.assigned_user_id ? (techById.get(j.assigned_user_id) ?? "Teammate") : null,
         secondTechName: j.second_tech_id ? (techById.get(j.second_tech_id) ?? "Teammate") : null,
+        techColor: j.assigned_user_id ? (colorById.get(j.assigned_user_id) ?? null) : null,
       };
     });
   }
@@ -160,6 +174,7 @@ async function attach(office: Office, jobs: EmbeddedJob[]): Promise<JobRow[]> {
   const propById = new Map(properties.map((p) => [p.id, p]));
   const custById = new Map(customers.map((c) => [c.id, c]));
   const techById = new Map(team.map((t) => [t.user_id, t.name]));
+  const colorById = new Map(team.map((t) => [t.user_id, t.color]));
   return jobs.map((j) => {
     const property = propById.get(j.property_id) ?? null;
     return {
@@ -170,6 +185,7 @@ async function attach(office: Office, jobs: EmbeddedJob[]): Promise<JobRow[]> {
         (property ? (custById.get(property.customer_id) ?? null) : null),
       techName: j.assigned_user_id ? (techById.get(j.assigned_user_id) ?? "Teammate") : null,
       secondTechName: j.second_tech_id ? (techById.get(j.second_tech_id) ?? "Teammate") : null,
+      techColor: j.assigned_user_id ? (colorById.get(j.assigned_user_id) ?? null) : null,
     };
   });
 }

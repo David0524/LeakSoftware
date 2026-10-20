@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
-import { Alert, Share, StyleSheet, View } from "react-native";
+import { Alert, Pressable, Share, StyleSheet, Text, View } from "react-native";
 import {
   ROLE_LABELS,
+  TECH_COLORS,
   assignableRoles,
   canMakeJobs,
   requiresFinishPhoto,
   requiresFinishedChecklist,
   roleLabel,
   seesAllJobs,
+  teamOrder,
   type Role,
+  type TechColor,
 } from "@leakbook/core";
 import { useTeam, type TeamMember } from "../../data/schedule";
 import {
@@ -29,13 +32,15 @@ import {
   ListRow,
   Section,
   Segmented,
+  SwitchControl,
   T,
   Toggle,
 } from "../../ui/components";
 import { chooseAction, confirmDestructive } from "../../ui/confirm";
 import { haptics } from "../../ui/haptics";
-import { Select } from "../../ui/Select";
-import { space } from "../../ui/theme";
+import { TechDot, techHex } from "../../ui/TechDot";
+import { WebIcon } from "../../ui/WebIcon";
+import { color, face, MAX_TEXT_SCALE, minTap, space, type } from "../../ui/theme";
 import {
   EditSheet,
   FormActions,
@@ -45,10 +50,13 @@ import {
   useEditSheet,
 } from "./SettingsList";
 
-// Settings › Team (the website's settings/team): what techs can do (owners), open invites, and
-// the people, each person's role and access changed in a sheet, and each person's profile
-// (owner, 2026-10-20). Memberships, profiles, and the shop's settings are synced rows; invites
-// are server rows, made with the website's functions.
+// Settings › Team (the website's settings/team): what techs can do (owners), then the people as
+// one list (owner, 2026-10-20; docs/design/2026-10-20-team-week.md section 2): the active A to
+// Z, then those turned off, most recently first (core teamOrder). Each row has the tech's color
+// dot, name, role and an On/Off switch; tapping it opens the profile with Role, Color and the
+// switch again. Open invites stay in their own section under the list. Memberships, profiles,
+// and the shop's settings are synced rows; invites are server rows, made with the website's
+// functions.
 
 const ABOUT: Record<Role, string> = {
   owner: "Everything, including Sundeck Pro billing, payments setup, and who has which role.",
@@ -77,6 +85,37 @@ function TeamPage() {
   const owner = membership?.role === "owner";
   const team = useTeam(company.id);
   const sheet = useEditSheet<TeamMember>();
+  // Turned off on this phone, until the server's disabled_at syncs back: first in the list.
+  const [offAt, setOffAt] = useState<Map<string, string>>(() => new Map());
+  const order = teamOrder(
+    team.map((m) => ({
+      ...m,
+      disabled_at: m.disabled_at ?? offAt.get(m.membership_id) ?? null,
+    })),
+  );
+  /** Owners and admins change anyone's access but their own, and only owners an owner's. */
+  const canSwitch = (m: TeamMember) => m.user_id !== user?.id && (owner || m.role !== "owner");
+  function setAccess(m: TeamMember, on: boolean) {
+    const write = () => {
+      getServices().sync.write("membership", m.membership_id, company.id, {
+        status: on ? "active" : "disabled",
+      });
+      setOffAt((was) => {
+        const next = new Map(was);
+        if (on) next.delete(m.membership_id);
+        else next.set(m.membership_id, new Date().toISOString());
+        return next;
+      });
+      haptics.success();
+      sheet.done(on ? `${m.name} is on.` : `${m.name} is turned off.`);
+    };
+    if (on) return write();
+    confirmDestructive({
+      title: `Turn off ${m.name}? They can’t sign in, and their coming jobs stay as they are.`,
+      confirm: "Turn Off",
+      onConfirm: write,
+    });
+  }
   const profiles = useTeamProfiles(company.id);
   const profileOf = new Map(profiles.filter((p) => p.user_id).map((p) => [p.user_id!, p]));
   const others = profiles.filter((p) => !p.user_id).sort((a, b) => a.name.localeCompare(b.name));
@@ -149,6 +188,81 @@ function TeamPage() {
         subtitle="Techs run jobs on the phone. Admins run the office. Owners also handle billing, payments setup, and roles."
         notice={sheet.notice}
       >
+        <Section title="Active">
+          <Group separatorInset={space["4"] + 10 + space["3"]}>
+            {order.active.map((m) => (
+              <MemberRow
+                key={m.membership_id}
+                member={m}
+                you={m.user_id === user?.id}
+                canSwitch={canSwitch(m)}
+                onSwitch={(on) => setAccess(m, on)}
+                onPress={() => setEditingProfile({ member: m, profile: profileOf.get(m.user_id) })}
+              />
+            ))}
+          </Group>
+        </Section>
+
+        {order.off.length ? (
+          <Section title="Turned off">
+            <Group separatorInset={space["4"] + 10 + space["3"]}>
+              {order.off.map((m) => (
+                <MemberRow
+                  key={m.membership_id}
+                  member={m}
+                  you={m.user_id === user?.id}
+                  canSwitch={canSwitch(m)}
+                  onSwitch={(on) => setAccess(m, on)}
+                  onPress={() =>
+                    setEditingProfile({ member: m, profile: profileOf.get(m.user_id) })
+                  }
+                />
+              ))}
+            </Group>
+          </Section>
+        ) : null}
+
+        <Section
+          title="Open invites"
+          footer={
+            invites?.length
+              ? "Send the link by text or email. It works once, for that email address, for 14 days."
+              : invites
+                ? "No open invites."
+                : "Open invites show when there’s a signal."
+          }
+        >
+          <Group>
+            {(invites ?? []).map((i) => (
+              <ListRow
+                key={i.id}
+                title={i.email}
+                detail={roleLabel(i.role)}
+                accessibilityHint="Share the link or revoke the invite"
+                onPress={() => inviteActions(i)}
+              />
+            ))}
+            <ListRow title="+ Invite Someone" tone="link" onPress={() => setInviting(true)} />
+          </Group>
+        </Section>
+
+        <Section
+          title="Without the app"
+          footer="Profiles for people who work for you without using the app. Only owners and admins see them."
+        >
+          <Group>
+            {others.map((p) => (
+              <ListRow
+                key={p.id}
+                title={p.name}
+                subtitle={[p.phone, "No app"].filter(Boolean).join(" · ")}
+                onPress={() => setEditingProfile({ profile: p })}
+              />
+            ))}
+            <ListRow title="Add Person" tone="link" onPress={() => setEditingProfile({})} />
+          </Group>
+        </Section>
+
         <Section title="What techs can do">
           {owner ? (
             <View style={{ gap: space["3"] }}>
@@ -207,81 +321,6 @@ function TeamPage() {
             </View>
           </Group>
         </Section>
-
-        <Section
-          title="Open invites"
-          footer={
-            invites?.length
-              ? "Send the link by text or email. It works once, for that email address, for 14 days."
-              : invites
-                ? "No open invites."
-                : "Open invites show when there’s a signal."
-          }
-        >
-          <Group>
-            {(invites ?? []).map((i) => (
-              <ListRow
-                key={i.id}
-                title={i.email}
-                detail={roleLabel(i.role)}
-                accessibilityHint="Share the link or revoke the invite"
-                onPress={() => inviteActions(i)}
-              />
-            ))}
-            <ListRow title="+ Invite Someone" tone="link" onPress={() => setInviting(true)} />
-          </Group>
-        </Section>
-
-        <Section title="People">
-          <Group>
-            {team.map((m) => (
-              <ListRow
-                key={m.membership_id}
-                onPress={() => sheet.open(m)}
-                detail={roleLabel(m.role) + (m.status === "disabled" ? " · Turned off" : "")}
-              >
-                <T>
-                  {m.name}
-                  {m.user_id === user?.id ? <T muted> (you)</T> : null}
-                </T>
-                {m.email ? (
-                  <T variant="secondary" muted>
-                    {m.email}
-                  </T>
-                ) : null}
-              </ListRow>
-            ))}
-          </Group>
-        </Section>
-
-        <Section
-          title="Profiles"
-          footer="Each person’s phone, email, address, emergency contact, and notes. Only owners and admins see them."
-        >
-          <Group>
-            {team.map((m) => {
-              const profile = profileOf.get(m.user_id);
-              return (
-                <ListRow
-                  key={`profile-${m.membership_id}`}
-                  title={profile?.name ?? m.name}
-                  subtitle={profile?.phone ?? undefined}
-                  detail={profile ? undefined : "Add Details"}
-                  onPress={() => setEditingProfile({ member: m, profile })}
-                />
-              );
-            })}
-            {others.map((p) => (
-              <ListRow
-                key={p.id}
-                title={p.name}
-                subtitle={[p.phone, "No app"].filter(Boolean).join(" · ")}
-                onPress={() => setEditingProfile({ profile: p })}
-              />
-            ))}
-            <ListRow title="Add Person" tone="link" onPress={() => setEditingProfile({})} />
-          </Group>
-        </Section>
       </SettingsList>
       <EditSheet
         open={editingProfile != null}
@@ -291,20 +330,20 @@ function TeamPage() {
         {editingProfile ? (
           <ProfileForm
             target={editingProfile}
+            owner={owner}
+            canSwitch={editingProfile.member ? canSwitch(editingProfile.member) : false}
+            on={
+              editingProfile.member
+                ? (team.find((m) => m.membership_id === editingProfile.member!.membership_id)
+                    ?.status ?? editingProfile.member.status) === "active"
+                : true
+            }
+            onSwitch={(on) => editingProfile.member && setAccess(editingProfile.member, on)}
             onDone={(message) => {
               setEditingProfile(null);
               sheet.done(message);
             }}
           />
-        ) : null}
-      </EditSheet>
-      <EditSheet
-        open={sheet.editing != null && sheet.editing !== "new"}
-        title={sheet.editing && sheet.editing !== "new" ? sheet.editing.name : ""}
-        onClose={sheet.close}
-      >
-        {sheet.editing && sheet.editing !== "new" ? (
-          <MemberForm member={sheet.editing} owner={owner} onDone={sheet.done} />
         ) : null}
       </EditSheet>
       <EditSheet open={inviting} title="Invite Someone" onClose={() => setInviting(false)}>
@@ -388,9 +427,28 @@ interface ProfileTarget {
  * A person's profile (owner, 2026-10-20): name, phone, email, address, emergency contact, and
  * notes, as the website's Settings › Team › Profiles.
  */
-function ProfileForm({ target, onDone }: { target: ProfileTarget; onDone: (m: string) => void }) {
+function ProfileForm({
+  target,
+  owner,
+  canSwitch,
+  on,
+  onSwitch,
+  onDone,
+}: {
+  target: ProfileTarget;
+  /** Only owners change roles (the database refuses it for anyone else too). */
+  owner: boolean;
+  canSwitch: boolean;
+  /** Their access now (the switch acts at once, asking before turning off). */
+  on: boolean;
+  onSwitch: (on: boolean) => void;
+  onDone: (m: string) => void;
+}) {
   const company = useCompany();
   const { member, profile } = target;
+  const roles = assignableRoles(owner ? "owner" : "admin");
+  const [role, setRole] = useState<Role>(member?.role ?? "tech");
+  const [tech, setTech] = useState<TechColor>(member?.color ?? "slate");
   const [f, setF] = useState<TeamProfileForm>({
     name: profile?.name ?? member?.name ?? "",
     phone: profile?.phone ?? "",
@@ -406,11 +464,19 @@ function ProfileForm({ target, onDone }: { target: ProfileTarget; onDone: (m: st
     const checked = teamProfileValues(f);
     if ("fields" in checked) return setErrors(checked.fields);
     setErrors({});
-    saveTeamProfile(
-      company.id,
-      checked.values,
-      profile ? { id: profile.id } : { userId: member?.user_id ?? null },
-    );
+    const { sync } = getServices();
+    sync.batch(() => {
+      saveTeamProfile(
+        company.id,
+        checked.values,
+        profile ? { id: profile.id } : { userId: member?.user_id ?? null },
+      );
+      if (member && (role !== member.role || tech !== member.color))
+        sync.write("membership", member.membership_id, company.id, {
+          ...(owner && role !== member.role ? { role } : {}),
+          color: tech,
+        });
+    });
     haptics.success();
     onDone(profile ? "Saved." : `Added ${checked.values.name}.`);
   }
@@ -470,6 +536,42 @@ function ProfileForm({ target, onDone }: { target: ProfileTarget; onDone: (m: st
           maxLength={4000}
         />
       </FieldGroup>
+      {member ? (
+        <>
+          {roles.length < 2 || (member.role === "owner" && !owner) ? (
+            <View style={{ gap: 4 }}>
+              <T variant="bodyMedium">Role: {ROLE_LABELS[role]}</T>
+              <T variant="secondary" muted>
+                {ABOUT[role]}
+              </T>
+            </View>
+          ) : (
+            <View style={{ gap: 4 }}>
+              <Segmented
+                label="Role"
+                value={role}
+                onChange={setRole}
+                options={roles.map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
+              />
+              <T variant="secondary" muted>
+                {ABOUT[role]}
+              </T>
+            </View>
+          )}
+          <ColorPicker value={tech} onChange={setTech} />
+          <Group>
+            <View style={[styles.switchRow, !canSwitch && { opacity: 0.5 }]}>
+              <T style={{ flex: 1 }}>{on ? "On" : "Off"}</T>
+              <SwitchControl
+                value={on}
+                disabled={!canSwitch}
+                label={`${member.name}, ${on ? "on" : "off"}`}
+                onValueChange={onSwitch}
+              />
+            </View>
+          </Group>
+        </>
+      ) : null}
       <FormActions
         submit={profile ? "Save" : "Save Profile"}
         onSubmit={save}
@@ -491,73 +593,115 @@ function ProfileForm({ target, onDone }: { target: ProfileTarget; onDone: (m: st
   );
 }
 
-function MemberForm({
-  member,
-  owner,
-  onDone,
+/**
+ * A person in the list: their color dot, name (17) and role (15) under it, and at the right the
+ * On/Off switch (disabled for yourself, and for an owner when you're an admin). Tapping the row
+ * opens their profile.
+ */
+function MemberRow({
+  member: m,
+  you,
+  canSwitch,
+  onSwitch,
+  onPress,
 }: {
   member: TeamMember;
-  owner: boolean;
-  onDone: (m: string) => void;
+  you: boolean;
+  canSwitch: boolean;
+  onSwitch: (on: boolean) => void;
+  onPress: () => void;
 }) {
-  const company = useCompany();
-  const roles = assignableRoles(owner ? "owner" : "admin");
-  const [role, setRole] = useState<Role>(member.role);
-  const [status, setStatus] = useState(member.status);
-  function save() {
-    // Only owners change roles (the database refuses it for anyone else too).
-    getServices().sync.write("membership", member.membership_id, company.id, {
-      ...(owner ? { role } : {}),
-      status,
-    });
-    haptics.success();
-    onDone("Saved.");
-  }
+  const on = m.status === "active";
   return (
-    <>
-      {member.email ? (
-        <T variant="secondary" muted>
-          {member.email}
-        </T>
-      ) : null}
-      {roles.length < 2 ? (
-        <View style={{ gap: 4 }}>
-          <T variant="bodyMedium">Role: {ROLE_LABELS[role]}</T>
-          <T variant="secondary" muted>
-            {ABOUT[role]}
-          </T>
-        </View>
-      ) : (
-        <View style={{ gap: 4 }}>
-          <Segmented
-            label="Role"
-            value={role}
-            onChange={setRole}
-            options={roles.map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
+    <ListRow
+      onPress={onPress}
+      chevron={false}
+      accessibilityLabel={`${m.name}${you ? " (you)" : ""}, ${roleLabel(m.role)}`}
+      accessibilityHint="Opens their profile"
+      leading={<TechDot tech={m.color} />}
+      trailing={
+        <View style={!canSwitch && { opacity: 0.5 }}>
+          <SwitchControl
+            value={on}
+            disabled={!canSwitch}
+            label={`${m.name}, ${on ? "on" : "off"}`}
+            onValueChange={onSwitch}
           />
-          <T variant="secondary" muted>
-            {ABOUT[role]}
-          </T>
         </View>
-      )}
-      {member.role === "owner" && !owner ? (
-        <OwnerOnly />
-      ) : (
-        <Select
-          label="Access"
-          value={status}
-          onChange={setStatus}
-          options={[
-            { value: "active", label: "Active" },
-            { value: "disabled", label: "Turned off" },
-          ]}
-        />
-      )}
-      <FormActions submit="Save" onSubmit={save} />
-    </>
+      }
+    >
+      <T>
+        {m.name}
+        {you ? <T muted> (you)</T> : null}
+      </T>
+      <T variant="secondary" muted>
+        {roleLabel(m.role)}
+      </T>
+    </ListRow>
+  );
+}
+
+/** Color: the ten tech colors as 44 pt swatches with their names; the chosen one is checked. */
+function ColorPicker({ value, onChange }: { value: TechColor; onChange: (c: TechColor) => void }) {
+  return (
+    <View style={{ gap: space["2"] }} accessibilityRole="radiogroup" accessibilityLabel="Color">
+      <T variant="bodyMedium">Color</T>
+      <View style={styles.swatches}>
+        {TECH_COLORS.map((c) => {
+          const chosen = c.key === value;
+          return (
+            <Pressable
+              key={c.key}
+              accessibilityRole="radio"
+              accessibilityLabel={c.label}
+              accessibilityState={{ checked: chosen }}
+              onPress={() => {
+                if (chosen) return;
+                haptics.selection();
+                onChange(c.key);
+              }}
+              style={styles.swatch}
+            >
+              <View style={[styles.swatchDot, { backgroundColor: techHex(c.key) }]}>
+                {chosen ? (
+                  <WebIcon name="check" size={18} color={color.paper} strokeWidth={3} />
+                ) : null}
+              </View>
+              <Text
+                style={[
+                  type.footnote,
+                  chosen ? face.semiBold : face.regular,
+                  { color: color.text },
+                ]}
+                maxFontSizeMultiplier={MAX_TEXT_SCALE}
+                numberOfLines={1}
+              >
+                {c.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   setting: { paddingHorizontal: space["4"], paddingBottom: space["3"] },
+  switchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    minHeight: minTap,
+    paddingHorizontal: space["4"],
+    paddingVertical: space["2"],
+  },
+  swatches: { flexDirection: "row", flexWrap: "wrap", gap: space["2"] },
+  swatch: { width: 60, minHeight: minTap + 22, alignItems: "center", gap: 4 },
+  swatchDot: {
+    width: minTap,
+    height: minTap,
+    borderRadius: minTap / 2,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

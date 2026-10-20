@@ -66,18 +66,45 @@ public struct TeamMember: Equatable, Sendable, Identifiable {
     public var id: String
     public var name: String
     public var active: Bool
+    /// Their color (owner, 2026-10-20: "a dot beside their name"; `membership.color`).
+    public var color: TechColor = .slate
+
+    public init(id: String, name: String, active: Bool, color: TechColor = .slate) {
+        self.id = id
+        self.name = name
+        self.active = active
+        self.color = color
+    }
+}
+
+/// Each member's color by user id: `membership.color` (core `techColor`: anything else is
+/// Slate).
+public func memberColors(_ memberships: [Row]) -> [String: TechColor] {
+    var colors: [String: TechColor] = [:]
+    for m in memberships {
+        guard let user = m["user_id"]?.string, colors[user] == nil else { continue }
+        colors[user] = techColor(m["color"])
+    }
+    return colors
+}
+
+/// Each member's color by user id, from the phone's synced memberships.
+public func teamColors(_ store: LocalStore, companyId: String) -> [String: TechColor] {
+    memberColors((try? store.list("membership", companyId: companyId)) ?? [])
 }
 
 /// The shop's members with their names (from the cached profiles), the signed-in person first.
 public func teamMembers(_ store: LocalStore, kv: KeyValue, companyId: String, userId: String) -> [TeamMember] {
     let names = Dictionary(kv.team.map { ($0.id, $0.displayName) }, uniquingKeysWith: { a, _ in a })
     let memberships = ((try? store.list("membership", companyId: companyId)) ?? [])
+    let colors = memberColors(memberships)
     var seen = Set<String>()
     let members = memberships.compactMap { m -> TeamMember? in
         guard let user = m["user_id"]?.string, seen.insert(user).inserted else { return nil }
         let status = m["status"]?.string ?? "active"
         guard status != "removed" else { return nil }
-        return TeamMember(id: user, name: names[user] ?? "Teammate", active: status == "active")
+        return TeamMember(
+            id: user, name: names[user] ?? "Teammate", active: status == "active", color: colors[user] ?? .slate)
     }
     return members.sorted { a, b in
         if (a.id == userId) != (b.id == userId) { return a.id == userId }

@@ -85,6 +85,9 @@ function palette(scheme: Scheme) {
     placeholder: role.placeholder,
     thumb: role.thumb,
     ...status,
+    // Tech colors (Settings › Team; team and week spec section 3), by palette key, each at
+    // least 3:1 on the surface in its mode.
+    tech: dark ? tokens.color.tech.dark : tokens.color.tech.light,
     // Brand colors used directly (pool outline, logo dot, app icon, video letterbox).
     navy: tokens.color.brand.navy,
     water: tokens.color.brand.water,

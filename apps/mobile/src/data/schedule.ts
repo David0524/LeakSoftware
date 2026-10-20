@@ -7,12 +7,14 @@ import {
   pointKey,
   propertyLocation,
   routingSettings,
+  techColor,
   type Company,
   type DriveFn,
   type JobChange,
   type JobLock,
   type LatLng,
   type PlanContext,
+  type TechColor,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { getServices } from "../lib/services";
@@ -42,6 +44,10 @@ export interface TeamMember {
   membership_id: string;
   name: string;
   email: string | null;
+  /** Their tech color's palette key (core techColor: Slate when unset). */
+  color: TechColor;
+  /** When they were turned off (Team's second list, most recent first). */
+  disabled_at: string | null;
 }
 
 /** The shop's people (memberships with their names), by name, as the website lists them. */
@@ -51,6 +57,8 @@ export function useTeam(companyId: string): TeamMember[] {
     user_id: string;
     role: TeamMember["role"];
     status: TeamMember["status"];
+    color?: string | null;
+    disabled_at?: string | null;
     deleted_at?: string | null;
   }>("membership", companyId);
   const profiles = getServices().sync.team();
@@ -67,6 +75,8 @@ export function useTeam(companyId: string): TeamMember[] {
           status: m.status,
           name: p?.full_name || p?.email || "Teammate",
           email: p?.email ?? null,
+          color: techColor(m.color),
+          disabled_at: m.disabled_at ?? null,
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));

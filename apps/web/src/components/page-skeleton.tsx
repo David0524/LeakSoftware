@@ -88,13 +88,12 @@ export function TodaySkeleton() {
 export function ScheduleSkeleton() {
   return (
     <Skeleton title="Schedule">
-      {/* Phones: Day / Week / Month / Routes on a row of their own, then the date row. */}
-      <Bone className="mb-3 h-11 w-full sm:hidden" />
+      {/* One row: previous, the date, next, and Day / Week / Month at the far right. */}
       <div className="mb-3 flex items-center gap-2">
         <Bone className="size-11" />
         <Bone className="h-11 w-11 sm:w-40" />
         <Bone className="size-11" />
-        <Bone className="ml-auto h-10 w-64 max-sm:hidden" />
+        <Bone className="ml-auto h-10 w-44 sm:w-56" />
       </div>
       <div className="mb-4 flex gap-1 sm:hidden">
         {Array.from({ length: 7 }, (_, i) => (

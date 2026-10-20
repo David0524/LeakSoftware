@@ -355,6 +355,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
     return {
       id: dayTech,
       label: dayTech === office.user.id ? "Me" : (tech?.name ?? "Teammate"),
+      color: tech?.color ?? null,
       title: mine ? "Today" : `Today · ${tech?.name ?? "Teammate"}`,
       content: (
         <>

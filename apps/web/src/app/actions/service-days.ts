@@ -37,7 +37,7 @@ export interface PlanUndo {
   assigned_user_id: string | null;
 }
 
-/** A plan on the Routes view: its customer, pool, days and tech. */
+/** A plan in Week's Customers to Add (and Suggest Days): its customer, pool, days and tech. */
 export interface RouteCustomer {
   planId: string;
   customer: string;
@@ -65,7 +65,7 @@ type PlanRow = ServicePlan & {
   created_at?: string | null;
 };
 
-/** Every plan that's running (not paused or ended), for the Routes view. */
+/** Every plan that's running (not paused or ended), for Week's Customers to Add. */
 export async function loadRouteCustomers(): Promise<RouteCustomer[]> {
   const office = await requireManager();
   const ctx = await routeContext(office);

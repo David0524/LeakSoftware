@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TechDot } from "@/components/tech-dot";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -314,7 +315,19 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                     ) : null}
 
                     <Grouped title="Assigned to">
-                      <Row label="Tech" value={job.techName ?? "Nobody yet"} />
+                      <Row
+                        label="Tech"
+                        value={
+                          job.techName ? (
+                            <span className="inline-flex items-center gap-2">
+                              <TechDot color={job.techColor} />
+                              {job.techName}
+                            </span>
+                          ) : (
+                            "Nobody yet"
+                          )
+                        }
+                      />
                       {job.secondTechName ? <Row label="With" value={job.secondTechName} /> : null}
                       {job.fee_cents != null ? (
                         <Row

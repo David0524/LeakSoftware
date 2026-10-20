@@ -33,7 +33,7 @@
                         VStack(alignment: .leading, spacing: 16) {
                             Grouped(label: "Plan for") {
                                 if techs.count > 1 { choice("all", "Everyone", on: picked.count == techs.count) }
-                                ForEach(techs) { t in choice(t.id, t.name, on: picked.contains(t.id)) }
+                                ForEach(techs) { t in choice(t.id, t.name, on: picked.contains(t.id), color: t.color) }
                             }
                             .accessibilityValue(planForLabel(picked, techs: techs))
                         }
@@ -72,10 +72,11 @@
         }
 
         /// A row of the checklist: a tech's name (or Everyone), and a check when on.
-        private func choice(_ id: String, _ name: String, on: Bool) -> some View {
+        private func choice(_ id: String, _ name: String, on: Bool, color: TechColor? = nil) -> some View {
             Button {
                 withAnimation(Motion.snappy) { picked = togglePlanTech(picked, id, techs: techs) }
             } label: {
+                // The tech's dot before their name (owner, 2026-10-20); Everyone lines up with them.
                 ListRow(name) {
                     Image(systemName: "checkmark")
                         .font(.system(size: 17, weight: .semibold))
@@ -83,6 +84,7 @@
                         .opacity(on ? 1 : 0)
                         .accessibilityHidden(true)
                 }
+                .withLeading(Group { if let color { TechDot(color: color) } else { Color.clear.frame(width: 10) } })
             }
             .buttonStyle(.row)
             .accessibilityAddTraits(on ? .isSelected : [])

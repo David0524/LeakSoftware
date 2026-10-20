@@ -136,7 +136,7 @@ export default function Jobs() {
     banner.show(
       r.error
         ? { tone: "error", message: r.error }
-        : { tone: "success", ...bannerText(r.message ?? "Moved.") },
+        : { tone: "success", ...bannerText(r.message ?? "Moved."), undo: r.undo },
     ),
   );
   const line = useLine(company.id);

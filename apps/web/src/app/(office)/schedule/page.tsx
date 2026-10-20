@@ -22,6 +22,7 @@ import {
   mapStatus,
   weekday,
   jobLock,
+  asksPlanMove,
 } from "@leakbook/core";
 import { lockTag } from "@/lib/day-map";
 import { PlanWeek } from "@/components/plan-week";
@@ -64,7 +65,10 @@ import {
 import { NavPlus } from "@/components/nav-bar";
 import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
-import { RoutesView } from "./routes-view";
+import { redirect } from "next/navigation";
+import { loadRouteCustomers } from "@/app/actions/service-days";
+import { CustomersToAdd } from "@/components/customers-to-add";
+import { TechDot } from "@/components/tech-dot";
 
 export const metadata: Metadata = { title: "Schedule · Sundeck Pro" };
 
@@ -125,6 +129,12 @@ function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardSto
     // One line for Needs a Time's compact cards.
     note: tag,
     schedule: scheduleOf(j, ctx.timeZone),
+    // A maintenance plan's visit: moving it to another day or tech asks first (owner,
+    // 2026-10-20). Only Scheduled visits ask; core decides.
+    plan:
+      j.service_plan_id && asksPlanMove(j)
+        ? { id: j.service_plan_id, status: j.status, moved: !!j.plan_moved }
+        : null,
   };
 }
 
@@ -141,6 +151,7 @@ function column(
   ctx: RouteContext,
   techId: string,
   title: string,
+  color: string,
   date: string,
   route: DayRoute | undefined,
   app: MapsApp,
@@ -164,6 +175,7 @@ function column(
     key: routeKey(techId, date),
     techId,
     title,
+    color,
     date,
     stops,
     driveMin: route?.summary.driveMin ?? 0,
@@ -181,20 +193,19 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   const canAdd = await mayMakeJobs(office);
   const params = await searchParams;
   const today = shopToday(office);
-  // Routes (owners and admins): which weekday each pool customer is serviced on, and by whom
-  // (owner, 2026-10-20, docs/plans/route-maps.md part 3). Techs keep Day, Week and Month.
-  const views = office.isManager
-    ? (["day", "week", "month", "routes"] as const)
-    : (["day", "week", "month"] as const);
+  // Day, Week and Month. Routes went into Week (owner, 2026-10-20: "it's actually a pretty
+  // useless tab. Let's just build that all into Week"); its old links open Week.
+  const views = ["day", "week", "month"] as const;
+  if (params.view === "routes") {
+    const q = new URLSearchParams({ view: "week" });
+    if (isDateString(params.date)) q.set("date", params.date);
+    if (typeof params.tech === "string") q.set("tech", params.tech);
+    redirect(`/schedule?${q}`);
+  }
   const viewLinks = (current: string, d: string, t: string) => (
     <SegmentedLinks
       label="View"
-      // Four segments don't fit beside the date on a phone: they get their own row there.
-      className={cx(
-        SEGMENT_TRACK,
-        "ml-auto shrink-0 flex-nowrap",
-        views.length > 3 && "max-sm:order-first max-sm:ml-0 max-sm:w-full max-sm:[&>a]:flex-1",
-      )}
+      className={cx(SEGMENT_TRACK, "ml-auto shrink-0 flex-nowrap")}
       items={views.map((v) => ({
         href: `/schedule?view=${v}&date=${d}&tech=${t}`,
         label: VIEW_NAMES[v],
@@ -202,35 +213,20 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       }))}
     />
   );
-  if (params.view === "routes" && office.isManager) {
-    const wantedTech = typeof params.tech === "string" ? params.tech : null;
-    const backDate = isDateString(params.date) ? params.date : today;
-    return (
-      <>
-        <PageHeader
-          title="Schedule"
-          navAction={canAdd ? <NavPlus href="/jobs/new" label="New Job" /> : undefined}
-          subtitle="Which day each pool customer is serviced"
-        />
-        <div className="mb-4 flex items-center gap-2">
-          {viewLinks("routes", backDate, wantedTech ?? "all")}
-        </div>
-        <RoutesView office={office} tech={wantedTech} />
-      </>
-    );
-  }
   const view: ScheduleView =
     params.view === "week" ? "week" : params.view === "month" ? "month" : "day";
   const date = isDateString(params.date) ? params.date : today;
   const days = scheduleDays(view, date);
   // Settings, routes, and Needs a Time all load at once.
   const ctxP = routeContext(office);
-  const [ctx, app, { routes, unassigned, team }, tray] = await Promise.all([
+  const [ctx, app, { routes, unassigned, team }, tray, routePlans] = await Promise.all([
     ctxP,
     mapsAppForRequest(),
     loadRoutes(office, ctxP, days),
     // Needs a Time is the office's list: techs don't see it (owner, 2026-10-18).
     office.isManager ? needsScheduling(office) : null,
+    // Week's Customers to Add (maintenance plans with no day yet): owners and admins.
+    view === "week" && office.isManager ? loadRouteCustomers() : null,
   ]);
   const trayJobs = tray ? tray.map((j) => trayStop(j, ctx)) : null;
 
@@ -266,7 +262,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   for (const t of techs)
     for (const d of days)
       columns.push({
-        ...column(ctx, t.user_id, t.name, d, routes.get(routeKey(t.user_id, d)), app),
+        ...column(ctx, t.user_id, t.name, t.color, d, routes.get(routeKey(t.user_id, d)), app),
         phoneHidden: !onPhone(t.user_id),
       });
   // The plan's cleanings on each visit, on the date they're due (owner, 2026-10-20).
@@ -289,7 +285,9 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       (!j.scheduled_start ||
         planDates.includes(localDate(new Date(j.scheduled_start), ctx.timeZone))),
   ).length;
-  const planTechs = movers.map((t) => ({ id: t.user_id, name: t.name }));
+  const planTechs = movers.map((t) => ({ id: t.user_id, name: t.name, color: t.color }));
+  // Customers to Add: the plans, and the techs (you first, as on the rest of Schedule).
+  const plans = routePlans ? { list: routePlans, workDays: ctx.settings.workDays } : null;
 
   const move = (n: number) =>
     view === "month" ? addMonths(date, n) : addDays(date, view === "week" ? 7 * n : n);
@@ -354,7 +352,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       {/* Swipe sideways for the previous or next day, week, or month (owner, 2026-10-20). */}
       <SwipeHrefs page={href(date)} scope="schedule" prev={href(move(-1))} next={href(move(1))}>
         {/* One row: previous, the date, next, and Day / Week / Month at the far right. */}
-        <div className={cx("mb-3 flex items-center gap-2", views.length > 3 && "max-sm:flex-wrap")}>
+        <div className="mb-3 flex items-center gap-2">
           <Link
             href={href(move(-1))}
             className={buttonClass("secondary", "min-w-11 shrink-0 px-3")}
@@ -385,15 +383,22 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
               ...techs.map((t) => ({
                 id: t.user_id,
                 name: t.user_id === office.user.id ? "Me" : t.name,
+                color: t.color as string | null,
               })),
-              { id: "all", name: "Everyone" },
+              { id: "all", name: "Everyone", color: null },
             ].map((t) => (
               <Link
                 key={t.id}
                 href={href(date, view, t.id)}
                 aria-current={t.id === tech ? "page" : undefined}
-                className={pillClass(t.id === tech)}
+                className={pillClass(t.id === tech, "gap-2")}
               >
+                {t.color ? (
+                  <TechDot
+                    color={t.color}
+                    className={cx(t.id === tech && "ring-2 ring-white/90")}
+                  />
+                ) : null}
                 {t.name}
               </Link>
             ))}
@@ -455,18 +460,26 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                   buttonClassName="w-full"
                 />
               ) : null}
+              {plans ? (
+                <CustomersToAdd
+                  variant="phone"
+                  plans={plans.list}
+                  techs={planTechs}
+                  workDays={plans.workDays}
+                />
+              ) : null}
               {days.map((d) => {
                 const list = phoneColumns
                   .filter((c) => c.date === d)
                   .flatMap((c) =>
                     c.stops
                       .filter((s) => !s.tag.startsWith("Second tech"))
-                      .map((s) => ({ s, tech: c.title })),
+                      .map((s) => ({ s, tech: { name: c.title, color: c.color ?? null } })),
                   )
                   .concat(
                     (tech === "all" ? (unassigned.get(d) ?? []) : []).map((j) => ({
                       s: toStop(j, ctx),
-                      tech: "No tech yet",
+                      tech: { name: "No tech yet", color: null },
                     })),
                   );
                 return (
@@ -505,7 +518,11 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                             }
                             detail={
                               <>
-                                <span className="text-text">{s.customer}</span> · {tech}
+                                <span className="text-text">{s.customer}</span> ·{" "}
+                                {tech.color ? (
+                                  <TechDot color={tech.color} className="mr-1" />
+                                ) : null}
+                                {tech.name}
                               </>
                             }
                             value={<StatusBadge status={s.status} />}
@@ -522,7 +539,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
                 mode="week"
                 columns={columns}
                 tray={trayJobs}
-                techs={movers.map((t) => ({ id: t.user_id, name: t.name }))}
+                techs={planTechs}
+                plans={plans}
                 today={today}
                 weekDays={days.map((d) => [d, formatDay(d)])}
                 maps={maps}
@@ -537,7 +555,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
             mode="day"
             columns={columns}
             tray={trayJobs}
-            techs={movers.map((t) => ({ id: t.user_id, name: t.name }))}
+            techs={planTechs}
             today={today}
             maps={maps}
           />
@@ -637,4 +655,4 @@ function MonthCalendar({
   );
 }
 
-const VIEW_NAMES = { day: "Day", week: "Week", month: "Month", routes: "Routes" } as const;
+const VIEW_NAMES = { day: "Day", week: "Week", month: "Month" } as const;

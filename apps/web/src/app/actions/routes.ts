@@ -175,6 +175,11 @@ export interface MoveInput {
   date: string | null;
   /** Place in the tech's route that day (0 = first). Past the end: last. */
   index: number;
+  /**
+   * A plan visit's Just This Visit (owner, 2026-10-20): true marks it moved, so remaking the
+   * plan's visits leaves it where it is; Undo passes its old value back. Left out: unchanged.
+   */
+  planMoved?: boolean;
 }
 
 /**
@@ -184,6 +189,7 @@ export interface MoveInput {
  */
 export async function moveJob(input: MoveInput): Promise<RouteResult> {
   const { job: jobId, tech, date } = input;
+  const marked = typeof input.planMoved === "boolean" ? { plan_moved: input.planMoved } : {};
   if (
     !UUID.test(jobId) ||
     (tech !== null && !UUID.test(tech)) ||
@@ -227,6 +233,7 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
         scheduled_start: null,
         scheduled_end: null,
         arrival_fixed: false,
+        ...marked,
       },
     ]);
     if (error) return { error };
@@ -257,6 +264,7 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
         status,
         scheduled_start: start,
         scheduled_end: new Date(Date.parse(start) + duration * 60_000).toISOString(),
+        ...marked,
       },
     ]);
     if (error) return { error };
@@ -293,11 +301,14 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
   stops.splice(index, 0, moved);
   const route = timeRoute(stops, ctx.depot, workDay(ctx.settings), drive);
   const updates = routeUpdates(date, ctx.timeZone, stops, route);
-  const mine: JobUpdate & { assigned_user_id?: string; status?: string } = updates.find(
-    (u) => u.id === jobId,
-  )!;
+  const mine: JobUpdate & {
+    assigned_user_id?: string;
+    status?: string;
+    plan_moved?: boolean;
+  } = updates.find((u) => u.id === jobId)!;
   mine.assigned_user_id = tech;
   mine.status = status;
+  Object.assign(mine, marked);
   if (fixedMin != null) {
     mine.scheduled_start = zonedMinutesToIso(date, fixedMin, ctx.timeZone);
     mine.scheduled_end = new Date(

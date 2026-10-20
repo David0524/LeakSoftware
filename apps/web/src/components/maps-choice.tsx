@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MAPS_LABELS } from "@leakbook/core";
 
 type Choice = "auto" | "apple" | "google";
 
@@ -12,7 +13,7 @@ export function MapsChoice({ initial }: { initial: Choice }) {
   const [choice, setChoice] = useState<Choice>(initial);
   return (
     <label className="flex min-h-11 items-center justify-between gap-3">
-      <span className="font-medium">Directions open in</span>
+      <span className="font-medium">{MAPS_LABELS.setting}</span>
       <select
         value={choice}
         onChange={(e) => {
@@ -22,9 +23,9 @@ export function MapsChoice({ initial }: { initial: Choice }) {
         }}
         className="min-h-11 rounded-xl border border-control-border bg-surface px-2 text-link"
       >
-        <option value="auto">Automatic</option>
-        <option value="apple">Apple Maps</option>
-        <option value="google">Google Maps</option>
+        <option value="auto">{MAPS_LABELS.automatic}</option>
+        <option value="apple">{MAPS_LABELS.apple}</option>
+        <option value="google">{MAPS_LABELS.google}</option>
       </select>
     </label>
   );

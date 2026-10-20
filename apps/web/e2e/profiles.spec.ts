@@ -8,8 +8,14 @@ test("owners keep a profile for each person, and phone numbers format as they're
   page,
 }) => {
   await signIn(page, OWNER, "/settings/team");
-  const profiles = page.getByTestId("profile");
-  await profiles.filter({ hasText: "Tony Tech" }).click();
+  // Team is one list: each person's row opens their profile (owner, 2026-10-20).
+  const profiles = page.getByTestId("member");
+  const open = () =>
+    profiles
+      .filter({ hasText: "Tony Tech" })
+      .getByRole("button", { name: /^Tony Tech/ })
+      .click();
+  await open();
   const sheet = page.getByRole("dialog", { name: "Tony Tech" });
 
   const phone = sheet.getByLabel("Phone").first();
@@ -28,11 +34,11 @@ test("owners keep a profile for each person, and phone numbers format as they're
   await sheet.getByLabel("Name").nth(1).fill("Jordan Tech");
   await sheet.getByLabel("Phone").nth(1).pressSequentially("4805550199");
   await sheet.getByLabel("Notes").fill(note);
-  await sheet.getByRole("button", { name: /^Save/ }).click();
+  await sheet.getByRole("button", { name: /^Save( Profile)?$/ }).click();
   await expect(page.getByText(/^(Saved\.|Added Tony Tech\.)$/)).toBeVisible();
 
   await page.reload();
-  await profiles.filter({ hasText: "Tony Tech" }).click();
+  await open();
   const again = page.getByRole("dialog", { name: "Tony Tech" });
   await expect(again.getByLabel("Phone").first()).toHaveValue("(480) 555-0111");
   await expect(again.getByLabel("Phone").nth(1)).toHaveValue("(480) 555-0199");

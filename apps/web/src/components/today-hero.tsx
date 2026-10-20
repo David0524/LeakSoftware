@@ -80,9 +80,10 @@ export interface HeroOnMyWay {
 
 /**
  * Today's card for the stop the tech is on (owner, 2026-10-20; docs/plans/today-hero.md): the
- * Live Activity in the app, in its water blue. The name opens the job; the address opens
- * directions; the main button is the moment's (Start, Open Checklist). Owners and
- * admins looking at a tech's day get Call and Directions only.
+ * Live Activity in the app, in its water blue. The name opens the job on a clean tap (a swipe
+ * never opens it: useSwipe drops the click after a sideways drag); the address is plain text,
+ * and Directions is its round button; the main button is the moment's (Start, Open Checklist).
+ * Owners and admins looking at a tech's day get Call and Directions only.
  *
  * The card shows any stop (gestures.md section 1): swipe it, tap a segment of the bar, or use
  * the Left and Right arrow keys while it has focus; Back to Now returns to the stop the day is
@@ -281,17 +282,10 @@ export function TodayHeroCard({
           <ul className="mt-3 space-y-1.5">
             {job.address ? (
               <Detail icon={<PinIcon className="size-[0.9375rem]" />}>
-                {/* Plain text that opens directions, as iOS shows a tappable address; a warning
-                  symbol after it when the map can't find it (owner, 2026-10-20). */}
-                <a
-                  href={directionsHref({ address: job.address, location: job.location })}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`${job.address}, directions in Maps`}
-                  className="text-[1.0625rem] font-medium hover:underline"
-                >
-                  {job.address}
-                </a>
+                {/* Plain text: Directions is the round button below (owner, 2026-10-20: "The
+                  address should no longer be clickable"). A warning symbol after it when the map
+                  can't find it. */}
+                <span className="text-[1.0625rem] font-medium">{job.address}</span>
                 {job.notOnMap ? (
                   <span title={NOT_ON_MAP.title} className="ml-1.5 inline-flex align-[-0.1em]">
                     <WarningIcon className="size-[1.0625rem]" />

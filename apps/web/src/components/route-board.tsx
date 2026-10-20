@@ -38,16 +38,32 @@ import {
   type ReactNode,
 } from "react";
 import {
+  PLAN_MOVE_CHOICES,
+  asksPlanMove,
   directionsHref,
   durationLabel,
+  planMovedBanner,
+  visitMovedBanner,
+  weekday,
   type CleaningKind,
   type JobLock,
   type JobStatus,
   type LatLng,
 } from "@leakbook/core";
 import { scheduleJob } from "@/app/actions/jobs";
+import { setServiceDay, undoServiceDays, type PlanUndo } from "@/app/actions/service-days";
+import type { RoutePlanCard } from "@/lib/service-routes";
+import {
+  CustomersToAdd,
+  PLAN_DRAG,
+  PlanDrop,
+  type PlanDragData,
+  type PlanDrops,
+} from "./customers-to-add";
+import { SideSectionTitle } from "./side-section";
+import { TechDot, TechStripe } from "./tech-dot";
 import { hasLock, toggleLock } from "@/lib/row-menu";
-import { RowActions, formOf, type MenuEntry, type SwipeAction } from "./row-actions";
+import { RowActions, RowMenuButton, formOf, type MenuEntry, type SwipeAction } from "./row-actions";
 import { DayMap } from "./day-map";
 import { CleaningIcon, KeyIcon } from "./icons";
 import { LockTag } from "./lock-tag";
@@ -62,10 +78,12 @@ import {
   type Suggestion,
 } from "@/app/actions/routes";
 import { AddressLink, OpenRouteInMaps } from "./open-in-maps";
-import { Sheet } from "./sheet";
+import { Sheet, useChoice } from "./sheet";
 import { showBanner } from "./top-banner";
 import { useFlip } from "./use-flip";
 import { Button, StatusBadge, buttonClass, cx, pillClass } from "./ui";
+
+type Tech = { id: string; name: string; color?: string | null };
 
 // The schedule as routes (routing, owner request 2026-10-13): each tech's day in order with
 // the driving between stops. Drag a job by its grip to another place, tech, or day (mouse,
@@ -111,6 +129,12 @@ export interface BoardStop {
    * and Lock Time save through that form's action.
    */
   schedule?: { date: string; time: string; hours: string; tech: string; lock: JobLock } | null;
+  /**
+   * A maintenance plan's visit (owner, 2026-10-20): moving it to another day or tech asks
+   * Change Schedule or Just This Visit. Its plan, its status as core reads it, and whether a
+   * Just This Visit already moved it (for Undo).
+   */
+  plan?: { id: string; status: JobStatus; moved: boolean } | null;
 }
 
 export interface BoardColumn {
@@ -120,6 +144,8 @@ export interface BoardColumn {
   phoneHidden?: boolean;
   techId: string;
   title: string;
+  /** The tech's color (Settings › Team): a dot by their name, a stripe on their cards. */
+  color?: string | null;
   date: string;
   stops: BoardStop[];
   driveMin: number;
@@ -149,6 +175,8 @@ interface StopActions {
   lock: (s: BoardStop, part: "day" | "time") => void;
   /** It waits in Needs a Time (nothing to take off). */
   inTray: (id: string) => boolean;
+  /** A drag just ended: the click it ends with doesn't open the job. */
+  dragged: () => boolean;
 }
 const BoardActions = createContext<StopActions | null>(null);
 
@@ -228,8 +256,13 @@ function applyMove(lists: Lists, m: Move): Lists {
 /** The pointer's box first (for empty days and week cells), else the nearest stop. */
 const collision: CollisionDetection = (args) => {
   const hits = pointerWithin(args);
+  // A customer to add lands only where the pointer is: a tech's day, never the nearest stop.
+  if (String(args.active.id).startsWith(PLAN_DRAG)) return hits;
   return hits.length ? hits : closestCenter(args);
 };
+
+/** "Luis is on Tuesdays…": the planned tech's name, or nothing for nobody. */
+const nameIn = (techs: Tech[], id: string) => techs.find((t) => t.id === id)?.name ?? "";
 
 export function RouteBoard({
   mode,
@@ -242,12 +275,13 @@ export function RouteBoard({
   workDates = [],
   planDates = null,
   planWaiting = 0,
+  plans = null,
 }: {
   mode: "day" | "week";
   columns: BoardColumn[];
   /** Needs a Time; null hides it (techs don't see it: owner, 2026-10-18). */
   tray: TrayJob[] | null;
-  techs: { id: string; name: string }[];
+  techs: Tech[];
   today: string;
   /** Week mode: the days across, as [date, label]. */
   weekDays?: [string, string][];
@@ -259,6 +293,11 @@ export function RouteBoard({
   planDates?: string[] | null;
   /** Jobs in Needs a Time with nobody on them that Plan Week could place. */
   planWaiting?: number;
+  /**
+   * Week, owners and admins: Customers to Add (maintenance plans with no day yet), in the
+   * sidebar beside Needs a Time (owner, 2026-10-20: Routes moved into Week).
+   */
+  plans?: { list: RoutePlanCard[]; workDays: number[] } | null;
 }) {
   const initial = useMemo(() => {
     const lists: Lists = { [TRAY]: tray ?? [] };
@@ -272,6 +311,10 @@ export function RouteBoard({
   const [optimizing, startOptimize] = useTransition();
   const [planning, setPlanning] = useState<string | null>(null);
   const [dragging, setDragging] = useState<BoardStop | null>(null);
+  const [draggingPlan, setDraggingPlan] = useState<PlanDragData | null>(null);
+  const planDrops = useRef<PlanDrops | null>(null);
+  const dragEnd = useRef(0);
+  const [choose, chooseSheet] = useChoice<"schedule" | "visit">();
   const [moving, setMoving] = useState<BoardStop | null>(null);
   const byKey = useMemo(() => new Map(columns.map((c) => [c.key, c])), [columns]);
   // Stable, so the open sheet isn't re-focused each time the board re-renders.
@@ -297,10 +340,12 @@ export function RouteBoard({
       : null;
 
   const where = (id: string) => Object.keys(lists).find((k) => lists[k]!.some((s) => s.id === id));
+  /** Week with something to schedule: the sidebar (a tray above the board when narrower). */
+  const side = mode === "week" && (!!tray || !!plans);
 
   // The board as it is and as it's being dragged: lists that reorder slide into place.
   const board = useRef<HTMLDivElement>(null);
-  useFlip(board, !!dragging);
+  useFlip(board, !!dragging || !!draggingPlan);
 
   // Results show as a short banner at the top of the screen (owner, 2026-10-20), in the same
   // frame as the reordered day: set in the transition, shown once it's on screen.
@@ -343,6 +388,14 @@ export function RouteBoard({
   /** Move a job to a list ("techId|date", "none|date", or the tray) at a place. */
   function moveTo(job: string, to: string, index: number) {
     if (to === TRAY) {
+      const from = where(job);
+      const stop = from ? lists[from]!.find((s) => s.id === job) : undefined;
+      // A plan visit taken off the schedule is always a one-off (owner, 2026-10-20): no
+      // question, but it's marked moved so the plan never puts it back; Undo restores both.
+      if (stop?.plan && from && from !== TRAY) {
+        takeOffPlanVisit(stop, from, null);
+        return;
+      }
       run({ job, to, index: 0 }, () => moveJob({ job, tech: null, date: null, index: 0 }));
       return;
     }
@@ -354,9 +407,160 @@ export function RouteBoard({
     }
     // No tech: the job keeps its time and waits in Needs a Time.
     const none = tech === "none";
+    // A maintenance plan's visit going to another day or tech asks first (owner, 2026-10-20).
+    const from = where(job);
+    const stop = from ? lists[from]!.find((s) => s.id === job) : undefined;
+    // Nobody yet: to Needs a Time, a one-off like Take Off Schedule (owner, 2026-10-20).
+    if (none && stop?.plan && from && from !== TRAY) {
+      takeOffPlanVisit(stop, from, date!);
+      return;
+    }
+    if (!none && stop?.plan && from && from !== TRAY) {
+      const [fromTech, fromDate] = from.split("|") as [string, string];
+      const asks = asksPlanMove(
+        { service_plan_id: stop.plan.id, status: stop.plan.status },
+        {
+          from: { date: fromDate, techId: fromTech === "none" ? null : fromTech },
+          to: { date: date!, techId: tech },
+        },
+      );
+      if (asks) {
+        const fromIndex = lists[from]!.findIndex((s) => s.id === job);
+        void movePlanVisit(stop, { fromTech, fromDate, fromIndex, tech, date: date!, index });
+        return;
+      }
+    }
     run({ job, to: none ? TRAY : to, index: none ? 0 : index }, () =>
       moveJob({ job, tech: none ? null : tech, date: date!, index }),
     );
+  }
+
+  /**
+   * "Move <Customer>'s visits?" (owner, 2026-10-20, docs/design/2026-10-20-team-week.md
+   * section 5): Change Schedule moves the plan, so every coming visit falls on the new weekday
+   * with the new tech; Just This Visit moves only this one and marks it moved. Both have Undo.
+   */
+  async function movePlanVisit(
+    stop: BoardStop,
+    m: {
+      fromTech: string;
+      fromDate: string;
+      fromIndex: number;
+      tech: string;
+      date: string;
+      index: number;
+    },
+  ) {
+    const plan = stop.plan!;
+    const pick = await choose({
+      title: PLAN_MOVE_CHOICES.title(stop.customer),
+      choices: [
+        { key: "schedule", label: PLAN_MOVE_CHOICES.changeSchedule },
+        { key: "visit", label: PLAN_MOVE_CHOICES.justThisVisit },
+      ],
+    });
+    if (!pick) return;
+    const placed = { job: stop.id, to: `${m.tech}|${m.date}`, index: m.index };
+    if (pick === "schedule") {
+      start(async () => {
+        optimistic(placed);
+        const r = await setServiceDay({
+          plan: plan.id,
+          from: weekday(m.fromDate),
+          to: weekday(m.date),
+          tech: m.tech,
+        });
+        const rows = r.undo;
+        start(() =>
+          r.error
+            ? void showBanner({ tone: "error", message: r.error })
+            : void showBanner({
+                message: planMovedBanner(stop.customer, weekdayName(m.date), nameIn(techs, m.tech)),
+                action: rows?.length
+                  ? { label: "Undo", onAction: () => undoSchedule(rows) }
+                  : undefined,
+              }),
+        );
+      });
+      return;
+    }
+    start(async () => {
+      optimistic(placed);
+      const r = await moveJob({
+        job: stop.id,
+        tech: m.tech,
+        date: m.date,
+        index: m.index,
+        planMoved: true,
+      });
+      start(() =>
+        r.error
+          ? void showBanner({ tone: "error", message: r.error })
+          : void showBanner({
+              tone: r.detail ? "warning" : "success",
+              message: visitMovedBanner,
+              detail: r.detail,
+              action: {
+                label: "Undo",
+                onAction: () =>
+                  run({ job: stop.id, to: `${m.fromTech}|${m.fromDate}`, index: m.fromIndex }, () =>
+                    moveJob({
+                      job: stop.id,
+                      tech: m.fromTech === "none" ? null : m.fromTech,
+                      date: m.fromDate,
+                      index: m.fromIndex,
+                      planMoved: plan.moved,
+                    }),
+                  ),
+              },
+            }),
+      );
+    });
+  }
+
+  /**
+   * A plan visit to Needs a Time, marked moved, with Undo putting both back: off the schedule
+   * (`date` null), or with nobody on it, keeping its time on `date`.
+   */
+  function takeOffPlanVisit(stop: BoardStop, from: string, date: string | null) {
+    const plan = stop.plan!;
+    const [fromTech, fromDate] = from.split("|") as [string, string];
+    const fromIndex = lists[from]!.findIndex((s) => s.id === stop.id);
+    start(async () => {
+      optimistic({ job: stop.id, to: TRAY, index: 0 });
+      const r = await moveJob({ job: stop.id, tech: null, date, index: 0, planMoved: true });
+      start(() =>
+        r.error
+          ? void showBanner({ tone: "error", message: r.error })
+          : void showBanner({
+              message: r.message ?? "Taken off the schedule.",
+              action: {
+                label: "Undo",
+                onAction: () =>
+                  run({ job: stop.id, to: from, index: fromIndex }, () =>
+                    moveJob({
+                      job: stop.id,
+                      tech: fromTech === "none" ? null : fromTech,
+                      date: fromDate,
+                      index: fromIndex,
+                      planMoved: plan.moved,
+                    }),
+                  ),
+              },
+            }),
+      );
+    });
+  }
+
+  function undoSchedule(rows: PlanUndo[]) {
+    start(async () => {
+      const r = await undoServiceDays(rows);
+      start(() =>
+        r.error
+          ? void showBanner({ tone: "error", message: r.error })
+          : void showBanner({ message: r.message ?? "Put back as it was." }),
+      );
+    });
   }
 
   /** Lock Day or Lock Time: the job page's Schedule form, saved with the lock changed. */
@@ -392,10 +596,15 @@ export function RouteBoard({
     takeOff: (stop) => moveTo(stop.id, TRAY, 0),
     lock,
     inTray: (id) => (lists[TRAY] ?? []).some((x) => x.id === id),
+    dragged: () => Date.now() - dragEnd.current < 400,
   };
 
   function onDragStart(e: DragStartEvent) {
     const id = String(e.active.id);
+    if (id.startsWith(PLAN_DRAG)) {
+      setDraggingPlan((e.active.data.current as PlanDragData | undefined) ?? null);
+      return;
+    }
     setDragging(
       Object.values(lists)
         .flat()
@@ -405,8 +614,23 @@ export function RouteBoard({
 
   function onDragEnd(e: DragEndEvent) {
     setDragging(null);
+    setDraggingPlan(null);
+    dragEnd.current = Date.now();
     const id = String(e.active.id);
     const over = e.over ? String(e.over.id) : null;
+    if (id.startsWith(PLAN_DRAG)) {
+      // Touch and hold without moving: the customer's menu, as iOS lifts an item to show it.
+      const touch = typeof TouchEvent !== "undefined" && e.activatorEvent instanceof TouchEvent;
+      if (touch && Math.hypot(e.delta.x, e.delta.y) < 8) return planDrops.current?.hold(id);
+      const key = over ? (over in lists ? over : where(over)) : null;
+      if (!key || key === TRAY) return;
+      const col = byKey.get(key);
+      const [tech, date] = key.split("|") as [string, string];
+      if (!col || tech === "none") return;
+      if (!col.open) return report({ error: "Pick today or a later day." });
+      planDrops.current?.drop(id.slice(PLAN_DRAG.length), tech, date);
+      return;
+    }
     const from = where(id);
     if (!over || !from) return;
     const to = over in lists ? over : where(over);
@@ -430,7 +654,10 @@ export function RouteBoard({
       collisionDetection={collision}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      onDragCancel={() => setDragging(null)}
+      onDragCancel={() => {
+        setDragging(null);
+        setDraggingPlan(null);
+      }}
       autoScroll={{ threshold: { x: 0.2, y: 0.15 }, acceleration: 12 }}
       accessibility={{
         screenReaderInstructions: {
@@ -440,73 +667,116 @@ export function RouteBoard({
       }}
     >
       <BoardActions value={actions}>
-        <div ref={board}>
-          {lead ? (
-            <DayLead
-              column={lead}
-              stops={lists[lead.key] ?? []}
-              optimizing={optimizingKey === lead.key}
-              busy={optimizing}
-              onPlan={() => optimize(lead.techId, lead.date)}
-              maps={maps}
-              today={today}
-            />
-          ) : null}
-
-          {tray ? (
-            <Tray
-              jobs={lists[TRAY] ?? []}
-              onMove={setMoving}
-              onSuggestion={(job, s) => moveTo(job, `${s.techId}|${s.date}`, s.position)}
-            />
-          ) : null}
-
-          {mode === "day" ? (
-            <div className="grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-[repeat(2,minmax(0,1fr))] xl:grid-cols-[repeat(3,minmax(0,1fr))]">
-              {columns.map((c) => (
-                <DayColumn
-                  key={c.key}
-                  column={c}
-                  stops={lists[c.key] ?? []}
-                  optimizing={optimizingKey === c.key}
-                  busy={optimizing}
-                  onPlan={() => optimize(c.techId!, c.date)}
-                  onMove={setMoving}
-                  maps={maps}
-                  today={today}
-                  lead={c.key === lead?.key}
-                />
-              ))}
-            </div>
-          ) : (
-            <>
-              <WeekMaps
-                columns={columns}
-                lists={lists}
-                days={weekDays ?? []}
-                workDates={workDates}
-                today={today}
-                maps={maps}
-                planDates={planDates}
-                planWaiting={planWaiting}
-                optimizingKey={optimizingKey}
+        <PlanDrop value={planDrops}>
+          <div
+            ref={board}
+            // Week on a computer or iPad (≥ 1024 pt): a 280 pt sidebar on the left with Needs a
+            // Time, then Customers to Add, scrolling on its own, and the board to its right
+            // (owner, 2026-10-20: where you pick and drag from, as in Mail and Calendar).
+            className={cx(
+              side && "lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-5",
+            )}
+          >
+            {lead ? (
+              <DayLead
+                column={lead}
+                stops={lists[lead.key] ?? []}
+                optimizing={optimizingKey === lead.key}
                 busy={optimizing}
-                onPlan={optimize}
-              />
-              <WeekGrid
-                columns={columns}
-                lists={lists}
-                days={weekDays ?? []}
+                onPlan={() => optimize(lead.techId, lead.date)}
+                maps={maps}
                 today={today}
-                onMove={setMoving}
               />
-            </>
-          )}
-        </div>
+            ) : null}
+
+            {side ? (
+              <aside
+                aria-label="To schedule"
+                data-testid="week-sidebar"
+                className="mb-5 space-y-4 lg:sticky lg:top-4 lg:mb-0 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto lg:overscroll-contain lg:pb-1"
+              >
+                {tray ? (
+                  <Tray
+                    side
+                    jobs={lists[TRAY] ?? []}
+                    onMove={setMoving}
+                    onSuggestion={(job, s) => moveTo(job, `${s.techId}|${s.date}`, s.position)}
+                  />
+                ) : null}
+                {plans ? (
+                  <CustomersToAdd
+                    variant="sidebar"
+                    plans={plans.list}
+                    techs={techs}
+                    workDays={plans.workDays}
+                  />
+                ) : null}
+              </aside>
+            ) : tray ? (
+              <Tray
+                jobs={lists[TRAY] ?? []}
+                onMove={setMoving}
+                onSuggestion={(job, s) => moveTo(job, `${s.techId}|${s.date}`, s.position)}
+              />
+            ) : null}
+
+            {mode === "day" ? (
+              <div className="grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-[repeat(2,minmax(0,1fr))] xl:grid-cols-[repeat(3,minmax(0,1fr))]">
+                {columns.map((c) => (
+                  <DayColumn
+                    key={c.key}
+                    column={c}
+                    stops={lists[c.key] ?? []}
+                    optimizing={optimizingKey === c.key}
+                    busy={optimizing}
+                    onPlan={() => optimize(c.techId!, c.date)}
+                    onMove={setMoving}
+                    maps={maps}
+                    today={today}
+                    lead={c.key === lead?.key}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="min-w-0">
+                <WeekMaps
+                  columns={columns}
+                  lists={lists}
+                  days={weekDays ?? []}
+                  workDates={workDates}
+                  today={today}
+                  maps={maps}
+                  planDates={planDates}
+                  planWaiting={planWaiting}
+                  optimizingKey={optimizingKey}
+                  busy={optimizing}
+                  onPlan={optimize}
+                />
+                <WeekGrid
+                  columns={columns}
+                  lists={lists}
+                  days={weekDays ?? []}
+                  today={today}
+                  onMove={setMoving}
+                  optimizingKey={optimizingKey}
+                  busy={optimizing}
+                  onPlan={optimize}
+                />
+              </div>
+            )}
+          </div>
+        </PlanDrop>
       </BoardActions>
 
       <DragOverlay dropAnimation={null}>
-        {dragging ? (
+        {draggingPlan ? (
+          <div className="card max-w-72 px-4 py-2.5 shadow-xl ring-2 ring-link">
+            <span className="block truncate font-semibold">{draggingPlan.customer}</span>
+            <span className="block truncate text-[0.9375rem] text-text-muted">
+              {draggingPlan.address}
+            </span>
+          </div>
+        ) : dragging ? (
           <div className="card max-w-sm p-3 shadow-xl ring-2 ring-link">
             {dragging.time ? (
               <span className="block font-display text-[1.0625rem] font-bold">{dragging.time}</span>
@@ -533,6 +803,7 @@ export function RouteBoard({
           }}
         />
       ) : null}
+      {chooseSheet}
     </DndContext>
   );
 }
@@ -716,7 +987,10 @@ function DayColumn({
         isOver && "bg-link/5 ring-2 ring-link",
       )}
     >
-      <h2 className="font-display text-xl font-bold">{c.title}</h2>
+      <h2 className="flex items-center gap-2 font-display text-xl font-bold">
+        <TechDot color={c.color} />
+        {c.title}
+      </h2>
       {/* Phones with one tech chosen show this above Needs a Time instead (DayLead). */}
       <div className={lead ? "max-sm:hidden" : undefined}>
         <DayHeader
@@ -749,7 +1023,7 @@ function DayColumn({
                   label={i === 0 ? "from the shop" : "drive"}
                 />
               ) : null}
-              <StopCard stop={s} position={i + 1} onMove={onMove} />
+              <StopCard stop={s} position={i + 1} onMove={onMove} color={c.color} />
             </li>
           ))}
           {c.techId && stops.length && c.backLegMin != null ? (
@@ -774,8 +1048,9 @@ function Leg({
 }) {
   return (
     // Today's connector between stops: a dotted line and the drive.
-    <p className="flex items-center gap-2 py-0.5 pl-4 text-[0.9375rem] text-text-muted">
-      <span aria-hidden="true" className="h-4 border-l-2 border-dotted border-text-muted" />
+    // Tighter beside desktop's one-line cards, so about 12 stops fit on a day.
+    <p className="flex items-center gap-2 py-0.5 pl-4 text-[0.9375rem] text-text-muted lg:py-0 lg:pl-3 lg:text-[0.8125rem]">
+      <span aria-hidden="true" className="h-4 border-l-2 border-dotted border-text-muted lg:h-3" />
       {durationLabel(minutes)} {label}
       {short > 0 ? (
         <span className="font-semibold text-status-warning">· {durationLabel(short)} late</span>
@@ -784,8 +1059,10 @@ function Leg({
   );
 }
 
-export function Grip(props: Record<string, unknown> & { label: string; className?: string }) {
-  const { label, className, ...rest } = props;
+export function Grip(
+  props: Record<string, unknown> & { label: string; className?: string; compact?: boolean },
+) {
+  const { label, className, compact = false, ...rest } = props;
   return (
     <button
       type="button"
@@ -796,12 +1073,19 @@ export function Grip(props: Record<string, unknown> & { label: string; className
       // On phones too (owner, 2026-10-20). touch-none: a finger on the grip drags the job, not
       // the page; no text selection or callout on the long press.
       className={cx(
-        "grid size-11 shrink-0 cursor-grab touch-none place-items-center rounded-full text-text-muted select-none [-webkit-touch-callout:none] hover:bg-text/[0.06] active:cursor-grabbing active:bg-link/10 active:text-link",
+        "grid shrink-0 cursor-grab touch-none place-items-center rounded-full text-text-muted select-none [-webkit-touch-callout:none] hover:bg-text/[0.06] active:cursor-grabbing active:bg-link/10 active:text-link",
+        // Desktop's one-line cards: a pointer target the card's height (the whole card drags).
+        compact ? "h-8 w-7" : "size-11",
         className,
       )}
       {...rest}
     >
-      <svg viewBox="0 0 24 24" className="size-5" fill="currentColor" aria-hidden="true">
+      <svg
+        viewBox="0 0 24 24"
+        className={compact ? "size-4" : "size-5"}
+        fill="currentColor"
+        aria-hidden="true"
+      >
         {[6, 12, 18].map((y) =>
           [9, 15].map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.6" />),
         )}
@@ -816,13 +1100,23 @@ function finished(status: JobStatus) {
 }
 
 /** The stop's place in the route, round, as on Today: a check once done, blue while on it. */
-function StopBadge({ position, status }: { position: number; status: JobStatus }) {
+function StopBadge({
+  position,
+  status,
+  small = false,
+}: {
+  position: number;
+  status: JobStatus;
+  /** Desktop's one-line cards. */
+  small?: boolean;
+}) {
   const done = finished(status);
   return (
     <span
       aria-hidden="true"
       className={cx(
-        "mt-1 grid size-8 shrink-0 place-items-center rounded-full font-display font-bold",
+        "grid shrink-0 place-items-center rounded-full font-display font-bold",
+        small ? "size-6 text-[0.8125rem]" : "mt-1 size-8",
         done
           ? "bg-status-pass text-on-status"
           : status === "in_progress"
@@ -833,7 +1127,7 @@ function StopBadge({ position, status }: { position: number; status: JobStatus }
       {done ? (
         <svg
           viewBox="0 0 24 24"
-          className="size-4"
+          className={small ? "size-3.5" : "size-4"}
           fill="none"
           stroke="currentColor"
           strokeWidth="3"
@@ -876,10 +1170,13 @@ function StopCard({
   stop: s,
   position,
   onMove,
+  color,
 }: {
   stop: BoardStop;
   position: number;
   onMove: (s: BoardStop) => void;
+  /** Whose route it's on: a stripe on the card's leading edge. */
+  color?: string | null;
 }) {
   const {
     attributes,
@@ -897,10 +1194,18 @@ function StopCard({
       style={{ transform: CSS.Translate.toString(transform), transition }}
       data-testid="stop"
       aria-label={`${s.time ?? "No time"}, ${s.customer}`}
-      className={cx("card relative overflow-hidden", isDragging && "opacity-40")}
+      className={cx("card relative overflow-hidden lg:rounded-xl", isDragging && "opacity-40")}
     >
+      <CompactCard
+        stop={s}
+        position={position}
+        color={color}
+        listeners={listeners}
+        attributes={attributes}
+      />
       {/* Swipe left for Move…, right for the locks; touch and hold or right-click for the
-          menu (gestures.md section 12). The visible Move… does the same for everyone else. */}
+          menu (gestures.md section 12). The visible Move… does the same for everyone else.
+          Computers get the one-line card above instead. */}
       <RowActions
         title={`${s.customer}${s.number ? ` · Job #${s.number}` : ""}`}
         menu={stopMenu(s, actions)}
@@ -908,14 +1213,15 @@ function StopCard({
         swipeClassName="rounded-[1.25rem]"
         // Over the card's bottom corner, under Move… and the grip.
         buttonClassName="absolute right-1.5 bottom-1.5"
-        className="rounded-[1.25rem]"
+        className="rounded-[1.25rem] lg:hidden"
       >
         <div
           className={cx(
-            "flex items-start gap-2 rounded-[1.25rem] bg-surface py-1.5 pl-3",
+            "relative flex items-start gap-2 rounded-[1.25rem] bg-surface py-1.5 pl-3.5",
             s.draggable ? "pr-1" : "pr-3",
           )}
         >
+          {color ? <TechStripe color={color} /> : null}
           <StopBadge position={position} status={s.status} />
           <div className="min-w-0 flex-1">
             {/* The time, then the customer under it (always two lines, so the cards in a column
@@ -1008,6 +1314,89 @@ function StopCard({
   );
 }
 
+/**
+ * A stop on a computer (≥ 1024 pt; owner, 2026-10-20: "the schedule cards are still way too
+ * big"): one line, 36 pt tall, so about 12 stops fit on a day. The tech's color stripe, the stop
+ * number, the customer in 15 pt semibold and the kind of visit in 13 pt, the lock and
+ * not-on-map symbols, and the grip. Hovering shows the address and time; a click opens the job;
+ * it drags from anywhere on the card, the grip included. Right-click for its menu.
+ */
+function CompactCard({
+  stop: s,
+  position,
+  color,
+  listeners,
+  attributes,
+}: {
+  stop: BoardStop;
+  /** Its place in the day; null in a week cell, which lists by time. */
+  position: number | null;
+  color?: string | null;
+  listeners: ReturnType<typeof useSortable>["listeners"];
+  attributes: ReturnType<typeof useSortable>["attributes"];
+}) {
+  const actions = use(BoardActions);
+  const hint = [s.time, s.address].filter(Boolean).join(" · ");
+  return (
+    <RowActions
+      title={`${s.customer}${s.number ? ` · Job #${s.number}` : ""}`}
+      menu={stopMenu(s, actions)}
+      // "⋯" on hover and keyboard focus, just before the grip.
+      buttonClassName={cx(
+        "absolute top-1/2 -translate-y-1/2 size-7!",
+        s.draggable ? "right-8" : "right-1",
+      )}
+      className="rounded-xl max-lg:hidden"
+    >
+      <div
+        {...(s.draggable ? listeners : {})}
+        title={hint || undefined}
+        data-testid="stop-line"
+        // A drag that ends on the card isn't a click on it.
+        onClickCapture={(e) => {
+          if (actions?.dragged()) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }}
+        className={cx(
+          "relative flex h-9 items-center gap-1.5 rounded-xl bg-surface pr-0.5 pl-2.5 select-none",
+          s.draggable && "cursor-grab active:cursor-grabbing",
+        )}
+      >
+        {color ? <TechStripe color={color} /> : null}
+        {position != null ? (
+          <StopBadge position={position} status={s.status} small />
+        ) : s.time ? (
+          <span className="shrink-0 text-[0.8125rem] font-semibold text-text-muted tabular-nums">
+            {s.time.replace(/\s?(AM|PM)$/, "")}
+          </span>
+        ) : null}
+        <Link
+          href={`/jobs/${s.id}`}
+          draggable={false}
+          className={cx(
+            "flex min-w-0 flex-1 items-baseline gap-1.5 hover:underline",
+            finished(s.status) && "opacity-70",
+          )}
+        >
+          <span className="truncate text-[0.9375rem] font-semibold text-link">{s.customer}</span>
+          <span className="truncate text-[0.8125rem] text-text-muted">{s.tag}</span>
+          <span className="sr-only">
+            {s.time ? `, ${s.time}` : ""}
+            {s.address ? `, ${s.address}` : ""}
+          </span>
+        </Link>
+        {s.lock ? <LockTag lock={s.lock} /> : null}
+        {s.notOnMap || !s.location ? <NotOnMapTag /> : null}
+        {s.draggable ? (
+          <Grip compact label={`Drag ${s.customer}`} {...attributes} {...listeners} />
+        ) : null}
+      </div>
+    </RowActions>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Week: techs down, days across
 // ---------------------------------------------------------------------------
@@ -1046,6 +1435,7 @@ function WeekMaps({
     () => [...new Map(columns.map((c) => [c.techId, c.title])).entries()],
     [columns],
   );
+  const colors = new Map(columns.map((c) => [c.techId, c.color]));
   const busiest =
     techs.find(([id]) => days.some(([d]) => (lists[`${id}|${d}`] ?? []).length > 0))?.[0] ??
     techs[0]?.[0] ??
@@ -1062,13 +1452,13 @@ function WeekMaps({
       {/* The section's title with its one action, then whose week the maps show. */}
       <div className="mb-2 flex min-h-11 flex-wrap items-center justify-between gap-x-3">
         <h2 id="week-routes" className="font-display text-xl font-bold">
-          {maps ? (techs.length > 1 ? "Routes" : `${name}’s Routes`) : "This Week"}
+          {maps ? (techs.length > 1 ? "Maps" : `${name}’s Maps`) : "This Week"}
         </h2>
         {planDates ? (
           <PlanWeek
             dates={planDates}
             waiting={planWaiting}
-            techs={techs.map(([id, title]) => ({ id, name: title }))}
+            techs={techs.map(([id, title]) => ({ id, name: title, color: colors.get(id) }))}
             defaultTech={maps ? tech : null}
             className="contents"
           />
@@ -1085,8 +1475,12 @@ function WeekMaps({
               type="button"
               aria-pressed={id === tech}
               onClick={() => setPicked(id)}
-              className={pillClass(id === tech)}
+              className={pillClass(id === tech, "gap-2")}
             >
+              <TechDot
+                color={colors.get(id)}
+                className={cx(id === tech && "ring-2 ring-white/90")}
+              />
               {title}
             </button>
           ))}
@@ -1151,20 +1545,44 @@ function WeekGrid({
   days,
   today,
   onMove,
+  optimizingKey,
+  busy,
+  onPlan,
 }: {
   columns: BoardColumn[];
   lists: Lists;
   days: [string, string][];
   today: string;
   onMove: (s: BoardStop) => void;
+  optimizingKey: string | null;
+  busy: boolean;
+  onPlan: (techId: string, date: string) => void;
 }) {
-  const rows = [...new Map(columns.map((c) => [c.techId, c.title])).entries()];
+  const rows = [...new Map(columns.map((c) => [c.techId, c])).values()];
+  /**
+   * The day's "⋯" menu (owner, 2026-10-20: "you can't optimize" on Routes): Optimize each
+   * tech's route that day, and Open Day.
+   */
+  const dayMenu = (d: string): MenuEntry[] => {
+    const open = rows
+      .map((r) => columns.find((c) => c.key === `${r.techId}|${d}`))
+      .filter((c): c is BoardColumn => !!c && c.open && (lists[c.key] ?? []).length > 0);
+    return [
+      // While a day is optimizing, Optimize waits (hidden, not dimmed: context-menus.md).
+      ...(busy ? [] : open).map((c) => ({
+        label: rows.length > 1 ? `Optimize ${c.title}’s Route` : "Optimize Route",
+        onSelect: () => onPlan(c.techId, d),
+      })),
+      "separator",
+      { label: "Open Day", href: `/schedule?view=day&date=${d}` },
+    ];
+  };
   return (
-    <div className="overflow-x-auto card">
-      <table className="w-full min-w-[880px] table-fixed text-left">
+    <div className="card overflow-x-auto">
+      <table className="w-full min-w-[760px] table-fixed text-left">
         <thead className="border-b border-border">
           <tr>
-            <th scope="col" className="w-32 px-3 py-2 font-medium text-text-muted">
+            <th scope="col" className="w-28 px-3 py-2 font-medium text-text-muted">
               Tech
             </th>
             {days.map(([d, label]) => (
@@ -1172,30 +1590,51 @@ function WeekGrid({
                 key={d}
                 scope="col"
                 className={cx(
-                  "px-2 py-2 font-medium",
+                  "px-1.5 py-1 font-medium",
                   d === today ? "text-link" : "text-text-muted",
                 )}
               >
-                <Link
-                  href={`/schedule?view=day&date=${d}`}
-                  aria-current={d === today ? "date" : undefined}
-                  className="underline-offset-4 hover:underline"
+                <RowActions
+                  title={weekdayName(d)}
+                  menu={dayMenu(d)}
+                  button="none"
+                  className="flex items-center gap-1"
                 >
-                  {label}
-                  {d === today ? " · Today" : ""}
-                </Link>
+                  <Link
+                    href={`/schedule?view=day&date=${d}`}
+                    aria-current={d === today ? "date" : undefined}
+                    className="min-w-0 truncate py-1.5 underline-offset-4 hover:underline"
+                  >
+                    {label}
+                    {d === today ? " · Today" : ""}
+                  </Link>
+                  {optimizingKey?.endsWith(`|${d}`) ? (
+                    <span
+                      role="status"
+                      aria-label="Optimizing…"
+                      className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none"
+                    />
+                  ) : null}
+                  <RowMenuButton
+                    visible
+                    className="ml-auto grid size-8 shrink-0 place-items-center rounded-full text-link hover:bg-link/10 aria-expanded:bg-link/10"
+                  />
+                </RowActions>
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map(([techId, name]) => (
-            <tr key={techId ?? "none"} className="border-b border-border align-top last:border-0">
+          {rows.map((r) => (
+            <tr key={r.techId ?? "none"} className="border-b border-border align-top last:border-0">
               <th scope="row" className="px-3 py-2 font-semibold">
-                {name}
+                <span className="flex items-center gap-2">
+                  <TechDot color={r.color} />
+                  <span className="min-w-0 break-words">{r.title}</span>
+                </span>
               </th>
               {days.map(([d]) => {
-                const key = `${techId ?? "none"}|${d}`;
+                const key = `${r.techId ?? "none"}|${d}`;
                 const col = columns.find((c) => c.key === key)!;
                 return (
                   <WeekCell
@@ -1238,10 +1677,10 @@ function WeekCell({
       )}
     >
       <SortableContext id={c.key} items={stops.map((s) => s.id)} strategy={rectSortingStrategy}>
-        <ul data-flip-list={c.key} className="min-h-12 space-y-1.5">
-          {stops.map((s) => (
+        <ul data-flip-list={c.key} className="min-h-12 space-y-1.5 lg:space-y-1">
+          {stops.map((s, i) => (
             <li key={s.id} data-flip={s.id}>
-              <WeekChip stop={s} onMove={onMove} />
+              <WeekChip stop={s} position={i + 1} color={c.color} onMove={onMove} />
             </li>
           ))}
         </ul>
@@ -1259,7 +1698,17 @@ function WeekCell({
  * A stop in a week cell: the time, the customer, and the kind of visit, as a small card. The
  * grip sits beside the time, so the name gets the cell's whole width.
  */
-function WeekChip({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop) => void }) {
+function WeekChip({
+  stop: s,
+  position,
+  color,
+  onMove,
+}: {
+  stop: BoardStop;
+  position: number;
+  color?: string | null;
+  onMove: (s: BoardStop) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: s.id,
     disabled: !s.draggable,
@@ -1270,20 +1719,31 @@ function WeekChip({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       data-testid="stop"
-      className={cx("well relative", isDragging && "opacity-40")}
+      className={cx(
+        "well relative overflow-hidden lg:rounded-xl lg:bg-transparent",
+        isDragging && "opacity-40",
+      )}
     >
+      <CompactCard
+        stop={s}
+        position={position}
+        color={color}
+        listeners={listeners}
+        attributes={attributes}
+      />
       {/* Touch and hold or right-click for the stop's menu (gestures.md section 12); no swipes
           in the week's small cells. */}
       <RowActions
         title={`${s.customer}${s.number ? ` · Job #${s.number}` : ""}`}
         menu={stopMenu(s, actions)}
         buttonClassName="absolute right-0.5 bottom-0.5"
-        className="rounded-[inherit]"
+        className="rounded-[inherit] lg:hidden"
       >
+        {color ? <TechStripe color={color} /> : null}
         <Link
           href={`/jobs/${s.id}`}
           className={cx(
-            "block min-h-11 rounded-2xl px-2 pb-2 active:bg-text/[0.06]",
+            "block min-h-11 rounded-2xl pr-2 pb-2 pl-3 active:bg-text/[0.06]",
             finished(s.status) && "opacity-70",
           )}
         >
@@ -1335,67 +1795,84 @@ function Tray({
   jobs,
   onMove,
   onSuggestion,
+  side = false,
 }: {
   jobs: BoardStop[];
   onMove: (s: BoardStop) => void;
   onSuggestion: (job: string, s: Suggestion) => void;
+  /** In Week's sidebar: listed down on wide screens (a row above the board when narrower). */
+  side?: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: TRAY });
   const [all, setAll] = useState(false);
+  const [open, setOpen] = useState(true);
+  const listId = useId();
   return (
     <section
       ref={setNodeRef}
-      aria-labelledby="tray-title"
+      aria-label="Needs a Time"
       data-testid="tray"
-      className={cx("card mb-6 p-4", isOver && "ring-2 ring-link")}
+      className={cx("card p-4", side ? "lg:p-3" : "mb-6", isOver && "ring-2 ring-link")}
     >
-      <div className="flex items-center justify-between gap-3">
-        <h2 id="tray-title" className="font-display text-xl font-bold">
-          Needs a Time{jobs.length ? ` (${jobs.length})` : ""}
-        </h2>
-        {jobs.length > 3 ? (
-          <button
-            type="button"
-            aria-expanded={all}
-            onClick={() => setAll((a) => !a)}
-            className="-mr-2 min-h-11 px-3 text-[0.9375rem] font-semibold text-link max-md:hidden"
-          >
-            {all ? "Show Less" : `Show All ${jobs.length}`}
-          </button>
-        ) : null}
-      </div>
-      {jobs.length === 0 ? (
-        <p className="mt-1 text-[0.9375rem] text-text-muted">
-          Every job has a time. Drag a job here to take it off the schedule.
-        </p>
-      ) : (
-        <SortableContext id={TRAY} items={jobs.map((j) => j.id)} strategy={rectSortingStrategy}>
-          {/* One row that scrolls sideways (the next card peeks in), so a long list doesn't
+      <SideSectionTitle
+        id={listId}
+        title="Needs a Time"
+        count={jobs.length}
+        open={open}
+        onToggle={() => setOpen((o) => !o)}
+        action={
+          jobs.length > 3 ? (
+            <button
+              type="button"
+              aria-expanded={all}
+              onClick={() => setAll((a) => !a)}
+              className={cx(
+                "-mr-2 min-h-11 shrink-0 px-3 text-[0.9375rem] font-semibold text-link max-md:hidden",
+                side && "lg:hidden",
+              )}
+            >
+              {all ? "Show Less" : `Show All ${jobs.length}`}
+            </button>
+          ) : null
+        }
+      />
+      <div id={listId} hidden={!open}>
+        {jobs.length === 0 ? (
+          <p className="mt-1 text-[0.9375rem] text-text-muted">
+            Every job has a time. Drag a job here to take it off the schedule.
+          </p>
+        ) : (
+          <SortableContext id={TRAY} items={jobs.map((j) => j.id)} strategy={rectSortingStrategy}>
+            {/* One row that scrolls sideways (the next card peeks in), so a long list doesn't
               push the routes down; wider screens can open it all as a grid (owner,
               2026-10-18: "super cluttered on desktop"). */}
-          <ul
-            data-flip-list={TRAY}
-            className={cx(
-              "relative -mx-4 mt-3 flex snap-x snap-mandatory scroll-px-4 items-start gap-3 overflow-x-auto px-4 pb-1",
-              all &&
-                "md:mx-0 md:grid md:grid-cols-[repeat(2,minmax(0,1fr))] md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-[repeat(3,minmax(0,1fr))]",
-            )}
-          >
-            {jobs.map((j) => (
-              <li
-                key={j.id}
-                data-flip={j.id}
-                className={cx(
-                  "w-[88%] max-w-80 shrink-0 snap-start",
-                  all && "md:w-auto md:max-w-none",
-                )}
-              >
-                <TrayCard job={j} onMove={onMove} onSuggestion={onSuggestion} />
-              </li>
-            ))}
-          </ul>
-        </SortableContext>
-      )}
+            <ul
+              data-flip-list={TRAY}
+              className={cx(
+                "relative -mx-4 mt-3 flex snap-x snap-mandatory scroll-px-4 items-start gap-3 overflow-x-auto px-4 pb-1",
+                all &&
+                  "md:mx-0 md:grid md:grid-cols-[repeat(2,minmax(0,1fr))] md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-[repeat(3,minmax(0,1fr))]",
+                side &&
+                  "lg:mx-0 lg:mt-2 lg:block lg:space-y-1.5 lg:overflow-visible lg:px-0 lg:pb-0",
+              )}
+            >
+              {jobs.map((j) => (
+                <li
+                  key={j.id}
+                  data-flip={j.id}
+                  className={cx(
+                    "w-[88%] max-w-80 shrink-0 snap-start",
+                    all && "md:w-auto md:max-w-none",
+                    side && "lg:w-auto lg:max-w-none",
+                  )}
+                >
+                  <TrayCard job={j} onMove={onMove} onSuggestion={onSuggestion} />
+                </li>
+              ))}
+            </ul>
+          </SortableContext>
+        )}
+      </div>
     </section>
   );
 }
@@ -1637,7 +2114,7 @@ function MoveSheet({
   stop: BoardStop;
   from: string;
   lists: Lists;
-  techs: { id: string; name: string }[];
+  techs: Tech[];
   today: string;
   onClose: () => void;
   onMove: (to: string, index: number) => void;
@@ -1660,25 +2137,32 @@ function MoveSheet({
   // iOS form rows: the label on the left, the value on the right.
   const row = "flex min-h-11 items-center justify-between gap-3 px-4 py-1.5";
   const control = "min-h-11 min-w-0 max-w-[60%] bg-transparent text-right text-link";
+  const techControl = "min-h-11 min-w-0 max-w-full bg-transparent text-right text-link";
   return (
     <Sheet open onClose={onClose} title={`Move ${stop.customer}`}>
       <p className="mb-4 text-center text-[0.9375rem] text-text-muted">{stop.address}</p>
       <ul className="grouped">
         <li className={row}>
           <label htmlFor={`${ids}-tech`}>Tech</label>
-          <select
-            id={`${ids}-tech`}
-            value={tech}
-            onChange={(e) => setTech(e.target.value)}
-            className={control}
-          >
-            {techs.length > 1 ? <option value="">Nobody yet (waits in Needs a Time)</option> : null}
-            {techs.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
+          {/* The chosen tech's dot beside the picker (a select can't show one in its list). */}
+          <span className="ml-auto flex min-w-0 max-w-[65%] items-center gap-2">
+            {tech ? <TechDot color={techs.find((t) => t.id === tech)?.color} /> : null}
+            <select
+              id={`${ids}-tech`}
+              value={tech}
+              onChange={(e) => setTech(e.target.value)}
+              className={techControl}
+            >
+              {techs.length > 1 ? (
+                <option value="">Nobody yet (waits in Needs a Time)</option>
+              ) : null}
+              {techs.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </span>
         </li>
         <li className={row}>
           <label htmlFor={`${ids}-day`}>Day</label>

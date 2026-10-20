@@ -139,7 +139,12 @@ export default function Today() {
     const list = members.filter(
       (m) => m.user_id !== me && (m.status === "active" || busy.has(m.user_id)),
     );
-    return [{ value: me, label: "Me" }, ...list.map((m) => ({ value: m.user_id, label: m.name }))];
+    // Each with their color dot (team and week spec section 3).
+    const myColor = members.find((m) => m.user_id === me)?.color ?? null;
+    return [
+      { value: me, label: "Me", dot: myColor },
+      ...list.map((m) => ({ value: m.user_id, label: m.name, dot: m.color })),
+    ];
   }, [dayJobs, me, members]);
   // A notification's request shows your own day.
   const shownTech = !asked && people.some((p) => p.value === techId) ? techId : me;

@@ -13,12 +13,14 @@ import {
   requiresFinishedChecklist,
   roleLabel,
   seesAllJobs,
+  teamOrder,
 } from "@leakbook/core";
+import { ColorPicker, MemberSwitch } from "@/components/team-controls";
+import { TechDot } from "@/components/tech-dot";
 import { CompleteJobForm, JobVisibilityForm } from "@/components/job-visibility";
 import {
   CopyLink,
   SField,
-  SSelect,
   SettingsFields,
   SettingsForm,
   SettingsSection,
@@ -34,7 +36,7 @@ import { Grouped } from "@/components/ui";
 import { OWNER_ONLY, getOffice } from "@/lib/auth";
 import { RoleChoice } from "@/components/role-choice";
 import { Banner } from "@/components/doc-ui";
-import { getCompany, getTeam, listConfig } from "@/lib/data";
+import { getCompany, getTeam, listConfig, type TeamMember } from "@/lib/data";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -171,6 +173,73 @@ export default async function TeamSettingsPage() {
   const myRole = office.isOwner ? "owner" : "admin";
   const roles = assignableRoles(myRole);
 
+  const order = teamOrder(team);
+  /** Whether you may turn this person off and on (not yourself; an owner only by an owner). */
+  const canSwitch = (m: TeamMember) =>
+    m.user_id !== office.user.id && (m.role !== "owner" || office.isOwner);
+  const memberRow = (m: TeamMember) => {
+    const profile = profileOf.get(m.user_id);
+    const name = profile?.name ?? m.name;
+    return (
+      <SheetRow
+        key={m.membership_id}
+        testId="member"
+        title={name}
+        label={
+          <span className="flex items-center gap-2.5">
+            <TechDot color={m.color} />
+            <span className="min-w-0 break-words">
+              {name}
+              {m.user_id === office.user.id ? (
+                <span className="text-text-muted"> (you)</span>
+              ) : null}
+            </span>
+          </span>
+        }
+        detail={<span className="pl-5">{roleLabel(m.role)}</span>}
+        accessory={
+          <MemberSwitch
+            id={m.membership_id}
+            name={name}
+            role={m.role}
+            active={m.status === "active"}
+            disabled={!canSwitch(m)}
+          />
+        }
+      >
+        <div className="space-y-6">
+          <ProfileFields profile={profile} user={m.user_id} name={m.name} email={m.email} />
+          <SettingsForm action={updateMember} submit="Save Role" full>
+            <input type="hidden" name="id" value={m.membership_id} />
+            <input type="hidden" name="status" value={m.status} />
+            <div className="px-4 sm:px-0">
+              <RoleChoice
+                roles={roles}
+                initial={m.role === "owner" || m.role === "admin" ? m.role : "tech"}
+                id={`role-${m.membership_id}`}
+              />
+            </div>
+          </SettingsForm>
+          <ColorPicker id={m.membership_id} name={name} color={m.color} />
+          <ul className="grouped">
+            <li>
+              <MemberSwitch
+                id={m.membership_id}
+                name={name}
+                role={m.role}
+                active={m.status === "active"}
+                disabled={!canSwitch(m)}
+                row
+              />
+            </li>
+          </ul>
+          {m.role === "owner" && !office.isOwner ? <Banner tone="info">{OWNER_ONLY}</Banner> : null}
+          {profile ? <RemoveProfile id={profile.id} /> : null}
+        </div>
+      </SheetRow>
+    );
+  };
+
   return (
     <SettingsListPage
       title="Team"
@@ -191,33 +260,10 @@ export default async function TeamSettingsPage() {
         ),
       }}
     >
-      <SettingsSection title="What techs can do">
-        {/* A shop security setting: owners only (owner, 2026-10-18). */}
-        {office.isOwner ? (
-          <JobVisibilityForm
-            seesAll={seesAllJobs("tech", company.settings)}
-            makesJobs={canMakeJobs("tech", company.settings)}
-          />
-        ) : (
-          <div className="space-y-2 px-4 sm:px-0">
-            <p>
-              Techs see{" "}
-              {seesAllJobs("tech", company.settings) ? "every job" : "only their own jobs"} and{" "}
-              {canMakeJobs("tech", company.settings) ? "can" : "can’t"} make new jobs.
-            </p>
-            <Banner tone="info">{OWNER_ONLY}</Banner>
-          </div>
-        )}
-      </SettingsSection>
-
-      <SettingsSection title="Completing a job">
-        {office.isManager ? (
-          <CompleteJobForm
-            checklist={requiresFinishedChecklist(company.settings)}
-            photo={requiresFinishPhoto(company.settings)}
-          />
-        ) : null}
-      </SettingsSection>
+      {/* One list (owner, 2026-10-20): the active people A to Z, then those turned off, the
+          most recently turned off first. Each row opens the person's profile. */}
+      <Grouped title="Active">{order.active.map(memberRow)}</Grouped>
+      {order.off.length ? <Grouped title="Turned off">{order.off.map(memberRow)}</Grouped> : null}
 
       <Grouped
         title="Open invites"
@@ -259,82 +305,10 @@ export default async function TeamSettingsPage() {
         <SettingsAddRow label="Invite Someone" />
       </Grouped>
 
-      <Grouped title="People">
-        {team.map((m) => (
-          <SheetRow
-            key={m.membership_id}
-            title={m.name}
-            label={
-              <>
-                {m.name}
-                {m.user_id === office.user.id ? (
-                  <span className="text-text-muted"> (you)</span>
-                ) : null}
-              </>
-            }
-            detail={m.email ? <span className="break-all">{m.email}</span> : undefined}
-            value={roleLabel(m.role) + (m.status === "disabled" ? " · Turned off" : "")}
-          >
-            <SettingsForm action={updateMember} primary full>
-              <input type="hidden" name="id" value={m.membership_id} />
-              {m.email ? (
-                <p className="mb-4 px-4 text-[0.9375rem] break-all text-text-muted sm:px-0">
-                  {m.email}
-                </p>
-              ) : null}
-              <div className="mb-4 px-4 sm:px-0">
-                <RoleChoice
-                  roles={roles}
-                  initial={m.role === "owner" || m.role === "admin" ? m.role : "tech"}
-                  id={`role-${m.membership_id}`}
-                />
-              </div>
-              {m.role === "owner" && !office.isOwner ? (
-                // Turning an owner off is the owner's (owner, 2026-10-18).
-                <div className="px-4 sm:px-0">
-                  <input type="hidden" name="status" value={m.status} />
-                  <Banner tone="info">{OWNER_ONLY}</Banner>
-                </div>
-              ) : (
-                <SettingsFields labelWidth="5rem">
-                  <SSelect
-                    label="Access"
-                    name="status"
-                    id={`status-${m.membership_id}`}
-                    defaultValue={m.status}
-                    options={[
-                      { value: "active", label: "Active" },
-                      { value: "disabled", label: "Turned off" },
-                    ]}
-                  />
-                </SettingsFields>
-              )}
-            </SettingsForm>
-          </SheetRow>
-        ))}
-      </Grouped>
-
       <Grouped
-        title="Profiles"
-        className="mt-8"
-        footer="Each person’s phone, email, address, emergency contact, and notes. Only owners and admins see them."
+        title="Without the app"
+        footer="Profiles for people who work for you without using the app. Only owners and admins see them."
       >
-        {team.map((m) => {
-          const profile = profileOf.get(m.user_id);
-          return (
-            <SheetRow
-              key={`profile-${m.membership_id}`}
-              testId="profile"
-              title={profile?.name ?? m.name}
-              label={profile?.name ?? m.name}
-              detail={profile?.phone ?? undefined}
-              value={profile ? undefined : "Add Details"}
-            >
-              <ProfileFields profile={profile} user={m.user_id} name={m.name} email={m.email} />
-              {profile ? <RemoveProfile id={profile.id} /> : null}
-            </SheetRow>
-          );
-        })}
         {others.map((p) => (
           <SheetRow
             key={p.id}
@@ -355,6 +329,34 @@ export default async function TeamSettingsPage() {
           <ProfileFields />
         </SheetRow>
       </Grouped>
+
+      <SettingsSection title="What techs can do">
+        {/* A shop security setting: owners only (owner, 2026-10-18). */}
+        {office.isOwner ? (
+          <JobVisibilityForm
+            seesAll={seesAllJobs("tech", company.settings)}
+            makesJobs={canMakeJobs("tech", company.settings)}
+          />
+        ) : (
+          <div className="space-y-2 px-4 sm:px-0">
+            <p>
+              Techs see{" "}
+              {seesAllJobs("tech", company.settings) ? "every job" : "only their own jobs"} and{" "}
+              {canMakeJobs("tech", company.settings) ? "can" : "can’t"} make new jobs.
+            </p>
+            <Banner tone="info">{OWNER_ONLY}</Banner>
+          </div>
+        )}
+      </SettingsSection>
+
+      <SettingsSection title="Completing a job">
+        {office.isManager ? (
+          <CompleteJobForm
+            checklist={requiresFinishedChecklist(company.settings)}
+            photo={requiresFinishPhoto(company.settings)}
+          />
+        ) : null}
+      </SettingsSection>
     </SettingsListPage>
   );
 }

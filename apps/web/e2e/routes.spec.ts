@@ -167,7 +167,7 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   const planned = await routeNames(page, "Priya Shah");
   expect(planned).toHaveLength(3);
   expect(planned.indexOf(name("goodyear"))).not.toBe(1);
-  await expect(route.getByRole("link", { name: "Open Route in Google Maps" })).toHaveAttribute(
+  await expect(route.getByRole("link", { name: "Open Route in Maps" })).toHaveAttribute(
     "href",
     /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1/,
   );
@@ -205,10 +205,12 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   await expect(tray.getByTestId("tray-job").filter({ hasText: name("tempe") })).toHaveCount(1);
 
   // 3b. Taking a job away from its tech puts it in Needs a Time, keeping its booked time.
+  // On a computer the stop is a one-line card (owner, 2026-10-20): Move… is in its menu.
   await route
     .getByRole("article", { name: new RegExp(name("zoo")) })
-    .getByRole("button", { name: "Move…" })
-    .click();
+    .getByTestId("stop-line")
+    .click({ button: "right" });
+  await page.getByRole("menu").getByRole("menuitem", { name: "Move…" }).click();
   const zooSheet = page.getByRole("dialog", { name: `Move ${name("zoo")}` });
   await zooSheet.getByLabel("Tech").selectOption({ label: "Nobody yet (waits in Needs a Time)" });
   await zooSheet.getByRole("button", { name: "Move", exact: true }).click();

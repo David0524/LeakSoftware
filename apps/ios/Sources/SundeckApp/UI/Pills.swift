@@ -1,4 +1,5 @@
 #if os(iOS)
+    import SundeckCore
     import SwiftUI
 
     // Filter and chooser pills (spec 3.8): 44 tall capsules, body medium, 8 apart, in a row that
@@ -14,19 +15,24 @@
         var selected: Bool
         /// Something dragged is over it (the Schedule's tech pills take a dropped stop).
         var targeted = false
+        /// A tech's color, as a dot before the name (Whose Day, Whose Schedule).
+        var dot: TechColor? = nil
         var action: () -> Void
 
         var body: some View {
             Button(action: action) {
-                Text(title)
-                    .textRole(.bodyMedium)
-                    .lineLimit(1)
-                    .foregroundStyle(selected ? Color.onPrimary : Color.text)
-                    .padding(.horizontal, 16)
-                    .frame(minHeight: minTarget)
-                    .background(Capsule().fill(selected ? Color.brandPrimary : targeted ? Color.tinted : Color.fill))
-                    .overlay { if targeted { Capsule().strokeBorder(Color.link, lineWidth: 2) } }
-                    .contentShape(Capsule())
+                HStack(spacing: 8) {
+                    if let dot { TechDot(color: dot) }
+                    Text(title)
+                }
+                .textRole(.bodyMedium)
+                .lineLimit(1)
+                .foregroundStyle(selected ? Color.onPrimary : Color.text)
+                .padding(.horizontal, 16)
+                .frame(minHeight: minTarget)
+                .background(Capsule().fill(selected ? Color.brandPrimary : targeted ? Color.tinted : Color.fill))
+                .overlay { if targeted { Capsule().strokeBorder(Color.link, lineWidth: 2) } }
+                .contentShape(Capsule())
             }
             .buttonStyle(.plain)
             .accessibilityAddTraits(selected ? [.isSelected] : [])
@@ -41,6 +47,8 @@
         /// Hovering a pill with it chooses that pill (spring loading).
         var canDrop: (Value) -> Bool = { _ in false }
         var onDrop: ((Value, String) -> Bool)?
+        /// A tech's color for an option (a dot before its name), or nil.
+        var dot: (Value) -> TechColor? = { _ in nil }
         @State private var targeted: Value?
 
         var body: some View {
@@ -48,7 +56,8 @@
                 HStack(spacing: 8) {
                     ForEach(options, id: \.self) { option in
                         let pill = Pill(
-                            title: label(option), selected: option == selection, targeted: targeted == option
+                            title: label(option), selected: option == selection, targeted: targeted == option,
+                            dot: dot(option)
                         ) { selection = option }
                         if let onDrop, canDrop(option) {
                             pill

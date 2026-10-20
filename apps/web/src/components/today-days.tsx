@@ -2,13 +2,16 @@
 
 import { useState, type ReactNode } from "react";
 import { SwipePages } from "./gestures";
-import { PageHeader, pillClass } from "./ui";
+import { TechDot } from "./tech-dot";
+import { PageHeader, cx, pillClass } from "./ui";
 
 export interface TodayDay {
   /** The tech whose day it is. */
   id: string;
   /** In Whose Day: "Me" or the tech's name. */
   label: string;
+  /** Their color: a dot before the name (owner, 2026-10-20). */
+  color?: string | null;
   /** The page title: "Today" or "Today · Priya Shah". */
   title: string;
   content: ReactNode;
@@ -65,8 +68,9 @@ export function TodayDays({
                 e.preventDefault();
                 pick(i);
               }}
-              className={pillClass(i === at)}
+              className={pillClass(i === at, "gap-2")}
             >
+              <TechDot color={d.color} className={cx(i === at && "ring-2 ring-white/90")} />
               {d.label}
             </a>
           ))}

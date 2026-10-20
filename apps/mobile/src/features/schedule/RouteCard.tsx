@@ -12,6 +12,7 @@ import type { RowGestures } from "../../ui/RowMenu";
 import { SwipeActions } from "../../ui/SwipeRow";
 import { AddressLine } from "../../ui/NotOnMap";
 import { Grip } from "../../ui/Grip";
+import { TechDot, TechStripe } from "../../ui/TechDot";
 import { WebIcon } from "../../ui/WebIcon";
 import {
   cardShadow,
@@ -66,6 +67,8 @@ export interface Route {
   key: string;
   techId: string;
   title: string;
+  /** The tech's color key (team and week spec section 3). */
+  color?: string | null;
   date: string;
   stops: Stop[];
   driveMin: number;
@@ -190,10 +193,10 @@ export function RouteCard({
       style={[styles.route, { backgroundColor: dropTint(hover, c.key) }]}
     >
       {lead ? (
-        <T variant="cardTitle">{c.title}</T>
+        <TechTitle route={c} />
       ) : (
         <Card padding={space["4"]}>
-          <T variant="cardTitle">{c.title}</T>
+          <TechTitle route={c} />
           <RouteFacts route={c} busy={busy} mapsButton={mapsButton} onPlan={onPlan} />
         </Card>
       )}
@@ -232,6 +235,7 @@ export function RouteCard({
                   : null
               }
               route={c.key}
+              tech={c.color ?? null}
               onMove={onMove}
               onDirections={onDirections}
               gestures={gesturesFor?.(s)}
@@ -242,6 +246,18 @@ export function RouteCard({
           <Leg text={`${durationLabel(c.backLegMin)} back to the shop`} />
         ) : null}
       </View>
+    </View>
+  );
+}
+
+/** The tech's name with their color dot before it (team and week spec section 3). */
+function TechTitle({ route: c }: { route: Route }) {
+  return (
+    <View style={styles.techTitle}>
+      <TechDot tech={c.color} />
+      <T variant="cardTitle" style={{ flexShrink: 1 }}>
+        {c.title}
+      </T>
     </View>
   );
 }
@@ -407,6 +423,7 @@ function StopCard({
   n,
   item,
   route,
+  tech,
   onMove,
   onDirections,
   gestures,
@@ -416,6 +433,8 @@ function StopCard({
   /** What a drag picks up; null for a stop that can't move (a canceled job). */
   item: DragItem | null;
   route: string;
+  /** The route's tech color: a 4 pt stripe on the card's leading edge. */
+  tech: string | null;
   onMove: (s: Stop) => void;
   onDirections: (s: Stop) => void;
   gestures?: RowGestures;
@@ -428,13 +447,17 @@ function StopCard({
     () => (
       <View style={styles.clip}>
         <StopFace stop={s} n={n} ghost />
+        <TechStripe tech={tech} />
       </View>
     ),
     gestures?.onLongPress,
   );
   const slot = slotRef(s.id, route);
   const content = (
-    <StopFace stop={s} n={n} onMove={onMove} onDirections={onDirections} gestures={gestures} />
+    <View>
+      <StopFace stop={s} n={n} onMove={onMove} onDirections={onDirections} gestures={gestures} />
+      <TechStripe tech={tech} />
+    </View>
   );
   // Swipe left for Move…, right for Lock… (a stop that can't move has neither).
   const leading = gestures ? gestures.leading : null;
@@ -510,6 +533,7 @@ const styles = StyleSheet.create({
     borderRadius: shape.card + space["2"],
   },
   stops: { gap: 0 },
+  techTitle: { flexDirection: "row", alignItems: "center", gap: space["2"] },
   stopWrap: { gap: space["1"], marginBottom: space["1"] },
   leg: {
     flexDirection: "row",

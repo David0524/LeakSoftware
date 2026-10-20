@@ -12,6 +12,7 @@ import { serviceDaysCases } from "./cases/service-days";
 import { todayHeroCases } from "./cases/today-hero";
 import { weekPlan } from "./cases/week-plan";
 import { download } from "./cases/download";
+import { team } from "./cases/team";
 
 /** One fixture file per entry: apps/ios/Tests/Fixtures/<name>.json. */
 export const modules: Record<string, ModuleCases> = {
@@ -28,4 +29,5 @@ export const modules: Record<string, ModuleCases> = {
   "today-hero": todayHeroCases,
   "week-plan": weekPlan,
   download,
+  team,
 };

@@ -451,6 +451,31 @@ export function mapsLinks(p: MapPlace): { apple: string; google: string } {
 export type MapsApp = "apple" | "google";
 
 /**
+ * Maps wording (owner, 2026-10-20: "Change 'Google Maps' and 'Apple Maps' to just 'Maps'").
+ * Buttons and links never name the maps company; only the setting's choices do, since that's
+ * where someone picks one (Settings › Directions open in: Automatic first).
+ */
+export const MAPS_LABELS = {
+  openInMaps: "Open in Maps",
+  directions: "Directions",
+  /** Apple Maps links take one stop: the day's button opens the next one. */
+  nextStop: "Next Stop in Maps",
+  /** Google Maps takes the whole route. */
+  openRoute: "Open Route in Maps",
+  /** The short form of either day button, where there's no room for the long one. */
+  maps: "Maps",
+  setting: "Directions open in",
+  automatic: "Automatic",
+  apple: "Maps (Apple)",
+  google: "Maps (Google)",
+} as const;
+
+/** The day's directions button for the chosen app: the whole route, or the next stop. */
+export function dayMapsLabel(app: MapsApp): string {
+  return app === "google" ? MAPS_LABELS.openRoute : MAPS_LABELS.nextStop;
+}
+
+/**
  * Which maps app directions open in: the device's saved choice, else Apple Maps on iPhone,
  * iPad, and Mac (iPads report themselves as Macs), else Google Maps.
  */

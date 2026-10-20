@@ -39,6 +39,16 @@
   --lb-separator: #3C3C434A;
   --lb-placeholder: #3C3C434C;
   --lb-thumb: #FFFFFF;
+  --lb-tech-blue: #1F6FAE;
+  --lb-tech-green: #2E8B57;
+  --lb-tech-orange: #D07B27;
+  --lb-tech-purple: #7B5CC4;
+  --lb-tech-pink: #C2477E;
+  --lb-tech-teal: #15899A;
+  --lb-tech-red: #C8463D;
+  --lb-tech-olive: #7A8B2E;
+  --lb-tech-brown: #9A6B3F;
+  --lb-tech-slate: #5A6875;
   --lb-landmark-leaf: #4C9A52;
   --lb-landmark-leaf-dark: #2F6E3A;
   --lb-landmark-trunk: #8B5E34;
@@ -81,6 +91,16 @@
   --lb-separator: #545458A6;
   --lb-placeholder: #EBEBF54C;
   --lb-thumb: #636366;
+  --lb-tech-blue: #4A93D0;
+  --lb-tech-green: #4CB07A;
+  --lb-tech-orange: #E89A4F;
+  --lb-tech-purple: #9D83DB;
+  --lb-tech-pink: #DB6E9F;
+  --lb-tech-teal: #3AAFC0;
+  --lb-tech-red: #E56A60;
+  --lb-tech-olive: #9DB04A;
+  --lb-tech-brown: #C08E5E;
+  --lb-tech-slate: #8A97A4;
   color-scheme: dark;
 }
 
@@ -110,6 +130,16 @@
     --lb-separator: #545458A6;
     --lb-placeholder: #EBEBF54C;
     --lb-thumb: #636366;
+    --lb-tech-blue: #4A93D0;
+    --lb-tech-green: #4CB07A;
+    --lb-tech-orange: #E89A4F;
+    --lb-tech-purple: #9D83DB;
+    --lb-tech-pink: #DB6E9F;
+    --lb-tech-teal: #3AAFC0;
+    --lb-tech-red: #E56A60;
+    --lb-tech-olive: #9DB04A;
+    --lb-tech-brown: #C08E5E;
+    --lb-tech-slate: #8A97A4;
     color-scheme: dark;
   }
 }
@@ -140,6 +170,16 @@
   --lb-separator: #3C3C434A;
   --lb-placeholder: #3C3C434C;
   --lb-thumb: #FFFFFF;
+  --lb-tech-blue: #1F6FAE;
+  --lb-tech-green: #2E8B57;
+  --lb-tech-orange: #D07B27;
+  --lb-tech-purple: #7B5CC4;
+  --lb-tech-pink: #C2477E;
+  --lb-tech-teal: #15899A;
+  --lb-tech-red: #C8463D;
+  --lb-tech-olive: #7A8B2E;
+  --lb-tech-brown: #9A6B3F;
+  --lb-tech-slate: #5A6875;
   color-scheme: light;
 }
 
@@ -174,6 +214,16 @@
   --color-status-excluded: var(--lb-excluded);
   --color-status-warning: var(--lb-warning);
   --color-status-info: var(--lb-info);
+  --color-tech-blue: var(--lb-tech-blue);
+  --color-tech-green: var(--lb-tech-green);
+  --color-tech-orange: var(--lb-tech-orange);
+  --color-tech-purple: var(--lb-tech-purple);
+  --color-tech-pink: var(--lb-tech-pink);
+  --color-tech-teal: var(--lb-tech-teal);
+  --color-tech-red: var(--lb-tech-red);
+  --color-tech-olive: var(--lb-tech-olive);
+  --color-tech-brown: var(--lb-tech-brown);
+  --color-tech-slate: var(--lb-tech-slate);
   --color-landmark-leaf: var(--lb-landmark-leaf);
   --color-landmark-leaf-dark: var(--lb-landmark-leaf-dark);
   --color-landmark-trunk: var(--lb-landmark-trunk);

@@ -13,6 +13,7 @@ import {
 import { Button, Group, ListRow, SwitchControl, T } from "../../ui/components";
 import { ModalSheet } from "../../ui/ModalSheet";
 import { color, minTap, space } from "../../ui/theme";
+import { TechDot } from "../../ui/TechDot";
 import { WebIcon } from "../../ui/WebIcon";
 
 // Plan Week (owner, 2026-10-20, docs/plans/route-maps.md: "build routes from scratch"), the
@@ -30,7 +31,7 @@ export function PlanWeek({
   onUndo,
   onResult,
 }: {
-  techs: { id: string; name: string }[];
+  techs: { id: string; name: string; color?: string | null }[];
   /** The tech chip picked on Schedule, else Everyone. */
   defaultTech: string | null;
   /** Jobs in Needs a Time with nobody on them that may be placed this week. */
@@ -87,7 +88,7 @@ export function PlanWeek({
     );
   }
 
-  const row = (value: string, label: string) => {
+  const row = (value: string, label: string, dot?: string | null) => {
     const on =
       value === EVERYONE
         ? techs.length > 0 && techs.every((t) => picked.includes(t.id))
@@ -98,6 +99,7 @@ export function PlanWeek({
         accessibilityLabel={`${label}${on ? ", selected" : ""}`}
         onPress={() => setPicked(togglePlanTech(picked, value, techs))}
         chevron={false}
+        leading={dot !== undefined ? <TechDot tech={dot} /> : undefined}
         trailing={
           <View style={!on && { opacity: 0 }}>
             <WebIcon name="check" size={20} color={color.link} strokeWidth={2.4} />
@@ -137,7 +139,7 @@ export function PlanWeek({
           </View>
           <Group>{[row(EVERYONE, "Everyone")]}</Group>
         </View>
-        <Group>{techs.map((t) => row(t.id, t.name))}</Group>
+        <Group>{techs.map((t) => row(t.id, t.name, t.color ?? null))}</Group>
         {waiting > 0 ? (
           // Whether jobs nobody has yet come onto the week too (an iOS switch row).
           <Group>

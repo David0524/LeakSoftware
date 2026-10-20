@@ -35,6 +35,14 @@
 
         enum Field { case fee, gallons, notes }
 
+        /// A tech's name as a row's value, with their dot before it.
+        private func techValue(_ name: String, _ color: TechColor?) -> some View {
+            HStack(spacing: 8) {
+                if let color { TechDot(color: color) }
+                Text(name).textRole(.body).foregroundStyle(Color.textMuted)
+            }
+        }
+
         var body: some View {
             let _ = sync.revision
             let company = session.company
@@ -48,8 +56,14 @@
                 if !links.isEmpty { linksGroup(links) }
                 if details.address != nil { pool(details) }
                 Grouped(label: "Assigned to") {
-                    ListRow("Tech", value: details.tech)
-                    if let with = details.with { ListRow("With", value: with) }
+                    // Each tech's color as a dot before their name (owner, 2026-10-20).
+                    let colors = company.map { teamColors(sync.store, companyId: $0.id) } ?? [:]
+                    ListRow("Tech") {
+                        techValue(details.tech, colors[job.job["assigned_user_id"]?.string ?? ""])
+                    }
+                    if let with = details.with {
+                        ListRow("With") { techValue(with, colors[job.job["second_tech_id"]?.string ?? ""]) }
+                    }
                     if let fee = details.fee { ListRow(details.feeLabel, value: fee) }
                 }
                 if !details.intake.isEmpty {

@@ -10,8 +10,11 @@
     /// The board is built off the main thread and swapped in when ready, and Optimize and Plan
     /// Week plan off it too, so the screen never stops while they work (owner, 2026-10-20: "The
     /// Liquid Glass literally freezes up when I press 'plan route'"). A stop can also be dragged (touch and hold) to another place, tech or
-    /// day, or to Needs a Time (owner, 2026-10-20), the same move as Move…. Every change is a write
-    /// through the sync layer. Port of apps/web/src/app/(office)/schedule/page.tsx and
+    /// day, or to Needs a Time (owner, 2026-10-20), the same move as Move…. Week holds the routes work
+    /// (owner, 2026-10-20: "Let's just build that all into Week"): every tech's row on each day,
+    /// Optimize in each day's "⋯", Customers to Add with Suggest Days, and dragging between days
+    /// and techs. Moving a maintenance plan's visit asks Change Schedule or Just This Visit. Every
+    /// change is a write through the sync layer. Port of apps/web/src/app/(office)/schedule/page.tsx and
     /// components/route-board.tsx.
     struct ScheduleScreen: View {
         @Environment(Session.self) private var session
@@ -30,7 +33,7 @@
         @State private var picking = false
         /// What the last change did, at the top of the screen (owner, 2026-10-20).
         @State private var banner: ResultBanner?
-        /// The tech whose day Optimize is working on.
+        /// The day Optimize is working on (`routeKey`).
         @State private var optimizing: String?
         /// Plan Week is working.
         @State private var planningRun = false
@@ -38,9 +41,16 @@
         @State private var animateNext = false
         @State private var saved = 0
         @State private var failed = 0
-        /// Plan Week's sheet, and the rows that put the week back (Undo on its result).
+        /// Plan Week's sheet.
         @State private var planningWeek = false
-        @State private var weekUndo: [WeekUndoRow]?
+        /// The rows that put the last change back (Undo on its banner), and what Undo says.
+        @State private var undo: PendingUndo?
+        /// A plan visit being moved, waiting for Change Schedule or Just This Visit.
+        @State private var planMove: PlanVisitMove?
+        /// Customers to Add: the plan whose Move sheet is open, and Suggest Days' results.
+        @State private var movingPlan: PlanMoveTarget?
+        @State private var suggestingDays = false
+        @State private var suggestedDays: SuggestedDays?
 
         /// `view` opens on Week or Month (the screenshot tests); Day by default.
         init(view: ScheduleView = .day) { _view = State(initialValue: view) }
@@ -78,14 +88,15 @@
                             canDrop: { $0 != "all" },
                             // A stop dropped on a person goes last on their day (Day view).
                             onDrop: view == .day
-                                ? { id, job in drop(job, on: .route(tech: id, date: board.date, index: nil)) } : nil
+                                ? { id, job in drop(job, on: .route(tech: id, date: board.date, index: nil)) } : nil,
+                            dot: { id in board.color(id) }
                         )
                         .padding(.horizontal, -16)
                         .accessibilityLabel("Whose schedule")
                     }
                     if let route = board.leadRoute {
-                        DayLead(route: route, board: board, busy: optimizing == route.techId) {
-                            plan(route.techId, board)
+                        DayLead(route: route, board: board, busy: optimizing == route.id) {
+                            plan(route.techId, date: board.date, board)
                         }
                     }
                     notices(board)
@@ -119,8 +130,8 @@
                 }
             }
             .refreshable { await sync.syncNow() }
-            // Plan Week's result has one Undo for the whole change (undo-and-redo.md).
-            .resultBanner($banner, onUndo: weekUndo.map { rows in { undoWeek(rows) } })
+            // A change's result has one Undo for the whole change (undo-and-redo.md).
+            .resultBanner($banner, onUndo: undo.map { u in { undoLast(u) } })
             .navigationTitle("Schedule")
             .toolbar { NewJobToolbar(back: "Schedule") }
             .sensoryFeedback(.success, trigger: saved)
@@ -142,7 +153,7 @@
                 if let board {
                     MoveSheet(target: target, board: board) { tech, day, index in
                         moving = nil
-                        apply {
+                        move(target.job, tech: tech, date: day) {
                             try moveJob(
                                 target.job.id, tech: tech, date: day, index: index, jobs: board.jobs, ctx: board.ctx,
                                 team: board.team, drive: drive)
@@ -154,7 +165,7 @@
                 if let board {
                     SuggestedTimesSheet(job: job, board: board, drive: drive) { s in
                         suggesting = nil
-                        apply {
+                        move(job, tech: s.slot.techId, date: s.slot.date) {
                             try moveJob(
                                 job.id, tech: s.slot.techId, date: s.slot.date, index: s.slot.position,
                                 jobs: board.jobs,
@@ -170,6 +181,33 @@
                         planWeek(techs: techs, tray: tray, board)
                     }
                 }
+            }
+            .sheet(item: $movingPlan) { target in
+                if let board {
+                    PlanMoveSheet(target: target, board: board) { day, tech in
+                        movingPlan = nil
+                        setPlan(target.plan, to: day, tech: tech)
+                    }
+                }
+            }
+            .sheet(item: $suggestedDays) { found in
+                if let board {
+                    SuggestedDaysSheet(found: found, board: board) {
+                        suggestedDays = nil
+                        keepDays(found)
+                    }
+                }
+            }
+            // Moving a maintenance plan's visit asks first (owner, 2026-10-20: "have a pop up ask
+            // 'change schedule' or 'just today'").
+            .confirmationDialog(
+                PlanMoveChoices.title(planMove?.job.customerName ?? ""),
+                isPresented: Binding(get: { planMove != nil }, set: { if !$0 { planMove = nil } }),
+                titleVisibility: .visible, presenting: planMove
+            ) { m in
+                Button(PlanMoveChoices.changeSchedule) { changeSchedule(m) }
+                Button(PlanMoveChoices.justThisVisit) { justThisVisit(m) }
+                Button(PlanMoveChoices.cancel, role: .cancel) {}
             }
             .sheet(isPresented: $picking) {
                 if let board {
@@ -231,71 +269,185 @@
             ForEach(board.shownTechs) { t in
                 RouteCard(
                     tech: t, board: board, route: board.loaded.routes[routeKey(t.id, board.date)],
-                    busy: optimizing == t.id, onPlan: { plan(t.id, board) }, actions: stopActions,
+                    busy: optimizing == routeKey(t.id, board.date), onPlan: { plan(t.id, date: board.date, board) },
+                    actions: stopActions,
                     onDrop: { id, index in drop(id, on: .route(tech: t.id, date: board.date, index: index)) },
                     lead: board.leadRoute?.techId == t.id)
             }
         }
 
+        /// Week (owner, 2026-10-20: "On routes, you can't optimize or rearrange placement … Let's
+        /// just build that all into Week"): Customers to Add, Optimize Week (Plan Week), then each
+        /// day with every tech's row; each day's "⋯" optimizes a tech's day; stops drag within a
+        /// day or to another day or tech.
         @ViewBuilder private func weekView(_ board: Board) -> some View {
+            if board.ctx.isManager {
+                CustomersToAddCard(
+                    plans: board.toAdd, busy: suggestingDays,
+                    onMove: { movingPlan = PlanMoveTarget(plan: $0, day: nil) },
+                    onSuggest: { suggestDays(board) })
+            }
             // Owners and admins: put the week's movable jobs on days for the least driving.
             if board.ctx.isManager && !planWeekDates(board.days, today: board.ctx.today).isEmpty {
                 Button {
                     planningWeek = true
                 } label: {
-                    BusyLabel(title: "Plan Week", busyTitle: "Planning…", busy: planningRun)
+                    BusyLabel(title: "Optimize Week", busyTitle: "Planning…", busy: planningRun)
                 }
                 .buttonStyle(.secondary(fullWidth: true))
                 .disabled(planningRun)
-                .accessibilityHint("Opens a sheet to plan this week’s routes")
+                .accessibilityHint("Opens Plan Week, to plan this week’s routes")
             }
-            ForEach(board.days, id: \.self) { d in
-                let list = board.weekList(d)
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Button {
-                            pick(d)
-                        } label: {
-                            Text(formatDay(d, long: true) + (d == board.ctx.today ? " · Today" : ""))
-                                .textRole(.subHeading)
-                                .foregroundStyle(d == board.ctx.today ? Color.link : Color.text)
-                                .frame(minHeight: minTarget)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityAddTraits(.isHeader)
-                        if list.isEmpty {
-                            Text("Nothing scheduled").textRole(.secondary).foregroundStyle(Color.textMuted)
-                        }
+            ForEach(board.days, id: \.self) { d in weekDay(d, board) }
+        }
+
+        @ViewBuilder private func weekDay(_ d: String, _ board: Board) -> some View {
+            let rows = board.weekTechs(d)
+            let unassigned = board.tech == "all" ? board.loaded.unassigned[d] ?? [] : []
+            let empty = rows.allSatisfy { ($0.route?.jobs ?? []).isEmpty } && unassigned.isEmpty
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .center, spacing: 8) {
+                    Button {
+                        pick(d)
+                    } label: {
+                        Text(formatDay(d, long: true) + (d == board.ctx.today ? " · Today" : ""))
+                            .textRole(.subHeading)
+                            .foregroundStyle(d == board.ctx.today ? Color.link : Color.text)
+                            .multilineTextAlignment(.leading)
+                            .frame(minHeight: minTarget)
                     }
-                    if !list.isEmpty {
-                        GroupedRows(
-                            list.map {
-                                WeekItem(job: $0.job, tech: $0.tech, cleanings: board.cleanings[$0.job.id] ?? [])
-                            }
-                        ) { item in
-                            // Swipe left for Move…, right to lock; touch and hold for the menu,
-                            // and drag from it to move (gestures spec section 12).
-                            let actions = stopActions(
-                                item.job, from: "\(item.job.assignedUserId ?? "none")|\(d)")
-                            SwipeActionsRow(
-                                actions: actions.trailing, leading: actions.leading, menuTitle: actions.title,
-                                menuItems: actions.menu, gripWidth: actions.movable ? 32 : 0
-                            ) {
-                                Button {
-                                    openRoute(.job(item.job.id))
-                                } label: {
-                                    WeekRow(item: item, timeZone: board.ctx.timeZone, movable: actions.movable)
-                                }
-                                .buttonStyle(.row)
-                                .zoomSource(item.job.id)
-                            }
-                            .scheduleDragSource(item.job)
-                        }
-                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityHint("Opens the day")
+                    Spacer(minLength: 0)
+                    dayMenu(d, rows: rows, board)
                 }
                 // A stop dropped on a day keeps its tech and goes last that day.
-                .scheduleDropTarget(cornerRadius: CGFloat(Radius.card)) { drop($0, on: .day(d)) }
+                .scheduleDropTarget(cornerRadius: CGFloat(Radius.block)) { drop($0, on: .day(d)) }
+                if empty && rows.isEmpty {
+                    Text("Nothing scheduled").textRole(.secondary).foregroundStyle(Color.textMuted)
+                }
+                ForEach(rows) { row in
+                    weekTech(row.tech, route: row.route, day: d, board)
+                }
+                if !unassigned.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("No tech yet").textRole(.bodyEmphasis).foregroundStyle(Color.text)
+                            .padding(.horizontal, 16)
+                            .frame(minHeight: minTarget)
+                        weekRows(
+                            unassigned.map {
+                                WeekItem(
+                                    job: $0, tech: "No tech yet", cleanings: board.cleanings[$0.id] ?? [],
+                                    note: stopNote($0, routeTech: nil, names: board.names))
+                            }, day: d, tech: nil, board)
+                    }
+                }
             }
+        }
+
+        /// One tech's row on a day: their dot and name with the day's stops and driving (a stop
+        /// dropped on it goes last), then the stops (a stop dropped on one takes its place).
+        @ViewBuilder private func weekTech(_ t: TeamMember, route: DayRoute?, day d: String, _ board: Board)
+            -> some View
+        {
+            let jobs = route?.jobs ?? []
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    TechDot(color: t.color)
+                    Text(t.name).textRole(.bodyEmphasis).foregroundStyle(Color.text)
+                    Spacer(minLength: 8)
+                    Text(
+                        route.map {
+                            "\($0.jobs.count) \($0.jobs.count == 1 ? "stop" : "stops") · \(durationLabel($0.summary.driveMin))"
+                        } ?? "Nothing scheduled"
+                    )
+                    .textRole(.secondary).foregroundStyle(Color.textMuted).monospacedDigit()
+                    .contentTransition(.numericText())
+                    .multilineTextAlignment(.trailing)
+                }
+                .padding(.horizontal, 16)
+                .frame(minHeight: minTarget)
+                .contentShape(Rectangle())
+                .scheduleDropTarget(cornerRadius: CGFloat(Radius.block)) {
+                    drop($0, on: .route(tech: t.id, date: d, index: nil))
+                }
+                .accessibilityElement(children: .combine)
+                if !jobs.isEmpty {
+                    weekRows(
+                        jobs.map {
+                            WeekItem(
+                                job: $0, tech: t.name, cleanings: board.cleanings[$0.id] ?? [],
+                                note: stopNote($0, routeTech: t.id, names: board.names),
+                                color: board.color($0.assignedUserId))
+                        }, day: d, tech: t.id, board)
+                }
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("\(t.name), \(formatDay(d, long: true))")
+        }
+
+        private func weekRows(_ items: [WeekItem], day d: String, tech: String?, _ board: Board) -> some View {
+            GroupedRows(items) { item in
+                // Swipe left for Move…, right to lock; touch and hold for the menu, and drag from
+                // it to move (gestures spec section 12).
+                let actions = stopActions(item.job, from: "\(item.job.assignedUserId ?? "none")|\(d)")
+                SwipeActionsRow(
+                    actions: actions.trailing, leading: actions.leading, menuTitle: actions.title,
+                    menuItems: actions.menu, gripWidth: actions.movable ? 32 : 0
+                ) {
+                    Button {
+                        openRoute(.job(item.job.id))
+                    } label: {
+                        WeekRow(item: item, timeZone: board.ctx.timeZone, movable: actions.movable)
+                            .techStripe(item.color)
+                    }
+                    .buttonStyle(.row)
+                    .zoomSource(item.job.id)
+                }
+                .scheduleDragSource(item.job)
+                .scheduleDropTarget(cornerRadius: 0) { id in
+                    let index = items.firstIndex { $0.id == item.id }
+                    let target: ScheduleDrop =
+                        tech.map { ScheduleDrop.route(tech: $0, date: d, index: index) } ?? .day(d)
+                    return drop(id, on: target)
+                }
+            }
+        }
+
+        /// A day's "⋯": Open Day, and Optimize for each tech with stops (today and later).
+        private func dayMenu(_ d: String, rows: [WeekTechRow], _ board: Board)
+            -> some View
+        {
+            let planned = d >= board.ctx.today ? rows.filter { !($0.route?.jobs ?? []).isEmpty } : []
+            return Menu {
+                Button("Open Day", systemImage: "calendar") { pick(d) }
+                ForEach(planned) { row in
+                    Button {
+                        plan(row.tech.id, date: d, board)
+                    } label: {
+                        Label {
+                            Text(planned.count == 1 && board.tech != "all" ? "Optimize" : "Optimize \(row.tech.name)")
+                        } icon: {
+                            row.tech.color.menuImage
+                        }
+                    }
+                    .disabled(optimizing != nil)
+                }
+            } label: {
+                Group {
+                    if let busy = optimizing, rows.contains(where: { routeKey($0.tech.id, d) == busy }) {
+                        ProgressView().controlSize(.small).tint(Color.link)
+                    } else {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(Color.link)
+                    }
+                }
+                .frame(width: minTarget, height: minTarget)
+                .contentShape(Circle())
+            }
+            .accessibilityLabel("Actions for \(formatDay(d, long: true))")
         }
 
         // MARK: - Actions
@@ -313,14 +465,14 @@
             }
         }
 
-        private func move(_ job: ScheduleJob, from: String?) { moving = MoveTarget(job: job, from: from) }
+        private func openMove(_ job: ScheduleJob, from: String?) { moving = MoveTarget(job: job, from: from) }
 
         /// A stop's swipes and menu (gestures spec section 12), each the same as its button: Move…
         /// opens the Move sheet, the locks save as the Move sheet's Lock does (alone, so the day
         /// isn't re-timed), Take Off Schedule is the sheet's, and Directions the address's.
         private func stopActions(_ job: ScheduleJob, from: String?) -> ScheduleStopActions {
             ScheduleStopActions(
-                job: job, onMove: { move(job, from: from) }, onLock: { lock(job, $0) },
+                job: job, onMove: { openMove(job, from: from) }, onLock: { lock(job, $0) },
                 onTakeOff: from != nil && canUnschedule(job.status) ? { takeOff(job) } : nil,
                 onOpen: { openRoute(.job(job.id)) },
                 onDirections: job.address.isEmpty
@@ -339,7 +491,7 @@
         /// Take Off Schedule, as the Move sheet's: back to Needs a Time.
         private func takeOff(_ job: ScheduleJob) {
             guard let board else { return }
-            apply {
+            move(job, tech: nil, date: nil) {
                 try moveJob(
                     job.id, tech: nil, date: nil, index: 0, jobs: board.jobs, ctx: board.ctx, team: board.team,
                     drive: drive)
@@ -349,10 +501,10 @@
         /// Optimize: the day planned off the main thread (the button shows Optimizing… at once),
         /// then saved through the sync layer, the stops sliding into their new order, and the
         /// result on the banner.
-        private func plan(_ techId: String, _ board: Board) {
+        private func plan(_ techId: String, date: String, _ board: Board) {
             guard optimizing == nil else { return }
-            optimizing = techId
-            let (date, jobs, ctx, team, drive) = (board.date, board.jobs, board.ctx, board.team, drive)
+            optimizing = routeKey(techId, date)
+            let (jobs, ctx, team, drive) = (board.jobs, board.ctx, board.team, drive)
             Task {
                 let outcome = await Task.detached(priority: .userInitiated) {
                     Result {
@@ -391,7 +543,10 @@
                 planningRun = false
                 switch outcome {
                 case .success(let week):
-                    let undo = week.undo.isEmpty ? nil : week.undo
+                    let undo =
+                        week.undo.isEmpty
+                        ? nil
+                        : PendingUndo(rows: undoWeekPlan(week.undo).map(TableUpdate.init), message: weekPlanUndone)
                     save(
                         week.updates,
                         ResultBanner(kind: .success, title: week.message, detail: week.detail, undoable: undo != nil),
@@ -402,17 +557,178 @@
             }
         }
 
-        /// Undo Plan Week: every job back as it was.
-        private func undoWeek(_ rows: [WeekUndoRow]) {
-            save(undoWeekPlan(rows), ResultBanner(kind: .success, title: weekPlanUndone))
+        /// Undo: every row back as it was.
+        private func undoLast(_ u: PendingUndo) {
+            saveTable(u.rows, ResultBanner(kind: .success, title: u.message))
         }
 
-        /// A stop dropped on the schedule: the same move as Move…, through the sync layer. False
-        /// (the stop slides back) when the move is refused, with the reason above the routes.
-        private func drop(_ jobId: String, on target: ScheduleDrop) -> Bool {
+        /// A stop or a Customers to Add tile dropped on the schedule: the same move as Move…,
+        /// through the sync layer. False (it slides back) when the move is refused, with the
+        /// reason on the banner.
+        private func drop(_ item: String, on target: ScheduleDrop) -> Bool {
             guard let board else { return false }
-            return apply {
-                try dropJob(jobId, on: target, jobs: board.jobs, ctx: board.ctx, team: board.team, drive: drive)
+            if let planId = planDragId(item) { return dropPlan(planId, on: target, board) }
+            guard let job = board.jobs.first(where: { $0.id == item }) else { return false }
+            let to: (tech: String?, date: String?) =
+                switch target {
+                case .route(let tech, let date, _): (tech, date)
+                case .day(let date): (job.assignedUserId, date)
+                case .needsATime: (nil, nil)
+                }
+            return move(job, tech: to.tech, date: to.date) {
+                try dropJob(item, on: target, jobs: board.jobs, ctx: board.ctx, team: board.team, drive: drive)
+            }
+        }
+
+        /// Any move of a job: a maintenance plan's visit going to another day or tech asks first
+        /// (Change Schedule or Just This Visit); anything else is saved at once.
+        @discardableResult
+        private func move(
+            _ job: ScheduleJob, tech: String?, date: String?,
+            _ change: () throws -> (updates: [JobUpdate], message: String)?
+        ) -> Bool {
+            guard let board else { return false }
+            // Off the schedule (Needs a Time, Take Off Schedule) or to Nobody yet, a plan visit is
+            // always a one-off: no question, but marked so the plan never puts it back; Undo
+            // restores both.
+            if date == nil || tech == nil, job.servicePlanId != nil {
+                do {
+                    guard let (updates, message) = try change() else { return true }
+                    let rows = justThisVisitRows(PlanVisitMove(job: job, tech: tech, date: "", updates: updates))
+                    return saveTable(
+                        rows, ResultBanner(kind: .success, title: message.isEmpty ? "Moved" : message, undoable: true),
+                        undo: PendingUndo(rows: undoRows(sync.store, rows), message: putBackMessage))
+                } catch {
+                    fail(error)
+                    return false
+                }
+            }
+            guard let date, asksToMovePlanVisit(job, tech: tech, date: date, ctx: board.ctx) else {
+                return apply(change)
+            }
+            do {
+                guard let (updates, _) = try change() else { return true }
+                let pending = PlanVisitMove(job: job, tech: tech, date: date, updates: updates)
+                // Only owners and admins change a plan; a tech's move is this visit only.
+                if board.ctx.isManager && board.plans.contains(where: { $0.planId == job.servicePlanId }) {
+                    planMove = pending
+                } else {
+                    justThisVisit(pending)
+                }
+                return true
+            } catch {
+                fail(error)
+                return false
+            }
+        }
+
+        /// Change Schedule: the plan moves to the new weekday and tech (every coming visit
+        /// follows), with Undo.
+        private func changeSchedule(_ m: PlanVisitMove) {
+            planMove = nil
+            guard let board, let plan = board.plans.first(where: { $0.planId == m.job.servicePlanId }) else { return }
+            do {
+                let rows = try changeScheduleRows(m, plan: plan, today: board.ctx.today)
+                let tech = m.tech ?? plan.techId ?? ""
+                saveTable(
+                    rows,
+                    ResultBanner(
+                        kind: .success,
+                        title: planMovedBanner(
+                            m.job.customerName, weekdayNames[weekdayOf(m.date) ?? 0],
+                            tech.isEmpty ? "" : board.name(tech)),
+                        undoable: true),
+                    undo: PendingUndo(rows: undoRows(sync.store, rows), message: putBackMessage))
+            } catch {
+                fail(error)
+            }
+        }
+
+        /// Just This Visit: only this visit moves, marked so remaking the plan's visits never puts
+        /// it back; Undo restores it.
+        private func justThisVisit(_ m: PlanVisitMove) {
+            planMove = nil
+            let rows = justThisVisitRows(m)
+            saveTable(
+                rows, ResultBanner(kind: .success, title: visitMovedBanner, undoable: true),
+                undo: PendingUndo(rows: undoRows(sync.store, rows), message: putBackMessage))
+        }
+
+        /// A Customers to Add tile dropped on a tech's day: the plan goes on that weekday with
+        /// them. On a day with several techs showing, its Move sheet opens on that day.
+        private func dropPlan(_ planId: String, on target: ScheduleDrop, _ board: Board) -> Bool {
+            guard let plan = board.plans.first(where: { $0.planId == planId }) else { return false }
+            switch target {
+            case .route(let tech, let date, _):
+                guard let day = weekdayOf(date) else { return false }
+                setPlan(plan, to: day, tech: tech)
+                return true
+            case .day(let date):
+                guard let day = weekdayOf(date) else { return false }
+                let techs = board.shownTechs.filter(\.active)
+                if techs.count == 1 {
+                    setPlan(plan, to: day, tech: techs[0].id)
+                } else {
+                    movingPlan = PlanMoveTarget(plan: plan, day: day)
+                }
+                return true
+            case .needsATime:
+                return false
+            }
+        }
+
+        /// A plan on a weekday with a tech (its coming visits follow), with Undo.
+        private func setPlan(_ plan: RoutePlanCard, to day: Int, tech: String) {
+            guard let board else { return }
+            do {
+                let row = try planDayUpdate(plan, from: nil, to: day, tech: tech, today: board.ctx.today)
+                saveTable(
+                    [row],
+                    ResultBanner(
+                        kind: .success,
+                        title: planMovedBanner(plan.customer, weekdayNames[day], board.name(tech)),
+                        undoable: true),
+                    undo: PendingUndo(rows: undoRows(sync.store, [row]), message: putBackMessage))
+            } catch {
+                fail(error)
+            }
+        }
+
+        /// Suggest Days for Customers to Add, among the techs shown (Everyone: every active tech),
+        /// off the main thread; nothing is saved until Keep.
+        private func suggestDays(_ board: Board) {
+            guard !suggestingDays, !board.toAdd.isEmpty else { return }
+            suggestingDays = true
+            let techs = board.shownTechs.filter(\.active).map(\.id)
+            let (toAdd, all, ctx, drive) = (board.toAdd, board.plans, board.ctx, drive)
+            Task {
+                let found = await Task.detached(priority: .userInitiated) {
+                    suggestPlanDays(toAdd: toAdd, all: all, techs: techs, ctx: ctx, drive: drive)
+                }.value
+                suggestingDays = false
+                if found.suggestions.isEmpty {
+                    banner = ResultBanner(
+                        kind: .warning, title: noSuggestionsMessage(leftOutNote(toAdd, left: found.left)))
+                } else {
+                    suggestedDays = SuggestedDays(
+                        suggestions: found.suggestions, note: leftOutNote(toAdd, left: found.left))
+                }
+            }
+        }
+
+        /// Keep: each suggested day and tech saved, with one Undo.
+        private func keepDays(_ found: SuggestedDays) {
+            guard let board else { return }
+            do {
+                let rows = try found.suggestions.compactMap { s -> TableUpdate? in
+                    guard let plan = board.plans.first(where: { $0.planId == s.id }) else { return nil }
+                    return try planDayUpdate(plan, from: nil, to: s.day, tech: s.techId, today: board.ctx.today)
+                }
+                saveTable(
+                    rows, ResultBanner(kind: .success, title: keptDaysMessage(rows.count), undoable: true),
+                    undo: PendingUndo(rows: undoRows(sync.store, rows), message: putBackMessage))
+            } catch {
+                fail(error)
             }
         }
 
@@ -431,11 +747,16 @@
 
         /// The rows, in one transaction; the next board animates in, and the banner says so.
         @discardableResult
-        private func save(_ updates: [JobUpdate], _ result: ResultBanner?, undo: [WeekUndoRow]? = nil) -> Bool {
+        private func save(_ updates: [JobUpdate], _ result: ResultBanner?, undo: PendingUndo? = nil) -> Bool {
+            saveTable(updates.map(TableUpdate.init), result, undo: undo)
+        }
+
+        @discardableResult
+        private func saveTable(_ updates: [TableUpdate], _ result: ResultBanner?, undo: PendingUndo? = nil) -> Bool {
             guard let company = session.company else { return false }
             do {
-                try saveJobUpdates(sync, companyId: company.id, updates)
-                weekUndo = undo
+                try saveRows(sync, companyId: company.id, updates)
+                self.undo = undo
                 animateNext = !updates.isEmpty
                 if let result { banner = result }
                 saved += 1
@@ -447,7 +768,7 @@
         }
 
         private func fail(_ error: any Error) {
-            weekUndo = nil
+            undo = nil
             banner = ResultBanner(kind: .error, title: String(describing: error))
             failed += 1
         }
@@ -507,6 +828,11 @@
         var names: [String: String] = [:]
         /// The map that leads Day view with one tech chosen (`leadRoute`).
         var leadMap: DayMapModel?
+        /// Each teammate's color by id (their dot and their cards' stripe).
+        var colors: [String: TechColor] = [:]
+        /// Managers: the running maintenance plans, and Week's Customers to Add.
+        var plans: [RoutePlanCard] = []
+        var toAdd: [RoutePlanCard] = []
 
         init(
             store: LocalStore, kv: KeyValue, company: CompanyContext, userId: String, view: ScheduleView, date: String?,
@@ -541,6 +867,11 @@
                 loaded.routes.values.flatMap { $0.jobs.map(\.id) } + loaded.unassigned.values.flatMap { $0.map(\.id) })
             cleanings = scheduledCleanings(store, companyId: company.id, jobIds: shown)
             names = Dictionary(team.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
+            colors = Dictionary(team.map { ($0.id, $0.color) }, uniquingKeysWith: { a, _ in a })
+            if ctx.isManager {
+                plans = routePlans(store, companyId: company.id, today: ctx.today)
+                if view == .week { toAdd = customersToAdd(plans, techIds: team.filter(\.active).map(\.id)) }
+            }
             if let route = leadRoute {
                 leadMap = dayMapModel(
                     jobs: route.jobs, depot: ctx.depot, date: self.date, today: ctx.today, tech: route.techName,
@@ -549,6 +880,18 @@
         }
 
         func name(_ id: String) -> String { names[id] ?? "Teammate" }
+
+        func color(_ id: String?) -> TechColor? { id.flatMap { colors[$0] } }
+
+        /// Week: the techs' rows on a day: every shown active tech on a working day (so a stop can
+        /// be dropped on anyone), and on other days only those with stops.
+        func weekTechs(_ d: String) -> [WeekTechRow] {
+            let working = weekdayOf(d).map { ctx.settings.workDays.contains($0) } ?? true
+            return shownTechs.compactMap { t in
+                let route = loaded.routes[routeKey(t.id, d)].flatMap { $0.jobs.isEmpty ? nil : $0 }
+                return route != nil || (working && t.active) ? WeekTechRow(tech: t, route: route) : nil
+            }
+        }
 
         var shownTechs: [TeamMember] { techs.filter { tech == "all" || $0.id == tech } }
 
@@ -572,19 +915,6 @@
             shownTechs.contains { t in
                 days.contains { d in loaded.routes[routeKey(t.id, d)]?.jobs.contains { $0.location == nil } ?? false }
             }
-        }
-
-        /// A day's jobs for the week list: the shown people's (not as second tech), and with
-        /// Everyone the day's jobs with no tech.
-        func weekList(_ d: String) -> [(job: ScheduleJob, tech: String)] {
-            var list: [(ScheduleJob, String)] = []
-            for t in shownTechs {
-                for j in loaded.routes[routeKey(t.id, d)]?.jobs ?? [] where j.assignedUserId == t.id {
-                    list.append((j, t.name))
-                }
-            }
-            if tech == "all" { list += (loaded.unassigned[d] ?? []).map { ($0, "No tech yet") } }
-            return list
         }
 
         var jobsShown: Int {
@@ -874,7 +1204,8 @@
                             note: stopNote(j, routeTech: tech.id, names: board.names),
                             timeZone: board.ctx.timeZone, routing: board.routing,
                             cleanings: board.cleanings[j.id] ?? [],
-                            actions: actions(j, routeKey(tech.id, board.date))
+                            actions: actions(j, routeKey(tech.id, board.date)),
+                            stripe: board.color(j.assignedUserId)
                         )
                         .scheduleDropTarget(cornerRadius: CGFloat(Radius.card)) { onDrop($0, i) }
                     }
@@ -889,12 +1220,18 @@
             if lead {
                 // Phones with one tech chosen: the map, the day's facts and the buttons lead the
                 // screen above Needs a Time (DayLead), so the stops start under the tech's name.
-                CardTitle(tech.name)
-                    .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
-                    .padding(.top, 8)
+                HStack(spacing: 8) {
+                    TechDot(color: tech.color)
+                    CardTitle(tech.name)
+                }
+                .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
+                .padding(.top, 8)
             } else {
                 VStack(alignment: .leading, spacing: 4) {
-                    CardTitle(tech.name)
+                    HStack(spacing: 8) {
+                        TechDot(color: tech.color)
+                        CardTitle(tech.name)
+                    }
                     if let route, !jobs.isEmpty {
                         RouteFacts(route: route, board: board, busy: busy, onPlan: onPlan)
                     } else {
@@ -955,13 +1292,11 @@
                         Button {
                             openURL(link)
                         } label: {
-                            Label(
-                                board.mapsApp == .google ? "Google Maps" : "Apple Maps",
-                                systemImage: "mappin.and.ellipse")
+                            // "Maps", never the maps company (owner, 2026-10-20).
+                            Label(MapsLabels.maps, systemImage: "mappin.and.ellipse")
                         }
                         .buttonStyle(.secondary(fullWidth: true))
-                        .accessibilityLabel(
-                            board.mapsApp == .google ? "Open Route in Google Maps" : "Next Stop in Apple Maps")
+                        .accessibilityLabel(dayMapsLabel(board.mapsApp))
                     }
                 }
                 .padding(.top, 8)
@@ -1004,6 +1339,8 @@
         var cleanings: [ScheduledCleaning] = []
         /// Swipe left for Move…, right to lock; touch and hold for the menu (gestures spec 12).
         var actions: ScheduleStopActions
+        /// The tech's color, as a 4 pt stripe on the card's leading edge (owner, 2026-10-20).
+        var stripe: TechColor? = nil
         @Environment(\.openRoute) private var openRoute
         private var onMove: () -> Void { actions.onMove }
 
@@ -1022,6 +1359,7 @@
                     if canMoveJob(job.status) { DragGrip() }
                 }
                 .padding(EdgeInsets(top: 8, leading: 12, bottom: 12, trailing: canMoveJob(job.status) ? 0 : 8))
+                .techStripe(stripe)
             }
             .clipShape(shape)
             .card(padding: 0)
@@ -1311,10 +1649,21 @@
         }
     }
 
+    /// A tech's row on a day in Week, and their route that day (nil: nothing scheduled).
+    struct WeekTechRow: Identifiable {
+        var tech: TeamMember
+        var route: DayRoute?
+        var id: String { tech.id }
+    }
+
     struct WeekItem: Identifiable {
         var job: ScheduleJob
         var tech: String
         var cleanings: [ScheduledCleaning] = []
+        /// What the stop is ("Maintenance", "Second tech, with Dana"), under the customer.
+        var note: String? = nil
+        /// The job's tech's color: the row's leading stripe.
+        var color: TechColor? = nil
         var id: String { job.id }
     }
 
@@ -1353,7 +1702,7 @@
                     Text("\(formatTime(item.job.scheduledStart, timeZone: timeZone)) · \(item.job.numberText)")
                         .textRole(.bodyEmphasis).foregroundStyle(Color.text).monospacedDigit()
                     (Text(item.job.customerName).foregroundStyle(Color.text)
-                        + Text(" · \(item.tech)").foregroundStyle(Color.textMuted))
+                        + Text(" · \(item.note ?? item.tech)").foregroundStyle(Color.textMuted))
                         .textRole(.secondary)
                     ScheduledCleaningsRow(cleanings: item.cleanings)
                 }
@@ -1361,7 +1710,7 @@
                 StatusChip(status: item.job.status)
                 if movable { DragGrip(width: 24) } else { Chevron() }
             }
-            .padding(.leading, 16)
+            .padding(.leading, item.color == nil ? 16 : 20)
             .padding(.trailing, movable ? 8 : 16)
             .padding(.vertical, 10)
             .frame(minHeight: minTarget)
@@ -1528,11 +1877,20 @@
                                         if movers.count > 1 {
                                             Text("Nobody yet (waits in Needs a Time)").tag(String?.none)
                                         }
-                                        ForEach(movers) { Text($0.name).tag(Optional($0.id)) }
+                                        ForEach(movers) { m in
+                                            Label {
+                                                Text(m.name)
+                                            } icon: {
+                                                m.color.menuImage
+                                            }.tag(Optional(m.id))
+                                        }
                                     }
                                     .pickerStyle(.inline)
                                 } label: {
-                                    MenuValue(text: techLabel)
+                                    HStack(spacing: 8) {
+                                        if let color = board.color(tech) { TechDot(color: color) }
+                                        MenuValue(text: techLabel)
+                                    }
                                 }
                                 .accessibilityLabel("Tech")
                                 .accessibilityValue(techLabel)
