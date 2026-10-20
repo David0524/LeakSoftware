@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { isHexColor, type ExclusionReason, type SeverityLevel } from "@leakbook/core";
+import { confirmDestructive } from "../../ui/confirm";
 import { removeConfig, saveConfig, toInt, useConfig } from "../../data/config";
 import { useCompany } from "../../state/session";
 import { FieldGroup, FieldRow, Group, ListRow, T, Toggle } from "../../ui/components";
@@ -39,6 +40,15 @@ function ExclusionsPage() {
               title={r.label}
               detail={r.active ? undefined : "Off"}
               onPress={() => sheet.open(r)}
+              // Swipe to remove; the row's sheet keeps its visible Remove button.
+              deleteLabel="Remove"
+              onDelete={() =>
+                confirmDestructive({
+                  title: "Remove this reason?",
+                  confirm: "Remove",
+                  onConfirm: () => removeConfig("exclusion_reason", company.id, r.id),
+                })
+              }
             />
           ))}
         </Group>
@@ -151,6 +161,15 @@ function SeveritiesPage() {
               title={s.name}
               subtitle={s.must_mention ? "Always in the report summary" : undefined}
               onPress={() => sheet.open(s)}
+              // Swipe to remove; the row's sheet keeps its visible Remove button.
+              deleteLabel="Remove Severity"
+              onDelete={() =>
+                confirmDestructive({
+                  title: "Remove this severity?",
+                  confirm: "Remove Severity",
+                  onConfirm: () => removeConfig("severity_level", company.id, s.id),
+                })
+              }
               trailing={
                 <View style={styles.value}>
                   {s.active ? null : <T muted>Off</T>}

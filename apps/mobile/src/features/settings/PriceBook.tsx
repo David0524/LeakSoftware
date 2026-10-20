@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Text } from "react-native";
 import { companyServices, formatCents, parseDollars, type ComponentType } from "@leakbook/core";
+import { confirmDestructive } from "../../ui/confirm";
 import { removeConfig, saveConfig, toInt, useConfig } from "../../data/config";
 import { useCompany } from "../../state/session";
 import { Empty, FieldGroup, FieldRow, Group, ListRow, Section, Toggle } from "../../ui/components";
@@ -68,6 +69,15 @@ function PriceBookPage() {
                   title={item.name}
                   subtitle={item.active ? undefined : "Hidden"}
                   onPress={() => sheet.open(item)}
+                  // Swipe to remove; the row's sheet keeps its visible Remove button.
+                  deleteLabel="Remove Item"
+                  onDelete={() =>
+                    confirmDestructive({
+                      title: "Remove this item from the price book?",
+                      confirm: "Remove Item",
+                      onConfirm: () => removeConfig("price_book_item", company.id, item.id),
+                    })
+                  }
                   detail={
                     <Text
                       style={[type.body, tabular, { color: color.textMuted }]}

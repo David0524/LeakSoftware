@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { formatFieldLines, parseFieldLines, type Outcome, type TestType } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
+import { confirmDestructive } from "../../ui/confirm";
 import { removeConfig, saveConfig, toInt, useConfig } from "../../data/config";
 import { useCompany } from "../../state/session";
 import {
@@ -66,6 +67,15 @@ function TestTypesPage() {
               subtitle={t.calculator ? "Calculates the result" : undefined}
               detail={t.active ? undefined : "Off"}
               onPress={() => sheet.open(t)}
+              // Swipe to remove; the row's sheet keeps its visible Remove button.
+              deleteLabel="Remove Test Type"
+              onDelete={() =>
+                confirmDestructive({
+                  title: "Remove this test type?",
+                  confirm: "Remove Test Type",
+                  onConfirm: () => removeConfig("test_type", company.id, t.id),
+                })
+              }
             />
           ))}
         </Group>

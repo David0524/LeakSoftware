@@ -31,6 +31,7 @@ import {
   type PlanRepeat as Repeat,
 } from "@leakbook/core";
 import { useRows, useSyncStatus } from "../../../../../data/hooks";
+import { locateAfterSync } from "../../../../../lib/locate";
 import { useTeam } from "../../../../../data/schedule";
 import {
   checkPlan,
@@ -380,6 +381,7 @@ function NewJobForm() {
     });
     const { sync } = services;
     // Customer, property, job, and its checklist are saved together or not at all.
+    let newPool: string | null = null;
     const jobId = sync.batch(() => {
       const cust =
         customerId ??
@@ -395,6 +397,7 @@ function NewJobForm() {
           diagram_shape: shape,
           ...(gallons ? { approx_gallons: gallons } : {}),
         });
+      if (!propertyId) newPool = prop;
       if (propertyId && gallons && gallons !== knownGallons)
         sync.write("property", propertyId, company.id, { approx_gallons: gallons });
       const job = sync.insert("job", company.id, {
@@ -427,6 +430,8 @@ function NewJobForm() {
       }
       return job;
     });
+    // A new pool is found on the map from its address once it's up.
+    if (newPool) void locateAfterSync(company.id, { property_id: newPool });
     haptics.success();
     created.current = true;
     router.replace(`/jobs/${jobId}`);

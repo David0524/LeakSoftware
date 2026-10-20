@@ -1,4 +1,4 @@
-import { useMemo, useSyncExternalStore } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import type { Row } from "@leakbook/sync";
 import { getServices } from "../lib/services";
 import type { SyncStatus } from "../lib/sync-service";
@@ -48,4 +48,19 @@ export function useRow<T>(table: string, id: string | undefined): T | undefined 
     // eslint-disable-next-line react-hooks/exhaustive-deps -- version signals data changes
     [table, id, version],
   );
+}
+
+/** Pull to refresh on a synced list: syncs now (the rows update as they arrive). */
+export function useSyncRefresh(): { refreshing: boolean; onRefresh: () => void } {
+  const [refreshing, setRefreshing] = useState(false);
+  return {
+    refreshing,
+    onRefresh: () => {
+      setRefreshing(true);
+      void getServices()
+        .sync.syncNow()
+        .catch(() => undefined)
+        .finally(() => setRefreshing(false));
+    },
+  };
 }

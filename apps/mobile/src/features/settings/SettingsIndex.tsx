@@ -7,12 +7,18 @@ import { Button, Group, ListRow, Notice, Screen, Section, T } from "../../ui/com
 import { ManagersOnly } from "./SettingsList";
 
 // Settings (spec 5.12; the website's settings index and lib/settings-sections.ts): the pages in
-// their groups. The lists techs' work depends on are in the app; the rest open the website.
+// their groups. Everything is in the app (owner, 2026-10-19: "From the app, do not link to the
+// website if you can help it") except Payments (Stripe's own setup) and Import (a spreadsheet
+// from a computer).
 // Sundeck Pro Billing is left out of the apps (store payment rules, spec 8.4).
 
 /** Pages the app has; the others open the website. */
 export const NATIVE_PAGES = [
+  "company",
   "team",
+  "scheduling",
+  "phone",
+  "reports",
   "price-book",
   "components",
   "tests",

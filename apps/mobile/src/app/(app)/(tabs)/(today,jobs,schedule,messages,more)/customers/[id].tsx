@@ -23,6 +23,7 @@ import { KIND_LABELS, useCustomerData } from "../../../../../data/customers";
 import { MaintenancePlans } from "../../../../../features/maintenance/MaintenancePlans";
 import { useTeam } from "../../../../../data/schedule";
 import { useLine } from "../../../../../data/texting";
+import { locateAfterSync } from "../../../../../lib/locate";
 import { getServices } from "../../../../../lib/services";
 import { openDirections, useDirectionsChoice } from "../../../../../state/directions";
 import { useCompany, useSession } from "../../../../../state/session";
@@ -483,6 +484,8 @@ function PoolForm({ pool, onSaved }: { pool: Property; onSaved: () => void }) {
         ? { latitude: null, longitude: null, geocoded_address: null, location_source: null }
         : {}),
     });
+    // Once it's up, the server finds the new address on the map.
+    if (moved) void locateAfterSync(company.id, { property_id: pool.id });
     haptics.success();
     onSaved();
   }

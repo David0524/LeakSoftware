@@ -152,12 +152,23 @@ export function PoolDiagram({
   );
 }
 
-/** Where a landmark's 24 x 24 drawing goes: its size box on its center, mirrored when flipped. */
-export function landmarkTransform(l: { cx: number; cy: number; size: number; flip: boolean }) {
+/**
+ * Where a landmark's 24 x 24 drawing goes: its size box on its center; flipped, mirrored left
+ * to right, or top to bottom for a landmark the same both ways across (the steps: `mirror` "y",
+ * owner 2026-10-20), as the website's landmarkTransform.
+ */
+export function landmarkTransform(l: {
+  cx: number;
+  cy: number;
+  size: number;
+  flip: boolean;
+  mirror?: "x" | "y";
+}) {
   const k = l.size / 24;
-  return l.flip
-    ? `translate(${l.cx + l.size / 2} ${l.cy - l.size / 2}) scale(${-k} ${k})`
-    : `translate(${l.cx - l.size / 2} ${l.cy - l.size / 2}) scale(${k})`;
+  if (!l.flip) return `translate(${l.cx - l.size / 2} ${l.cy - l.size / 2}) scale(${k})`;
+  return l.mirror === "y"
+    ? `translate(${l.cx - l.size / 2} ${l.cy + l.size / 2}) scale(${k} ${-k})`
+    : `translate(${l.cx + l.size / 2} ${l.cy - l.size / 2}) scale(${-k} ${k})`;
 }
 
 /**

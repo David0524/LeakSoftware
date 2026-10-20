@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Linking, StyleSheet, View } from "react-native";
+import { Alert, Share, StyleSheet, View } from "react-native";
 import {
   ROLE_LABELS,
   assignableRoles,
@@ -14,7 +14,18 @@ import { useTeam, type TeamMember } from "../../data/schedule";
 import { API_URL } from "../../lib/config";
 import { getServices } from "../../lib/services";
 import { useCompany, useSession } from "../../state/session";
-import { Group, ListRow, Section, Segmented, T, Toggle } from "../../ui/components";
+import {
+  Button,
+  FieldGroup,
+  FieldRow,
+  Group,
+  ListRow,
+  Section,
+  Segmented,
+  T,
+  Toggle,
+} from "../../ui/components";
+import { chooseAction, confirmDestructive } from "../../ui/confirm";
 import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { space } from "../../ui/theme";
@@ -41,6 +52,7 @@ interface Invite {
   id: string;
   email: string;
   role: Role;
+  token: string;
 }
 
 export function Team() {
@@ -58,17 +70,49 @@ function TeamPage() {
   const team = useTeam(company.id);
   const sheet = useEditSheet<TeamMember>();
   const [invites, setInvites] = useState<Invite[] | null>(null);
+  const [inviting, setInviting] = useState(false);
+  const [round, setRound] = useState(0);
+  // Invites are server rows (not synced): read here, made and revoked with the website's
+  // functions (create_invite, revoke_invite), so they need a connection.
   useEffect(() => {
     void getServices()
       .supabase.from("invite")
-      .select("id, email, role")
+      .select("id, email, role, token")
       .eq("company_id", company.id)
       .is("accepted_at", null)
       .is("revoked_at", null)
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
       .then(({ data }) => setInvites((data ?? []) as Invite[]));
-  }, [company.id]);
+  }, [company.id, round]);
+  const link = (i: Invite) => `${API_URL ?? "https://sundeckpro.com"}/invite/${i.token}`;
+  function inviteActions(i: Invite) {
+    chooseAction({
+      title: i.email,
+      actions: [
+        {
+          label: "Share Invite Link",
+          onPress: () =>
+            void Share.share({ message: `Join ${company.name} on Sundeck Pro: ${link(i)}` }),
+        },
+        {
+          label: "Revoke Invite",
+          onPress: () =>
+            confirmDestructive({
+              title: "Revoke this invite? The link will stop working.",
+              confirm: "Revoke Invite",
+              onConfirm: () =>
+                void getServices()
+                  .supabase.rpc("revoke_invite", { invite_id: i.id })
+                  .then(({ error }) => {
+                    if (error) Alert.alert("Couldn’t revoke", error.message);
+                    else setRound((n) => n + 1);
+                  }),
+            }),
+        },
+      ],
+    });
+  }
 
   const settings = company.settings as unknown as Record<string, unknown>;
   const seesAll = seesAllJobs("tech", settings);
@@ -164,14 +208,15 @@ function TeamPage() {
         >
           <Group>
             {(invites ?? []).map((i) => (
-              <ListRow key={i.id} title={i.email} detail={roleLabel(i.role)} />
+              <ListRow
+                key={i.id}
+                title={i.email}
+                detail={roleLabel(i.role)}
+                accessibilityHint="Share the link or revoke the invite"
+                onPress={() => inviteActions(i)}
+              />
             ))}
-            <ListRow
-              title="+ Invite Someone"
-              tone="link"
-              accessibilityHint="Opens Settings › Team on the website"
-              onPress={() => API_URL && void Linking.openURL(`${API_URL}/settings/team`)}
-            />
+            <ListRow title="+ Invite Someone" tone="link" onPress={() => setInviting(true)} />
           </Group>
         </Section>
 
@@ -206,7 +251,74 @@ function TeamPage() {
           <MemberForm member={sheet.editing} owner={owner} onDone={sheet.done} />
         ) : null}
       </EditSheet>
+      <EditSheet open={inviting} title="Invite Someone" onClose={() => setInviting(false)}>
+        <InviteForm
+          owner={owner}
+          onDone={(message) => {
+            setInviting(false);
+            setRound((n) => n + 1);
+            sheet.done(message);
+          }}
+        />
+      </EditSheet>
     </>
+  );
+}
+
+/** A new invite: email and role, made on the server (create_invite); then share its link. */
+function InviteForm({ owner, onDone }: { owner: boolean; onDone: (message: string) => void }) {
+  const company = useCompany();
+  const roles = assignableRoles(owner ? "owner" : "admin");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<Role>("tech");
+  const [error, setError] = useState<string | undefined>();
+  const [busy, setBusy] = useState(false);
+  async function create() {
+    const address = email.trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(address)) return setError("Enter a valid email.");
+    setError(undefined);
+    setBusy(true);
+    try {
+      const { error: rpcError } = await getServices().supabase.rpc("create_invite", {
+        target_company: company.id,
+        invite_email: address,
+        invite_role: role,
+      });
+      if (rpcError) return setError(rpcError.message);
+      onDone(`Invite created for ${address}. Tap it under Open invites to share the link.`);
+    } catch {
+      setError("You’re offline. Invites need a connection.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <View style={{ gap: space["4"] }}>
+      <FieldGroup labelWidth={80}>
+        <FieldRow
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          error={error}
+        />
+      </FieldGroup>
+      {roles.length > 1 ? (
+        <View style={{ gap: 4 }}>
+          <Segmented
+            label="Role"
+            value={role}
+            onChange={setRole}
+            options={roles.map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
+          />
+          <T variant="secondary" muted>
+            {ABOUT[role]}
+          </T>
+        </View>
+      ) : null}
+      <Button title="Create Invite" wide loading={busy} onPress={() => void create()} />
+    </View>
   );
 }
 

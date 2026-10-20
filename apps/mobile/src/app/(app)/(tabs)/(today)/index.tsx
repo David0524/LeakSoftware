@@ -52,6 +52,7 @@ import {
   face,
   font,
   MAX_TEXT_SCALE,
+  minTap,
   shape,
   space,
   tabular,
@@ -358,9 +359,29 @@ function Stop({
           <Text style={[styles.time, tabular, { color: color.text }]}>
             {job.scheduled_start ? formatTime(job.scheduled_start, timeZone) : ""}
           </Text>
-          <T variant="bodyEmphasis" numberOfLines={1} style={{ flexShrink: 1 }}>
-            {name}
-          </T>
+          {expanded ? (
+            // Open, the name is the link to the job (owner, 2026-10-20: no Open Job button).
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={`Open the job for ${name}`}
+              onPress={() => router.push(`/jobs/${job.id}`)}
+              hitSlop={8}
+              style={({ pressed }) => [styles.nameLink, pressed && { opacity: 0.5 }]}
+            >
+              <Text
+                numberOfLines={1}
+                style={[type.bodyEmphasis, { color: color.link, flexShrink: 1 }]}
+                maxFontSizeMultiplier={MAX_TEXT_SCALE}
+              >
+                {name}
+              </Text>
+              <WebIcon name="chevronRight" size={16} color={color.link} strokeWidth={2.4} />
+            </Pressable>
+          ) : (
+            <T variant="bodyEmphasis" numberOfLines={1} style={{ flexShrink: 1 }}>
+              {name}
+            </T>
+          )}
           {/* Most stops are scheduled; the chip shows other states. */}
           {job.status !== "scheduled" ? <StatusChip status={job.status} /> : null}
           {lock && lock !== "started" ? (
@@ -420,11 +441,6 @@ function Stop({
               day={day}
               done={done}
             />
-            <Button
-              title="Open Job"
-              kind="secondary"
-              onPress={() => router.push(`/jobs/${job.id}`)}
-            />
             {done ? null : (
               <View style={styles.actions}>
                 {phone ? (
@@ -479,6 +495,13 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     alignItems: "center",
     columnGap: space["2"],
+  },
+  nameLink: {
+    minHeight: minTap,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    flexShrink: 1,
   },
   body: { gap: space["1"], paddingHorizontal: space["3"], paddingBottom: space["3"] },
   buttons: {

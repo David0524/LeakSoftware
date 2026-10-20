@@ -62,6 +62,7 @@ import { DatePicker, MonthCalendar, monthTitle } from "./Calendar";
 import { MoveSheet, SuggestSheet, type MoveTarget } from "./MoveSheet";
 import { NeedsATime } from "./NeedsATime";
 import { RouteCard, type Route, type Stop } from "./RouteCard";
+import { SwipeNav } from "../../ui/SwipeNav";
 import { WeekStrip } from "./WeekStrip";
 
 const VIEW_NAMES = { day: "Day", week: "Week", month: "Month" } as const;
@@ -463,129 +464,137 @@ export function ScheduleScreen() {
           <Notice tone="success">{result.message}</Notice>
         ) : null}
 
-        {tray && view !== "month" ? (
-          <NeedsATime jobs={trayStops} onSuggest={suggest} onMove={openMove} />
-        ) : null}
+        {/* Swipe sideways for the day, week, or month before or after (owner, 2026-10-19);
+            Previous and Next above stay the visible way. */}
+        <SwipeNav
+          style={styles.pages}
+          onPrevious={() => setDate(move(-1))}
+          onNext={() => setDate(move(1))}
+        >
+          {tray && view !== "month" ? (
+            <NeedsATime jobs={trayStops} onSuggest={suggest} onMove={openMove} />
+          ) : null}
 
-        {view === "day"
-          ? shownRoutes.map((r) => {
-              const directions = r.stops.length
-                ? dayDirections(
-                    app,
-                    ctx.depot || depotAddress
-                      ? { address: depotAddress, location: ctx.depot }
-                      : null,
-                    r.stops.map((s) => ({
-                      address: s.address,
-                      location: s.location,
-                      done: s.status !== "scheduled" && s.status !== "in_progress",
-                    })),
-                  )
-                : null;
-              return (
-                <RouteCard
-                  key={r.key}
-                  route={r}
-                  busy={false}
-                  onPlan={() => plan(r)}
-                  onMove={openMove}
-                  onDirections={(s) =>
-                    openDirections({ address: s.address, location: s.location }, choice)
-                  }
-                  mapsButton={
-                    directions ? (
-                      <Button
-                        kind="secondary"
-                        icon="pin"
-                        wide
-                        title={directions.app === "google" ? "Google Maps" : "Apple Maps"}
-                        onPress={() => void Linking.openURL(directions.href)}
-                        style={{ paddingHorizontal: 8 }}
-                      />
-                    ) : null
-                  }
-                />
-              );
-            })
-          : null}
+          {view === "day"
+            ? shownRoutes.map((r) => {
+                const directions = r.stops.length
+                  ? dayDirections(
+                      app,
+                      ctx.depot || depotAddress
+                        ? { address: depotAddress, location: ctx.depot }
+                        : null,
+                      r.stops.map((s) => ({
+                        address: s.address,
+                        location: s.location,
+                        done: s.status !== "scheduled" && s.status !== "in_progress",
+                      })),
+                    )
+                  : null;
+                return (
+                  <RouteCard
+                    key={r.key}
+                    route={r}
+                    busy={false}
+                    onPlan={() => plan(r)}
+                    onMove={openMove}
+                    onDirections={(s) =>
+                      openDirections({ address: s.address, location: s.location }, choice)
+                    }
+                    mapsButton={
+                      directions ? (
+                        <Button
+                          kind="secondary"
+                          icon="pin"
+                          wide
+                          title={directions.app === "google" ? "Google Maps" : "Apple Maps"}
+                          onPress={() => void Linking.openURL(directions.href)}
+                          style={{ paddingHorizontal: 8 }}
+                        />
+                      ) : null
+                    }
+                  />
+                );
+              })
+            : null}
 
-        {view === "week"
-          ? days.map((d) => {
-              const list = weekList(d);
-              const isToday = d === today;
-              return (
-                <View key={d} style={{ gap: space["2"] }}>
-                  <View style={styles.dayHead}>
-                    <Text
-                      accessibilityRole="button"
-                      onPress={() => {
-                        setDate(d);
-                        setView("day");
-                      }}
-                      style={[
-                        type.subHeading,
-                        styles.dayLink,
-                        { color: isToday ? color.link : color.text },
-                      ]}
-                    >
-                      {formatDay(d, "long")}
-                      {isToday ? " · Today" : ""}
-                    </Text>
-                    {list.length === 0 ? (
-                      <T variant="secondary" muted>
-                        Nothing scheduled
-                      </T>
+          {view === "week"
+            ? days.map((d) => {
+                const list = weekList(d);
+                const isToday = d === today;
+                return (
+                  <View key={d} style={{ gap: space["2"] }}>
+                    <View style={styles.dayHead}>
+                      <Text
+                        accessibilityRole="button"
+                        onPress={() => {
+                          setDate(d);
+                          setView("day");
+                        }}
+                        style={[
+                          type.subHeading,
+                          styles.dayLink,
+                          { color: isToday ? color.link : color.text },
+                        ]}
+                      >
+                        {formatDay(d, "long")}
+                        {isToday ? " · Today" : ""}
+                      </Text>
+                      {list.length === 0 ? (
+                        <T variant="secondary" muted>
+                          Nothing scheduled
+                        </T>
+                      ) : null}
+                    </View>
+                    {list.length ? (
+                      <Group>
+                        {list.map(({ j, tech: name }) => (
+                          <ListRow
+                            key={j.id}
+                            onPress={() => router.push(`/jobs/${j.id}`)}
+                            trailing={
+                              <StatusChip status={j.status} style={{ alignSelf: "center" }} />
+                            }
+                          >
+                            <T variant="bodyEmphasis">
+                              {j.scheduled_start ? formatTime(j.scheduled_start, tz) : ""} ·{" "}
+                              {j.number ? `#${j.number}` : "New"}
+                            </T>
+                            <T variant="secondary" muted numberOfLines={1}>
+                              <Text style={{ color: color.text }}>
+                                {j.customer?.name ?? "Customer"}
+                              </Text>
+                              {" · "}
+                              {name}
+                            </T>
+                          </ListRow>
+                        ))}
+                      </Group>
                     ) : null}
                   </View>
-                  {list.length ? (
-                    <Group>
-                      {list.map(({ j, tech: name }) => (
-                        <ListRow
-                          key={j.id}
-                          onPress={() => router.push(`/jobs/${j.id}`)}
-                          trailing={
-                            <StatusChip status={j.status} style={{ alignSelf: "center" }} />
-                          }
-                        >
-                          <T variant="bodyEmphasis">
-                            {j.scheduled_start ? formatTime(j.scheduled_start, tz) : ""} ·{" "}
-                            {j.number ? `#${j.number}` : "New"}
-                          </T>
-                          <T variant="secondary" muted numberOfLines={1}>
-                            <Text style={{ color: color.text }}>
-                              {j.customer?.name ?? "Customer"}
-                            </Text>
-                            {" · "}
-                            {name}
-                          </T>
-                        </ListRow>
-                      ))}
-                    </Group>
-                  ) : null}
-                </View>
-              );
-            })
-          : null}
+                );
+              })
+            : null}
 
-        {view === "month" ? (
-          <MonthCalendar
-            days={days}
-            month={date.slice(0, 7)}
-            today={today}
-            counts={monthCounts}
-            onPick={(d) => {
-              setDate(d);
-              setView("day");
-            }}
-          />
-        ) : null}
+          {view === "month" ? (
+            <MonthCalendar
+              days={days}
+              month={date.slice(0, 7)}
+              today={today}
+              counts={monthCounts}
+              onPick={(d) => {
+                setDate(d);
+                setView("day");
+              }}
+            />
+          ) : null}
 
-        {inView === 0 ? (
-          <T muted>
-            No jobs scheduled{" "}
-            {view === "day" ? "this day" : view === "week" ? "this week" : "this month"}.
-          </T>
-        ) : null}
+          {inView === 0 ? (
+            <T muted>
+              No jobs scheduled{" "}
+              {view === "day" ? "this day" : view === "week" ? "this week" : "this month"}.
+            </T>
+          ) : null}
+        </SwipeNav>
       </Screen>
 
       <ModalSheet visible={goTo} onClose={() => setGoTo(false)} title="Go to Date">
@@ -646,6 +655,7 @@ export function ScheduleScreen() {
 }
 
 const styles = StyleSheet.create({
+  pages: { gap: space["5"] },
   controls: { flexDirection: "row", alignItems: "center", gap: space["2"] },
   dayHead: {
     flexDirection: "row",

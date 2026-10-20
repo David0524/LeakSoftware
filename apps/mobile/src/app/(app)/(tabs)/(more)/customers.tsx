@@ -1,7 +1,8 @@
 import { router } from "expo-router";
 import { formatAddress, offersPool } from "@leakbook/core";
 import { useMemo, useState } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import { useSyncRefresh } from "../../../../data/hooks";
+import { Animated, RefreshControl, StyleSheet, Text, View } from "react-native";
 import {
   CUSTOMER_SORTS,
   KIND_PLURALS,
@@ -77,6 +78,7 @@ export default function Customers() {
     </View>
   );
 
+  const pull = useSyncRefresh();
   return (
     <Animated.FlatList
       ref={ref as never}
@@ -84,6 +86,7 @@ export default function Customers() {
       style={{ backgroundColor: color.bg }}
       contentContainerStyle={contentContainerStyle}
       data={rows}
+      refreshControl={<RefreshControl {...pull} />}
       keyExtractor={(c) => c.id}
       initialNumToRender={20}
       ListHeaderComponent={top}

@@ -63,6 +63,7 @@ import {
   CompleteBlockedNotice,
   useCompleteJobBlocker,
 } from "../../../../../../features/job/CompleteJob";
+import { SwipeNav } from "../../../../../../ui/SwipeNav";
 import { SyncBar } from "../../../../../../ui/SyncBar";
 import { ScreenTip } from "../../../../../../ui/Tip";
 import {
@@ -121,7 +122,8 @@ export default function JobDetail() {
     scrollProps,
     contentContainerStyle,
   } = useScreenChrome({
-    title: job ? (job.number ? `Job #${job.number}` : "New Job") : "Job",
+    // The customer's name on top, the job number smaller below (owner, 2026-10-20).
+    title: job ? (customer?.name ?? (job.number ? `Job #${job.number}` : "New Job")) : "Job",
   });
   const barY = barState(useRoute().key).y;
 
@@ -153,6 +155,7 @@ export default function JobDetail() {
     ...(jobHasWrapUp(job.type) ? [{ value: "wrapup" as const, label: "Wrap-Up" }] : []),
   ];
   const shown = sections.some((s) => s.value === section) ? section : "details";
+  const shownAt = sections.findIndex((s) => s.value === shown);
 
   const update = (values: Record<string, JsonValue>) =>
     services.sync.write("job", job.id, company.id, values);
@@ -203,6 +206,7 @@ export default function JobDetail() {
         <View style={styles.header}>
           {titleBlock}
           <View style={styles.subtitle}>
+            {customer && job.number ? <T muted>{`Job #${job.number}`}</T> : null}
             <StatusChip status={job.status} />
             <T muted>{JOB_TYPE_LABELS[job.type]}</T>
           </View>
@@ -233,7 +237,19 @@ export default function JobDetail() {
         >
           {switcher}
         </View>
-        <View style={styles.content}>
+        {/* Swipe sideways for the section before or after (owner, 2026-10-19); the switcher
+            above stays the visible way. */}
+        <SwipeNav
+          style={styles.content}
+          onPrevious={() => {
+            const to = sections[shownAt - 1];
+            if (to) setSection(to.value);
+          }}
+          onNext={() => {
+            const to = sections[shownAt + 1];
+            if (to) setSection(to.value);
+          }}
+        >
           <SyncBar onPress={() => router.push("/more/sync")} />
           {shown === "details" ? (
             <Details
@@ -347,7 +363,7 @@ export default function JobDetail() {
               </View>
             </View>
           ) : null}
-        </View>
+        </SwipeNav>
       </Animated.ScrollView>
       {pinned ? (
         <Animated.View

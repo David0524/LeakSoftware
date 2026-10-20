@@ -6,8 +6,8 @@ import {
   invoiceBalance,
   isManagerRole,
 } from "@leakbook/core";
-import { Alert, Animated, StyleSheet, View } from "react-native";
-import { useRows } from "../../../../data/hooks";
+import { Alert, Animated, RefreshControl, StyleSheet, View } from "react-native";
+import { useRows, useSyncRefresh } from "../../../../data/hooks";
 import {
   invoicesCsv,
   paymentsCsv,
@@ -83,6 +83,7 @@ export default function Invoices() {
     ) : undefined,
   });
 
+  const pull = useSyncRefresh();
   return (
     <Animated.FlatList
       ref={ref as never}
@@ -90,6 +91,7 @@ export default function Invoices() {
       style={{ backgroundColor: color.bg }}
       contentContainerStyle={contentContainerStyle}
       data={invoices}
+      refreshControl={<RefreshControl {...pull} />}
       keyExtractor={(i) => i.id}
       initialNumToRender={20}
       ListHeaderComponent={

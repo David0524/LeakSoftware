@@ -4,6 +4,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { companyServices, gettingStarted, type Company, type StartStep } from "@leakbook/core";
 import { useRows } from "../../data/hooks";
 import { API_URL } from "../../lib/config";
+import { NATIVE_PAGES } from "../settings/SettingsIndex";
 import { getServices } from "../../lib/services";
 import { Card, Check, Chevron, T } from "../../ui/components";
 import { color, MAX_TEXT_SCALE, minTap, space, type } from "../../ui/theme";
@@ -48,15 +49,17 @@ function useHidden(): [boolean, () => void] {
   ];
 }
 
-/** Where a step leads in the app; settings pages the app doesn't have open the website. */
+/** Where a step leads in the app; anything else opens the website. */
 function open(step: StartStep) {
   const href = step.href;
   if (href === "/jobs/new" || href === "/jobs" || href === "/customers") {
     router.push(href);
     return;
   }
-  if (href === "/settings/team" || href === "/settings/import" || href === "/settings/company") {
-    router.push(href === "/settings/team" ? "/settings/team" : "/settings");
+  // Settings pages are in the app (owner, 2026-10-19: no website links from the app).
+  const page = href.startsWith("/settings/") ? href.slice("/settings/".length) : null;
+  if (page !== null) {
+    router.push(NATIVE_PAGES.includes(page) ? (`/settings/${page}` as never) : "/settings");
     return;
   }
   if (API_URL) void Linking.openURL(`${API_URL}${href}`);

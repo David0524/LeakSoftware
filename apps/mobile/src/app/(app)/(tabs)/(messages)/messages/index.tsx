@@ -1,7 +1,7 @@
 import { router } from "expo-router";
 import { formatPhone, isManagerRole } from "@leakbook/core";
 import { useEffect, useState } from "react";
-import { Linking, Platform, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { setUnread, useConversations, useLine } from "../../../../../data/texting";
 import { API_URL } from "../../../../../lib/config";
 import { useCompany, useSession } from "../../../../../state/session";
@@ -81,7 +81,7 @@ export default function Messages() {
             {manager && API_URL ? (
               <Text
                 accessibilityRole="link"
-                onPress={() => void Linking.openURL(`${API_URL}/settings/phone`)}
+                onPress={() => router.push("/settings/phone")}
                 style={[face.semiBold, { color: color.link, textDecorationLine: "underline" }]}
               >
                 Set Up a Number
