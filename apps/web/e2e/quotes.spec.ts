@@ -159,7 +159,7 @@ test("the office opens the repair job from the accepted quote and schedules it",
   const panel = page.getByTestId("quote").filter({ hasText: `Quote #${bankQuote.number} ·` });
   await expect(panel).toContainText("Accepted by Sam Sample");
   await panel.getByRole("link", { name: /^Repair job/ }).click();
-  await expect(page.getByRole("heading", { name: /^Job #\d+/ })).toBeVisible();
+  await expect(page.getByText(/^Job #\d+$/).first()).toBeVisible();
   await expect(page.getByText("Repair", { exact: true }).first()).toBeVisible();
 
   // The schedule form is in a sheet; saving closes it and says so on the page.

@@ -1,19 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { cx } from "./ui";
 
 /**
  * A stop on Today (owner, 2026-10-19: "keep these cards on Today collapsed except for the job
  * you are on. Then a tap on an old job or future job expands it"): one row (number, time,
- * customer, state) that opens to the address, notes, and buttons.
+ * customer, state) that opens to the address, notes, and buttons, with the name then a link to
+ * the job.
  */
 export function TodayStop({
   label,
   number,
   current,
   done,
-  summary,
+  time,
+  name,
+  href,
+  extra,
   children,
 }: {
   label: string;
@@ -21,7 +26,12 @@ export function TodayStop({
   /** The stop you're on: open, and ringed. */
   current: boolean;
   done: boolean;
-  summary: ReactNode;
+  time: ReactNode;
+  /** The customer: once the card is open, their name opens the job (owner, 2026-10-20). */
+  name: string;
+  href: string;
+  /** State after the name (a badge, a lock). */
+  extra?: ReactNode;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(current);
@@ -32,12 +42,12 @@ export function TodayStop({
       className={cx("card", current && "ring-2 ring-link")}
       data-testid="today-stop"
     >
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls={body}
+      {/* The whole row opens and closes the card; the chevron is its button for keyboards and
+          screen readers. Open, the name is a link to the job instead of an Open Job button
+          (owner, 2026-10-20: "We're wasting space by keeping as a new button"). */}
+      <div
         onClick={() => setOpen(!open)}
-        className="flex min-h-14 w-full items-center gap-2 px-3 py-2 text-left"
+        className="flex min-h-14 w-full cursor-pointer items-center gap-2 px-3 py-2 text-left"
       >
         <span
           aria-hidden="true"
@@ -65,24 +75,60 @@ export function TodayStop({
         <span
           className={cx("flex min-w-0 flex-1 flex-wrap items-center gap-x-2", done && "opacity-70")}
         >
-          {summary}
-        </span>
-        <svg
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-          className={cx(
-            "size-5 shrink-0 text-text-muted transition-transform motion-reduce:transition-none",
-            open && "rotate-180",
+          <span className="font-display text-[1.0625rem] font-bold">{time}</span>
+          {open ? (
+            <Link
+              href={href}
+              onClick={(e) => e.stopPropagation()}
+              className="-my-2 flex min-h-11 min-w-0 flex-1 items-center gap-0.5 font-semibold text-link"
+            >
+              <span className="truncate">{name}</span>
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                className="size-4 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9 6l6 6-6 6" />
+              </svg>
+            </Link>
+          ) : (
+            <span className="min-w-0 flex-1 truncate font-semibold">{name}</span>
           )}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          {extra}
+        </span>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={body}
+          aria-label={open ? `Hide ${name}` : `Show ${name}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen(!open);
+          }}
+          className="-mr-2 grid size-11 shrink-0 place-items-center rounded-full"
         >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
-      </button>
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            className={cx(
+              "size-5 text-text-muted transition-transform motion-reduce:transition-none",
+              open && "rotate-180",
+            )}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+      </div>
       {open ? (
         <div id={body} className="space-y-1 px-3 pb-3">
           {children}

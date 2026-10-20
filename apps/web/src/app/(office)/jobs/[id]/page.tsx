@@ -128,9 +128,11 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
     <>
       <PageHeader
         back={{ href: "/jobs", label: "Jobs" }}
-        title={job.number ? `Job #${job.number}` : "New Job"}
+        // The customer's name on top, the job number smaller below (owner, 2026-10-20).
+        title={job.customer?.name ?? (job.number ? `Job #${job.number}` : "New Job")}
         subtitle={
           <span className="flex flex-wrap items-center gap-3">
+            {job.customer && job.number ? <span>Job #{job.number}</span> : null}
             <StatusBadge status={job.status} />
             {job.service_plan_id && job.customer ? (
               <Link

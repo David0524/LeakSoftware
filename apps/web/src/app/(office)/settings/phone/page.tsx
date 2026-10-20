@@ -76,7 +76,9 @@ export default async function PhoneSettingsPage() {
           <>
             <SettingsSection title="Get a new number" boxed>
               <p className="mb-4 text-text-muted">
-                A local number that texts, sends photos, and takes calls. Included with Sundeck Pro.
+                Texting needs a company number: a local number that texts, sends photos, and takes
+                calls. Included with Sundeck Pro. Your own mobile number, below, is only where calls
+                ring.
               </p>
               <NumberPicker />
             </SettingsSection>
@@ -157,7 +159,7 @@ export default async function PhoneSettingsPage() {
                 autoComplete="tel"
                 placeholder="(480) 555-0100"
                 defaultValue={mine ? formatPhone(toE164(mine) ?? mine) : ""}
-                hint="Calls you place ring here first, then connect from the company number. Each person adds their own on the phone app or here."
+                hint="Calls you place ring here first, then connect from the company number. Customers never see it, and texts don’t come from it. Each person adds their own on the phone app or here."
               />
             </SettingsFields>
           </SettingsForm>

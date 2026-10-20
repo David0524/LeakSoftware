@@ -428,6 +428,7 @@ describe("pool diagram: draw, landmarks, the spa's size, clear", async () => {
         cy: 90,
         size: 20,
         flip: false,
+        mirror: "x",
         parts: core.LANDMARKS.find((l) => l.key === "house")!.parts,
       },
     ]);
@@ -565,6 +566,12 @@ describe("landmarks resize and flip", () => {
       [30, true],
       [20, false],
     ]);
+    // The steps are the same both ways across, so they mirror top to bottom (owner, 2026-10-20).
+    expect(core.LANDMARKS.filter((l) => l.mirror === "y").map((l) => l.key)).toEqual(["steps"]);
+    const steps = core.poolDiagram("rectangle", false, {
+      landmarks: [{ kind: "steps", x: 0.5, y: 0.5, flip: true }],
+    });
+    expect(steps.landmarks[0]!.mirror).toBe("y");
     expect(core.clampLandmarkSize(3)).toBe(10);
     expect(core.clampLandmarkSize(60)).toBe(44);
     expect(core.clampLandmarkSize(22.26)).toBe(22.3);

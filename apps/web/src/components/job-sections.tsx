@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore, type ReactNode } from "react";
+import { SwipePages, useSegmentDrag } from "./gestures";
 import { cx } from "./ui";
 
 export interface JobSection {
@@ -27,6 +28,19 @@ export function JobSections({ sections }: { sections: JobSection[] }) {
   );
   const active = sections.some((s) => s.id === hash) ? hash : sections[0]!.id;
 
+  const index = sections.findIndex((s) => s.id === active);
+  // Hold the chosen part and drag it along, and swipe across the page for the next or previous
+  // part, as the iPhone app's (owner, 2026-10-20: "navigate the different job pages with
+  // gestures").
+  const { held, handlers } = useSegmentDrag(index, (i) => choose(sections[i]!.id));
+  const shown = held ?? index;
+  const go = (step: number) => {
+    // Wider screens show every part on one page.
+    if (!matchMedia("(max-width: 639.98px)").matches) return;
+    const next = sections[index + step];
+    if (next) choose(next.id);
+  };
+
   function choose(id: string) {
     // replaceState keeps Back for leaving the job; tell the store the hash changed.
     history.replaceState(null, "", `#${id}`);
@@ -43,9 +57,10 @@ export function JobSections({ sections }: { sections: JobSection[] }) {
         <div
           role="tablist"
           aria-label="Job sections"
-          className="grid grid-cols-5 gap-0.5 rounded-full bg-fill p-0.5"
+          className="grid grid-cols-5 gap-0.5 rounded-full bg-fill p-0.5 touch-pan-y select-none"
+          {...handlers}
         >
-          {sections.map((s) => (
+          {sections.map((s, i) => (
             <button
               key={s.id}
               type="button"
@@ -53,11 +68,14 @@ export function JobSections({ sections }: { sections: JobSection[] }) {
               id={`tab-${s.id}`}
               aria-selected={active === s.id}
               aria-controls={`part-${s.id}`}
+              data-segment
               onClick={() => choose(s.id)}
               // The iOS segmented control: the chosen part on a raised white thumb.
               className={cx(
-                "relative min-h-11 rounded-full px-1 text-[0.8125rem] transition-colors",
-                active === s.id
+                "relative min-h-11 rounded-full px-1 text-[0.8125rem]",
+                "transition-[color,background-color,transform] duration-200 motion-reduce:transition-none",
+                held === i && "scale-[1.06] shadow-lg",
+                shown === i
                   ? "bg-thumb font-semibold text-text shadow-[0_3px_8px_rgb(0_0_0/0.12),0_3px_1px_rgb(0_0_0/0.04)]"
                   : "font-medium text-text",
               )}
@@ -78,17 +96,19 @@ export function JobSections({ sections }: { sections: JobSection[] }) {
           ))}
         </div>
       </div>
-      {sections.map((s, i) => (
-        <div
-          key={s.id}
-          id={`part-${s.id}`}
-          role="tabpanel"
-          aria-labelledby={`tab-${s.id}`}
-          className={cx(i > 0 && "sm:mt-10", active !== s.id && "max-sm:hidden")}
-        >
-          {s.content}
-        </div>
-      ))}
+      <SwipePages onPrev={() => go(-1)} onNext={() => go(1)}>
+        {sections.map((s, i) => (
+          <div
+            key={s.id}
+            id={`part-${s.id}`}
+            role="tabpanel"
+            aria-labelledby={`tab-${s.id}`}
+            className={cx(i > 0 && "sm:mt-10", active !== s.id && "max-sm:hidden")}
+          >
+            {s.content}
+          </div>
+        ))}
+      </SwipePages>
     </>
   );
 }

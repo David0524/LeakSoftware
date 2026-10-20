@@ -24,15 +24,7 @@ import { TodayComplete } from "@/components/today-complete";
 import { TodayStop } from "@/components/today-stop";
 import { WeatherBadge } from "@/components/weather-badge";
 import { AddressLink, OpenRouteInMaps } from "@/components/open-in-maps";
-import {
-  ButtonLink,
-  Empty,
-  PageHeader,
-  StatusBadge,
-  cx,
-  iconButtonClass,
-  pillClass,
-} from "@/components/ui";
+import { Empty, PageHeader, StatusBadge, cx, iconButtonClass, pillClass } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { getCompany, getPlanCleanings, mayMakeJobs } from "@/lib/data";
 import { getLine } from "@/lib/messages";
@@ -183,14 +175,11 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                     number={i + 1}
                     current={isNext}
                     done={done}
-                    summary={
+                    time={j.scheduled_start ? formatTime(j.scheduled_start, ctx.timeZone) : ""}
+                    name={j.customer?.name ?? "Customer"}
+                    href={`/jobs/${j.id}`}
+                    extra={
                       <>
-                        <span className="font-display text-[1.0625rem] font-bold">
-                          {j.scheduled_start ? formatTime(j.scheduled_start, ctx.timeZone) : ""}
-                        </span>
-                        <span className="min-w-0 flex-1 truncate font-semibold">
-                          {j.customer?.name ?? "Customer"}
-                        </span>
                         {/* Most stops are scheduled; the badge shows other states. */}
                         {j.status !== "scheduled" ? <StatusBadge status={j.status} /> : null}
                         {lock && lock !== "started" ? (
@@ -241,9 +230,6 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                         done={done}
                         undoable={j.type !== "maintenance" && j.stop_done_on === ctx.today}
                       />
-                      <ButtonLink href={`/jobs/${j.id}`} kind="secondary" className="min-h-11 px-5">
-                        Open Job
-                      </ButtonLink>
                       {done ? null : (
                         <span className="ml-auto flex shrink-0 gap-2">
                           {j.customer?.phone ? (

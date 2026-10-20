@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SegmentedLinks, SwipeHrefs } from "@/components/gestures";
 import {
   LOCK_LABELS,
   addDays,
@@ -37,7 +38,6 @@ import {
   cx,
   pillClass,
   SEGMENT_TRACK,
-  segmentClass,
 } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { mapsAppForRequest } from "@/lib/maps";
@@ -249,198 +249,198 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
       <Suspense fallback={null}>
         <ScreenTip screen="schedule" />
       </Suspense>
-      {/* One row: previous, the date, next, and Day / Week / Month at the far right. */}
-      <div className="mb-3 flex items-center gap-2">
-        <Link
-          href={href(move(-1))}
-          className={buttonClass("secondary", "min-w-11 shrink-0 px-3")}
-          aria-label={`Previous ${view}`}
-        >
-          ‹
-        </Link>
-        <DateJump value={date} view={view} tech={tech} />
-        <Link
-          href={href(move(1))}
-          className={buttonClass("secondary", "min-w-11 shrink-0 px-3")}
-          aria-label={`Next ${view}`}
-        >
-          ›
-        </Link>
-        <nav aria-label="View" className={cx(SEGMENT_TRACK, "ml-auto shrink-0 flex-nowrap")}>
-          {(["day", "week", "month"] as const).map((v) => (
-            <Link
-              key={v}
-              href={href(date, v)}
-              aria-current={v === view ? "page" : undefined}
-              className={segmentClass(v === view, "px-3 text-[0.9375rem]")}
-            >
-              {VIEW_NAMES[v]}
-            </Link>
-          ))}
-        </nav>
-      </div>
-
-      {view === "day" ? <WeekStrip date={date} today={today} tech={tech} /> : null}
-
-      {/* Whose schedule: under the days of the week. */}
-      {techs.length > 1 ? (
-        <nav
-          aria-label="Whose schedule"
-          className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:hidden"
-        >
-          {[
-            ...techs.map((t) => ({
-              id: t.user_id,
-              name: t.user_id === office.user.id ? "Me" : t.name,
-            })),
-            { id: "all", name: "Everyone" },
-          ].map((t) => (
-            <Link
-              key={t.id}
-              href={href(date, view, t.id)}
-              aria-current={t.id === tech ? "page" : undefined}
-              className={pillClass(t.id === tech)}
-            >
-              {t.name}
-            </Link>
-          ))}
-        </nav>
-      ) : null}
-
-      {!ctx.depot ? (
-        <div className="mb-4">
-          <Notice tone="warning">
-            Routes start and end at the shop, which has no map location yet.{" "}
-            {office.isManager ? (
-              <Link href="/settings/scheduling" className="font-semibold text-link underline">
-                Set it in Settings › Scheduling
-              </Link>
-            ) : (
-              "An owner can set it in Settings › Scheduling."
-            )}
-          </Notice>
+      {/* Swipe sideways for the previous or next day, week, or month (owner, 2026-10-20). */}
+      <SwipeHrefs prev={href(move(-1))} next={href(move(1))}>
+        {/* One row: previous, the date, next, and Day / Week / Month at the far right. */}
+        <div className="mb-3 flex items-center gap-2">
+          <Link
+            href={href(move(-1))}
+            className={buttonClass("secondary", "min-w-11 shrink-0 px-3")}
+            aria-label={`Previous ${view}`}
+          >
+            ‹
+          </Link>
+          <DateJump value={date} view={view} tech={tech} />
+          <Link
+            href={href(move(1))}
+            className={buttonClass("secondary", "min-w-11 shrink-0 px-3")}
+            aria-label={`Next ${view}`}
+          >
+            ›
+          </Link>
+          <SegmentedLinks
+            label="View"
+            className={cx(SEGMENT_TRACK, "ml-auto shrink-0 flex-nowrap")}
+            items={(["day", "week", "month"] as const).map((v) => ({
+              href: href(date, v),
+              label: VIEW_NAMES[v],
+              active: v === view,
+            }))}
+          />
         </div>
-      ) : null}
-      {unlocated ? (
-        <p className="mb-4 text-[0.9375rem] text-text-muted">
-          Pools marked “No map location” aren’t counted in drive times: their address wasn’t found
-          on the map. Check the address on the customer’s pool.
-        </p>
-      ) : null}
 
-      {view === "month" ? (
-        <>
-          <div className="sm:hidden">
-            <MonthCalendar
-              days={days}
-              month={date.slice(0, 7)}
-              today={today}
-              counts={monthCounts(phoneColumns, tech === "all")}
-              href={(d) => href(d, "day")}
-            />
+        {view === "day" ? <WeekStrip date={date} today={today} tech={tech} /> : null}
+
+        {/* Whose schedule: under the days of the week. */}
+        {techs.length > 1 ? (
+          <nav
+            aria-label="Whose schedule"
+            className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:hidden"
+          >
+            {[
+              ...techs.map((t) => ({
+                id: t.user_id,
+                name: t.user_id === office.user.id ? "Me" : t.name,
+              })),
+              { id: "all", name: "Everyone" },
+            ].map((t) => (
+              <Link
+                key={t.id}
+                href={href(date, view, t.id)}
+                aria-current={t.id === tech ? "page" : undefined}
+                className={pillClass(t.id === tech)}
+              >
+                {t.name}
+              </Link>
+            ))}
+          </nav>
+        ) : null}
+
+        {!ctx.depot ? (
+          <div className="mb-4">
+            <Notice tone="warning">
+              Routes start and end at the shop, which has no map location yet.{" "}
+              {office.isManager ? (
+                <Link href="/settings/scheduling" className="font-semibold text-link underline">
+                  Set it in Settings › Scheduling
+                </Link>
+              ) : (
+                "An owner can set it in Settings › Scheduling."
+              )}
+            </Notice>
           </div>
-          <div className="max-sm:hidden">
-            <MonthCalendar
-              days={days}
-              month={date.slice(0, 7)}
-              today={today}
-              counts={monthCounts(columns, true)}
-              href={(d) => href(d, "day")}
-            />
-          </div>
-        </>
-      ) : view === "week" ? (
-        <>
-          {/* Phones: the week as an agenda, day by day. Moving is done from the day view. */}
-          <div className="space-y-5 sm:hidden">
-            {days.map((d) => {
-              const list = phoneColumns
-                .filter((c) => c.date === d)
-                .flatMap((c) =>
-                  c.stops
-                    .filter((s) => !s.note?.startsWith("Second tech"))
-                    .map((s) => ({ s, tech: c.title })),
-                )
-                .concat(
-                  (tech === "all" ? (unassigned.get(d) ?? []) : []).map((j) => ({
-                    s: toStop(j, ctx),
-                    tech: "No tech yet",
-                  })),
-                );
-              return (
-                <section key={d} aria-label={formatDay(d, "long")}>
-                  {/* An empty day is one line: the day, then "Nothing scheduled" beside it. */}
-                  <h2
-                    className={cx(
-                      "flex flex-wrap items-baseline gap-x-2 font-display text-lg font-bold",
-                      list.length > 0 && "mb-2",
-                      d === today && "text-link",
-                    )}
-                  >
-                    <Link
-                      href={href(d, "day")}
-                      className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
+        ) : null}
+        {unlocated ? (
+          <p className="mb-4 text-[0.9375rem] text-text-muted">
+            Pools marked “No map location” aren’t counted in drive times: their address wasn’t found
+            on the map. Check the address on the customer’s pool.
+          </p>
+        ) : null}
+
+        {view === "month" ? (
+          <>
+            <div className="sm:hidden">
+              <MonthCalendar
+                days={days}
+                month={date.slice(0, 7)}
+                today={today}
+                counts={monthCounts(phoneColumns, tech === "all")}
+                href={(d) => href(d, "day")}
+              />
+            </div>
+            <div className="max-sm:hidden">
+              <MonthCalendar
+                days={days}
+                month={date.slice(0, 7)}
+                today={today}
+                counts={monthCounts(columns, true)}
+                href={(d) => href(d, "day")}
+              />
+            </div>
+          </>
+        ) : view === "week" ? (
+          <>
+            {/* Phones: the week as an agenda, day by day. Moving is done from the day view. */}
+            <div className="space-y-5 sm:hidden">
+              {days.map((d) => {
+                const list = phoneColumns
+                  .filter((c) => c.date === d)
+                  .flatMap((c) =>
+                    c.stops
+                      .filter((s) => !s.note?.startsWith("Second tech"))
+                      .map((s) => ({ s, tech: c.title })),
+                  )
+                  .concat(
+                    (tech === "all" ? (unassigned.get(d) ?? []) : []).map((j) => ({
+                      s: toStop(j, ctx),
+                      tech: "No tech yet",
+                    })),
+                  );
+                return (
+                  <section key={d} aria-label={formatDay(d, "long")}>
+                    {/* An empty day is one line: the day, then "Nothing scheduled" beside it. */}
+                    <h2
+                      className={cx(
+                        "flex flex-wrap items-baseline gap-x-2 font-display text-lg font-bold",
+                        list.length > 0 && "mb-2",
+                        d === today && "text-link",
+                      )}
                     >
-                      {formatDay(d, "long")}
-                      {d === today ? " · Today" : ""}
-                    </Link>
-                    {list.length === 0 ? (
-                      <span className="font-sans text-[0.9375rem] font-normal text-text-muted">
-                        Nothing scheduled
-                      </span>
-                    ) : null}
-                  </h2>
-                  {list.length === 0 ? null : (
-                    <Grouped>
-                      {list.map(({ s, tech }) => (
-                        <Row
-                          key={s.id}
-                          href={`/jobs/${s.id}`}
-                          label={
-                            <span className="font-semibold">
-                              {s.time} · {s.number ? `#${s.number}` : "New"}
-                            </span>
-                          }
-                          detail={
-                            <>
-                              <span className="text-text">{s.customer}</span> · {tech}
-                            </>
-                          }
-                          value={<StatusBadge status={s.status} />}
-                        />
-                      ))}
-                    </Grouped>
-                  )}
-                </section>
-              );
-            })}
-          </div>
-          <div className="hidden sm:block">
-            <RouteBoard
-              mode="week"
-              columns={columns}
-              tray={trayJobs}
-              techs={movers.map((t) => ({ id: t.user_id, name: t.name }))}
-              today={today}
-              weekDays={days.map((d) => [d, formatDay(d)])}
-            />
-          </div>
-        </>
-      ) : (
-        <RouteBoard
-          mode="day"
-          columns={columns}
-          tray={trayJobs}
-          techs={movers.map((t) => ({ id: t.user_id, name: t.name }))}
-          today={today}
-        />
-      )}
-      {jobsOnPhone === 0 || jobsShown === 0 ? (
-        <p className={cx("mt-4 text-text-muted", jobsShown > 0 && "sm:hidden")}>
-          No jobs scheduled{" "}
-          {view === "day" ? "this day" : view === "week" ? "this week" : "this month"}.
-        </p>
-      ) : null}
+                      <Link
+                        href={href(d, "day")}
+                        className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
+                      >
+                        {formatDay(d, "long")}
+                        {d === today ? " · Today" : ""}
+                      </Link>
+                      {list.length === 0 ? (
+                        <span className="font-sans text-[0.9375rem] font-normal text-text-muted">
+                          Nothing scheduled
+                        </span>
+                      ) : null}
+                    </h2>
+                    {list.length === 0 ? null : (
+                      <Grouped>
+                        {list.map(({ s, tech }) => (
+                          <Row
+                            key={s.id}
+                            href={`/jobs/${s.id}`}
+                            label={
+                              <span className="font-semibold">
+                                {s.time} · {s.number ? `#${s.number}` : "New"}
+                              </span>
+                            }
+                            detail={
+                              <>
+                                <span className="text-text">{s.customer}</span> · {tech}
+                              </>
+                            }
+                            value={<StatusBadge status={s.status} />}
+                          />
+                        ))}
+                      </Grouped>
+                    )}
+                  </section>
+                );
+              })}
+            </div>
+            <div className="hidden sm:block">
+              <RouteBoard
+                mode="week"
+                columns={columns}
+                tray={trayJobs}
+                techs={movers.map((t) => ({ id: t.user_id, name: t.name }))}
+                today={today}
+                weekDays={days.map((d) => [d, formatDay(d)])}
+              />
+            </div>
+          </>
+        ) : (
+          <RouteBoard
+            mode="day"
+            columns={columns}
+            tray={trayJobs}
+            techs={movers.map((t) => ({ id: t.user_id, name: t.name }))}
+            today={today}
+          />
+        )}
+        {jobsOnPhone === 0 || jobsShown === 0 ? (
+          <p className={cx("mt-4 text-text-muted", jobsShown > 0 && "sm:hidden")}>
+            No jobs scheduled{" "}
+            {view === "day" ? "this day" : view === "week" ? "this week" : "this month"}.
+          </p>
+        ) : null}
+      </SwipeHrefs>
     </>
   );
 }

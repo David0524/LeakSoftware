@@ -2,6 +2,16 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-20 (owner: Liquid Glass sliders, gestures, addresses, no website links, texting, the steps, job titles, Today)
+- **Segmented controls are the system's on iOS 26** (Day/Week/Month, the job tabs, Light/Dark): the real Liquid Glass control, which can be held and dragged; our own stays for iOS 18. On the website and Android, the thumb of every segmented control, the job tabs and Day/Week/Month included, can be held and dragged.
+- **Gestures:** swipe sideways across a job for its next or previous part, and across Schedule for the next or previous day, week, or month. Swipes that start on a drawing, slider, map, or sideways scroller are left to them. Swipe actions on list rows have a visible alternative.
+- **A changed address is looked up again:** editing a pool's or the shop's address clears the old pin in the same write, and the server finds the new one (the apps call `/api/locate`). Cole Izhaky's pool had a GPS pin from a phone in New York (Mark Location Here, since removed); it was cleared so it's looked up from its Las Vegas address.
+- **The apps don't open the website when they can help it:** Company and Branding, Scheduling and Routes, Report Templates, and Phone and Texting are native in both apps (`/api/phone` for the company number). Left on the web: Stripe's own onboarding, Billing (store rules), and the customer-facing quote and report pages.
+- **Texting needs a company number,** which the shop doesn't have yet; a person's own mobile number is only where calls ring. Phone and Texting now says so on every platform.
+- **The steps mirror top to bottom** when tapped (they're the same both ways across); the other landmarks mirror left to right.
+- **A job's title is the customer's name**, with the job number smaller below it.
+- **Today has no Open Job button:** on an open stop card, the customer's name is the link to the job.
+
 ## 2026-10-19 (owner: "Live Activity should begin at the beginning of the workday")
 - **The Live Activity runs the tech's whole day:** it starts by itself at the start of the shop's working day (Settings › Scheduling, on its work days) while the tech has stops left today, showing the first stop as "Up next" with its scheduled time. On My Way, Start Job, and Mark Complete change it as before; after a stop is done it moves on to the next one, and it ends after the last. If the tech closes it, it stays closed until the next work day. Still no timers. On Android, the ongoing notification does the same (core `liveStopRuns`, phase `ahead`).
 

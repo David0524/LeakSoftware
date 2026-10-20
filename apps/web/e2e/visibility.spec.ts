@@ -58,7 +58,7 @@ test("owners choose whether techs see every job or only their own", async ({ bro
     await expect(techPage.getByRole("heading", { name: "Jobs" })).toBeVisible();
     await expect(techPage.getByRole("row").filter({ hasText: customer })).toHaveCount(0);
     await techPage.goto(`/jobs/${jobId}`);
-    await expect(techPage.getByRole("heading", { name: /^Job #/ })).toHaveCount(0);
+    await expect(techPage.getByText(/^Job #\d+$/)).toHaveCount(0);
     await techPage.goto("/schedule?view=day");
     await expect(techPage.getByRole("region", { name: "Tony Tech" })).toBeVisible();
     await expect(techPage.getByRole("region", { name: "Priya Shah" })).toHaveCount(0);

@@ -118,7 +118,7 @@ test("New Job books a maintenance visit, or starts a plan for a new customer", a
   await page.getByLabel("Date").fill(day);
   await page.getByLabel("Tech", { exact: true }).selectOption({ label: "Priya Shah" });
   await page.getByRole("button", { name: "Create Job" }).click();
-  await expect(page.getByRole("heading", { name: /^Job #\d+$/ })).toBeVisible();
+  await expect(page.getByText(/^Job #\d+$/).first()).toBeVisible();
   // The service checklist, not the leak one.
   await expect(page.getByText(/^0 done · 0 need attention · 0 skipped · 7 to do$/)).toBeVisible();
 

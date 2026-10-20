@@ -133,7 +133,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
     .getByLabel("Detection price")
     .selectOption({ label: "Leak detection - pool ($375.00)" });
   await page.getByRole("button", { name: "Create Job" }).click();
-  await expect(page.getByRole("heading", { name: /^Job #\d+$/ })).toBeVisible();
+  await expect(page.getByText(/^Job #\d+$/).first()).toBeVisible();
   const detectionJob = new URL(page.url()).pathname;
 
   // 4. Inspect: start, one leak with where, the rest not leaking; a finding.

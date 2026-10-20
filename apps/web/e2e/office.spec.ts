@@ -63,7 +63,7 @@ test("owner views the M4 sample job", async ({ page }) => {
   await page.goto("/jobs?status=all&q=Sam%20Sample");
   const row = page.getByRole("row").filter({ hasText: "Sam Sample" });
   await row.getByRole("link").first().click();
-  await expect(page.getByRole("heading", { name: /^Job #\d+/ })).toBeVisible();
+  await expect(page.getByText(/^Job #\d+$/).first()).toBeVisible();
   await expect(page.getByText("7408 E Osborn Rd, Scottsdale, AZ 85251").first()).toBeVisible();
 
   // Texts with Sam about this job (seed_demo_messages.sql): the latest few, then the whole
@@ -363,7 +363,7 @@ test("the office adds a job for a new customer, with its checklist ready", async
   await expect(page.getByLabel("Detection fee ($)")).not.toHaveValue("");
   await page.getByRole("button", { name: "Create Job" }).click();
 
-  await expect(page.getByRole("heading", { name: /^Job #\d+$/ })).toBeVisible();
+  await expect(page.getByText(/^Job #\d+$/).first()).toBeVisible();
   await expect(page.getByRole("link", { name, exact: true })).toBeVisible();
   await expect(page.getByText("12 Office Way, Tempe, AZ").first()).toBeVisible();
   await expect(page.getByText("Tony Tech").first()).toBeVisible();
@@ -445,7 +445,7 @@ test("on a phone: a tab bar moves between sections and nothing scrolls sideways"
     .getByRole("link", { name: /Sam Sample/ })
     .first()
     .click();
-  await expect(page.getByRole("heading", { name: /^Job #\d+$/ })).toBeVisible();
+  await expect(page.getByText(/^Job #\d+$/).first()).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   await phone.close();
 });
@@ -468,7 +468,7 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   await page.getByLabel("Date").fill(new Date().toISOString().slice(0, 10));
   await page.getByLabel("Tech", { exact: true }).selectOption({ label: "Tony Tech" });
   await page.getByRole("button", { name: "Create Job" }).click();
-  await expect(page.getByRole("heading", { name: /^Job #\d+$/ })).toBeVisible();
+  await expect(page.getByText(/^Job #\d+$/).first()).toBeVisible();
   const jobUrl = new URL(page.url()).pathname;
 
   const phone = await browser.newContext({

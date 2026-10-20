@@ -554,7 +554,10 @@ export interface Landmark {
   y: number;
   /** Its size in diagram units (pinched or dragged, like the spa); LANDMARK_SIZE when unset. */
   s?: number;
-  /** Mirrored left to right (a tap on the selected landmark). */
+  /**
+   * Mirrored (a tap on the selected landmark): left to right, or top to bottom for a drawing
+   * that's the same both ways across (LANDMARKS' `mirror`; owner, 2026-10-20, the steps).
+   */
   flip?: boolean;
 }
 
@@ -589,7 +592,13 @@ export interface LandmarkPart {
  * C, and Z only, so every platform draws them from the same paths. Each part is filled with
  * its tone and outlined in color.landmark.outline (stroke 1 in the box).
  */
-export const LANDMARKS: { key: LandmarkKind; label: string; parts: LandmarkPart[] }[] = [
+export const LANDMARKS: {
+  key: LandmarkKind;
+  label: string;
+  /** How a tap mirrors it: "x" left to right (the default), "y" top to bottom. */
+  mirror?: "x" | "y";
+  parts: LandmarkPart[];
+}[] = [
   {
     key: "tree",
     label: "Tree",
@@ -635,6 +644,8 @@ export const LANDMARKS: { key: LandmarkKind; label: string; parts: LandmarkPart[
   {
     key: "steps",
     label: "Steps",
+    // The same both ways across, so a tap turns them top to bottom.
+    mirror: "y",
     parts: [
       { d: "M2.5 15.5 H21.5 V21.5 H2.5 Z", tone: "concrete" },
       { d: "M5.5 9.5 H18.5 V15.5 H5.5 Z", tone: "concrete" },
@@ -694,8 +705,9 @@ export interface PoolDiagram {
   drawing: string[];
   /**
    * Landmarks: each drawing's parts (LANDMARKS) in a `size` box centered on cx, cy, i.e.
-   * translate(cx - size / 2, cy - size / 2) scale(size / 24); flipped, mirrored about cx:
-   * translate(cx + size / 2, cy - size / 2) scale(-size / 24, size / 24).
+   * translate(cx - size / 2, cy - size / 2) scale(size / 24); flipped, mirrored about cx
+   * (`mirror` "x"): translate(cx + size / 2, cy - size / 2) scale(-size / 24, size / 24), or
+   * about cy ("y"): translate(cx - size / 2, cy + size / 2) scale(size / 24, -size / 24).
    */
   landmarks: {
     kind: LandmarkKind;
@@ -703,6 +715,7 @@ export interface PoolDiagram {
     cy: number;
     size: number;
     flip: boolean;
+    mirror: "x" | "y";
     parts: LandmarkPart[];
   }[];
 }
@@ -989,6 +1002,7 @@ export function poolDiagram(
         cy: Math.min(DIAGRAM_HEIGHT - half, Math.max(half, l.y * DIAGRAM_HEIGHT)),
         size,
         flip: l.flip === true,
+        mirror: LANDMARKS.find((k) => k.key === l.kind)!.mirror ?? "x",
         parts: LANDMARKS.find((k) => k.key === l.kind)!.parts,
       };
     }),

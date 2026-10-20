@@ -1,4 +1,5 @@
 import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   daySummary,
   formatAddress,
@@ -197,12 +198,24 @@ export async function locateProperty(office: Office, propertyId: string): Promis
 }
 
 async function lookUpProperty(office: Office, propertyId: string): Promise<LatLng | null> {
+  return locatePropertyWith(await createClient(), office.company.id, propertyId);
+}
+
+/**
+ * A pool's coordinates from its address, when the address changed since the last lookup, as
+ * `db`'s person (the website's session, or a phone's, /api/locate).
+ */
+export async function locatePropertyWith(
+  db: SupabaseClient,
+  companyId: string,
+  propertyId: string,
+): Promise<LatLng | null> {
   if (!routingConfigured()) return null;
-  const supabase = await createClient();
-  const { data } = await supabase
+  const { data } = await db
     .from("property")
     .select("id, address_line1, city, state, postal_code, geocoded_address")
     .eq("id", propertyId)
+    .eq("company_id", companyId)
     .maybeSingle();
   const p = data as
     (Parameters<typeof formatAddress>[0] & { geocoded_address: string | null }) | null;
@@ -210,10 +223,10 @@ async function lookUpProperty(office: Office, propertyId: string): Promise<LatLn
   const address = formatAddress(p);
   // Coordinates are kept with the address they belong to, whether looked up, marked at the
   // pool by GPS, or set by hand: only a changed address needs a new lookup.
-  if (p.geocoded_address === address) return null;
-  const found = await geocodeAddress(supabase, office.company.id, address);
+  if (!address || p.geocoded_address === address) return null;
+  const found = await geocodeAddress(db, companyId, address);
   if (!found) return null;
-  const { error } = await supabase
+  const { error } = await db
     .from("property")
     .update({
       latitude: found.lat,
@@ -227,16 +240,24 @@ async function lookUpProperty(office: Office, propertyId: string): Promise<LatLn
 
 /** The shop's coordinates from its address, when the address changed since the last lookup. */
 export async function locateCompany(office: Office): Promise<boolean> {
-  if (!routingConfigured()) return false;
-  const supabase = await createClient();
-  const company = await getCompany(office);
-  const address = formatAddress(company as unknown as Parameters<typeof formatAddress>[0]);
-  if (!address || company.geocoded_address === address) return false;
-  const found = await geocodeAddress(supabase, office.company.id, address);
-  if (!found) return false;
-  const { error } = await supabase
+  return !!(await locateCompanyWith(await createClient(), office.company.id));
+}
+
+export async function locateCompanyWith(
+  db: SupabaseClient,
+  companyId: string,
+): Promise<LatLng | null> {
+  if (!routingConfigured()) return null;
+  const { data } = await db.from("company").select("*").eq("id", companyId).maybeSingle();
+  if (!data) return null;
+  const address = formatAddress(data as unknown as Parameters<typeof formatAddress>[0]);
+  if (!address || (data as { geocoded_address: string | null }).geocoded_address === address)
+    return null;
+  const found = await geocodeAddress(db, companyId, address);
+  if (!found) return null;
+  const { error } = await db
     .from("company")
     .update({ latitude: found.lat, longitude: found.lng, geocoded_address: address })
-    .eq("id", office.company.id);
-  return !error;
+    .eq("id", companyId);
+  return error ? null : found;
 }
