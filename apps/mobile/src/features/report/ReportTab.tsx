@@ -19,6 +19,7 @@ import { useRows, useSyncStatus } from "../../data/hooks";
 import {
   REPORT_STEPS,
   finishReportFromPhone,
+  UploadsPendingError,
   reportsOnline,
   sendReportFromPhone,
   useJobReports,
@@ -29,11 +30,12 @@ import {
 import { AUTOSAVE_DELAY_MS } from "../../lib/autosave";
 import { API_URL } from "../../lib/config";
 import {
+  forgetReportRequest,
   queueReportRequest,
   useQueuedReportRequests,
   watchReportRequests,
 } from "../../lib/reportQueue";
-import { QUEUED_MESSAGE } from "../../lib/reportRequests";
+import { queuedMessage } from "../../lib/reportRequests";
 import { getServices } from "../../lib/services";
 import { useCompany, useSession } from "../../state/session";
 import { Button, Card, Field, Notice, T } from "../../ui/components";
@@ -273,7 +275,11 @@ export function ReportTab({
    * No signal: Finish Report and sending wait on the phone (owner, 2026-10-20) and go once the
    * signal is back and the job's changes are on the server.
    */
-  function queueForLater(kind: "email" | "text" | "finish", reportId: string) {
+  function queueForLater(
+    kind: "email" | "text" | "finish",
+    reportId: string,
+    waitingFor?: "uploads",
+  ) {
     const sending = kind !== "finish";
     if (kind === "email" && !/^\S+@\S+\.\S+$/.test(email))
       return setSendStatus({ tone: "error", text: "Enter the customer’s email." });
@@ -282,9 +288,10 @@ export function ReportTab({
       reportId,
       jobId: job.id,
       to: kind === "email" ? email : kind === "text" ? (customer?.phone ?? null) : null,
+      ...(waitingFor ? { waitingFor } : {}),
     });
     haptics.success();
-    (sending ? setSendStatus : setStatus)({ tone: "info", text: QUEUED_MESSAGE });
+    (sending ? setSendStatus : setStatus)({ tone: "info", text: queuedMessage({ waitingFor }) });
   }
 
   async function run(kind: "draft" | "email" | "text" | "finish", reportId = draft?.id) {
@@ -304,6 +311,8 @@ export function ReportTab({
         setBusy(null);
         return queueForLater(kind, reportId);
       }
+      // Tapped again with a signal: this one goes now, not the one waiting too.
+      if (reportId) forgetReportRequest(kind, reportId);
     }
     try {
       if (kind === "draft") {
@@ -335,8 +344,11 @@ export function ReportTab({
       }
     } catch (e) {
       const text = e instanceof Error ? e.message : String(e);
+      // Photos still uploading: it waits on the phone and goes once they're up.
+      if (kind !== "draft" && reportId && e instanceof UploadsPendingError)
+        queueForLater(kind, reportId, "uploads");
       // Lost the signal on the way: it waits on the phone instead (not Write Draft).
-      if (kind !== "draft" && reportId && /connection|signal/i.test(text))
+      else if (kind !== "draft" && reportId && /connection|signal/i.test(text))
         queueForLater(kind, reportId);
       else (sending ? setSendStatus : setStatus)({ tone: "error", text });
     } finally {
@@ -397,7 +409,9 @@ export function ReportTab({
         <StepList steps={REPORT_STEPS.send} at={step} label="Sending the report" />
       ) : null}
       {queued.some((r) => r.reportId === reportId && r.kind !== "finish") ? (
-        <Notice>{QUEUED_MESSAGE}</Notice>
+        <Notice>
+          {queuedMessage(queued.find((r) => r.reportId === reportId && r.kind !== "finish")!)}
+        </Notice>
       ) : sendStatus && sendingId === reportId ? (
         <Notice tone={sendStatus.tone}>{sendStatus.text}</Notice>
       ) : null}
@@ -490,7 +504,7 @@ export function ReportTab({
         />
       ) : null}
       {queued.some((r) => r.kind === "finish") ? (
-        <Notice>{QUEUED_MESSAGE}</Notice>
+        <Notice>{queuedMessage(queued.find((r) => r.kind === "finish")!)}</Notice>
       ) : status ? (
         <Notice tone={status.tone}>{status.text}</Notice>
       ) : null}

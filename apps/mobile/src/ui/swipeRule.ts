@@ -9,6 +9,8 @@ export const SWIPE_RATIO = 1.8;
 
 /** Which way a finished drag pages, or null when it doesn't count. */
 export function swipeDirection(dx: number, dy: number): "previous" | "next" | null {
-  if (Math.abs(dx) < SWIPE_MIN_DISTANCE || Math.abs(dx) < Math.abs(dy) * SWIPE_RATIO) return null;
+  // Written so a missing reading (NaN) never counts.
+  if (!(Math.abs(dx) >= SWIPE_MIN_DISTANCE && Math.abs(dx) >= Math.abs(dy) * SWIPE_RATIO))
+    return null;
   return dx < 0 ? "next" : "previous";
 }

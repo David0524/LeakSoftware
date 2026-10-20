@@ -21,7 +21,10 @@ import {
 } from "@leakbook/core";
 import { useJobInspection } from "../../data/inspection";
 import {
+  forgetCapture,
   prepareLocation,
+  recoverPendingCapture,
+  rememberCapture,
   saveCapture,
   useJobMedia,
   useMediaSource,
@@ -132,12 +135,14 @@ export function MediaSection({
     position: Promise<{ latitude: number; longitude: number } | null>,
     added: string,
     to: MediaTarget = captureTarget(),
-  ) {
+  ): Promise<boolean> {
     try {
       await saveCapture(company.id, to, file, position);
       setStatus({ text: added, tone: "pass" });
+      return true;
     } catch (e) {
       setStatus({ text: e instanceof Error ? e.message : String(e), tone: "fail" });
+      return false;
     }
   }
 
@@ -161,6 +166,9 @@ export function MediaSection({
     if (!to) return;
     setBusy(kind);
     setStatus(null);
+    // If Android closes the app while the camera or library is open, the next start saves the
+    // capture here (data/media's recoverPendingCapture).
+    rememberCapture({ companyId: company.id, target: to, kind, source });
     try {
       if (source === "library") {
         // Taken earlier, maybe elsewhere: where the phone is now isn't where it was taken.
@@ -181,7 +189,7 @@ export function MediaSection({
         const file = await captureWithCamera(kind);
         if (!file) break;
         taken++;
-        await save(
+        const saved = await save(
           file,
           position,
           kind === "video"
@@ -191,8 +199,9 @@ export function MediaSection({
               : `${taken} photos added.`,
           to,
         );
-        // Photos keep the camera open for the next one; a video is one at a time.
-        if (kind === "video") break;
+        // Photos keep the camera open for the next one; a video is one at a time. A photo that
+        // couldn't be saved (phone full) stops here, so its message isn't hidden by the camera.
+        if (kind === "video" || !saved) break;
       }
     } catch (e) {
       const title = kind === "photo" ? "Couldn’t take the photo" : "Couldn’t record the video";
@@ -204,6 +213,7 @@ export function MediaSection({
         ]);
       } else setStatus({ text: message, tone: "fail" });
     } finally {
+      forgetCapture();
       setBusy(null);
     }
   }
@@ -230,7 +240,9 @@ export function MediaSection({
           ) : null}
           {recording ? (
             <VoiceRecorder
-              onSaved={(file) => save(file, prepareLocation(), "Voice note added.")}
+              onSaved={async (file) => {
+                await save(file, prepareLocation(), "Voice note added.");
+              }}
               onClose={() => setRecording(false)}
             />
           ) : (
@@ -685,3 +697,14 @@ const styles = StyleSheet.create({
   duration: { ...face.semiBold, fontSize: 13, fontVariant: ["tabular-nums"] },
   badge: { position: "absolute", right: 4, bottom: 4, borderRadius: 12, padding: 3 },
 });
+
+/**
+ * Mounted once while signed in: a photo or video taken while Android closed the app is saved
+ * to the job, finding, item or test it was taken for, as if the camera had returned.
+ */
+export function RecoverCapture() {
+  useEffect(() => {
+    void recoverPendingCapture();
+  }, []);
+  return null;
+}

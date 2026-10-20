@@ -11,6 +11,8 @@ export interface Autosave<T> {
   flush(): boolean;
   /** Stop the timer without saving. */
   cancel(): void;
+  /** The value on the phone changed by other means (another device, a cleared answer). */
+  rebase(value: T): void;
 }
 
 /** Debounced saving of one value; a value equal to the last one saved isn't saved again. */
@@ -52,6 +54,9 @@ export function createAutosave<T>({
     cancel() {
       stop();
       waiting = null;
+    },
+    rebase(value) {
+      saved = value;
     },
   };
 }

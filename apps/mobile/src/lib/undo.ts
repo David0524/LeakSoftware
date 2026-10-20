@@ -1,3 +1,5 @@
+import { currentVerdict, type ChecklistItemResult } from "@leakbook/core";
+
 // Undo after Mark Remaining (owner, 2026-10-20: one-handed use, item 5): the marks are saved
 // at once, and "Marked N" with Undo sits where the button was for five seconds (not a toast).
 
@@ -38,4 +40,15 @@ export function createUndoWindow(
       return open;
     },
   };
+}
+
+/**
+ * The items Mark Remaining's Undo clears: the ones it marked that still have its answer. An
+ * item answered again meanwhile keeps the newer answer.
+ */
+export function marksToUndo(
+  marked: readonly string[],
+  results: ReadonlyMap<string, Pick<ChecklistItemResult, "status" | "outcome">>,
+): string[] {
+  return marked.filter((id) => currentVerdict(results.get(id)) === "ok");
 }

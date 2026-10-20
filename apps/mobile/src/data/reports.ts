@@ -61,7 +61,41 @@ export function useJobSignatures(companyId: string, jobId: string) {
 /** Writing and sending reports happen on the Sundeck Pro server (AI, email, PDF). */
 export const reportsOnline = Boolean(API_URL);
 
-export class ReportServerError extends Error {}
+export class ReportServerError extends Error {
+  constructor(
+    message: string,
+    /** The server's HTTP status, when it answered. */
+    readonly status: number | null = null,
+  ) {
+    super(message);
+  }
+}
+
+/** A photo, video or signature image of the job hasn't uploaded yet, so the report would miss it. */
+export class UploadsPendingError extends ReportServerError {
+  constructor() {
+    super("The photos haven’t finished uploading yet. Try again in a moment.");
+  }
+}
+
+/** Throws UploadsPendingError while a file of this report's job is still waiting to upload. */
+function requireUploaded(reportId: string) {
+  const { sync } = getServices();
+  const jobId = sync.get("report", reportId)?.job_id;
+  if (typeof jobId === "string" && sync.hasPendingUploads(jobId)) throw new UploadsPendingError();
+}
+
+/**
+ * Whether a queued request should wait and try again (no connection, signed out, the server
+ * busy or at fault) rather than be dropped as refused. Decided by the status when the server
+ * answered, so a server fault with its own message isn't taken for a refusal.
+ */
+export function tryAgainLater(e: unknown): boolean {
+  if (e instanceof ReportServerError && e.status !== null)
+    return e.status === 401 || e.status === 408 || e.status === 429 || e.status >= 500;
+  const message = e instanceof Error ? e.message : "";
+  return /connection|Sign in|said 5/.test(message);
+}
 
 /** POST to the Sundeck Pro server as the signed-in user. */
 export async function call<T>(path: string, body: unknown): Promise<T> {
@@ -79,7 +113,8 @@ export async function call<T>(path: string, body: unknown): Promise<T> {
     throw new ReportServerError("No connection. Try again when you have signal.");
   }
   const data = (await res.json().catch(() => ({}))) as T & { error?: string };
-  if (!res.ok) throw new ReportServerError(data.error ?? `The server said ${res.status}.`);
+  if (!res.ok)
+    throw new ReportServerError(data.error ?? `The server said ${res.status}.`, res.status);
   return data;
 }
 
@@ -116,6 +151,7 @@ export async function sendReportFromPhone(
     throw new ReportServerError(
       "Your edits haven’t reached the server yet. Try again with signal.",
     );
+  requireUploaded(reportId);
   onStep(1);
   const result = await call<{ link: string; message: string; emailed: boolean }>(
     `/api/reports/${reportId}/send`,
@@ -142,6 +178,7 @@ export async function finishReportFromPhone(
     throw new ReportServerError(
       "The signature or your edits haven’t reached the server yet. Finish when you have signal.",
     );
+  requireUploaded(reportId);
   onStep(1);
   const result = await call<{ token: string }>(`/api/reports/${reportId}/finish`, {
     customerAway,

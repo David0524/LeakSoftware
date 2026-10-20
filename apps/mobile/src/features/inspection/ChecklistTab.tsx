@@ -28,6 +28,7 @@ import { confirmDestructive } from "../../ui/confirm";
 import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { useNoSwipe } from "../../ui/SwipeNav";
+import { marksToUndo } from "../../lib/undo";
 import { UndoRow, useUndoWindow } from "../../ui/Undo";
 import { useAutosaveText } from "../../ui/useAutosave";
 import { color, face, font, MAX_TEXT_SCALE, minTap, shape, space } from "../../ui/theme";
@@ -250,10 +251,10 @@ function ChecklistGroup({
         );
     });
     haptics.success();
-    // Undo clears what it marked, back to To do.
+    // Undo clears what it marked, back to To do (not an item answered again since).
     undo.start(`Marked ${marked.length}`, () =>
       services.sync.batch(() => {
-        for (const id of marked)
+        for (const id of marksToUndo(marked, results.current))
           saveChecklistResult(
             services.sync,
             job.company_id,

@@ -10,6 +10,8 @@ export interface ReportRequest {
   jobId: string;
   /** Email address (email) or phone number (text). */
   to: string | null;
+  /** Made with a signal, but the job's photos were still uploading. */
+  waitingFor?: "uploads";
 }
 
 /** Adds a request; the same request for the same report replaces the earlier one. */
@@ -45,3 +47,11 @@ export function parseRequests(raw: string | null): ReportRequest[] {
 
 /** The line shown while a request waits (the same words for each). */
 export const QUEUED_MESSAGE = "Will send when you’re back online.";
+
+/** The line shown while a request waits for the job's photos to upload. */
+export const UPLOADS_QUEUED_MESSAGE = "Will send when the photos finish uploading.";
+
+/** What a waiting request says. */
+export function queuedMessage(req: Pick<ReportRequest, "waitingFor">): string {
+  return req.waitingFor === "uploads" ? UPLOADS_QUEUED_MESSAGE : QUEUED_MESSAGE;
+}

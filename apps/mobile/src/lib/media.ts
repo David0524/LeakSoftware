@@ -188,6 +188,25 @@ export async function chooseFromLibrary(kind: "photo" | "video"): Promise<Captur
   return prepareCapture(kind, asset, exifTime(asset.exif) ?? new Date().toISOString());
 }
 
+/**
+ * Android can close the app while the camera or the library is open (low memory); the photo or
+ * video the tech took is then handed back on the next start (owner request, 2026-10-20). Null
+ * when there's nothing to recover (any other platform, Cancel, an error).
+ */
+export async function recoverCapture(
+  kind: "photo" | "video",
+  source: "camera" | "library",
+): Promise<CapturedFile | null> {
+  const result = await ImagePicker.getPendingResultAsync();
+  if (!result || "code" in result || result.canceled || !result.assets?.[0]) return null;
+  const asset = result.assets[0];
+  if (kind === "video" && (asset.duration ?? 0) > (MEDIA_LIMITS.videoMaxSeconds + 1) * 1000)
+    return null;
+  const capturedAt =
+    (source === "library" ? exifTime(asset.exif) : null) ?? new Date().toISOString();
+  return prepareCapture(kind, asset, capturedAt);
+}
+
 async function prepareCapture(
   kind: "photo" | "video",
   asset: ImagePicker.ImagePickerAsset,

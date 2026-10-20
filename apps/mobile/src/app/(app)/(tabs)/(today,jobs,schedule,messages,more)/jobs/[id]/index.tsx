@@ -17,7 +17,6 @@ import {
   parseDollars,
   propertyLocation,
   toE164,
-  userTransitions,
   type CompanySettings,
   REPAIR_ITEM_KEY,
   REPAIR_ITEM_LABEL,
@@ -30,7 +29,12 @@ import type { JsonValue } from "@leakbook/sync";
 import { useRow, useSyncStatus } from "../../../../../../data/hooks";
 import { reportsOnline, useJobReports } from "../../../../../../data/reports";
 import { AUTOSAVE_DELAY_MS } from "../../../../../../lib/autosave";
-import { NEXT_STEP_LABELS, nextStepButtons, type NextStep } from "../../../../../../lib/nextStep";
+import {
+  NEXT_STEP_LABELS,
+  jobMoves,
+  nextStepButtons,
+  type NextStep,
+} from "../../../../../../lib/nextStep";
 import { liveStopStarted } from "../../../../../../lib/liveStop";
 import { useInspectionConfig, useJobInspection } from "../../../../../../data/inspection";
 import { useConversations, useLine } from "../../../../../../data/texting";
@@ -192,7 +196,7 @@ export default function JobDetail() {
   }
   // Start Job moved to the Next Step bar (owner, 2026-10-20); the other moves stay here.
   const startable = job.status === "scheduled" || job.status === "unscheduled";
-  const transitions = userTransitions(job.status, job.type).filter(
+  const transitions = jobMoves(job.status, job.type).filter(
     (to) => to !== "canceled" && !(to === "in_progress" && startable),
   );
 
@@ -325,7 +329,7 @@ export default function JobDetail() {
               customer={customer}
               update={update}
               onCancel={
-                userTransitions(job.status, job.type).includes("canceled")
+                jobMoves(job.status, job.type).includes("canceled")
                   ? () =>
                       confirmDestructive({
                         title: "Cancel this job?",

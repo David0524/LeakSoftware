@@ -24,6 +24,7 @@ import { getServices } from "../../lib/services";
 import { useCompany, useSession } from "../../state/session";
 import { Button, Card, Empty, Field, Notice, T, Toggle } from "../../ui/components";
 import { confirmDestructive } from "../../ui/confirm";
+import { parseLineQuantity } from "../../lib/lineQuantity";
 import { haptics } from "../../ui/haptics";
 import { color, face, MAX_TEXT_SCALE, space, tabular } from "../../ui/theme";
 import { Divider } from "../report/ReportTab";
@@ -274,12 +275,11 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
   const [sendMessage, setSendMessage] = useState<Message>(null);
 
   function addLine() {
-    const quantity = Number(line.quantity.replace(",", ".") || "1");
+    const quantity = parseLineQuantity(line.quantity);
     const price = parseDollars(line.price);
     const errors: Record<string, string> = {};
     if (!line.description.trim()) errors.description = "Describe the work.";
-    if (!(quantity > 0) || Math.round(quantity * 100) !== quantity * 100)
-      errors.quantity = "Enter a quantity like 1 or 2.5.";
+    if (quantity === null) errors.quantity = "Enter a quantity like 1 or 2.5.";
     if (price === null || price < 0) errors.price = "Enter a price like 125.";
     setLineErrors(errors);
     if (Object.keys(errors).length) return;

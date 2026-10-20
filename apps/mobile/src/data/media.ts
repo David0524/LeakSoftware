@@ -5,6 +5,7 @@ import {
   askLocationOnce,
   currentPosition,
   localMediaUri,
+  recoverCapture,
   storeCapture,
   type CapturedFile,
 } from "../lib/media";
@@ -39,6 +40,60 @@ export function useJobMedia(companyId: string, jobId: string, target?: Omit<Medi
         ),
     [all, jobId, findingId, componentId, testResultId],
   );
+}
+
+// A capture under way, kept on the phone so one Android closed the app during can still be
+// attached where it was meant to go (lib/media's recoverCapture).
+const CAPTURE_KEY = "capture:pending";
+
+export interface CaptureIntent {
+  companyId: string;
+  target: MediaTarget;
+  kind: "photo" | "video";
+  source: "camera" | "library";
+}
+
+/** The camera or library is about to open for this target. */
+export function rememberCapture(intent: CaptureIntent) {
+  getServices().kv.set(CAPTURE_KEY, JSON.stringify(intent));
+}
+
+/** The capture came back (or was canceled) in this run of the app. */
+export function forgetCapture() {
+  getServices().kv.remove(CAPTURE_KEY);
+}
+
+function rememberedCapture(): CaptureIntent | null {
+  try {
+    const v = JSON.parse(getServices().kv.get(CAPTURE_KEY) ?? "null") as CaptureIntent | null;
+    return v &&
+      typeof v.companyId === "string" &&
+      typeof v.target?.jobId === "string" &&
+      (v.kind === "photo" || v.kind === "video") &&
+      (v.source === "camera" || v.source === "library")
+      ? v
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * At start: a photo or video taken while Android closed the app is saved to the target it was
+ * taken for. Returns that job's id, or null when there was nothing to recover. Never throws.
+ */
+export async function recoverPendingCapture(): Promise<string | null> {
+  const intent = rememberedCapture();
+  if (!intent) return null;
+  forgetCapture();
+  try {
+    const file = await recoverCapture(intent.kind, intent.source);
+    if (!file) return null;
+    await saveCapture(intent.companyId, intent.target, file, Promise.resolve(null));
+    return intent.target.jobId;
+  } catch {
+    return null;
+  }
 }
 
 /** Save a capture: file into the media folder, row and upload ticket into the database. */
