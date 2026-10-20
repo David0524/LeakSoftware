@@ -248,6 +248,7 @@ export interface SwipeAction {
  * on a button acts and closes the row; nothing acts on a full swipe, so a long drag never does
  * anything by itself. The swipe is never the only way: the row keeps its own visible buttons
  * and offers the same actions to TalkBack and VoiceOver (accessibilityActions on the row).
+ * Trailing actions are listed most used first, which is drawn on the outer edge (section 12).
  */
 export function SwipeActions({
   leading,
@@ -299,7 +300,10 @@ export function SwipeActions({
         renderRightActions={
           trailing.length
             ? () => (
-                <View style={styles.actionRow}>{trailing.map((a) => button(a, "flex-end"))}</View>
+                // The first action sits on the outer (trailing) edge, as iOS draws them.
+                <View style={styles.actionRow}>
+                  {[...trailing].reverse().map((a) => button(a, "flex-end"))}
+                </View>
               )
             : undefined
         }

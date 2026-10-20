@@ -2,20 +2,28 @@ import { router } from "expo-router";
 import { formatPhone, isManagerRole } from "@leakbook/core";
 import { useEffect, useState } from "react";
 import { Platform, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
-import { setUnread, useConversations, useLine } from "../../../../../data/texting";
+import { callFromCompany, setUnread, useConversations, useLine } from "../../../../../data/texting";
 import { API_URL } from "../../../../../lib/config";
+import {
+  conversationRowActions,
+  menuTitle,
+  type ConversationActionId,
+} from "../../../../../lib/rowActions";
 import { useCompany, useSession } from "../../../../../state/session";
 import { Empty, Group, HeaderButton, Notice, Screen, T } from "../../../../../ui/components";
 import { haptics } from "../../../../../ui/haptics";
-import { useMenu } from "../../../../../ui/Select";
-import { SwipeLeading } from "../../../../../ui/SwipeRow";
+import { useResultBanner } from "../../../../../ui/ResultBanner";
+import { rowGestures, useRowMenu } from "../../../../../ui/RowMenu";
+import { SwipeActions } from "../../../../../ui/SwipeRow";
 import { color, face, MAX_TEXT_SCALE, space, type } from "../../../../../ui/theme";
 import { ScreenTip } from "../../../../../ui/Tip";
 
 /**
  * The shop's shared inbox (spec 5.7; company texting, owner 2026-10-16): every text and call
- * with customers on the company number, the same list the office sees. Swipe right (or press
- * and hold) for Unread or Read, for the whole team.
+ * with customers on the company number, the same list the office sees. Swipe left for Read or
+ * Unread (for the whole team), right to Call from the company number; touch and hold for Open,
+ * Call, Mark Read or Mark Unread, and Open Customer (gestures spec section 12), as the
+ * thread's own buttons do them.
  */
 export default function Messages() {
   const company = useCompany();
@@ -24,7 +32,8 @@ export default function Messages() {
   const line = useLine(company.id);
   const conversations = useConversations(company.id);
   const working = line?.status === "active";
-  const menu = useMenu();
+  const menu = useRowMenu();
+  const banner = useResultBanner();
   const [refreshing, setRefreshing] = useState(false);
 
   // Refreshes on open and every 20 seconds while showing (until push notifications exist).
@@ -68,6 +77,7 @@ export default function Messages() {
           : () => null
       }
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />}
+      overlay={banner.element}
     >
       <ScreenTip screen="messages" />
       {line?.status === "pending" ? (
@@ -97,29 +107,46 @@ export default function Messages() {
       ) : (
         <Group separatorInset={space["4"] + 18}>
           {conversations.map((c) => {
-            const toggle = () => setUnread(company.id, c.id, !c.unread);
+            const actions = conversationRowActions({
+              unread: c.unread,
+              canCall: working,
+              customerId: c.customer_id,
+            });
+            // The thread's Call button: the company number rings my phone first.
+            const call = () =>
+              callFromCompany(c.id)
+                .then((r) =>
+                  banner.show({
+                    tone: "info",
+                    message: r.demo
+                      ? "Texting isn’t connected on the server, so no call was placed."
+                      : `Your phone (${r.calling}) rings first. Answer to connect.`,
+                  }),
+                )
+                .catch((e: unknown) =>
+                  banner.show({
+                    tone: "error",
+                    message: e instanceof Error ? e.message : String(e),
+                  }),
+                );
+            const run = (id: ConversationActionId) => {
+              if (id === "open") router.push(`/messages/${c.id}`);
+              if (id === "call") void call();
+              if (id === "toggle") setUnread(company.id, c.id, !c.unread);
+              if (id === "customer" && c.customer_id) router.push(`/customers/${c.customer_id}`);
+            };
+            const g = rowGestures(actions, run, () =>
+              menu.open(menuTitle(c.name), actions.menu, run),
+            );
             return (
-              <SwipeLeading key={c.id} label={c.unread ? "Read" : "Unread"} onPress={toggle}>
+              <SwipeActions key={c.id} leading={g.leading} trailing={g.trailing}>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`${c.name}${c.unread ? ", unread" : ""}, ${c.last_preview ?? ""}`}
-                  accessibilityActions={[
-                    { name: "toggle", label: c.unread ? "Mark as Read" : "Mark as Unread" },
-                  ]}
-                  onAccessibilityAction={toggle}
+                  accessibilityActions={g.accessibilityActions}
+                  onAccessibilityAction={g.onAccessibilityAction}
                   onPress={() => router.push(`/messages/${c.id}`)}
-                  onLongPress={() => {
-                    haptics.light();
-                    menu.open({
-                      title: c.name,
-                      items: [
-                        {
-                          label: c.unread ? "Mark as Read" : "Mark as Unread",
-                          onPress: toggle,
-                        },
-                      ],
-                    });
-                  }}
+                  onLongPress={g.onLongPress}
                   android_ripple={{ color: color.ripple }}
                   style={({ pressed }) => [
                     styles.row,
@@ -151,7 +178,7 @@ export default function Messages() {
                     </T>
                   </View>
                 </Pressable>
-              </SwipeLeading>
+              </SwipeActions>
             );
           })}
         </Group>

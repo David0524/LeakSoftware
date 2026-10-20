@@ -134,6 +134,12 @@ public struct JobListRow: Identifiable, Equatable, Sendable {
     /// For the row's Call and Text swipe actions.
     public var customerId: String? = nil
     public var phone: String? = nil
+    /// For the row's swipes and menu (gestures spec section 12): the job number, the pool for
+    /// Directions, whether its page offers Complete Job, and whether it can be moved (Move…).
+    public var number: Int? = nil
+    public var place: MapPlace? = nil
+    public var completable = false
+    public var movable = false
 }
 
 /// The Jobs list for a filter, search and sort: deleted jobs left out, a limited tech's own jobs
@@ -174,7 +180,17 @@ public func jobList(
             id: v.id, customer: v.customerName,
             kind: "\(v.number.map { "#\($0)" } ?? "New job") · \(jobTypeLabel(v.type))", address: address,
             when: "\(when) · \(tech)", status: v.status, customerId: v.customer?.id,
-            phone: v.customer?["phone"]?.string.flatMap { $0.isEmpty ? nil : $0 })
+            phone: v.customer?["phone"]?.string.flatMap { $0.isEmpty ? nil : $0 }, number: v.number,
+            place: address.map { a in
+                MapPlace(
+                    address: a,
+                    location: v.property.flatMap { p in
+                        guard let lat = p["latitude"]?.number, let lng = p["longitude"]?.number else { return nil }
+                        return LatLng(lat: lat, lng: lng)
+                    })
+            },
+            completable: jobHeaderPhoneActions(v.status, type: v.type).contains(.done) || checklistShowsCompleteJob(v),
+            movable: canMoveJob(v.status) && jobReschedulable(type: v.type.rawValue, status: v.status.rawValue))
     }
 }
 
@@ -210,10 +226,15 @@ public struct ReportListRow: Identifiable, Equatable, Sendable {
     public var detail: String
     /// "Sent Oct 15, 2026" or "Draft".
     public var value: String
+    /// A sent version (Resend), and its customer link (Copy Customer Link).
+    public var sent = false
+    public var link: URL? = nil
 }
 
 /// Every job's current report, newest first (superseded versions left out).
-public func reportList(_ store: LocalStore, companyId: String, filter: ReportFilter, timeZone: String)
+public func reportList(
+    _ store: LocalStore, companyId: String, filter: ReportFilter, timeZone: String, webURL: URL? = AppConfig.webURL
+)
     -> [ReportListRow]
 {
     let views = Dictionary(
@@ -224,6 +245,14 @@ public func reportList(_ store: LocalStore, companyId: String, filter: ReportFil
         let status = r["status"]?.string ?? "draft"
         guard r["deleted_at"]?.string == nil, status != "superseded" else { return false }
         return filter == .all || status == filter.rawValue
+    }
+    // Each report's customer link that still works (as the Wrap-Up's View version reads it).
+    var tokens: [String: String] = [:]
+    for link in (try? store.list("share_link", companyId: companyId)) ?? [] {
+        guard let id = link["report_id"]?.string, let token = link["token"]?.string,
+            link["revoked_at"]?.string == nil, link["deleted_at"]?.string == nil
+        else { continue }
+        tokens[id] = token
     }
     return
         reports
@@ -240,6 +269,8 @@ public func reportList(_ store: LocalStore, companyId: String, filter: ReportFil
             return ReportListRow(
                 id: r.id, jobId: jobId, customer: view?.customerName ?? "Customer",
                 job: view?.number.map { "Job #\($0)" } ?? "New job", detail: detail,
-                value: sent.map { "Sent \(formatShortDate($0, timeZone: timeZone))" } ?? "Draft")
+                value: sent.map { "Sent \(formatShortDate($0, timeZone: timeZone))" } ?? "Draft",
+                sent: r["status"]?.string == "sent",
+                link: tokens[r.id].flatMap { token in webURL.map { reportURL($0, token) } })
         }
 }

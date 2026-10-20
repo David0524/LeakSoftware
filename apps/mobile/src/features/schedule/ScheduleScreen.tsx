@@ -22,6 +22,9 @@ import {
   formatDay,
   formatTime,
   isManagerRole,
+  JOB_LOCK_LABELS,
+  JOB_LOCKS,
+  jobLock,
   jobMinutes,
   localDate,
   localMinutes,
@@ -46,9 +49,12 @@ import {
   routeKey,
   routesFor,
   saveJobChanges,
+  saveJobLock,
   useDriveTimes,
   useTeam,
 } from "../../data/schedule";
+import { menuTitle, stopRowActions, toggleLock, type StopActionId } from "../../lib/rowActions";
+import { rowGestures, useRowMenu } from "../../ui/RowMenu";
 import { getServices } from "../../lib/services";
 import { useFirstLoad } from "../../data/hooks";
 import { useLocateMissing } from "../../lib/locate";
@@ -146,6 +152,7 @@ export function ScheduleScreen() {
   const [wanted, setWanted] = useState<string | null>(null);
   const [goTo, setGoTo] = useState(false);
   const banner = useResultBanner();
+  const rowMenu = useRowMenu();
   const reduceMotion = useReduceMotion();
   const loading = useFirstLoad(jobs.length > 0);
   /** The route being optimized: its button shows "Optimizing…". */
@@ -522,6 +529,51 @@ export function ScheduleScreen() {
     });
   }
 
+  // Swipe actions and touch-and-hold menus on stops (gestures spec section 12): Move… and
+  // Take Off Schedule are the Move sheet's, the locks are the job page's Lock picker.
+  function setLock(s: Stop, next: ReturnType<typeof jobLock>) {
+    const j = byId.get(s.id);
+    if (!j || next === jobLock(j)) return;
+    try {
+      saveJobLock(company.id, j.id, next);
+      banner.show({
+        tone: "success",
+        message: `${s.customer}: ${JOB_LOCK_LABELS[next].tag ?? "Not locked"}`,
+      });
+    } catch (e) {
+      fail(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  function stopGestures(s: Stop, tray = false) {
+    const j = byId.get(s.id);
+    const lock = j ? jobLock(j) : "none";
+    const actions = stopRowActions({
+      status: s.status,
+      lock,
+      scheduled: Boolean(j?.scheduled_start && j.status !== "unscheduled"),
+      hasAddress: Boolean(s.address),
+      tray,
+    });
+    const title = menuTitle(s.customer, s.number ? `#${s.number}` : null);
+    const run = (id: StopActionId) => {
+      if (id === "open") router.push(`/jobs/${s.id}`);
+      if (id === "move") openMove(s);
+      if (id === "suggest") suggest(s);
+      if (id === "directions") openDirections({ address: s.address, location: s.location }, choice);
+      if (id === "lockDay") setLock(s, toggleLock(lock, "day"));
+      if (id === "lockTime") setLock(s, toggleLock(lock, "time"));
+      if (id === "unschedule") moveTo(s.id, null, null, 0);
+      if (id === "lock")
+        rowMenu.open(
+          `Lock ${s.customer}`,
+          JOB_LOCKS.map((l) => ({ id: l, label: JOB_LOCK_LABELS[l].segment, checked: l === lock })),
+          (l) => setLock(s, l),
+        );
+    };
+    return rowGestures(actions, run, () => rowMenu.open(title, actions.menu, run));
+  }
+
   function suggest(s: Stop) {
     const j = byId.get(s.id);
     if (!j) return;
@@ -787,7 +839,12 @@ export function ScheduleScreen() {
           ) : null}
 
           {tray && view !== "month" ? (
-            <NeedsATime jobs={trayStops} onSuggest={suggest} onMove={openMove} />
+            <NeedsATime
+              jobs={trayStops}
+              onSuggest={suggest}
+              onMove={openMove}
+              gesturesFor={(s) => stopGestures(s, true)}
+            />
           ) : null}
 
           {view === "day"
@@ -802,6 +859,7 @@ export function ScheduleScreen() {
                   onDirections={(s) =>
                     openDirections({ address: s.address, location: s.location }, choice)
                   }
+                  gesturesFor={(s) => stopGestures(s)}
                   mapsButton={mapsButton(r)}
                 />
               ))
@@ -853,6 +911,9 @@ export function ScheduleScreen() {
                           <ListRow
                             key={j.id}
                             onPress={() => router.push(`/jobs/${j.id}`)}
+                            gestures={stopGestures(
+                              toStop(j, j.assigned_user_id ?? null, null, 0, d),
+                            )}
                             trailing={
                               <StatusChip status={j.status} style={{ alignSelf: "center" }} />
                             }
@@ -943,6 +1004,7 @@ export function ScheduleScreen() {
         }}
       />
 
+      {rowMenu.element}
       <SuggestSheet
         open={suggesting != null}
         title="Suggested Times"

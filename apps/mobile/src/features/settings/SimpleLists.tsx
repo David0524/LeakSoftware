@@ -7,6 +7,7 @@ import { useCompany } from "../../state/session";
 import { FieldGroup, FieldRow, Group, ListRow, T, Toggle } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { space } from "../../ui/theme";
+import { useRowMenu } from "../../ui/RowMenu";
 import { EditSheet, FormActions, ManagersOnly, SettingsList, useEditSheet } from "./SettingsList";
 
 // Settings › Exclusion Reasons and Severities (the website's settings/exclusions and
@@ -24,6 +25,8 @@ function ExclusionsPage() {
   const company = useCompany();
   const reasons = useConfig<ExclusionReason>("exclusion_reason", company.id);
   const sheet = useEditSheet<ExclusionReason>();
+  // Touch and hold a row for Edit and its delete (gestures spec section 12).
+  const menu = useRowMenu();
   return (
     <>
       <SettingsList
@@ -40,6 +43,7 @@ function ExclusionsPage() {
               title={r.label}
               detail={r.active ? undefined : "Off"}
               onPress={() => sheet.open(r)}
+              editMenu={{ menu, title: r.label }}
               // Swipe to remove; the row's sheet keeps its visible Remove button.
               deleteLabel="Remove"
               onDelete={() =>
@@ -53,6 +57,7 @@ function ExclusionsPage() {
           ))}
         </Group>
       </SettingsList>
+      {menu.element}
       <EditSheet
         open={sheet.editing != null}
         title={sheet.editing === "new" ? "Add Reason" : (sheet.editing?.label ?? "")}
@@ -145,6 +150,8 @@ function SeveritiesPage() {
   const company = useCompany();
   const levels = useConfig<SeverityLevel>("severity_level", company.id);
   const sheet = useEditSheet<SeverityLevel>();
+  // Touch and hold a row for Edit and its delete (gestures spec section 12).
+  const menu = useRowMenu();
   return (
     <>
       <SettingsList
@@ -161,6 +168,7 @@ function SeveritiesPage() {
               title={s.name}
               subtitle={s.must_mention ? "Always in the report summary" : undefined}
               onPress={() => sheet.open(s)}
+              editMenu={{ menu, title: s.name }}
               // Swipe to remove; the row's sheet keeps its visible Remove button.
               deleteLabel="Remove Severity"
               onDelete={() =>
@@ -180,6 +188,7 @@ function SeveritiesPage() {
           ))}
         </Group>
       </SettingsList>
+      {menu.element}
       <EditSheet
         open={sheet.editing != null}
         title={sheet.editing === "new" ? "Add Severity" : (sheet.editing?.name ?? "")}

@@ -39,7 +39,11 @@ export default async function MessagesPage({ searchParams }: PageProps<"/message
       <div className="grid max-w-5xl gap-6 md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-4">
           <LineNotice line={line} isOwner={office.isManager} />
-          <ConversationList conversations={conversations} timeZone={office.company.timezone} />
+          <ConversationList
+            conversations={conversations}
+            timeZone={office.company.timezone}
+            canCall={active}
+          />
         </div>
         <p className="self-start rounded-2xl bg-text/[0.04] p-6 text-center text-text-muted max-md:hidden">
           Pick a conversation to read it and reply.

@@ -64,7 +64,9 @@ import { BAR_HEIGHT, barState, setLargeTitle, TITLE_HANDOFF } from "./Bar";
 import { haptics } from "./haptics";
 import { Icon, type IconName } from "./Icon";
 import { WebIcon, type WebIconName } from "./WebIcon";
-import { SwipeLeading, SwipeToDelete } from "./SwipeRow";
+import { SwipeActions, SwipeLeading, SwipeToDelete } from "./SwipeRow";
+import { editRowMenu, type RowMenu } from "./editMenu";
+import type { RowGestures } from "./RowMenu";
 import { useNoSwipe } from "./SwipeNav";
 import { FormKeyboardBar, KEYBOARD_BAR_HEIGHT, KeyboardAvoider, useKeyboardOpen } from "./keyboard";
 import { chooseAction } from "./confirm";
@@ -1283,6 +1285,9 @@ export function ListRow({
   onDelete,
   deleteLabel = "Delete",
   leadingAction,
+  onLongPress: holdProp,
+  gestures,
+  editMenu,
   children,
 }: {
   title?: string;
@@ -1311,9 +1316,26 @@ export function ListRow({
    * Not for rows that also delete.
    */
   leadingAction?: { label: string; onPress: () => void };
+  /** Touch and hold: the row's menu (gestures spec section 12), with a light tap. */
+  onLongPress?: () => void;
+  /**
+   * Swipe actions both ways, their accessibility actions and the menu (ui/RowMenu
+   * rowGestures), in place of onDelete and leadingAction.
+   */
+  gestures?: RowGestures;
+  /**
+   * Touch and hold for Edit (the row's tap) and its delete (onDelete, which asks first), titled
+   * with the row's name: settings lists and findings (gestures spec section 12).
+   */
+  editMenu?: { menu: RowMenu; title: string };
   /** Free-form content in place of title and subtitle. */
   children?: ReactNode;
 }) {
+  const onLongPress =
+    holdProp ??
+    (editMenu && onPress
+      ? editRowMenu(editMenu.menu, editMenu.title, { onEdit: onPress, onDelete, deleteLabel })
+      : undefined);
   const action = tone !== "default";
   const showChevron = Boolean(onPress) && (chevron ?? !action);
   const body = (
@@ -1353,24 +1375,46 @@ export function ListRow({
       {showChevron ? <Chevron /> : null}
     </>
   );
-  const a11yAction = onDelete
+  const menuAction = onLongPress ? [{ name: "menu", label: "Show Actions" }] : [];
+  const a11yAction = gestures
     ? {
-        accessibilityActions: [{ name: "delete", label: deleteLabel }],
-        onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) => {
-          if (e.nativeEvent.actionName === "delete") onDelete();
-        },
+        accessibilityActions: gestures.accessibilityActions,
+        onAccessibilityAction: gestures.onAccessibilityAction,
       }
-    : leadingAction
+    : onDelete
       ? {
-          accessibilityActions: [{ name: "leading", label: leadingAction.label }],
+          accessibilityActions: [{ name: "delete", label: deleteLabel }, ...menuAction],
           onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) => {
-            if (e.nativeEvent.actionName === "leading") leadingAction.onPress();
+            if (e.nativeEvent.actionName === "delete") onDelete();
+            if (e.nativeEvent.actionName === "menu") onLongPress?.();
           },
         }
-      : null;
-  const swipeable = Boolean(onDelete || leadingAction);
+      : leadingAction
+        ? {
+            accessibilityActions: [{ name: "leading", label: leadingAction.label }, ...menuAction],
+            onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) => {
+              if (e.nativeEvent.actionName === "leading") leadingAction.onPress();
+              if (e.nativeEvent.actionName === "menu") onLongPress?.();
+            },
+          }
+        : onLongPress
+          ? {
+              accessibilityActions: menuAction,
+              onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) => {
+                if (e.nativeEvent.actionName === "menu") onLongPress();
+              },
+            }
+          : null;
+  const longPress = gestures ? gestures.onLongPress : onLongPress;
+  const swipeable = Boolean(
+    onDelete || leadingAction || gestures?.leading || gestures?.trailing.length,
+  );
   const swipe = (row: ReactNode) =>
-    onDelete ? (
+    gestures && (gestures.leading || gestures.trailing.length) ? (
+      <SwipeActions leading={gestures.leading} trailing={gestures.trailing}>
+        {row}
+      </SwipeActions>
+    ) : onDelete ? (
       <SwipeToDelete label={deleteLabel} onDelete={onDelete}>
         {row}
       </SwipeToDelete>
@@ -1381,7 +1425,7 @@ export function ListRow({
     ) : (
       row
     );
-  if (!onPress)
+  if (!onPress && !longPress)
     return swipe(
       <View
         style={[
@@ -1403,6 +1447,7 @@ export function ListRow({
       accessibilityHint={accessibilityHint}
       {...a11yAction}
       onPress={onPress}
+      onLongPress={longPress}
       android_ripple={{ color: color.ripple }}
       style={({ pressed }) => [
         styles.listRow,

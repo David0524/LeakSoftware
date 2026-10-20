@@ -16,6 +16,8 @@
         var detail: String? = nil
         /// Shows Undo, and stays twice as long so there's time to press it.
         var undoable = false
+        /// What Undo does, for VoiceOver (Plan Week's by default).
+        var undoHint: String? = nil
 
         var symbol: String { kind == .success ? "checkmark.circle.fill" : "exclamationmark.triangle.fill" }
 
@@ -126,7 +128,7 @@
                 .frame(maxWidth: .infinity, alignment: .leading)
                 if let onUndo {
                     Button("Undo", action: onUndo)
-                        .accessibilityHint("Puts every job back as it was")
+                        .accessibilityHint(banner.undoHint ?? "Puts every job back as it was")
                         .font(.role(.bodyEmphasis))
                         .foregroundStyle(Color.link)
                         .padding(.horizontal, 12)

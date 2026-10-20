@@ -122,6 +122,13 @@ export default async function TestTypesPage() {
         {types.map((t) => (
           <SheetRow
             key={t.id}
+            remove={{
+              table: "test_type",
+              id: t.id,
+              path: "/settings/tests",
+              confirm: "Remove this test type?",
+              confirmLabel: "Remove Test Type",
+            }}
             title={t.name}
             label={t.name}
             detail={t.calculator ? "Calculates the result" : undefined}

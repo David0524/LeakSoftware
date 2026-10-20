@@ -25,6 +25,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import {
+  createContext,
+  use,
   useCallback,
   useEffect,
   useId,
@@ -33,11 +35,19 @@ import {
   useRef,
   useState,
   useTransition,
-  type MouseEvent,
-  type PointerEvent,
   type ReactNode,
 } from "react";
-import { durationLabel, type CleaningKind, type JobStatus, type LatLng } from "@leakbook/core";
+import {
+  directionsHref,
+  durationLabel,
+  type CleaningKind,
+  type JobLock,
+  type JobStatus,
+  type LatLng,
+} from "@leakbook/core";
+import { scheduleJob } from "@/app/actions/jobs";
+import { hasLock, toggleLock } from "@/lib/row-menu";
+import { RowActions, formOf, type MenuEntry, type SwipeAction } from "./row-actions";
 import { DayMap } from "./day-map";
 import { CleaningIcon, KeyIcon } from "./icons";
 import { LockTag } from "./lock-tag";
@@ -96,6 +106,11 @@ export interface BoardStop {
   note?: string | null;
   /** The plan's cleanings due on this visit: filter, salt cell (owner, 2026-10-20). */
   cleanings?: { kind: CleaningKind; name: string }[];
+  /**
+   * Its schedule as the job page's Schedule form holds it (null: no time yet), so Lock Day
+   * and Lock Time save through that form's action.
+   */
+  schedule?: { date: string; time: string; hours: string; tech: string; lock: JobLock } | null;
 }
 
 export interface BoardColumn {
@@ -123,6 +138,67 @@ export interface TrayJob extends BoardStop {
 }
 
 const TRAY = "tray";
+
+/**
+ * What a stop's swipes and menu do (gestures.md section 12): the same as Move…, Move's Take
+ * Off Schedule, and the job page's lock picker.
+ */
+interface StopActions {
+  move: (s: BoardStop) => void;
+  takeOff: (s: BoardStop) => void;
+  lock: (s: BoardStop, part: "day" | "time") => void;
+  /** It waits in Needs a Time (nothing to take off). */
+  inTray: (id: string) => boolean;
+}
+const BoardActions = createContext<StopActions | null>(null);
+
+/** A stop's menu: Open, Move…, Lock Day, Lock Time, Take Off Schedule, Directions. */
+function stopMenu(s: BoardStop, a: StopActions | null): MenuEntry[] {
+  const lock = s.schedule?.lock;
+  const canLock = !!a && s.draggable && !!s.schedule;
+  return [
+    { label: "Open", href: `/jobs/${s.id}` },
+    a && s.draggable && { label: "Move…", onSelect: () => a.move(s) },
+    canLock && {
+      label: hasLock(lock!, "day") ? "Unlock Day" : "Lock Day",
+      onSelect: () => a!.lock(s, "day"),
+    },
+    canLock && {
+      label: hasLock(lock!, "time") ? "Unlock Time" : "Lock Time",
+      onSelect: () => a!.lock(s, "time"),
+    },
+    a &&
+      s.draggable &&
+      !a.inTray(s.id) && { label: "Take Off Schedule", onSelect: () => a.takeOff(s) },
+    s.address && {
+      label: "Directions",
+      href: directionsHref({ address: s.address, location: s.location }),
+      external: true,
+    },
+  ];
+}
+
+/** A stop's swipes: Move… to the left; Lock Day and Lock Time to the right. */
+function stopSwipes(s: BoardStop, a: StopActions | null) {
+  if (!a || !s.draggable) return {};
+  const trailing: SwipeAction[] = [{ label: "Move…", tone: "blue", onSelect: () => a.move(s) }];
+  const lock = s.schedule?.lock;
+  const leading: SwipeAction[] | undefined = s.schedule
+    ? [
+        {
+          label: hasLock(lock!, "day") ? "Unlock Day" : "Lock Day",
+          tone: "orange",
+          onSelect: () => a.lock(s, "day"),
+        },
+        {
+          label: hasLock(lock!, "time") ? "Unlock Time" : "Lock Time",
+          tone: "orange",
+          onSelect: () => a.lock(s, "time"),
+        },
+      ]
+    : undefined;
+  return { leading, trailing };
+}
 
 type Lists = Record<string, BoardStop[]>;
 
@@ -283,6 +359,41 @@ export function RouteBoard({
     );
   }
 
+  /** Lock Day or Lock Time: the job page's Schedule form, saved with the lock changed. */
+  function lock(stop: BoardStop, part: "day" | "time") {
+    const sch = stop.schedule;
+    if (!sch) return;
+    const next = toggleLock(sch.lock, part);
+    const on = hasLock(next, part);
+    start(async () => {
+      const r = await scheduleJob(
+        {},
+        formOf({
+          job: stop.id,
+          date: sch.date,
+          time: sch.time,
+          hours: sch.hours,
+          tech: sch.tech,
+          lock: next,
+        }),
+      );
+      const error = r.error ?? Object.values(r.fields ?? {})[0];
+      start(() =>
+        report(
+          error
+            ? { error }
+            : { message: `${part === "day" ? "Day" : "Time"} ${on ? "locked" : "unlocked"}.` },
+        ),
+      );
+    });
+  }
+  const actions: StopActions = {
+    move: setMoving,
+    takeOff: (stop) => moveTo(stop.id, TRAY, 0),
+    lock,
+    inTray: (id) => (lists[TRAY] ?? []).some((x) => x.id === id),
+  };
+
   function onDragStart(e: DragStartEvent) {
     const id = String(e.active.id);
     setDragging(
@@ -328,69 +439,71 @@ export function RouteBoard({
         },
       }}
     >
-      <div ref={board}>
-        {lead ? (
-          <DayLead
-            column={lead}
-            stops={lists[lead.key] ?? []}
-            optimizing={optimizingKey === lead.key}
-            busy={optimizing}
-            onPlan={() => optimize(lead.techId, lead.date)}
-            maps={maps}
-            today={today}
-          />
-        ) : null}
-
-        {tray ? (
-          <Tray
-            jobs={lists[TRAY] ?? []}
-            onMove={setMoving}
-            onSuggestion={(job, s) => moveTo(job, `${s.techId}|${s.date}`, s.position)}
-          />
-        ) : null}
-
-        {mode === "day" ? (
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-[repeat(2,minmax(0,1fr))] xl:grid-cols-[repeat(3,minmax(0,1fr))]">
-            {columns.map((c) => (
-              <DayColumn
-                key={c.key}
-                column={c}
-                stops={lists[c.key] ?? []}
-                optimizing={optimizingKey === c.key}
-                busy={optimizing}
-                onPlan={() => optimize(c.techId!, c.date)}
-                onMove={setMoving}
-                maps={maps}
-                today={today}
-                lead={c.key === lead?.key}
-              />
-            ))}
-          </div>
-        ) : (
-          <>
-            <WeekMaps
-              columns={columns}
-              lists={lists}
-              days={weekDays ?? []}
-              workDates={workDates}
-              today={today}
-              maps={maps}
-              planDates={planDates}
-              planWaiting={planWaiting}
-              optimizingKey={optimizingKey}
+      <BoardActions value={actions}>
+        <div ref={board}>
+          {lead ? (
+            <DayLead
+              column={lead}
+              stops={lists[lead.key] ?? []}
+              optimizing={optimizingKey === lead.key}
               busy={optimizing}
-              onPlan={optimize}
-            />
-            <WeekGrid
-              columns={columns}
-              lists={lists}
-              days={weekDays ?? []}
+              onPlan={() => optimize(lead.techId, lead.date)}
+              maps={maps}
               today={today}
-              onMove={setMoving}
             />
-          </>
-        )}
-      </div>
+          ) : null}
+
+          {tray ? (
+            <Tray
+              jobs={lists[TRAY] ?? []}
+              onMove={setMoving}
+              onSuggestion={(job, s) => moveTo(job, `${s.techId}|${s.date}`, s.position)}
+            />
+          ) : null}
+
+          {mode === "day" ? (
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-[repeat(2,minmax(0,1fr))] xl:grid-cols-[repeat(3,minmax(0,1fr))]">
+              {columns.map((c) => (
+                <DayColumn
+                  key={c.key}
+                  column={c}
+                  stops={lists[c.key] ?? []}
+                  optimizing={optimizingKey === c.key}
+                  busy={optimizing}
+                  onPlan={() => optimize(c.techId!, c.date)}
+                  onMove={setMoving}
+                  maps={maps}
+                  today={today}
+                  lead={c.key === lead?.key}
+                />
+              ))}
+            </div>
+          ) : (
+            <>
+              <WeekMaps
+                columns={columns}
+                lists={lists}
+                days={weekDays ?? []}
+                workDates={workDates}
+                today={today}
+                maps={maps}
+                planDates={planDates}
+                planWaiting={planWaiting}
+                optimizingKey={optimizingKey}
+                busy={optimizing}
+                onPlan={optimize}
+              />
+              <WeekGrid
+                columns={columns}
+                lists={lists}
+                days={weekDays ?? []}
+                today={today}
+                onMove={setMoving}
+              />
+            </>
+          )}
+        </div>
+      </BoardActions>
 
       <DragOverlay dropAnimation={null}>
         {dragging ? (
@@ -697,68 +810,6 @@ export function Grip(props: Record<string, unknown> & { label: string; className
   );
 }
 
-/** How far a swipe left opens a stop to show Move. */
-const REVEAL = 88;
-
-/**
- * Swipe left on a stop (touch only) to show Move behind it, as in iOS lists. A tap on an
- * open stop closes it. The visible Move… button does the same for everyone else.
- */
-function useSwipeToReveal(enabled: boolean) {
-  const [open, setOpen] = useState(false);
-  const [drag, setDrag] = useState<number | null>(null);
-  const live = useRef<number | null>(null);
-  const gesture = useRef<{ x: number; y: number; base: number; axis: "x" | "y" | null } | null>(
-    null,
-  );
-  const swiped = useRef(false);
-  const offset = drag ?? (open ? -REVEAL : 0);
-  const end = () => {
-    const g = gesture.current;
-    gesture.current = null;
-    if (!g || g.axis !== "x") return;
-    setOpen((live.current ?? g.base) < -REVEAL / 2);
-    live.current = null;
-    setDrag(null);
-  };
-  const handlers = enabled
-    ? {
-        onPointerDown: (e: PointerEvent) => {
-          // Touch only, and not on the drag grip.
-          if (e.pointerType !== "touch" || (e.target as Element).closest("[data-grip]")) return;
-          swiped.current = false;
-          gesture.current = { x: e.clientX, y: e.clientY, base: open ? -REVEAL : 0, axis: null };
-        },
-        onPointerMove: (e: PointerEvent) => {
-          const g = gesture.current;
-          if (!g) return;
-          const dx = e.clientX - g.x;
-          const dy = e.clientY - g.y;
-          if (!g.axis) {
-            if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-            g.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
-          }
-          if (g.axis !== "x") return;
-          swiped.current = true;
-          live.current = Math.min(0, Math.max(-REVEAL - 24, g.base + dx));
-          setDrag(live.current);
-        },
-        onPointerUp: end,
-        onPointerCancel: end,
-        // A swipe isn't a tap on the link under the finger; a tap on an open stop closes it.
-        onClickCapture: (e: MouseEvent) => {
-          if (swiped.current || open) {
-            e.preventDefault();
-            e.stopPropagation();
-            if (!swiped.current) setOpen(false);
-            swiped.current = false;
-          }
-        },
-      }
-    : {};
-  return { offset, dragging: drag !== null, handlers, close: () => setOpen(false) };
-}
-
 /** Done for the day: the report, quote, or invoice is under way or finished. */
 function finished(status: JobStatus) {
   return !["unscheduled", "scheduled", "in_progress", "canceled"].includes(status);
@@ -839,7 +890,7 @@ function StopCard({
     transition,
     isDragging,
   } = useSortable({ id: s.id, disabled: !s.draggable });
-  const swipe = useSwipeToReveal(s.draggable);
+  const actions = use(BoardActions);
   return (
     <article
       ref={setNodeRef}
@@ -848,120 +899,111 @@ function StopCard({
       aria-label={`${s.time ?? "No time"}, ${s.customer}`}
       className={cx("card relative overflow-hidden", isDragging && "opacity-40")}
     >
-      {swipe.offset < 0 ? (
-        // Behind the stop, shown by the swipe. Screen readers and keyboards use Move… instead.
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-hidden="true"
-          onClick={() => {
-            swipe.close();
-            onMove(s);
-          }}
-          className="absolute inset-y-0 right-0 bg-link font-semibold text-white"
-          style={{ width: Math.max(REVEAL, -swipe.offset) }}
-        >
-          Move
-        </button>
-      ) : null}
-      <div
-        {...swipe.handlers}
-        // A swipe on a stop that moves opens Move, not the next day.
-        data-no-swipe={s.draggable ? "" : undefined}
-        style={swipe.offset ? { transform: `translateX(${swipe.offset}px)` } : undefined}
-        className={cx(
-          "relative flex touch-pan-y items-start gap-2 rounded-[1.25rem] bg-surface py-1.5 pl-3",
-          s.draggable ? "pr-1" : "pr-3",
-          !swipe.dragging && "transition-transform duration-200 motion-reduce:transition-none",
-        )}
+      {/* Swipe left for Move…, right for the locks; touch and hold or right-click for the
+          menu (gestures.md section 12). The visible Move… does the same for everyone else. */}
+      <RowActions
+        title={`${s.customer}${s.number ? ` · Job #${s.number}` : ""}`}
+        menu={stopMenu(s, actions)}
+        {...stopSwipes(s, actions)}
+        swipeClassName="rounded-[1.25rem]"
+        // Over the card's bottom corner, under Move… and the grip.
+        buttonClassName="absolute right-1.5 bottom-1.5"
+        className="rounded-[1.25rem]"
       >
-        <StopBadge position={position} status={s.status} />
-        <div className="min-w-0 flex-1">
-          {/* The time, then the customer under it (always two lines, so the cards in a column
+        <div
+          className={cx(
+            "flex items-start gap-2 rounded-[1.25rem] bg-surface py-1.5 pl-3",
+            s.draggable ? "pr-1" : "pr-3",
+          )}
+        >
+          <StopBadge position={position} status={s.status} />
+          <div className="min-w-0 flex-1">
+            {/* The time, then the customer under it (always two lines, so the cards in a column
               line up); both open the job. Move… and the grip sit at the end of the row, so the
               lines under it keep the card's full width. */}
-          <div className="flex items-start">
-            <Link
-              href={`/jobs/${s.id}`}
-              className={cx(
-                "flex min-h-11 min-w-0 flex-1 flex-col justify-center py-1",
-                finished(s.status) && "opacity-70",
-              )}
-            >
-              <span className="font-display text-[1.0625rem] leading-snug font-bold whitespace-nowrap tabular-nums">
-                {s.time ?? "Saving…"}
-              </span>
-              <span className="flex min-w-0 items-center gap-0.5 font-semibold text-link">
-                <span className="truncate">{s.customer}</span>
-                <Chevron />
-              </span>
-            </Link>
-            {s.draggable ? (
-              <>
-                <button
-                  type="button"
-                  className={buttonClass("quiet", "shrink-0 px-2")}
-                  onClick={() => onMove(s)}
-                >
-                  Move…
-                </button>
-                <Grip
-                  label={`Drag ${s.customer}`}
-                  ref={setActivatorNodeRef}
-                  {...attributes}
-                  {...listeners}
-                />
-              </>
-            ) : null}
-          </div>
-          <div className={cx("space-y-1 pb-1.5", s.draggable && "pr-2")}>
-            {/* The kind of visit (or the second tech's note) as a pill, then any state worth
-                saying: most stops are Scheduled, so that badge is left out. */}
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="rounded-full bg-fill px-2.5 py-0.5 text-[0.8125rem] font-semibold text-text">
-                {s.tag}
-              </span>
-              {s.status !== "scheduled" ? <StatusBadge status={s.status} /> : null}
-              {s.lock ? <LockTag lock={s.lock} /> : null}
-              {s.number ? (
-                <span className="text-[0.8125rem] text-text-muted">#{s.number}</span>
+            <div className="flex items-start">
+              <Link
+                href={`/jobs/${s.id}`}
+                className={cx(
+                  "flex min-h-11 min-w-0 flex-1 flex-col justify-center py-1",
+                  finished(s.status) && "opacity-70",
+                )}
+              >
+                <span className="font-display text-[1.0625rem] leading-snug font-bold whitespace-nowrap tabular-nums">
+                  {s.time ?? "Saving…"}
+                </span>
+                <span className="flex min-w-0 items-center gap-0.5 font-semibold text-link">
+                  <span className="truncate">{s.customer}</span>
+                  <Chevron />
+                </span>
+              </Link>
+              {s.draggable ? (
+                <>
+                  <button
+                    type="button"
+                    className={buttonClass("quiet", "shrink-0 px-2")}
+                    onClick={() => onMove(s)}
+                  >
+                    Move…
+                  </button>
+                  <Grip
+                    label={`Drag ${s.customer}`}
+                    ref={setActivatorNodeRef}
+                    {...attributes}
+                    {...listeners}
+                  />
+                </>
               ) : null}
             </div>
-            {s.address ? (
-              // Not found on the map: a small warning symbol right after the address (owner,
-              // 2026-10-20: "Don't waste space with text").
-              <p className="flex min-w-0 items-center gap-1.5 text-[0.9375rem]">
-                <span className="min-w-0 truncate">
-                  <AddressLink address={s.address} location={s.location} muted />
+            <div className={cx("space-y-1 pb-1.5", s.draggable && "pr-2")}>
+              {/* The kind of visit (or the second tech's note) as a pill, then any state worth
+                saying: most stops are Scheduled, so that badge is left out. */}
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="rounded-full bg-fill px-2.5 py-0.5 text-[0.8125rem] font-semibold text-text">
+                  {s.tag}
                 </span>
-                {s.notOnMap || !s.location ? <NotOnMapTag /> : null}
-              </p>
-            ) : null}
-            {s.access && !finished(s.status) ? (
-              <p className="flex items-start gap-1.5 text-[0.9375rem] font-medium text-text">
-                <KeyIcon className="mt-0.5 size-[1.125rem] shrink-0 text-status-warning" />
-                <span className="min-w-0 truncate">
-                  <span className="sr-only">Access: </span>
-                  {s.access}
-                </span>
-              </p>
-            ) : null}
-            {s.cleanings?.length ? (
-              <ul className="flex flex-wrap gap-x-3 gap-y-0.5" aria-label="Cleanings due">
-                {s.cleanings.map((c) => (
-                  <li
-                    key={c.name}
-                    className="inline-flex items-center gap-1 text-[0.9375rem] font-medium text-text"
-                  >
-                    <CleaningIcon kind={c.kind} className="size-[1.125rem] shrink-0" />
-                    {c.name}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
+                {s.status !== "scheduled" ? <StatusBadge status={s.status} /> : null}
+                {s.lock ? <LockTag lock={s.lock} /> : null}
+                {s.number ? (
+                  <span className="text-[0.8125rem] text-text-muted">#{s.number}</span>
+                ) : null}
+              </div>
+              {s.address ? (
+                // Not found on the map: a small warning symbol right after the address (owner,
+                // 2026-10-20: "Don't waste space with text").
+                <p className="flex min-w-0 items-center gap-1.5 text-[0.9375rem]">
+                  <span className="min-w-0 truncate">
+                    <AddressLink address={s.address} location={s.location} muted />
+                  </span>
+                  {s.notOnMap || !s.location ? <NotOnMapTag /> : null}
+                </p>
+              ) : null}
+              {s.access && !finished(s.status) ? (
+                <p className="flex items-start gap-1.5 text-[0.9375rem] font-medium text-text">
+                  <KeyIcon className="mt-0.5 size-[1.125rem] shrink-0 text-status-warning" />
+                  <span className="min-w-0 truncate">
+                    <span className="sr-only">Access: </span>
+                    {s.access}
+                  </span>
+                </p>
+              ) : null}
+              {s.cleanings?.length ? (
+                <ul className="flex flex-wrap gap-x-3 gap-y-0.5" aria-label="Cleanings due">
+                  {s.cleanings.map((c) => (
+                    <li
+                      key={c.name}
+                      className="inline-flex items-center gap-1 text-[0.9375rem] font-medium text-text"
+                    >
+                      <CleaningIcon kind={c.kind} className="size-[1.125rem] shrink-0" />
+                      {c.name}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
           </div>
         </div>
-      </div>
+      </RowActions>
     </article>
   );
 }
@@ -1222,6 +1264,7 @@ function WeekChip({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
     id: s.id,
     disabled: !s.draggable,
   });
+  const actions = use(BoardActions);
   return (
     <div
       ref={setNodeRef}
@@ -1229,45 +1272,57 @@ function WeekChip({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
       data-testid="stop"
       className={cx("well relative", isDragging && "opacity-40")}
     >
-      <Link
-        href={`/jobs/${s.id}`}
-        className={cx(
-          "block min-h-11 rounded-2xl px-2 pb-2 active:bg-text/[0.06]",
-          finished(s.status) && "opacity-70",
-        )}
+      {/* Touch and hold or right-click for the stop's menu (gestures.md section 12); no swipes
+          in the week's small cells. */}
+      <RowActions
+        title={`${s.customer}${s.number ? ` · Job #${s.number}` : ""}`}
+        menu={stopMenu(s, actions)}
+        buttonClassName="absolute right-0.5 bottom-0.5"
+        className="rounded-[inherit]"
       >
-        <span
+        <Link
+          href={`/jobs/${s.id}`}
           className={cx(
-            "flex min-h-11 items-center font-display text-[0.9375rem] font-bold tabular-nums",
-            s.draggable && "pr-10",
+            "block min-h-11 rounded-2xl px-2 pb-2 active:bg-text/[0.06]",
+            finished(s.status) && "opacity-70",
           )}
         >
-          {s.time ?? "Saving…"}
-        </span>
-        <span
-          className="line-clamp-2 block text-[0.9375rem] leading-snug font-semibold text-link"
-          title={s.customer}
-        >
-          {s.customer}
-        </span>
-        <span className="mt-0.5 line-clamp-1 block text-[0.8125rem] text-text-muted" title={s.tag}>
-          {s.tag}
-        </span>
-        {s.lock ? <LockTag lock={s.lock} className="mt-0.5" /> : null}
-      </Link>
-      {s.draggable ? (
-        <>
-          <Grip
-            label={`Drag ${s.customer}`}
-            className="absolute top-0 right-0"
-            {...attributes}
-            {...listeners}
-          />
-          <button type="button" className="sr-only focus:not-sr-only" onClick={() => onMove(s)}>
-            Move…
-          </button>
-        </>
-      ) : null}
+          <span
+            className={cx(
+              "flex min-h-11 items-center font-display text-[0.9375rem] font-bold tabular-nums",
+              s.draggable && "pr-10",
+            )}
+          >
+            {s.time ?? "Saving…"}
+          </span>
+          <span
+            className="line-clamp-2 block text-[0.9375rem] leading-snug font-semibold text-link"
+            title={s.customer}
+          >
+            {s.customer}
+          </span>
+          <span
+            className="mt-0.5 line-clamp-1 block text-[0.8125rem] text-text-muted"
+            title={s.tag}
+          >
+            {s.tag}
+          </span>
+          {s.lock ? <LockTag lock={s.lock} className="mt-0.5" /> : null}
+        </Link>
+        {s.draggable ? (
+          <>
+            <Grip
+              label={`Drag ${s.customer}`}
+              className="absolute top-0 right-0"
+              {...attributes}
+              {...listeners}
+            />
+            <button type="button" className="sr-only focus:not-sr-only" onClick={() => onMove(s)}>
+              Move…
+            </button>
+          </>
+        ) : null}
+      </RowActions>
     </div>
   );
 }
@@ -1363,8 +1418,9 @@ function TrayCard({
     transition,
     isDragging,
   } = useSortable({ id: j.id });
-  const [actions, setActions] = useState(false);
+  const [sheetOpen, setActions] = useState(false);
   const closeActions = useCallback(() => setActions(false), []);
+  const actions = use(BoardActions);
   return (
     <article
       ref={setNodeRef}
@@ -1377,43 +1433,57 @@ function TrayCard({
         isDragging && "opacity-40",
       )}
     >
-      {/* Two lines, with the actions behind "…", so a long list stays short (owner,
-          2026-10-18: the cards were "a little too bulky"). */}
-      <Link href={`/jobs/${j.id}`} className="min-w-0 flex-1 py-1 hover:underline">
-        <span className="block truncate">
-          <span className="font-semibold">{j.customer}</span>
-          <span className="text-text-muted">{j.number ? ` · #${j.number}` : ""}</span>
-        </span>
-        <span className="flex min-w-0 items-center gap-1.5 text-[0.9375rem] text-text-muted">
-          {j.lock ? <LockTag lock={j.lock} className="shrink-0" /> : null}
-          {j.address ? <span className="min-w-0 truncate">{j.address}</span> : null}
-          {j.notOnMap || !j.location ? <NotOnMapTag /> : null}
-          {j.note ? (
-            <span className="min-w-0 truncate">
-              {j.address ? "· " : ""}
-              {j.note}
-            </span>
-          ) : null}
-        </span>
-      </Link>
-      <button
-        type="button"
-        aria-label={`Actions for ${j.customer}`}
-        title="Suggest Times or Move"
-        aria-haspopup="dialog"
-        onClick={() => setActions(true)}
-        className="grid size-11 shrink-0 place-items-center rounded-full text-link hover:bg-link/10"
+      {/* Touch and hold or right-click for the job's menu (gestures.md section 12); its "…"
+          button keeps Suggest Times and Move…. No swipes: the list scrolls sideways. */}
+      <RowActions
+        title={`${j.customer}${j.number ? ` · Job #${j.number}` : ""}`}
+        menu={stopMenu(j, actions)}
+        button="none"
+        className="flex min-w-0 flex-1 items-center gap-1"
       >
-        <svg viewBox="0 0 24 24" className="size-6" fill="currentColor" aria-hidden="true">
-          <circle cx="6" cy="12" r="1.8" />
-          <circle cx="12" cy="12" r="1.8" />
-          <circle cx="18" cy="12" r="1.8" />
-        </svg>
-      </button>
-      {/* The grip at the card's trailing edge, as on every card that drags (owner, 2026-10-20:
+        {/* Two lines, with the actions behind "…", so a long list stays short (owner,
+          2026-10-18: the cards were "a little too bulky"). */}
+        <Link href={`/jobs/${j.id}`} className="min-w-0 flex-1 py-1 hover:underline">
+          <span className="block truncate">
+            <span className="font-semibold">{j.customer}</span>
+            <span className="text-text-muted">{j.number ? ` · #${j.number}` : ""}</span>
+          </span>
+          <span className="flex min-w-0 items-center gap-1.5 text-[0.9375rem] text-text-muted">
+            {j.lock ? <LockTag lock={j.lock} className="shrink-0" /> : null}
+            {j.address ? <span className="min-w-0 truncate">{j.address}</span> : null}
+            {j.notOnMap || !j.location ? <NotOnMapTag /> : null}
+            {j.note ? (
+              <span className="min-w-0 truncate">
+                {j.address ? "· " : ""}
+                {j.note}
+              </span>
+            ) : null}
+          </span>
+        </Link>
+        <button
+          type="button"
+          aria-label={`Actions for ${j.customer}`}
+          title="Suggest Times or Move"
+          aria-haspopup="dialog"
+          onClick={() => setActions(true)}
+          className="grid size-11 shrink-0 place-items-center rounded-full text-link hover:bg-link/10"
+        >
+          <svg viewBox="0 0 24 24" className="size-6" fill="currentColor" aria-hidden="true">
+            <circle cx="6" cy="12" r="1.8" />
+            <circle cx="12" cy="12" r="1.8" />
+            <circle cx="18" cy="12" r="1.8" />
+          </svg>
+        </button>
+        {/* The grip at the card's trailing edge, as on every card that drags (owner, 2026-10-20:
           "Schedule dragging should be on the right side of the card"). */}
-      <Grip label={`Drag ${j.customer}`} ref={setActivatorNodeRef} {...attributes} {...listeners} />
-      <Sheet open={actions} onClose={closeActions} title={j.customer}>
+        <Grip
+          label={`Drag ${j.customer}`}
+          ref={setActivatorNodeRef}
+          {...attributes}
+          {...listeners}
+        />
+      </RowActions>
+      <Sheet open={sheetOpen} onClose={closeActions} title={j.customer}>
         <p className="mb-2 text-[0.9375rem] text-text-muted">
           {[j.number ? `#${j.number}` : null, j.address, j.note].filter(Boolean).join(" · ")}
         </p>

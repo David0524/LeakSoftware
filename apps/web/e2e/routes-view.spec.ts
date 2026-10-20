@@ -96,7 +96,8 @@ test("a customer to add moves to Jake's Tuesday with Move…, and Undo puts it b
 
     const toAdd = page.getByTestId("customers-to-add");
     await expect(toAdd.getByRole("heading", { name: /^Customers to Add/ })).toBeVisible();
-    const card = toAdd.getByRole("button", { name: new RegExp(NAME) });
+    // Names that start with it: the row, not its "⋯" More button (gestures.md section 12).
+    const card = toAdd.getByRole("button", { name: new RegExp(`^${NAME}`) });
     await expect(card).toBeVisible();
     await expect(page.getByRole("button", { name: "Jake Turner", pressed: true })).toBeVisible();
     // No map image is broken (none are drawn without a Mapbox key).
@@ -124,8 +125,8 @@ test("a customer to add moves to Jake's Tuesday with Move…, and Undo puts it b
     const tuesday = page
       .getByTestId("route-day")
       .filter({ has: page.getByRole("heading", { name: "Tuesday" }) });
-    await expect(tuesday.getByRole("button", { name: new RegExp(NAME) })).toBeVisible();
-    await expect(toAdd.getByRole("button", { name: new RegExp(NAME) })).toHaveCount(0);
+    await expect(tuesday.getByRole("button", { name: new RegExp(`^${NAME}`) })).toBeVisible();
+    await expect(toAdd.getByRole("button", { name: new RegExp(`^${NAME}`) })).toHaveCount(0);
     await expect.poll(async () => (await row()).assigned_user_id).toBe(jakeId);
     const moved = await row();
     expect(weekdayOf(moved.starts_on as string)).toBe(2);
@@ -133,8 +134,8 @@ test("a customer to add moves to Jake's Tuesday with Move…, and Undo puts it b
     // Undo puts it back in Customers to Add.
     await notice.getByRole("button", { name: "Undo" }).click();
     await expect(page.getByTestId("top-banner")).toContainText("Put back as it was.");
-    await expect(toAdd.getByRole("button", { name: new RegExp(NAME) })).toBeVisible();
-    await expect(tuesday.getByRole("button", { name: new RegExp(NAME) })).toHaveCount(0);
+    await expect(toAdd.getByRole("button", { name: new RegExp(`^${NAME}`) })).toBeVisible();
+    await expect(tuesday.getByRole("button", { name: new RegExp(`^${NAME}`) })).toHaveCount(0);
     await expect.poll(async () => (await row()).assigned_user_id).toBeNull();
   } finally {
     // The plan ends, so its visits leave the demo schedule.

@@ -80,6 +80,9 @@
         @State private var notice: String?
         @State private var browser: BrowserPage?
         @State private var loaded = false
+        /// Delete from a row's swipe or menu, asked first.
+        @State private var removing: ConfigItem?
+        @State private var banner: ResultBanner?
 
         var body: some View {
             let company = session.company
@@ -140,6 +143,14 @@
                                 .disabled(!manager)
                                 .surfaceRow()
                                 .listRowInsets(EdgeInsets())
+                                // Swipe left for Delete; touch and hold for Edit and Delete… (gestures
+                                // spec section 12). Both ask first, as the item's sheet does.
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    if manager {
+                                        Button("Delete", systemImage: "trash") { removing = item }.tint(Color.fail)
+                                    }
+                                }
+                                .rowMenu(item.name, manager ? menu(item) : [])
                             }
                         } header: {
                             if let title = group.title { SectionLabel(title) }
@@ -173,6 +184,14 @@
                 PersonProfileSheet(target: target) { notice = $0 }
             }
             .browserSheet($browser)
+            .resultBanner($banner)
+            .confirmationDialog(
+                removeWords.confirm, isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
+                titleVisibility: .visible, presenting: removing
+            ) { item in
+                Button(removeWords.button, role: .destructive) { remove(item) }
+                Button("Cancel", role: .cancel) {}
+            }
             .task(id: "\(sync.revision)|\(company?.id ?? "")|\(list.rawValue)") { reload() }
             .onAppear { if !loaded { list = ChecklistList.lists(services).first ?? .leak } }
         }
@@ -223,6 +242,44 @@
                 }
             } header: {
                 SectionLabel(CompleteJobSetting.title)
+            }
+        }
+
+        /// Edit and Delete… (Duplicate, Move Up and Move Down aren't on the phone: order is the
+        /// Order field in Edit).
+        private func menu(_ item: ConfigItem) -> [SwipeAction] {
+            [
+                SwipeAction(title: "Edit", systemImage: "pencil", tint: Color.link) { editing = .edit(item) },
+                SwipeAction(title: "Delete…", systemImage: "trash", tint: Color.fail, role: .destructive) {
+                    removing = item
+                },
+            ]
+        }
+
+        /// The item sheet's question and button for this page.
+        private var removeWords: (confirm: String, button: String) {
+            switch page {
+            case .priceBook: ("Remove this item from the price book?", "Remove Item")
+            case .components:
+                switch list {
+                case .inspection: ("Remove this question from new checklists?", "Remove Component")
+                case .pool: ("Remove this component from new visits?", "Remove Component")
+                default: ("Remove this component from new checklists?", "Remove Component")
+                }
+            case .tests: ("Remove this test type?", "Remove Test Type")
+            case .severities: ("Remove this severity?", "Remove Severity")
+            default: ("Remove this reason?", "Remove")
+            }
+        }
+
+        /// The sheet's Remove, through the same write.
+        private func remove(_ item: ConfigItem) {
+            removing = nil
+            do {
+                try ConfigWrites.remove(sync, page: page, id: item.id)
+                banner = ResultBanner(kind: .success, title: "Removed \(item.name).")
+            } catch {
+                banner = ResultBanner(kind: .error, title: String(describing: error))
             }
         }
 

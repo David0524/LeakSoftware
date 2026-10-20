@@ -3,6 +3,7 @@
     import SundeckCore
     import SundeckSync
     import SwiftUI
+    import UIKit
 
     /// More › Invoices (spec 5.10; website app/(office)/invoices): the shop's invoices on this
     /// phone, newest first. A row opens its job (Wrap-Up has the invoice). Managers export the
@@ -19,6 +20,13 @@
         @State private var filter: InvoiceFilter
         @State private var sort = InvoiceSort.newest
         @State private var search = ""
+        /// Each row's link, Record Payment and Void, read with the list (gestures spec section 12).
+        @State private var rowActions: [String: InvoiceRowActions] = [:]
+        @State private var banner: ResultBanner?
+        /// Record Payment from a row: the invoice and the amount typed (the balance at first).
+        @State private var paying: InvoiceListItem?
+        @State private var amount = ""
+        @State private var voiding: InvoiceListItem?
 
         /// `filter` opens on one (the dashboard's Owed to you opens Unpaid); All by default.
         init(filter: InvoiceFilter = .all) { _filter = State(initialValue: filter) }
@@ -101,6 +109,15 @@
                             .buttonStyle(.row)
                             .surfaceRow()
                             .listRowInsets(EdgeInsets())
+                            // Swipe right for Record Payment on an unpaid invoice; touch and hold
+                            // for the menu. The invoice's card has each (gestures spec 12).
+                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                if rowActions[item.id]?.rules.canRecordPayment == true {
+                                    Button("Record Payment", systemImage: "dollarsign.circle") { startPayment(item) }
+                                        .tint(Color.pass)
+                                }
+                            }
+                            .rowMenu(menuTitle(item), menu(item))
                         }
                     }
                 }
@@ -127,6 +144,27 @@
                 }
             }
             .sheet(item: $shared) { FileShareSheet(url: $0.url) }
+            .resultBanner($banner)
+            .alert(
+                "Record Payment", isPresented: Binding(get: { paying != nil }, set: { if !$0 { paying = nil } }),
+                presenting: paying
+            ) { item in
+                TextField("Amount received ($)", text: $amount)
+                    .keyboardType(.decimalPad)
+                Button("Cancel", role: .cancel) {}
+                Button("Record Payment") { Task { await recordPayment(item) } }
+                    .keyboardShortcut(.defaultAction)
+            } message: { _ in
+                Text(InvoiceCardModel.paymentHint)
+            }
+            .confirmationDialog(
+                InvoiceCardModel.voidTitle,
+                isPresented: Binding(get: { voiding != nil }, set: { if !$0 { voiding = nil } }),
+                titleVisibility: .visible, presenting: voiding
+            ) { item in
+                Button("Void Invoice", role: .destructive) { Task { await void(item) } }
+                Button("Cancel", role: .cancel) {}
+            }
             .task(id: "\(sync.revision)|\(company?.id ?? "")") { reload() }
             .task { await loadUnbilled() }
         }
@@ -134,7 +172,75 @@
         private func reload() {
             guard let company = session.company else { return }
             list = invoiceList(sync.store, companyId: company.id)
+            rowActions = invoiceRowActions(
+                sync.store, companyId: company.id, list: list, manager: isManagerRole(company.role))
             loaded = true
+        }
+
+        // MARK: Row actions (gestures spec section 12)
+
+        /// "Grace Holloway · Invoice #1026".
+        private func menuTitle(_ item: InvoiceListItem) -> String {
+            (item.customer ?? "Customer") + (item.invoice.number.map { " · Invoice #\($0)" } ?? " · Draft invoice")
+        }
+
+        /// Open, Copy Payment Link, Record Payment, Void… (Send Reminder isn't on the phone).
+        private func menu(_ item: InvoiceListItem) -> [SwipeAction] {
+            let actions = rowActions[item.id]
+            var list = [
+                SwipeAction(title: "Open", systemImage: "arrow.up.right", tint: Color.link) {
+                    openRoute(.jobSection(item.invoice.jobId, .wrapUp))
+                }
+            ]
+            if let link = actions?.link {
+                list.append(
+                    SwipeAction(title: "Copy Payment Link", systemImage: "link", tint: Color.link) {
+                        UIPasteboard.general.url = link
+                        banner = ResultBanner(kind: .success, title: "Payment link copied.")
+                    })
+            }
+            if actions?.rules.canRecordPayment == true {
+                list.append(
+                    SwipeAction(title: "Record Payment", systemImage: "dollarsign.circle", tint: Color.pass) {
+                        startPayment(item)
+                    })
+            }
+            if actions?.rules.canVoid == true {
+                list.append(
+                    SwipeAction(title: "Void…", systemImage: "xmark.circle", tint: Color.fail, role: .destructive) {
+                        voiding = item
+                    })
+            }
+            return list
+        }
+
+        private func startPayment(_ item: InvoiceListItem) {
+            amount = rowActions[item.id]?.balanceText ?? ""
+            paying = item
+        }
+
+        /// The card's Record Payment, through the same server call.
+        private func recordPayment(_ item: InvoiceListItem) async {
+            guard let company = session.company else { return }
+            let flow = InvoiceFlow(sync: sync, companyId: company.id, jobId: item.invoice.jobId)
+            await flow.recordPayment(item.invoice.id, amount: amount, rpc: LenientRPC(client: app.client))
+            show(flow)
+        }
+
+        /// The card's Void Invoice, after the same question.
+        private func void(_ item: InvoiceListItem) async {
+            guard let company = session.company else { return }
+            let flow = InvoiceFlow(sync: sync, companyId: company.id, jobId: item.invoice.jobId)
+            await flow.void(item.invoice.id, draft: false, rpc: LenientRPC(client: app.client))
+            show(flow)
+        }
+
+        private func show(_ flow: InvoiceFlow) {
+            if let error = flow.error {
+                banner = ResultBanner(kind: .error, title: error)
+            } else if let message = flow.message {
+                banner = ResultBanner(kind: .success, title: message)
+            }
         }
 
         /// Writes the CSV from the phone's rows and opens the share sheet.

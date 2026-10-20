@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { JobsTabs } from "@/components/jobs-tabs";
-import { Empty, Grouped, PageHeader, Row, pillClass } from "@/components/ui";
+import { Empty, Grouped, PageHeader, RowContent, pillClass } from "@/components/ui";
+import { ReportActions } from "@/components/list-actions";
 import { getOffice } from "@/lib/auth";
 import { listReports } from "@/lib/data";
+import { siteOrigin } from "@/lib/origin";
+import { emailConfigured } from "@/server/email";
 
 export const metadata: Metadata = { title: "Reports · Sundeck Pro" };
 
@@ -27,7 +30,8 @@ export default async function ReportsPage({ searchParams }: PageProps<"/jobs/rep
   const office = await getOffice();
   const { status } = await searchParams;
   const filter = FILTERS.find((f) => f.key === status) ?? FILTERS[0];
-  const reports = await listReports(office, filter.key);
+  const [reports, origin] = await Promise.all([listReports(office, filter.key), siteOrigin()]);
+  const emailReady = emailConfigured();
   const day = (iso: string) =>
     new Date(iso).toLocaleDateString("en-US", {
       timeZone: office.company.timezone,
@@ -69,29 +73,42 @@ export default async function ReportsPage({ searchParams }: PageProps<"/jobs/rep
       ) : (
         <Grouped className="max-w-3xl">
           {reports.map((r) => (
-            <Row
+            <ReportActions
               key={r.id}
-              href={`/jobs/${r.job_id}#wrap-up`}
-              label={
-                <>
-                  <span className="font-semibold">{r.job?.bill_to?.name ?? "Customer"}</span>
-                  <span className="text-text-muted">
-                    {" "}
-                    · {r.job?.number ? `Job #${r.job.number}` : "New job"}
-                  </span>
-                </>
-              }
-              detail={[
-                r.job?.type === "inspection" && r.template_key === "homeowner"
-                  ? "Pool inspection report"
-                  : TEMPLATES[r.template_key],
-                r.version > 1 ? `version ${r.version}` : null,
-                r.job?.property?.address_line1,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-              value={r.status === "sent" && r.sent_at ? `Sent ${day(r.sent_at)}` : "Draft"}
-            />
+              report={{
+                id: r.id,
+                jobId: r.job_id,
+                title: `${r.job?.bill_to?.name ?? "Customer"} · ${r.job?.number ? `Job #${r.job.number}` : "New job"}`,
+                template: r.template_key,
+                link: r.status === "sent" && r.token ? `${origin}/r/${r.token}` : null,
+                // Resend: sent ones, by email to the customer, as the job page's Send by Email.
+                resendTo:
+                  r.status === "sent" && emailReady ? (r.job?.bill_to?.email ?? null) : null,
+              }}
+            >
+              <RowContent
+                href={`/jobs/${r.job_id}#wrap-up`}
+                label={
+                  <>
+                    <span className="font-semibold">{r.job?.bill_to?.name ?? "Customer"}</span>
+                    <span className="text-text-muted">
+                      {" "}
+                      · {r.job?.number ? `Job #${r.job.number}` : "New job"}
+                    </span>
+                  </>
+                }
+                detail={[
+                  r.job?.type === "inspection" && r.template_key === "homeowner"
+                    ? "Pool inspection report"
+                    : TEMPLATES[r.template_key],
+                  r.version > 1 ? `version ${r.version}` : null,
+                  r.job?.property?.address_line1,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+                value={r.status === "sent" && r.sent_at ? `Sent ${day(r.sent_at)}` : "Draft"}
+              />
+            </ReportActions>
           ))}
         </Grouped>
       )}

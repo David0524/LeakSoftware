@@ -146,9 +146,10 @@ test("customers text and call the company number, and the team answers", async (
     await expect(listed.getByRole("link", { name: /unread/ })).toBeVisible();
     await expect.poll(unreadNow).toBe(true);
 
-    // A right click on the row in the list marks it read again.
+    // A right click on the row in the list marks it read again (gestures.md section 12: its
+    // menu is titled with the conversation's name).
     await listed.getByRole("link").click({ button: "right" });
-    await page.getByRole("menuitem", { name: "Mark as Read" }).click();
+    await page.getByRole("menuitem", { name: "Mark Read", exact: true }).click();
     await expect(listed.getByRole("link", { name: /unread/ })).toHaveCount(0);
     await expect.poll(unreadNow).toBe(false);
   } finally {

@@ -91,7 +91,7 @@
                     notices(board)
                     if board.ctx.isManager && view != .month {
                         NeedsATimeCard(
-                            jobs: board.tray, board: board, onMove: move, onSuggest: { suggesting = $0 },
+                            jobs: board.tray, board: board, actions: stopActions, onSuggest: { suggesting = $0 },
                             onDrop: { drop($0, on: .needsATime) })
                     }
                     // Swipe left or right for the next or previous day, week or month (the arrows
@@ -231,7 +231,7 @@
             ForEach(board.shownTechs) { t in
                 RouteCard(
                     tech: t, board: board, route: board.loaded.routes[routeKey(t.id, board.date)],
-                    busy: optimizing == t.id, onPlan: { plan(t.id, board) }, onMove: move,
+                    busy: optimizing == t.id, onPlan: { plan(t.id, board) }, actions: stopActions,
                     onDrop: { id, index in drop(id, on: .route(tech: t.id, date: board.date, index: index)) },
                     lead: board.leadRoute?.techId == t.id)
             }
@@ -273,13 +273,22 @@
                                 WeekItem(job: $0.job, tech: $0.tech, cleanings: board.cleanings[$0.job.id] ?? [])
                             }
                         ) { item in
-                            Button {
-                                openRoute(.job(item.job.id))
-                            } label: {
-                                WeekRow(item: item, timeZone: board.ctx.timeZone, movable: canMoveJob(item.job.status))
+                            // Swipe left for Move…, right to lock; touch and hold for the menu,
+                            // and drag from it to move (gestures spec section 12).
+                            let actions = stopActions(
+                                item.job, from: "\(item.job.assignedUserId ?? "none")|\(d)")
+                            SwipeActionsRow(
+                                actions: actions.trailing, leading: actions.leading, menuTitle: actions.title,
+                                menuItems: actions.menu, gripWidth: actions.movable ? 32 : 0
+                            ) {
+                                Button {
+                                    openRoute(.job(item.job.id))
+                                } label: {
+                                    WeekRow(item: item, timeZone: board.ctx.timeZone, movable: actions.movable)
+                                }
+                                .buttonStyle(.row)
+                                .zoomSource(item.job.id)
                             }
-                            .buttonStyle(.row)
-                            .zoomSource(item.job.id)
                             .scheduleDragSource(item.job)
                         }
                     }
@@ -305,6 +314,37 @@
         }
 
         private func move(_ job: ScheduleJob, from: String?) { moving = MoveTarget(job: job, from: from) }
+
+        /// A stop's swipes and menu (gestures spec section 12), each the same as its button: Move…
+        /// opens the Move sheet, the locks save as the Move sheet's Lock does (alone, so the day
+        /// isn't re-timed), Take Off Schedule is the sheet's, and Directions the address's.
+        private func stopActions(_ job: ScheduleJob, from: String?) -> ScheduleStopActions {
+            ScheduleStopActions(
+                job: job, onMove: { move(job, from: from) }, onLock: { lock(job, $0) },
+                onTakeOff: from != nil && canUnschedule(job.status) ? { takeOff(job) } : nil,
+                onOpen: { openRoute(.job(job.id)) },
+                onDirections: job.address.isEmpty
+                    ? nil
+                    : {
+                        if let url = directionsURL(job.place, app: MapsApp(sync.kv)) { openURL(url) }
+                    })
+        }
+
+        /// Lock Day or Lock Time (or Unlock): the lock alone, with no message (owner, 2026-10-20:
+        /// "Don't do lock messages"); the card's lock icon and the haptic say it.
+        private func lock(_ job: ScheduleJob, _ lock: JobLock) {
+            save(lockOnlyChange(lock, jobId: job.id).updates, nil)
+        }
+
+        /// Take Off Schedule, as the Move sheet's: back to Needs a Time.
+        private func takeOff(_ job: ScheduleJob) {
+            guard let board else { return }
+            apply {
+                try moveJob(
+                    job.id, tech: nil, date: nil, index: 0, jobs: board.jobs, ctx: board.ctx, team: board.team,
+                    drive: drive)
+            }
+        }
 
         /// Optimize: the day planned off the main thread (the button shows Optimizing… at once),
         /// then saved through the sync layer, the stops sliding into their new order, and the
@@ -391,13 +431,13 @@
 
         /// The rows, in one transaction; the next board animates in, and the banner says so.
         @discardableResult
-        private func save(_ updates: [JobUpdate], _ result: ResultBanner, undo: [WeekUndoRow]? = nil) -> Bool {
+        private func save(_ updates: [JobUpdate], _ result: ResultBanner?, undo: [WeekUndoRow]? = nil) -> Bool {
             guard let company = session.company else { return false }
             do {
                 try saveJobUpdates(sync, companyId: company.id, updates)
                 weekUndo = undo
                 animateNext = !updates.isEmpty
-                banner = result
+                if let result { banner = result }
                 saved += 1
                 return true
             } catch {
@@ -702,7 +742,7 @@
     struct NeedsATimeCard: View {
         var jobs: [ScheduleJob]
         var board: Board
-        var onMove: (ScheduleJob, String?) -> Void
+        var actions: (ScheduleJob, String?) -> ScheduleStopActions
         var onSuggest: (ScheduleJob) -> Void
         var onDrop: ((String) -> Bool)?
 
@@ -719,7 +759,7 @@
                                 ForEach(jobs) { j in
                                     TrayCard(
                                         job: j, notOnMap: board.routing && j.mapMissing, note: note(j),
-                                        onMove: { onMove(j, nil) }, onSuggest: { onSuggest(j) }
+                                        actions: actions(j, nil), onSuggest: { onSuggest(j) }
                                     )
                                     .frame(width: geo.size.width * 0.85)
                                 }
@@ -751,9 +791,10 @@
         var notOnMap = false
         /// What follows the address: "No tech yet · booked …", the kind of job.
         var note: String
-        var onMove: () -> Void
+        var actions: ScheduleStopActions
         var onSuggest: () -> Void
         @Environment(\.openRoute) private var openRoute
+        private var onMove: () -> Void { actions.onMove }
 
         var body: some View {
             HStack(spacing: 4) {
@@ -790,9 +831,12 @@
                 if canMoveJob(job.status) { DragGrip(width: 24) }
             }
             .well(padding: 8)
+            // Touch and hold for the menu (and drag from it to move). No swipes here: the cards sit
+            // in a row that scrolls sideways, so a sideways swipe scrolls it.
+            .rowMenu(actions.title, actions.menu)
             .scheduleDragSource(job)
             .accessibilityElement(children: .contain)
-            .accessibilityAction(named: "Move") { onMove() }
+            .swipeAccessibilityActions(actions.leading + actions.trailing)
         }
     }
 
@@ -807,7 +851,8 @@
         /// Optimize is working on this day.
         var busy = false
         var onPlan: () -> Void
-        var onMove: (ScheduleJob, String?) -> Void
+        /// A stop's swipes and menu, from the route it's on.
+        var actions: (ScheduleJob, String?) -> ScheduleStopActions
         /// A stop dropped on this day (job id, place in the route or nil for last).
         var onDrop: (String, Int?) -> Bool
         /// The day's map, facts and buttons are in `DayLead` above Needs a Time.
@@ -827,8 +872,10 @@
                         ScheduleStopCard(
                             number: i + 1, job: j,
                             note: stopNote(j, routeTech: tech.id, names: board.names),
-                            timeZone: board.ctx.timeZone, routing: board.routing, cleanings: board.cleanings[j.id] ?? []
-                        ) { onMove(j, routeKey(tech.id, board.date)) }
+                            timeZone: board.ctx.timeZone, routing: board.routing,
+                            cleanings: board.cleanings[j.id] ?? [],
+                            actions: actions(j, routeKey(tech.id, board.date))
+                        )
                         .scheduleDropTarget(cornerRadius: CGFloat(Radius.card)) { onDrop($0, i) }
                     }
                     LegLine(minutes: route.summary.backLegMin, label: "back to the shop", short: 0, inset: 31)
@@ -955,20 +1002,18 @@
         var timeZone: String
         var routing = false
         var cleanings: [ScheduledCleaning] = []
-        var onMove: () -> Void
+        /// Swipe left for Move…, right to lock; touch and hold for the menu (gestures spec 12).
+        var actions: ScheduleStopActions
         @Environment(\.openRoute) private var openRoute
+        private var onMove: () -> Void { actions.onMove }
 
         var body: some View {
             let shape = RoundedRectangle(cornerRadius: CGFloat(Radius.card), style: .continuous)
+            // A swipe never starts on the grip, and touch and hold opens the menu, from which the
+            // card can still be dragged to another place.
             SwipeActionsRow(
-                actions: canMoveJob(job.status)
-                    ? [
-                        SwipeAction(
-                            title: "Move", systemImage: "arrow.up.and.down.and.arrow.left.and.right", tint: Color.link,
-                            action: onMove)
-                    ]
-                    : [],
-                menu: false
+                actions: actions.trailing, leading: actions.leading, menuTitle: actions.title,
+                menuItems: actions.menu, gripWidth: actions.movable ? 32 : 0
             ) {
                 HStack(spacing: 0) {
                     content
@@ -1012,10 +1057,8 @@
                         .zoomSource(job.id)
                         .accessibilityLabel(spoken)
                         .accessibilityHint("Opens the job")
-                        .accessibilityActions {
-                            // Drag and drop's alternative (owner, 2026-10-20).
-                            if canMoveJob(job.status) { Button("Move", action: onMove) }
-                        }
+                        // Drag and drop's alternative (owner, 2026-10-20), and the swipes.
+                        .swipeAccessibilityActions(actions.leading + actions.trailing)
                         if canMoveJob(job.status) {
                             Button("Move…", action: onMove)
                                 .buttonStyle(.quiet(size: .small))
@@ -1055,6 +1098,73 @@
         /// "Stop 1, 9:00 AM, Grace Holloway".
         private var spoken: String {
             ["Stop \(number)", time, job.customerName].joined(separator: ", ")
+        }
+    }
+
+    /// A schedule stop's swipes and menu (gestures spec section 12; the same on Day's stops, Week's
+    /// rows and Needs a Time): swipe left for Move…, right for Lock Day and Lock Time (Unlock once
+    /// locked); the menu has Open, Move…, Lock Day, Lock Time, Take Off Schedule and Directions,
+    /// each only where the stop can take it.
+    struct ScheduleStopActions {
+        var job: ScheduleJob
+        var onMove: () -> Void
+        var onLock: (JobLock) -> Void
+        /// On a route and not started: back to Needs a Time.
+        var onTakeOff: (() -> Void)?
+        var onOpen: () -> Void
+        var onDirections: (() -> Void)?
+
+        var movable: Bool { canMoveJob(job.status) }
+        private var lock: JobLock { jobLock(job) }
+        private var dayLocked: Bool { lock == .day || lock == .both }
+        private var timeLocked: Bool { lock == .time || lock == .both }
+
+        /// "Grace Holloway · Job #1040".
+        var title: String { job.customerName + (job.number.map { " · Job #\($0)" } ?? "") }
+
+        private var move: SwipeAction {
+            SwipeAction(
+                title: "Move…", systemImage: "arrow.up.and.down.and.arrow.left.and.right", tint: Color.link,
+                action: onMove)
+        }
+
+        private var lockDay: SwipeAction {
+            SwipeAction(
+                title: dayLocked ? "Unlock Day" : "Lock Day", systemImage: dayLocked ? "lock.open" : "lock",
+                tint: Color.navy
+            ) { onLock(jobLock(lockDay: !dayLocked, lockTime: timeLocked, arrivalFixed: false)) }
+        }
+
+        /// Only a stop with a time can keep it.
+        private var lockTime: SwipeAction? {
+            guard job.scheduledStart != nil else { return nil }
+            return SwipeAction(
+                title: timeLocked ? "Unlock Time" : "Lock Time", systemImage: timeLocked ? "lock.open" : "clock",
+                tint: Color.link
+            ) { onLock(jobLock(lockDay: dayLocked, lockTime: !timeLocked, arrivalFixed: false)) }
+        }
+
+        var trailing: [SwipeAction] { movable ? [move] : [] }
+        var leading: [SwipeAction] { movable ? [lockDay] + [lockTime].compactMap { $0 } : [] }
+
+        var menu: [SwipeAction] {
+            var list = [SwipeAction(title: "Open", systemImage: "arrow.up.right", tint: Color.link, action: onOpen)]
+            if movable {
+                list.append(move)
+                list.append(lockDay)
+                if let lockTime { list.append(lockTime) }
+            }
+            if let onTakeOff {
+                list.append(
+                    SwipeAction(
+                        title: "Take Off Schedule", systemImage: "tray.and.arrow.down", tint: Color.link,
+                        action: onTakeOff))
+            }
+            if let onDirections {
+                list.append(
+                    SwipeAction(title: "Directions", systemImage: "location", tint: Color.link, action: onDirections))
+            }
+            return list
         }
     }
 

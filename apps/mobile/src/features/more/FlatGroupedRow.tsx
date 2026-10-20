@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Linking, Platform, Pressable, StyleSheet, View } from "react-native";
+import type { RowGestures } from "../../ui/RowMenu";
 import { SwipeActions } from "../../ui/SwipeRow";
 import { Chevron } from "../../ui/components";
 import { color, shape, space } from "../../ui/theme";
@@ -16,6 +17,7 @@ export function FlatGroupedRow({
   label,
   value,
   phone,
+  gestures,
   children,
 }: {
   first: boolean;
@@ -26,9 +28,24 @@ export function FlatGroupedRow({
   value?: ReactNode;
   /** Swipe left to call this number (gestures spec section 5), also offered to TalkBack. */
   phone?: string | null;
+  /**
+   * Swipe actions both ways, touch and hold for the row's menu, and the same choices for
+   * TalkBack (ui/RowMenu rowGestures; gestures spec section 12), in place of `phone`.
+   */
+  gestures?: RowGestures;
   children: ReactNode;
 }) {
-  const call = phone ? () => void Linking.openURL(`tel:${phone}`) : null;
+  const callNow = phone ? () => void Linking.openURL(`tel:${phone}`) : null;
+  const g: RowGestures | null =
+    gestures ??
+    (callNow
+      ? {
+          leading: null,
+          trailing: [{ label: "Call", tint: color.link, onPress: callNow }],
+          accessibilityActions: [{ name: "call", label: "Call" }],
+          onAccessibilityAction: (e) => e.nativeEvent.actionName === "call" && callNow(),
+        }
+      : null);
   const row = (
     <View
       style={[
@@ -42,9 +59,10 @@ export function FlatGroupedRow({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={label}
-        accessibilityActions={call ? [{ name: "call", label: "Call" }] : undefined}
-        onAccessibilityAction={(e) => e.nativeEvent.actionName === "call" && call?.()}
+        accessibilityActions={g?.accessibilityActions.length ? g.accessibilityActions : undefined}
+        onAccessibilityAction={g?.onAccessibilityAction}
         onPress={onPress}
+        onLongPress={g?.onLongPress}
         android_ripple={{ color: color.ripple }}
         style={({ pressed }) => [
           styles.row,
@@ -57,8 +75,8 @@ export function FlatGroupedRow({
       </Pressable>
     </View>
   );
-  return call ? (
-    <SwipeActions trailing={[{ label: "Call", tint: color.link, onPress: call }]}>
+  return g && (g.leading || g.trailing.length) ? (
+    <SwipeActions leading={g.leading} trailing={g.trailing}>
       {row}
     </SwipeActions>
   ) : (

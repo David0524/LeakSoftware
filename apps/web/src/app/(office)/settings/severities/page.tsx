@@ -76,6 +76,13 @@ export default async function SeveritiesPage() {
         {levels.map((s) => (
           <SheetRow
             key={s.id}
+            remove={{
+              table: "severity_level",
+              id: s.id,
+              path: "/settings/severities",
+              confirm: "Remove this severity?",
+              confirmLabel: "Remove Severity",
+            }}
             title={s.name}
             label={s.name}
             detail={s.must_mention ? "Always in the report summary" : undefined}

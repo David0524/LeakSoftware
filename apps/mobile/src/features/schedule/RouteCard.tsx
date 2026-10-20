@@ -1,16 +1,15 @@
 import { router } from "expo-router";
-import { useRef, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureDetector } from "react-native-gesture-handler";
-import ReanimatedSwipeable, {
-  type SwipeableMethods,
-} from "react-native-gesture-handler/ReanimatedSwipeable";
 import { durationLabel, type CleaningKind, type JobStatus, type LatLng } from "@leakbook/core";
 import type { LockTagKind } from "../../lib/dayMap";
 import type { DragItem } from "../../lib/scheduleDrag";
 import { CleaningNames } from "../maintenance/Cleanings";
 import { Button, Card, StatusChip, T } from "../../ui/components";
 import { LockTag } from "../../ui/LockTag";
+import type { RowGestures } from "../../ui/RowMenu";
+import { SwipeActions } from "../../ui/SwipeRow";
 import { AddressLine } from "../../ui/NotOnMap";
 import { Grip } from "../../ui/Grip";
 import { WebIcon } from "../../ui/WebIcon";
@@ -167,6 +166,7 @@ export function RouteCard({
   onPlan,
   onMove,
   onDirections,
+  gesturesFor,
 }: {
   route: Route;
   busy: boolean;
@@ -177,6 +177,8 @@ export function RouteCard({
   onPlan: () => void;
   onMove: (s: Stop) => void;
   onDirections: (s: Stop) => void;
+  /** A stop's swipe actions (Move…, Lock…) and touch-and-hold menu (gestures spec section 12). */
+  gesturesFor?: (s: Stop) => RowGestures;
 }) {
   const { zoneRef } = useDropZones();
   const hover = useDragHover();
@@ -232,6 +234,7 @@ export function RouteCard({
               route={c.key}
               onMove={onMove}
               onDirections={onDirections}
+              gestures={gesturesFor?.(s)}
             />
           </View>
         ))}
@@ -276,20 +279,29 @@ function StopFace({
   ghost = false,
   onMove,
   onDirections,
+  gestures,
 }: {
   stop: Stop;
   n: number;
   ghost?: boolean;
   onMove?: (s: Stop) => void;
   onDirections?: (s: Stop) => void;
+  /** Its swipe actions and menu, for TalkBack and VoiceOver too. */
+  gestures?: RowGestures;
 }) {
   const kind = s.tag;
   return (
     <View
       style={[styles.face, { backgroundColor: color.surface }]}
       accessible={false}
-      accessibilityActions={s.movable && onMove ? [{ name: "move", label: "Move" }] : undefined}
-      onAccessibilityAction={() => onMove?.(s)}
+      accessibilityActions={
+        gestures
+          ? gestures.accessibilityActions
+          : s.movable && onMove
+            ? [{ name: "move", label: "Move" }]
+            : undefined
+      }
+      onAccessibilityAction={(e) => (gestures ? gestures.onAccessibilityAction(e) : onMove?.(s))}
     >
       <View style={styles.top}>
         <Badge n={n} status={s.status} done={s.done} />
@@ -301,6 +313,7 @@ function StopFace({
           accessibilityHint="Opens the job"
           disabled={ghost}
           onPress={() => router.push(`/jobs/${s.id}`)}
+          onLongPress={s.movable ? undefined : gestures?.onLongPress}
           style={({ pressed }) => [styles.open, pressed && { opacity: 0.6 }]}
         >
           <Text
@@ -396,6 +409,7 @@ function StopCard({
   route,
   onMove,
   onDirections,
+  gestures,
 }: {
   stop: Stop;
   n: number;
@@ -404,17 +418,31 @@ function StopCard({
   route: string;
   onMove: (s: Stop) => void;
   onDirections: (s: Stop) => void;
+  gestures?: RowGestures;
 }) {
-  const swipe = useRef<SwipeableMethods>(null);
   const hover = useDragHover();
   const { slotRef } = useDropZones();
-  const { gesture, ref } = useDragSource(item, () => (
-    <View style={styles.clip}>
-      <StopFace stop={s} n={n} ghost />
-    </View>
-  ));
+  // Held and let go without moving: the stop's menu; held and moved: dragged (section 12).
+  const { gesture, ref } = useDragSource(
+    item,
+    () => (
+      <View style={styles.clip}>
+        <StopFace stop={s} n={n} ghost />
+      </View>
+    ),
+    gestures?.onLongPress,
+  );
   const slot = slotRef(s.id, route);
-  const content = <StopFace stop={s} n={n} onMove={onMove} onDirections={onDirections} />;
+  const content = (
+    <StopFace stop={s} n={n} onMove={onMove} onDirections={onDirections} gestures={gestures} />
+  );
+  // Swipe left for Move…, right for Lock… (a stop that can't move has neither).
+  const leading = gestures ? gestures.leading : null;
+  const trailing = gestures
+    ? gestures.trailing
+    : s.movable
+      ? [{ label: "Move", tint: color.link, onPress: () => onMove(s) }]
+      : [];
   return (
     <GestureDetector gesture={gesture}>
       <View
@@ -426,39 +454,20 @@ function StopCard({
         // Left in place, faded, while it's held.
         style={[styles.card, cardShadow(), hover.id === s.id && { opacity: 0.35 }]}
       >
-        {s.movable ? (
-          <View style={styles.clip}>
-            <ReanimatedSwipeable
-              ref={swipe}
-              friction={1.5}
-              rightThreshold={44}
-              overshootRight={false}
-              renderRightActions={() => (
-                <Pressable
-                  accessibilityElementsHidden
-                  importantForAccessibility="no-hide-descendants"
-                  onPress={() => {
-                    swipe.current?.close();
-                    onMove(s);
-                  }}
-                  style={[styles.swipeAction, { backgroundColor: color.link }]}
-                >
-                  <Text style={[type.bodyEmphasis, { color: color.onPrimary }]}>Move</Text>
-                </Pressable>
-              )}
-            >
+        <View style={styles.clip}>
+          {leading || trailing.length ? (
+            <SwipeActions leading={leading} trailing={trailing}>
               {content}
-            </ReanimatedSwipeable>
-          </View>
-        ) : (
-          <View style={styles.clip}>{content}</View>
-        )}
+            </SwipeActions>
+          ) : (
+            content
+          )}
+        </View>
       </View>
     </GestureDetector>
   );
 }
 
-/** Needs a Time's card under the finger while it's dragged. */
 export function GhostCard({ stop: s }: { stop: Stop }) {
   return (
     <View style={[styles.face, styles.clip, { backgroundColor: color.surface, paddingRight: 36 }]}>
@@ -546,5 +555,4 @@ const styles = StyleSheet.create({
   pill: { borderRadius: shape.pill, paddingHorizontal: 10, paddingVertical: 2 },
   access: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
   ghostGrip: { position: "absolute", right: 4, top: 0, bottom: 0, justifyContent: "center" },
-  swipeAction: { width: 88, alignItems: "center", justifyContent: "center" },
 });

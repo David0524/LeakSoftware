@@ -41,6 +41,18 @@
                                         .buttonStyle(.row)
                                         .accessibilityLabel("Edit \(row.title)")
                                     }
+                                    // Touch and hold: Edit, Delete… (gestures spec section 12).
+                                    .rowMenu(
+                                        row.title,
+                                        [
+                                            SwipeAction(title: "Edit", systemImage: "pencil", tint: Color.link) {
+                                                openEditor(.finding(jobId: job.id, findingId: row.id, componentId: nil))
+                                            },
+                                            SwipeAction(
+                                                title: "Delete…", systemImage: "trash", tint: Color.fail,
+                                                role: .destructive
+                                            ) { deleting = row },
+                                        ])
                                 }
                             }
                         }

@@ -204,6 +204,8 @@ body:has(.nav-accessory) .nav-main.glass-bar {
     right: 0;
     border-top: 0.5px solid var(--lb-separator);
     pointer-events: none;
+    /* Over a row that swipes (its moving part has its own fill). */
+    z-index: 1;
   }
 
   /* iOS switch: 51 x 31, green when on. It is a checkbox underneath. */

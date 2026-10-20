@@ -3,9 +3,13 @@ import Link from "next/link";
 import {
   JOB_SORTS,
   JOB_TYPE_LABELS,
+  canMoveJob,
   formatAddress,
   formatSchedule,
   jobSort,
+  propertyLocation,
+  userTransitions,
+  visitReportMode,
   type JobStatus,
 } from "@leakbook/core";
 import {
@@ -14,13 +18,17 @@ import {
   Empty,
   Grouped,
   PageHeader,
-  Row,
+  RowContent,
   StatusBadge,
   buttonClass,
   pillClass,
 } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { OPEN_STATUSES, listJobs, mayMakeJobs } from "@/lib/data";
+import { OPEN_STATUSES, getCompany, listJobs, mayMakeJobs, type JobRow } from "@/lib/data";
+import { getLine } from "@/lib/messages";
+import { completeSendPrompt } from "@/lib/next-step";
+import { JobActions, type JobRowData } from "@/components/list-actions";
+import { RowMenuButton } from "@/components/row-actions";
 import { JobsTabs } from "@/components/jobs-tabs";
 import { NavPlus } from "@/components/nav-bar";
 import { Suspense } from "react";
@@ -57,7 +65,30 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
   const filter = FILTERS.find((f) => f.key === status) ?? FILTERS[0]!;
   const search = typeof q === "string" ? q.trim() : "";
   const limit = Math.min(Math.max(Number(show) || PAGE, PAGE), 500);
-  const found = await listJobs(office, filter.statuses, { limit, search, sort });
+  const [found, company, line] = await Promise.all([
+    listJobs(office, filter.statuses, { limit, search, sort }),
+    getCompany(office),
+    getLine(office),
+  ]);
+  const reportMode = visitReportMode(company.settings);
+  // A row's swipe actions and menu (gestures.md section 12), from what its page offers.
+  const actions = (j: JobRow): JobRowData => ({
+    id: j.id,
+    number: j.number ?? null,
+    customer: j.customer?.name ?? "Customer",
+    phone: j.customer?.phone ?? null,
+    inboxHref:
+      line?.status === "active" && j.customer ? `/messages/new?customer=${j.customer.id}` : null,
+    address: j.property ? formatAddress(j.property) : null,
+    location: propertyLocation(j.property),
+    canComplete: userTransitions(j.status, j.type).includes("done"),
+    completePrompt: completeSendPrompt({
+      jobType: j.type,
+      reportMode,
+      customer: j.customer?.name,
+    }),
+    canMove: canMoveJob(j.status),
+  });
   const more = found.length > limit;
   const jobs = more ? found.slice(0, limit) : found;
   const link = (params: Record<string, string>) => {
@@ -141,29 +172,30 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
           {/* Phones: an inset grouped list, a row per job. */}
           <Grouped className="sm:hidden">
             {jobs.map((j) => (
-              <Row
-                key={j.id}
-                href={`/jobs/${j.id}`}
-                label={<span className="font-semibold">{j.customer?.name ?? "Customer"}</span>}
-                detail={
-                  <>
-                    <span className="block">
-                      {j.number ? `#${j.number}` : "New job"} · {JOB_TYPE_LABELS[j.type]}
-                    </span>
-                    {j.property ? (
-                      <span className="block truncate">{formatAddress(j.property)}</span>
-                    ) : null}
-                    <span className="block text-text">
-                      {j.status === "in_progress" && j.started_at
-                        ? "Started"
-                        : formatSchedule(j.scheduled_start ?? null, now, office.company.timezone)}
-                      {" · "}
-                      {j.techName ?? "Unassigned"}
-                    </span>
-                  </>
-                }
-                value={<StatusBadge status={j.status} />}
-              />
+              <JobActions key={j.id} as="li" job={actions(j)}>
+                <RowContent
+                  href={`/jobs/${j.id}`}
+                  label={<span className="font-semibold">{j.customer?.name ?? "Customer"}</span>}
+                  detail={
+                    <>
+                      <span className="block">
+                        {j.number ? `#${j.number}` : "New job"} · {JOB_TYPE_LABELS[j.type]}
+                      </span>
+                      {j.property ? (
+                        <span className="block truncate">{formatAddress(j.property)}</span>
+                      ) : null}
+                      <span className="block text-text">
+                        {j.status === "in_progress" && j.started_at
+                          ? "Started"
+                          : formatSchedule(j.scheduled_start ?? null, now, office.company.timezone)}
+                        {" · "}
+                        {j.techName ?? "Unassigned"}
+                      </span>
+                    </>
+                  }
+                  value={<StatusBadge status={j.status} />}
+                />
+              </JobActions>
             ))}
           </Grouped>
           <div className="hidden overflow-x-auto card sm:block">
@@ -189,7 +221,12 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
               </thead>
               <tbody>
                 {jobs.map((j) => (
-                  <tr key={j.id} className="border-b border-border last:border-0 hover:bg-bg">
+                  <JobActions
+                    key={j.id}
+                    as="tr"
+                    job={actions(j)}
+                    className="border-b border-border last:border-0 hover:bg-bg"
+                  >
                     <td className="px-4 py-3 align-top">
                       <Link
                         href={`/jobs/${j.id}`}
@@ -215,10 +252,12 @@ export default async function JobsPage({ searchParams }: PageProps<"/jobs">) {
                         ? "Started"
                         : formatSchedule(j.scheduled_start ?? null, now, office.company.timezone)}
                     </td>
-                    <td className="px-4 py-3 align-top">
+                    {/* Room kept at the end for the row's "⋯" button (gestures.md section 12). */}
+                    <td className="relative py-3 pr-12 pl-4 align-top">
                       {j.techName ?? <span className="text-text-muted">Unassigned</span>}
+                      <RowMenuButton />
                     </td>
-                  </tr>
+                  </JobActions>
                 ))}
               </tbody>
             </table>

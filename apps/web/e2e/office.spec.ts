@@ -163,7 +163,8 @@ test("owner edits the price book", async ({ page }) => {
 
   const item = page.getByTestId("price-item").filter({ hasText: name });
   await expect(item).toContainText("$123.45");
-  await item.getByRole("button").click();
+  // The row itself (its "⋯" More button comes after it).
+  await item.getByRole("button").first().click();
   const edit = page.getByRole("dialog", { name });
   await edit.getByLabel("Price ($)").fill("150");
   await edit.getByRole("button", { name: "Save Item" }).click();
@@ -174,7 +175,7 @@ test("owner edits the price book", async ({ page }) => {
 
   // Clean up.
   const saved = page.getByTestId("price-item").filter({ hasText: name });
-  await saved.getByRole("button").click();
+  await saved.getByRole("button").first().click();
   await page.getByRole("dialog", { name }).getByRole("button", { name: "Remove Item" }).click();
   await page
     .getByRole("alertdialog", { name: "Remove this item from the price book?" })

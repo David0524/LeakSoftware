@@ -2,6 +2,7 @@
     import SundeckCore
     import SundeckSync
     import SwiftUI
+    import UIKit
 
     /// Where a tab's stack can go.
     enum Route: Hashable {
@@ -83,6 +84,15 @@
         @State private var sort = JobSort.scheduled
         @State private var rows: [JobListRow] = []
         @State private var reports: [ReportListRow] = []
+        /// What a row's swipe or menu action did, at the top (gestures spec section 12).
+        @State private var banner: ResultBanner?
+        /// Undo for the last Mark Complete: Reopen Visit, as the job page offers it.
+        @State private var reopen: String?
+        /// Move… from a row: the job page's Change Schedule sheet.
+        @State private var moving: MovingJob?
+        /// Mark Complete on a visit whose report goes out by itself asks first.
+        @State private var askingSend: JobListRow?
+        @State private var completes = 0
 
         /// `filter` opens on a status (the dashboard's rows); Open by default.
         init(filter: JobFilter = .open) { _filter = State(initialValue: filter) }
@@ -117,6 +127,25 @@
             .scrollDismissesKeyboard(.immediately)
             .refreshable { await sync.syncNow() }
             .sensoryFeedback(.impact(weight: .light), trigger: sync.status.phase == .syncing)
+            .sensoryFeedback(.success, trigger: completes)
+            .resultBanner($banner, onUndo: reopen.map { id in { reopenVisit(id) } })
+            .sheet(item: $moving) { target in
+                JobMoveSheet(jobId: target.id) { result in
+                    reopen = nil
+                    banner = result
+                }
+            }
+            .alert(
+                CompleteSendPrompt.title,
+                isPresented: Binding(get: { askingSend != nil }, set: { if !$0 { askingSend = nil } }),
+                presenting: askingSend
+            ) { row in
+                Button(CompleteSendPrompt.cancel, role: .cancel) {}
+                Button(CompleteSendPrompt.confirm) { complete(row, confirmed: true) }
+                    .keyboardShortcut(.defaultAction)
+            } message: { row in
+                Text(CompleteSendPrompt.message(customer: row.customer == "Customer" ? nil : row.customer))
+            }
             .navigationTitle(mode.title)
             .toolbar {
                 if mode == .jobs {
@@ -156,8 +185,12 @@
                     text: q.isEmpty ? "No jobs here. Add one with New Job, or on the phone." : "No jobs match “\(q)”.")
             } else {
                 GroupedRows(rows) { row in
-                    // Swipe left (or touch and hold) for Call and Text; the job page has both too.
-                    SwipeActionsRow(actions: contactActions(row)) {
+                    // Swipe left for Call and Directions, right for Mark Complete; touch and hold
+                    // for the menu (gestures spec section 12). The job page has each of them too.
+                    SwipeActionsRow(
+                        actions: trailingActions(row), leading: leadingActions(row),
+                        menuTitle: jobMenuTitle(row), menuItems: menuActions(row)
+                    ) {
                         Button {
                             openRoute(.job(row.id))
                         } label: {
@@ -181,22 +214,173 @@
                         ReportListRowView(row: r)
                     }
                     .buttonStyle(.row)
+                    // Touch and hold: Open, Copy Customer Link, Resend (no swipes on Reports).
+                    .rowMenu("\(r.customer) · \(r.job)", reportActions(r))
                 }
             }
         }
 
-        private func contactActions(_ row: JobListRow) -> [SwipeAction] {
-            var actions: [SwipeAction] = []
-            if let phone = row.phone, let url = URL(string: "tel:\(phone.filter { $0.isNumber || $0 == "+" })") {
-                actions.append(SwipeAction(title: "Call", systemImage: "phone.fill", tint: Color.pass) { openURL(url) })
+        // MARK: - Row actions (gestures spec section 12)
+
+        /// "Grace Holloway · Job #1040".
+        private func jobMenuTitle(_ row: JobListRow) -> String {
+            row.customer + (row.number.map { " · Job #\($0)" } ?? "")
+        }
+
+        /// Swipe left: Call (the outer edge), then Directions.
+        private func trailingActions(_ row: JobListRow) -> [SwipeAction] {
+            var list: [SwipeAction] = []
+            if let url = row.phone.flatMap(CustomersScreen.telURL) {
+                list.append(SwipeAction(title: "Call", systemImage: "phone.fill", tint: Color.pass) { openURL(url) })
             }
-            if let customerId = row.customerId, row.phone != nil {
-                actions.append(
-                    SwipeAction(title: "Text", systemImage: "message.fill", tint: Color.link) {
-                        openRoute(.messages(.newMessage(customerId: customerId)))
+            if let place = row.place {
+                list.append(
+                    SwipeAction(title: "Directions", systemImage: "location.fill", tint: Color.link) {
+                        directions(place)
                     })
             }
-            return actions
+            return list
+        }
+
+        /// Swipe right: Mark Complete, on a job whose page offers Complete Job.
+        private func leadingActions(_ row: JobListRow) -> [SwipeAction] {
+            guard row.completable else { return [] }
+            return [
+                SwipeAction(title: MarkStopText.complete, systemImage: "checkmark", tint: Color.pass) { complete(row) }
+            ]
+        }
+
+        /// Open, Call, Message, Directions, Move…, Copy Job Number.
+        private func menuActions(_ row: JobListRow) -> [SwipeAction] {
+            var list = [
+                SwipeAction(title: "Open", systemImage: "arrow.up.right", tint: Color.link) {
+                    openRoute(.job(row.id))
+                }
+            ]
+            if let url = row.phone.flatMap(CustomersScreen.telURL) {
+                list.append(SwipeAction(title: "Call", systemImage: "phone", tint: Color.pass) { openURL(url) })
+            }
+            if let phone = row.phone {
+                list.append(
+                    SwipeAction(title: "Message", systemImage: "message", tint: Color.link) {
+                        message(phone: phone, customerId: row.customerId)
+                    })
+            }
+            if let place = row.place {
+                list.append(
+                    SwipeAction(title: "Directions", systemImage: "location", tint: Color.link) { directions(place) })
+            }
+            if row.movable {
+                list.append(
+                    SwipeAction(
+                        title: "Move…", systemImage: "arrow.up.and.down.and.arrow.left.and.right", tint: Color.link
+                    ) { moving = MovingJob(id: row.id) })
+            }
+            if let number = row.number {
+                list.append(
+                    SwipeAction(title: "Copy Job Number", systemImage: "doc.on.doc", tint: Color.link) {
+                        UIPasteboard.general.string = String(number)
+                        reopen = nil
+                        banner = ResultBanner(kind: .success, title: "Copied job number \(number).")
+                    })
+            }
+            return list
+        }
+
+        private func directions(_ place: MapPlace) {
+            if let url = directionsURL(place, app: MapsApp(sync.kv)) { openURL(url) }
+        }
+
+        /// The customer page's Text: New Message on the company number when it works, else Messages.
+        private func message(phone: String, customerId: String?) {
+            if let company = session.company, let customerId,
+                companyLine(sync.store, companyId: company.id)?.status == "active"
+            {
+                openRoute(.messages(.newMessage(customerId: customerId)))
+            } else if let url = URL(string: "sms:\(phone.filter { $0.isNumber || $0 == "+" })") {
+                openURL(url)
+            }
+        }
+
+        /// The job page's Complete Job: the shop's checks first (the checklist, a pool photo), a
+        /// visit whose report goes out by itself asks first; then the banner with Undo (Reopen Visit).
+        private func complete(_ row: JobListRow, confirmed: Bool = false) {
+            guard let company = session.company,
+                let job = (try? jobView(sync.store, companyId: company.id, jobId: row.id)) ?? nil
+            else { return }
+            reopen = nil
+            if let block = statusChangeBlock(.done, sync.store, settings: company.settings, jobId: row.id) {
+                banner = ResultBanner(kind: .warning, title: block, detail: "Open the job to finish it.")
+                return
+            }
+            if !confirmed, CompleteSendPrompt.asks(jobType: job.type, settings: company.settings) {
+                askingSend = row
+                return
+            }
+            do {
+                try sync.write("job", id: row.id, companyId: company.id, jobStatusValues(.done, job: job.job))
+                app.visitReports.completed(jobType: job.type, jobId: row.id, settings: company.settings)
+                completes += 1
+                reopen = row.id
+                banner = ResultBanner(
+                    kind: .success, title: "\(row.customer) completed.", undoable: true,
+                    undoHint: "Reopens the visit")
+            } catch {
+                banner = ResultBanner(kind: .error, title: String(describing: error))
+            }
+        }
+
+        /// Undo Mark Complete: the job page's Reopen Visit.
+        private func reopenVisit(_ jobId: String) {
+            guard let company = session.company,
+                let job = (try? jobView(sync.store, companyId: company.id, jobId: jobId)) ?? nil
+            else { return }
+            reopen = nil
+            do {
+                try sync.write("job", id: jobId, companyId: company.id, jobStatusValues(.inProgress, job: job.job))
+            } catch {
+                banner = ResultBanner(kind: .error, title: String(describing: error))
+            }
+        }
+
+        /// A report: Open, Copy Customer Link (while it works), Resend (a sent version, by email).
+        private func reportActions(_ r: ReportListRow) -> [SwipeAction] {
+            var list = [
+                SwipeAction(title: "Open", systemImage: "arrow.up.right", tint: Color.link) {
+                    openRoute(.jobSection(r.jobId, .wrapUp))
+                }
+            ]
+            if let link = r.link {
+                list.append(
+                    SwipeAction(title: "Copy Customer Link", systemImage: "link", tint: Color.link) {
+                        UIPasteboard.general.url = link
+                        reopen = nil
+                        banner = ResultBanner(kind: .success, title: "Customer link copied.")
+                    })
+            }
+            if r.sent {
+                list.append(
+                    SwipeAction(title: "Resend", systemImage: "paperplane", tint: Color.link) {
+                        Task { await resend(r) }
+                    })
+            }
+            return list
+        }
+
+        /// The Wrap-Up's Send by Email for the finished version, to the customer's email (it waits
+        /// on the phone without signal, as there).
+        private func resend(_ r: ReportListRow) async {
+            guard let company = session.company else { return }
+            let flow = ReportFlow(
+                sync: sync, companyId: company.id, jobId: r.jobId, settings: company.settings, sends: app.reportSends)
+            await flow.run(.email, reportId: r.id, server: ReportServer(sync: sync, api: app.api))
+            reopen = nil
+            if let error = flow.error {
+                banner = ResultBanner(
+                    kind: .error, title: error.text, detail: "Open the report to check the customer’s email.")
+            } else {
+                banner = ResultBanner(kind: .success, title: flow.message ?? "Sent.")
+            }
         }
 
         private func reload() {
@@ -216,6 +400,11 @@
                     sync.store, companyId: company.id, filter: reportFilter, timeZone: company.timeZone)
             }
         }
+    }
+
+    /// The job a list's Move… opens.
+    struct MovingJob: Identifiable {
+        var id: String
     }
 
     /// An inset grouped block whose rows load lazily as they scroll (long lists): `surface`,

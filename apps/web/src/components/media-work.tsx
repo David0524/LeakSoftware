@@ -45,6 +45,7 @@ import {
 import { MarkupOverlay } from "./markup";
 import { Segmented } from "./segmented";
 import { useNextStep } from "./next-step-events";
+import { RowActions, RowMenuButton, type MenuEntry } from "./row-actions";
 import { useConfirm } from "./sheet";
 import { Button, Field, Select, buttonClass, cx, iconButtonClass } from "./ui";
 import { SavedNote, useAutosave } from "./undo";
@@ -504,27 +505,40 @@ function VoiceNote({
 // One photo or recording: Mark Up and Delete
 // ---------------------------------------------------------------------------
 
-export function MediaActions({
+export interface MediaCardInfo {
+  id: string;
+  kind: MediaKind;
+  url: string | null;
+  width: number;
+  height: number;
+  shapes: MarkupShape[];
+  caption: string | null;
+  label: string;
+}
+
+/**
+ * One photo or recording on the job page, as a card: its preview, what it shows, then Mark Up
+ * and More (Delete). Touch and hold, right-click, or "⋯" opens its menu (Edit, Delete…), and a
+ * swipe left shows Delete… (gestures.md section 12); Delete always asks first.
+ */
+export function MediaCard({
   jobId,
   media,
+  preview,
+  children,
 }: {
   jobId: string;
-  media: {
-    id: string;
-    kind: MediaKind;
-    url: string | null;
-    width: number;
-    height: number;
-    shapes: MarkupShape[];
-    caption: string | null;
-    label: string;
-  };
+  media: MediaCardInfo;
+  preview: ReactNode;
+  /** What it is, its caption, when it was taken. */
+  children: ReactNode;
 }) {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirm, confirmSheet] = useConfirm();
   const kind = MEDIA_KIND_LABELS[media.kind];
+  const canMarkUp = media.kind === "photo" && !!media.url;
   async function remove() {
     const ok = await confirm({
       title: `Remove this ${kind.toLowerCase()} from the job?`,
@@ -538,31 +552,50 @@ export function MediaActions({
     setBusy(false);
     if (!r.ok) setError(r.error);
   }
+  const menu: MenuEntry[] = [
+    canMarkUp && { label: "Edit", onSelect: () => setEditing(true) },
+    "separator",
+    { label: "Delete…", destructive: true, onSelect: () => void remove() },
+  ];
   return (
     <>
-      {/* Delete is behind More, away from Mark Up (owner, 2026-10-20). */}
-      <div className="flex flex-wrap items-center gap-3">
-        {media.kind === "photo" && media.url ? (
-          <button
-            type="button"
-            className={buttonClass("secondary", "min-w-24")}
-            onClick={() => setEditing(true)}
-            aria-label={`${media.shapes.length ? "Edit Markup" : "Mark Up"}: ${media.label}`}
-          >
-            {media.shapes.length ? "Edit Markup" : "Mark Up"}
-          </button>
-        ) : null}
-        <MoreMenu
-          label={`More: ${media.label}`}
-          disabled={busy}
-          items={[{ label: `Delete ${kind}`, destructive: true, onSelect: () => void remove() }]}
-        />
-      </div>
-      {error ? (
-        <p role="alert" className="text-status-fail">
-          {error}
-        </p>
-      ) : null}
+      <RowActions
+        as="li"
+        title={media.label}
+        menu={menu}
+        trailing={[{ label: "Delete…", tone: "red", onSelect: () => void remove() }]}
+        disabled={busy}
+        className="overflow-hidden card"
+        swipeClassName="rounded-[inherit]"
+        // Its More button is always on the card.
+        button="none"
+        data-no-swipe=""
+      >
+        {preview}
+        <div className="p-3 text-[0.9375rem]">
+          {children}
+          {/* Delete is behind More, away from Mark Up (owner, 2026-10-20). */}
+          <div className="flex flex-wrap items-center gap-3">
+            {canMarkUp ? (
+              <button
+                type="button"
+                className={buttonClass("secondary", "min-w-24")}
+                onClick={() => setEditing(true)}
+                aria-label={`${media.shapes.length ? "Edit Markup" : "Mark Up"}: ${media.label}`}
+              >
+                {media.shapes.length ? "Edit Markup" : "Mark Up"}
+              </button>
+            ) : null}
+            {/* The card's menu (Edit, Delete…), the same as touch and hold or right-click. */}
+            <RowMenuButton visible className={iconButtonClass("disabled:opacity-50")} />
+          </div>
+          {error ? (
+            <p role="alert" className="text-status-fail">
+              {error}
+            </p>
+          ) : null}
+        </div>
+      </RowActions>
       {confirmSheet}
       {editing && media.url ? (
         <MarkupEditor
@@ -599,92 +632,6 @@ export function MediaActions({
         />
       ) : null}
     </>
-  );
-}
-
-/**
- * A round "More" (…) button whose pull-down menu holds less common actions, as iOS's
- * (apple-design: menus). Escape or a tap outside closes it.
- */
-function MoreMenu({
-  label,
-  items,
-  disabled = false,
-}: {
-  label: string;
-  items: { label: string; destructive?: boolean; onSelect: () => void }[];
-  disabled?: boolean;
-}) {
-  // Fixed to the screen (from the button's place), so a card's rounded clipping can't cut it.
-  const [open, setOpen] = useState<{ left: number; bottom: number } | null>(null);
-  const box = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: Event) => {
-      if (
-        e instanceof KeyboardEvent ? e.key === "Escape" : !box.current?.contains(e.target as Node)
-      )
-        setOpen(null);
-    };
-    document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", close);
-    box.current?.querySelector<HTMLElement>("[role=menuitem]")?.focus();
-    return () => {
-      document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", close);
-    };
-  }, [open]);
-  return (
-    <div ref={box}>
-      <button
-        type="button"
-        aria-label={label}
-        aria-haspopup="menu"
-        aria-expanded={!!open}
-        disabled={disabled}
-        onClick={(e) => {
-          if (open) return setOpen(null);
-          const r = e.currentTarget.getBoundingClientRect();
-          setOpen({
-            left: Math.max(16, Math.min(r.left, window.innerWidth - 240)),
-            bottom: window.innerHeight - r.top + 8,
-          });
-        }}
-        className={iconButtonClass("disabled:opacity-50")}
-      >
-        <svg viewBox="0 0 24 24" className="size-6" fill="currentColor" aria-hidden="true">
-          <circle cx="6" cy="12" r="1.8" />
-          <circle cx="12" cy="12" r="1.8" />
-          <circle cx="18" cy="12" r="1.8" />
-        </svg>
-      </button>
-      {open ? (
-        <div
-          role="menu"
-          aria-label={label}
-          style={open}
-          className="glass-sheet fixed z-40 w-56 overflow-hidden rounded-xl py-1 shadow-lg"
-        >
-          {items.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setOpen(null);
-                item.onSelect();
-              }}
-              className={cx(
-                "block min-h-11 w-full px-4 text-left hover:bg-text/[0.06] focus-visible:bg-text/[0.06] focus-visible:outline-none",
-                item.destructive ? "text-status-fail" : "text-text",
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
   );
 }
 

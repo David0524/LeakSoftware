@@ -568,23 +568,33 @@ export function Grouped({
  * and a chevron when it opens something.
  */
 export function Row({
-  label,
-  detail,
-  value,
-  href,
-  icon,
   className,
-  children,
-}: {
+  ...props
+}: RowContentProps & {
+  className?: string;
+}) {
+  return (
+    <li className={className}>
+      <RowContent {...props} />
+    </li>
+  );
+}
+
+export interface RowContentProps {
   label?: ReactNode;
   detail?: ReactNode;
   value?: ReactNode;
   href?: string;
   icon?: ReactNode;
-  className?: string;
   /** Free-form content instead of label/value. */
   children?: ReactNode;
-}) {
+}
+
+/**
+ * A grouped row's content, without its `li`: for rows a list wraps in its swipe actions and
+ * menu (RowActions as="li").
+ */
+export function RowContent({ label, detail, value, href, icon, children }: RowContentProps) {
   const inner = (
     <>
       {icon ? <span className="shrink-0">{icon}</span> : null}
@@ -603,16 +613,12 @@ export function Row({
     </>
   );
   const row = "flex min-h-11 items-center gap-3 px-4 py-2.5";
-  return (
-    <li className={className}>
-      {href ? (
-        <Link href={href} className={cx(row, "active:bg-text/[0.06] hover:bg-text/[0.03]")}>
-          {inner}
-        </Link>
-      ) : (
-        <div className={row}>{inner}</div>
-      )}
-    </li>
+  return href ? (
+    <Link href={href} className={cx(row, "active:bg-text/[0.06] hover:bg-text/[0.03]")}>
+      {inner}
+    </Link>
+  ) : (
+    <div className={row}>{inner}</div>
   );
 }
 

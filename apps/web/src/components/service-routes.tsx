@@ -15,6 +15,8 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import {
+  createContext,
+  use,
   useCallback,
   useEffect,
   useId,
@@ -62,6 +64,7 @@ import {
 } from "@/lib/service-routes";
 import { DayMap } from "./day-map";
 import { NotOnMapTag } from "./not-on-map";
+import { RowActions, type MenuEntry, type RowActionsHandle } from "./row-actions";
 import { Segmented } from "./segmented";
 import { Sheet } from "./sheet";
 import { showBanner } from "./top-banner";
@@ -107,6 +110,16 @@ interface Suggested {
 
 /** "Mon", or the full name for a reader. Spring loading waits this long over a segment. */
 const SPRING_MS = 450;
+
+/**
+ * The cards' menus (gestures.md section 12), by drag id: a hold on a card picks it up to drag
+ * (it drags on a hold), so a hold that's let go without moving opens its menu instead.
+ */
+const CardMenus = createContext<{
+  menus: Map<string, RowActionsHandle>;
+  /** More than one tech: Change Tech… is offered. */
+  techs: boolean;
+} | null>(null);
 
 export function ServiceRoutes({
   plans,
@@ -283,6 +296,12 @@ export function ServiceRoutes({
     clearTimeout(spring.current?.timer);
     spring.current = null;
     setDragging(null);
+    // Touch and hold without moving: the card's menu, as iOS lifts an item to show its menu.
+    const touch = typeof TouchEvent !== "undefined" && e.activatorEvent instanceof TouchEvent;
+    if (touch && Math.hypot(e.delta.x, e.delta.y) < 8) {
+      cardMenus.current.get(String(e.active.id))?.open(undefined, true);
+      return;
+    }
     const from = byDrag(String(e.active.id));
     const to = dropDay(e.over ? String(e.over.id) : undefined);
     if (!from || to == null || !tech) return;
@@ -298,6 +317,11 @@ export function ServiceRoutes({
     if (e.over && String(e.over.id).startsWith("seg-")) setPhoneDay(to);
   }
 
+  const cardMenus = useRef(new Map<string, RowActionsHandle>());
+  const menuContext = useMemo(
+    () => ({ menus: cardMenus.current, techs: techs.length > 1 }),
+    [techs.length],
+  );
   const canMove = (p: RoutePlanCard) => !pending && (!suggested || suggestedIds.has(p.planId));
   const openMove = (plan: RoutePlanCard, from: number | null) => {
     if (!canMove(plan)) return;
@@ -355,184 +379,186 @@ export function ServiceRoutes({
       }}
       autoScroll={{ threshold: { x: 0.15, y: 0.15 }, acceleration: 12 }}
     >
-      <div ref={board}>
-        {/* Wide screens: Customers to Add beside the week. */}
-        <div className="max-lg:hidden lg:grid lg:grid-cols-[16.5rem_minmax(0,1fr)] lg:items-start lg:gap-5">
+      <CardMenus value={menuContext}>
+        <div ref={board}>
+          {/* Wide screens: Customers to Add beside the week. */}
+          <div className="max-lg:hidden lg:grid lg:grid-cols-[16.5rem_minmax(0,1fr)] lg:items-start lg:gap-5">
+            <AddList
+              plans={toAdd}
+              suggestedIds={suggestedIds}
+              canMove={canMove}
+              onMove={(p) => openMove(p, null)}
+              prefix="d"
+            />
+            <div className="min-w-0">
+              <div className="mb-4 flex min-h-11 items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  {pills ?? <h2 className="font-display text-xl font-bold">{techName}’s Routes</h2>}
+                </div>
+                <Button
+                  type="button"
+                  kind="secondary"
+                  aria-haspopup="dialog"
+                  disabled={pending || !!suggested || !tech}
+                  onClick={() => setSheet("suggest")}
+                  className="shrink-0"
+                >
+                  {suggesting ? "Suggesting…" : "Suggest Days"}
+                </Button>
+              </div>
+              <ol
+                aria-label={`${techName}’s days`}
+                className="grid gap-3 overflow-x-auto pb-2"
+                style={{ gridTemplateColumns: `repeat(${routes.length}, minmax(9.75rem, 1fr))` }}
+              >
+                {routes.map((r) => (
+                  <DayColumn
+                    key={r.day}
+                    route={r}
+                    tech={techName}
+                    maps={maps}
+                    suggestedIds={suggestedIds}
+                    canMove={canMove}
+                    onMove={openMove}
+                  />
+                ))}
+              </ol>
+            </div>
+          </div>
+
+          {/* Phones and narrow windows: one day at a time. */}
+          <div className="lg:hidden">
+            {pills ? <div className="mb-3">{pills}</div> : null}
+            <ul className="grouped mb-4">
+              <li>
+                <button
+                  type="button"
+                  aria-haspopup="dialog"
+                  onClick={() => setSheet("add")}
+                  className="flex min-h-11 w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-text/[0.03] active:bg-text/[0.06]"
+                >
+                  <span className="flex-1">Customers to Add</span>
+                  <span className="text-text-muted tabular-nums">{toAdd.length}</span>
+                  <span aria-hidden="true" className="text-xl leading-none text-text-muted/70">
+                    ›
+                  </span>
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  aria-haspopup="dialog"
+                  disabled={pending || !!suggested || !tech}
+                  onClick={() => setSheet("suggest")}
+                  className="flex min-h-11 w-full items-center px-4 py-2.5 text-left text-link hover:bg-text/[0.03] active:bg-text/[0.06] disabled:opacity-50"
+                >
+                  {suggesting ? "Suggesting…" : "Suggest Days"}
+                </button>
+              </li>
+            </ul>
+            <DaySegments routes={routes} day={day} onPick={setPhoneDay} dragging={!!dragging} />
+            {current ? (
+              <section aria-label={`${techName}, ${WEEKDAY_NAMES[current.day]}`} className="mt-4">
+                {maps && current.plans.length ? (
+                  <DayMap
+                    company={maps.company}
+                    pins={current.pins}
+                    stops={mapStops(current)}
+                    missing={current.missing}
+                    tech={techName}
+                    day={WEEKDAY_NAMES[current.day]}
+                    className="mb-2"
+                  />
+                ) : null}
+                <DayFacts route={current} />
+                <ol data-flip-list={`p-${current.day}`} className="mt-3 space-y-1.5">
+                  {current.plans.length ? (
+                    current.plans.map((p, i) => (
+                      <PlanCard
+                        key={p.planId}
+                        id={`p:${p.planId}@${current.day}`}
+                        plan={p}
+                        number={i + 1}
+                        suggested={suggestedIds.has(p.planId)}
+                        disabled={!canMove(p)}
+                        onMove={() => openMove(p, current.day)}
+                        grip
+                      />
+                    ))
+                  ) : (
+                    <li className="rounded-[1.25rem] bg-text/[0.04] p-4 text-center text-text-muted">
+                      No pools on {WEEKDAY_NAMES[current.day]} yet.
+                    </li>
+                  )}
+                </ol>
+              </section>
+            ) : null}
+          </div>
+        </div>
+
+        {suggested ? (
+          <SuggestBar
+            count={suggested.list.length}
+            note={leftOutNote(suggested.asked, suggested.left)}
+            techs={new Set(suggested.list.map((s) => s.techId)).size}
+            busy={pending}
+            onCancel={() => setSuggested(null)}
+            onKeep={keep}
+          />
+        ) : null}
+
+        <DragOverlay dropAnimation={null}>
+          {dragging ? (
+            <div className="card max-w-72 px-4 py-2.5 shadow-xl ring-2 ring-link">
+              <span className="block truncate font-semibold">{dragging.customer}</span>
+              <span className="block truncate text-[0.9375rem] text-text-muted">
+                {dragging.address}
+              </span>
+            </div>
+          ) : null}
+        </DragOverlay>
+
+        <Sheet
+          open={sheet === "add"}
+          onClose={closeSheet}
+          title="Customers to Add"
+          cancelLabel="Done"
+        >
           <AddList
             plans={toAdd}
             suggestedIds={suggestedIds}
             canMove={canMove}
             onMove={(p) => openMove(p, null)}
-            prefix="d"
+            prefix="s"
+            inSheet
           />
-          <div className="min-w-0">
-            <div className="mb-4 flex min-h-11 items-center gap-3">
-              <div className="min-w-0 flex-1">
-                {pills ?? <h2 className="font-display text-xl font-bold">{techName}’s Routes</h2>}
-              </div>
-              <Button
-                type="button"
-                kind="secondary"
-                aria-haspopup="dialog"
-                disabled={pending || !!suggested || !tech}
-                onClick={() => setSheet("suggest")}
-                className="shrink-0"
-              >
-                {suggesting ? "Suggesting…" : "Suggest Days"}
-              </Button>
-            </div>
-            <ol
-              aria-label={`${techName}’s days`}
-              className="grid gap-3 overflow-x-auto pb-2"
-              style={{ gridTemplateColumns: `repeat(${routes.length}, minmax(9.75rem, 1fr))` }}
-            >
-              {routes.map((r) => (
-                <DayColumn
-                  key={r.day}
-                  route={r}
-                  tech={techName}
-                  maps={maps}
-                  suggestedIds={suggestedIds}
-                  canMove={canMove}
-                  onMove={openMove}
-                />
-              ))}
-            </ol>
-          </div>
-        </div>
+        </Sheet>
 
-        {/* Phones and narrow windows: one day at a time. */}
-        <div className="lg:hidden">
-          {pills ? <div className="mb-3">{pills}</div> : null}
-          <ul className="grouped mb-4">
-            <li>
-              <button
-                type="button"
-                aria-haspopup="dialog"
-                onClick={() => setSheet("add")}
-                className="flex min-h-11 w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-text/[0.03] active:bg-text/[0.06]"
-              >
-                <span className="flex-1">Customers to Add</span>
-                <span className="text-text-muted tabular-nums">{toAdd.length}</span>
-                <span aria-hidden="true" className="text-xl leading-none text-text-muted/70">
-                  ›
-                </span>
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
-                aria-haspopup="dialog"
-                disabled={pending || !!suggested || !tech}
-                onClick={() => setSheet("suggest")}
-                className="flex min-h-11 w-full items-center px-4 py-2.5 text-left text-link hover:bg-text/[0.03] active:bg-text/[0.06] disabled:opacity-50"
-              >
-                {suggesting ? "Suggesting…" : "Suggest Days"}
-              </button>
-            </li>
-          </ul>
-          <DaySegments routes={routes} day={day} onPick={setPhoneDay} dragging={!!dragging} />
-          {current ? (
-            <section aria-label={`${techName}, ${WEEKDAY_NAMES[current.day]}`} className="mt-4">
-              {maps && current.plans.length ? (
-                <DayMap
-                  company={maps.company}
-                  pins={current.pins}
-                  stops={mapStops(current)}
-                  missing={current.missing}
-                  tech={techName}
-                  day={WEEKDAY_NAMES[current.day]}
-                  className="mb-2"
-                />
-              ) : null}
-              <DayFacts route={current} />
-              <ol data-flip-list={`p-${current.day}`} className="mt-3 space-y-1.5">
-                {current.plans.length ? (
-                  current.plans.map((p, i) => (
-                    <PlanCard
-                      key={p.planId}
-                      id={`p:${p.planId}@${current.day}`}
-                      plan={p}
-                      number={i + 1}
-                      suggested={suggestedIds.has(p.planId)}
-                      disabled={!canMove(p)}
-                      onMove={() => openMove(p, current.day)}
-                      grip
-                    />
-                  ))
-                ) : (
-                  <li className="rounded-[1.25rem] bg-text/[0.04] p-4 text-center text-text-muted">
-                    No pools on {WEEKDAY_NAMES[current.day]} yet.
-                  </li>
-                )}
-              </ol>
-            </section>
-          ) : null}
-        </div>
-      </div>
-
-      {suggested ? (
-        <SuggestBar
-          count={suggested.list.length}
-          note={leftOutNote(suggested.asked, suggested.left)}
-          techs={new Set(suggested.list.map((s) => s.techId)).size}
-          busy={pending}
-          onCancel={() => setSuggested(null)}
-          onKeep={keep}
-        />
-      ) : null}
-
-      <DragOverlay dropAnimation={null}>
-        {dragging ? (
-          <div className="card max-w-72 px-4 py-2.5 shadow-xl ring-2 ring-link">
-            <span className="block truncate font-semibold">{dragging.customer}</span>
-            <span className="block truncate text-[0.9375rem] text-text-muted">
-              {dragging.address}
-            </span>
-          </div>
+        {sheet === "suggest" && tech ? (
+          <SuggestSheet
+            tech={{ id: tech, name: techName }}
+            techs={techs}
+            toAdd={toAdd}
+            rebuild={rebuildPlans(saved, tech)}
+            onClose={closeSheet}
+            onSuggest={suggest}
+          />
         ) : null}
-      </DragOverlay>
 
-      <Sheet
-        open={sheet === "add"}
-        onClose={closeSheet}
-        title="Customers to Add"
-        cancelLabel="Done"
-      >
-        <AddList
-          plans={toAdd}
-          suggestedIds={suggestedIds}
-          canMove={canMove}
-          onMove={(p) => openMove(p, null)}
-          prefix="s"
-          inSheet
-        />
-      </Sheet>
-
-      {sheet === "suggest" && tech ? (
-        <SuggestSheet
-          tech={{ id: tech, name: techName }}
-          techs={techs}
-          toAdd={toAdd}
-          rebuild={rebuildPlans(saved, tech)}
-          onClose={closeSheet}
-          onSuggest={suggest}
-        />
-      ) : null}
-
-      {moving ? (
-        <MoveSheet
-          moving={moving}
-          techs={techs}
-          tech={tech}
-          workDays={workDays}
-          onClose={closeMove}
-          onMove={(to, techId) => {
-            setMoving(null);
-            move({ plan: moving.plan, from: moving.from, to, tech: techId });
-          }}
-        />
-      ) : null}
+        {moving ? (
+          <MoveSheet
+            moving={moving}
+            techs={techs}
+            tech={tech}
+            workDays={workDays}
+            onClose={closeMove}
+            onMove={(to, techId) => {
+              setMoving(null);
+              move({ plan: moving.plan, from: moving.from, to, tech: techId });
+            }}
+          />
+        ) : null}
+      </CardMenus>
     </DndContext>
   );
 }
@@ -661,6 +687,21 @@ function PlanCard({
   const { onKeyDown: _keys, ...pointer } = (listeners ?? {}) as Record<string, unknown>;
   void _keys;
   const note = repeatNote(p);
+  // Its menu (gestures.md section 12): Change Day…, Change Tech… (the Move sheet has both), and
+  // Open Plan. Right-click or "⋯"; on touch, a hold let go without moving (it drags on a hold).
+  const cards = use(CardMenus);
+  const handle = useCallback(
+    (h: RowActionsHandle | null) => {
+      if (h) cards?.menus.set(id, h);
+      else cards?.menus.delete(id);
+    },
+    [cards, id],
+  );
+  const menu: MenuEntry[] = [
+    !disabled && { label: "Change Day…", onSelect: onMove },
+    !disabled && cards?.techs && { label: "Change Tech…", onSelect: onMove },
+    p.customerId && { label: "Open Plan", href: `/customers/${p.customerId}` },
+  ];
   return (
     // The layout and the plan, not the day: a customer moved to another day slides there.
     <li data-flip={id.split("@")[0]}>
@@ -669,75 +710,87 @@ function PlanCard({
         data-testid="route-customer"
         className={cx(
           well ? "well" : "card",
-          "relative flex items-center",
+          "relative",
           isDragging && "opacity-40",
           suggested && "ring-2 ring-link/40",
         )}
       >
-        <button
-          type="button"
-          {...(draggable && !disabled ? pointer : {})}
-          aria-haspopup="dialog"
-          aria-disabled={disabled || undefined}
-          title={disabled ? undefined : "Move or drag"}
-          onClick={disabled ? undefined : onMove}
-          className={cx(
-            "flex min-h-11 min-w-0 flex-1 touch-manipulation items-center gap-2.5 rounded-[inherit] py-2 text-left select-none [-webkit-touch-callout:none]",
-            number != null ? "gap-2 pl-1.5" : "pl-3",
-            grip ? "pr-1" : "pr-3",
-            disabled
-              ? "cursor-default"
-              : draggable
-                ? "cursor-grab hover:bg-text/[0.03] active:cursor-grabbing"
-                : "hover:bg-text/[0.03] active:bg-text/[0.06]",
-          )}
+        <RowActions
+          title={p.customer}
+          menu={menu}
+          longPress={false}
+          handle={handle}
+          // Over the grip's place, or the card's end: the name keeps its room.
+          buttonClassName={
+            grip ? "absolute top-1/2 right-1.5 -translate-y-1/2" : "absolute top-1 right-1"
+          }
+          className="flex items-center rounded-[inherit]"
         >
-          {number != null ? (
+          <button
+            type="button"
+            {...(draggable && !disabled ? pointer : {})}
+            aria-haspopup="dialog"
+            aria-disabled={disabled || undefined}
+            title={disabled ? undefined : "Move or drag"}
+            onClick={disabled ? undefined : onMove}
+            className={cx(
+              "flex min-h-11 min-w-0 flex-1 touch-manipulation items-center gap-2.5 rounded-[inherit] py-2 text-left select-none [-webkit-touch-callout:none]",
+              number != null ? "gap-2 pl-1.5" : "pl-3",
+              grip ? "pr-1" : "pr-3",
+              disabled
+                ? "cursor-default"
+                : draggable
+                  ? "cursor-grab hover:bg-text/[0.03] active:cursor-grabbing"
+                  : "hover:bg-text/[0.03] active:bg-text/[0.06]",
+            )}
+          >
+            {number != null ? (
+              <span
+                aria-hidden="true"
+                className="grid size-7 shrink-0 place-items-center rounded-full bg-fill font-display text-[0.9375rem] font-bold tabular-nums"
+              >
+                {number}
+              </span>
+            ) : null}
+            <span className="min-w-0 flex-1">
+              {/* Narrow day columns: the name may take two lines rather than lose its end. */}
+              <span className="line-clamp-2 font-semibold leading-snug break-words">
+                {p.customer}
+              </span>
+              {p.address ? (
+                <span className="flex min-w-0 items-center gap-1 text-[0.9375rem] text-text-muted">
+                  <span className="truncate">{p.address}</span>
+                  {!p.location ? <NotOnMapTag /> : null}
+                </span>
+              ) : !p.location ? (
+                <NotOnMapTag />
+              ) : null}
+              {suggested || note ? (
+                <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  {suggested ? (
+                    <span className="rounded-full bg-link/12 px-2.5 py-0.5 text-[0.8125rem] font-semibold text-link">
+                      Suggested
+                    </span>
+                  ) : null}
+                  {note ? <span className="text-[0.8125rem] text-text-muted">{note}</span> : null}
+                </span>
+              ) : null}
+              <span className="sr-only">. Move…</span>
+            </span>
+          </button>
+          {grip && draggable && !disabled ? (
             <span
               aria-hidden="true"
-              className="grid size-7 shrink-0 place-items-center rounded-full bg-fill font-display text-[0.9375rem] font-bold tabular-nums"
+              className="grid size-11 shrink-0 place-items-center text-text-muted/70"
             >
-              {number}
+              <svg viewBox="0 0 24 24" className="size-5" fill="currentColor">
+                {[6, 12, 18].map((y) =>
+                  [9, 15].map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.6" />),
+                )}
+              </svg>
             </span>
           ) : null}
-          <span className="min-w-0 flex-1">
-            {/* Narrow day columns: the name may take two lines rather than lose its end. */}
-            <span className="line-clamp-2 font-semibold leading-snug break-words">
-              {p.customer}
-            </span>
-            {p.address ? (
-              <span className="flex min-w-0 items-center gap-1 text-[0.9375rem] text-text-muted">
-                <span className="truncate">{p.address}</span>
-                {!p.location ? <NotOnMapTag /> : null}
-              </span>
-            ) : !p.location ? (
-              <NotOnMapTag />
-            ) : null}
-            {suggested || note ? (
-              <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                {suggested ? (
-                  <span className="rounded-full bg-link/12 px-2.5 py-0.5 text-[0.8125rem] font-semibold text-link">
-                    Suggested
-                  </span>
-                ) : null}
-                {note ? <span className="text-[0.8125rem] text-text-muted">{note}</span> : null}
-              </span>
-            ) : null}
-            <span className="sr-only">. Move…</span>
-          </span>
-        </button>
-        {grip && draggable && !disabled ? (
-          <span
-            aria-hidden="true"
-            className="grid size-11 shrink-0 place-items-center text-text-muted/70"
-          >
-            <svg viewBox="0 0 24 24" className="size-5" fill="currentColor">
-              {[6, 12, 18].map((y) =>
-                [9, 15].map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.6" />),
-              )}
-            </svg>
-          </span>
-        ) : null}
+        </RowActions>
       </div>
     </li>
   );

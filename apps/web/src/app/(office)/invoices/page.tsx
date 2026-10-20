@@ -12,7 +12,19 @@ import {
   dateFormat,
 } from "@leakbook/core";
 import { SortMenu } from "@/components/sort-menu";
-import { Button, ButtonLink, Empty, Grouped, PageHeader, Row, pillClass } from "@/components/ui";
+import {
+  Button,
+  ButtonLink,
+  Empty,
+  Grouped,
+  PageHeader,
+  RowContent,
+  pillClass,
+} from "@/components/ui";
+import { InvoiceActions, type InvoiceRowData } from "@/components/list-actions";
+import { RowMenuButton } from "@/components/row-actions";
+import { siteOrigin } from "@/lib/origin";
+import type { InvoiceListRow } from "@/lib/data";
 import { getOffice } from "@/lib/auth";
 import { listInvoices, unbilledMaintenance, getCompany } from "@/lib/data";
 import { MonthlyBilling } from "@/components/monthly-billing";
@@ -25,11 +37,24 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
   const office = await getOffice();
   const params = await searchParams;
   const one = (k: string) => (typeof params[k] === "string" ? (params[k] as string) : "");
-  const [all, unbilled, company] = await Promise.all([
+  const [all, unbilled, company, origin] = await Promise.all([
     listInvoices(office),
     unbilledMaintenance(office),
     getCompany(office),
+    siteOrigin(),
   ]);
+  // A row's swipe actions and menu (gestures.md section 12), from what the job page offers.
+  const actions = (i: InvoiceListRow): InvoiceRowData => ({
+    id: i.id,
+    jobId: i.job_id,
+    number: i.number,
+    customer: i.customer ?? "Customer",
+    status: i.status,
+    balance: invoiceBalance(i),
+    link: i.token ? `${origin}/i/${i.token}` : null,
+    canManage: office.isManager,
+    unpaid: i.amount_paid_cents === 0,
+  });
   const open = all.filter((i) => i.status === "sent" || i.status === "partially_paid");
   const owed = open.reduce((sum, i) => sum + invoiceBalance(i), 0);
   const tz = office.company.timezone;
@@ -150,35 +175,36 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
           {/* Phones: an inset grouped list, a row per invoice. */}
           <Grouped className="sm:hidden">
             {invoices.map((i) => (
-              <Row
-                key={i.id}
-                href={`/jobs/${i.job_id}#invoice`}
-                label={<span className="font-semibold">{i.customer}</span>}
-                detail={
-                  <>
-                    <span className="block">
-                      #{i.number}
-                      {i.period_month
-                        ? ` · Maintenance, ${monthLabel(i.period_month)}`
-                        : i.jobNumber
-                          ? ` · Job #${i.jobNumber}`
+              <InvoiceActions key={i.id} as="li" invoice={actions(i)}>
+                <RowContent
+                  href={`/jobs/${i.job_id}#invoice`}
+                  label={<span className="font-semibold">{i.customer}</span>}
+                  detail={
+                    <>
+                      <span className="block">
+                        #{i.number}
+                        {i.period_month
+                          ? ` · Maintenance, ${monthLabel(i.period_month)}`
+                          : i.jobNumber
+                            ? ` · Job #${i.jobNumber}`
+                            : ""}
+                      </span>
+                      <span className="block">
+                        {invoiceOverdue(i, today) ? "Overdue" : INVOICE_STATUS_LABELS[i.status]}
+                        {i.sent_at ? ` · sent ${day(i.sent_at)}` : ""}
+                        {i.status === "sent" || i.status === "partially_paid"
+                          ? ` · ${formatCents(invoiceBalance(i))} due`
                           : ""}
+                      </span>
+                    </>
+                  }
+                  value={
+                    <span className="font-semibold text-text tabular-nums">
+                      {formatCents(i.total_cents)}
                     </span>
-                    <span className="block">
-                      {invoiceOverdue(i, today) ? "Overdue" : INVOICE_STATUS_LABELS[i.status]}
-                      {i.sent_at ? ` · sent ${day(i.sent_at)}` : ""}
-                      {i.status === "sent" || i.status === "partially_paid"
-                        ? ` · ${formatCents(invoiceBalance(i))} due`
-                        : ""}
-                    </span>
-                  </>
-                }
-                value={
-                  <span className="font-semibold text-text tabular-nums">
-                    {formatCents(i.total_cents)}
-                  </span>
-                }
-              />
+                  }
+                />
+              </InvoiceActions>
             ))}
           </Grouped>
           <div className="hidden overflow-x-auto card sm:block">
@@ -200,14 +226,19 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
                   <th scope="col" className="px-4 py-3 text-right font-medium">
                     Total
                   </th>
-                  <th scope="col" className="px-4 py-3 text-right font-medium">
+                  <th scope="col" className="py-3 pr-12 pl-4 text-right font-medium">
                     Balance
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {invoices.map((i) => (
-                  <tr key={i.id} className="border-b border-border last:border-0">
+                  <InvoiceActions
+                    key={i.id}
+                    as="tr"
+                    invoice={actions(i)}
+                    className="border-b border-border last:border-0"
+                  >
                     <td className="px-4 py-3">
                       <Link
                         href={`/jobs/${i.job_id}#invoice`}
@@ -233,12 +264,14 @@ export default async function InvoicesPage({ searchParams }: PageProps<"/invoice
                     <td className="px-4 py-3 text-right tabular-nums">
                       {formatCents(i.total_cents)}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
+                    {/* Room kept at the end for the row's "⋯" button (gestures.md section 12). */}
+                    <td className="relative py-3 pr-12 pl-4 text-right tabular-nums">
                       {i.status === "void" || i.status === "draft"
                         ? ""
                         : formatCents(invoiceBalance(i))}
+                      <RowMenuButton />
                     </td>
-                  </tr>
+                  </InvoiceActions>
                 ))}
               </tbody>
             </table>

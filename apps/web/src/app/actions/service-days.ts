@@ -50,6 +50,8 @@ export interface RouteCustomer {
   repeat: string;
   /** When the plan was made: Customers to Add lists the newest first. */
   createdAt: string | null;
+  /** Whose plan it is: Open Plan goes to their page. */
+  customerId: string | null;
 }
 
 type PlanRow = ServicePlan & {
@@ -88,6 +90,7 @@ export async function loadRouteCustomers(): Promise<RouteCustomer[]> {
       durationMin: p.duration_minutes,
       repeat: planRepeat(p),
       createdAt: p.created_at ?? null,
+      customerId: p.customer_id ?? null,
     }))
     .sort((a, b) => a.customer.localeCompare(b.customer));
 }

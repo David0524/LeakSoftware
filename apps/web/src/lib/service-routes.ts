@@ -27,6 +27,8 @@ export interface RoutePlanCard {
   repeat?: string;
   /** When the plan was made (newest first in Customers to Add). */
   createdAt?: string | null;
+  /** Whose plan it is: Open Plan goes to their page. */
+  customerId?: string | null;
 }
 
 export const WEEKDAY_NAMES = [

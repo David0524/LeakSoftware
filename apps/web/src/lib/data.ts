@@ -989,6 +989,8 @@ export interface InvoiceListRow {
   period_month: string | null;
   jobNumber: number | null;
   customer: string | null;
+  /** The customer's link (/i/<token>) once sent, for Copy Payment Link. */
+  token: string | null;
 }
 
 /** Every invoice in the company, newest first, with its job number and customer. */
@@ -1004,22 +1006,35 @@ export async function listInvoices(office: Office): Promise<InvoiceListRow[]> {
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(500),
-  ) as Omit<InvoiceListRow, "jobNumber" | "customer">[];
+  ) as Omit<InvoiceListRow, "jobNumber" | "customer" | "token">[];
   const jobIds = [...new Set(invoices.map((i) => i.job_id))];
-  const jobs = jobIds.length
-    ? (must(
-        await supabase
+  const [jobs, links] = await Promise.all([
+    jobIds.length
+      ? supabase
           .from("job")
           .select("id, number, property_id, bill_to_customer_id, status")
-          .in("id", jobIds),
-      ) as Job[])
-    : [];
+          .in("id", jobIds)
+          .then((r) => must(r) as Job[])
+      : ([] as Job[]),
+    // Each sent invoice's customer link, for the list's Copy Payment Link.
+    invoices.length
+      ? supabase
+          .from("share_link")
+          .select("token, invoice_id")
+          .eq("company_id", office.company.id)
+          .not("invoice_id", "is", null)
+          .is("revoked_at", null)
+          .then((r) => (r.data ?? []) as { token: string; invoice_id: string }[])
+      : [],
+  ]);
   const rows = await attach(office, jobs);
   const byId = new Map(rows.map((j) => [j.id, j]));
+  const tokenOf = new Map(links.map((l) => [l.invoice_id, l.token]));
   return invoices.map((i) => ({
     ...i,
     jobNumber: byId.get(i.job_id)?.number ?? null,
     customer: byId.get(i.job_id)?.customer?.name ?? null,
+    token: tokenOf.get(i.id) ?? null,
   }));
 }
 
@@ -1090,9 +1105,11 @@ export interface ReportListRow {
   job: {
     number: number | null;
     type?: string;
-    bill_to: { name: string } | null;
+    bill_to: { name: string; email?: string | null } | null;
     property: { address_line1: string | null } | null;
   } | null;
+  /** The customer's link (/r/<token>) once sent, for Copy Customer Link. */
+  token?: string | null;
 }
 
 /** The shop's reports, newest first: current versions only (a resent report replaces its last). */
@@ -1105,7 +1122,7 @@ export async function listReports(
   let q = supabase
     .from("report")
     .select(
-      "id, job_id, template_key, version, status, sent_at, updated_at, job:job!report_job_id_company_id_fkey(number, type, bill_to:customer!job_bill_to_customer_id_company_id_fkey(name), property:property!job_property_id_company_id_fkey(address_line1))",
+      "id, job_id, template_key, version, status, sent_at, updated_at, job:job!report_job_id_company_id_fkey(number, type, bill_to:customer!job_bill_to_customer_id_company_id_fkey(name, email), property:property!job_property_id_company_id_fkey(address_line1))",
     )
     .eq("company_id", office.company.id)
     .is("deleted_at", null)
@@ -1113,7 +1130,21 @@ export async function listReports(
     .order("updated_at", { ascending: false })
     .limit(limit);
   if (status !== "all") q = q.eq("status", status);
-  return must(await q) as unknown as ReportListRow[];
+  const reports = must(await q) as unknown as ReportListRow[];
+  // Sent reports' customer links, for the list's Copy Customer Link.
+  const sent = reports.filter((r) => r.status === "sent").map((r) => r.id);
+  const links = sent.length
+    ? (((
+        await supabase
+          .from("share_link")
+          .select("token, report_id")
+          .eq("company_id", office.company.id)
+          .not("report_id", "is", null)
+          .is("revoked_at", null)
+      ).data ?? []) as { token: string; report_id: string }[])
+    : [];
+  const tokenOf = new Map(links.map((l) => [l.report_id, l.token]));
+  return reports.map((r) => ({ ...r, token: tokenOf.get(r.id) ?? null }));
 }
 
 /** A pool's chemical log, newest first (owner, 2026-10-19). */

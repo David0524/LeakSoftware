@@ -34,7 +34,19 @@ export default async function ExclusionsPage() {
     >
       <Grouped>
         {reasons.map((r) => (
-          <SheetRow key={r.id} title={r.label} label={r.label} value={r.active ? undefined : "Off"}>
+          <SheetRow
+            key={r.id}
+            remove={{
+              table: "exclusion_reason",
+              id: r.id,
+              path: "/settings/exclusions",
+              confirm: "Remove this reason?",
+              confirmLabel: "Remove",
+            }}
+            title={r.label}
+            label={r.label}
+            value={r.active ? undefined : "Off"}
+          >
             <SettingsForm action={saveExclusionReason} primary full>
               <input type="hidden" name="id" value={r.id} />
               <SettingsFields

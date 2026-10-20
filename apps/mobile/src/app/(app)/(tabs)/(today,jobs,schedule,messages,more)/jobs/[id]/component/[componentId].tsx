@@ -24,6 +24,7 @@ import {
   confirmRemoveComponent,
 } from "../../../../../../../features/inspection/remove";
 import { haptics } from "../../../../../../../ui/haptics";
+import { useRowMenu } from "../../../../../../../ui/RowMenu";
 import { Select } from "../../../../../../../ui/Select";
 import {
   currentVerdict,
@@ -49,6 +50,8 @@ export default function ComponentScreen() {
   const { services, user } = useSession();
   const config = useInspectionConfig(company.id);
   const insp = useJobInspection(company.id, jobId);
+  // Touch and hold a test or finding for Edit and Delete (gestures spec section 12).
+  const menu = useRowMenu();
   const component = insp.componentById.get(componentId);
   const result = insp.resultByComponent.get(componentId);
   const type = component ? config.componentTypeById.get(component.component_type_id) : undefined;
@@ -168,6 +171,7 @@ export default function ComponentScreen() {
 
       {type.answer === "done" ? null : (
         <View style={styles.part}>
+          {menu.element}
           <T variant="sectionLabel">Tests on this item</T>
           {tests.length > 0 ? (
             <Group>
@@ -180,6 +184,7 @@ export default function ComponentScreen() {
                     trailing={<OutcomeChip outcome={t.outcome} />}
                     onPress={() => router.push(`/jobs/${jobId}/test/${t.id}`)}
                     onDelete={() => confirmDeleteTest(services.sync, company.id, t.id, name)}
+                    editMenu={{ menu, title: name }}
                   />
                 );
               })}
@@ -206,6 +211,7 @@ export default function ComponentScreen() {
                   title={f.title}
                   onPress={() => router.push(`/jobs/${jobId}/finding/${f.id}`)}
                   onDelete={() => confirmDeleteFinding(services.sync, company.id, f.id, f.title)}
+                  editMenu={{ menu, title: f.title }}
                 />
               ))}
             </Group>

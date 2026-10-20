@@ -21,6 +21,7 @@ import {
   JOB_TYPE_LABELS,
   mapStatus,
   weekday,
+  jobLock,
 } from "@leakbook/core";
 import { lockTag } from "@/lib/day-map";
 import { PlanWeek } from "@/components/plan-week";
@@ -65,6 +66,35 @@ import { RoutesView } from "./routes-view";
 
 export const metadata: Metadata = { title: "Schedule · Sundeck Pro" };
 
+/**
+ * The job's schedule as the job page's Schedule form holds it, so Lock Day and Lock Time from a
+ * card save through the same form action (gestures.md section 12). null: no time yet.
+ */
+function scheduleOf(j: JobRow, timeZone: string): BoardStop["schedule"] {
+  if (!j.scheduled_start) return null;
+  const parts = dateFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(j.scheduled_start));
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  return {
+    date: `${get("year")}-${get("month")}-${get("day")}`,
+    time: `${get("hour")}:${get("minute")}`,
+    hours: j.scheduled_end
+      ? String(
+          (new Date(j.scheduled_end).getTime() - new Date(j.scheduled_start).getTime()) / 3_600_000,
+        )
+      : "2",
+    tech: j.assigned_user_id ?? "",
+    lock: jobLock(j),
+  };
+}
+
 function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardStop {
   const onSecond = route && j.assigned_user_id !== route.techId;
   // The kind of visit, or whose stop it is on the second tech's route: a pill on the card.
@@ -92,6 +122,7 @@ function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardSto
     access: j.property?.access_notes?.trim() || null,
     // One line for Needs a Time's compact cards.
     note: tag,
+    schedule: scheduleOf(j, ctx.timeZone),
   };
 }
 

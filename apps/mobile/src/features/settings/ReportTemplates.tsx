@@ -37,6 +37,7 @@ import { confirmDestructive } from "../../ui/confirm";
 import { savedReportPreview } from "../report/SavedReportPicker";
 import { haptics } from "../../ui/haptics";
 import { space } from "../../ui/theme";
+import { useRowMenu } from "../../ui/RowMenu";
 import { EditSheet, FormActions, ManagersOnly, SettingsList, useEditSheet } from "./SettingsList";
 
 // Settings › Report Templates (the website's settings/reports): which reports techs can send,
@@ -76,6 +77,8 @@ function TemplatesPage() {
   const leak = offersLeak(company.settings);
   const saved = useSavedReports(company.id);
   const savedSheet = useEditSheet<SavedReport>();
+  // Touch and hold a row for Edit and its delete (gestures spec section 12).
+  const menu = useRowMenu();
   const removeSaved = (r: SavedReport) =>
     confirmDestructive({
       title: "Delete this saved report?",
@@ -106,6 +109,7 @@ function TemplatesPage() {
                 subtitle={ABOUT.homeowner}
                 detail={t.enabled ? "On" : "Off"}
                 onPress={() => sheet.open(t)}
+                editMenu={{ menu, title: t.name }}
               />
             ))}
           </Group>
@@ -128,6 +132,7 @@ function TemplatesPage() {
                       title={r.name}
                       subtitle={savedReportPreview(r)}
                       onPress={() => savedSheet.open(r)}
+                      editMenu={{ menu, title: r.name }}
                       deleteLabel="Delete"
                       onDelete={() => removeSaved(r)}
                     />
@@ -145,6 +150,7 @@ function TemplatesPage() {
           </>
         ) : null}
       </SettingsList>
+      {menu.element}
       <EditSheet
         open={savedSheet.editing != null}
         title={savedSheet.editing === "new" ? "New Saved Report" : (savedSheet.editing?.name ?? "")}

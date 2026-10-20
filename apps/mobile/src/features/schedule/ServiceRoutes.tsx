@@ -30,6 +30,7 @@ import {
 import { planContext, useTeam } from "../../data/schedule";
 import { savePlanDays, useRoutePlans } from "../../data/serviceRoutes";
 import { autoScrollStep, clampScroll } from "../../lib/scheduleDrag";
+import { HOLD_SLOP } from "./ScheduleDrag";
 import {
   PUT_BACK,
   ROUTE_HOLD_MS,
@@ -83,7 +84,9 @@ import {
   useReduceMotion,
   type ScrollMetrics,
 } from "../../ui/components";
+import { routePlanRowActions } from "../../lib/rowActions";
 import { useResultBanner } from "../../ui/ResultBanner";
+import { useRowMenu } from "../../ui/RowMenu";
 import { Glass } from "../../ui/Glass";
 import { haptics } from "../../ui/haptics";
 import { ModalSheet } from "../../ui/ModalSheet";
@@ -295,6 +298,12 @@ export function ServiceRoutes({
   // --- Moving ----------------------------------------------------------------------
 
   const canMove = (p: RoutePlanCard) => !suggested || suggestedIds.has(p.planId);
+  // Touch and hold a customer: Change Day… and Change Tech…, both the card's Move sheet.
+  const rowMenu = useRowMenu();
+  const planMenu = (plan: RoutePlanCard, from: number | null) =>
+    rowMenu.open(plan.customer, routePlanRowActions(canMove(plan)).menu, () =>
+      openMove(plan, from),
+    );
   const openMove = (plan: RoutePlanCard, from: number | null) => {
     if (!canMove(plan)) return;
     setSheet(null);
@@ -438,6 +447,7 @@ export function ServiceRoutes({
                     suggested={suggestedIds.has(p.planId)}
                     disabled={!canMove(p)}
                     onMove={() => openMove(p, current.day)}
+                    onHold={() => planMenu(p, current.day)}
                   />
                 ))}
                 {heldCard && !current.plans.includes(heldCard) ? (
@@ -475,6 +485,7 @@ export function ServiceRoutes({
         onClose={() => setSheet(null)}
         onMove={(p) => openMove(p, null)}
       />
+      {rowMenu.element}
 
       {sheet === "suggest" && tech ? (
         <SuggestSheet
@@ -909,9 +920,27 @@ class CardBox {
   held: Held | null = null;
   ghost: () => ReactNode = () => null;
   node: View | null = null;
-  set(held: Held, ghost: () => ReactNode) {
+  /** The card's touch-and-hold menu, opened by a hold let go without moving. */
+  hold: (() => void) | undefined = undefined;
+  private at = { x: 0, y: 0 };
+  private moved = false;
+  set(held: Held, ghost: () => ReactNode, hold?: () => void) {
     this.held = held;
     this.ghost = ghost;
+    this.hold = hold;
+  }
+  lift(x: number, y: number) {
+    this.at = { x, y };
+    this.moved = false;
+  }
+  track(x: number, y: number) {
+    if (Math.hypot(x - this.at.x, y - this.at.y) > HOLD_SLOP) this.moved = true;
+  }
+  /** Let go: the menu when it was only held (and there is one), else the drop. */
+  release(end?: () => void, cancel?: () => void) {
+    if (this.moved || !this.hold) return end?.();
+    cancel?.();
+    this.hold();
   }
   attach = (node: View | null) => {
     this.node = node;
@@ -927,10 +956,12 @@ function useCardDrag(
   enabled: boolean,
   held: Held,
   ghost: () => ReactNode,
+  /** Held and let go without moving: the card's menu (gestures spec section 12). */
+  onHold?: () => void,
 ) {
   const [box] = useState(() => new CardBox());
   useEffect(() => {
-    box.set(held, ghost);
+    box.set(held, ghost, onHold);
   });
   const begin = drag?.begin;
   const moveTo = drag?.move;
@@ -943,10 +974,14 @@ function useCardDrag(
         .enabled(enabled)
         .activateAfterLongPress(ROUTE_HOLD_MS)
         .onStart((e) => {
+          box.lift(e.absoluteX, e.absoluteY);
           if (begin) box.start(begin, e.absoluteX, e.absoluteY);
         })
-        .onUpdate((e) => moveTo?.(e.absoluteX, e.absoluteY))
-        .onEnd(() => end?.())
+        .onUpdate((e) => {
+          box.track(e.absoluteX, e.absoluteY);
+          moveTo?.(e.absoluteX, e.absoluteY);
+        })
+        .onEnd(() => box.release(end, cancel))
         .onFinalize(() => cancel?.()),
     [enabled, box, begin, moveTo, end, cancel],
   );
@@ -965,6 +1000,7 @@ function PlanCard({
   suggested,
   disabled,
   onMove,
+  onHold,
   draggable = true,
   hidden = false,
 }: {
@@ -974,17 +1010,25 @@ function PlanCard({
   suggested: boolean;
   disabled: boolean;
   onMove: () => void;
+  /** Touch and hold: Change Day… and Change Tech… (gestures spec section 12). */
+  onHold?: () => void;
   draggable?: boolean;
   /** Kept mounted out of sight while it's held and its day is no longer showing. */
   hidden?: boolean;
 }) {
   const drag = useContext(DragContext);
   const enabled = !!drag && draggable && !disabled;
-  const { gesture, ref } = useCardDrag(drag, enabled, { plan: p, from }, () => (
-    <View style={[styles.clip, { backgroundColor: color.surface }]}>
-      <PlanFace plan={p} number={number} suggested={suggested} grip />
-    </View>
-  ));
+  const { gesture, ref } = useCardDrag(
+    drag,
+    enabled,
+    { plan: p, from },
+    () => (
+      <View style={[styles.clip, { backgroundColor: color.surface }]}>
+        <PlanFace plan={p} number={number} suggested={suggested} grip />
+      </View>
+    ),
+    disabled ? undefined : onHold,
+  );
   const note = repeatNote(p);
   const label = [
     number != null ? `${number}. ${p.customer}` : p.customer,
@@ -1018,6 +1062,12 @@ function PlanCard({
         accessibilityState={{ disabled }}
         disabled={disabled}
         onPress={onMove}
+        // Without a drag (Customers to Add's sheet), touch and hold opens the menu here.
+        onLongPress={enabled || disabled ? undefined : onHold}
+        accessibilityActions={
+          onHold && !disabled ? [{ name: "menu", label: "Show Actions" }] : undefined
+        }
+        onAccessibilityAction={(e) => e.nativeEvent.actionName === "menu" && onHold?.()}
         android_ripple={{ color: color.ripple }}
         style={({ pressed }) => [styles.clip, pressed && { backgroundColor: color.rowPressed }]}
       >
@@ -1046,8 +1096,12 @@ function AddSheet({
 }) {
   const [query, setQuery] = useState("");
   const list = searchCards(plans, query);
+  // Touch and hold a customer: Change Day… and Change Tech… (gestures spec section 12), in
+  // the sheet so the menu opens over it.
+  const menu = useRowMenu();
   return (
     <ModalSheet visible={open} onClose={onClose} title="Customers to Add" cancel="Done">
+      {menu.element}
       {plans.length > 4 || query ? (
         <SearchField
           value={query}
@@ -1070,6 +1124,9 @@ function AddSheet({
               suggested={suggestedIds.has(p.planId)}
               disabled={!canMove(p)}
               onMove={() => onMove(p)}
+              onHold={() =>
+                menu.open(p.customer, routePlanRowActions(canMove(p)).menu, () => onMove(p))
+              }
               draggable={false}
             />
           ))}

@@ -48,11 +48,11 @@ export function showsJobSchedule(job: { type: string; status: string }) {
 }
 
 /**
- * Job › Details › Schedule (spec 5.4; the website's `JobSchedule`): the tech and time, its lock
- * (owner, 2026-10-20: "locks for jobs whether that's day, time, or both"), then Schedule Job /
- * Change Schedule (the Schedule tab's Move sheet) and Suggest Times. Worked out on the phone and saved through the sync layer, like the Schedule tab.
+ * Move… for a job, as Job › Details › Schedule's Change Schedule does it (the Schedule tab's
+ * Move sheet, core moveJobChange, saved through the sync layer). The Jobs list's Move… uses it
+ * too (gestures spec section 12). `onResult` gets what the move says, or why it couldn't.
  */
-export function JobSchedule({ jobId }: { jobId: string }) {
+export function useJobMove(onResult: (r: { message?: string; error?: string }) => void) {
   const company = useCompany();
   const { membership, user } = useSession();
   const me = user?.id ?? "";
@@ -64,25 +64,13 @@ export function JobSchedule({ jobId }: { jobId: string }) {
   const jobs = useJobViews(company.id);
   const team = useTeam(company.id);
   const [moving, setMoving] = useState<MoveTarget | null>(null);
-  const [suggesting, setSuggesting] = useState<{ list: SuggestedTime[]; note?: string } | null>(
-    null,
-  );
-  const [result, setResult] = useState<{ message?: string; error?: string } | null>(null);
-  const [locking, setLocking] = useState<JobLock | null>(null);
-  const job = jobs.find((j) => j.id === jobId);
   const { drive } = useDriveTimes(company.id, [
     ctx.depot,
     ...jobs.filter((j) => j.scheduled_start).map((j) => propertyLocation(j.property)),
   ]);
-  if (!job) return null;
-
   const movers = (
     seesAll ? team.filter((t) => t.status === "active") : team.filter((t) => t.user_id === me)
   ).map((t) => ({ id: t.user_id, name: t.name }));
-  const lock = jobLock(job);
-  const techName = job.assigned_user_id
-    ? (team.find((t) => t.user_id === job.assigned_user_id)?.name ?? "Teammate")
-    : "Nobody yet";
 
   const dayJobsOf = (techId: string, d: string) =>
     (routesFor(jobs, [d], tz).routes.get(routeKey(techId, d)) ?? []).map((j) => ({
@@ -96,15 +84,15 @@ export function JobSchedule({ jobId }: { jobId: string }) {
     error?: string;
   }) {
     if (change.error) {
-      setResult({ error: change.error });
+      onResult({ error: change.error });
       return;
     }
     try {
       saveJobChanges(company.id, change.updates);
       haptics.success();
-      setResult({ message: change.message });
+      onResult({ message: change.message });
     } catch (e) {
-      setResult({ error: e instanceof Error ? e.message : String(e) });
+      onResult({ error: e instanceof Error ? e.message : String(e) });
     }
   }
 
@@ -127,6 +115,71 @@ export function JobSchedule({ jobId }: { jobId: string }) {
       ),
     );
   }
+
+  function open(job: JobView) {
+    setMoving({
+      id: job.id,
+      customer: job.customer?.name ?? "Customer",
+      address: "",
+      from:
+        job.scheduled_start && job.status !== "unscheduled"
+          ? {
+              tech: job.assigned_user_id ?? null,
+              date: localDate(new Date(job.scheduled_start), tz),
+            }
+          : null,
+      unschedulable: canUnschedule(job.status),
+    });
+  }
+
+  const element = (
+    <MoveSheet
+      job={moving}
+      techs={movers}
+      manager={manager}
+      today={ctx.today}
+      placesFor={(t, d, id) =>
+        dayJobsOf(t, d)
+          .filter((j) => j.id !== id)
+          .map((j) => ({
+            customer: j.customer?.name ?? "Customer",
+            time: j.scheduled_start ? formatTime(j.scheduled_start, tz) : null,
+          }))
+      }
+      onClose={() => setMoving(null)}
+      onMove={(t, d, index) => {
+        const job = jobs.find((j) => j.id === moving?.id);
+        setMoving(null);
+        if (job) moveTo(job, t, d, index);
+      }}
+    />
+  );
+
+  return { open, moveTo, element, ctx, jobs, team, drive, seesAll, me };
+}
+
+/**
+ * Job › Details › Schedule (spec 5.4; the website's `JobSchedule`): the tech and time, its lock
+ * (owner, 2026-10-20: "locks for jobs whether that's day, time, or both"), then Schedule Job /
+ * Change Schedule (the Schedule tab's Move sheet) and Suggest Times. Worked out on the phone and saved through the sync layer, like the Schedule tab.
+ */
+export function JobSchedule({ jobId }: { jobId: string }) {
+  const company = useCompany();
+  const [suggesting, setSuggesting] = useState<{ list: SuggestedTime[]; note?: string } | null>(
+    null,
+  );
+  const [result, setResult] = useState<{ message?: string; error?: string } | null>(null);
+  const [locking, setLocking] = useState<JobLock | null>(null);
+  const mover = useJobMove(setResult);
+  const { ctx, jobs, team, drive, seesAll, me, moveTo } = mover;
+  const tz = ctx.timeZone;
+  const job = jobs.find((j) => j.id === jobId);
+  if (!job) return null;
+
+  const lock = jobLock(job);
+  const techName = job.assigned_user_id
+    ? (team.find((t) => t.user_id === job.assigned_user_id)?.name ?? "Teammate")
+    : "Nobody yet";
 
   function suggest(j: JobView) {
     const dates = suggestionDates(ctx);
@@ -193,21 +246,7 @@ export function JobSchedule({ jobId }: { jobId: string }) {
           title={job.scheduled_start ? "Change Schedule" : "Schedule Job"}
           tone="link"
           accessibilityRole="button"
-          onPress={() =>
-            setMoving({
-              id: job.id,
-              customer: job.customer?.name ?? "Customer",
-              address: "",
-              from:
-                job.scheduled_start && job.status !== "unscheduled"
-                  ? {
-                      tech: job.assigned_user_id ?? null,
-                      date: localDate(new Date(job.scheduled_start), tz),
-                    }
-                  : null,
-              unschedulable: canUnschedule(job.status),
-            })
-          }
+          onPress={() => mover.open(job)}
         />
         {job.status === "scheduled" || job.status === "unscheduled" ? (
           <ListRow
@@ -223,25 +262,7 @@ export function JobSchedule({ jobId }: { jobId: string }) {
           {result.error ?? result.message}
         </T>
       ) : null}
-      <MoveSheet
-        job={moving}
-        techs={movers}
-        manager={manager}
-        today={ctx.today}
-        placesFor={(t, d, id) =>
-          dayJobsOf(t, d)
-            .filter((j) => j.id !== id)
-            .map((j) => ({
-              customer: j.customer?.name ?? "Customer",
-              time: j.scheduled_start ? formatTime(j.scheduled_start, tz) : null,
-            }))
-        }
-        onClose={() => setMoving(null)}
-        onMove={(t, d, index) => {
-          setMoving(null);
-          moveTo(job, t, d, index);
-        }}
-      />
+      {mover.element}
       {/* Locks (owner, 2026-10-20): what Optimize and Plan Week leave alone. */}
       <ModalSheet visible={locking != null} onClose={() => setLocking(null)} title="Lock">
         <View style={{ gap: space["2"] }}>

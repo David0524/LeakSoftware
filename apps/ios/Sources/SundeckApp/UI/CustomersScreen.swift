@@ -22,6 +22,9 @@
         @State private var show = "all"
         @State private var rows: [CustomerListItem] = []
         @State private var loaded = false
+        /// The company number works: Message opens New Message, as the customer's page does.
+        @State private var lineWorking = false
+        @Environment(\.openRoute) private var openRoute
 
         var body: some View {
             let company = session.company
@@ -61,21 +64,16 @@
                                         c, sort: sort, timeZone: company?.timeZone ?? "America/Phoenix"))
                             }
                             .surfaceRow()
-                            // Swipe left (or touch and hold) for Call where there's a phone; the
-                            // customer's page has it too (gestures spec section 5).
+                            // Swipe left for Call and Message where there's a phone; touch and
+                            // hold for the menu. The customer's page has each (gestures spec 12).
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                if let url = c.phone.flatMap(Self.telURL) {
-                                    Button("Call", systemImage: "phone.fill") { openURL(url) }.tint(Color.pass)
-                                }
-                            }
-                            .contextMenu {
                                 if let phone = c.phone, let url = Self.telURL(phone) {
-                                    Button("Call", systemImage: "phone") { openURL(url) }
-                                    if let sms = URL(string: "sms:\(phone.filter { $0.isNumber || $0 == "+" })") {
-                                        Button("Message", systemImage: "message") { openURL(sms) }
-                                    }
+                                    Button("Call", systemImage: "phone.fill") { openURL(url) }.tint(Color.pass)
+                                    Button("Message", systemImage: "message.fill") { message(c.id, phone) }
+                                        .tint(Color.link)
                                 }
                             }
+                            .rowMenu(c.name, menu(c))
                         }
                     }
                 }
@@ -90,7 +88,38 @@
         private func reload() {
             guard let company = session.company else { return }
             rows = customerList(sync.store, companyId: company.id, search: search, sort: sort, show: show)
+            lineWorking = companyLine(sync.store, companyId: company.id)?.status == "active"
             loaded = true
+        }
+
+        /// Open, Call, Message, Directions (their pool). New Job for a customer isn't on the phone.
+        private func menu(_ c: CustomerListItem) -> [SwipeAction] {
+            var list = [
+                SwipeAction(title: "Open", systemImage: "arrow.up.right", tint: Color.link) {
+                    openRoute(.more(.customer(c.id)))
+                }
+            ]
+            if let phone = c.phone, let url = Self.telURL(phone) {
+                list.append(SwipeAction(title: "Call", systemImage: "phone", tint: Color.pass) { openURL(url) })
+                list.append(
+                    SwipeAction(title: "Message", systemImage: "message", tint: Color.link) { message(c.id, phone) })
+            }
+            if let place = c.place {
+                list.append(
+                    SwipeAction(title: "Directions", systemImage: "location", tint: Color.link) {
+                        if let url = directionsURL(place, choice: sync.kv.directionsChoice) { openURL(url) }
+                    })
+            }
+            return list
+        }
+
+        /// The customer page's Text: New Message on the company number, else Messages.
+        private func message(_ customerId: String, _ phone: String) {
+            if lineWorking {
+                openRoute(.messages(.newMessage(customerId: customerId)))
+            } else if let url = URL(string: "sms:\(phone.filter { $0.isNumber || $0 == "+" })") {
+                openURL(url)
+            }
         }
     }
 
