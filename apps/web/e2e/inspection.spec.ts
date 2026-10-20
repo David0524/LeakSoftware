@@ -32,8 +32,11 @@ test("a pool inspection: New Job, answers and gates, and its report", async ({ p
 
   // Equipment opens first; a flagged answer counts as needing attention.
   const leaking = page.getByRole("radiogroup", { name: "Does the system show visible leaking?" });
-  await leaking.getByRole("radio", { name: "Yes" }).click();
-  await expect(leaking.getByRole("radio", { name: "Yes" })).toHaveAttribute("aria-checked", "true");
+  await leaking.getByRole("radio", { name: "Yes", exact: true }).click();
+  await expect(leaking.getByRole("radio", { name: "Yes", exact: true })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
   await page
     .getByRole("button", { name: "Describe: Does the system show visible leaking?" })
     .click();
@@ -53,7 +56,7 @@ test("a pool inspection: New Job, answers and gates, and its report", async ({ p
     ),
   ).toBeVisible();
   const fence = page.getByRole("radiogroup", { name: "Is a perimeter fence present?" });
-  await fence.getByRole("radio", { name: "No" }).click();
+  await fence.getByRole("radio", { name: "No", exact: true }).click();
   await expect(page.getByText("Not present: 5 questions folded away.")).toBeVisible();
   await expect(
     page.getByRole("radiogroup", { name: "Are all gates self closing and self latching?" }),
@@ -62,8 +65,8 @@ test("a pool inspection: New Job, answers and gates, and its report", async ({ p
   // Plumbing: a leak.
   await page.getByRole("button", { name: "Plumbing Static Test" }).click();
   await page
-    .getByRole("radiogroup", { name: "Main drain" })
-    .getByRole("radio", { name: "Leaking" })
+    .getByRole("radiogroup", { name: "Main drain", exact: true })
+    .getByRole("radio", { name: "Leaking", exact: true })
     .click();
   await expect(page.getByText(/· 1 need attention · 1 leaking$/)).toBeVisible();
 
