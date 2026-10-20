@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import {
   isDiagramShape,
   calculate,
@@ -27,6 +28,8 @@ import {
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { requireCompletable } from "@/server/reports";
+import { sendVisitReport } from "@/server/visit-reports";
+import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 import type { FormState } from "./auth";
 
@@ -76,6 +79,18 @@ export async function changeJobStatus(_: FormState, form: FormData): Promise<For
   if (to === "in_progress" && !job.started_at) values.started_at = new Date().toISOString();
   const { error } = await db.from("job").update(values).eq("id", jobId);
   if (error) return { error: error.message };
+  // A completed visit sends its report by itself in shops that chose Automatic (owner,
+  // 2026-10-20), after the reply; the database checks the shop's choice and sends only once.
+  if (to === "done" && job.type === "maintenance") {
+    const origin = await siteOrigin();
+    after(async () => {
+      try {
+        await sendVisitReport(db, jobId, { automatic: true, origin, userId: office.user.id });
+      } catch {
+        // Not sent now: the daily catch-up sends it.
+      }
+    });
+  }
   revalidatePath("/jobs");
   revalidatePath("/schedule");
   revalidatePath("/today");

@@ -2875,5 +2875,65 @@
       ],
       "result": "Clean salt cell due in 52 weeks"
     }
+  ],
+  "VISIT_REPORT_MODES": [
+    {
+      "args": [],
+      "result": [
+        {
+          "value": "auto",
+          "label": "Automatic",
+          "hint": "Each visit’s report goes to the customer when the visit is completed."
+        },
+        {
+          "value": "manual",
+          "label": "By Hand",
+          "hint": "Techs send it with Send Visit Report."
+        },
+        {
+          "value": "off",
+          "label": "Off",
+          "hint": "No visit reports."
+        }
+      ]
+    }
+  ],
+  "visitReportMode": [
+    {
+      "args": [
+        null
+      ],
+      "result": "manual"
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": "manual"
+    },
+    {
+      "args": [
+        {
+          "visit_reports": "auto"
+        }
+      ],
+      "result": "auto"
+    },
+    {
+      "args": [
+        {
+          "visit_reports": "off"
+        }
+      ],
+      "result": "off"
+    },
+    {
+      "args": [
+        {
+          "visit_reports": "weekly"
+        }
+      ],
+      "result": "manual"
+    }
   ]
 }

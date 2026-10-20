@@ -69,5 +69,15 @@ select throws_ok($$ select send_visit_report((select visit from v)) $$, '23514',
 select is(send_visit_report((select visit from v), true) ->> 'skipped', 'off', 'or by itself');
 reset role;
 
+-- The daily catch-up sends as the server.
+update company set settings = settings || '{"visit_reports": "auto"}'
+  where id = (select company_a from ids);
+delete from share_link where job_id = (select visit from v);
+delete from report where job_id = (select visit from v);
+set role service_role;
+select ok((send_visit_report((select visit from v), true) ->> 'token') is not null,
+  'the server''s catch-up sends a due visit''s report');
+reset role;
+
 select * from finish();
 rollback;

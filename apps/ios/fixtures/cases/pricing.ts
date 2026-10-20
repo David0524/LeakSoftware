@@ -1,4 +1,5 @@
 import {
+  waterTestRows,
   ACID_PRODUCTS,
   CHLORINE_PRODUCTS,
   READING_LABELS,
@@ -513,5 +514,16 @@ export const pricing: ModuleCases = {
         },
       ],
     ]),
+  ),
+  // A visit report's water test (owner, 2026-10-20).
+  waterTestRows: rule(
+    (r: Record<string, number | null>) => waterTestRows(r),
+    [
+      [{}],
+      [{ fc: 1, ph: 7.5, ta: 140 }],
+      [{ fc: 3, ph: 7.4, ta: 80, ch: 250, cya: 60, salt: 3000 }],
+      [{ fc: 9, ph: 8.2, ta: 60, ch: 500, cya: 100, salt: 2500 }],
+      [{ ph: null, cya: 0 }],
+    ],
   ),
 };

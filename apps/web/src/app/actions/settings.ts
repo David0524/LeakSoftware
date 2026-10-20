@@ -13,6 +13,7 @@ import {
   uuidv7,
   type TestFieldSchema,
   SAVED_REPORT_SECTIONS,
+  visitReportMode,
   savedReportFrom,
   savedReportSections,
 } from "@leakbook/core";
@@ -343,6 +344,25 @@ export async function saveCompleteJob(_: FormState, form: FormData): Promise<For
     ...((company?.settings ?? {}) as Record<string, unknown>),
     require_checklist_to_finish: checked(form, "require_checklist_to_finish"),
     require_finish_photo: checked(form, "require_finish_photo"),
+  };
+  const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
+  if (error) return failed(error);
+  revalidatePath("/", "layout");
+  return { message: "Saved." };
+}
+
+/** Settings › Report Templates › Visit reports: Automatic, By Hand, or Off (owner, 2026-10-20). */
+export async function saveVisitReportMode(_: FormState, form: FormData): Promise<FormState> {
+  const office = await requireManager();
+  const supabase = await createClient();
+  const { data: company } = await supabase
+    .from("company")
+    .select("settings")
+    .eq("id", office.company.id)
+    .single();
+  const settings = {
+    ...((company?.settings ?? {}) as Record<string, unknown>),
+    visit_reports: visitReportMode({ visit_reports: text(form, "visit_reports") }),
   };
   const { error } = await supabase.from("company").update({ settings }).eq("id", office.company.id);
   if (error) return failed(error);

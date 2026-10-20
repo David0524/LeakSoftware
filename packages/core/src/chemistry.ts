@@ -501,3 +501,34 @@ export function readingSummary(r: Partial<Record<ReadingKey, number | null>>): s
     .map((k) => `${short[k]} ${k === "ph" ? Number(r[k]).toFixed(1) : Number(r[k])}`)
     .join(" · ");
 }
+
+/**
+ * A visit report's water test (owner, 2026-10-20): each reading taken, with the range the pool
+ * aims for and whether it was low, in range, or high, in the calculator's order.
+ */
+export function waterTestRows(r: Partial<Record<ReadingKey, number | null>>): {
+  key: ReadingKey;
+  label: string;
+  value: number;
+  range: string;
+  status: "low" | "ok" | "high";
+  statusLabel: string;
+}[] {
+  const t = targets(r.cya ?? null);
+  const order: ReadingKey[] = ["fc", "ph", "ta", "ch", "cya", "salt"];
+  return order
+    .filter((k) => r[k] != null && Number.isFinite(Number(r[k])))
+    .map((k) => {
+      const value = Number(r[k]);
+      const range = t[k];
+      const status = value < range.low ? "low" : value > range.high ? "high" : "ok";
+      return {
+        key: k,
+        label: READING_LABELS[k],
+        value,
+        range: `${range.low}–${range.high}`,
+        status,
+        statusLabel: status === "ok" ? "In range" : status === "low" ? "Low" : "High",
+      };
+    });
+}

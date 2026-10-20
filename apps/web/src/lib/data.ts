@@ -577,7 +577,7 @@ export function listConfig<T>(office: Office, table: string): Promise<T[]> {
 
 export interface ReportRow {
   id: string;
-  template_key: "homeowner" | "partner" | "insurance";
+  template_key: "homeowner" | "partner" | "insurance" | "maintenance";
   version: number;
   status: "draft" | "sent" | "superseded";
   final_sections: { key: string; title: string; text: string }[] | null;
@@ -951,7 +951,7 @@ export async function getAccess(office: Office): Promise<CompanyAccess | null> {
 export interface ReportListRow {
   id: string;
   job_id: string;
-  template_key: "homeowner" | "partner" | "insurance";
+  template_key: "homeowner" | "partner" | "insurance" | "maintenance";
   version: number;
   status: "draft" | "sent" | "superseded";
   sent_at: string | null;

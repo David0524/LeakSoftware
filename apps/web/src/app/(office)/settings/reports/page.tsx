@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
-import { SAVED_REPORT_SECTIONS, savedReportSections } from "@leakbook/core";
+import {
+  SAVED_REPORT_SECTIONS,
+  offersPool,
+  savedReportSections,
+  visitReportMode,
+} from "@leakbook/core";
+import { VisitReportSetting } from "@/components/visit-report-setting";
+import { getCompany } from "@/lib/data";
 import { removeConfigRow, saveReportTemplate, saveSavedReport } from "@/app/actions/settings";
 import {
   SField,
@@ -73,9 +80,10 @@ function SavedReportFields({ saved }: { saved?: SavedReport }) {
 
 export default async function ReportTemplatesPage() {
   const office = await getOffice();
-  const [templates, saved] = await Promise.all([
+  const [templates, saved, company] = await Promise.all([
     listConfig<Template>(office, "report_template"),
     listConfig<SavedReport>(office, "saved_report"),
+    getCompany(office),
   ]);
   const order = ["homeowner", "insurance"];
   // The partner report is gone (owner, 2026-10-18); its sent reports still open.
@@ -135,6 +143,18 @@ export default async function ReportTemplatesPage() {
 
       {/* Your own wording, used word for word (owner, 2026-10-20: "Not like AI prompts, but a
           copy/paste essentially that the tech uses each time"). */}
+      {offersPool(company.settings) ? (
+        <Grouped
+          title="Visit reports"
+          className="mt-8"
+          footer="A maintenance visit’s report: the water test, the checklist and cleanings, and photos, at a link for the customer."
+        >
+          <li className="py-3">
+            <VisitReportSetting initial={visitReportMode(company.settings)} />
+          </li>
+        </Grouped>
+      ) : null}
+
       <Grouped
         title="Saved reports"
         className="mt-8"

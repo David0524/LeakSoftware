@@ -6,6 +6,7 @@ import type { FinalSection, ReportSnapshot, ReportTemplateKey } from "@leakbook/
 import { Banner, DOC_PAGE } from "@/components/doc-ui";
 import { ReportLoading } from "@/components/report-loading";
 import { ReportView } from "@/components/report-view";
+import { VisitReportView, type VisitSnapshot } from "@/components/visit-report-view";
 import { publicClient } from "@/server/reports";
 
 export const metadata: Metadata = { title: "Leak Detection Report", robots: { index: false } };
@@ -14,7 +15,7 @@ interface TokenReport {
   report_id: string;
   company_id: string;
   job_id: string;
-  template_key: ReportTemplateKey;
+  template_key: ReportTemplateKey | "maintenance";
   version: number;
   status: "sent" | "superseded";
   sent_at: string | null;
@@ -77,16 +78,27 @@ async function Report({ params, searchParams }: PageProps<"/r/[token]">) {
           </Banner>
         </div>
       ) : null}
-      <ReportView
-        templateKey={r.template_key}
-        version={r.version}
-        sentAt={r.sent_at}
-        snapshot={s}
-        sections={r.final_sections ?? []}
-        urls={urls}
-        logoUrl={logo.data?.signedUrl ?? null}
-        pdfHref={print ? undefined : `/r/${token}/pdf`}
-      />
+      {r.template_key === "maintenance" ? (
+        <VisitReportView
+          snapshot={s as VisitSnapshot}
+          version={r.version}
+          sentAt={r.sent_at}
+          urls={urls}
+          logoUrl={logo.data?.signedUrl ?? null}
+          pdfHref={print ? undefined : `/r/${token}/pdf`}
+        />
+      ) : (
+        <ReportView
+          templateKey={r.template_key}
+          version={r.version}
+          sentAt={r.sent_at}
+          snapshot={s}
+          sections={r.final_sections ?? []}
+          urls={urls}
+          logoUrl={logo.data?.signedUrl ?? null}
+          pdfHref={print ? undefined : `/r/${token}/pdf`}
+        />
+      )}
     </>
   );
 }

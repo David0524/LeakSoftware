@@ -309,3 +309,27 @@ export function filterAge(lastReplaced: string | null | undefined, today: string
   if (months < 24) return `Filter ${months} ${months === 1 ? "month" : "months"} old`;
   return `Filter ${Math.floor(months / 12)} years old`;
 }
+
+// ---------------------------------------------------------------------------
+// Visit reports (owner, 2026-10-20: "build a report with the tested chemicals, checklist,
+// cleanings, photos, etc. ... Include manual send and auto send. Owner/admin can turn that off")
+// ---------------------------------------------------------------------------
+
+export type VisitReportMode = "manual" | "auto" | "off";
+
+/** Settings › Report Templates › Visit reports, in the order shown. */
+export const VISIT_REPORT_MODES: { value: VisitReportMode; label: string; hint: string }[] = [
+  {
+    value: "auto",
+    label: "Automatic",
+    hint: "Each visit’s report goes to the customer when the visit is completed.",
+  },
+  { value: "manual", label: "By Hand", hint: "Techs send it with Send Visit Report." },
+  { value: "off", label: "Off", hint: "No visit reports." },
+];
+
+/** The shop's choice (company.settings.visit_reports); by hand when unset. */
+export function visitReportMode(settings: unknown): VisitReportMode {
+  const v = (settings as { visit_reports?: unknown } | null)?.visit_reports;
+  return v === "auto" || v === "off" || v === "manual" ? v : "manual";
+}

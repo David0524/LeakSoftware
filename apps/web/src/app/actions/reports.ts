@@ -6,6 +6,7 @@ import { getOffice } from "@/lib/auth";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 import { draftReport, saveReportText, sendReport, type Channel } from "@/server/reports";
+import { sendVisitReport } from "@/server/visit-reports";
 import type { FormState } from "./auth";
 import { sectionsOf } from "./report-form";
 
@@ -73,6 +74,43 @@ export async function sendReportAction(
     };
   } catch (e) {
     revalidatePath(`/jobs/${text(form, "job")}`);
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/**
+ * Send Visit Report on a maintenance visit (owner, 2026-10-20): by email, by text from the
+ * company number, or (with no number) the link to text from your own phone.
+ */
+export async function sendVisitReportAction(
+  _: ReportFormState,
+  form: FormData,
+): Promise<ReportFormState> {
+  const office = await getOffice();
+  const jobId = text(form, "job");
+  const channel = text(form, "channel");
+  if (channel !== "email" && channel !== "text" && channel !== "sms_device")
+    return { error: "Choose how to send it." };
+  try {
+    const sent = await sendVisitReport(await createClient(), jobId, {
+      channel,
+      to: text(form, "to") || null,
+      origin: await siteOrigin(),
+      userId: office.user.id,
+    });
+    revalidatePath(`/jobs/${jobId}`);
+    if ("skipped" in sent) return { error: "The visit report wasn’t sent." };
+    return {
+      link: sent.link,
+      sms: sent.delivered ? undefined : sent.message,
+      message:
+        sent.delivered === "email"
+          ? "Visit report emailed."
+          : sent.delivered === "text"
+            ? "Visit report texted."
+            : "Visit report ready. Text the customer the link.",
+    };
+  } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
   }
 }

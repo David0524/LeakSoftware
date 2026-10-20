@@ -1,4 +1,6 @@
 import {
+  VISIT_REPORT_MODES,
+  visitReportMode,
   CLEANING_DUE_SOON_DAYS,
   CLEANING_MONTHS,
   cadenceLabel,
@@ -228,5 +230,17 @@ export const maintenance: ModuleCases = {
       ["Clean filter", d] as [string, typeof d],
       ["Clean salt cell", d] as [string, typeof d],
     ]),
+  ),
+  // Visit reports (owner, 2026-10-20).
+  VISIT_REPORT_MODES: rule(() => VISIT_REPORT_MODES, [[]]),
+  visitReportMode: rule(
+    (settings: unknown) => visitReportMode(settings),
+    [
+      [null],
+      [{}],
+      [{ visit_reports: "auto" }],
+      [{ visit_reports: "off" }],
+      [{ visit_reports: "weekly" }],
+    ],
   ),
 };

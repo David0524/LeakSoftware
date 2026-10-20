@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import {
+  visitReportMode,
   JOB_TYPE_LABELS,
   MEDIA_KIND_LABELS,
   POOL_TYPE_LABELS,
@@ -63,6 +64,7 @@ import {
   iconButtonClass,
 } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import {
   auditFor,
   getChemicalReadings,
@@ -86,6 +88,7 @@ import { QuoteBuilder, StartQuote } from "@/components/quote-builder";
 import { QuotePanel } from "@/components/quote-panel";
 import { RemoveSignature } from "@/components/remove-signature";
 import { ReportPanel } from "@/components/report-panel";
+import { VisitReportPanel } from "@/components/visit-report-panel";
 import { AddressLink } from "@/components/open-in-maps";
 import { ChemicalDropdown } from "@/components/chem-dropdown";
 import { JobSchedule } from "@/components/schedule-form";
@@ -305,6 +308,8 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                     <Timeline detail={detail} tz={tz} />
                   </section>
                 ) : null}
+
+                {job.type === "maintenance" ? <VisitReport detail={detail} /> : null}
 
                 {jobHasWrapUp(job.type) ? null : (
                   <section className="mt-8 max-w-3xl" aria-labelledby="quotes">
@@ -875,6 +880,61 @@ async function Schedule({ detail, tz }: { detail: JobDetail; tz: string }) {
       }}
       canSuggest={job.status === "scheduled" || job.status === "unscheduled"}
     />
+  );
+}
+
+/**
+ * A maintenance visit's report (owner, 2026-10-20): what went to the customer, and Send Visit
+ * Report. Hidden when the shop turned visit reports off.
+ */
+async function VisitReport({ detail }: { detail: JobDetail }) {
+  const office = await getOffice();
+  const [company, line, sent] = await Promise.all([
+    getCompany(office),
+    getLine(office),
+    createClient().then((db) =>
+      db
+        .from("report")
+        .select("id, version, status, sent_at, share_link(token, revoked_at)")
+        .eq("job_id", detail.job.id)
+        .eq("template_key", "maintenance")
+        .is("deleted_at", null)
+        .order("version", { ascending: false }),
+    ),
+  ]);
+  const mode = visitReportMode(company.settings);
+  if (mode === "off") return null;
+  const versions = (
+    (sent.data ?? []) as {
+      id: string;
+      version: number;
+      status: string;
+      sent_at: string | null;
+      share_link: { token: string; revoked_at: string | null }[];
+    }[]
+  ).map((r) => ({
+    id: r.id,
+    version: r.version,
+    current: r.status === "sent",
+    sentAt: r.sent_at,
+    token: r.share_link.find((l) => !l.revoked_at)?.token ?? null,
+  }));
+  return (
+    <section className="mt-8 max-w-3xl" aria-labelledby="visit-report">
+      <h2 id="visit-report" className="mb-3 font-display text-2xl font-bold">
+        Visit Report
+      </h2>
+      <VisitReportPanel
+        jobId={detail.job.id}
+        auto={mode === "auto"}
+        done={detail.job.status === "done"}
+        customerEmail={detail.job.customer?.email ?? null}
+        hasLine={line?.status === "active"}
+        emailReady={emailConfigured()}
+        versions={versions}
+        timeZone={office.company.timezone}
+      />
+    </section>
   );
 }
 

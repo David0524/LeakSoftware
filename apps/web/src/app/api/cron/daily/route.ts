@@ -2,6 +2,7 @@ import { adminClient } from "@/server/admin";
 import { syncAllSubscriptionPrices } from "@/server/billing";
 import { runFollowups } from "@/server/followups";
 import { siteOrigin } from "@/lib/origin";
+import { sendVisitReport } from "@/server/visit-reports";
 
 export const maxDuration = 300;
 
@@ -27,11 +28,25 @@ export async function GET(request: Request) {
   const links = await admin.rpc("expire_share_links");
   // Sundeck Pro prices follow each shop's package and people; this catches anything missed.
   const prices = await syncAllSubscriptionPrices(admin);
+  // Visit reports that should have gone by themselves but didn't (a phone completed the
+  // visit and never told the server): sent by email now.
+  const due = await admin.rpc("visit_reports_due");
+  const origin = await siteOrigin();
+  let visitReports = 0;
+  for (const v of (due.data ?? []) as { job_id: string }[]) {
+    try {
+      const r = await sendVisitReport(admin, v.job_id, { automatic: true, origin });
+      if (!("skipped" in r)) visitReports++;
+    } catch {
+      // Tried again tomorrow while the visit is within two days.
+    }
+  }
   return Response.json({
     followups,
     subscriptionPrices: prices,
     expiredLinks: links.error ? links.error.message : links.data,
     maintenanceVisits: error ? error.message : visits,
     monthlyInvoices: billed.error ? billed.error.message : billed.data,
+    visitReports: due.error ? due.error.message : visitReports,
   });
 }

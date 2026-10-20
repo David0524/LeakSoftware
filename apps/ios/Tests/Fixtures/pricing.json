@@ -32787,5 +32787,190 @@
         }
       ]
     }
+  ],
+  "waterTestRows": [
+    {
+      "args": [
+        {}
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "fc": 1,
+          "ph": 7.5,
+          "ta": 140
+        }
+      ],
+      "result": [
+        {
+          "key": "fc",
+          "label": "Free chlorine",
+          "value": 1,
+          "range": "3–6",
+          "status": "low",
+          "statusLabel": "Low"
+        },
+        {
+          "key": "ph",
+          "label": "pH",
+          "value": 7.5,
+          "range": "7.4–7.6",
+          "status": "ok",
+          "statusLabel": "In range"
+        },
+        {
+          "key": "ta",
+          "label": "Alkalinity",
+          "value": 140,
+          "range": "80–120",
+          "status": "high",
+          "statusLabel": "High"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "fc": 3,
+          "ph": 7.4,
+          "ta": 80,
+          "ch": 250,
+          "cya": 60,
+          "salt": 3000
+        }
+      ],
+      "result": [
+        {
+          "key": "fc",
+          "label": "Free chlorine",
+          "value": 3,
+          "range": "4.5–7.5",
+          "status": "low",
+          "statusLabel": "Low"
+        },
+        {
+          "key": "ph",
+          "label": "pH",
+          "value": 7.4,
+          "range": "7.4–7.6",
+          "status": "ok",
+          "statusLabel": "In range"
+        },
+        {
+          "key": "ta",
+          "label": "Alkalinity",
+          "value": 80,
+          "range": "80–120",
+          "status": "ok",
+          "statusLabel": "In range"
+        },
+        {
+          "key": "ch",
+          "label": "Calcium",
+          "value": 250,
+          "range": "200–400",
+          "status": "ok",
+          "statusLabel": "In range"
+        },
+        {
+          "key": "cya",
+          "label": "Stabilizer",
+          "value": 60,
+          "range": "30–80",
+          "status": "ok",
+          "statusLabel": "In range"
+        },
+        {
+          "key": "salt",
+          "label": "Salt",
+          "value": 3000,
+          "range": "2700–3400",
+          "status": "ok",
+          "statusLabel": "In range"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "fc": 9,
+          "ph": 8.2,
+          "ta": 60,
+          "ch": 500,
+          "cya": 100,
+          "salt": 2500
+        }
+      ],
+      "result": [
+        {
+          "key": "fc",
+          "label": "Free chlorine",
+          "value": 9,
+          "range": "7.5–10.5",
+          "status": "ok",
+          "statusLabel": "In range"
+        },
+        {
+          "key": "ph",
+          "label": "pH",
+          "value": 8.2,
+          "range": "7.4–7.6",
+          "status": "high",
+          "statusLabel": "High"
+        },
+        {
+          "key": "ta",
+          "label": "Alkalinity",
+          "value": 60,
+          "range": "80–120",
+          "status": "low",
+          "statusLabel": "Low"
+        },
+        {
+          "key": "ch",
+          "label": "Calcium",
+          "value": 500,
+          "range": "200–400",
+          "status": "high",
+          "statusLabel": "High"
+        },
+        {
+          "key": "cya",
+          "label": "Stabilizer",
+          "value": 100,
+          "range": "30–80",
+          "status": "high",
+          "statusLabel": "High"
+        },
+        {
+          "key": "salt",
+          "label": "Salt",
+          "value": 2500,
+          "range": "2700–3400",
+          "status": "low",
+          "statusLabel": "Low"
+        }
+      ]
+    },
+    {
+      "args": [
+        {
+          "ph": null,
+          "cya": 0
+        }
+      ],
+      "result": [
+        {
+          "key": "cya",
+          "label": "Stabilizer",
+          "value": 0,
+          "range": "30–80",
+          "status": "low",
+          "statusLabel": "Low"
+        }
+      ]
+    }
   ]
 }

@@ -201,3 +201,14 @@ describe("Replace filter", () => {
     expect(filterAge("2024-08-01", "2026-10-19")).toBe("Filter 2 years old");
   });
 });
+
+describe("visit reports", () => {
+  it("are sent by hand unless the shop chose otherwise", async () => {
+    const { visitReportMode, VISIT_REPORT_MODES } = await import("../src");
+    expect(visitReportMode(null)).toBe("manual");
+    expect(visitReportMode({ visit_reports: "auto" })).toBe("auto");
+    expect(visitReportMode({ visit_reports: "off" })).toBe("off");
+    expect(visitReportMode({ visit_reports: "weekly" })).toBe("manual");
+    expect(VISIT_REPORT_MODES.map((m) => m.label)).toEqual(["Automatic", "By Hand", "Off"]);
+  });
+});

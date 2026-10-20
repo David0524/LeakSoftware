@@ -197,3 +197,16 @@ describe("readingSummary", () => {
     expect(readingSummary({})).toBe("");
   });
 });
+
+describe("a visit report's water test", () => {
+  it("lists each reading taken with its range and how it measured", async () => {
+    const { waterTestRows } = await import("../src");
+    const rows = waterTestRows({ fc: 1, ph: 7.5, ta: 140, cya: null, salt: undefined });
+    expect(rows.map((r) => [r.label, r.value, r.range, r.statusLabel])).toEqual([
+      ["Free chlorine", 1, "3–6", "Low"],
+      ["pH", 7.5, "7.4–7.6", "In range"],
+      ["Alkalinity", 140, "80–120", "High"],
+    ]);
+    expect(waterTestRows({})).toEqual([]);
+  });
+});
