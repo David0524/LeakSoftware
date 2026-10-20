@@ -238,13 +238,7 @@ public struct CustomerDetail: Equatable, Sendable {
 }
 
 /// The job type's name on a customer's page.
-public func customerJobTypeLabel(_ type: JobType) -> String {
-    switch type {
-    case .detection: "Leak detection"
-    case .repair: "Repair"
-    case .maintenance: "Maintenance"
-    }
-}
+public func customerJobTypeLabel(_ type: JobType) -> String { type.label }
 
 public func customerDetail(
     _ store: LocalStore, companyId: String, customerId: String, names: [String: String] = [:], now: Date = Date(),

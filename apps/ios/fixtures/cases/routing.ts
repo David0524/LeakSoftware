@@ -1,6 +1,8 @@
 import {
   ARRIVAL_WINDOWS,
   LOCK_LABELS,
+  NOT_ON_MAP,
+  mapStatus,
   ROUTING_DEFAULTS,
   arrivalText,
   arrivalWindow,
@@ -109,6 +111,86 @@ const settings = (o: Partial<RoutingSettings> = {}): RoutingSettings => ({
 
 // routing.ts and route-plan.ts.
 export const routing: ModuleCases = {
+  // "Not found on the map" (owner, 2026-10-20).
+  NOT_ON_MAP: rule(() => NOT_ON_MAP, [[]]),
+  mapStatus: rule(
+    (p: Parameters<typeof mapStatus>[0], routing: boolean) => mapStatus(p, routing),
+    [
+      [null, true],
+      [{ address_line1: "1 Main St", city: "Mesa", state: "AZ", postal_code: "85201" }, true],
+      [{ address_line1: "1 Main St", city: "Mesa", state: "AZ", postal_code: "85201" }, false],
+      [
+        {
+          address_line1: "1 Main St",
+          city: "Mesa",
+          state: "AZ",
+          postal_code: "85201",
+          latitude: 33.4,
+          longitude: -111.8,
+        },
+        true,
+      ],
+      [
+        {
+          address_line1: "1 Main St",
+          city: "Mesa",
+          state: "AZ",
+          postal_code: "85201",
+          latitude: 33.4,
+          longitude: -111.8,
+        },
+        false,
+      ],
+      [
+        {
+          address_line1: "1 Main St",
+          city: "Mesa",
+          state: "AZ",
+          postal_code: "85201",
+          latitude: 33.4,
+          longitude: -111.8,
+          geocoded_address: "1 Main St, Mesa, AZ 85201",
+        },
+        true,
+      ],
+      [
+        {
+          address_line1: "1 Main St",
+          city: "Mesa",
+          state: "AZ",
+          postal_code: "85201",
+          latitude: 33.4,
+          longitude: -111.8,
+          geocoded_address: "9 Old Rd, Mesa, AZ 85201",
+        },
+        true,
+      ],
+      [
+        {
+          address_line1: "1 Main St",
+          city: null,
+          state: null,
+          postal_code: null,
+          latitude: 0,
+          longitude: 0,
+        },
+        true,
+      ],
+      [{ address_line1: "1 Main St", latitude: 33.4, longitude: null }, true],
+      [{ address_line1: "", city: "Mesa", state: "AZ", postal_code: "85201" }, true],
+      [{ address_line1: "   ", city: "Mesa", latitude: 33.4, longitude: -111.8 }, true],
+      [
+        {
+          address_line1: "1 Main St",
+          city: "Mesa",
+          state: "AZ",
+          postal_code: "85201",
+          geocoded_address: "1 Main St, Mesa, AZ 85201",
+        },
+        true,
+      ],
+    ],
+  ),
   haversineMeters: rule(
     (a: LatLng, b: LatLng) => haversineMeters(a, b),
     [

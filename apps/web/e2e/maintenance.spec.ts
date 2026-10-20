@@ -125,7 +125,7 @@ test("New Job books a maintenance visit, or starts a plan for a new customer", a
   await page.getByLabel("Street address").fill("455 N Galvin Pkwy");
   await page.getByLabel("City").fill("Phoenix");
   await page.getByLabel("State", { exact: true }).fill("AZ");
-  await page.getByRole("radio", { name: "Pool Service" }).click();
+  await page.getByRole("radio", { name: "Service", exact: true }).click();
   await expect(page.getByLabel("Second tech (optional)")).toHaveCount(0);
   await page.getByLabel("Date").fill(day);
   await page.getByLabel("Tech", { exact: true }).selectOption({ label: "Priya Shah" });
@@ -152,7 +152,7 @@ test("New Job books a maintenance visit, or starts a plan for a new customer", a
   await page.getByLabel("Street address").fill("1201 N Galvin Pkwy");
   await page.getByLabel("City").fill("Phoenix");
   await page.getByLabel("State", { exact: true }).fill("AZ");
-  await page.getByRole("radio", { name: "Pool Service" }).click();
+  await page.getByRole("radio", { name: "Service", exact: true }).click();
   await page.getByLabel("Repeats").selectOption("weekly");
   await page.getByLabel("First visit").fill(day);
   await page.getByLabel("Tech", { exact: true }).selectOption({ label: "Priya Shah" });

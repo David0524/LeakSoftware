@@ -6,6 +6,7 @@ import { DiscardGuard } from "@/components/discard-guard";
 import { body, display } from "./fonts";
 import startupImage from "./splash.json";
 import "./globals.css";
+import { PhoneFormatting } from "@/components/phone-format";
 
 export const metadata: Metadata = {
   title: "Sundeck Pro",
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Suspense fallback={null}>
           <DiscardGuard />
         </Suspense>
+        <PhoneFormatting />
       </body>
     </html>
   );

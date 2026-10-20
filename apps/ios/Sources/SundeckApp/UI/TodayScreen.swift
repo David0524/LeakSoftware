@@ -145,6 +145,8 @@
         var lineActive: Bool
         /// The cleanings due soon at each stop, by job (owner, 2026-10-19).
         var cleanings: [String: [VisitCleaning]] = [:]
+        /// The server looks addresses up, so "Not on map" can show (`MapLookups`).
+        var routing = false
 
         init(
             store: LocalStore, kv: KeyValue, company: CompanyContext, userId: String, wanted: String?, drive: DriveTimes
@@ -176,6 +178,7 @@
             }
             mapsApp = MapsApp(kv)
             lineActive = companyLine(store, companyId: company.id)?.status == "active"
+            routing = MapLookups.on(kv, company: try? store.get("company", company.id))
         }
 
         func name(_ id: String) -> String { techs.first { $0.id == id }?.name ?? "Teammate" }
@@ -259,6 +262,8 @@
                 if expanded {
                     VStack(alignment: .leading, spacing: 4) {
                         AddressButton(place: job.place)
+                        // Left out of drive times until its address is found (owner, 2026-10-20).
+                        if day.routing && job.mapMissing { NotOnMapTag() }
                         if !done, let cleanings = day.cleanings[job.id] {
                             FlowRow(spacing: 16) { ForEach(cleanings) { CleaningDueLabel(cleaning: $0) } }
                                 .accessibilityElement(children: .contain)
@@ -350,7 +355,7 @@
             .contentShape(Rectangle())
         }
 
-        /// Mark Complete (primary) or Mark Not Complete, then call and On My Way.
+        /// Mark Complete (primary), or Reopen Visit or Mark Not Complete, then call and On My Way.
         private func buttons(done: Bool) -> some View {
             HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 8) {
@@ -377,7 +382,8 @@
     /// Mark Complete on a Today stop (owner, 2026-10-19: every stop on the day's route): a
     /// maintenance visit is completed; a leak or repair job's stop is done for the day, and its
     /// report and invoice still follow. When the shop wants the checklist or a photo first, it
-    /// says so, with Open Job. A stop marked by mistake is marked not complete again. When
+    /// says so, with Open Job. A stop marked by mistake is marked not complete again, and a
+    /// completed visit is reopened (owner, 2026-10-20: core `todayUndo`). When
     /// completing sends the visit report (Automatic shops), it asks first (owner, 2026-10-20).
     /// Website components/today-complete.tsx.
     struct TodayMarkButton: View {
@@ -395,13 +401,16 @@
             let done = job.doneOn(day.ctx.today)
             VStack(alignment: .leading, spacing: 4) {
                 if done {
-                    Button(MarkStopText.notComplete) { mark(complete: false) }
-                        .buttonStyle(.secondary)
-                        .accessibilityLabel(MarkStopText.spoken(true, job.customerName))
+                    // Reopen Visit on a completed visit, Mark Not Complete on a leak or repair stop.
+                    if let undo = todayUndo(job, day: day.ctx.today) {
+                        Button(undo.label) { mark(complete: false) }
+                            .buttonStyle(.secondary)
+                            .accessibilityLabel(MarkStopText.spoken(undo.label, job.customerName))
+                    }
                 } else {
                     Button(MarkStopText.complete) { complete() }
                         .buttonStyle(.primary)
-                        .accessibilityLabel(MarkStopText.spoken(false, job.customerName))
+                        .accessibilityLabel(MarkStopText.spoken(MarkStopText.complete, job.customerName))
                 }
                 if let blocked {
                     InlineLinkText(text: blocked, link: MarkStopText.openJob) { openRoute(.job(job.id)) }

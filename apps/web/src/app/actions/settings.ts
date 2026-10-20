@@ -16,6 +16,9 @@ import {
   visitReportMode,
   savedReportFrom,
   savedReportSections,
+  INSPECTION_SECTIONS,
+  optionsFromText,
+  type ChecklistSection,
 } from "@leakbook/core";
 import { OWNER_ONLY, requireManager, requireOwner } from "@/lib/auth";
 import { friendlyDbError, isWebUrl } from "@/lib/limits";
@@ -410,6 +413,7 @@ const ARCHIVABLE = new Set([
   "exclusion_reason",
   "severity_level",
   "saved_report",
+  "team_profile",
 ]);
 
 export async function removeConfigRow(_: FormState, form: FormData): Promise<FormState> {
@@ -493,6 +497,7 @@ export async function saveComponentType(_: FormState, form: FormData): Promise<F
   // Pool visit items are tasks (Done, Needs Attention, Skipped) in the Service section; leak
   // inspection items take a verdict in the section the owner picks (owner, 2026-10-16: an
   // item a pool shop added used to land on the leak checklist).
+  if (text(form, "job_type") === "inspection") return saveInspectionQuestion(form, id, name);
   const visit = text(form, "job_type") === "maintenance";
   const section = ["visual", "plumbing", "bond_beam", "other"].includes(text(form, "section"))
     ? text(form, "section")
@@ -530,6 +535,85 @@ export async function saveComponentType(_: FormState, form: FormData): Promise<F
   );
   if (error) return failed(error);
   return done("/settings/components", id ? "Saved." : `Added ${name}.`);
+}
+
+/** A pool inspection question (2026-10-20): its section, group, answers, and banner. */
+async function saveInspectionQuestion(
+  form: FormData,
+  id: string,
+  name: string,
+): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const section = INSPECTION_SECTIONS.includes(text(form, "section") as ChecklistSection)
+    ? text(form, "section")
+    : "insp_equipment";
+  const answer = ["choice", "multi", "text"].includes(text(form, "answer"))
+    ? text(form, "answer")
+    : "choice";
+  const options = answer === "text" ? null : optionsFromText(String(form.get("options") ?? ""));
+  if (options && options.length < 2) return { fields: { options: "Enter at least two choices." } };
+  const values = {
+    name,
+    section,
+    answer,
+    options,
+    group_label: text(form, "group_label") || null,
+    notice: text(form, "notice") || null,
+    sort_order: int(form, "sort_order"),
+    active: id ? checked(form, "active") : true,
+  };
+  const { error } = await upsert(
+    supabase,
+    "component_type",
+    office.company.id,
+    id,
+    values,
+    id
+      ? {}
+      : {
+          key: configKey(name, await takenKeys(supabase, "component_type", office.company.id)),
+          job_type: "inspection",
+          applies_to: "both",
+          methods: ["Visual"],
+        },
+  );
+  if (error) return failed(error);
+  return done("/settings/components", id ? "Saved." : `Added ${name}.`);
+}
+
+/**
+ * A person's profile (owner, 2026-10-20): name, phone, email, address, emergency contact and
+ * notes, kept by owners and admins. `user` links it to a team member; without it, someone who
+ * doesn't use the app.
+ */
+export async function saveTeamProfile(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const id = text(form, "id");
+  const name = text(form, "name");
+  if (!name) return { fields: { name: "Enter a name." } };
+  const email = text(form, "email");
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return { fields: { email: "Enter an email like name@example.com." } };
+  const values = {
+    name,
+    phone: text(form, "phone") || null,
+    email: email || null,
+    address: text(form, "address") || null,
+    emergency_name: text(form, "emergency_name") || null,
+    emergency_phone: text(form, "emergency_phone") || null,
+    notes: text(form, "notes") || null,
+  };
+  const user = text(form, "user");
+  const { error } = await upsert(
+    supabase,
+    "team_profile",
+    office.company.id,
+    id,
+    values,
+    user ? { user_id: user } : {},
+  );
+  if (error) return failed(error);
+  return done("/settings/team", id ? "Saved." : `Added ${name}.`);
 }
 
 /** Thresholds for built-in calculators, and fields for custom test types. */

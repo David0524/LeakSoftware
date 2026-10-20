@@ -1,4 +1,7 @@
 import {
+  JOB_TYPE_LABELS,
+  reportShareText,
+  reportTitle,
   SAVED_REPORT_SECTIONS,
   applySavedReport,
   replaceSavedReportQuestion,
@@ -11,6 +14,10 @@ import {
   companyServices,
   formatCents,
   formatPhone,
+  formatPhoneTyping,
+  phoneCaret,
+  todayUndo,
+  jobReschedulable,
   isHexColor,
   isManagerRole,
   jobActionLabel,
@@ -126,7 +133,7 @@ export const basics: ModuleCases = {
   ),
   jobFeeLabel: rule(
     (t: string | null) => jobFeeLabel(t),
-    [["detection"], ["repair"], ["maintenance"], [null], [""], ["Detection"]],
+    [["detection"], ["repair"], ["maintenance"], ["inspection"], [null], [""], ["Detection"]],
   ),
   toE164: rule(
     (s: string | null) => toE164(s),
@@ -148,6 +155,67 @@ export const basics: ModuleCases = {
   formatPhone: rule(
     (s: string) => formatPhone(s),
     [["+16025550142"], ["+442079460958"], ["6025550142"]],
+  ),
+  // Phone numbers formatted as they're typed (owner, 2026-10-20).
+  formatPhoneTyping: rule(
+    (s: string) => formatPhoneTyping(s),
+    [
+      [""],
+      ["   "],
+      ["6"],
+      ["60"],
+      ["602"],
+      ["6025"],
+      ["602555"],
+      ["6025550"],
+      ["6025550142"],
+      ["60255501423"],
+      ["(602) 555-0142"],
+      ["(602) 555-01422"],
+      ["(602"],
+      ["(602)"],
+      ["(602) 5"],
+      ["602.555.0142"],
+      ["602-555-0142 "],
+      ["1"],
+      ["16"],
+      ["1602"],
+      ["16025550142"],
+      ["+1"],
+      ["+1 (602) 555-0142"],
+      ["+16025550142"],
+      ["+1 (602) 555-01423"],
+      ["+44 20 7946 0958"],
+      ["+"],
+      ["-"],
+      ["602 555 0142 ext 3"],
+      ["555-HELP"],
+      ["(602) 555-0142 x"],
+      ["١٢٣"],
+      ["6😀02"],
+    ],
+  ),
+  phoneCaret: rule(
+    (s: string, n: number) => phoneCaret(s, n),
+    [
+      ["(602) 555-0142", 0],
+      ["(602) 555-0142", 1],
+      ["(602) 555-0142", 3],
+      ["(602) 555-0142", 4],
+      ["(602) 555-0142", 6],
+      ["(602) 555-0142", 7],
+      ["(602) 555-0142", 10],
+      ["(602) 555-0142", 11],
+      ["+1 (602) 555-0142", 0],
+      ["+1 (602) 555-0142", 1],
+      ["+1 (602) 555-0142", 2],
+      ["+1", 0],
+      ["+", 0],
+      ["", 0],
+      ["", 3],
+      ["(6", -1],
+      ["6😀02", 2],
+    ],
   ),
   companyServices: rule(
     (s: unknown) => companyServices(s),
@@ -226,6 +294,39 @@ export const basics: ModuleCases = {
       [{ type: "detection" }, "2026-10-19"],
       [{ type: "repair" }, "2026-10-20"],
     ],
+  ),
+  // Schedule Job / Change Schedule on the job page until its work is done (owner, 2026-10-20).
+  jobReschedulable: rule(
+    (job: { type: string; status: string }) => jobReschedulable(job),
+    ["maintenance", "detection", "repair", "inspection"].flatMap((type) =>
+      [...JOB_STATUSES, "bogus"].map(
+        (status) => [{ type, status }] as [{ type: string; status: string }],
+      ),
+    ),
+  ),
+  // Reopen Visit or Mark Not Complete on a done Today stop (owner, 2026-10-20).
+  todayUndo: rule(
+    (job: { type: string; status: string; stop_done_on?: string | null }, day: string) =>
+      todayUndo(job, day),
+    ["maintenance", "detection", "repair", "inspection"].flatMap((type) =>
+      [
+        { status: "done" },
+        { status: "done", stop_done_on: "2026-10-20" },
+        { status: "scheduled" },
+        { status: "scheduled", stop_done_on: "2026-10-20" },
+        { status: "in_progress", stop_done_on: "2026-10-20" },
+        { status: "in_progress", stop_done_on: "2026-10-19" },
+        { status: "scheduled", stop_done_on: null },
+        { status: "report_sent", stop_done_on: "2026-10-20" },
+        { status: "canceled", stop_done_on: "2026-10-20" },
+      ].map(
+        (job) =>
+          [{ type, ...job }, "2026-10-20"] as [
+            { type: string; status: string; stop_done_on?: string | null },
+            string,
+          ],
+      ),
+    ),
   ),
   jobHasWrapUp: rule(
     (t: string | null) => jobHasWrapUp(t),
@@ -399,6 +500,24 @@ export const basics: ModuleCases = {
         ],
       ],
       [[]],
+    ],
+  ),
+
+  JOB_TYPE_LABELS: rule(() => JOB_TYPE_LABELS, [[]]),
+  reportTitle: rule(
+    (t: string | null) => reportTitle(t),
+    [["inspection"], ["detection"], ["repair"], ["maintenance"], [null], ["Inspection"]],
+  ),
+  reportShareText: rule(
+    (shop: string, link: string, withQuote?: boolean, jobType?: string | null) =>
+      reportShareText(shop, link, withQuote, jobType),
+    [
+      ["Blue Pools", "https://x.co/r/abc"],
+      ["Blue Pools", "https://x.co/r/abc", true],
+      ["Blue Pools", "https://x.co/r/abc", false, "inspection"],
+      ["Blue Pools", "https://x.co/r/abc", true, "inspection"],
+      ["Blue Pools", "https://x.co/r/abc", false, "detection"],
+      ["Blue Pools", "https://x.co/r/abc", false, null],
     ],
   ),
 };

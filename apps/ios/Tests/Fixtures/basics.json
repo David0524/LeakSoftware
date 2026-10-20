@@ -1241,6 +1241,12 @@
     },
     {
       "args": [
+        "inspection"
+      ],
+      "result": "Price"
+    },
+    {
+      "args": [
         null
       ],
       "result": "Price"
@@ -1350,6 +1356,327 @@
         "6025550142"
       ],
       "result": "6025550142"
+    }
+  ],
+  "formatPhoneTyping": [
+    {
+      "args": [
+        ""
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        "   "
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        "6"
+      ],
+      "result": "(6"
+    },
+    {
+      "args": [
+        "60"
+      ],
+      "result": "(60"
+    },
+    {
+      "args": [
+        "602"
+      ],
+      "result": "(602"
+    },
+    {
+      "args": [
+        "6025"
+      ],
+      "result": "(602) 5"
+    },
+    {
+      "args": [
+        "602555"
+      ],
+      "result": "(602) 555"
+    },
+    {
+      "args": [
+        "6025550"
+      ],
+      "result": "(602) 555-0"
+    },
+    {
+      "args": [
+        "6025550142"
+      ],
+      "result": "(602) 555-0142"
+    },
+    {
+      "args": [
+        "60255501423"
+      ],
+      "result": "60255501423"
+    },
+    {
+      "args": [
+        "(602) 555-0142"
+      ],
+      "result": "(602) 555-0142"
+    },
+    {
+      "args": [
+        "(602) 555-01422"
+      ],
+      "result": "(602) 555-01422"
+    },
+    {
+      "args": [
+        "(602"
+      ],
+      "result": "(602"
+    },
+    {
+      "args": [
+        "(602)"
+      ],
+      "result": "(602"
+    },
+    {
+      "args": [
+        "(602) 5"
+      ],
+      "result": "(602) 5"
+    },
+    {
+      "args": [
+        "602.555.0142"
+      ],
+      "result": "(602) 555-0142"
+    },
+    {
+      "args": [
+        "602-555-0142 "
+      ],
+      "result": "(602) 555-0142"
+    },
+    {
+      "args": [
+        "1"
+      ],
+      "result": "+1"
+    },
+    {
+      "args": [
+        "16"
+      ],
+      "result": "+1 (6"
+    },
+    {
+      "args": [
+        "1602"
+      ],
+      "result": "+1 (602"
+    },
+    {
+      "args": [
+        "16025550142"
+      ],
+      "result": "+1 (602) 555-0142"
+    },
+    {
+      "args": [
+        "+1"
+      ],
+      "result": "+1"
+    },
+    {
+      "args": [
+        "+1 (602) 555-0142"
+      ],
+      "result": "+1 (602) 555-0142"
+    },
+    {
+      "args": [
+        "+16025550142"
+      ],
+      "result": "+1 (602) 555-0142"
+    },
+    {
+      "args": [
+        "+1 (602) 555-01423"
+      ],
+      "result": "+1 (602) 555-01423"
+    },
+    {
+      "args": [
+        "+44 20 7946 0958"
+      ],
+      "result": "+44 20 7946 0958"
+    },
+    {
+      "args": [
+        "+"
+      ],
+      "result": "+"
+    },
+    {
+      "args": [
+        "-"
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        "602 555 0142 ext 3"
+      ],
+      "result": "602 555 0142 ext 3"
+    },
+    {
+      "args": [
+        "555-HELP"
+      ],
+      "result": "555-HELP"
+    },
+    {
+      "args": [
+        "(602) 555-0142 x"
+      ],
+      "result": "(602) 555-0142 x"
+    },
+    {
+      "args": [
+        "١٢٣"
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        "6😀02"
+      ],
+      "result": "(602"
+    }
+  ],
+  "phoneCaret": [
+    {
+      "args": [
+        "(602) 555-0142",
+        0
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        "(602) 555-0142",
+        1
+      ],
+      "result": 2
+    },
+    {
+      "args": [
+        "(602) 555-0142",
+        3
+      ],
+      "result": 4
+    },
+    {
+      "args": [
+        "(602) 555-0142",
+        4
+      ],
+      "result": 7
+    },
+    {
+      "args": [
+        "(602) 555-0142",
+        6
+      ],
+      "result": 9
+    },
+    {
+      "args": [
+        "(602) 555-0142",
+        7
+      ],
+      "result": 11
+    },
+    {
+      "args": [
+        "(602) 555-0142",
+        10
+      ],
+      "result": 14
+    },
+    {
+      "args": [
+        "(602) 555-0142",
+        11
+      ],
+      "result": 14
+    },
+    {
+      "args": [
+        "+1 (602) 555-0142",
+        0
+      ],
+      "result": 2
+    },
+    {
+      "args": [
+        "+1 (602) 555-0142",
+        1
+      ],
+      "result": 2
+    },
+    {
+      "args": [
+        "+1 (602) 555-0142",
+        2
+      ],
+      "result": 5
+    },
+    {
+      "args": [
+        "+1",
+        0
+      ],
+      "result": 2
+    },
+    {
+      "args": [
+        "+",
+        0
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        "",
+        0
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        "",
+        3
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        "(6",
+        -1
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        "6😀02",
+        2
+      ],
+      "result": 4
     }
   ],
   "companyServices": [
@@ -1909,6 +2236,818 @@
       }
     }
   ],
+  "jobReschedulable": [
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "unscheduled"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "scheduled"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "in_progress"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "report_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "quote_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "quote_accepted"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "invoiced"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "paid"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "canceled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "done"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "bogus"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "unscheduled"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "scheduled"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "in_progress"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "report_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "quote_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "quote_accepted"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "invoiced"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "paid"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "canceled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "done"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "bogus"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "unscheduled"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "scheduled"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "in_progress"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "report_sent"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "quote_sent"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "quote_accepted"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "invoiced"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "paid"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "canceled"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "done"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "bogus"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "unscheduled"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "scheduled"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "in_progress"
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "report_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "quote_sent"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "quote_accepted"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "invoiced"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "paid"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "canceled"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "done"
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "bogus"
+        }
+      ],
+      "result": false
+    }
+  ],
+  "todayUndo": [
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "done"
+        },
+        "2026-10-20"
+      ],
+      "result": {
+        "label": "Reopen Visit",
+        "reopen": true
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "done",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": {
+        "label": "Reopen Visit",
+        "reopen": true
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "scheduled"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "scheduled",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "in_progress",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "in_progress",
+          "stop_done_on": "2026-10-19"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "scheduled",
+          "stop_done_on": null
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "report_sent",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "maintenance",
+          "status": "canceled",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "done"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "done",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "scheduled"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "scheduled",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": {
+        "label": "Mark Not Complete",
+        "reopen": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "in_progress",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": {
+        "label": "Mark Not Complete",
+        "reopen": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "in_progress",
+          "stop_done_on": "2026-10-19"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "scheduled",
+          "stop_done_on": null
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "report_sent",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "detection",
+          "status": "canceled",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "done"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "done",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "scheduled"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "scheduled",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": {
+        "label": "Mark Not Complete",
+        "reopen": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "in_progress",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": {
+        "label": "Mark Not Complete",
+        "reopen": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "in_progress",
+          "stop_done_on": "2026-10-19"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "scheduled",
+          "stop_done_on": null
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "report_sent",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "repair",
+          "status": "canceled",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "done"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "done",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "scheduled"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "scheduled",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": {
+        "label": "Mark Not Complete",
+        "reopen": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "in_progress",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": {
+        "label": "Mark Not Complete",
+        "reopen": false
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "in_progress",
+          "stop_done_on": "2026-10-19"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "scheduled",
+          "stop_done_on": null
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "report_sent",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "type": "inspection",
+          "status": "canceled",
+          "stop_done_on": "2026-10-20"
+        },
+        "2026-10-20"
+      ],
+      "result": null
+    }
+  ],
   "jobHasWrapUp": [
     {
       "args": [
@@ -2025,7 +3164,7 @@
       "result": [
         {
           "value": "maintenance",
-          "label": "Pool Service"
+          "label": "Service"
         },
         {
           "value": "repair",
@@ -2039,12 +3178,16 @@
       ],
       "result": [
         {
-          "value": "detection",
-          "label": "Leak Detection"
-        },
-        {
           "value": "repair",
           "label": "Repair"
+        },
+        {
+          "value": "detection",
+          "label": "Leak"
+        },
+        {
+          "value": "inspection",
+          "label": "Inspection"
         }
       ]
     },
@@ -2054,16 +3197,20 @@
       ],
       "result": [
         {
-          "value": "detection",
-          "label": "Leak Detection"
-        },
-        {
           "value": "maintenance",
-          "label": "Pool Service"
+          "label": "Service"
         },
         {
           "value": "repair",
           "label": "Repair"
+        },
+        {
+          "value": "detection",
+          "label": "Leak"
+        },
+        {
+          "value": "inspection",
+          "label": "Inspection"
         }
       ]
     }
@@ -3843,6 +4990,108 @@
         []
       ],
       "result": {}
+    }
+  ],
+  "JOB_TYPE_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "detection": "Leak detection",
+        "repair": "Repair",
+        "maintenance": "Maintenance",
+        "inspection": "Pool inspection"
+      }
+    }
+  ],
+  "reportTitle": [
+    {
+      "args": [
+        "inspection"
+      ],
+      "result": "Pool Inspection Report"
+    },
+    {
+      "args": [
+        "detection"
+      ],
+      "result": "Leak Detection Report"
+    },
+    {
+      "args": [
+        "repair"
+      ],
+      "result": "Leak Detection Report"
+    },
+    {
+      "args": [
+        "maintenance"
+      ],
+      "result": "Leak Detection Report"
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": "Leak Detection Report"
+    },
+    {
+      "args": [
+        "Inspection"
+      ],
+      "result": "Leak Detection Report"
+    }
+  ],
+  "reportShareText": [
+    {
+      "args": [
+        "Blue Pools",
+        "https://x.co/r/abc"
+      ],
+      "result": "Blue Pools: your leak detection report: https://x.co/r/abc"
+    },
+    {
+      "args": [
+        "Blue Pools",
+        "https://x.co/r/abc",
+        true
+      ],
+      "result": "Blue Pools: your leak detection report and repair estimate: https://x.co/r/abc"
+    },
+    {
+      "args": [
+        "Blue Pools",
+        "https://x.co/r/abc",
+        false,
+        "inspection"
+      ],
+      "result": "Blue Pools: your pool inspection report: https://x.co/r/abc"
+    },
+    {
+      "args": [
+        "Blue Pools",
+        "https://x.co/r/abc",
+        true,
+        "inspection"
+      ],
+      "result": "Blue Pools: your pool inspection report and repair estimate: https://x.co/r/abc"
+    },
+    {
+      "args": [
+        "Blue Pools",
+        "https://x.co/r/abc",
+        false,
+        "detection"
+      ],
+      "result": "Blue Pools: your leak detection report: https://x.co/r/abc"
+    },
+    {
+      "args": [
+        "Blue Pools",
+        "https://x.co/r/abc",
+        false,
+        null
+      ],
+      "result": "Blue Pools: your leak detection report: https://x.co/r/abc"
     }
   ]
 }

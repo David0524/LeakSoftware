@@ -3,6 +3,7 @@
  * Config rows (component_type, test_type, severity_level) come from the database.
  */
 import type { JobType, Property } from "./models";
+import { inspectionAnswerText } from "./pool-inspection";
 
 // ---------------------------------------------------------------------------
 // Row shapes
@@ -15,7 +16,21 @@ interface Base {
 }
 
 /** Where an item is listed on the checklist and the report. */
-export type ChecklistSection = "visual" | "plumbing" | "bond_beam" | "other" | "service";
+export type ChecklistSection =
+  | "visual"
+  | "plumbing"
+  | "bond_beam"
+  | "other"
+  | "service"
+  // Pool Inspection's tabs (2026-10-20).
+  | "insp_equipment"
+  | "insp_self_cleaning"
+  | "insp_heaters"
+  | "insp_electrical"
+  | "insp_fencing"
+  | "insp_covers"
+  | "insp_visual"
+  | "insp_plumbing";
 
 export const CHECKLIST_SECTION_LABELS: Record<ChecklistSection, string> = {
   visual: "Visual Leak Inspection",
@@ -23,6 +38,14 @@ export const CHECKLIST_SECTION_LABELS: Record<ChecklistSection, string> = {
   bond_beam: "Bond Beam",
   other: "Other",
   service: "Service",
+  insp_equipment: "Equipment",
+  insp_self_cleaning: "Self Cleaning (In Floor) System",
+  insp_heaters: "Heaters",
+  insp_electrical: "Electrical Safety",
+  insp_fencing: "Fencing and Child Barriers",
+  insp_covers: "Covers",
+  insp_visual: "Visual Leak Inspection",
+  insp_plumbing: "Plumbing Static Test",
 };
 
 export interface ComponentType extends Base {
@@ -31,11 +54,18 @@ export interface ComponentType extends Base {
   section?: ChecklistSection;
   /**
    * leak: a verdict (not leaking, leaking, attention, not applicable); yes_no: yes or no;
-   * done: a maintenance task (done, needs attention, skipped).
+   * done: a maintenance task (done, needs attention, skipped); choice, multi, text: a pool
+   * inspection question (pool-inspection.ts).
    */
-  answer?: "leak" | "yes_no" | "done";
-  /** Which jobs get the item: leak detection (default) or maintenance visits. */
-  job_type?: "detection" | "maintenance";
+  answer?: "leak" | "yes_no" | "done" | "choice" | "multi" | "text";
+  /** Which jobs get the item: leak detection (default), maintenance visits, or pool inspections. */
+  job_type?: "detection" | "maintenance" | "inspection";
+  /** The small header it sits under ("Filtration System"). */
+  group_label?: string | null;
+  /** A choice or multi question's options (ChoiceOption[]). */
+  options?: unknown;
+  /** A banner shown before it, word for word. */
+  notice?: string | null;
   /** Only for this pool type (vinyl checks); null for every pool. */
   applies_to_pool_type?: string | null;
   /**
@@ -79,6 +109,8 @@ export interface ChecklistItemResult extends Base {
   notes?: string | null;
   inspected_at?: string | null;
   inspected_by?: string | null;
+  /** A pool inspection answer: an option's label, a list of labels, or text. */
+  value?: unknown;
 }
 
 export type FieldType = "text" | "number" | "select" | "textarea";
@@ -292,10 +324,15 @@ export function checklistTally(
 
 /** Badge text for an item, in his words. Yes/no items read "Yes" or "No". */
 export function verdictLabel(
-  r: Pick<ChecklistItemResult, "status" | "outcome"> | undefined,
-  answer: "leak" | "yes_no" | "done" = "leak",
+  r: (Pick<ChecklistItemResult, "status" | "outcome"> & { value?: unknown }) | undefined,
+  answer: ComponentType["answer"] = "leak",
 ): string {
   if (!r || r.status === "pending") return "To do";
+  if (answer === "choice" || answer === "multi" || answer === "text")
+    return (
+      inspectionAnswerText(answer, r.value) ??
+      (r.status === "excluded" ? "Not applicable" : "Answered")
+    );
   if (answer === "done") {
     if (r.status === "excluded") return "Skipped";
     return r.outcome === "attention" ? "Needs attention" : "Done";
@@ -529,6 +566,13 @@ export type SpaShape = "round" | "square";
  */
 export interface DiagramLayout {
   mirror?: boolean;
+  /**
+   * The pool is drawn in the middle of the diagram (owner, 2026-10-20: "Pool shapes are not
+   * centered"). Pools saved before sat 10 units left, to leave room for the spa; their spa,
+   * landmarks, drawing and finding pins were placed against that, so they keep it until the
+   * shape is saved again (centerLayout).
+   */
+  centered?: boolean;
   /**
    * The spa's center (0..1), its shape, and its radius `r` in diagram units (pinched on the
    * diagram, owner 2026-10-19). `size` is the nearest preset, for app builds that predate `r`.
@@ -771,8 +815,58 @@ const POOL_PATHS: Record<DiagramShape, string> = {
 
 const DIAGRAM_WIDTH = 160;
 const DIAGRAM_HEIGHT = 100;
-/** Pools are drawn in x 8..132; mirroring flips them about the middle of that. */
+/** The paths are drawn in x 8..132; mirroring flips them about the middle of that. */
 const MIRROR_AXIS = 140;
+/** How far right a centered pool is drawn: x 18..142, the middle of the 160-wide diagram. */
+export const POOL_CENTER_OFFSET = 10;
+
+/** Moves a pool path right by dx (absolute M, L, H, V, Q, C, and Z only, as mirrorPath). */
+export function offsetPath(path: string, dx: number): string {
+  if (!dx || !path) return path;
+  const out: string[] = [];
+  let command = "";
+  let index = 0;
+  for (const token of path.match(/[A-Za-z]|-?\d*\.?\d+/g) ?? []) {
+    if (/[A-Za-z]/.test(token)) {
+      command = token;
+      index = 0;
+      out.push(token);
+      continue;
+    }
+    const n = Number(token);
+    const isX = command === "H" || (command !== "V" && index % 2 === 0);
+    out.push(String(isX ? n + dx : n));
+    index++;
+  }
+  return out.join(" ").replace(/ ([A-Za-z])/g, " $1");
+}
+
+/**
+ * A layout moved to the centered pool: the spa, landmarks and drawing move right with it, so
+ * they stay where they were against the outline. The shape editors open with this, and save it.
+ */
+export function centerLayout(layout: DiagramLayout): DiagramLayout {
+  if (layout.centered) return layout;
+  const dx = POOL_CENTER_OFFSET / DIAGRAM_WIDTH;
+  const x = (v: number) => Math.round(Math.min(1, Math.max(0, v + dx)) * 10_000) / 10_000;
+  return {
+    ...layout,
+    centered: true,
+    ...(layout.spa ? { spa: { ...layout.spa, x: x(layout.spa.x) } } : {}),
+    ...(layout.landmarks ? { landmarks: layout.landmarks.map((l) => ({ ...l, x: x(l.x) })) } : {}),
+    ...(layout.drawing
+      ? {
+          drawing: layout.drawing.map((d): DrawnShape =>
+            d.type === "line"
+              ? { ...d, x1: x(d.x1), x2: x(d.x2) }
+              : d.type === "circle"
+                ? { ...d, cx: x(d.cx) }
+                : { ...d, points: d.points.map(([px, py]) => [x(px), py] as [number, number]) },
+          ),
+        }
+      : {}),
+  };
+}
 
 /**
  * Mirrors a pool path left to right. The paths use absolute M, L, H, V, Q, C, and Z only, so
@@ -834,6 +928,7 @@ export function parseDiagramLayout(value: unknown): DiagramLayout {
   const o = value as Record<string, unknown>;
   const layout: DiagramLayout = {};
   if (o.mirror === true) layout.mirror = true;
+  if (o.centered === true) layout.centered = true;
   const spa = o.spa as Record<string, unknown> | undefined;
   if (spa && isUnitNumber(spa.x) && isUnitNumber(spa.y)) {
     layout.spa = { x: spa.x, y: spa.y };
@@ -978,12 +1073,13 @@ export function poolDiagram(
 ): PoolDiagram {
   const path = POOL_PATHS[shape ?? "rectangle"] ?? POOL_PATHS.rectangle;
   const mirror = layout?.mirror === true;
+  const dx = layout?.centered ? POOL_CENTER_OFFSET : 0;
   const placed = layout?.spa;
   const r = placed?.r ?? SPA_SIZES.find((z) => z.key === (placed?.size ?? "medium"))!.r;
   return {
     width: DIAGRAM_WIDTH,
     height: DIAGRAM_HEIGHT,
-    pool: mirror && path ? mirrorPath(path) : path,
+    pool: offsetPath(mirror && path ? mirrorPath(path) : path, dx),
     spa: hasSpa
       ? {
           cx: placed ? placed.x * DIAGRAM_WIDTH : mirror ? DIAGRAM_WIDTH - 145 : 145,

@@ -3,6 +3,7 @@ import {
   JOB_TYPE_LABELS,
   POOL_TYPE_LABELS,
   formatAddress,
+  mapStatus,
   formatPhone,
   formatSchedule,
   isManagerRole,
@@ -24,6 +25,9 @@ import { MaintenancePlans } from "../../../../../features/maintenance/Maintenanc
 import { useTeam } from "../../../../../data/schedule";
 import { useLine } from "../../../../../data/texting";
 import { locateAfterSync } from "../../../../../lib/locate";
+import { useRoutingOn } from "../../../../../lib/routing";
+import { NotOnMapTag } from "../../../../../ui/NotOnMap";
+import { useAddressSuggestions } from "../../../../../features/address/AddressSuggestions";
 import { getServices } from "../../../../../lib/services";
 import { openDirections, useDirectionsChoice } from "../../../../../state/directions";
 import { useCompany, useSession } from "../../../../../state/session";
@@ -64,6 +68,7 @@ export default function CustomerPage() {
   const lastReadings = latestByPool(useChemicalLog(company.id));
   const line = useLine(company.id);
   const [choice] = useDirectionsChoice();
+  const routing = useRoutingOn();
   const [editing, setEditing] = useState<"contact" | Property | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const customer = customers.find((c) => c.id === id && !c.deleted_at);
@@ -206,6 +211,7 @@ export default function CustomerPage() {
                         .filter(Boolean)
                         .join(" · ")}
                     </T>
+                    {mapStatus(p, routing) === "missing" ? <NotOnMapTag /> : null}
                   </ListRow>
                   {p.access_notes ? (
                     <ListRow title="Access notes" subtitle={p.access_notes} />
@@ -455,6 +461,16 @@ function PoolForm({ pool, onSaved }: { pool: Property; onSaved: () => void }) {
   const [error, setError] = useState<string | undefined>();
   const [gallonsError, setGallonsError] = useState<string | undefined>();
   const set = (k: keyof typeof f) => (v: string) => setF({ ...f, [k]: v });
+  // Real addresses as the street is typed (owner, 2026-10-20); picking one fills the rest.
+  const suggestions = useAddressSuggestions(f.address_line1, (s) =>
+    setF((x) => ({
+      ...x,
+      address_line1: s.line1,
+      city: s.city,
+      state: s.state,
+      postal_code: s.postal_code,
+    })),
+  );
 
   function save() {
     setError(undefined);
@@ -506,6 +522,7 @@ function PoolForm({ pool, onSaved }: { pool: Property; onSaved: () => void }) {
           onChangeText={set("address_line1")}
           error={error}
         />
+        {suggestions}
         <FieldRow
           label="Unit"
           value={f.address_line2}

@@ -370,7 +370,7 @@ import Testing
         ])
         #expect(f.jobType == .maintenance)
         #expect(f.hours == "0.75")
-        #expect(f.jobTypes.map(\.label) == ["Pool Service", "Repair"])
+        #expect(f.jobTypes.map(\.label) == ["Service", "Repair"])
         #expect(!f.showsBooking)
         #expect(!f.showsSecondTech)
         #expect(f.feeLabel == "Price ($)")

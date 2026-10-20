@@ -82,7 +82,9 @@ export default async function ReportsPage({ searchParams }: PageProps<"/jobs/rep
                 </>
               }
               detail={[
-                TEMPLATES[r.template_key],
+                r.job?.type === "inspection" && r.template_key === "homeowner"
+                  ? "Pool inspection report"
+                  : TEMPLATES[r.template_key],
                 r.version > 1 ? `version ${r.version}` : null,
                 r.job?.property?.address_line1,
               ]

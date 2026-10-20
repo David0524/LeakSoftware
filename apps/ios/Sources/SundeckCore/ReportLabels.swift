@@ -23,6 +23,19 @@ extension SignaturePurpose {
     }
 }
 
+/// The report's title: the job type's own name (`reportTitle`).
+public func reportTitle(_ jobType: String?) -> String {
+    jobType == "inspection" ? "Pool Inspection Report" : "Leak Detection Report"
+}
+
+/// The text a tech sends with the report link (`reportShareText`).
+public func reportShareText(_ shopName: String, _ link: String, withQuote: Bool = false, jobType: String? = nil)
+    -> String
+{
+    let what = jobType == "inspection" ? "pool inspection report" : "leak detection report"
+    return "\(shopName): your \(what)\(withQuote ? " and repair estimate" : ""): \(link)"
+}
+
 /// A report pill's color meaning (`VerdictTone` in report.ts).
 public enum VerdictTone: String, Codable, Sendable {
     case pass, attention, leaking

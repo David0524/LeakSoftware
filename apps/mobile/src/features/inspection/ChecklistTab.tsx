@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import {
   CHECKLIST_SECTION_LABELS,
+  INSPECTION_SECTIONS,
   checklistSectionSummary,
   componentApplies,
   markRemainingLabel,
@@ -15,6 +16,7 @@ import {
 } from "@leakbook/core";
 import {
   addComponent,
+  checklistJobType,
   createChecklist,
   removeComponent,
   saveChecklistResult,
@@ -34,10 +36,16 @@ import { UndoRow, useUndoWindow } from "../../ui/Undo";
 import { useAutosaveText } from "../../ui/useAutosave";
 import { color, face, font, MAX_TEXT_SCALE, minTap, shape, space } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
+import { InspectionChecklist } from "./InspectionChecklist";
 import { currentVerdict, verdictOptions, verdictValues, type Verdict } from "./verdict";
 
-/** The website's section order (CHECKLIST_SECTION_LABELS). */
-const SECTIONS = Object.keys(CHECKLIST_SECTION_LABELS) as ChecklistSection[];
+/**
+ * The website's section order (CHECKLIST_SECTION_LABELS). A pool inspection's eight sections
+ * have their own rows (InspectionChecklist).
+ */
+const SECTIONS = (Object.keys(CHECKLIST_SECTION_LABELS) as ChecklistSection[]).filter(
+  (s) => !INSPECTION_SECTIONS.includes(s),
+);
 
 const ADD_ANOTHER = "another:";
 
@@ -75,7 +83,8 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
   const [adding, setAdding] = useState<string | null>(null);
   // Edit, as in an iOS list: every item gets Remove (owner, 2026-10-19).
   const [editing, setEditing] = useState(false);
-  const maintenance = job.type === "maintenance";
+  // Which checklist this job takes: a visit's, a pool inspection's, or the leak one.
+  const kind = checklistJobType(job.type);
 
   if (insp.components.length === 0) {
     return (
@@ -93,7 +102,7 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
               has_spa: property?.has_spa ?? false,
               pool_type: property?.pool_type ?? null,
             },
-            maintenance ? "maintenance" : "detection",
+            kind,
           )
         }
       />
@@ -102,15 +111,32 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
 
   const typeOf = (c: JobComponent) => config.componentTypeById.get(c.component_type_id);
   const photos = new Map<string, number>();
+  // A pool inspection question shows how many photos it holds, as the website.
+  const questionPhotos = new Map<string, number>();
   for (const m of media)
-    if (m.job_component_id)
+    if (m.job_component_id) {
       photos.set(m.job_component_id, (photos.get(m.job_component_id) ?? 0) + 1);
+      if (m.kind === "photo")
+        questionPhotos.set(m.job_component_id, (questionPhotos.get(m.job_component_id) ?? 0) + 1);
+    }
+  // Pool inspection questions, in checklist order (their type's order, then the instance).
+  const inspectionRows = insp.components
+    .flatMap((c) => {
+      const t = typeOf(c);
+      return t && INSPECTION_SECTIONS.includes(t.section ?? "other")
+        ? [{ component: c, type: t, result: insp.resultByComponent.get(c.id) }]
+        : [];
+    })
+    .sort(
+      (a, b) =>
+        a.type.sort_order - b.type.sort_order || a.component.sort_order - b.component.sort_order,
+    );
 
   const present = new Set(insp.components.map((c) => c.component_type_id));
   const addable = config.componentTypes.filter(
     (t) =>
       !present.has(t.id) &&
-      (t.job_type ?? "detection") === (maintenance ? "maintenance" : "detection") &&
+      (t.job_type ?? "detection") === kind &&
       (!property || componentApplies(t, { ...property, has_pool: true })),
   );
   // Types that can repeat ("Another Return"), once each.
@@ -154,6 +180,14 @@ export function ChecklistTab({ job, property }: { job: Job; property?: Property 
           </Text>
         </Pressable>
       </View>
+      {inspectionRows.length ? (
+        <InspectionChecklist
+          job={job}
+          rows={inspectionRows}
+          photos={questionPhotos}
+          editing={editing}
+        />
+      ) : null}
       {SECTIONS.map((section) => {
         const items = insp.components
           .filter((c) => (typeOf(c)?.section ?? "other") === section && typeOf(c))

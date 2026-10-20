@@ -36,11 +36,11 @@ select is((select count(*) from component_type where company_id = (select id fro
             and job_type = 'detection'), 27::bigint, 'both: the inspection checklist arrives');
 select is((select count(*) from test_type where company_id = (select id from pool_shop)), 4::bigint,
   'both: and the leak tests');
-select is((select count(*) from price_book_item where company_id = (select id from pool_shop)), 26::bigint,
+select is((select count(*) from price_book_item where company_id = (select id from pool_shop)), 27::bigint,
   'both: both price books, each once');
 select lives_ok(format($$ select add_package_defaults(%L, 'both') $$, (select id from pool_shop)),
   'running it again is harmless');
-select is((select count(*) from price_book_item where company_id = (select id from pool_shop)), 26::bigint,
+select is((select count(*) from price_book_item where company_id = (select id from pool_shop)), 27::bigint,
   'and adds nothing twice');
 reset role;
 
@@ -51,7 +51,7 @@ create temp table leak_shop on commit drop as
 grant select on leak_shop to authenticated;
 select is((select count(*) from component_type where company_id = (select id from leak_shop)
             and job_type = 'maintenance'), 0::bigint, 'leak: no visit checklist');
-select is((select count(*) from price_book_item where company_id = (select id from leak_shop)), 10::bigint,
+select is((select count(*) from price_book_item where company_id = (select id from leak_shop)), 11::bigint,
   'leak: the leak detection price book only');
 select throws_ok($$ select create_company('X', null, 'spa') $$, '22023', null,
   'unknown services are refused');

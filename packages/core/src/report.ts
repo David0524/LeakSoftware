@@ -16,6 +16,12 @@ import {
 } from "./inspection";
 import type { Markup } from "./media";
 import { contrastRatio } from "./settings";
+import {
+  INSPECTION_SECTIONS,
+  foldedItems,
+  inspectionAnswerText,
+  inspectionTone,
+} from "./pool-inspection";
 
 export type ReportTemplateKey = "homeowner" | "partner";
 
@@ -37,9 +43,14 @@ export interface SnapshotComponent {
   notes: string | null;
   /** M8.5: checklist section, answer kind, verdict, and where. */
   section?: ChecklistSection;
-  answer?: "leak" | "yes_no" | "done";
+  answer?: "leak" | "yes_no" | "done" | "choice" | "multi" | "text";
   outcome?: ChecklistOutcome | null;
   location_text?: string | null;
+  /** Pool inspection questions (2026-10-20): the group, choices, banner, and the answer. */
+  group_label?: string | null;
+  options?: unknown;
+  notice?: string | null;
+  value?: unknown;
 }
 
 export interface SnapshotTest {
@@ -308,6 +319,85 @@ export function reportChecklist(s: ReportSnapshot): ReportChecklistSection[] | n
   })).filter((x) => x.items.length > 0);
 }
 
+/** One answered inspection question on the report: the question and its answer. */
+export interface InspectionReportRow {
+  id: string;
+  question: string;
+  answer: string;
+  tone: VerdictTone;
+  notes: string | null;
+  /** Its group header ("Filtration System"), for Needs attention. */
+  group: string | null;
+}
+
+export interface InspectionReportSection {
+  section: ChecklistSection;
+  title: string;
+  groups: { label: string | null; rows: InspectionReportRow[]; notPresent: boolean }[];
+}
+
+/**
+ * The pool inspection report (2026-10-20): every answered question as a compact row, by section
+ * and group; a group whose gate said no reads "Not present" without its folded questions. Needs
+ * attention lists the flagged answers first. Recommendations are the form's banners, word for
+ * word, for the sections that were answered.
+ */
+export function inspectionReport(s: Pick<ReportSnapshot, "components">): {
+  needsAttention: InspectionReportRow[];
+  sections: InspectionReportSection[];
+  recommendations: string[];
+} {
+  const items = s.components.filter((c) => INSPECTION_SECTIONS.includes(c.section ?? "other"));
+  const folded = foldedItems(items);
+  const row = (c: SnapshotComponent): InspectionReportRow => ({
+    id: c.id,
+    question: c.label,
+    answer:
+      inspectionAnswerText(c.answer, c.value) ??
+      (c.status === "excluded" ? "Not applicable" : "Answered"),
+    tone: inspectionTone(c),
+    notes: c.notes?.trim() || null,
+    group: c.group_label ?? null,
+  });
+  const answered = items.filter((c) => c.status !== "pending" && !folded.has(c.id));
+  const sections = INSPECTION_SECTIONS.map((section): InspectionReportSection => {
+    const here = items.filter((c) => c.section === section);
+    const groups: InspectionReportSection["groups"] = [];
+    for (const c of here) {
+      const label = c.group_label ?? null;
+      let g = groups.at(-1);
+      if (!g || g.label !== label) {
+        g = { label, rows: [], notPresent: false };
+        groups.push(g);
+      }
+      if (folded.has(c.id)) g.notPresent = true;
+      else if (c.status !== "pending") g.rows.push(row(c));
+    }
+    return {
+      section,
+      title: CHECKLIST_SECTION_LABELS[section],
+      groups: groups.filter((g) => g.rows.length > 0),
+    };
+  }).filter((x) => x.groups.length > 0);
+  const shown = new Set(sections.map((x) => x.section));
+  return {
+    needsAttention: answered
+      .filter((c) => c.outcome === "leaking" || c.outcome === "attention")
+      .sort((a, b) => (a.outcome === b.outcome ? 0 : a.outcome === "leaking" ? -1 : 1))
+      .map(row),
+    sections,
+    recommendations: [
+      ...new Set(
+        items
+          .filter((c) => c.notice?.trim() && shown.has(c.section ?? "other"))
+          .map((c) => c.notice!.trim())
+          // A lead-in to the next question ("…vessel structure:") isn't a recommendation.
+          .filter((n) => !n.endsWith(":")),
+      ),
+    ],
+  };
+}
+
 /** "Leaks noted": the leaking items, with where when the tech gave it. */
 export function leaksNoted(s: ReportSnapshot): string[] {
   return s.components
@@ -522,7 +612,9 @@ export function validateNarrative(draft: unknown, s: ReportSnapshot): NarrativeP
             message: `“${m[0]}” does not match any reading, result, or count recorded on this job.`,
           });
       }
-      for (const type of s.component_types) {
+      // A pool inspection's questions are sentences that use the leak checklist's names ("Main
+      // drain", "Pool"), so the names aren't checked there (2026-10-20).
+      for (const type of s.job.type === "inspection" ? [] : s.component_types) {
         const name = escapeRegExp(type.name.toLowerCase());
         const lower = text.toLowerCase();
         // A numbered instance ("Return 5") must exist on this job.
@@ -566,6 +658,7 @@ export function validateNarrative(draft: unknown, s: ReportSnapshot): NarrativeP
 // ---------------------------------------------------------------------------
 
 export function plainNarrative(s: ReportSnapshot, template: "homeowner" | "partner"): Narrative {
+  if (s.job.type === "inspection") return inspectionNarrative(s);
   const labelOf = new Map(s.components.map((c) => [c.id, c.label]));
   const failed = s.tests.filter((t) => t.outcome === "fail");
   const excluded = s.components.filter((c) => c.status === "excluded");
@@ -645,6 +738,57 @@ export function plainNarrative(s: ReportSnapshot, template: "homeowner" | "partn
   };
 }
 
+/**
+ * Write Draft on a pool inspection (owner decision 3, 2026-10-20): a summary from the answers,
+ * what needs attention, and the next steps with the form's recommendations. Editable before
+ * sending, like the leak report's draft.
+ */
+function inspectionNarrative(s: ReportSnapshot): Narrative {
+  const sections = NARRATIVE_SECTIONS.homeowner;
+  const titleOf = (key: string) => sections.find((x) => x.key === key)!.title;
+  const report = inspectionReport(s);
+  const answered = report.sections.reduce(
+    (n, x) => n + x.groups.reduce((m, g) => m + g.rows.length, 0),
+    0,
+  );
+  const flagged = report.needsAttention;
+  const leaking = flagged.filter((r) => r.tone === "leaking");
+  const idOf = (rowId: string) => s.components.find((c) => c.id === rowId)?.result_id ?? rowId;
+  const summary: NarrativeParagraph = {
+    text: flagged.length
+      ? `We inspected the pool, its equipment, and its safety features, and answered ${answered} questions. ${flagged.length} ${flagged.length === 1 ? "item needs" : "items need"} attention${leaking.length ? `, ${leaking.length} of them leaking` : ""}.`
+      : `We inspected the pool, its equipment, and its safety features, and answered ${answered} questions. Nothing needs attention.`,
+    source_ids: flagged.map((r) => idOf(r.id)),
+  };
+  const findings: NarrativeParagraph[] = flagged.length
+    ? flagged.map((r) => ({
+        text: [
+          `${r.group ? `${r.group}: ` : ""}${r.question}${/[?:]$/.test(r.question) ? "" : ":"} ${r.answer}.`,
+          r.notes ? (/[.!?]$/.test(r.notes) ? r.notes : `${r.notes}.`) : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
+        source_ids: [idOf(r.id)],
+      }))
+    : [{ text: "Everything we inspected was in order.", source_ids: [] }];
+  const steps: NarrativeParagraph[] = [
+    {
+      text: flagged.length
+        ? "We recommend taking care of the items above. Ask us for a quote for any repair."
+        : "No repair is needed based on today’s inspection.",
+      source_ids: flagged.map((r) => idOf(r.id)),
+    },
+    ...report.recommendations.map((text) => ({ text, source_ids: [] })),
+  ];
+  return {
+    sections: [
+      { key: "summary", title: titleOf("summary"), paragraphs: [summary] },
+      { key: "findings", title: titleOf("findings"), paragraphs: findings },
+      { key: "next_steps", title: titleOf("next_steps"), paragraphs: steps },
+    ],
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Rendering helpers
 // ---------------------------------------------------------------------------
@@ -662,8 +806,19 @@ export const SIGNATURE_PURPOSE_LABELS: Record<string, string> = {
 };
 
 /** The text a tech sends with the report link (6.5). */
-export function reportShareText(shopName: string, link: string, withQuote = false): string {
-  return `${shopName}: your leak detection report${withQuote ? " and repair estimate" : ""}: ${link}`;
+export function reportShareText(
+  shopName: string,
+  link: string,
+  withQuote = false,
+  jobType?: string | null,
+): string {
+  const what = jobType === "inspection" ? "pool inspection report" : "leak detection report";
+  return `${shopName}: your ${what}${withQuote ? " and repair estimate" : ""}: ${link}`;
+}
+
+/** The report's title: the job type's own name. */
+export function reportTitle(jobType: string | null | undefined): string {
+  return jobType === "inspection" ? "Pool Inspection Report" : "Leak Detection Report";
 }
 
 /** Block order on the report page, per template (report_template.sections). */

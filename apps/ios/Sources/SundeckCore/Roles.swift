@@ -54,6 +54,37 @@ public func markCompleteValues(type: String, day: String) -> [String: JSONValue]
     type == "maintenance" ? ["status": "done"] : ["stop_done_on": .string(day)]
 }
 
+/// Whether the job's page offers Schedule Job / Change Schedule (owner, 2026-10-20: "You should
+/// be able to reschedule a job from the jobs page after creating it"): until its work is done,
+/// started jobs included; repairs as before. Port of `jobReschedulable`.
+public func jobReschedulable(type: String, status: String) -> Bool {
+    type == "repair" || status == "unscheduled" || status == "scheduled" || status == "in_progress"
+}
+
+/// What a done stop on Today offers (owner, 2026-10-20: "Maintenance jobs don't have a reopen
+/// visit button on the Today page"): a completed maintenance visit, Reopen Visit (back to in
+/// progress); a leak or repair stop marked done today, Mark Not Complete; otherwise nothing.
+/// Port of `todayUndo`.
+public struct TodayUndo: Codable, Equatable, Sendable {
+    /// "Reopen Visit" or "Mark Not Complete".
+    public var label: String
+    /// Reopen the visit (done to in progress) rather than clear the day's mark.
+    public var reopen: Bool
+
+    public init(label: String, reopen: Bool) {
+        self.label = label
+        self.reopen = reopen
+    }
+
+    public static let reopenVisit = TodayUndo(label: "Reopen Visit", reopen: true)
+    public static let markNotComplete = TodayUndo(label: "Mark Not Complete", reopen: false)
+}
+
+public func todayUndo(type: String, status: String, stopDoneOn: String?, day: String) -> TodayUndo? {
+    if type == "maintenance" { return status == "done" ? .reopenVisit : nil }
+    return stopDoneOn == day && (status == "scheduled" || status == "in_progress") ? .markNotComplete : nil
+}
+
 /// Whether the job page has a Wrap-Up section (report, signatures, quotes, invoice).
 /// Maintenance visits don't (owner, 2026-10-19): they end with Complete Job, are billed monthly,
 /// and quote repairs from Details.
@@ -66,6 +97,18 @@ public let repairItemLabel = "What they need"
 
 public enum JobType: String, Codable, CaseIterable, Sendable {
     case detection, repair, maintenance
+    /// Pool Inspection (owner, 2026-10-20; PoolInspection.swift).
+    case inspection
+
+    /// "Leak detection", "Repair", "Maintenance", "Pool inspection" (`JOB_TYPE_LABELS`).
+    public var label: String {
+        switch self {
+        case .detection: "Leak detection"
+        case .repair: "Repair"
+        case .maintenance: "Maintenance"
+        case .inspection: "Pool inspection"
+        }
+    }
 }
 
 /// What the job's price is called (owner, 2026-10-19): a detection fee on leak detection, a
@@ -80,12 +123,17 @@ public struct JobTypeOption: Codable, Equatable, Sendable {
     public let label: String
 }
 
-/// The jobs New Job offers: the package's own, then Repair, which every shop gets.
+/// The jobs New Job offers, in this order (owner, 2026-10-20: "service, repair, leak, pool
+/// inspection"): Service (pool care shops), Repair (every shop), then Leak and Inspection (leak
+/// shops). Short labels, so all four fit across a phone.
 public func newJobTypes(_ services: Services) -> [JobTypeOption] {
     var options: [JobTypeOption] = []
-    if services != .pool { options.append(JobTypeOption(value: .detection, label: "Leak Detection")) }
-    if services != .leak { options.append(JobTypeOption(value: .maintenance, label: "Pool Service")) }
+    if services != .leak { options.append(JobTypeOption(value: .maintenance, label: "Service")) }
     options.append(JobTypeOption(value: .repair, label: "Repair"))
+    if services != .pool {
+        options.append(JobTypeOption(value: .detection, label: "Leak"))
+        options.append(JobTypeOption(value: .inspection, label: "Inspection"))
+    }
     return options
 }
 

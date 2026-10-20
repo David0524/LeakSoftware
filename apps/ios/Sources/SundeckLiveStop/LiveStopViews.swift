@@ -3,6 +3,7 @@
     import SundeckTokens
     import SwiftUI
     import UIKit
+    import WidgetKit
 
     // The Live Activity's views (owner, 2026-10-19: "Make the live notification look beautiful
     // please. Include our logo." and "Do not include a timer or stop watch"): drawn by the widget
@@ -20,15 +21,22 @@
         }
     }
 
-    /// The Live Activity's colors and type: brand navy behind white text, the water blue for
-    /// the progress, Barlow (the brand display face) for the name and the figure.
+    /// The Live Activity's colors and type: the brand's water blue behind white text (owner,
+    /// 2026-10-20: "use our lighter blue for live activities"; it was navy), white for the
+    /// progress and the check, Barlow (the brand display face) for the name and the figure. The
+    /// Dynamic Island is always black, where the same white reads too.
     public enum LiveStopStyle {
-        public static let background = Tokens.Brand.navy.liveColor
-        /// The water blue as it reads on navy (the light shade of `color.brand.water`).
-        public static let water = Tokens.Role.link.dark.liveColor
+        public static let background = Tokens.Brand.water.liveColor
+        /// The Dynamic Island's keyline: the same water blue.
+        public static let keyline = Tokens.Brand.water.liveColor
+        /// The progress bar and the done check.
+        public static let accent = Color.white
+        /// Text in the Dynamic Island, which is always black: the water blue's light shade.
+        public static let island = Tokens.Role.link.dark.liveColor
         public static let text = Color.white
-        public static let muted = Color.white.opacity(0.72)
-        public static let track = Color.white.opacity(0.18)
+        /// Secondary text: 0.85 white keeps 4.5:1 on the water blue.
+        public static let muted = Color.white.opacity(0.85)
+        public static let track = Color.white.opacity(0.28)
 
         /// Barlow at `size`, scaling with Dynamic Type.
         public static func display(_ size: CGFloat, _ weight: BrandFonts.Weight = .bold) -> Font {
@@ -43,13 +51,27 @@
     /// backgrounds), copied into the extension by xtool.yml's `resources`.
     public enum LiveStopLogo {
         public static let fileName = "mark-reverse-512"
+        /// The tallest the mark is drawn (the Lock Screen's), at 3x: 48 pt.
+        static let pixelHeight: CGFloat = 144
 
-        /// The mark from a bundle's root (the extension's), or nil when it isn't there.
+        /// The mark from a bundle's root (the extension's), or nil when it isn't there. It's
+        /// redrawn at the size it shows (the file is 512 by 749): a Live Activity's images are
+        /// kept small, and one too big for it came out as a black shape (TestFlight, 2026-10-20).
         public static func image(in bundle: Bundle = .main) -> Image? {
             guard let url = bundle.url(forResource: fileName, withExtension: "png"),
-                let picture = UIImage(contentsOfFile: url.path)
+                let picture = UIImage(contentsOfFile: url.path), picture.size.height > 0
             else { return nil }
-            return Image(uiImage: picture)
+            let scale = min(1, pixelHeight / (picture.size.height * picture.scale))
+            let size = CGSize(
+                width: (picture.size.width * picture.scale * scale).rounded(),
+                height: (picture.size.height * picture.scale * scale).rounded())
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 1
+            format.opaque = false
+            let small = UIGraphicsImageRenderer(size: size, format: format).image { _ in
+                picture.draw(in: CGRect(origin: .zero, size: size))
+            }
+            return Image(uiImage: small).renderingMode(.original)
         }
     }
 
@@ -66,10 +88,13 @@
         public var body: some View {
             Group {
                 if let logo {
-                    logo.resizable().interpolation(.high).aspectRatio(contentMode: .fit)
+                    // In its own colors, also where the Lock Screen tints a Live Activity (it drew
+                    // the mark as a black shape there, TestFlight 2026-10-20).
+                    logo.resizable().interpolation(.high).widgetAccentedRenderingMode(.fullColor)
+                        .aspectRatio(contentMode: .fit)
                 } else {
                     Image(systemName: "drop.fill").resizable().aspectRatio(contentMode: .fit)
-                        .foregroundStyle(LiveStopStyle.water)
+                        .foregroundStyle(LiveStopStyle.accent)
                 }
             }
             .frame(height: height)
@@ -77,7 +102,7 @@
         }
     }
 
-    /// The day's progress: a thin water-blue bar on a faint track.
+    /// The day's progress: a thin white bar on a faint track.
     public struct LiveStopProgress: View {
         public var value: Double
 
@@ -87,7 +112,7 @@
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(LiveStopStyle.track)
-                    Capsule().fill(LiveStopStyle.water)
+                    Capsule().fill(LiveStopStyle.accent)
                         .frame(width: max(geo.size.height, geo.size.width * min(1, max(0, value))))
                 }
             }
@@ -97,7 +122,7 @@
     }
 
     /// The stop's access notes on one line with a key (owner, 2026-10-20: gate code, which gate,
-    /// dogs), in the brand's warning amber on navy.
+    /// dogs), with a light amber key on the water blue.
     public struct LiveStopAccess: View {
         public var text: String
 
@@ -107,7 +132,7 @@
             HStack(spacing: 6) {
                 Image(systemName: "key.fill")
                     .font(LiveStopStyle.small(.semibold))
-                    .foregroundStyle(Color(red: 1, green: 0.78, blue: 0.35))
+                    .foregroundStyle(Color(red: 1, green: 0.84, blue: 0.48))
                 Text(text)
                     .font(LiveStopStyle.small(.medium))
                     .foregroundStyle(LiveStopStyle.text)
@@ -139,7 +164,7 @@
                 if content.figure == "✓" {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: size * 0.8, weight: .semibold))
-                        .foregroundStyle(LiveStopStyle.water)
+                        .foregroundStyle(LiveStopStyle.accent)
                         .frame(height: size)
                 } else {
                     Text(content.figure)
@@ -183,8 +208,8 @@
     }
 
     /// The Lock Screen (and banner) view: the mark and "Sundeck Pro" (or the actions), the
-    /// headline, the large figure, the stop and the next stop, and the day's progress, on brand
-    /// navy.
+    /// headline, the large figure, the stop and the next stop, and the day's progress, on the
+    /// brand's water blue.
     public struct LiveStopLockScreen: View {
         public var content: LiveStopContent
         public var logo: Image?
@@ -316,7 +341,7 @@
             Text(content.compact)
                 .font(LiveStopStyle.display(15))
                 .monospacedDigit()
-                .foregroundStyle(LiveStopStyle.water)
+                .foregroundStyle(LiveStopStyle.island)
                 .accessibilityLabel(content.spoken)
         }
 

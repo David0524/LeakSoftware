@@ -13,9 +13,26 @@ import Testing
             "arrivalText", "onMyWayText", "mapsLinks", "routeLink", "dayDirections", "ROUTING_DEFAULTS",
             "ARRIVAL_WINDOWS", "routingSettings", "workDay", "weekday", "localMinutes", "LOCK_LABELS", "canMoveJob",
             "canUnschedule", "lockReason", "inRouteOrder", "jobMinutes", "stopFor", "zonedMinutesToIso",
-            "routeUpdates", "daySummary",
+            "routeUpdates", "daySummary", "NOT_ON_MAP", "mapStatus",
         ]
         #expect(Fixtures.rules(module) == checked)
+    }
+
+    @Test func notOnTheMap() {
+        checkRule(module, "NOT_ON_MAP") { _ in
+            ["title": NotOnMap.title, "detail": NotOnMap.detail, "short": NotOnMap.short]
+        }
+        checkRule(module, "mapStatus") { c in
+            let row = try c.arg(0, as: JSONValue.self)
+            guard case .object(var o) = row else {
+                return mapStatus(nil, geocodedAddress: nil, routing: try c.arg(1))
+            }
+            o["has_pool"] = o["has_pool"] ?? true
+            o["has_spa"] = o["has_spa"] ?? false
+            return mapStatus(
+                try JSONValue.object(o).decode(Property.self), geocodedAddress: o["geocoded_address"]?.string,
+                routing: try c.arg(1))
+        }
     }
 
     /// The cases' drive times: known minutes between point keys, else the estimate.

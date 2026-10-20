@@ -67,6 +67,7 @@ import { SwipeLeading, SwipeToDelete } from "./SwipeRow";
 import { useNoSwipe } from "./SwipeNav";
 import { FormKeyboardBar, KEYBOARD_BAR_HEIGHT, KeyboardAvoider, useKeyboardOpen } from "./keyboard";
 import { chooseAction } from "./confirm";
+import { phoneEdit } from "../lib/phoneTyping";
 
 // The app's building blocks, drawn like the phone website on iPhone and Android (spec 3).
 // Colors are read while rendering (never baked into a stylesheet), so they follow Appearance.
@@ -659,6 +660,7 @@ export function Field({
   const [focused, setFocused] = useState(false);
   // Typing and selecting text never change the job section (owner, 2026-10-20).
   const noSwipe = useNoSwipe();
+  const phone = usePhoneTyping(input);
   return (
     <View style={styles.field}>
       <T variant="bodyMedium">{label}</T>
@@ -668,6 +670,7 @@ export function Field({
         placeholderTextColor={color.placeholder}
         maxFontSizeMultiplier={MAX_TEXT_SCALE}
         {...input}
+        {...phone}
         onFocus={(e) => {
           setFocused(true);
           input.onFocus?.(e);
@@ -1364,6 +1367,30 @@ export function FieldGroup({
   );
 }
 
+/**
+ * Phone fields (keyboardType "phone-pad") format as they're typed, "(602) 555-0142" (owner,
+ * 2026-10-20; lib/phoneTyping.ts). The caret is put after the digit it was after for one
+ * render, then left to the person again.
+ */
+function usePhoneTyping(input: TextInputProps): Partial<TextInputProps> {
+  const [selection, setSelection] = useState<{ start: number; end: number } | undefined>();
+  useEffect(() => {
+    if (!selection) return;
+    const timer = setTimeout(() => setSelection(undefined), 0);
+    return () => clearTimeout(timer);
+  }, [selection]);
+  if (input.keyboardType !== "phone-pad" || !input.onChangeText) return {};
+  const onChangeText = input.onChangeText;
+  return {
+    selection: selection ?? input.selection,
+    onChangeText: (raw: string) => {
+      const next = phoneEdit(String(input.value ?? ""), raw);
+      if (next.text !== raw) setSelection({ start: next.caret, end: next.caret });
+      onChangeText(next.text);
+    },
+  };
+}
+
 const NUMERIC_KEYBOARDS = new Set(["decimal-pad", "number-pad", "numeric", "phone-pad"]);
 
 /**
@@ -1424,6 +1451,7 @@ export function FieldRow({
   const scaledWidth = labelWidth * Math.min(fontScale, 1.35);
 
   const noSwipe = useNoSwipe();
+  const phone = usePhoneTyping(input);
   const field = (
     <TextInput
       {...noSwipe}
@@ -1435,6 +1463,7 @@ export function FieldRow({
       {...flow}
       {...(wrap ? { multiline: true, submitBehavior: "blurAndSubmit" as const } : null)}
       {...input}
+      {...phone}
       placeholder={input.placeholder ?? (shown === "full" ? label : undefined)}
       accessibilityLabel={label}
       accessibilityHint={error ?? hint}

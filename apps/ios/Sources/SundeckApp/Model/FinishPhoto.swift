@@ -24,9 +24,17 @@ public func finishPhotoBlock(_ store: LocalStore, settings: JSONValue?, jobId: S
 }
 
 /// Checklist items still to do on the job on this phone: its results still pending, as the
-/// website's `requireCompletable` counts them.
+/// website's `requireCompletable` counts them. A pool inspection counts only the questions its
+/// gates leave open (`inspectionProgress().toDo`, 2026-10-20).
 public func jobChecklistToDo(_ store: LocalStore, jobId: String) -> Int {
-    ((try? store.list("checklist_item_result", jobId: jobId)) ?? [])
+    if let job = try? store.get("job", jobId), job["type"]?.string == JobType.inspection.rawValue,
+        let companyId = job["company_id"]?.string
+    {
+        return checklistToDo(
+            config: InspectionConfig(store, companyId: companyId), inspection: JobInspection(store, jobId: jobId),
+            jobType: .inspection)
+    }
+    return ((try? store.list("checklist_item_result", jobId: jobId)) ?? [])
         .filter {
             $0["job_id"]?.string == jobId && $0["status"]?.string == "pending" && $0["deleted_at"]?.string == nil
         }
@@ -67,31 +75,33 @@ public enum FinishPhotoText {
 /// Mark Complete on a Today stop's words (owner, 2026-10-19).
 public enum MarkStopText {
     public static let complete = "Mark Complete"
-    public static let notComplete = "Mark Not Complete"
+    public static let notComplete = TodayUndo.markNotComplete.label
+    public static let reopenVisit = TodayUndo.reopenVisit.label
     public static let openJob = "Open Job"
-    public static let reopenVisit = "Reopen the visit from its page."
 
-    /// What VoiceOver reads: "Mark Complete for Maria Lopez".
-    public static func spoken(_ done: Bool, _ customer: String) -> String {
-        "\(done ? notComplete : complete) for \(customer)"
-    }
+    /// What VoiceOver reads: "Mark Complete for Maria Lopez", "Reopen Visit for Maria Lopez".
+    public static func spoken(_ title: String, _ customer: String) -> String { "\(title) for \(customer)" }
 }
 
-/// Whether a stop's Mark Complete shows, and as Mark Not Complete: a leak or repair stop done
-/// only for the day can be undone; a finished visit or a job further on shows neither.
+/// What a done stop on Today offers (core `todayUndo`, owner 2026-10-20): Reopen Visit on a
+/// completed maintenance visit, Mark Not Complete on a leak or repair stop done today, else nil.
+public func todayUndo(_ job: ScheduleJob, day: String) -> TodayUndo? {
+    todayUndo(type: job.type.rawValue, status: job.status.rawValue, stopDoneOn: job.stopDoneOn, day: day)
+}
+
+/// The stop's button: Mark Complete, or what a done stop offers (Reopen Visit, Mark Not
+/// Complete); nil when a done stop offers nothing (a job further on).
 public func markStopTitle(_ job: ScheduleJob, day: String) -> String? {
-    let done = job.doneOn(day)
-    let undoable = job.type != .maintenance && job.stopDoneOn == day
-    if done && !undoable { return nil }
-    return done ? MarkStopText.notComplete : MarkStopText.complete
+    job.doneOn(day) ? todayUndo(job, day: day)?.label : MarkStopText.complete
 }
 
 @MainActor
 public enum StopWrites {
-    /// Mark Complete (`complete`) or Mark Not Complete on a Today stop, through the sync layer
-    /// (website `markStop`): a maintenance visit is completed (Complete Job, with the shop's
-    /// rules); a leak or repair job keeps its status and its stop is marked done for `day`
-    /// (core `markCompleteValues`), or cleared. Returns why it was stopped, or nil.
+    /// Mark Complete (`complete`), or Reopen Visit and Mark Not Complete, on a Today stop, through
+    /// the sync layer (website `markStop`): a maintenance visit is completed (Complete Job, with
+    /// the shop's rules) or reopened (back to in progress); a leak or repair job keeps its status
+    /// and its stop is marked done for `day` (core `markCompleteValues`), or cleared. Returns
+    /// why it was stopped, or nil.
     @discardableResult
     public static func mark(
         _ sync: SyncService, companyId: String, settings: JSONValue?, jobId: String, complete: Bool, day: String,
@@ -100,7 +110,11 @@ public enum StopWrites {
         guard let row = try sync.store.get("job", jobId) else { return "Job not found." }
         let type = row["type"]?.string ?? "detection"
         if type == "maintenance" {
-            if !complete { return MarkStopText.reopenVisit }
+            if !complete {
+                // Reopen Visit (owner, 2026-10-20), as on the visit's page.
+                try sync.write("job", id: jobId, companyId: companyId, jobStatusValues(.inProgress, job: row))
+                return nil
+            }
             if let block = statusChangeBlock(.done, sync.store, settings: settings, jobId: jobId) { return block }
             try sync.write("job", id: jobId, companyId: companyId, jobStatusValues(.done, job: row))
             visitReports?.completed(jobType: .maintenance, jobId: jobId, settings: settings)

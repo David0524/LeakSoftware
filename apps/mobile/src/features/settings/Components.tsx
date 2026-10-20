@@ -1,7 +1,10 @@
 import { useState } from "react";
 import {
   CHECKLIST_SECTION_LABELS,
+  INSPECTION_SECTIONS,
   companyServices,
+  optionsFromText,
+  optionsToText,
   type ChecklistSection,
   type ComponentType,
 } from "@leakbook/core";
@@ -23,15 +26,28 @@ import { EditSheet, FormActions, ManagersOnly, SettingsList, useEditSheet } from
 import { formChanged } from "../../lib/discard";
 import { useUnsavedChanges } from "../../ui/ModalSheet";
 
-// Settings › Checklist Components (the website's settings/components): pool visits and leak
-// inspections have their own checklists; a shop that does both switches between them.
+// Settings › Checklist Components (the website's settings/components): pool visits, leak
+// inspections and pool inspections (2026-10-20) have their own checklists; a shop that does
+// more than one switches between them.
 
 const APPLIES = [
   { value: "pool", label: "Pool" },
   { value: "spa", label: "Spa" },
   { value: "both", label: "Pool and spa" },
 ];
-type Kind = "pool" | "leak";
+type Kind = "pool" | "leak" | "inspection";
+
+const KIND_LABELS: Record<Kind, string> = {
+  pool: "Pool Visits",
+  leak: "Leak Inspections",
+  inspection: "Pool Inspections",
+};
+
+const ANSWERS = [
+  { value: "choice", label: "One choice" },
+  { value: "multi", label: "Several choices" },
+  { value: "text", label: "Text" },
+];
 const LEAK_SECTIONS: ChecklistSection[] = ["visual", "plumbing", "bond_beam", "other"];
 
 export function ChecklistComponents() {
@@ -47,11 +63,20 @@ function ComponentsPage() {
   const types = useConfig<ComponentType>("component_type", company.id);
   const sheet = useEditSheet<ComponentType>();
   const services = companyServices(company.settings);
-  const kinds: Kind[] = services === "both" ? ["pool", "leak"] : [services];
+  const kinds: Kind[] =
+    services === "both"
+      ? ["pool", "leak", "inspection"]
+      : services === "leak"
+        ? ["leak", "inspection"]
+        : ["pool"];
   const [chosen, setChosen] = useState<Kind>(kinds[0]!);
   const kind = kinds.includes(chosen) ? chosen : kinds[0]!;
   const mine = types.filter((t) =>
-    kind === "pool" ? t.job_type === "maintenance" : t.job_type !== "maintenance",
+    kind === "pool"
+      ? t.job_type === "maintenance"
+      : kind === "inspection"
+        ? t.job_type === "inspection"
+        : (t.job_type ?? "detection") === "detection",
   );
   const groups: { value: string; label: string; rows: ComponentType[]; footer?: string }[] =
     kind === "pool"
@@ -64,11 +89,13 @@ function ComponentsPage() {
             footer: "Each maintenance plan sets how often, from the customer's page.",
           },
         ].filter((g) => g.rows.length)
-      : LEAK_SECTIONS.map((v) => ({
-          value: v,
-          label: CHECKLIST_SECTION_LABELS[v],
-          rows: mine.filter((t) => (t.section ?? "plumbing") === v),
-        })).filter((g) => g.rows.length);
+      : (kind === "inspection" ? INSPECTION_SECTIONS : LEAK_SECTIONS)
+          .map((v) => ({
+            value: v,
+            label: CHECKLIST_SECTION_LABELS[v],
+            rows: mine.filter((t) => (t.section ?? "plumbing") === v),
+          }))
+          .filter((g) => g.rows.length);
   const applies = (t: ComponentType) => APPLIES.find((a) => a.value === t.applies_to)?.label;
 
   return (
@@ -78,7 +105,9 @@ function ComponentsPage() {
         subtitle={
           kind === "pool"
             ? "What techs do on every pool visit. Changes apply to new visits; visits already started keep their checklist."
-            : "What every leak inspection checks. Changes apply to new jobs; jobs already started keep their checklist."
+            : kind === "inspection"
+              ? "Every question of a pool inspection. Changes apply to new jobs; jobs already started keep their checklist."
+              : "What every leak inspection checks. Changes apply to new jobs; jobs already started keep their checklist."
         }
         addLabel="Add Component"
         onAdd={() => sheet.open("new")}
@@ -92,7 +121,7 @@ function ComponentsPage() {
             onChange={setChosen}
             options={kinds.map((k) => ({
               value: k,
-              label: k === "pool" ? "Pool Visits" : "Leak Inspections",
+              label: KIND_LABELS[k],
             }))}
           />
         ) : null}
@@ -105,9 +134,14 @@ function ComponentsPage() {
                   key={t.id}
                   title={t.name}
                   subtitle={
-                    kind === "pool"
-                      ? applies(t)
-                      : [applies(t), t.methods.join(", ")].filter(Boolean).join(" · ") || undefined
+                    kind === "inspection"
+                      ? [t.group_label, ANSWERS.find((a) => a.value === t.answer)?.label]
+                          .filter(Boolean)
+                          .join(" · ") || undefined
+                      : kind === "pool"
+                        ? applies(t)
+                        : [applies(t), t.methods.join(", ")].filter(Boolean).join(" · ") ||
+                          undefined
                   }
                   detail={t.active ? undefined : "Off"}
                   onPress={() => sheet.open(t)}
@@ -122,11 +156,18 @@ function ComponentsPage() {
         title={sheet.editing === "new" ? "Add Component" : (sheet.editing?.name ?? "")}
         onClose={sheet.close}
       >
-        <TypeForm
-          t={sheet.editing === "new" ? undefined : (sheet.editing ?? undefined)}
-          kind={kind}
-          onDone={sheet.done}
-        />
+        {kind === "inspection" ? (
+          <QuestionForm
+            t={sheet.editing === "new" ? undefined : (sheet.editing ?? undefined)}
+            onDone={sheet.done}
+          />
+        ) : (
+          <TypeForm
+            t={sheet.editing === "new" ? undefined : (sheet.editing ?? undefined)}
+            kind={kind}
+            onDone={sheet.done}
+          />
+        )}
       </EditSheet>
     </>
   );
@@ -138,7 +179,7 @@ function TypeForm({
   onDone,
 }: {
   t?: ComponentType;
-  kind: Kind;
+  kind: Exclude<Kind, "inspection">;
   onDone: (m: string) => void;
 }) {
   const company = useCompany();
@@ -278,6 +319,147 @@ function TypeForm({
             ? {
                 label: "Remove Component",
                 confirm: `Remove this component from new ${visit ? "visits" : "checklists"}?`,
+                onConfirm: () => {
+                  removeConfig("component_type", company.id, t.id);
+                  onDone("Removed.");
+                },
+              }
+            : undefined
+        }
+      />
+    </>
+  );
+}
+
+/**
+ * A pool inspection question (2026-10-20), as the website's: its words, section, group, answer
+ * kind, choices with what they mean, and banner. Written through the sync layer.
+ */
+function QuestionForm({ t, onDone }: { t?: ComponentType; onDone: (m: string) => void }) {
+  const company = useCompany();
+  const [f, setF] = useState({
+    name: t?.name ?? "",
+    section: (t?.section && INSPECTION_SECTIONS.includes(t.section)
+      ? t.section
+      : "insp_equipment") as string,
+    group: t?.group_label ?? "",
+    answer: (t?.answer === "multi" || t?.answer === "text" ? t.answer : "choice") as string,
+    order: String(t?.sort_order ?? 3500),
+    options: optionsToText(t?.options ?? [{ label: "Yes" }, { label: "No" }]),
+    notice: t?.notice ?? "",
+    active: t?.active ?? true,
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const set = (k: keyof typeof f) => (v: string) => setF({ ...f, [k]: v });
+
+  function save() {
+    const e: Record<string, string> = {};
+    const name = f.name.trim();
+    if (!name) e.name = "Enter a name.";
+    const options = f.answer === "text" ? null : optionsFromText(f.options);
+    if (options && options.length < 2) e.options = "Enter at least two choices.";
+    setErrors(e);
+    if (Object.keys(e).length) return;
+    saveConfig(
+      "component_type",
+      company.id,
+      t?.id ?? null,
+      {
+        name,
+        section: f.section,
+        answer: f.answer,
+        options: options ? options.map((o) => ({ ...o })) : null,
+        group_label: f.group.trim() || null,
+        notice: f.notice.trim() || null,
+        sort_order: toInt(f.order),
+        active: t ? f.active : true,
+        ...(t
+          ? {}
+          : {
+              job_type: "inspection",
+              applies_to: "both",
+              methods: ["Visual"],
+              allows_multiple: false,
+              default_count: 1,
+              on_schedule: false,
+            }),
+      },
+      t ? undefined : name,
+    );
+    haptics.success();
+    onDone(t ? "Saved." : `Added ${name}.`);
+  }
+
+  return (
+    <>
+      <FieldGroup labelWidth={136}>
+        <FieldRow
+          label="Question"
+          layout="stacked"
+          value={f.name}
+          onChangeText={set("name")}
+          error={errors.name}
+        />
+      </FieldGroup>
+      <Select
+        label="Section"
+        value={f.section}
+        onChange={set("section")}
+        options={INSPECTION_SECTIONS.map((v) => ({
+          value: v,
+          label: CHECKLIST_SECTION_LABELS[v],
+        }))}
+      />
+      <FieldGroup labelWidth={136} footer="The small header it sits under, like Filtration System.">
+        <FieldRow label="Group" value={f.group} onChangeText={set("group")} />
+      </FieldGroup>
+      <Select label="Answer" value={f.answer} onChange={set("answer")} options={ANSWERS} />
+      <FieldGroup labelWidth={136}>
+        <FieldRow
+          label="Order"
+          value={f.order}
+          onChangeText={set("order")}
+          keyboardType="number-pad"
+        />
+      </FieldGroup>
+      {f.answer === "text" ? null : (
+        <FieldGroup
+          title="Choices"
+          footer="One per line. Add (needs attention), (leaking), or (not applicable) after a choice that means that, and (folds the group) to a first question’s No to fold its group away."
+        >
+          <FieldRow
+            label="Choices"
+            multiline
+            value={f.options}
+            onChangeText={set("options")}
+            error={errors.options}
+          />
+        </FieldGroup>
+      )}
+      <FieldGroup
+        title="Banner"
+        footer="Shown above the question, and as a recommendation on the report."
+      >
+        <FieldRow label="Banner" multiline value={f.notice} onChangeText={set("notice")} />
+      </FieldGroup>
+      {t ? (
+        <FieldGroup>
+          <Toggle
+            inList
+            label="On new checklists"
+            value={f.active}
+            onChange={(v) => setF({ ...f, active: v })}
+          />
+        </FieldGroup>
+      ) : null}
+      <FormActions
+        submit={t ? "Save" : "Add Component"}
+        onSubmit={save}
+        remove={
+          t
+            ? {
+                label: "Remove Component",
+                confirm: "Remove this question from new checklists?",
                 onConfirm: () => {
                   removeConfig("component_type", company.id, t.id);
                   onDone("Removed.");

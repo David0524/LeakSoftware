@@ -82,7 +82,7 @@
         @Environment(SyncService.self) private var sync
 
         var body: some View {
-            if syncBarMessage(sync.status) != nil {
+            if syncBarMessage(sync.barStatus) != nil {
                 SyncBarRow()
                     .padding(.horizontal, CGFloat(Spacing.pageMargin))
                     .padding(.vertical, 8)

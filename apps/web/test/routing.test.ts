@@ -47,6 +47,9 @@ function fakeProvider(): RoutingProvider & { matrixCalls: number } {
     async geocode(address: string) {
       return address.includes("Galvin") ? ZOO : null;
     },
+    async suggest() {
+      return [];
+    },
     async matrix(points: { lat: number; lng: number }[]) {
       p.matrixCalls++;
       return points.map((_, i) => points.map((_, j) => (i === j ? 0 : 10 + i + j)));
@@ -95,7 +98,14 @@ describe("Mapbox", () => {
       const url = String(input);
       urls.push(url);
       if (url.includes("/geocode/")) {
-        return Response.json({ features: [{ geometry: { coordinates: [-111.94637, 33.44962] } }] });
+        return Response.json({
+          features: [
+            {
+              geometry: { coordinates: [-111.94637, 33.44962] },
+              properties: { feature_type: "address" },
+            },
+          ],
+        });
       }
       return Response.json({
         durations: [
@@ -114,6 +124,57 @@ describe("Mapbox", () => {
       [14, 0],
     ]);
     expect(urls[1]).toContain("-112.077110,33.448790;-111.946370,33.449620");
+  });
+
+  it("finds only the address itself, not its town or ZIP code", async () => {
+    const answer = (feature_type: string) =>
+      (async () =>
+        Response.json({
+          features: [{ geometry: { coordinates: [-111.9, 33.4] }, properties: { feature_type } }],
+        })) as unknown as typeof fetch;
+    expect(await mapbox("pk.test", answer("street")).geocode("N Galvin Pkwy, Phoenix")).toEqual({
+      lat: 33.4,
+      lng: -111.9,
+    });
+    for (const vague of ["place", "postcode", "locality", "region"])
+      expect(await mapbox("pk.test", answer(vague)).geocode("Phoenix, AZ")).toBeNull();
+  });
+
+  it("suggests addresses near the shop as they're typed", async () => {
+    const urls: string[] = [];
+    const fetchImpl = (async (input: URL | string) => {
+      urls.push(String(input));
+      return Response.json({
+        features: [
+          {
+            properties: {
+              name: "455 North Galvin Parkway",
+              full_address: "455 North Galvin Parkway, Phoenix, Arizona 85008, United States",
+              context: {
+                address: { name: "455 North Galvin Parkway" },
+                place: { name: "Phoenix" },
+                region: { region_code: "AZ" },
+                postcode: { name: "85008" },
+              },
+            },
+          },
+          { properties: {} },
+        ],
+      });
+    }) as typeof fetch;
+    expect(await mapbox("pk.test", fetchImpl).suggest("455 N Galv", SHOP)).toEqual([
+      {
+        line1: "455 North Galvin Parkway",
+        city: "Phoenix",
+        state: "AZ",
+        postal_code: "85008",
+        label: "455 North Galvin Parkway, Phoenix, Arizona 85008, United States",
+      },
+    ]);
+    expect(urls[0]).toContain("autocomplete=true");
+    expect(urls[0]).toContain("types=address");
+    expect(urls[0]).not.toContain("permanent=true");
+    expect(urls[0]).toContain("proximity=-112.07711%2C33.44879");
   });
 
   it("reports a failed request", async () => {

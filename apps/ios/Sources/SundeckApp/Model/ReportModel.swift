@@ -127,7 +127,10 @@ public struct ReportTabModel: Equatable, Sendable {
         finished = sent.first { $0.status == .sent }
         waitingSigners = signatureRecords.filter { $0.reportId == nil && $0.purpose != "quote_acceptance" }
             .map(\.signerName)
-        templateName = byKey[template.rawValue]?.name ?? "Homeowner report"
+        // A pool inspection's report is the Pool Inspection Report (2026-10-20).
+        templateName =
+            job.type == .inspection
+            ? reportTitle(JobType.inspection.rawValue) : byKey[template.rawValue]?.name ?? "Homeowner report"
         versions = sent.map { r in
             var label = "Version \(r.version)"
             if let at = r.sentAt { label += " · " + mediumDate(at, timeZone: timeZone.identifier, time: true) }

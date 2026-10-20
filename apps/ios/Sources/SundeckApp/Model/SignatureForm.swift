@@ -181,6 +181,8 @@ public struct ReviewSummary: Sendable {
 
     public var companyName: String
     public var maintenance: Bool
+    /// A pool inspection (2026-10-20): its progress, leaving out questions its gates folded away.
+    public var inspection: InspectionChecklist?
     public var customerName: String?
     public var address: String
     public var sections: [FinalSection]
@@ -207,6 +209,7 @@ public struct ReviewSummary: Sendable {
 
         self.companyName = companyName
         maintenance = view.type == .maintenance
+        inspection = view.type == .inspection ? InspectionChecklist(config: config, inspection: insp) : nil
         customerName = customer?["name"]?.string
         address = view.decodedProperty.map(formatAddress) ?? ""
         sections = (draft?.finalSections ?? []).filter {
@@ -274,29 +277,39 @@ public struct ReviewSummary: Sendable {
     public static let awayNote =
         "For the tech: nobody here to sign? Finish the report without a signature. It will say the customer wasn’t present."
 
-    public var title: String { maintenance ? "Service Report" : "Leak Detection Report" }
+    public var title: String {
+        maintenance ? "Service Report" : reportTitle(inspection != nil ? JobType.inspection.rawValue : nil)
+    }
     public var customerText: String { customerName ?? "Customer" }
 
     public var tallyText: String {
-        maintenance
+        if let inspection { return inspection.tallyText }
+        return maintenance
             ? "\(tally.pass) done · \(tally.attention) need attention · \(tally.notApplicable) skipped"
             : "\(tally.pass) not leaking · \(tally.attention) attention · \(tally.leaking) leaking · \(tally.notApplicable) not applicable"
     }
 
+    /// Items still to do: a pool inspection leaves out the questions its gates folded away.
+    public var pending: Int { inspection?.progress.toDo ?? tally.pending }
+
     /// "2 still to do" under the tally, while items are left.
-    public var pendingText: String? { tally.pending > 0 ? "\(tally.pending) still to do" : nil }
+    public var pendingText: String? { pending > 0 ? "\(pending) still to do" : nil }
+
+    /// What holds up signing: the checklist, except on a pool inspection, whose report lists the
+    /// questions answered (2026-10-20).
+    var blocking: Int { inspection != nil ? 0 : pending }
 
     /// Signing waits for the checklist.
     public var pendingNotice: String? {
-        guard tally.pending > 0 else { return nil }
-        let items = tally.pending == 1 ? "item is" : "items are"
-        return "\(tally.pending) checklist \(items) still to do. Finish the checklist, then come back to sign."
+        guard blocking > 0 else { return nil }
+        let items = pending == 1 ? "item is" : "items are"
+        return "\(pending) checklist \(items) still to do. Finish the checklist, then come back to sign."
     }
 
     /// The sign-off fields and pad: the checklist is done and the shop takes signatures.
-    public var showsSignOff: Bool { tally.pending == 0 && !purposes.isEmpty }
+    public var showsSignOff: Bool { blocking == 0 && !purposes.isEmpty }
     /// Sign (or Finish Report) and Customer Not Here, once the checklist is done.
-    public var showsButtons: Bool { tally.pending == 0 }
+    public var showsButtons: Bool { blocking == 0 }
     public var signTitle: String { purposes.isEmpty ? "Finish Report" : "Sign" }
     public var showsCustomerNotHere: Bool { !purposes.isEmpty }
 

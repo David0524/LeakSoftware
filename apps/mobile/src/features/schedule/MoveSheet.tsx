@@ -52,6 +52,8 @@ export interface MoveTarget {
   address: string;
   /** "techId|date" now, or null when it waits in Needs a Time. */
   from: { tech: string | null; date: string } | null;
+  /** False for a started job: it can move, but not come off the schedule (core canUnschedule). */
+  unschedulable?: boolean;
 }
 
 export function MoveSheet({
@@ -211,7 +213,7 @@ function MoveForm({
           }}
         />
         {dateError ? <Notice tone="error">{dateError}</Notice> : null}
-        {job.from ? (
+        {job.from && job.unschedulable !== false ? (
           <Button
             title="Take Off Schedule"
             kind="secondary"

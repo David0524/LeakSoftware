@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CHECKLIST_SECTION_LABELS, companyServices, type ChecklistSection } from "@leakbook/core";
+import {
+  CHECKLIST_SECTION_LABELS,
+  INSPECTION_SECTIONS,
+  companyServices,
+  optionsToText,
+  type ChecklistSection,
+} from "@leakbook/core";
 import { removeConfigRow, saveComponentType } from "@/app/actions/settings";
 import {
   SField,
   SSelect,
   SSwitch,
+  STextArea,
   SettingsFields,
   SettingsForm,
 } from "@/components/settings-forms";
@@ -27,12 +34,105 @@ const APPLIES = [
   { value: "both", label: "Pool and spa" },
 ];
 
-type Kind = "pool" | "leak";
+// Pool visits, leak inspections, and pool inspections (2026-10-20).
+type Kind = "pool" | "leak" | "inspection";
+
+const KIND_LABELS: Record<Kind, string> = {
+  pool: "Pool Visits",
+  leak: "Leak Inspections",
+  inspection: "Pool Inspections",
+};
+
+const ANSWERS = [
+  { value: "choice", label: "One choice" },
+  { value: "multi", label: "Several choices" },
+  { value: "text", label: "Text" },
+];
+
+/** A pool inspection question: its words, place, answers, and banner. */
+function InspectionFields({ t }: { t?: ComponentType }) {
+  const p = t?.id ?? "new";
+  return (
+    <>
+      <input type="hidden" name="job_type" value="inspection" />
+      <SettingsFields labelWidth="8.5rem" className="sm:grid sm:grid-cols-2 sm:gap-4">
+        <SField
+          label="Question"
+          name="name"
+          id={`name-${p}`}
+          defaultValue={t?.name}
+          className="sm:col-span-2"
+          stacked
+        />
+        <SSelect
+          label="Section"
+          name="section"
+          id={`section-${p}`}
+          defaultValue={t?.section ?? "insp_equipment"}
+          options={INSPECTION_SECTIONS.map((v) => ({
+            value: v,
+            label: CHECKLIST_SECTION_LABELS[v],
+          }))}
+        />
+        <SField
+          label="Group"
+          name="group_label"
+          id={`group-${p}`}
+          defaultValue={t?.group_label ?? ""}
+          hint="The small header it sits under, like Filtration System."
+        />
+        <SSelect
+          label="Answer"
+          name="answer"
+          id={`answer-${p}`}
+          defaultValue={t?.answer ?? "choice"}
+          options={ANSWERS}
+        />
+        <SField
+          label="Order"
+          name="sort_order"
+          id={`order-${p}`}
+          inputMode="numeric"
+          defaultValue={t?.sort_order ?? 3500}
+        />
+      </SettingsFields>
+      <SettingsFields>
+        <STextArea
+          label="Choices"
+          name="options"
+          id={`options-${p}`}
+          rows={4}
+          defaultValue={optionsToText(t?.options ?? [{ label: "Yes" }, { label: "No" }])}
+          hint="One per line. Add (needs attention), (leaking), or (not applicable) after a choice that means that, and (folds the group) to a first question’s No to fold its group away."
+        />
+        <STextArea
+          label="Banner"
+          name="notice"
+          id={`notice-${p}`}
+          rows={2}
+          defaultValue={t?.notice ?? ""}
+          hint="Shown above the question, and as a recommendation on the report."
+        />
+      </SettingsFields>
+      {t ? (
+        <SettingsFields>
+          <SSwitch
+            label="On new checklists"
+            name="active"
+            id={`active-${p}`}
+            defaultChecked={t.active}
+          />
+        </SettingsFields>
+      ) : null}
+    </>
+  );
+}
 
 const LEAK_SECTIONS: ChecklistSection[] = ["visual", "plumbing", "bond_beam", "other"];
 
 function TypeFields({ t, kind }: { t?: ComponentType; kind: Kind }) {
   const p = t?.id ?? "new";
+  if (kind === "inspection") return <InspectionFields t={t} />;
   if (kind === "pool")
     return (
       <>
@@ -147,10 +247,19 @@ export default async function ComponentsPage({ searchParams }: PageProps<"/setti
   // Pool visits and leak inspections have their own checklists (owner, 2026-10-16); a shop
   // sees the ones for what it does, and switches between them when it does both.
   const services = companyServices(company.settings);
-  const kinds: Kind[] = services === "both" ? ["pool", "leak"] : [services];
+  const kinds: Kind[] =
+    services === "both"
+      ? ["pool", "leak", "inspection"]
+      : services === "leak"
+        ? ["leak", "inspection"]
+        : ["pool"];
   const kind: Kind = kinds.includes(list as Kind) ? (list as Kind) : kinds[0]!;
   const mine = types.filter((t) =>
-    kind === "pool" ? t.job_type === "maintenance" : t.job_type !== "maintenance",
+    kind === "pool"
+      ? t.job_type === "maintenance"
+      : kind === "inspection"
+        ? t.job_type === "inspection"
+        : (t.job_type ?? "detection") === "detection",
   );
   const groups =
     kind === "pool"
@@ -163,11 +272,13 @@ export default async function ComponentsPage({ searchParams }: PageProps<"/setti
             footer: "Each maintenance plan sets how often, from the customer's page.",
           },
         ].filter((g) => g.rows.length)
-      : LEAK_SECTIONS.map((v) => ({
-          value: v,
-          label: CHECKLIST_SECTION_LABELS[v],
-          rows: mine.filter((t) => (t.section ?? "plumbing") === v),
-        })).filter((g) => g.rows.length);
+      : (kind === "inspection" ? INSPECTION_SECTIONS : LEAK_SECTIONS)
+          .map((v) => ({
+            value: v,
+            label: CHECKLIST_SECTION_LABELS[v],
+            rows: mine.filter((t) => (t.section ?? "plumbing") === v),
+          }))
+          .filter((g) => g.rows.length);
   const applies = (t: ComponentType) => APPLIES.find((a) => a.value === t.applies_to)?.label;
   return (
     <SettingsListPage
@@ -175,7 +286,9 @@ export default async function ComponentsPage({ searchParams }: PageProps<"/setti
       subtitle={
         kind === "pool"
           ? "What techs do on every pool visit. Changes apply to new visits; visits already started keep their checklist."
-          : "What every leak inspection checks. Changes apply to new jobs; jobs already started keep their checklist."
+          : kind === "inspection"
+            ? "Every question of a pool inspection. Changes apply to new jobs; jobs already started keep their checklist."
+            : "What every leak inspection checks. Changes apply to new jobs; jobs already started keep their checklist."
       }
       add={{
         label: "Add Component",
@@ -199,7 +312,7 @@ export default async function ComponentsPage({ searchParams }: PageProps<"/setti
                 aria-current={k === kind ? "page" : undefined}
                 className={segmentClass(k === kind)}
               >
-                {k === "pool" ? "Pool Visits" : "Leak Inspections"}
+                {KIND_LABELS[k]}
               </Link>
             ))}
           </nav>
@@ -216,9 +329,13 @@ export default async function ComponentsPage({ searchParams }: PageProps<"/setti
               title={t.name}
               label={t.name}
               detail={
-                kind === "pool"
-                  ? applies(t)
-                  : [applies(t), t.methods.join(", ")].filter(Boolean).join(" · ") || undefined
+                kind === "inspection"
+                  ? [t.group_label, ANSWERS.find((a) => a.value === t.answer)?.label]
+                      .filter(Boolean)
+                      .join(" · ") || undefined
+                  : kind === "pool"
+                    ? applies(t)
+                    : [applies(t), t.methods.join(", ")].filter(Boolean).join(" · ") || undefined
               }
               value={t.active ? undefined : "Off"}
             >
@@ -232,7 +349,7 @@ export default async function ComponentsPage({ searchParams }: PageProps<"/setti
                   submit="Remove Component"
                   danger
                   full
-                  confirm={`Remove this component from new ${kind === "pool" ? "visits" : "checklists"}?`}
+                  confirm={`Remove this ${kind === "inspection" ? "question" : "component"} from new ${kind === "pool" ? "visits" : "checklists"}?`}
                 >
                   <input type="hidden" name="table" value="component_type" />
                   <input type="hidden" name="id" value={t.id} />

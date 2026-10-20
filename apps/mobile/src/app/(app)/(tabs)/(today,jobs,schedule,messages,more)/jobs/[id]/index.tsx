@@ -6,8 +6,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   JOB_TYPE_LABELS,
   POOL_TYPE_LABELS,
-  checklistTally,
+  intakeQuestionsFor,
   formatAddress,
+  mapStatus,
   formatCents,
   formatSchedule,
   jobActionLabel,
@@ -36,7 +37,11 @@ import {
   type NextStep,
 } from "../../../../../../lib/nextStep";
 import { liveStopStarted } from "../../../../../../lib/liveStop";
-import { useInspectionConfig, useJobInspection } from "../../../../../../data/inspection";
+import {
+  useChecklistProgress,
+  useInspectionConfig,
+  useJobInspection,
+} from "../../../../../../data/inspection";
 import { useConversations, useLine } from "../../../../../../data/texting";
 import { openDirections, useDirectionsChoice } from "../../../../../../state/directions";
 import { useCompany, useSession } from "../../../../../../state/session";
@@ -71,6 +76,8 @@ import { KeyboardAvoider } from "../../../../../../ui/keyboard";
 import { SwipeNav, useNoSwipe } from "../../../../../../ui/SwipeNav";
 import { usePinnedSyncBar } from "../../../../../../ui/SyncBar";
 import { useUnsavedChanges } from "../../../../../../ui/ModalSheet";
+import { NotOnMapRow } from "../../../../../../ui/NotOnMap";
+import { useRoutingOn } from "../../../../../../lib/routing";
 import { ScreenTip } from "../../../../../../ui/Tip";
 import {
   color,
@@ -127,7 +134,9 @@ export default function JobDetail() {
   );
   const [switcherY, setSwitcherY] = useState<number | null>(null);
   // Complete Job waits for the checklist or a photo when the shop asks (owner, 2026-10-19).
-  const blocker = useCompleteJobBlocker({ id, company_id: company.id });
+  const blocker = useCompleteJobBlocker({ id, company_id: company.id, type: job?.type });
+  // A pool inspection counts only the questions its gates leave open (2026-10-20).
+  const progress = useChecklistProgress(company.id, id, job?.type);
   const [completeAsked, setCompleteAsked] = useState<"header" | "checklist" | null>(null);
   const config = useInspectionConfig(company.id);
   const reports = useJobReports(company.id, id);
@@ -165,10 +174,10 @@ export default function JobDetail() {
   }
 
   const maintenance = job.type === "maintenance";
-  const tally = checklistTally(insp.components, insp.results);
+  const { tally, inspection } = progress;
   const sections: { value: JobSection; label: string; badge?: number }[] = [
     { value: "details", label: "Details" },
-    { value: "checklist", label: "Checklist", badge: tally.pending || undefined },
+    { value: "checklist", label: "Checklist", badge: progress.toDo || undefined },
     ...(maintenance ? [] : [{ value: "findings" as const, label: "Findings" }]),
     { value: "photos", label: "Photos" },
     // Visits end with Complete Job and are billed monthly: no Wrap-Up (owner, 2026-10-19).
@@ -355,9 +364,11 @@ export default function JobDetail() {
                 <T muted>
                   {insp.components.length === 0
                     ? "No checklist yet."
-                    : maintenance
-                      ? `${tally.pass} done · ${tally.attention} need attention · ${tally.notApplicable} skipped · ${tally.pending} to do`
-                      : `${tally.pass} not leaking · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} not applicable · ${tally.pending} to do`}
+                    : inspection
+                      ? `${inspection.answered} of ${inspection.total} answered · ${inspection.attention} need attention · ${inspection.leaking} leaking`
+                      : maintenance
+                        ? `${tally.pass} done · ${tally.attention} need attention · ${tally.notApplicable} skipped · ${tally.pending} to do`
+                        : `${tally.pass} not leaking · ${tally.attention} attention · ${tally.leaking} leaking · ${tally.notApplicable} not applicable · ${tally.pending} to do`}
                 </T>
               </View>
               {job.type === "repair" ? null : (
@@ -420,7 +431,7 @@ export default function JobDetail() {
                 <T variant="sectionHeading">Signatures</T>
                 <Signatures job={job} />
               </View>
-              {job.type === "detection" || maintenance ? (
+              {job.type !== "repair" ? (
                 <View style={styles.part}>
                   <T variant="sectionHeading">Quotes</T>
                   <QuoteTab job={job} />
@@ -469,6 +480,7 @@ function Details({
   const line = useLine(company.id);
   const conversations = useConversations(company.id);
   const [choice] = useDirectionsChoice();
+  const routing = useRoutingOn();
   // Typing never changes the job section (owner, 2026-10-20).
   const noSwipe = useNoSwipe();
   const [notes, setNotes] = useState<string | null>(null);
@@ -504,7 +516,11 @@ function Details({
   // Only leak detection marks a leak's location (owner, 2026-10-19: no leak checkbox on
   // maintenance visits) and calls its price a detection fee.
   const detection = job.type === "detection";
-  const questions = (company.settings as Partial<CompanySettings>).intake_questions ?? [];
+  // Only this job type's questions (a pool inspection asks its own, 2026-10-20).
+  const questions = intakeQuestionsFor(
+    (company.settings as Partial<CompanySettings>).intake_questions ?? [],
+    job.type,
+  );
   const answers = [
     // From the Customer on a repair (owner, 2026-10-19): what the customer needs.
     { q: { key: REPAIR_ITEM_KEY, label: REPAIR_ITEM_LABEL }, a: job.intake?.[REPAIR_ITEM_KEY] },
@@ -643,6 +659,7 @@ function Details({
           ) : (
             <ListRow subtitle="Address not on this phone yet." />
           )}
+          {mapStatus(property, routing) === "missing" ? <NotOnMapRow /> : null}
           {property?.access_notes ? (
             <ListRow>
               <T variant="secondary" muted>

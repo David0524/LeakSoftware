@@ -71,7 +71,11 @@
         @Environment(SyncService.self) private var sync
         @State private var groups: [(title: String?, items: [ConfigItem])] = []
         @State private var team: [SettingsTeamMember] = []
-        @State private var poolChecklist = false
+        /// Settings › Team › Profiles (owners and admins).
+        @State private var profiles: [ProfileListRow] = []
+        @State private var editingProfile: ProfileSheetTarget?
+        /// Which checklist Checklist Components shows (pool visits, leak or pool inspections).
+        @State private var list: ChecklistList = .leak
         @State private var editing: ConfigSheetTarget?
         @State private var notice: String?
         @State private var browser: BrowserPage?
@@ -85,13 +89,13 @@
             List {
                 Section {
                     VStack(alignment: .leading, spacing: 16) {
-                        if let subtitle = settingsSubtitle(page, services: services, poolChecklist: poolChecklist) {
+                        if let subtitle = settingsSubtitle(page, services: services, list: list) {
                             Text(subtitle).textRole(.body).foregroundStyle(Color.textMuted)
                         }
-                        if page == .components && services == .both {
+                        if page == .components && ChecklistList.lists(services).count > 1 {
                             Segmented(
-                                selection: $poolChecklist, options: [true, false],
-                                label: { $0 ? "Pool Visits" : "Leak Inspections" }, title: "Checklist")
+                                selection: $list, options: ChecklistList.lists(services), label: \.label,
+                                title: "Checklist")
                         }
                         if let notice { Notice(kind: .success, text: notice) }
                     }
@@ -109,6 +113,7 @@
                         Text("Invite people, change roles, and turn people off on the website.")
                             .textRole(.footnote).foregroundStyle(Color.textMuted)
                     }
+                    if manager { profilesGroup }
                     if manager, let company { completingAJob(company) }
                     Section {
                         ActionRow("Open Team on the Website") { browser = .site(page.webPath) }
@@ -158,13 +163,41 @@
             .sheet(item: $editing) { target in
                 if page == .priceBook {
                     PriceItemSheet(item: target.item) { notice = $0 }
+                } else if page == .components && list == .inspection, let item = target.item {
+                    InspectionQuestionSheet(item: item) { notice = $0 }
                 } else {
-                    ConfigItemSheet(page: page, item: target.item, poolChecklist: poolChecklist) { notice = $0 }
+                    ConfigItemSheet(page: page, item: target.item, poolChecklist: list == .pool) { notice = $0 }
                 }
             }
+            .sheet(item: $editingProfile) { target in
+                PersonProfileSheet(target: target) { notice = $0 }
+            }
             .browserSheet($browser)
-            .task(id: "\(sync.revision)|\(company?.id ?? "")|\(poolChecklist)") { reload() }
-            .onAppear { if !loaded { poolChecklist = services == .pool } }
+            .task(id: "\(sync.revision)|\(company?.id ?? "")|\(list.rawValue)") { reload() }
+            .onAppear { if !loaded { list = ChecklistList.lists(services).first ?? .leak } }
+        }
+
+        /// Profiles (owner, 2026-10-20): one row per team member, then people without the app, and
+        /// Add Person. Each opens the profile in a sheet.
+        private var profilesGroup: some View {
+            Section {
+                ForEach(profiles) { row in
+                    Button {
+                        editingProfile = .row(row)
+                    } label: {
+                        ListRow(row.title, detail: row.detail, value: row.value, chevron: true)
+                    }
+                    .buttonStyle(.row)
+                    .surfaceRow()
+                    .listRowInsets(EdgeInsets())
+                }
+                ActionRow(ProfileText.addPerson) { editingProfile = .addPerson }
+                    .surfaceRow().listRowInsets(EdgeInsets())
+            } header: {
+                SectionLabel(ProfileText.title)
+            } footer: {
+                Text(ProfileText.footer).textRole(.footnote).foregroundStyle(Color.textMuted)
+            }
         }
 
         /// Completing a job (owners and admins, 2026-10-19): what Complete Job waits for.
@@ -198,15 +231,116 @@
             let store = sync.store
             switch page {
             case .priceBook: groups = priceBookGroups(store, companyId: company.id)
-            case .components: groups = [(nil, componentItems(store, companyId: company.id, pool: poolChecklist))]
+            case .components: groups = componentGroups(store, companyId: company.id, list: list)
             case .tests: groups = [(nil, testTypeItems(store, companyId: company.id))]
             case .severities: groups = [(nil, severityItems(store, companyId: company.id))]
             case .exclusions: groups = [(nil, exclusionItems(store, companyId: company.id))]
             case .team:
                 team = teamMembers(store, kv: sync.kv, companyId: company.id, me: session.user?.id)
+                profiles = profileRows(personProfiles(store, companyId: company.id), team: team)
             default: groups = []
             }
             loaded = true
+        }
+    }
+
+    /// Which profile the profile sheet edits: a row of the Profiles group, or Add Person.
+    enum ProfileSheetTarget: Identifiable {
+        case row(ProfileListRow)
+        case addPerson
+
+        var id: String {
+            switch self {
+            case .row(let row): row.id
+            case .addPerson: "add-person"
+            }
+        }
+    }
+
+    /// A person's profile (owner, 2026-10-20; website settings/team `ProfileFields`): Name, Phone,
+    /// Email and Address, the emergency contact's Name and Phone, and Notes; Save (Save Profile
+    /// for a new one) and Delete Profile. Written through the sync layer.
+    struct PersonProfileSheet: View {
+        var target: ProfileSheetTarget
+        var done: (String) -> Void
+        @Environment(Session.self) private var session
+        @Environment(SyncService.self) private var sync
+        @Environment(\.dismiss) private var dismiss
+        @State private var form = PersonProfileForm()
+        @State private var original = PersonProfileForm()
+        @State private var error: String?
+        @State private var confirmDelete = false
+        @State private var loaded = false
+
+        private var row: ProfileListRow? {
+            if case .row(let row) = target { return row }
+            return nil
+        }
+        private var profile: PersonProfile? { row?.profile }
+
+        var body: some View {
+            FormSheet(title: row?.title ?? ProfileText.addPerson, dirty: form != original) {
+                if row == nil {
+                    Text(ProfileText.addPersonHint).textRole(.secondary).foregroundStyle(Color.textMuted)
+                }
+                Grouped {
+                    LabeledFieldRow(label: "Name", text: $form.name, labelWidth: 96)
+                    LabeledFieldRow(label: "Phone", text: $form.phone, keyboard: .phonePad, labelWidth: 96)
+                    LabeledFieldRow(label: "Email", text: $form.email, keyboard: .emailAddress, labelWidth: 96)
+                    LabeledFieldRow(label: "Address", text: $form.address, labelWidth: 96)
+                }
+                Grouped(label: ProfileText.emergency) {
+                    LabeledFieldRow(label: "Name", text: $form.emergencyName, labelWidth: 96)
+                    LabeledFieldRow(label: "Phone", text: $form.emergencyPhone, keyboard: .phonePad, labelWidth: 96)
+                }
+                Grouped {
+                    LabeledFieldRow(label: "Notes", text: $form.notes, labelWidth: 96, multiline: true)
+                }
+                if let error { Notice(kind: .error, text: error) }
+                Button(profile == nil ? ProfileText.saveNew : ProfileText.save) { save() }
+                    .buttonStyle(.primary(fullWidth: true, size: .field))
+                if profile != nil {
+                    Hairline()
+                    Button(ProfileText.delete, role: .destructive) { confirmDelete = true }
+                        .buttonStyle(.danger(fullWidth: true, size: .field))
+                }
+            }
+            .confirmationDialog(ProfileText.deleteConfirm, isPresented: $confirmDelete, titleVisibility: .visible) {
+                Button(ProfileText.delete, role: .destructive) { delete() }
+            }
+            .onAppear {
+                guard !loaded else { return }
+                loaded = true
+                form = PersonProfileForm(profile: profile, name: row?.memberName, email: row?.memberEmail)
+                original = form
+            }
+        }
+
+        private func save() {
+            if let problem = form.error {
+                error = problem
+                return
+            }
+            guard let company = session.company else { return }
+            do {
+                let said = try ProfileWrites.save(
+                    sync, companyId: company.id, id: profile?.id, userId: profile == nil ? row?.userId : nil, form)
+                done(said)
+                dismiss()
+            } catch {
+                self.error = String(describing: error)
+            }
+        }
+
+        private func delete() {
+            guard let profile else { return }
+            do {
+                try ProfileWrites.delete(sync, id: profile.id)
+                done("Removed.")
+                dismiss()
+            } catch {
+                self.error = String(describing: error)
+            }
         }
     }
 
@@ -391,6 +525,89 @@
             guard let item else { return }
             do {
                 try ConfigWrites.remove(sync, page: page, id: item.id)
+                done("Removed.")
+                dismiss()
+            } catch {
+                self.error = String(describing: error)
+            }
+        }
+    }
+
+    /// A pool inspection question's form (2026-10-20; website settings/components
+    /// `InspectionFields`): the question, its group, choices, banner, order, and whether new
+    /// checklists get it; its section and answer kind are set on the website.
+    struct InspectionQuestionSheet: View {
+        var item: ConfigItem
+        var done: (String) -> Void
+        @Environment(Session.self) private var session
+        @Environment(SyncService.self) private var sync
+        @Environment(\.dismiss) private var dismiss
+        @State private var form = InspectionQuestionForm()
+        @State private var original = InspectionQuestionForm()
+        @State private var error: String?
+        @State private var confirmRemove = false
+
+        var body: some View {
+            FormSheet(title: item.name, dirty: form != original) {
+                Grouped {
+                    LabeledFieldRow(label: "Question", text: $form.name, labelWidth: 120, multiline: true)
+                    ListRow("Section", value: form.section.label)
+                    LabeledFieldRow(label: "Group", text: $form.group, labelWidth: 120)
+                    ListRow("Answer", value: form.answerLabel)
+                    LabeledFieldRow(label: "Order", text: $form.order, keyboard: .numberPad, labelWidth: 120)
+                }
+                if form.asksOptions {
+                    Grouped(
+                        footer:
+                            "One per line. Add (needs attention), (leaking), or (not applicable) after a choice that means that, and (folds the group) to a first question’s No to fold its group away."
+                    ) {
+                        LabeledFieldRow(label: "Choices", text: $form.options, labelWidth: 120, multiline: true)
+                    }
+                }
+                Grouped(footer: "Shown above the question, and as a recommendation on the report.") {
+                    LabeledFieldRow(label: "Banner", text: $form.notice, labelWidth: 120, multiline: true)
+                }
+                Grouped(footer: "Section and answer are changed on the website, in Settings › Checklist Components.") {
+                    SwitchRow("On new checklists", isOn: $form.active)
+                }
+                if let error { Notice(kind: .error, text: error) }
+                Button("Save") { save() }
+                    .buttonStyle(.primary(fullWidth: true, size: .field))
+                Hairline()
+                Button("Remove Component", role: .destructive) { confirmRemove = true }
+                    .buttonStyle(.danger(fullWidth: true, size: .field))
+            }
+            .confirmationDialog(
+                "Remove this question from new checklists?", isPresented: $confirmRemove, titleVisibility: .visible
+            ) {
+                Button("Remove Component", role: .destructive) { remove() }
+            }
+            .onAppear {
+                if original == InspectionQuestionForm() {
+                    form = InspectionQuestionForm(item.row)
+                    original = form
+                }
+            }
+        }
+
+        private func save() {
+            if let problem = form.error {
+                error = problem
+                return
+            }
+            guard let company = session.company else { return }
+            do {
+                try ConfigWrites.saveInspectionQuestion(sync, companyId: company.id, id: item.id, form)
+                done("Saved.")
+                dismiss()
+            } catch {
+                self.error = String(describing: error)
+            }
+        }
+
+        private func remove() {
+            do {
+                try ConfigWrites.remove(sync, page: .components, id: item.id)
                 done("Removed.")
                 dismiss()
             } catch {

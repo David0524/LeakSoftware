@@ -467,6 +467,21 @@ export function Checkbox({ label, ...input }: ComponentProps<"input"> & { label:
   );
 }
 
+/**
+ * One of a tap-all-that-apply list: a pill that fills when on. A real checkbox underneath, so
+ * forms, keyboards and screen readers treat it as one.
+ */
+export function ChipToggle({ label, ...input }: ComponentProps<"input"> & { label: string }) {
+  return (
+    <label className="relative inline-flex cursor-pointer">
+      <input {...input} type="checkbox" className="peer sr-only" />
+      <span className="inline-flex min-h-11 items-center rounded-full bg-fill px-4 font-medium transition-colors peer-checked:bg-link peer-checked:text-white peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-focus hover:bg-text/[0.1] peer-checked:hover:bg-link">
+        {label}
+      </span>
+    </label>
+  );
+}
+
 export function Notice({
   tone = "info",
   children,

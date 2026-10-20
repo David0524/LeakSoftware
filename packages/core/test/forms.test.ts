@@ -7,6 +7,7 @@ import {
   zonedTimeToIso,
   type NewJobInput,
   type Services,
+  todayUndo,
 } from "../src";
 
 const blank: NewJobInput = {
@@ -142,8 +143,33 @@ describe("newJobRecords", () => {
 describe("newJobTypes", () => {
   const values = (s: Services) => newJobTypes(s).map((t) => t.value);
   it("offers the package's own jobs, then Repair to every shop", () => {
-    expect(values("leak")).toEqual(["detection", "repair"]);
+    expect(values("leak")).toEqual(["repair", "detection", "inspection"]);
     expect(values("pool")).toEqual(["maintenance", "repair"]);
-    expect(values("both")).toEqual(["detection", "maintenance", "repair"]);
+    expect(values("both")).toEqual(["maintenance", "repair", "detection", "inspection"]);
+  });
+});
+
+describe("todayUndo (owner, 2026-10-20)", () => {
+  const day = "2026-10-20";
+  it("reopens a completed maintenance visit", () => {
+    expect(todayUndo({ type: "maintenance", status: "done" }, day)).toEqual({
+      label: "Reopen Visit",
+      reopen: true,
+    });
+    expect(todayUndo({ type: "maintenance", status: "in_progress" }, day)).toBeNull();
+    expect(todayUndo({ type: "maintenance", status: "invoiced" }, day)).toBeNull();
+  });
+  it("marks a leak or repair stop not complete on the day it was marked", () => {
+    for (const type of ["detection", "repair", "inspection"])
+      expect(todayUndo({ type, status: "in_progress", stop_done_on: day }, day)).toEqual({
+        label: "Mark Not Complete",
+        reopen: false,
+      });
+    expect(
+      todayUndo({ type: "detection", status: "in_progress", stop_done_on: "2026-10-19" }, day),
+    ).toBeNull();
+    expect(
+      todayUndo({ type: "detection", status: "report_sent", stop_done_on: day }, day),
+    ).toBeNull();
   });
 });

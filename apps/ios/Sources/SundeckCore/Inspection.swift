@@ -9,6 +9,15 @@ public enum ChecklistSection: String, Codable, CaseIterable, Sendable {
     case bondBeam = "bond_beam"
     case other
     case service
+    // Pool Inspection's tabs (2026-10-20).
+    case inspEquipment = "insp_equipment"
+    case inspSelfCleaning = "insp_self_cleaning"
+    case inspHeaters = "insp_heaters"
+    case inspElectrical = "insp_electrical"
+    case inspFencing = "insp_fencing"
+    case inspCovers = "insp_covers"
+    case inspVisual = "insp_visual"
+    case inspPlumbing = "insp_plumbing"
 
     public var label: String {
         switch self {
@@ -17,6 +26,14 @@ public enum ChecklistSection: String, Codable, CaseIterable, Sendable {
         case .bondBeam: "Bond Beam"
         case .other: "Other"
         case .service: "Service"
+        case .inspEquipment: "Equipment"
+        case .inspSelfCleaning: "Self Cleaning (In Floor) System"
+        case .inspHeaters: "Heaters"
+        case .inspElectrical: "Electrical Safety"
+        case .inspFencing: "Fencing and Child Barriers"
+        case .inspCovers: "Covers"
+        case .inspVisual: "Visual Leak Inspection"
+        case .inspPlumbing: "Plumbing Static Test"
         }
     }
 
@@ -26,11 +43,13 @@ public enum ChecklistSection: String, Codable, CaseIterable, Sendable {
     }
 }
 
-/// How an item is answered: a leak verdict, yes or no, or a maintenance task.
+/// How an item is answered: a leak verdict, yes or no, a maintenance task, or a pool inspection
+/// question's option, options, or text (PoolInspection.swift).
 public enum ComponentAnswer: String, Codable, Sendable {
     case leak
     case yesNo = "yes_no"
     case done
+    case choice, multi, text
 
     /// An answer kind this app doesn't know reads as a leak verdict, the default.
     public init(from decoder: Decoder) throws {
@@ -59,8 +78,14 @@ public struct ComponentType: Codable, Equatable, Sendable {
     /// leak: a verdict (not leaking, leaking, attention, not applicable); yes_no: yes or no;
     /// done: a maintenance task (done, needs attention, skipped).
     public var answer: ComponentAnswer?
-    /// Which jobs get the item: leak detection (default) or maintenance visits.
+    /// Which jobs get the item: leak detection (default), maintenance visits, or pool inspections.
     public var jobType: JobType?
+    /// The small header it sits under ("Filtration System").
+    public var groupLabel: String?
+    /// A choice or multi question's options (`choiceOptions` reads them).
+    public var options: JSONValue?
+    /// A banner shown before it, word for word.
+    public var notice: String?
     /// Only for this pool type (vinyl checks); nil for every pool.
     public var appliesToPoolType: String?
     /// Done every few months (filter, salt cell): kept off new visits; a maintenance plan's
@@ -78,6 +103,8 @@ public struct ComponentType: Codable, Equatable, Sendable {
         case companyId = "company_id"
         case deletedAt = "deleted_at"
         case jobType = "job_type"
+        case groupLabel = "group_label"
+        case options, notice
         case appliesToPoolType = "applies_to_pool_type"
         case onSchedule = "on_schedule"
         case allowsMultiple = "allows_multiple"
@@ -139,9 +166,11 @@ public struct ChecklistItemResult: Codable, Equatable, Sendable {
     public var notes: String?
     public var inspectedAt: String?
     public var inspectedBy: String?
+    /// A pool inspection answer: an option's label, a list of labels, or text.
+    public var value: JSONValue?
 
     enum CodingKeys: String, CodingKey {
-        case id, status, outcome, method, notes
+        case id, status, outcome, method, notes, value
         case companyId = "company_id"
         case deletedAt = "deleted_at"
         case jobId = "job_id"
@@ -734,14 +763,23 @@ public struct DiagramLayout: Codable, Equatable, Sendable {
 
     /// True or absent (TypeScript leaves the key out unless it's true).
     public var mirror: Bool?
+    /// The pool is drawn in the middle of the diagram (owner, 2026-10-20: "Pool shapes are not
+    /// centered"). Pools saved before sat 10 units left, to leave room for the spa; their spa,
+    /// landmarks, drawing and finding pins were placed against that, so they keep it until the
+    /// shape is saved again (`centerLayout`). True or absent.
+    public var centered: Bool?
     public var spa: Spa?
     /// Lines, circles, and freehand strokes drawn on the diagram (Draw), 0..1 of it.
     public var drawing: [DrawnShape]?
     /// Trees, rocks, a waterfall, and so on, placed around the pool (Landmarks).
     public var landmarks: [Landmark]?
 
-    public init(mirror: Bool? = nil, spa: Spa? = nil, drawing: [DrawnShape]? = nil, landmarks: [Landmark]? = nil) {
+    public init(
+        mirror: Bool? = nil, centered: Bool? = nil, spa: Spa? = nil, drawing: [DrawnShape]? = nil,
+        landmarks: [Landmark]? = nil
+    ) {
         self.mirror = mirror
+        self.centered = centered
         self.spa = spa
         self.drawing = drawing
         self.landmarks = landmarks
@@ -969,8 +1007,10 @@ public struct PoolDiagram: Codable, Equatable, Sendable {
 
 private let diagramWidth = 160.0
 private let diagramHeight = 100.0
-/// Pools are drawn in x 8..132; mirroring flips them about the middle of that.
+/// The paths are drawn in x 8..132; mirroring flips them about the middle of that.
 private let mirrorAxis = 140.0
+/// How far right a centered pool is drawn: x 18..142, the middle of the 160-wide diagram.
+public let poolCenterOffset = 10.0
 
 /// The tokens of `/[A-Za-z]|-?\d*\.?\d+/g` in order; anything else is skipped.
 private func pathTokens(_ path: String) -> [String] {
@@ -1029,11 +1069,61 @@ public func mirrorPath(_ path: String) -> String {
     return out.joined(separator: " ")
 }
 
+/// Moves a pool path right by dx (absolute M, L, H, V, Q, C, and Z only, as `mirrorPath`).
+public func offsetPath(_ path: String, _ dx: Double) -> String {
+    if dx == 0 || dx.isNaN || path.isEmpty { return path }
+    var out: [String] = []
+    var command = ""
+    var index = 0
+    for token in pathTokens(path) {
+        if let first = token.unicodeScalars.first, ("A"..."Z").contains(first) || ("a"..."z").contains(first) {
+            command = token
+            index = 0
+            out.append(token)
+            continue
+        }
+        let n = ECMA.number(token)
+        let isX = command == "H" || (command != "V" && index % 2 == 0)
+        out.append(ECMA.numberString(isX ? n + dx : n))
+        index += 1
+    }
+    return out.joined(separator: " ")
+}
+
+/// A layout moved to the centered pool: the spa, landmarks and drawing move right with it, so
+/// they stay where they were against the outline. The shape editor opens with this, and saves
+/// it.
+public func centerLayout(_ layout: DiagramLayout) -> DiagramLayout {
+    if layout.centered == true { return layout }
+    let dx = poolCenterOffset / diagramWidth
+    func x(_ v: Double) -> Double { ECMA.round(min(1, max(0, v + dx)) * 10_000) / 10_000 }
+    var out = layout
+    out.centered = true
+    if var spa = layout.spa {
+        spa.x = x(spa.x)
+        out.spa = spa
+    }
+    out.landmarks = layout.landmarks?.map { l in
+        var l = l
+        l.x = x(l.x)
+        return l
+    }
+    out.drawing = layout.drawing?.map { d in
+        switch d {
+        case .line(let x1, let y1, let x2, let y2): .line(x1: x(x1), y1: y1, x2: x(x2), y2: y2)
+        case .circle(let cx, let cy, let rx, let ry): .circle(cx: x(cx), cy: cy, rx: rx, ry: ry)
+        case .pen(let points): .pen(points: points.map { p in p.count >= 2 ? [x(p[0]), p[1]] : p })
+        }
+    }
+    return out
+}
+
 /// Read a layout from a synced row. Anything unrecognized is dropped, never thrown.
 public func parseDiagramLayout(_ value: JSONValue?) -> DiagramLayout {
     guard let value else { return DiagramLayout() }
     var layout = DiagramLayout()
     if value["mirror"] == .bool(true) { layout.mirror = true }
+    if value["centered"] == .bool(true) { layout.centered = true }
     func unit(_ v: JSONValue?) -> Double? {
         if case .number(let n) = v, n >= 0, n <= 1 { return n }
         return nil
@@ -1198,10 +1288,12 @@ public let clearedDiagram: (shape: DiagramShape, hasSpa: Bool, layout: DiagramLa
 public func poolDiagram(_ shape: DiagramShape?, _ hasSpa: Bool, _ layout: DiagramLayout? = nil) -> PoolDiagram {
     let path = (shape ?? .rectangle).path
     let mirror = layout?.mirror == true
+    let dx = layout?.centered == true ? poolCenterOffset : 0
     let placed = layout?.spa
     let r = placed?.r ?? (placed?.size ?? .medium).r
     return PoolDiagram(
-        width: diagramWidth, height: diagramHeight, pool: mirror && !path.isEmpty ? mirrorPath(path) : path,
+        width: diagramWidth, height: diagramHeight,
+        pool: offsetPath(mirror && !path.isEmpty ? mirrorPath(path) : path, dx),
         spa: hasSpa
             ? .init(
                 cx: placed.map { $0.x * diagramWidth } ?? (mirror ? diagramWidth - 145 : 145),
@@ -1233,11 +1325,15 @@ extension ECMA {
 
 // MARK: - Verdicts
 
-/// Badge text for an item, in the design partner's words. Yes/no items read "Yes" or "No".
-public func verdictLabel(status: ChecklistStatus?, outcome: ChecklistOutcome?, answer: ComponentAnswer = .leak)
-    -> String
-{
+/// Badge text for an item, in the design partner's words. Yes/no items read "Yes" or "No"; a
+/// pool inspection question reads its answer.
+public func verdictLabel(
+    status: ChecklistStatus?, outcome: ChecklistOutcome?, answer: ComponentAnswer = .leak, value: JSONValue? = nil
+) -> String {
     guard let status, status != .pending else { return "To do" }
+    if answer.isInspection {
+        return inspectionAnswerText(answer, value) ?? (status == .excluded ? "Not applicable" : "Answered")
+    }
     if answer == .done {
         if status == .excluded { return "Skipped" }
         return outcome == .attention ? "Needs attention" : "Done"

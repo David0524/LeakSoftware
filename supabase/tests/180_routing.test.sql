@@ -36,6 +36,9 @@ select lives_ok(format($$ update company set latitude = 33.44879, longitude = -1
 select is(routing_use((select ca from ids), 'matrix', 3, 5), true, 'calls within the daily cap');
 select is(routing_use((select ca from ids), 'geocode', 2, 5), true, 'kinds share the cap');
 select is(routing_use((select ca from ids), 'matrix', 1, 5), false, 'past the cap: use the estimate');
+-- Address suggestions have their own allowance (2026-10-20): typing never uses up routes'.
+select is(routing_use((select ca from ids), 'suggest', 4, 5), true, 'suggestions are counted apart');
+select is(routing_use((select ca from ids), 'suggest', 2, 5), false, 'and stop at their own cap');
 select throws_ok(format('select routing_use(%L, ''matrix'', 1, 5)', (select cb from ids)), '42501',
   null, 'only for your own shop');
 

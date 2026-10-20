@@ -19,6 +19,7 @@ import {
   type Landmark,
   type LandmarkKind,
   type SpaShape,
+  centerLayout,
 } from "@leakbook/core";
 import { savePoolDiagram } from "@/app/actions/diagram";
 import { DiagramShapes, LandmarkArt } from "./pool-diagram";
@@ -63,7 +64,7 @@ export function PoolShapeEditor({
   propertyId,
   shape: savedShape,
   hasSpa: savedSpa,
-  layout,
+  layout: savedLayout,
   onDone,
 }: {
   jobId: string;
@@ -73,6 +74,8 @@ export function PoolShapeEditor({
   layout: DiagramLayout;
   onDone: () => void;
 }) {
+  // Opened on the centered pool, with what's placed moved along (owner, 2026-10-20).
+  const layout = centerLayout(savedLayout);
   const [shape, setShape] = useState<DiagramShape | null>(savedShape);
   const [hasSpa, setHasSpa] = useState(savedSpa);
   const [mirror, setMirror] = useState(layout.mirror === true);
@@ -109,7 +112,7 @@ export function PoolShapeEditor({
   const touches = useRef(new Map<number, { x: number; y: number }>());
 
   // Where the spa is drawn now: placed, or the default corner.
-  const drawnSpa = poolDiagram(shape, hasSpa, { mirror }).spa;
+  const drawnSpa = poolDiagram(shape, hasSpa, { mirror, centered: true }).spa;
   const spaNow = hasSpa
     ? (spa ??
       (drawnSpa
@@ -117,6 +120,7 @@ export function PoolShapeEditor({
         : null))
     : null;
   const next: DiagramLayout = {
+    centered: true,
     ...(mirror ? { mirror: true } : {}),
     ...(hasSpa && spa
       ? { spa: { x: spa.x, y: spa.y, r: spa.r, size: spaSizeFor(spa.r), shape: spa.shape } }
@@ -344,7 +348,7 @@ export function PoolShapeEditor({
       >
         <TileArt>
           <path
-            d={poolDiagram(s.key, false).pool}
+            d={poolDiagram(s.key, false, { centered: true }).pool}
             className="fill-diagram-water stroke-water"
             strokeWidth={5}
           />

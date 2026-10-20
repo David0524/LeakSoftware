@@ -7,6 +7,8 @@ import {
   requiresFinishedChecklist,
   narrativeTemplate,
   reportShareText,
+  reportTitle,
+  inspectionProgress,
   toFinalSections,
   type FinalSection,
   type NarrativeProblem,
@@ -179,6 +181,51 @@ export async function requireFinishPhoto(db: SupabaseClient, jobId: string): Pro
   if (!count) throw new Refusal(FINISH_PHOTO_MESSAGE);
 }
 
+/** A pool inspection's questions still to do, leaving out the ones its gates folded away. */
+async function inspectionToDo(db: SupabaseClient, jobId: string): Promise<number> {
+  const [{ data: comps }, { data: results }] = await Promise.all([
+    db
+      .from("job_component")
+      .select(
+        "id, sort_order, type:component_type!job_component_component_type_id_company_id_fkey(section, group_label, options)",
+      )
+      .eq("job_id", jobId)
+      .is("deleted_at", null)
+      .order("sort_order"),
+    db
+      .from("checklist_item_result")
+      .select("job_component_id, status, outcome, value")
+      .eq("job_id", jobId)
+      .is("deleted_at", null),
+  ]);
+  const byComp = new Map(
+    (results ?? []).map((r) => [r.job_component_id as string, r as Record<string, unknown>]),
+  );
+  return inspectionProgress(
+    (comps ?? []).map((c) => {
+      const t = c.type as unknown as {
+        section: string | null;
+        group_label: string | null;
+        options: unknown;
+      } | null;
+      const r = byComp.get(c.id as string);
+      return {
+        id: c.id as string,
+        section: t?.section ?? null,
+        group_label: t?.group_label ?? null,
+        options: t?.options,
+        value: r?.value,
+        result: r
+          ? {
+              status: r.status as "pending" | "inspected" | "excluded",
+              outcome: (r.outcome ?? null) as "ok" | "leaking" | "attention" | null,
+            }
+          : null,
+      };
+    }),
+  ).toDo;
+}
+
 /**
  * Complete Job (owner, 2026-10-19): with the shop's "Finish the checklist first" on, every
  * checklist item must be answered; then the photo rule as above.
@@ -186,19 +233,22 @@ export async function requireFinishPhoto(db: SupabaseClient, jobId: string): Pro
 export async function requireCompletable(db: SupabaseClient, jobId: string): Promise<void> {
   const { data: job } = await db
     .from("job")
-    .select("company:company!job_company_id_fkey(settings)")
+    .select("type, company:company!job_company_id_fkey(settings)")
     .eq("id", jobId)
     .single();
   const settings = (job?.company as unknown as { settings: unknown } | null)?.settings;
   const [toDo, photos] = await Promise.all([
-    requiresFinishedChecklist(settings)
-      ? db
-          .from("checklist_item_result")
-          .select("id", { count: "exact", head: true })
-          .eq("job_id", jobId)
-          .eq("status", "pending")
-          .is("deleted_at", null)
-      : { count: 0 },
+    !requiresFinishedChecklist(settings)
+      ? { count: 0 }
+      : job?.type === "inspection"
+        ? // Questions folded away by their gate aren't to do (2026-10-20).
+          inspectionToDo(db, jobId).then((count) => ({ count }))
+        : db
+            .from("checklist_item_result")
+            .select("id", { count: "exact", head: true })
+            .eq("job_id", jobId)
+            .eq("status", "pending")
+            .is("deleted_at", null),
     requiresFinishPhoto(settings)
       ? db
           .from("media")
@@ -260,7 +310,9 @@ export async function sendReport(
   if (readError) throw dbFailure(readError);
   const snapshot = report.data_snapshot as ReportSnapshot;
   const shop = snapshot.company.name;
-  const message = reportShareText(shop, link);
+  const message = reportShareText(shop, link, false, snapshot.job.type);
+  // "leak detection report", or "pool inspection report" (2026-10-20).
+  const what = reportTitle(snapshot.job.type).toLowerCase();
 
   if (opts.channel === "sms_device") {
     await db.rpc("log_message", {
@@ -296,10 +348,10 @@ export async function sendReport(
       to: to!,
       cc,
       replyTo: snapshot.company.email,
-      subject: `Your leak detection report from ${shop}`,
-      text: `${greeting}\n\nYour leak detection report for ${snapshot.property.address} is ready:\n${link}\n\n${shop}${snapshot.company.phone ? `\n${snapshot.company.phone}` : ""}`,
-      html: `<p>${escapeHtml(greeting)}</p><p>Your leak detection report for ${escapeHtml(snapshot.property.address)} is ready.</p><p><a href="${link}">View your report</a></p><p>${escapeHtml(shop)}${snapshot.company.phone ? `<br>${escapeHtml(snapshot.company.phone)}` : ""}</p>`,
-      attachments: attach ? [{ filename: `${shop} leak detection report.pdf`, content: pdf! }] : [],
+      subject: `Your ${what} from ${shop}`,
+      text: `${greeting}\n\nYour ${what} for ${snapshot.property.address} is ready:\n${link}\n\n${shop}${snapshot.company.phone ? `\n${snapshot.company.phone}` : ""}`,
+      html: `<p>${escapeHtml(greeting)}</p><p>Your ${what} for ${escapeHtml(snapshot.property.address)} is ready.</p><p><a href="${link}">View your report</a></p><p>${escapeHtml(shop)}${snapshot.company.phone ? `<br>${escapeHtml(snapshot.company.phone)}` : ""}</p>`,
+      attachments: attach ? [{ filename: `${shop} ${what}.pdf`, content: pdf! }] : [],
     });
     await db.rpc("log_message", {
       target_job: report.job_id,

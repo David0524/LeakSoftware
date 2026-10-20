@@ -466,6 +466,32 @@ public func propertyLocation(_ p: Property?) -> LatLng? {
     return LatLng(lat: lat, lng: lng)
 }
 
+/// What the "not on the map" warning says, everywhere it shows (owner, 2026-10-20). Port of
+/// `NOT_ON_MAP`.
+public enum NotOnMap {
+    public static let title = "Not found on the map"
+    public static let detail =
+        "Routes and drive times leave this stop out until its address is found. Check the address, pick one of the suggestions as you type it, or mark the spot at the pool."
+    public static let short = "Not on map"
+}
+
+/// Whether a pool's address was found on the map (owner, 2026-10-20: "we need an indicator for
+/// when address doesn't register"): found when it has coordinates for its current address,
+/// missing when it has an address but no coordinates for it (not found, or changed since), nil
+/// when there's no address or no routing service to look it up with. Port of `mapStatus`.
+public enum MapStatus: String, Codable, Sendable {
+    case found, missing
+}
+
+public func mapStatus(_ p: Property?, geocodedAddress: String?, routing: Bool) -> MapStatus? {
+    guard let p, routing else { return nil }
+    let address = formatAddress(p)
+    if p.addressLine1.trimmingWhitespace().isEmpty || address.isEmpty { return nil }
+    // Pools located before lookups were kept with their address count as found.
+    if propertyLocation(p) != nil && (geocodedAddress == nil || geocodedAddress == address) { return .found }
+    return .missing
+}
+
 private func point(_ l: LatLng) -> String { "\(ECMA.numberString(l.lat)),\(ECMA.numberString(l.lng))" }
 
 private func destination(_ p: MapPlace) -> String { p.location.map(point) ?? p.address }

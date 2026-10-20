@@ -22,8 +22,8 @@ today) and walks through the route. There are no timers or stopwatches (owner, 2
 
 If the tech closes it from the Lock Screen, it stays closed until the next work day.
 
-Design (Apple's Live Activity guidance): Sundeck Pro's mark at the top left on the brand
-navy, the customer's name in Barlow (the brand display face), one large figure (minutes away,
+Design (Apple's Live Activity guidance): Sundeck Pro's mark at the top left on the brand's
+water blue (owner, 2026-10-20; it was navy), the customer's name in Barlow (the brand display face), one large figure (minutes away,
 or the time on site), a thin progress bar in the brand water blue, white text, and nothing
 the tech must read twice. The expanded Dynamic Island shows the same with a Call button
 and an Open Job link. Light and dark Lock Screens both read well (the activity sets its own

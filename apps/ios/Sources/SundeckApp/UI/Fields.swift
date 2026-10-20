@@ -83,6 +83,8 @@
         /// Next move between fields (`.keyboardBar`, owner 2026-10-20). nil: the field's own.
         var chain: FocusState<String?>.Binding? = nil
         var chainKey: String? = nil
+        /// Told when the field gets or lets go of the keyboard (address suggestions).
+        var onFocusChange: ((Bool) -> Void)? = nil
         @FocusState private var focused: Bool
 
         private var isFocused: Bool {
@@ -104,6 +106,8 @@
                     .multilineTextAlignment(numeric ? .trailing : .leading)
                     .monospacedDigit()
                     .modifier(ChainFocus(chain: chain, key: chainKey, own: $focused))
+                    .phoneTyping($text, active: keyboard == .phonePad && isFocused)
+                    .onChange(of: isFocused) { _, now in onFocusChange?(now) }
                     .accessibilityLabel(label)
                     if let unit {
                         Text(unit).textRole(.secondary).foregroundStyle(Color.textMuted)
@@ -117,6 +121,36 @@
                     FieldHint(text: hint)
                 }
             }
+        }
+    }
+
+    /// A phone field formats its number as it's typed (core `formatPhoneTyping`, owner
+    /// 2026-10-20), only while it has the keyboard, so a saved number that's loaded in isn't
+    /// changed. The value it sets itself is skipped, so it isn't formatted twice.
+    private struct PhoneTyping: ViewModifier {
+        @Binding var text: String
+        var active: Bool
+        @State private var set: String?
+
+        func body(content: Content) -> some View {
+            content.onChange(of: text) { old, new in
+                if new == set {
+                    set = nil
+                    return
+                }
+                guard active else { return }
+                let next = phoneTypingEdit(previous: old, raw: new)
+                if next != new {
+                    set = next
+                    text = next
+                }
+            }
+        }
+    }
+
+    extension View {
+        func phoneTyping(_ text: Binding<String>, active: Bool) -> some View {
+            modifier(PhoneTyping(text: text, active: active))
         }
     }
 

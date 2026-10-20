@@ -90,6 +90,36 @@ export function markCompleteValues(
 }
 
 /**
+ * Whether the job's page offers Schedule Job / Change Schedule (owner, 2026-10-20: "You should
+ * be able to reschedule a job from the jobs page after creating it"): until its work is done,
+ * started jobs included; repairs as before.
+ */
+export function jobReschedulable(job: { type: string; status: string }): boolean {
+  return (
+    job.type === "repair" ||
+    job.status === "unscheduled" ||
+    job.status === "scheduled" ||
+    job.status === "in_progress"
+  );
+}
+
+/**
+ * What a done stop on Today offers (owner, 2026-10-20: "Maintenance jobs don't have a reopen
+ * visit button on the Today page"): a completed maintenance visit, Reopen Visit (back to in
+ * progress); a leak or repair stop marked done today, Mark Not Complete; otherwise nothing.
+ */
+export function todayUndo(
+  job: { type: string; status: string; stop_done_on?: string | null },
+  day: string,
+): { label: "Reopen Visit" | "Mark Not Complete"; reopen: boolean } | null {
+  if (job.type === "maintenance")
+    return job.status === "done" ? { label: "Reopen Visit", reopen: true } : null;
+  return job.stop_done_on === day && (job.status === "scheduled" || job.status === "in_progress")
+    ? { label: "Mark Not Complete", reopen: false }
+    : null;
+}
+
+/**
  * Whether the job page has a Wrap-Up section (report, signatures, quotes, invoice). Maintenance
  * visits don't (owner, 2026-10-19: "For maintenance, get rid of the wrap up tab entirely"):
  * they end with Complete Job, are billed monthly, and quote repairs from Details.
@@ -143,7 +173,7 @@ export const offersLeak = (settings: unknown) => companyServices(settings) !== "
 /** Whether the shop does pool care (cleaning plans, the service checklist, monthly billing). */
 export const offersPool = (settings: unknown) => companyServices(settings) !== "leak";
 
-export type JobType = "detection" | "repair" | "maintenance";
+export type JobType = "detection" | "repair" | "maintenance" | "inspection";
 
 /**
  * What the job's price is called (owner, 2026-10-19): a detection fee on leak detection, a
@@ -154,14 +184,20 @@ export function jobFeeLabel(type: JobType | string | null | undefined): string {
 }
 
 /**
- * The jobs New Job offers: the package's own (Leak Detection, Pool Service, or both), then
- * Repair, which every shop gets (owner, 2026-10-18).
+ * The jobs New Job offers, in this order (owner, 2026-10-20: "service, repair, leak, pool
+ * inspection"): Service (pool care shops), Repair (every shop, owner 2026-10-18), then Leak and
+ * Inspection (leak shops). Short labels, so all four fit across a phone.
  */
 export function newJobTypes(services: Services): { value: JobType; label: string }[] {
   return [
-    ...(services !== "pool" ? [{ value: "detection" as const, label: "Leak Detection" }] : []),
-    ...(services !== "leak" ? [{ value: "maintenance" as const, label: "Pool Service" }] : []),
+    ...(services !== "leak" ? [{ value: "maintenance" as const, label: "Service" }] : []),
     { value: "repair", label: "Repair" },
+    ...(services !== "pool"
+      ? [
+          { value: "detection" as const, label: "Leak" },
+          { value: "inspection" as const, label: "Inspection" },
+        ]
+      : []),
   ];
 }
 
@@ -186,6 +222,8 @@ export interface IntakeQuestion {
   label: string;
   type: "multi" | "single" | "text";
   options?: string[];
+  /** The job types that ask it; none: leak detection (intakeQuestionsFor). */
+  job_types?: JobType[];
 }
 
 /** Split "a@x.com b@y.com, c@z.com" into addresses. */
@@ -320,4 +358,5 @@ export const JOB_TYPE_LABELS: Record<Job["type"], string> = {
   detection: "Leak detection",
   repair: "Repair",
   maintenance: "Maintenance",
+  inspection: "Pool inspection",
 };

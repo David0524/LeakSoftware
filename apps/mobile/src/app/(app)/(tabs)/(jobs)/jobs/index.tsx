@@ -323,7 +323,9 @@ function ReportRow({
     : "Draft";
   const template =
     report.template_key === "homeowner"
-      ? "Homeowner report"
+      ? job?.type === "inspection"
+        ? "Pool inspection report"
+        : "Homeowner report"
       : report.template_key === "maintenance"
         ? "Visit report"
         : "Partner report";

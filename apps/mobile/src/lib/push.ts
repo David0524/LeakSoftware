@@ -13,8 +13,11 @@ import { getServices } from "./services";
 // opens the job or the conversation. The current stop's ongoing notification is
 // features/today/LiveStop.tsx.
 
-/** The brand navy, for the small icon's tint and the ongoing notification. */
-export const NOTIFICATION_COLOR = tokens.color.brand.navy;
+/**
+ * The brand's water blue, for the current stop's ongoing notification: the lighter blue, as on
+ * the iPhone's Live Activity (owner, 2026-10-20).
+ */
+export const NOTIFICATION_COLOR = tokens.color.brand.water;
 /** Alerts (pushes from the website) and the current stop (shown by the app itself). */
 export const ALERTS_CHANNEL = "default";
 export const STOP_CHANNEL = "current-stop";

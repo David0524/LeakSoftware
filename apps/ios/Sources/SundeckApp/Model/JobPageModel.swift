@@ -49,14 +49,10 @@ public enum JobSectionMemory {
 
 // MARK: - Header
 
-/// "Leak detection", "Repair", "Maintenance"; a visit from a service plan reads "Maintenance plan".
+/// "Leak detection", "Repair", "Maintenance", "Pool inspection"; a visit from a service plan reads
+/// "Maintenance plan".
 public func jobTypeLabel(_ job: JobView) -> String {
-    let label =
-        switch job.type {
-        case .detection: "Leak detection"
-        case .repair: "Repair"
-        case .maintenance: "Maintenance"
-        }
+    let label = job.type.label
     let plan = job.job["service_plan_id"]?.string != nil && job.customer != nil
     return plan ? "\(label) plan" : label
 }
@@ -208,7 +204,7 @@ public struct JobDetails: Equatable, Sendable {
         feeLabel = jobFeeLabel(job.type)
         marksLeakLocation = job.type == .detection
         feeFooter = marksLeakLocation ? "The detection fee is shown on the report." : "Billed on the invoice."
-        intake = intakeAnswers(settings: settings, intake: job.job["intake"])
+        intake = intakeAnswers(settings: settings, intake: job.job["intake"], jobType: job.type)
         // From the Customer on a repair (owner, 2026-10-19): what the customer needs, first.
         if let need = job.job["intake"]?[repairItemKey]?.string, !need.isEmpty {
             intake.insert(IntakeAnswer(question: repairItemLabel, answer: need), at: 0)
@@ -224,10 +220,11 @@ public struct JobDetails: Equatable, Sendable {
     public var contactDetail: String? { phone != nil ? email : nil }
 }
 
-/// The shop's intake questions the customer answered, in the shop's order.
-public func intakeAnswers(settings: JSONValue, intake: JSONValue?) -> [IntakeAnswer] {
+/// The shop's intake questions for this kind of job (`intakeQuestionsFor`) the customer
+/// answered, in the shop's order.
+public func intakeAnswers(settings: JSONValue, intake: JSONValue?, jobType: JobType = .detection) -> [IntakeAnswer] {
     guard case .array(let questions)? = settings["intake_questions"] else { return [] }
-    return questions.compactMap { q in
+    return intakeQuestionsFor(questions, jobType).compactMap { q in
         guard let key = q["key"]?.string, let label = q["label"]?.string else { return nil }
         switch intake?[key] {
         case .string(let s) where !s.isEmpty: return IntakeAnswer(question: label, answer: s)

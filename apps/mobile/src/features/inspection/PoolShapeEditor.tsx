@@ -7,6 +7,7 @@ import {
   DRAWING_MAX,
   LANDMARKS,
   LANDMARKS_MAX,
+  centerLayout,
   clampLandmarkSize,
   clampSpaR,
   drawnPath,
@@ -109,7 +110,9 @@ function Tile({
 export function PoolShapeEditor({ property, onDone }: { property: Property; onDone: () => void }) {
   const { services } = useSession();
   const savedShape = (property.diagram_shape as DiagramShape | null | undefined) ?? null;
-  const layout = parseDiagramLayout(property.diagram_layout);
+  // Opened on the centered pool, with what's placed moved along (owner, 2026-10-20), and
+  // always saved centered, as the website's editor.
+  const layout = centerLayout(parseDiagramLayout(property.diagram_layout));
   const [shape, setShape] = useState<DiagramShape | null>(savedShape);
   const [hasSpa, setHasSpa] = useState(property.has_spa);
   const [mirror, setMirror] = useState(layout.mirror === true);
@@ -138,12 +141,13 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
   const height = (width * H) / W;
 
   // Where the spa is drawn now: placed, or the default corner.
-  const drawnSpa = poolDiagram(shape, hasSpa, { mirror }).spa;
+  const drawnSpa = poolDiagram(shape, hasSpa, { mirror, centered: true }).spa;
   const spaNow: Spa | null = hasSpa
     ? (spa ??
       (drawnSpa ? { x: drawnSpa.cx / W, y: drawnSpa.cy / H, r: drawnSpa.r, shape: "round" } : null))
     : null;
   const next: DiagramLayout = {
+    centered: true,
     ...(mirror ? { mirror: true } : {}),
     ...(hasSpa && spa
       ? { spa: { x: spa.x, y: spa.y, r: spa.r, size: spaSizeFor(spa.r), shape: spa.shape } }
@@ -415,7 +419,7 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
                     onPress={() => setShape(shape === t.s.key ? null : t.s.key)}
                   >
                     <Path
-                      d={poolDiagram(t.s.key, false).pool}
+                      d={poolDiagram(t.s.key, false, { centered: true }).pool}
                       fill={color.diagramWater}
                       stroke={color.water}
                       strokeWidth={5}

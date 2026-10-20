@@ -38,13 +38,16 @@ let package = Package(
         // The Live Activity's attributes and views, shared by the app and its widget extension.
         .target(name: "SundeckLiveStop", dependencies: ["SundeckCore", "SundeckTokens"]),
         // The widget extension: the Live Activity on the Lock Screen and in the Dynamic Island.
-        // xtool links extensions with `-e _NSExtensionMain` (the old principal-class entry), which
-        // leaves the widget's `@main` unreferenced and dead-strips it. WidgetKit extensions start
-        // at their `main` (WidgetBundle's), as Xcode builds them.
+        // xtool links extensions with `-e _NSExtensionMain`, which leaves the widget's `@main`
+        // unreferenced and dead-strips it, so xtool builds start it at `main` instead. The App
+        // Store build (AppHost/project.yml, SUNDECK_APP_STORE=1) must keep `_NSExtensionMain`:
+        // Apple refuses any other entry point (ITMS-90898, build 1005).
         .target(
             name: "SundeckLiveActivity",
             dependencies: ["SundeckLiveStop", "SundeckCore", "SundeckTokens"],
-            linkerSettings: [.unsafeFlags(["-Xlinker", "-e", "-Xlinker", "_main"], .when(platforms: [.iOS]))]
+            linkerSettings: Context.environment["SUNDECK_APP_STORE"] == "1"
+                ? []
+                : [.unsafeFlags(["-Xlinker", "-e", "-Xlinker", "_main"], .when(platforms: [.iOS]))]
         ),
         // Tests only: a sync transport straight to Postgres, and the two-device test harness.
         .target(

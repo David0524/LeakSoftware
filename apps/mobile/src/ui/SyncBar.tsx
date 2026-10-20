@@ -1,8 +1,9 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSyncStatus } from "../data/hooks";
 import type { SyncStatus } from "../lib/sync-service";
+import { SYNC_NOTE_DELAY_MS, quietWaiting, syncNoteDueAt } from "../lib/syncNote";
 import { BAR_HEIGHT } from "./Bar";
 import { Chevron } from "./components";
 import {
@@ -41,7 +42,7 @@ export function SyncBar({
   /** @deprecated The bar is a capsule on every platform now. */
   inset?: boolean;
 }) {
-  const { label, dot, healthy } = syncSummary(useSyncStatus());
+  const { label, dot, healthy } = useSyncBarSummary();
   if (healthy) return null;
   return (
     <Pressable
@@ -77,7 +78,7 @@ export function usePinnedSyncBar(onPress: () => void): {
   height: number;
 } {
   const insets = useSafeAreaInsets();
-  const { healthy } = syncSummary(useSyncStatus());
+  const { healthy } = useSyncBarSummary();
   const [measured, setMeasured] = useState(0);
   if (!drawnChrome) return { overlay: null, inline: <SyncBar onPress={onPress} />, height: 0 };
   if (healthy) return { overlay: null, inline: null, height: 0 };
@@ -94,6 +95,31 @@ export function usePinnedSyncBar(onPress: () => void): {
     inline: null,
     height: measured,
   };
+}
+
+/**
+ * The bar's summary: changes and files waiting under 8 seconds don't show (owner, 2026-10-20;
+ * lib/syncNote.ts), so a quick sync doesn't flash the bar. Anything else it would say (offline,
+ * problems) shows at once, with the real counts.
+ */
+function useSyncBarSummary(): ReturnType<typeof syncSummary> {
+  const status = useSyncStatus();
+  const since = status.waitingSince;
+  // The waiting spell whose 8 seconds have passed (a bar mounted late shows it at once).
+  const [shownFor, setShownFor] = useState<number | null>(() =>
+    since != null && syncNoteDueAt(status, Date.now()) == null ? since : null,
+  );
+  useEffect(() => {
+    if (since == null) return;
+    const timer = setTimeout(
+      () => setShownFor(since),
+      Math.max(0, since + SYNC_NOTE_DELAY_MS - Date.now()),
+    );
+    return () => clearTimeout(timer);
+  }, [since]);
+  const held = since != null && shownFor !== since;
+  const quiet = held ? syncSummary(quietWaiting(status)) : null;
+  return quiet?.healthy ? quiet : syncSummary(status);
 }
 
 /**

@@ -312,7 +312,10 @@
             }
             job = found
             let inspection = JobInspection(sync.store, jobId: jobId)
-            toDo = checklistTally(inspection.components, inspection.results).pending
+            // A pool inspection counts only the questions its gates leave open (2026-10-20).
+            toDo = checklistToDo(
+                config: InspectionConfig(sync.store, companyId: company.id), inspection: inspection,
+                jobType: found.type)
             if section == nil { section = JobSectionMemory.section(for: jobId, type: found.type) }
             if reportFlow == nil, jobHasWrapUp(found.type.rawValue) {
                 reportFlow = ReportFlow(

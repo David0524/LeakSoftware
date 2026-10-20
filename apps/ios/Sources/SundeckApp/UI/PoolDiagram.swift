@@ -282,7 +282,7 @@
                     onChange(shapeAfterTap(current: value, tapped: shape))
                 } label: {
                     VStack(spacing: 4) {
-                        let outline = DiagramOutline(poolDiagram(shape, false).pool)
+                        let outline = DiagramOutline(poolDiagram(shape, false, DiagramLayout(centered: true)).pool)
                         ZStack {
                             outline.fill(Color.diagramWater)
                             outline.stroke(Color.water, lineWidth: 1.5)

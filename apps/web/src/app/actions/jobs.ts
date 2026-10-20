@@ -15,7 +15,9 @@ import {
   type CompanySettings,
   type ComponentType,
   type JobStatus,
+  type JobType,
   type NewJobInput,
+  intakeQuestionsFor,
   parseGallons,
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
@@ -318,9 +320,13 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
       await supabase.from("property").update(values).eq("id", property);
   }
 
-  // Leak detection, a repair, or maintenance: a single visit, or (owners) a plan that repeats.
+  // Leak detection, a pool inspection, a repair, or maintenance: a single visit, or (owners) a
+  // plan that repeats.
   const chosen = text(form, "job_type");
-  const kind = chosen === "maintenance" || chosen === "repair" ? chosen : "detection";
+  const kind: JobType =
+    chosen === "maintenance" || chosen === "repair" || chosen === "inspection"
+      ? chosen
+      : "detection";
   const repeat = kind === "maintenance" ? text(form, "repeat") || "0" : "0";
   if (repeat !== "0") {
     if (!office.isManager) return { error: "Only owners can start maintenance plans." };
@@ -375,8 +381,10 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
     kind,
   );
 
-  const questions =
-    ((await getCompany(office)).settings as Partial<CompanySettings>).intake_questions ?? [];
+  const questions = intakeQuestionsFor(
+    ((await getCompany(office)).settings as Partial<CompanySettings>).intake_questions ?? [],
+    kind,
+  );
   const intake: Record<string, string | string[]> = {};
   for (const q of questions) {
     if (q.type === "multi") {

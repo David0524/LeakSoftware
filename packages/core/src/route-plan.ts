@@ -2,7 +2,7 @@
 // server loads the jobs and drive times, these functions decide the stops, what planning may
 // move, and the rows to save.
 
-import { zonedTimeToIso } from "./forms";
+import { formatAddress, zonedTimeToIso } from "./forms";
 import type { Job, Property } from "./models";
 import {
   clockToMinutes,
@@ -103,6 +103,47 @@ export function propertyLocation(p: Located | null | undefined): LatLng | null {
   return p && p.latitude != null && p.longitude != null
     ? { lat: p.latitude, lng: p.longitude }
     : null;
+}
+
+/** An address the routing service suggests as it's typed (Mapbox, temporary). */
+export interface AddressSuggestion {
+  line1: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  /** The whole address, for the list ("123 Main St, Phoenix, Arizona 85001"). */
+  label: string;
+}
+
+/** What the "not on the map" warning says, everywhere it shows (owner, 2026-10-20). */
+export const NOT_ON_MAP = {
+  title: "Not found on the map",
+  detail:
+    "Routes and drive times leave this stop out until its address is found. Check the address, pick one of the suggestions as you type it, or mark the spot at the pool.",
+  short: "Not on map",
+} as const;
+
+/**
+ * Whether a pool's address was found on the map (owner, 2026-10-20: "we need an indicator for
+ * when address doesn't register"): "found" when it has coordinates for its current address,
+ * "missing" when it has an address but no coordinates for it (not found, or changed since),
+ * null when there's no address or no routing service to look it up with.
+ */
+export function mapStatus(
+  p:
+    | (Pick<Property, "address_line1" | "city" | "state" | "postal_code"> &
+        Located & { geocoded_address?: string | null })
+    | null
+    | undefined,
+  routing: boolean,
+): "found" | "missing" | null {
+  if (!p || !routing) return null;
+  const address = formatAddress(p);
+  if (!p.address_line1?.trim() || !address) return null;
+  const located = propertyLocation(p) !== null;
+  // Pools located before lookups were kept with their address count as found.
+  if (located && (p.geocoded_address == null || p.geocoded_address === address)) return "found";
+  return "missing";
 }
 
 // ---------------------------------------------------------------------------

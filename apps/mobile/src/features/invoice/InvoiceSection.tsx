@@ -3,6 +3,7 @@ import { Share, StyleSheet, Text, View } from "react-native";
 import {
   INVOICE_STATUS_LABELS,
   formatCents,
+  jobFeeLabel,
   invoiceBalance,
   invoiceShareText,
   invoiceTotals,
@@ -95,7 +96,7 @@ export function InvoiceSection({ job, customer }: { job: Job; customer: Customer
             {job.type === "repair"
               ? "Copies the accepted quote and credits the deposit already paid. You can change it before sending."
               : job.fee_cents
-                ? `Bills the detection fee of ${formatCents(job.fee_cents)}. You can add lines before sending.`
+                ? `Bills the ${jobFeeLabel(job.type).toLowerCase()} of ${formatCents(job.fee_cents)}. You can add lines before sending.`
                 : "Starts an empty invoice. Add the lines before sending."}
           </T>
           <Button

@@ -52,6 +52,9 @@
         @State private var suggestions: (list: [Suggestion], note: String?)?
         @State private var starting = false
         @State private var planProblem: String?
+        /// Address suggestions under the street field (owner, 2026-10-20).
+        @State private var suggester = AddressSuggester()
+        @State private var streetFocused = false
 
         private var offline: Bool { sync.status.phase == .offline }
 
@@ -163,9 +166,22 @@
         private var poolCard: some View {
             FormCard("Pool") {
                 OutlinedField(
-                    label: "Street address", text: $form.input.addressLine1, error: form.errors["addressLine1"]
+                    label: "Street address", text: $form.input.addressLine1, error: form.errors["addressLine1"],
+                    onFocusChange: { streetFocused = $0 }
                 )
                 .textContentType(.streetAddressLine1)
+                .addressLookup(suggester, text: form.input.addressLine1, focused: streetFocused)
+                // Address suggestions as you type (owner, 2026-10-20), under the field.
+                if !suggester.items.isEmpty {
+                    Grouped {
+                        AddressSuggestionRows(suggester: suggester) { s in
+                            form.input.addressLine1 = s.line1
+                            form.input.city = s.city
+                            form.input.state = s.state
+                            form.input.postalCode = s.postalCode
+                        }
+                    }
+                }
                 OutlinedField(label: "City", text: $form.input.city).textContentType(.addressCity)
                 HStack(alignment: .top, spacing: 16) {
                     OutlinedField(label: "State", text: $form.input.state)
@@ -202,7 +218,10 @@
                         FieldLabel("Job")
                         Segmented(
                             selection: $form.jobType, options: form.jobTypes.map(\.value),
-                            label: { t in form.jobTypes.first { $0.value == t }?.label ?? "" }, title: "Job")
+                            label: { t in form.jobTypes.first { $0.value == t }?.label ?? "" }, title: "Job",
+                            // Service, Repair, Leak, Inspection fit across a phone in equal
+                            // segments (owner, 2026-10-20: "Repair is cut off").
+                            fillsWidth: true, segmentPadding: 8)
                     }
                 }
                 if form.showsRepeat {
@@ -341,17 +360,19 @@
                     ForEach(form.questions) { question in
                         switch question.kind {
                         case .multi:
-                            VStack(alignment: .leading, spacing: 0) {
+                            // Tap all that apply, as pills (Pool Inspection's features, 2026-10-20).
+                            VStack(alignment: .leading, spacing: 8) {
                                 FieldLabel(question.label)
-                                ForEach(question.options, id: \.self) { option in
-                                    SwitchRow(
-                                        option,
-                                        isOn: Binding(
-                                            get: { form.isPicked(question.key, option) },
-                                            set: { form.setPicked(question.key, option, $0) })
-                                    )
-                                    .padding(.horizontal, -16)
+                                FlowRow(spacing: 8) {
+                                    ForEach(question.options, id: \.self) { option in
+                                        let on = form.isPicked(question.key, option)
+                                        ChoicePill(title: option, isOn: on) {
+                                            form.setPicked(question.key, option, !on)
+                                        }
+                                    }
                                 }
+                                .accessibilityElement(children: .contain)
+                                .accessibilityLabel(question.label)
                             }
                         case .single:
                             SelectField(

@@ -36,6 +36,47 @@ export function formatPhone(e164: string): string {
   return m ? `(${m[1]}) ${m[2]}-${m[3]}` : e164;
 }
 
+/**
+ * A US phone number formatted as it's typed (owner, 2026-10-20: "When you type in Phone numbers
+ * it should put the parentheses and dash in for you"): "(602", "(602) 555", "(602) 555-0142".
+ * A leading 1 is the country code ("+1 (602) 555-0142"). Anything else is left as typed: a "+"
+ * number from another country, letters, or more than ten digits.
+ */
+export function formatPhoneTyping(text: string): string {
+  const trimmed = text.trim();
+  if (/[A-Za-z]/.test(trimmed) || (trimmed.startsWith("+") && !trimmed.startsWith("+1")))
+    return text;
+  let digits = trimmed.replace(/\D/g, "");
+  let prefix = "";
+  if (digits.startsWith("1")) {
+    prefix = "+1 ";
+    digits = digits.slice(1);
+  }
+  if (digits.length > 10) return text;
+  if (!digits) return prefix.trim();
+  const area = digits.slice(0, 3);
+  const mid = digits.slice(3, 6);
+  const last = digits.slice(6);
+  const body =
+    digits.length <= 3
+      ? `(${area}`
+      : digits.length <= 6
+        ? `(${area}) ${mid}`
+        : `(${area}) ${mid}-${last}`;
+  return prefix + body;
+}
+
+/** Where the caret goes in a formatted number: just after its `digits`-th digit. */
+export function phoneCaret(formatted: string, digits: number): number {
+  if (digits <= 0) return formatted.startsWith("+1") ? Math.min(formatted.length, 2) : 0;
+  let seen = 0;
+  for (let i = 0; i < formatted.length; i++) {
+    if (/\d/.test(formatted[i]!)) seen++;
+    if (seen === digits) return i + 1;
+  }
+  return formatted.length;
+}
+
 /** Whether `at` falls in the shop's working hours (Settings › Scheduling), in its time zone. */
 export function inBusinessHours(at: Date, timeZone: string, settings: unknown): boolean {
   const r = routingSettings(settings);

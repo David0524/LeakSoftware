@@ -51,6 +51,41 @@ public func syncBarMessage(_ s: SyncStatus, now: Date = Date()) -> SyncBarMessag
     return .init(text: "All changes saved to the office · \(ago(last, now))", tone: .good)
 }
 
+// MARK: - The "waiting to sync" note's delay
+
+/// How long changes and files wait, without a break, before the bar says so (owner, 2026-10-20:
+/// "The 'needs to sync' button should only appear after like 5-10 seconds. Not a good look when
+/// it happens instantly and lasts for milliseconds"). It goes away as soon as nothing waits.
+/// Offline, problems, a full phone and signing in again still show at once; More › Sync always
+/// shows the real state. Port of apps/mobile/src/lib/syncNote.ts.
+public let syncNoteDelay: TimeInterval = 8
+
+private func waiting(_ s: SyncStatus) -> Bool { s.pending > 0 || s.uploadsWaiting > 0 }
+
+/// When the current wait started: kept from `previous` while something waits, set to `now`
+/// when it starts, nil when nothing waits.
+public func waitingSince(_ s: SyncStatus, previous: Date?, now: Date) -> Date? {
+    guard waiting(s) else { return nil }
+    return previous ?? now
+}
+
+/// The status the sync bar shows at `now`: waiting changes and files are left out until they
+/// have waited `syncNoteDelay`.
+public func syncBarStatus(_ s: SyncStatus, now: Date) -> SyncStatus {
+    guard let since = s.waitingSince, now.timeIntervalSince(since) < syncNoteDelay else { return s }
+    var held = s
+    held.pending = 0
+    held.uploadsWaiting = 0
+    return held
+}
+
+/// When the bar should look again, or nil when nothing is held back.
+public func syncNoteDueAt(_ s: SyncStatus, now: Date) -> Date? {
+    guard let since = s.waitingSince else { return nil }
+    let due = since.addingTimeInterval(syncNoteDelay)
+    return due > now ? due : nil
+}
+
 private func changes(_ n: Int) -> String { n == 1 ? "1 change" : "\(n) changes" }
 
 private func filesText(_ n: Int, allPhotos: Bool) -> String {

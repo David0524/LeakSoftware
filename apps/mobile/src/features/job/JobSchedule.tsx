@@ -1,9 +1,11 @@
 import { useState } from "react";
 import {
+  canUnschedule,
   formatSchedule,
   formatTime,
   isManagerRole,
   jobMinutes,
+  jobReschedulable,
   localDate,
   moveJobChange,
   propertyLocation,
@@ -28,9 +30,13 @@ import { color } from "../../ui/theme";
 import { MoveSheet, SuggestSheet, type MoveTarget } from "../schedule/MoveSheet";
 import { jobDateError } from "../../lib/limits";
 
-/** Repair jobs and jobs not yet started show the Schedule group (as on the website). */
+/**
+ * The Schedule group shows until a job's work is done (owner, 2026-10-20: "You should be able
+ * to reschedule a job from the jobs page after creating it"), started jobs included; repairs
+ * always, as on the website (core jobReschedulable).
+ */
 export function showsJobSchedule(job: { type: string; status: string }) {
-  return job.type === "repair" || job.status === "scheduled" || job.status === "unscheduled";
+  return jobReschedulable(job);
 }
 
 /**
@@ -176,6 +182,7 @@ export function JobSchedule({ jobId }: { jobId: string }) {
                       date: localDate(new Date(job.scheduled_start), tz),
                     }
                   : null,
+              unschedulable: canUnschedule(job.status),
             })
           }
         />

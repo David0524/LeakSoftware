@@ -1,3 +1,4 @@
+import { reportTitle } from "@leakbook/core";
 import { siteOrigin } from "@/lib/origin";
 import { publicClient, reportPdf } from "@/server/reports";
 
@@ -14,7 +15,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/r/[token]/pdf">
     report_id: string;
     company_id: string;
     job_id: string;
-    snapshot: { company: { name: string } };
+    snapshot: { company: { name: string }; job?: { type?: string } };
   } | null;
   if (!r) return new Response("Not found", { status: 404 });
   const pdf = await reportPdf(await siteOrigin(), token, {
@@ -22,7 +23,11 @@ export async function GET(_request: Request, ctx: RouteContext<"/r/[token]/pdf">
     jobId: r.job_id,
     reportId: r.report_id,
   });
-  const name = `${r.snapshot.company.name} leak detection report.pdf`.replace(/[^\w .-]/g, "");
+  const name =
+    `${r.snapshot.company.name} ${reportTitle(r.snapshot.job?.type).toLowerCase()}.pdf`.replace(
+      /[^\w .-]/g,
+      "",
+    );
   return new Response(new Uint8Array(pdf), {
     headers: {
       "content-type": "application/pdf",

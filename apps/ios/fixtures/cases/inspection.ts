@@ -1,6 +1,25 @@
 import {
   CHECKLIST_SECTION_LABELS,
   checklistSectionSummary,
+  INSPECTION_SECTIONS,
+  NOT_PRESENT_LABEL,
+  choiceOptions,
+  foldedItems,
+  inspectionAnswerText,
+  inspectionAnswerValues,
+  inspectionProgress,
+  inspectionProgressText,
+  inspectionTone,
+  inspectionValue,
+  intakeQuestionsFor,
+  isGate,
+  isInspectionAnswer,
+  optionsFromText,
+  optionsToText,
+  toggleChoice,
+  type ChoiceOption,
+  type FoldRow,
+  type InspectionValue,
   markRemainingLabel,
   FINDING_STATUS_LABELS,
   currentVerdict,
@@ -29,6 +48,9 @@ import {
   SPA_SHAPES,
   SPA_SIZES,
   mirrorPath,
+  offsetPath,
+  centerLayout,
+  POOL_CENTER_OFFSET,
   parseDiagramLayout,
   calculate,
   checklistTally,
@@ -102,6 +124,78 @@ const types = [
   type("drain", { allows_multiple: true, default_count: 0, sort_order: 15 }),
   type("tie_a", { sort_order: 25 }),
   type("tie_b", { sort_order: 25, deleted_at: "" }),
+  // Pool inspection questions (2026-10-20).
+  type("insp_gate", {
+    job_type: "inspection",
+    section: "insp_equipment",
+    answer: "choice",
+    group_label: "Solar",
+    options: [{ label: "Yes" }, { label: "No", fold: true }],
+    sort_order: 2,
+  }),
+  type("insp_text", {
+    job_type: "inspection",
+    section: "insp_heaters",
+    answer: "text",
+    sort_order: 1,
+  }),
+];
+
+// Pool inspection options: an ordinary question, a leak question, and a gate.
+const yesNo: ChoiceOption[] = [
+  { label: "Yes", flag: "ok" },
+  { label: "No", flag: "attention" },
+  { label: "N/A", flag: "na" },
+];
+const leakChoice: ChoiceOption[] = [
+  { label: "Leaking", flag: "leaking" },
+  { label: "Not Leaking", flag: "ok" },
+  { label: "N/A", flag: "na" },
+];
+const gate: ChoiceOption[] = [{ label: "Yes" }, { label: "No", fold: true }];
+const parts: ChoiceOption[] = [
+  { label: "Pool main drain" },
+  { label: "Pool skimmer" },
+  { label: "Spa drain" },
+];
+
+/** A checklist row for folding and progress. */
+const frow = (
+  id: string,
+  section: string | null,
+  group: string | null,
+  options: unknown,
+  value: unknown,
+  result: { status: string; outcome: string | null } | null = value
+    ? { status: "inspected", outcome: "ok" }
+    : { status: "pending", outcome: null },
+) => ({ id, section, group_label: group, options, value, result });
+
+const foldRows = [
+  frow("g1", "insp_equipment", "Solar", gate, "No"),
+  frow("g2", "insp_equipment", "Solar", yesNo, null),
+  frow("g3", "insp_equipment", "Solar", leakChoice, "Leaking", {
+    status: "inspected",
+    outcome: "leaking",
+  }),
+  frow("h1", "insp_equipment", "Booster pump", gate, "Yes"),
+  frow("h2", "insp_equipment", "Booster pump", yesNo, "No", {
+    status: "inspected",
+    outcome: "attention",
+  }),
+  // The same group name in another section is another group.
+  frow("s1", "insp_heaters", "Solar", yesNo, null),
+  frow("s2", "insp_heaters", "Solar", yesNo, null),
+  frow("u1", "insp_equipment", null, gate, "No"),
+  frow("u2", "insp_equipment", null, yesNo, "N/A", { status: "excluded", outcome: null }),
+  frow("lone", "insp_covers", "Alone", gate, "No"),
+  frow("e1", "insp_fencing", "", gate, "No"),
+  frow("e2", "insp_fencing", "", yesNo, null),
+  frow("n1", "insp_plumbing", "Not a gate", yesNo, "No", {
+    status: "inspected",
+    outcome: "attention",
+  }),
+  frow("n2", "insp_plumbing", "Not a gate", yesNo, null, null),
 ];
 
 const comp = (id: string, typeId = "t", n = 1, over: Partial<JobComponent> = {}): JobComponent => ({
@@ -373,6 +467,7 @@ export const inspection: ModuleCases = {
       [types, prop(), "maintenance"],
       [types, prop(), "repair"],
       [types, prop(), "detection"],
+      [types, prop(), "inspection"],
       [[], prop()],
     ],
   ),
@@ -425,9 +520,25 @@ export const inspection: ModuleCases = {
       ...(["pending", "inspected", "excluded"] as const).flatMap((status) =>
         [null, "ok", "leaking", "attention"].map((outcome) => ({ status, outcome })),
       ),
-    ].flatMap(
-      (r) => [[r], [r, "leak"], [r, "yes_no"], [r, "done"]] as unknown as [never, string?][],
-    ),
+    ]
+      .flatMap(
+        (r) => [[r], [r, "leak"], [r, "yes_no"], [r, "done"]] as unknown as [never, string?][],
+      )
+      .concat(
+        // Pool inspection answers read their value.
+        [
+          [{ status: "inspected", outcome: "ok", value: "Yes" }, "choice"],
+          [{ status: "inspected", outcome: "attention", value: "No" }, "choice"],
+          [{ status: "excluded", outcome: null, value: "N/A" }, "choice"],
+          [{ status: "excluded", outcome: null, value: null }, "choice"],
+          [{ status: "inspected", outcome: "ok", value: null }, "choice"],
+          [{ status: "inspected", outcome: "ok", value: ["Pool skimmer", "Spa drain"] }, "multi"],
+          [{ status: "inspected", outcome: "ok", value: [] }, "multi"],
+          [{ status: "inspected", outcome: "ok", value: "Gas, 400k BTU" }, "text"],
+          [{ status: "pending", outcome: null, value: "Yes" }, "choice"],
+          [null, "text"],
+        ] as unknown as [never, string?][],
+      ),
   ),
   verdictOptions: rule(
     (answer: string | null) => verdictOptions(answer === null ? undefined : ({ answer } as never)),
@@ -609,6 +720,12 @@ export const inspection: ModuleCases = {
       ["oval", false, { mirror: true, spa: { x: 0.5, y: 0.5, size: "large" } }],
       // A pinched spa, a drawn pool, drawing and landmarks (owner, 2026-10-19).
       ["oval", true, { spa: { x: 0.5, y: 0.5, size: "large", r: 21.5 } }],
+      // Centered (owner, 2026-10-20): the pool moves right 10; the spa stays where placed.
+      ["rectangle", false, { centered: true }],
+      ["kidney", true, { centered: true }],
+      ["kidney", true, { centered: true, mirror: true }],
+      ["figure_eight", true, { centered: true, spa: { x: 0.85, y: 0.2 } }],
+      ["custom", false, { centered: true }],
       ["custom", false],
       ["custom", true, { mirror: true }],
       [
@@ -632,6 +749,54 @@ export const inspection: ModuleCases = {
             { kind: "rock", x: 0.5, y: 0.5 },
             { kind: "waterfall", x: 0, y: 1, s: 40, flip: true },
             { kind: "steps", x: 0.9, y: 0.1, s: 12 },
+          ],
+        },
+      ],
+    ],
+  ),
+
+  // Centered pools (owner, 2026-10-20).
+  POOL_CENTER_OFFSET: rule(() => POOL_CENTER_OFFSET, [[]]),
+  offsetPath: rule(
+    (path: string, dx: number) => offsetPath(path, dx),
+    [
+      ["M16 18 H124 Q130 18 130 24 V76 Q130 82 124 82 H16 Q10 82 10 76 V24 Q10 18 16 18 Z", 10],
+      ["M26 18 H114 L130 34 V66 L114 82 H26 L10 66 V34 Z", 10],
+      ["M1.5 2 L-3 .5 C1,2 3,4 5,6 V7 H8 Z", 10],
+      ["M0.1 0 L0.2 0.3 Z", 0.2],
+      ["M16 18 H124 Z", 0],
+      ["M16 18 H124 Z", -10],
+      ["12 13 M 1 2", 10],
+      ["", 10],
+      ["Z", 10],
+    ],
+  ),
+  centerLayout: rule(
+    (layout: DiagramLayout) => centerLayout(layout),
+    [
+      [{}],
+      [{ mirror: true }],
+      [{ centered: true, spa: { x: 0.5, y: 0.5 } }],
+      [{ spa: { x: 0.85, y: 0.2, size: "large", shape: "square", r: 21.5 } }],
+      [{ spa: { x: 0.95, y: 0.2 } }],
+      [{ mirror: true, spa: { x: 0.1234, y: 0.8 } }],
+      [
+        {
+          drawing: [
+            { type: "line", x1: 0.1, y1: 0.2, x2: 0.9, y2: 0.8 },
+            { type: "circle", cx: 0.5, cy: 0.5, rx: 0.25, ry: 0.3 },
+            {
+              type: "pen",
+              points: [
+                [0.1, 0.1],
+                [0.99, 0.3],
+              ],
+            },
+          ],
+          landmarks: [
+            { kind: "tree", x: 0, y: 0 },
+            { kind: "house", x: 1, y: 1 },
+            { kind: "waterfall", x: 0.33333, y: 1, s: 40, flip: true },
           ],
         },
       ],
@@ -666,6 +831,9 @@ export const inspection: ModuleCases = {
       [{ mirror: "true" }],
       [{ mirror: false }],
       [{ mirror: 1 }],
+      [{ centered: true }],
+      [{ centered: "true" }],
+      [{ centered: false, mirror: true }],
       [{ spa: { x: 0.85, y: 0.2, size: "large", shape: "square" } }],
       [{ mirror: true, spa: { x: 0, y: 1 } }],
       [{ spa: { x: 0.5, y: 0.5, size: "huge", shape: "triangle" } }],
@@ -856,6 +1024,8 @@ export const inspection: ModuleCases = {
         },
         details({ timing: { kind: "later" }, jobType: "maintenance" }),
       ],
+      [filled, details({ timing: { kind: "later" }, jobType: "inspection" })],
+      [filled, details({ timing: { kind: "later" }, jobType: "maintenance" })],
       [
         filled,
         details({
@@ -1102,6 +1272,232 @@ export const inspection: ModuleCases = {
       [["yes_no", "leak"]],
       [["done", "yes_no"]],
       [[null]],
+    ],
+  ),
+
+  // Pool inspection (pool-inspection.ts).
+  INSPECTION_SECTIONS: rule(() => INSPECTION_SECTIONS, [[]]),
+  NOT_PRESENT_LABEL: rule(() => NOT_PRESENT_LABEL, [[]]),
+  isInspectionAnswer: rule(
+    (a: string | null) => isInspectionAnswer(a),
+    [["choice"], ["multi"], ["text"], ["leak"], ["yes_no"], ["done"], [null], ["Choice"]],
+  ),
+  choiceOptions: rule(
+    (raw: unknown) => choiceOptions(raw),
+    [
+      [null],
+      ["Yes"],
+      [{ label: "Yes" }],
+      [[]],
+      [yesNo],
+      [gate],
+      [
+        [
+          { label: "Yes", flag: "ok" },
+          { label: " " },
+          { label: 3 },
+          null,
+          "No",
+          { label: "No", flag: "bad", fold: "yes" },
+          { label: " Gate ", fold: true, flag: "na" },
+          { label: "Off", fold: false, extra: 1 },
+        ],
+      ],
+    ],
+  ),
+  inspectionValue: rule(
+    (answer: string | null, raw: unknown) => inspectionValue(answer, raw),
+    ["choice", "multi", "text", "leak", null].flatMap((a) =>
+      [null, "Yes", "  ", "", ["a", 2, "b"], [], 5].map(
+        (raw) => [a, raw] as [string | null, unknown],
+      ),
+    ),
+  ),
+  inspectionAnswerText: rule(
+    (answer: string | null, raw: unknown) => inspectionAnswerText(answer, raw),
+    ["choice", "multi", "text", null].flatMap((a) =>
+      [null, "Yes", "  ", ["Pool main drain", "Pool skimmer"], ["x", 1], []].map(
+        (raw) => [a, raw] as [string | null, unknown],
+      ),
+    ),
+  ),
+  inspectionAnswerValues: rule(
+    (
+      type: { answer: string | null; options: unknown },
+      value: InspectionValue,
+      userId: string | null,
+      now: string,
+    ) => inspectionAnswerValues(type, value, userId, new Date(now)),
+    [
+      ...[
+        { answer: "choice", options: yesNo },
+        { answer: "choice", options: leakChoice },
+        { answer: "choice", options: gate },
+        { answer: "multi", options: parts },
+        { answer: "text", options: null },
+        { answer: "leak", options: null },
+      ].flatMap((type) =>
+        (
+          [
+            null,
+            "",
+            "  ",
+            "Yes",
+            "No",
+            "N/A",
+            "Leaking",
+            "Not Leaking",
+            "Unknown",
+            " padded ",
+            ["No", "Yes"],
+            [],
+            ["Pool skimmer", "Pool main drain"],
+          ] as InspectionValue[]
+        ).map(
+          (v) =>
+            [type, v, "u1", "2026-10-20T15:04:05.123Z"] as [
+              { answer: string | null; options: unknown },
+              InspectionValue,
+              string | null,
+              string,
+            ],
+        ),
+      ),
+      [{ answer: "choice", options: yesNo }, "No", null, "2026-01-01T00:00:00.000Z"],
+      [{ answer: "choice", options: "bad" }, "Yes", "u1", "2026-01-01T00:00:00.000Z"],
+    ],
+  ),
+  toggleChoice: rule(
+    (options: ChoiceOption[], picked: string[], label: string) =>
+      toggleChoice(options, picked, label),
+    [
+      [parts, [], "Pool skimmer"],
+      [parts, ["Spa drain"], "Pool main drain"],
+      [parts, ["Spa drain", "Pool main drain"], "Pool skimmer"],
+      [parts, ["Pool main drain", "Pool skimmer"], "Pool main drain"],
+      [parts, ["Pool skimmer"], "Pool skimmer"],
+      [parts, ["Spa drain", "Gone"], "Pool main drain"],
+      [parts, ["Spa drain"], "Unknown"],
+      [[], ["b"], "a"],
+    ],
+  ),
+  inspectionTone: rule(
+    (r: { status: string; outcome: string | null } | null) =>
+      inspectionTone((r ?? undefined) as never),
+    [
+      null,
+      ...["pending", "inspected", "excluded"].flatMap((status) =>
+        [null, "ok", "leaking", "attention"].map((outcome) => ({ status, outcome })),
+      ),
+    ].map((r) => [r] as [never]),
+  ),
+  foldedItems: rule(
+    (rows: FoldRow[]) => [...foldedItems(rows)].sort(),
+    [
+      [foldRows],
+      [[]],
+      [foldRows.slice(3, 5)],
+      [[frow("a", null, "G", gate, "No"), frow("b", null, "G", yesNo, null)]],
+      [[frow("a", "x", "G", gate, ["No"]), frow("b", "x", "G", yesNo, null)]],
+      [[frow("a", "x", "G", gate, ""), frow("b", "x", "G", yesNo, null)]],
+      // The gate is the group's first row, even when the rows aren't next to each other.
+      [
+        [
+          frow("a", "x", "G", yesNo, "No"),
+          frow("b", "x", "G", gate, "No"),
+          frow("c", "x", "H", gate, "No"),
+          frow("d", "x", "H", yesNo, null),
+          frow("e", "x", "G", yesNo, null),
+        ],
+      ],
+    ],
+  ),
+  isGate: rule(
+    (row: { options?: unknown }) => isGate(row),
+    [[{ options: gate }], [{ options: yesNo }], [{}], [{ options: null }], [{ options: "x" }]],
+  ),
+  inspectionProgress: rule(
+    (rows: Parameters<typeof inspectionProgress>[0], folded?: string[]) =>
+      inspectionProgress(rows, folded ? new Set(folded) : undefined),
+    [
+      [foldRows as never],
+      [[]],
+      [foldRows as never, []],
+      [foldRows as never, ["g1", "h2", "missing"]],
+      [foldRows.slice(3, 5) as never],
+    ],
+  ),
+  inspectionProgressText: rule(
+    (p: { answered: number; total: number; attention: number; leaking: number }) =>
+      inspectionProgressText(p),
+    [
+      [{ answered: 12, total: 49, attention: 1, leaking: 0 }],
+      [{ answered: 0, total: 0, attention: 0, leaking: 0 }],
+      [{ answered: 5, total: 5, attention: 0, leaking: 0 }],
+      [{ answered: 5, total: 5, attention: 1, leaking: 0 }],
+      [{ answered: 5, total: 5, attention: 2, leaking: 0 }],
+      [{ answered: 5, total: 5, attention: 0, leaking: 3 }],
+      [{ answered: 5, total: 5, attention: 2, leaking: 1 }],
+      [{ answered: 6, total: 5, attention: 0, leaking: 0 }],
+    ],
+  ),
+  intakeQuestionsFor: rule(
+    (questions: Parameters<typeof intakeQuestionsFor>[0], type: JobType) =>
+      intakeQuestionsFor(questions, type),
+    (["detection", "inspection", "repair", "maintenance"] as JobType[]).map(
+      (t) =>
+        [
+          [
+            { key: "a", label: "Leak where?", type: "text" },
+            {
+              key: "b",
+              label: "Features",
+              type: "multi",
+              options: ["Spa"],
+              job_types: ["inspection"],
+            },
+            {
+              key: "c",
+              label: "Both",
+              type: "single",
+              options: ["x"],
+              job_types: ["detection", "inspection"],
+            },
+            { key: "d", label: "Empty list", type: "text", job_types: [] },
+            { key: "e", label: "Repairs", type: "text", job_types: ["repair"] },
+          ],
+          t,
+        ] as [Parameters<typeof intakeQuestionsFor>[0], JobType],
+    ),
+  ),
+  optionsToText: rule(
+    (raw: unknown) => optionsToText(raw),
+    [
+      [null],
+      [[]],
+      [yesNo],
+      [leakChoice],
+      [gate],
+      [
+        [
+          { label: "Yes", flag: "ok" },
+          { label: "No", flag: "attention", fold: true },
+          { label: "Leaking", flag: "leaking" },
+          { label: "Not applicable", flag: "na" },
+          { label: " " },
+        ],
+      ],
+    ],
+  ),
+  optionsFromText: rule(
+    (text: string) => optionsFromText(text),
+    [
+      ["Yes\n\nNo (Needs attention, folds the group)\nYes\nSand / media\nN/A (not applicable)"],
+      [""],
+      ["  Leaking (leaking)  \r\nOK (ok)\nGate (folds the group, LEAKING)"],
+      ["A (b) (not applicable)\nB (x(y))\nC ()\n(leaking)\nD(needs attention)"],
+      ["Paren ) (leaking)\nTrail (leaking) x\n" + "x".repeat(121) + "\n" + "y".repeat(120)],
+      ["Multi word, comma (needs attention , folds the group , extra)"],
     ],
   ),
 };

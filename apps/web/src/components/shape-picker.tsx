@@ -54,7 +54,7 @@ export function ShapePicker({
         onKeyDown={onKeyDown}
       >
         {DIAGRAM_SHAPES.map((s) => {
-          const d = poolDiagram(s.key, false);
+          const d = poolDiagram(s.key, false, { centered: true });
           const on = value === s.key;
           // With nothing picked, the first shape takes the Tab stop.
           const tabStop = on || (value === null && s.key === DIAGRAM_SHAPES[0]!.key);

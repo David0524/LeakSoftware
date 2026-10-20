@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AddressField } from "@/components/address-field";
 import {
   saveBranding,
   saveCompany,
@@ -89,7 +90,7 @@ export default async function CompanySettingsPage() {
               />
               <SField label="Phone" name="phone" type="tel" defaultValue={str("phone")} />
               <SField label="Email" name="email" type="email" defaultValue={str("email")} />
-              <SField
+              <AddressField
                 label="Street address"
                 name="address_line1"
                 defaultValue={str("address_line1")}

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppState, Platform } from "react-native";
 import {
-  checklistTally,
   formatTime,
   liveStopContent,
   liveStopRuns,
@@ -13,7 +12,7 @@ import {
   type LiveStopPhase,
 } from "@leakbook/core";
 import { useSyncStatus } from "../../data/hooks";
-import { useJobInspection } from "../../data/inspection";
+import { useChecklistProgress } from "../../data/inspection";
 import { inRouteOrderViews, useJobViews, type JobView } from "../../data/jobs";
 import {
   LIVE_STOP_ID,
@@ -202,9 +201,11 @@ function StopCard({
   onUp: (phase: LiveStopPhase) => void;
 }) {
   const { job } = shown;
-  const insp = useJobInspection(job.company_id, job.id);
-  const tally = checklistTally(insp.components, insp.results);
-  const total = tally.pass + tally.attention + tally.leaking + tally.notApplicable + tally.pending;
+  // A pool inspection counts only the questions its gates leave open (2026-10-20).
+  const { tally, inspection } = useChecklistProgress(job.company_id, job.id, job.type);
+  const total =
+    inspection?.total ??
+    tally.pass + tally.attention + tally.leaking + tally.notApplicable + tally.pending;
   const input: LiveStopInput = {
     phase: shown.phase,
     customer: job.customer?.name ?? "Customer",
@@ -213,7 +214,7 @@ function StopCard({
     stops: shown.stops,
     eta: shown.arriveMin != null ? minutesLabel(shown.arriveMin) : null,
     scheduled: job.scheduled_start ? formatTime(job.scheduled_start, timeZone) : null,
-    checklistDone: total - tally.pending,
+    checklistDone: inspection?.answered ?? total - tally.pending,
     checklistTotal: total,
     next: shown.next
       ? {

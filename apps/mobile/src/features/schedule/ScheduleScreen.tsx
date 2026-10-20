@@ -3,9 +3,12 @@ import { useMemo, useState } from "react";
 import { Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
 import {
   LOCK_LABELS,
+  NOT_ON_MAP,
   addDays,
   addMonths,
   canMakeJobs,
+  canUnschedule,
+  mapStatus,
   canMoveJob,
   dayDirections,
   daySummary,
@@ -55,6 +58,7 @@ import {
   StatusChip,
   T,
 } from "../../ui/components";
+import { useRoutingOn } from "../../lib/routing";
 import { haptics } from "../../ui/haptics";
 import { ModalSheet } from "../../ui/ModalSheet";
 import { ScreenTip } from "../../ui/Tip";
@@ -83,6 +87,7 @@ export function ScheduleScreen() {
   const canAdd = canMakeJobs(role, company.settings);
   const seesAll = seesAllJobs(role, company.settings);
   const ctx = planContext(company);
+  const routing = useRoutingOn();
   const tz = ctx.timeZone;
   const today = ctx.today;
   const jobs = useJobViews(company.id);
@@ -161,15 +166,24 @@ export function ScheduleScreen() {
       movable: canMoveJob(j.status),
       legMin,
       shortMin,
-      note: onSecond
-        ? `Second tech, with ${name(j.assigned_user_id) ?? "the main tech"}`
-        : j.second_tech_id
-          ? `With ${name(j.second_tech_id) ?? "the second tech"}`
-          : j.type === "repair"
-            ? "Repair"
-            : j.type === "maintenance"
-              ? "Maintenance"
-              : null,
+      note:
+        [
+          onSecond
+            ? `Second tech, with ${name(j.assigned_user_id) ?? "the main tech"}`
+            : j.second_tech_id
+              ? `With ${name(j.second_tech_id) ?? "the second tech"}`
+              : j.type === "repair"
+                ? "Repair"
+                : j.type === "maintenance"
+                  ? "Maintenance"
+                  : j.type === "inspection"
+                    ? "Pool inspection"
+                    : null,
+          // Left out of drive times until its address is found (owner, 2026-10-20).
+          mapStatus(j.property, routing) === "missing" ? NOT_ON_MAP.short : null,
+        ]
+          .filter(Boolean)
+          .join(" · ") || null,
       cleanings: visitCleanings.get(j.id),
     };
   };
@@ -286,6 +300,7 @@ export function ScheduleScreen() {
         j.scheduled_start && j.status !== "unscheduled"
           ? { tech: j.assigned_user_id ?? null, date: localDate(new Date(j.scheduled_start), tz) }
           : null,
+      unschedulable: canUnschedule(j.status),
     });
   }
 

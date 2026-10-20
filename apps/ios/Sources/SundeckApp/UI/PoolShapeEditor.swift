@@ -192,7 +192,7 @@
                 ZStack {
                     switch tile {
                     case .shape(let s):
-                        let outline = DiagramOutline(poolDiagram(s, false).pool)
+                        let outline = DiagramOutline(poolDiagram(s, false, DiagramLayout(centered: true)).pool)
                         outline.fill(Color.diagramWater)
                         outline.stroke(Color.water, lineWidth: 5 * scale)
                     case .draw:

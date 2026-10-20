@@ -38,6 +38,9 @@
         @Environment(SyncService.self) private var sync
         @Environment(AppEnvironment.self) private var app
         @State private var profile = CompanyProfileForm()
+        /// Address suggestions under the street field (owner, 2026-10-20).
+        @State private var suggester = AddressSuggester()
+        @State private var streetFocused = false
         @State private var followups = FollowupsForm(nil)
         @State private var branding = BrandingForm(nil)
         @State private var disclaimer = ""
@@ -123,7 +126,16 @@
                         contentType: .emailAddress)
                     LabeledFieldRow(
                         label: "Street address", text: $profile.street, labelWidth: 132,
-                        contentType: .streetAddressLine1)
+                        contentType: .streetAddressLine1, onFocusChange: { streetFocused = $0 }
+                    )
+                    .addressLookup(suggester, text: profile.street, focused: streetFocused)
+                    // Address suggestions as you type (owner, 2026-10-20).
+                    AddressSuggestionRows(suggester: suggester) { s in
+                        profile.street = s.line1
+                        profile.city = s.city
+                        profile.state = s.state
+                        profile.zip = s.postalCode
+                    }
                     LabeledFieldRow(
                         label: "Address line 2", text: $profile.unit, labelWidth: 132, contentType: .streetAddressLine2)
                     LabeledFieldRow(label: "City", text: $profile.city, labelWidth: 132, contentType: .addressCity)
@@ -498,9 +510,11 @@
             defer { finding = false }
             do {
                 _ = try await app.api.post("api/locate", ["company_id": .string(company.id), "shop": true])
+                MapLookups.answered(sync.kv, status: 200)
                 locateResult = ("Found. The shop is on the map.", false)
                 await sync.syncNow()
             } catch {
+                if let failure = error as? WebAPI.Failure { MapLookups.answered(sync.kv, status: failure.status) }
                 locateResult = (String(describing: error), true)
             }
         }

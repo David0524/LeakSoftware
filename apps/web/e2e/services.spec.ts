@@ -26,7 +26,7 @@ test("a shop's services decide what the office shows", async ({ page }) => {
     await page.keyboard.press("Escape");
     await expect(nav.getByRole("link", { name: "Chemicals" })).toHaveCount(0);
     // A new job is a pool service visit or a repair: no leak detection choice or detection fee.
-    await expect(page.getByRole("radio", { name: "Leak Detection" })).toHaveCount(0);
+    await expect(page.getByRole("radio", { name: "Leak", exact: true })).toHaveCount(0);
     await expect(page.getByRole("radio", { name: "Repair" })).toBeVisible();
     await expect(page.getByLabel("Detection fee ($)")).toHaveCount(0);
     await page.goto("/settings");
@@ -35,7 +35,7 @@ test("a shop's services decide what the office shows", async ({ page }) => {
     await setServices(page, "Leak Detection");
     // Leak detection or a repair (owner, 2026-10-18: both packages get Repair).
     await page.goto("/jobs/new");
-    await expect(page.getByRole("radio", { name: "Pool Service" })).toHaveCount(0);
+    await expect(page.getByRole("radio", { name: "Service", exact: true })).toHaveCount(0);
     await page.getByRole("radio", { name: "Repair" }).click();
     await expect(page.getByLabel("Detection fee ($)")).toHaveCount(0);
     await expect(page.getByLabel("Price ($)")).toBeVisible();
@@ -51,7 +51,7 @@ test("a shop's services decide what the office shows", async ({ page }) => {
     await setServices(page, "Both");
   }
   await page.goto("/jobs/new");
-  await expect(page.getByRole("radio", { name: "Pool Service" })).toBeVisible();
+  await expect(page.getByRole("radio", { name: "Service", exact: true })).toBeVisible();
   await expect(page.getByRole("radio", { name: "Repair" })).toBeVisible();
 });
 

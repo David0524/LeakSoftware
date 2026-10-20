@@ -9,6 +9,11 @@ import {
   POOL_TYPE_LABELS,
   SIGNATURE_PURPOSE_LABELS,
   checklistTally,
+  jobReschedulable,
+  mapStatus,
+  inspectionProgress,
+  intakeQuestionsFor,
+  reportTitle,
   REPAIR_ITEM_KEY,
   REPAIR_ITEM_LABEL,
   cleaningCadence,
@@ -94,6 +99,8 @@ import { AddressLink } from "@/components/open-in-maps";
 import { ChemicalDropdown } from "@/components/chem-dropdown";
 import { JobSchedule } from "@/components/schedule-form";
 import { emailConfigured } from "@/server/email";
+import { routingConfigured } from "@/server/routing";
+import { NotOnMapRow } from "@/components/not-on-map";
 
 export const metadata: Metadata = { title: "Job · Sundeck Pro" };
 
@@ -119,7 +126,12 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
   const tz = office.company.timezone;
   const tally = checklistTally(detail.components, [...detail.results.values()]);
   const total = detail.components.length;
-  const questions = (company.settings as Partial<CompanySettings>).intake_questions ?? [];
+  // A pool inspection counts only the questions its gates leave open (2026-10-20).
+  const inspection = job.type === "inspection" ? inspectionProgress(inspectionRows(detail)) : null;
+  const questions = intakeQuestionsFor(
+    (company.settings as Partial<CompanySettings>).intake_questions ?? [],
+    job.type,
+  );
   // With a company number, texts go out from it (Messages), not this device.
   const texting = line?.status === "active";
   const answers = [
@@ -246,6 +258,9 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                             .filter(Boolean)
                             .join(" · ")}
                         />
+                        {mapStatus(job.property, routingConfigured()) === "missing" ? (
+                          <NotOnMapRow />
+                        ) : null}
                         {job.property.access_notes ? (
                           <Row>
                             <span className="min-w-0 flex-1">
@@ -306,7 +321,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                   </section>
                 </div>
 
-                {job.type === "repair" || ["unscheduled", "scheduled"].includes(job.status) ? (
+                {jobReschedulable(job) ? (
                   <section className="mt-8 max-w-2xl" aria-labelledby="schedule">
                     <h2
                       id="schedule"
@@ -350,7 +365,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
           {
             id: "checklist",
             label: "Checklist",
-            badge: tally.pending,
+            badge: inspection ? inspection.toDo : tally.pending,
             content: (
               <section aria-labelledby="checklist">
                 {/* Chemical first, at the top of the checklist (owner, 2026-10-19). */}
@@ -370,20 +385,26 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                 <p className="mb-3 text-text-muted">
                   {total === 0
                     ? "No checklist yet."
-                    : (job.type === "maintenance"
+                    : (inspection
                         ? [
-                            `${tally.pass} done`,
-                            `${tally.attention} need attention`,
-                            `${tally.notApplicable} skipped`,
-                            `${tally.pending} to do`,
+                            `${inspection.answered} of ${inspection.total} answered`,
+                            `${inspection.attention} need attention`,
+                            `${inspection.leaking} leaking`,
                           ]
-                        : [
-                            `${tally.pass} not leaking`,
-                            `${tally.attention} attention`,
-                            `${tally.leaking} leaking`,
-                            `${tally.notApplicable} not applicable`,
-                            `${tally.pending} to do`,
-                          ]
+                        : job.type === "maintenance"
+                          ? [
+                              `${tally.pass} done`,
+                              `${tally.attention} need attention`,
+                              `${tally.notApplicable} skipped`,
+                              `${tally.pending} to do`,
+                            ]
+                          : [
+                              `${tally.pass} not leaking`,
+                              `${tally.attention} attention`,
+                              `${tally.leaking} leaking`,
+                              `${tally.notApplicable} not applicable`,
+                              `${tally.pending} to do`,
+                            ]
                       ).join(" · ")}
                 </p>
                 {detail.components.length > 0 ? (
@@ -468,7 +489,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                         <Signatures detail={detail} tz={tz} />
                       </section>
 
-                      {job.type === "detection" || job.type === "maintenance" ? (
+                      {job.type !== "repair" ? (
                         <section className="mt-8" aria-labelledby="quotes">
                           <h2 id="quotes" className="mb-3 font-display text-2xl font-bold">
                             Quotes
@@ -510,8 +531,13 @@ function Checklist({ detail }: { detail: JobDetail }) {
           answer: type.answer,
           allows_multiple: type.allows_multiple,
           section: type.section ?? "other",
+          group_label: type.group_label ?? null,
+          options: type.options ?? null,
+          notice: type.notice ?? null,
         },
         fromPlan: !!c.plan_cleaning_id,
+        photos: detail.media.filter((m) => m.job_component_id === c.id && m.kind === "photo")
+          .length,
         result: r
           ? {
               id: r.id,
@@ -521,6 +547,7 @@ function Checklist({ detail }: { detail: JobDetail }) {
               method: r.method ?? null,
               exclusion_reason: r.exclusion_reason ?? null,
               notes: r.notes ?? null,
+              value: r.value ?? null,
             }
           : null,
       },
@@ -533,13 +560,37 @@ function Checklist({ detail }: { detail: JobDetail }) {
         t.active &&
         !t.deleted_at &&
         !present.has(t.id) &&
-        (t.job_type ?? "detection") ===
-          (detail.job.type === "maintenance" ? "maintenance" : "detection") &&
+        (t.job_type ?? "detection") === checklistJobType(detail.job.type) &&
         (!property || componentApplies(t, { ...property, has_pool: true })),
     )
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((t) => ({ id: t.id, name: t.name }));
   return <ChecklistEditor jobId={detail.job.id} rows={rows} addable={addable} />;
+}
+
+/** Which checklist a job takes: its own for visits and inspections, the leak one otherwise. */
+function checklistJobType(type: string) {
+  return type === "maintenance" || type === "inspection" ? type : "detection";
+}
+
+/** A pool inspection's items in checklist order, with their gates' answers, for folding. */
+function inspectionRows(detail: JobDetail) {
+  return detail.components.flatMap((c) => {
+    const t = detail.componentTypes.get(c.component_type_id);
+    const r = detail.results.get(c.id);
+    return t
+      ? [
+          {
+            id: c.id,
+            section: t.section ?? null,
+            group_label: t.group_label ?? null,
+            options: t.options,
+            value: r?.value,
+            result: r ? { status: r.status, outcome: r.outcome ?? null } : null,
+          },
+        ]
+      : [];
+  });
 }
 
 function Tests({ detail, tz }: { detail: JobDetail; tz: string }) {
@@ -841,7 +892,11 @@ async function Reports({ detail }: { detail: JobDetail }) {
       <ReportPanel
         jobId={detail.job.id}
         template={key}
-        name={templates.find((t) => t.key === key)?.name ?? "Homeowner report"}
+        name={
+          detail.job.type === "inspection"
+            ? reportTitle("inspection")
+            : (templates.find((t) => t.key === key)?.name ?? "Homeowner report")
+        }
         draft={reports.find((r) => r.template_key === key && r.status === "draft") ?? null}
         sent={reports.filter((r) => r.template_key === key && r.status !== "draft")}
         customerEmail={detail.job.customer?.email ?? null}
@@ -1079,7 +1134,7 @@ async function Invoices({ detail }: { detail: JobDetail }) {
               job.type === "repair"
                 ? "Copies the accepted quote and credits the deposit already paid. You can change it before sending."
                 : job.fee_cents
-                  ? `Bills the detection fee of ${formatCents(job.fee_cents)}. You can add lines before sending.`
+                  ? `Bills the ${jobFeeLabel(job.type).toLowerCase()} of ${formatCents(job.fee_cents)}. You can add lines before sending.`
                   : "Starts an empty invoice. Add the lines before sending."
             }
           />

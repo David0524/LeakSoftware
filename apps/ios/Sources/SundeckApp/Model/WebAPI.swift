@@ -21,8 +21,12 @@ public struct WebAPI: Sendable {
         public let description: String
         /// Form errors by field name (a 400 reply's `fields`).
         public var fields: [String: String] = [:]
-        /// The server's HTTP status, when it answered.
-        public var status: Int? = nil
+        /// The HTTP status (0 when there was no answer). Not part of equality: the message is.
+        public var status = 0
+
+        public static func == (a: Failure, b: Failure) -> Bool {
+            a.description == b.description && a.fields == b.fields
+        }
 
         public static let noConnection = "No connection. Try again when you have signal."
         public static let signInAgain = "Sign in again to continue."
@@ -34,12 +38,8 @@ public struct WebAPI: Sendable {
         /// busy or at fault (401, 408, 429, 5xx). Decided by the status when the server answered,
         /// so a fault with its own message isn't taken for a refusal (apps/mobile `tryAgainLater`).
         public var tryAgainLater: Bool {
-            if let status { return status == 401 || status == 408 || status == 429 || status >= 500 }
+            if status != 0 { return status == 401 || status == 408 || status == 429 || status >= 500 }
             return offline || description == Self.signInAgain
-        }
-
-        public static func == (a: Failure, b: Failure) -> Bool {
-            a.description == b.description && a.fields == b.fields
         }
     }
 

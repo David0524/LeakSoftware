@@ -34,7 +34,7 @@ export function ShapePicker({
       ) : null}
       <View accessibilityRole="radiogroup" accessibilityLabel={label} style={styles.row}>
         {DIAGRAM_SHAPES.map((s) => {
-          const d = poolDiagram(s.key, false);
+          const d = poolDiagram(s.key, false, { centered: true });
           const on = value === s.key;
           return (
             <Pressable

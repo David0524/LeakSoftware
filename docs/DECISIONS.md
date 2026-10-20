@@ -2,6 +2,31 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-20 (owner: "reschedule a job from the jobs page after creating it"; "an indicator for when address doesn't register"; "an auto complete or something for the mapping")
+- **A job can be rescheduled from its page until its work is done** (unscheduled, scheduled, or in progress; repairs as before), not only before it starts.
+- **"Not found on the map"**: a pool with an address but no map location for it shows a warning on the job page, "Not on map" on Today, Schedule and the customer's page. Routes and drive times leave it out until it's found. A lookup now counts only a match to the address or its street; a town or ZIP code's middle reads as not found instead of a wrong pin.
+- **Address suggestions as you type** in every street-address field, from the same Mapbox account (no new service): up to 5 real addresses near the shop after a short pause; picking one fills street, city, state and ZIP. Suggestions have their own daily allowance per shop (`ADDRESS_SUGGEST_DAILY_LIMIT`, default 2000), apart from lookups and drive times. They're Mapbox's temporary results, so only the address picked is kept; its location comes from the usual lookup.
+- **New Job's types are Service, Repair, Leak, Inspection**, in that order, short enough to fit across a phone.
+
+## 2026-10-20 (owner: tech profiles, centered pool shapes, the sync note, Reopen Visit on Today, phone numbers)
+- **Profiles for each person** (Settings › Team › Profiles): name, phone, email, address, emergency contact (name and phone) and notes. Owners and admins read and write them, on the website and their phones; techs don't see them, their own included. Team members get one each, and Add Person keeps one for someone who doesn't use the app.
+- **Pool shapes are drawn in the middle of the diagram** and of their buttons. Pools saved before sat 10 units left to leave room for the spa; those with nothing placed on them moved now, the rest move with their spa, landmarks and drawing the next time their shape is saved. Finding pins already placed and sent reports keep where they were.
+- **The "needs to sync" note shows only after 8 seconds** of changes waiting, so a quick sync doesn't flash it.
+- **A completed maintenance visit has Reopen Visit on Today**, as on its page; leak and repair stops keep Mark Not Complete.
+- **Phone numbers format as they're typed** on every phone field: "(602) 555-0142", "+1 (602) …" with a leading 1; numbers from other countries (starting "+") and extensions are left as typed.
+
+## 2026-10-20 (owner, from TestFlight: "live activity logo appears black"; "use our lighter blue for live activities"; "It doesn't seem to allow me to access photos from my camera roll")
+- **Live Activity and Android's current-stop notification in the water blue** (#1F6FAE) instead of navy: white text, white progress and check; the Dynamic Island keeps its black, with the water blue's light shade for its text and keyline.
+- **The Live Activity's logo** is drawn in its own colors where the Lock Screen tints Live Activities, and at the size it shows (the 512 by 749 file is redrawn to 144 pixels tall).
+- **The photo library:** build 1006 opened it only from a long press on Add Photo. The one-handed changes (merged here) put a Library button beside Add Photo on every platform.
+
+## 2026-10-20 (owner: "Pool inspection plan approved, go with your recommendations")
+- **Pool Inspection is a job type for leak shops** (`docs/plans/pool-inspection.md`), with the four recommendations: a gate question's No folds its group ("Not present"); the twelve feature questions are one tap-all-that-apply list in From the Customer; Write Draft drafts the report's summary; one price on the job from a new "Pool inspection" price book item ($495 to start; shops set their own).
+- **Every question of the Leaktronics form is a checklist row** (133 in eight sections, word for word, with group headers and banners). Contact fields are the job's own; Leaks noted and Summary notes are the report's text; the insurance claim question is left out ("Remove the insurance stuff").
+- **Which answer needs attention** is set per option, from the wording (No on "Is the heater properly sized?", Yes on "Does the system show visible leaking?"); "is there one" questions flag nothing. Shops can change any of it in Settings.
+- **The inspection report uses the homeowner report's draft, sign-off, and send**, titled Pool Inspection Report, rather than a separate report template.
+- **An inspection's report can be signed and sent before every question is answered** (unlike a leak detection, which waits for its whole checklist): the report lists the questions answered, and Needs attention lists the flagged ones. Write Draft doesn't check an inspection's text for leak checklist names ("Main drain", "Pool"), since its questions use those words.
+
 ## 2026-10-20 (owner: one-handed use review, "Do all changes except for 11")
 - **One-handed use on every platform** (`docs/design/2026-10-20-one-handed-use.md`): a Next Step bar at the bottom of the job page on phones (Start Job, Complete Job, Add Test · Add Finding, Add Photo · Add Video, Write Draft); photos on a test or finding before its first save; Save pinned in the test and finding sheets; typed text saves by itself (no Save Text); Android back asks before discarding; completing a visit asks "Ready to send the visit report?" when it would send one (Automatic shops), and Mark Remaining gets a 5-second Undo; report send controls first and versions folded; offline Finish and Send queue on the phones; checklist answers as one-tap segments (Remove Item only behind Edit and swipe); Delete in a photo's More menu; camera straight from Add Photo, Library visible; sync bar pinned; Today's tip after the stops. Reason: frequent field actions were at the top of the screen, two or more taps deep, or one slip from losing work.
 - **Not changed:** tap targets stay at the 44 pt minimum (review item 11, declined).

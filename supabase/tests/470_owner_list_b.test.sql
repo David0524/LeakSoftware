@@ -46,10 +46,11 @@ select ok(not exists (select 1 from public.company c,
                       jsonb_array_elements(c.settings -> 'intake_questions') q
                       where q ->> 'key' = 'pool_size'),
   'no shop asks the pool size question');
+-- Why they called and spa size, and the pool inspection's four (20261012006700).
 insert into public.company (name, timezone) values ('Fresh Shop', 'America/Phoenix');
 select ok((select not exists (select 1 from jsonb_array_elements(settings -> 'intake_questions') q
                               where q ->> 'key' = 'pool_size')
-                  and jsonb_array_length(settings -> 'intake_questions') = 2
+                  and jsonb_array_length(settings -> 'intake_questions') = 6
                   and (settings -> 'deposit' ->> 'value_bps') = '0'
            from public.company where name = 'Fresh Shop'),
   'a new shop starts without it, keeping the other defaults');

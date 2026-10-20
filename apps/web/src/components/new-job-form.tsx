@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import {
   POOL_TYPE_LABELS,
   minutesToClock,
+  intakeQuestionsFor,
   newJobTypes,
   type IntakeQuestion,
   type JobType,
@@ -12,13 +13,14 @@ import {
   type Services,
 } from "@leakbook/core";
 import { createJobAction } from "@/app/actions/jobs";
+import { AddressField } from "./address-field";
 import { FieldError, SField, STextArea, SettingsForm } from "./settings-forms";
 import { Suggestions } from "./route-board";
 import type { RepeatChoice } from "@/lib/plan-repeat";
 import { PlanRepeat } from "./plan-repeat";
 import { Segmented } from "./segmented";
 import { ShapePicker } from "./shape-picker";
-import { Checkbox, cx, SectionTitle, Select } from "./ui";
+import { Checkbox, ChipToggle, cx, SectionTitle, Select } from "./ui";
 
 interface CustomerOption {
   id: string;
@@ -69,7 +71,10 @@ export function NewJobForm({
   visitMinutes = 30,
   services = "both",
   repairItems = [],
+  inspectionFee = null,
 }: {
+  /** The price book's Pool inspection price, filled in when Pool Inspection is picked. */
+  inspectionFee?: number | null;
   /** From the Customer: the price book items a repair can be booked for (owner, 2026-10-19). */
   repairItems?: { id: string; name: string; cents: number }[];
   /** What the shop does: its own jobs, plus Repair for everyone. */
@@ -187,7 +192,7 @@ export function NewJobForm({
       {newPool ? (
         <Section title="Pool">
           <div className="grid gap-4 sm:grid-cols-2">
-            <SField label="Street address" name="address_line1" className="sm:col-span-2" />
+            <AddressField label="Street address" name="address_line1" className="sm:col-span-2" />
             <SField label="City" name="city" />
             <div className="grid grid-cols-2 gap-4">
               <SField label="State" name="state" maxLength={2} />
@@ -208,7 +213,7 @@ export function NewJobForm({
             <div className="self-end">
               <Checkbox name="has_spa" label="Has a spa" />
             </div>
-            {detection ? null : <GallonsField known={null} />}
+            {detection || kind === "inspection" ? null : <GallonsField known={null} />}
             <div className={cx("sm:col-span-2", maintenance && "hidden")}>
               <ShapePicker
                 name="diagram_shape"
@@ -235,7 +240,11 @@ export function NewJobForm({
             label="Job"
             name="job_type"
             value={kind}
-            onChange={setKind}
+            onChange={(next) => {
+              setKind(next);
+              if (next === "inspection" && inspectionFee != null && !fee)
+                setFee((inspectionFee / 100).toFixed(2));
+            }}
             options={newJobTypes(services)}
           />
           {maintenance && canPlan ? <PlanRepeat initial="0" once onChange={setRepeat} /> : null}
@@ -400,16 +409,19 @@ export function NewJobForm({
             hint="Shown to the tech with the job."
           />
         </Section>
-      ) : detection ? (
+      ) : detection || kind === "inspection" ? (
         <Section title="From the Customer">
           <GallonsField key={pool} known={knownGallons} />
-          {questions.map((q) =>
+          {intakeQuestionsFor(questions, kind).map((q) =>
             q.type === "multi" ? (
               <fieldset key={q.key}>
                 <legend className="font-medium">{q.label}</legend>
-                {(q.options ?? []).map((o) => (
-                  <Checkbox key={o} name={`q_${q.key}`} value={o} label={o} />
-                ))}
+                {/* Tap all that apply (Pool Inspection's features, 2026-10-20). */}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(q.options ?? []).map((o) => (
+                    <ChipToggle key={o} name={`q_${q.key}`} value={o} label={o} />
+                  ))}
+                </div>
               </fieldset>
             ) : q.type === "single" ? (
               <Select

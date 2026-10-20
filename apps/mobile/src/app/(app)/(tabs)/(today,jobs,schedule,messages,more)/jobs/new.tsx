@@ -24,12 +24,15 @@ import {
   canMakeJobs,
   companyServices,
   newJobTypes,
+  intakeQuestionsFor,
+  toggleChoice,
   isManagerRole,
   maintenanceSettings,
   type JobType,
   type PlanRepeat as Repeat,
 } from "@leakbook/core";
 import { useRows, useSyncStatus } from "../../../../../data/hooks";
+import { AddressSuggestions } from "../../../../../features/address/AddressSuggestions";
 import { locateAfterSync } from "../../../../../lib/locate";
 import { useTeam } from "../../../../../data/schedule";
 import {
@@ -39,6 +42,7 @@ import {
   type PlanErrors,
 } from "../../../../../features/maintenance/plan";
 import { PlanRepeat } from "../../../../../features/maintenance/PlanRepeat";
+import { ChipToggles } from "../../../../../features/inspection/ChoicePills";
 import { Select } from "../../../../../ui/Select";
 import { useCompany, useSession } from "../../../../../state/session";
 import {
@@ -87,14 +91,17 @@ function NewJobForm() {
   const properties = useRows<Property>("property", company.id);
   const componentTypes = useRows<ComponentType>("component_type", company.id);
   const priceBook = useRows<PriceBookItem>("price_book_item", company.id);
-  const questions = company.settings.intake_questions ?? [];
   const team = services.sync.team().filter((p) => p.id !== user?.id);
   // What the shop does decides the kind of job (company services setting, 2026-10-16).
   const offered = companyServices(company.settings);
   const [jobType, setJobType] = useState<JobType>(offered === "pool" ? "maintenance" : "detection");
   const maintenance = jobType === "maintenance";
   const leak = jobType === "detection";
+  // Pool Inspection (2026-10-20): a price and its own booking questions, like leak detection.
+  const inspection = jobType === "inspection";
   const repair = jobType === "repair";
+  // From the Customer asks this job type's own questions (a pool inspection its features).
+  const questions = intakeQuestionsFor(company.settings.intake_questions ?? [], jobType);
   // Owners and admins can start a maintenance plan here: visits that repeat (website's New Job).
   const canPlan = isManagerRole(membership?.role);
   const [repeat, setRepeat] = useState<Repeat | "0">("0");
@@ -151,7 +158,13 @@ function NewJobForm() {
   const spaChosen = propertyId
     ? (properties.find((p) => p.id === propertyId)?.has_spa ?? false)
     : hasSpa;
-  const suggestedFee = (spaChosen ? detection[1] : detection[0]) ?? detection[0];
+  // A pool inspection's price is the price book's Inspection item, as the website.
+  const inspectionItem = priceBook.find(
+    (i) => i.active && !i.deleted_at && i.category === "Inspection",
+  );
+  const suggestedFee = inspection
+    ? inspectionItem
+    : ((spaChosen ? detection[1] : detection[0]) ?? detection[0]);
   const feeText = fee ?? (suggestedFee ? (suggestedFee.price_cents / 100).toFixed(2) : "");
   // From the Customer (owner, 2026-10-19), as the website: a repair is booked for a price book
   // item, the ones the owner picked for it or every active one when none are picked yet.
@@ -343,7 +356,8 @@ function NewJobForm() {
       e.scheduleDate = jobDateError(input.scheduleDate)!;
     setErrors(e);
     const feeCents = feeText.trim() ? parseDollars(feeText) : null;
-    const badFee = leak && Boolean(feeText.trim()) && (feeCents === null || feeCents < 0);
+    const badFee =
+      (leak || inspection) && Boolean(feeText.trim()) && (feeCents === null || feeCents < 0);
     setFeeError(badFee ? "Enter a price like 649." : undefined);
     const priceCents = repairPrice.trim() ? parseDollars(repairPrice) : null;
     const badPrice =
@@ -396,12 +410,19 @@ function NewJobForm() {
         ...records.job,
         property_id: prop,
         bill_to_customer_id: cust,
-        // Leak detection has a detection fee and booking questions; a repair its price and
-        // what they need (From the Customer), as the website. Pool service visits have no
-        // second tech.
-        fee_cents: leak ? feeCents : repair ? priceCents : null,
+        // Leak detection has a detection fee and booking questions, a pool inspection its price
+        // and its own questions; a repair its price and what they need (From the Customer), as
+        // the website. Pool service visits have no second tech.
+        fee_cents: leak || inspection ? feeCents : repair ? priceCents : null,
         second_tech_id: maintenance || secondTech === "none" ? null : secondTech,
-        intake: leak ? answers : item ? { [REPAIR_ITEM_KEY]: item.name } : {},
+        intake:
+          leak || inspection
+            ? Object.fromEntries(
+                questions.filter((q) => q.key in answers).map((q) => [q.key, answers[q.key]!]),
+              )
+            : item
+              ? { [REPAIR_ITEM_KEY]: item.name }
+              : {},
         ...(repair && repairNotes.trim() ? { summary_notes: repairNotes.trim() } : {}),
       });
       // The checklist is ready the moment the job opens, even offline.
@@ -428,6 +449,7 @@ function NewJobForm() {
     leave(() => router.replace(`/jobs/${jobId}`));
   }
 
+  const jobTypes = newJobTypes(offered);
   return (
     <Screen
       title="New Job"
@@ -437,7 +459,15 @@ function NewJobForm() {
           : "Accepted quotes make their own repair jobs."
       }
     >
-      <Segmented label="Job" value={jobType} onChange={setJobType} options={newJobTypes(offered)} />
+      {/* Service, Repair, Leak, Inspection (owner, 2026-10-20: "Repair is cut off"): short
+          labels with tight sides, so all four fit across a phone. */}
+      <Segmented
+        label="Job"
+        value={jobType}
+        onChange={setJobType}
+        options={jobTypes}
+        compact={jobTypes.length > 3}
+      />
       <Section title="Customer">
         {selectedCustomer ? (
           <Card>
@@ -517,31 +547,29 @@ function NewJobForm() {
         )}
       </Section>
 
-      {leak ? (
+      {leak || inspection ? (
         <Section title="From the Customer">
           {gallonsField}
           {questions.map((q) =>
             q.type === "multi" ? (
-              <View key={q.key} style={{ gap: 4 }}>
+              <View key={q.key} style={{ gap: space["2"] }}>
                 <T variant="label">{q.label}</T>
-                {(q.options ?? []).map((o) => {
-                  const picked = ((answers[q.key] as string[] | undefined) ?? []).includes(o);
-                  return (
-                    <Toggle
-                      key={o}
-                      label={o}
-                      value={picked}
-                      onChange={(on) =>
-                        setAnswers((a) => {
-                          const list = ((a[q.key] as string[] | undefined) ?? []).filter(
-                            (x) => x !== o,
-                          );
-                          return { ...a, [q.key]: on ? [...list, o] : list };
-                        })
-                      }
-                    />
-                  );
-                })}
+                {/* Tap all that apply (Pool Inspection's features, 2026-10-20), as the website. */}
+                <ChipToggles
+                  label={q.label}
+                  options={q.options ?? []}
+                  value={(answers[q.key] as string[] | undefined) ?? []}
+                  onToggle={(o) =>
+                    setAnswers((a) => ({
+                      ...a,
+                      [q.key]: toggleChoice(
+                        (q.options ?? []).map((label) => ({ label })),
+                        (a[q.key] as string[] | undefined) ?? [],
+                        o,
+                      ),
+                    }))
+                  }
+                />
               </View>
             ) : q.type === "single" ? (
               <Choice
@@ -561,12 +589,16 @@ function NewJobForm() {
             ),
           )}
           <Field
-            label="Detection fee ($)"
+            label={inspection ? "Price ($)" : "Detection fee ($)"}
             value={feeText}
             onChangeText={setFee}
             keyboardType="decimal-pad"
             error={feeError}
-            hint="Shown on the report."
+            hint={
+              inspection
+                ? "Billed on the invoice. Add parts there before sending."
+                : "Shown on the report."
+            }
           />
         </Section>
       ) : null}
@@ -630,6 +662,18 @@ function NewJobForm() {
               onChangeText={set("addressLine1")}
               error={errors.addressLine1}
             />
+            <AddressSuggestions
+              street={form.addressLine1}
+              onPick={(s) =>
+                setForm((f) => ({
+                  ...f,
+                  addressLine1: s.line1,
+                  city: s.city,
+                  state: s.state,
+                  postalCode: s.postal_code,
+                }))
+              }
+            />
             <View style={styles.cols}>
               <View style={{ flex: 2 }}>
                 <Field label="City" value={form.city} onChangeText={set("city")} />
@@ -661,7 +705,7 @@ function NewJobForm() {
               onChange={setPoolType}
             />
             <Toggle label="Has a spa" value={hasSpa} onChange={setHasSpa} />
-            {leak ? null : gallonsField}
+            {leak || inspection ? null : gallonsField}
             {leak ? (
               <ShapePicker
                 value={shape}

@@ -14,6 +14,8 @@ import {
   validateFinding,
   validateTestData,
   verdictValues,
+  inspectionAnswerValues,
+  type InspectionValue,
   type ComponentType,
   type FindingStatus,
   type JobComponent,
@@ -114,11 +116,13 @@ export async function markStop(_: FormState, form: FormData): Promise<FormState>
     .single();
   if (!job) return { error: "Job not found." };
   if (job.type === "maintenance") {
-    if (!complete) return { error: "Reopen the visit from its page." };
+    // Not complete: Reopen Visit, back to in progress (owner, 2026-10-20).
     const f = new FormData();
     f.set("job", jobId);
-    f.set("to", "done");
-    return changeJobStatus({}, f);
+    f.set("to", complete ? "done" : "in_progress");
+    const result = await changeJobStatus({}, f);
+    revalidatePath("/today");
+    return result;
   }
   const day = localDate(new Date(), office.company.timezone);
   const { error } = await db
@@ -199,8 +203,8 @@ export async function setUpChecklist(_: FormState, form: FormData): Promise<Form
     has_spa: boolean;
     pool_type: string | null;
   } | null;
-  const jobType =
-    (job as { type?: string } | null)?.type === "maintenance" ? "maintenance" : "detection";
+  const type = (job as { type?: string } | null)?.type;
+  const jobType = type === "maintenance" || type === "inspection" ? type : "detection";
   const planned = planComponents(
     (types ?? []) as ComponentType[],
     {
@@ -247,6 +251,68 @@ export async function setVerdict(_: FormState, form: FormData): Promise<FormStat
       });
   if (error) return { error: error.message };
   return done(jobId);
+}
+
+/**
+ * A pool inspection answer (2026-10-20): an option, several, or text, as JSON in `value`. The
+ * question's own options decide the outcome (inspectionAnswerValues).
+ */
+export async function setAnswer(_: FormState, form: FormData): Promise<FormState> {
+  const { office, db } = await ctx();
+  const jobId = text(form, "job");
+  let value: InspectionValue = null;
+  try {
+    const raw = JSON.parse(String(form.get("value") ?? "null")) as unknown;
+    value =
+      typeof raw === "string"
+        ? raw
+        : Array.isArray(raw)
+          ? raw.filter((x): x is string => typeof x === "string")
+          : null;
+  } catch {
+    return { error: "That answer couldn’t be read." };
+  }
+  const { data: comp } = await db
+    .from("job_component")
+    .select("component_type_id")
+    .eq("id", text(form, "component"))
+    .single();
+  const { data: type } = comp
+    ? await db
+        .from("component_type")
+        .select("answer, options")
+        .eq("id", (comp as { component_type_id: string }).component_type_id)
+        .single()
+    : { data: null };
+  if (!type) return { error: "That question is gone. Refresh the page." };
+  const values = inspectionAnswerValues(
+    type as { answer: string; options: unknown },
+    value,
+    office.user.id,
+  );
+  const resultId = text(form, "result");
+  const { error } = resultId
+    ? await db.from("checklist_item_result").update(values).eq("id", resultId)
+    : await db.from("checklist_item_result").insert({
+        ...values,
+        id: uuidv7(),
+        company_id: office.company.id,
+        job_id: jobId,
+        job_component_id: text(form, "component"),
+      });
+  if (error) return { error: error.message };
+  return done(jobId);
+}
+
+/** A question's Describe box: notes on its checklist row. */
+export async function saveItemNotes(_: FormState, form: FormData): Promise<FormState> {
+  const { db } = await ctx();
+  const { error } = await db
+    .from("checklist_item_result")
+    .update({ notes: text(form, "notes") || null })
+    .eq("id", text(form, "result"));
+  if (error) return { error: error.message };
+  return done(text(form, "job"));
 }
 
 /**

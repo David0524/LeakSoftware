@@ -48,7 +48,7 @@
                     LiveStopIsland.mark(logo: logo)
                 }
                 .widgetURL(LiveStopLink.job(context.state.jobId))
-                .keylineTint(LiveStopStyle.water)
+                .keylineTint(LiveStopStyle.keyline)
             }
         }
     }
