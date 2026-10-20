@@ -92,10 +92,16 @@ test("a pool inspection: New Job, answers and gates, and its report", async ({ p
   await expect(attention.getByRole("listitem").first()).toContainText("Main drain");
   await expect(attention).toContainText("Drip at the filter union");
   await expect(page.getByText("Fencing · Not present")).toBeVisible();
+  // The form's banners, word for word, as the report's recommendations.
   await expect(
-    page.getByText(
-      "DUE TO ACCIDENTS AND INJURIES, INFORM CUSTOMER THAT CHILD PROOF BARRIERS MUST BE INSTALLED",
-    ),
+    page
+      .locator("section")
+      .filter({ has: page.getByRole("heading", { name: "Recommendations" }) })
+      .getByRole("listitem")
+      .filter({
+        hasText:
+          "DUE TO ACCIDENTS AND INJURIES, INFORM CUSTOMER THAT CHILD PROOF BARRIERS MUST BE INSTALLED",
+      }),
   ).toBeVisible();
-  await expect(page.getByText("$495.00")).toBeVisible();
+  await expect(page.getByText("$495.00").first()).toBeVisible();
 });
