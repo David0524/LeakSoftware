@@ -125,7 +125,11 @@ export const MARKUP_COLORS: MarkupColor[] = ["red", "yellow", "white"];
 export type MarkupShape =
   | { type: "arrow"; color: MarkupColor; x1: number; y1: number; x2: number; y2: number }
   | { type: "circle"; color: MarkupColor; cx: number; cy: number; rx: number; ry: number }
-  | { type: "text"; color: MarkupColor; x: number; y: number; text: string }
+  /**
+   * Text centered on (x, y). `s` is its size (owner, 2026-10-20: "adjust text location and
+   * size"): 1 is the standard size, from MARKUP_TEXT_SIZE_MIN to MARKUP_TEXT_SIZE_MAX.
+   */
+  | { type: "text"; color: MarkupColor; x: number; y: number; text: string; s?: number }
   /** Freehand (owner, 2026-10-19: "Mark up should have a pen"): points as 0..1 [x, y]. */
   | { type: "pen"; color: MarkupColor; points: [number, number][] };
 
@@ -139,6 +143,14 @@ export interface Markup {
 
 export const EMPTY_MARKUP: Markup = { version: 1, shapes: [] };
 export const MARKUP_TEXT_MAX = 80;
+export const MARKUP_TEXT_SIZE_MIN = 0.5;
+export const MARKUP_TEXT_SIZE_MAX = 3;
+
+/** A text size kept within bounds, to two decimals; 1 for anything that isn't a number. */
+export function clampTextSize(s: unknown): number {
+  const n = typeof s === "number" && Number.isFinite(s) ? s : 1;
+  return Math.round(Math.min(MARKUP_TEXT_SIZE_MAX, Math.max(MARKUP_TEXT_SIZE_MIN, n)) * 100) / 100;
+}
 
 const isUnit = (v: unknown): v is number => typeof v === "number" && v >= 0 && v <= 1;
 const isColor = (v: unknown): v is MarkupColor => MARKUP_COLORS.includes(v as MarkupColor);
@@ -166,9 +178,11 @@ function validShape(s: unknown): MarkupShape | null {
     }
     case "text": {
       const text = typeof o.text === "string" ? o.text.trim().slice(0, MARKUP_TEXT_MAX) : "";
-      return isUnit(o.x) && isUnit(o.y) && text
+      if (!isUnit(o.x) || !isUnit(o.y) || !text) return null;
+      const size = clampTextSize(o.s);
+      return size === 1
         ? { type: "text", color: o.color, x: o.x, y: o.y, text }
-        : null;
+        : { type: "text", color: o.color, x: o.x, y: o.y, text, s: size };
     }
     default:
       return null;
@@ -244,6 +258,18 @@ export function textShape(
   text: string,
 ): MarkupShape | null {
   return validShape({ type: "text", color, x: clampUnit(at.x), y: clampUnit(at.y), text });
+}
+
+/** A text label moved to `at` (dragged), kept on the photo. Other shapes come back unchanged. */
+export function moveText(shape: MarkupShape, at: { x: number; y: number }): MarkupShape {
+  if (shape.type !== "text") return shape;
+  return validShape({ ...shape, x: clampUnit(at.x), y: clampUnit(at.y) }) ?? shape;
+}
+
+/** A text label at a new size (pinched, or the size control), kept within bounds. */
+export function resizeText(shape: MarkupShape, size: number): MarkupShape {
+  if (shape.type !== "text") return shape;
+  return validShape({ ...shape, s: clampTextSize(size) }) ?? shape;
 }
 
 /** Arrow head points (in display pixels) for an arrow from (x1,y1) to (x2,y2). */

@@ -20,7 +20,7 @@ import type {
   TestResult,
   TestType,
 } from "@leakbook/core";
-import { canMakeJobs } from "@leakbook/core";
+import { canMakeJobs, cleaningKind, type CleaningKind } from "@leakbook/core";
 import type { Office } from "./auth";
 import { createClient } from "./supabase/server";
 
@@ -577,7 +577,7 @@ export function listConfig<T>(office: Office, table: string): Promise<T[]> {
 
 export interface ReportRow {
   id: string;
-  template_key: "homeowner" | "partner" | "insurance" | "maintenance";
+  template_key: "homeowner" | "partner" | "maintenance";
   version: number;
   status: "draft" | "sent" | "superseded";
   final_sections: { key: string; title: string; text: string }[] | null;
@@ -951,7 +951,7 @@ export async function getAccess(office: Office): Promise<CompanyAccess | null> {
 export interface ReportListRow {
   id: string;
   job_id: string;
-  template_key: "homeowner" | "partner" | "insurance" | "maintenance";
+  template_key: "homeowner" | "partner" | "maintenance";
   version: number;
   status: "draft" | "sent" | "superseded";
   sent_at: string | null;
@@ -1026,4 +1026,43 @@ export async function getPlanCleanings(office: Office, planIds: string[]) {
       .in("service_plan_id", planIds)
       .is("deleted_at", null),
   ) as (PlanCleaning & { type: { key: string; name: string } | null })[];
+}
+
+/**
+ * The scheduled cleanings on these visits (filter, salt cell, filter replacement: the
+ * checklist items a plan's cleaning put there, `plan_cleaning_id`), by job, so Schedule shows them on the date they're due (owner,
+ * 2026-10-20: "The filter/salt cells don't show up on the dates they're due"). The database
+ * puts each one on the first visit on or after its due date.
+ */
+export async function visitCleanings(
+  office: Office,
+  jobIds: string[],
+): Promise<Map<string, { kind: CleaningKind; name: string; planCleaningId: string }[]>> {
+  const out = new Map<string, { kind: CleaningKind; name: string; planCleaningId: string }[]>();
+  if (!jobIds.length) return out;
+  const supabase = await db();
+  const { data } = await supabase
+    .from("job_component")
+    .select(
+      "job_id, type:component_type!job_component_component_type_id_company_id_fkey(key, name)",
+    )
+    .eq("company_id", office.company.id)
+    .in("job_id", jobIds)
+    .not("plan_cleaning_id", "is", null)
+    .is("deleted_at", null);
+  for (const row of (data ?? []) as unknown as {
+    job_id: string;
+    plan_cleaning_id: string;
+    type: { key: string; name: string } | null;
+  }[]) {
+    if (!row.type) continue;
+    const list = out.get(row.job_id) ?? [];
+    list.push({
+      kind: cleaningKind(row.type),
+      name: row.type.name,
+      planCleaningId: row.plan_cleaning_id,
+    });
+    out.set(row.job_id, list);
+  }
+  return out;
 }

@@ -18,7 +18,7 @@ import {
   stopDone,
 } from "@leakbook/core";
 import { Suspense } from "react";
-import { CleaningIcon, KeyIcon, PhoneIcon } from "@/components/icons";
+import { CleaningIcon, PhoneIcon } from "@/components/icons";
 import { OnMyWay } from "@/components/on-my-way";
 import { TodayComplete } from "@/components/today-complete";
 import { TodayStop } from "@/components/today-stop";
@@ -26,7 +26,7 @@ import { WeatherBadge } from "@/components/weather-badge";
 import { AddressLink, OpenRouteInMaps } from "@/components/open-in-maps";
 import { Empty, PageHeader, StatusBadge, cx, iconButtonClass, pillClass } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
-import { getCompany, getPlanCleanings, mayMakeJobs } from "@/lib/data";
+import { getCompany, getPlanCleanings, visitCleanings, mayMakeJobs } from "@/lib/data";
 import { getLine } from "@/lib/messages";
 import { mapsAppForRequest } from "@/lib/maps";
 import { loadRoutes, routeContext, routeKey, shopToday } from "@/server/route-days";
@@ -79,20 +79,28 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   const legs = route?.summary.legs.reduce((a, b) => a + b, 0) ?? 0;
   const backLeg = route ? route.summary.driveMin - legs : 0;
   const mine = techId === office.user.id;
-  // Filter and salt cell cleanings due within a week of each visit (owner, 2026-10-19).
-  const cleanings = await getPlanCleanings(office, [
-    ...new Set(jobs.map((j) => j.service_plan_id).filter((id): id is string => !!id)),
-  ]).catch(() => []);
-  const dueAt = (j: (typeof jobs)[number]) =>
-    cleanings
-      .filter((c) => c.service_plan_id === j.service_plan_id)
+  // The plan's cleanings on each visit's checklist, with how they stand against their due date
+  // (owner, 2026-10-19; 2026-10-20: what Today shows is what the checklist has).
+  const [cleanings, onVisits] = await Promise.all([
+    getPlanCleanings(office, [
+      ...new Set(jobs.map((j) => j.service_plan_id).filter((id): id is string => !!id)),
+    ]).catch(() => []),
+    visitCleanings(
+      office,
+      jobs.map((j) => j.id),
+    ).catch(() => new Map<string, { planCleaningId: string }[]>()),
+  ]);
+  const dueAt = (j: (typeof jobs)[number]) => {
+    const here = new Set((onVisits.get(j.id) ?? []).map((x) => x.planCleaningId));
+    return cleanings
+      .filter((c) => here.has(c.id))
       .map((c) => ({
         id: c.id,
         name: c.type?.name ?? "Cleaning",
         kind: cleaningKind(c.type ?? {}),
         due: cleaningCountdown(c.next_due, j.plan_date ?? ctx.today),
-      }))
-      .filter((c) => c.due.soon);
+      }));
+  };
 
   return (
     <>
@@ -178,6 +186,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                     time={j.scheduled_start ? formatTime(j.scheduled_start, ctx.timeZone) : ""}
                     name={j.customer?.name ?? "Customer"}
                     href={`/jobs/${j.id}`}
+                    access={j.property?.access_notes ?? null}
                     extra={
                       <>
                         {/* Most stops are scheduled; the badge shows other states. */}
@@ -211,15 +220,6 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                           </li>
                         ))}
                       </ul>
-                    ) : null}
-                    {j.property?.access_notes ? (
-                      <p className="flex items-start gap-1.5 text-[0.9375rem] text-text-muted">
-                        <KeyIcon className="mt-0.5 size-[1.125rem] shrink-0" />
-                        <span className="line-clamp-2 min-w-0">
-                          <span className="sr-only">Access: </span>
-                          {j.property.access_notes}
-                        </span>
-                      </p>
                     ) : null}
                     <div className="flex flex-wrap items-start gap-2 pt-2">
                       {/* Every stop: done for the day without the full process (owner,

@@ -77,6 +77,7 @@ describe("liveStopContent", () => {
       progress: 2 / 7,
       compact: "9:42",
       spoken: "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
+      access: null,
     });
   });
 
@@ -133,6 +134,7 @@ describe("the workday's Live Activity", () => {
       progress: 0,
       compact: "9:00",
       spoken: "Up next: Smith at 9:00 AM. Stop 1 of 5.",
+      access: null,
     });
     expect(liveStopContent({ ...base, phase: "ahead", scheduled: null }).figure).toBe("Today");
   });
@@ -153,5 +155,37 @@ describe("the workday's Live Activity", () => {
     expect(liveStopRuns({ settings, date: "2026-10-18", nowMin: 9 * 60, stopsLeft: 3 })).toBe(
       false,
     );
+  });
+});
+
+describe("access notes on the Live Activity", () => {
+  const base = {
+    customer: "Smith",
+    address: "123 Palm Ln",
+    stop: 1,
+    stops: 3,
+    eta: "9:42 AM",
+    checklistDone: 0,
+    checklistTotal: 9,
+    next: null,
+  };
+
+  it("show the gate and the dog until the stop is done", async () => {
+    const { liveStopContent } = await import("../src");
+    const access = "Side gate code 4821.\n  Dog in yard.";
+    const driving = liveStopContent({ ...base, phase: "driving", access });
+    expect(driving.access).toBe("Side gate code 4821. Dog in yard.");
+    expect(driving.spoken).toMatch(/Access: Side gate code 4821\. Dog in yard\.$/);
+    expect(liveStopContent({ ...base, phase: "on_site", access }).access).not.toBeNull();
+    expect(liveStopContent({ ...base, phase: "done", access }).access).toBeNull();
+    expect(liveStopContent({ ...base, phase: "ahead", access: "   " }).access).toBeNull();
+  });
+
+  it("fit on one line", async () => {
+    const { accessLine } = await import("../src");
+    expect(accessLine(null)).toBeNull();
+    const long = accessLine("x".repeat(120))!;
+    expect(long).toHaveLength(90);
+    expect(long.endsWith("…")).toBe(true);
   });
 });

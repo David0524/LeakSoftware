@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
+import { KeyIcon } from "./icons";
 import { cx } from "./ui";
 
 /**
@@ -19,6 +20,7 @@ export function TodayStop({
   name,
   href,
   extra,
+  access,
   children,
 }: {
   label: string;
@@ -32,6 +34,11 @@ export function TodayStop({
   href: string;
   /** State after the name (a badge, a lock). */
   extra?: ReactNode;
+  /**
+   * The pool's access notes (gate code, which gate, dogs), shown on the card open or closed
+   * (owner, 2026-10-20): one line while closed, all of it open.
+   */
+  access?: string | null;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(current);
@@ -129,6 +136,15 @@ export function TodayStop({
           </svg>
         </button>
       </div>
+      {access?.trim() && !done ? (
+        <p className="-mt-1 flex items-start gap-1.5 px-3 pb-2 pl-[3.25rem] text-[0.9375rem] font-medium text-text">
+          <KeyIcon className="mt-0.5 size-[1.125rem] shrink-0 text-status-warning" />
+          <span className={cx("min-w-0", open ? "whitespace-pre-line" : "truncate")}>
+            <span className="sr-only">Access: </span>
+            {access.trim()}
+          </span>
+        </p>
+      ) : null}
       {open ? (
         <div id={body} className="space-y-1 px-3 pb-3">
           {children}

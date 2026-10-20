@@ -2,6 +2,7 @@ import {
   NOTIFICATION_KINDS,
   SHOP_KINDS,
   jobNotification,
+  accessLine,
   liveStopContent,
   liveStopRuns,
   notificationOn,
@@ -123,6 +124,17 @@ export const notifications: ModuleCases = {
       [{ routing: { day_start: "07:30", work_days: [1, 2, 3, 4, 5] } }, "2026-10-19", 900, 0],
       [{ routing: { day_start: "07:30", work_days: [0, 6] } }, "2026-10-18", 600, 1],
       [{ routing: { day_start: "bad" } }, "2026-10-19", 600, 1],
+    ],
+  ),
+  accessLine: rule(
+    (notes: string | null) => accessLine(notes),
+    [
+      [null],
+      [""],
+      ["  Right gate.  Has dogs. "],
+      ["x".repeat(89)],
+      ["x".repeat(90)],
+      ["x".repeat(91)],
     ],
   ),
 };

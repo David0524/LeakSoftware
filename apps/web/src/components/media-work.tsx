@@ -5,6 +5,10 @@ import {
   MEDIA_KIND_LABELS,
   MARKUP_COLORS,
   MARKUP_TEXT_MAX,
+  MARKUP_TEXT_SIZE_MAX,
+  MARKUP_TEXT_SIZE_MIN,
+  moveText,
+  resizeText,
   MEDIA_LIMITS,
   MIN_INK,
   fitWithin,
@@ -512,6 +516,36 @@ export function MediaActions({
   );
 }
 
+/** A dashed box around the selected label, drawn over the canvas in percentages. */
+function SelectedText({
+  shape,
+  width,
+  height,
+  unit,
+}: {
+  shape: MarkupShape;
+  width: number;
+  height: number;
+  unit: number;
+}) {
+  if (shape.type !== "text") return null;
+  const px = Math.max(10, 24 * unit) * (shape.s ?? 1);
+  const w = (shape.text.length * px * 0.62 + 16) / width;
+  const h = (px * 1.3) / height;
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute rounded-md border-2 border-dashed border-white shadow-[0_0_0_1px_rgb(0_0_0/0.5)]"
+      style={{
+        left: `${(shape.x - w / 2) * 100}%`,
+        top: `${(shape.y - h * 0.8) * 100}%`,
+        width: `${w * 100}%`,
+        height: `${h * 100}%`,
+      }}
+    />
+  );
+}
+
 const COLOR_NAMES: Record<MarkupColor, string> = { red: "Red", yellow: "Yellow", white: "White" };
 type Tool = "pen" | "arrow" | "circle" | "text";
 
@@ -555,6 +589,30 @@ export function MarkupEditor({
   const [confirm, confirmSheet] = useConfirm();
   const dirty = history.length > 1 || caption !== (savedCaption ?? "");
   const push = (next: MarkupShape[]) => setHistory((h) => [...h, next]);
+  // Text can be moved and resized after it's placed (owner, 2026-10-20): the Text tool selects
+  // a label with a tap, a drag moves it, and Size changes it.
+  const [picked, setPicked] = useState<number | null>(null);
+  const resizing = useRef<number | null>(null);
+  const moving = useRef<number | null>(null);
+  // The same, for drawing (refs can't be read while rendering).
+  const [dragging, setDragging] = useState<number | null>(null);
+  const selected = picked !== null && draft[picked]?.type === "text" ? picked : null;
+  const unit = width / 400;
+  /** The label under a point on the canvas (fractions), topmost first. */
+  const textAt = (p: { x: number; y: number }, box: DOMRect) => {
+    for (let i = draft.length - 1; i >= 0; i--) {
+      const t = draft[i]!;
+      if (t.type !== "text") continue;
+      const px = (Math.max(10, 24 * unit) * (t.s ?? 1) * box.width) / width;
+      const halfW = Math.max(22, (t.text.length * px * 0.62) / 2);
+      const halfH = Math.max(22, px * 0.75);
+      const dx = (p.x - t.x) * box.width;
+      // Text sits on its baseline: most of it is above y.
+      const dy = (p.y - t.y) * box.height + px * 0.35;
+      if (Math.abs(dx) <= halfW && Math.abs(dy) <= halfH) return i;
+    }
+    return null;
+  };
 
   const at = (e: PointerEvent<HTMLDivElement>) => {
     const box = e.currentTarget.getBoundingClientRect();
@@ -572,9 +630,18 @@ export function MarkupEditor({
       return shape ? push([...draft, shape]) : undefined;
     }
     if (tool === "text") {
+      if (moving.current !== null) {
+        const i = moving.current;
+        moving.current = null;
+        setDragging(null);
+        if (live) push(draft.map((x, n) => (n === i ? live : x)));
+        return;
+      }
       const shape = textShape(ink, from, label);
-      if (!shape) return setError("Type a label first, then tap the photo.");
+      if (!shape)
+        return setError("Type a label first, then tap the photo. Tap a label to move it.");
       setError(null);
+      setPicked(draft.length);
       return push([...draft, shape]);
     }
     push([
@@ -646,9 +713,27 @@ export function MarkupEditor({
             e.currentTarget.setPointerCapture(e.pointerId);
             start.current = at(e);
             stroke.current = [at(e)];
+            if (tool === "text") {
+              const hit = textAt(at(e), e.currentTarget.getBoundingClientRect());
+              moving.current = hit;
+              setDragging(hit);
+              if (hit !== null) setPicked(hit);
+            }
           }}
           onPointerMove={(e) => {
-            if (!start.current || tool === "text") return;
+            if (!start.current) return;
+            if (tool === "text") {
+              const i = moving.current;
+              if (i === null) return;
+              const p = at(e);
+              const t = draft[i]!;
+              // Follow the finger from where it took hold of the label.
+              if (t.type === "text")
+                setLive(
+                  moveText(t, { x: t.x + p.x - start.current.x, y: t.y + p.y - start.current.y }),
+                );
+              return;
+            }
             if (tool === "pen") {
               stroke.current.push(at(e));
               return setLive(penShape(ink, stroke.current));
@@ -659,11 +744,26 @@ export function MarkupEditor({
           onPointerCancel={() => {
             start.current = null;
             stroke.current = [];
+            moving.current = null;
+            setDragging(null);
             setLive(null);
           }}
         >
           {background}
-          <MarkupOverlay shapes={live ? [...draft, live] : draft} width={width} height={height} />
+          <MarkupOverlay
+            shapes={
+              live && tool === "text" && dragging !== null
+                ? draft.map((x, n) => (n === dragging ? live : x))
+                : live
+                  ? [...draft, live]
+                  : draft
+            }
+            width={width}
+            height={height}
+          />
+          {tool === "text" && selected !== null && !live ? (
+            <SelectedText shape={draft[selected]!} width={width} height={height} unit={unit} />
+          ) : null}
         </div>
       </div>
       <div className="mx-auto w-full max-w-2xl space-y-4 p-4">
@@ -680,15 +780,58 @@ export function MarkupEditor({
           ]}
         />
         {tool === "text" ? (
-          <Field
-            label="Label"
-            name="markup_label"
-            value={label}
-            maxLength={MARKUP_TEXT_MAX}
-            placeholder="Crack"
-            hint="Then tap the photo where it goes."
-            onChange={(e) => setLabel(e.target.value)}
-          />
+          <>
+            <Field
+              label="Label"
+              name="markup_label"
+              value={label}
+              maxLength={MARKUP_TEXT_MAX}
+              placeholder="Crack"
+              hint="Then tap the photo where it goes. Tap a label to select it; drag it to move it."
+              onChange={(e) => setLabel(e.target.value)}
+            />
+            {selected !== null && draft[selected]?.type === "text" ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="flex min-w-0 flex-1 items-center gap-3">
+                  <span className="font-medium">Size</span>
+                  <input
+                    type="range"
+                    min={MARKUP_TEXT_SIZE_MIN}
+                    max={MARKUP_TEXT_SIZE_MAX}
+                    step={0.1}
+                    value={(draft[selected] as { s?: number }).s ?? 1}
+                    onChange={(e) => {
+                      const next = resizeText(draft[selected]!, Number(e.target.value));
+                      // One Undo step per selection's size change: replace the last step while
+                      // the slider moves, if it was this same resize.
+                      setHistory((h) => {
+                        const last = h[h.length - 1]!;
+                        const updated = last.map((x, n) => (n === selected ? next : x));
+                        return resizing.current === selected
+                          ? [...h.slice(0, -1), updated]
+                          : [...h, updated];
+                      });
+                      resizing.current = selected;
+                    }}
+                    onPointerUp={() => (resizing.current = null)}
+                    onKeyUp={() => (resizing.current = null)}
+                    aria-label="Label size"
+                    className="min-w-0 flex-1 accent-[var(--color-link)]"
+                  />
+                </label>
+                <Button
+                  type="button"
+                  kind="quiet"
+                  onClick={() => {
+                    push(draft.filter((_, n) => n !== selected));
+                    setPicked(null);
+                  }}
+                >
+                  Delete Label
+                </Button>
+              </div>
+            ) : null}
+          </>
         ) : (
           <p className="text-text-muted">
             {tool === "pen"

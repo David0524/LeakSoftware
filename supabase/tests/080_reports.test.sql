@@ -17,7 +17,7 @@ grant all on st to authenticated, anon;
 select tests.authenticate_as((select tech_a from ids));
 
 select throws_ok($$ select prepare_report((select job_a from ids), 'insurance') $$,
-  '22023', null, 'the insurance template is not available yet');
+  '22023', null, 'there is no insurance report');
 
 insert into st select 'prep', prepare_report((select job_a from ids), 'homeowner')::text;
 select ok((select (v::jsonb ->> 'report_id') is not null from st where k = 'prep'),

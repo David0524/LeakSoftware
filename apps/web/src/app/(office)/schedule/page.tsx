@@ -19,6 +19,7 @@ import {
   type MapsApp,
   type ScheduleView,
   dateFormat,
+  type CleaningKind,
 } from "@leakbook/core";
 import {
   RouteBoard,
@@ -41,7 +42,8 @@ import {
 } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { mapsAppForRequest } from "@/lib/maps";
-import { mayMakeJobs, type JobRow } from "@/lib/data";
+import { mayMakeJobs, visitCleanings, type JobRow } from "@/lib/data";
+import { CleaningIcon } from "@/components/icons";
 import {
   loadRoutes,
   routeContext,
@@ -187,6 +189,12 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
         ...column(ctx, t.user_id, t.name, d, routes.get(routeKey(t.user_id, d)), app),
         phoneHidden: !onPhone(t.user_id),
       });
+  // The plan's cleanings on each visit, on the date they're due (owner, 2026-10-20).
+  const due = await visitCleanings(
+    office,
+    columns.flatMap((c) => c.stops.map((s) => s.id)),
+  );
+  for (const c of columns) for (const s of c.stops) s.cleanings = due.get(s.id);
   const phoneColumns = columns.filter((c) => !c.phoneHidden);
   const unlocated = columns.some((c) => c.stops.some((s) => !s.location));
 
@@ -218,6 +226,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           {
             jobs: stops.filter((x) => x.note !== "Maintenance").length + extra,
             cleanings: stops.filter((x) => x.note === "Maintenance").length,
+            due: stops.flatMap((x) => x.cleanings ?? []),
           },
         ];
       }),
@@ -459,7 +468,10 @@ function MonthCalendar({
   days: string[];
   month: string;
   today: string;
-  counts: Record<string, { jobs: number; cleanings: number }>;
+  counts: Record<
+    string,
+    { jobs: number; cleanings: number; due?: { kind: CleaningKind; name: string }[] }
+  >;
   href: (d: string) => string;
 }) {
   return (
@@ -482,6 +494,7 @@ function MonthCalendar({
             formatDay(d, "long"),
             c.jobs ? `${c.jobs} ${c.jobs === 1 ? "job" : "jobs"}` : null,
             c.cleanings ? `${c.cleanings} ${c.cleanings === 1 ? "cleaning" : "cleanings"}` : null,
+            ...(c.due ?? []).map((x) => `${x.name} due`),
           ]
             .filter(Boolean)
             .join(", ");
@@ -506,6 +519,14 @@ function MonthCalendar({
                 {c.cleanings ? (
                   <span className="text-[0.8125rem] leading-tight text-text-muted">
                     {c.cleanings} clean
+                  </span>
+                ) : null}
+                {c.due?.length ? (
+                  // The filter and salt cell cleanings due that day, as their icons.
+                  <span aria-hidden="true" className="mt-0.5 flex flex-wrap justify-center gap-0.5">
+                    {[...new Set(c.due.map((x) => x.kind))].map((k) => (
+                      <CleaningIcon key={k} kind={k} className="size-4 text-link" />
+                    ))}
                   </span>
                 ) : null}
               </Link>

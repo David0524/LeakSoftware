@@ -35,7 +35,8 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
-import { durationLabel, type JobStatus, type LatLng } from "@leakbook/core";
+import { durationLabel, type CleaningKind, type JobStatus, type LatLng } from "@leakbook/core";
+import { CleaningIcon } from "./icons";
 import {
   moveJob,
   planRoute,
@@ -71,6 +72,8 @@ export interface BoardStop {
   shortMin: number;
   /** Shown on the second tech's route. */
   note?: string | null;
+  /** The plan's cleanings due on this visit: filter, salt cell (owner, 2026-10-20). */
+  cleanings?: { kind: CleaningKind; name: string }[];
 }
 
 export interface BoardColumn {
@@ -581,6 +584,19 @@ function StopCard({ stop: s, onMove }: { stop: BoardStop; onMove: (s: BoardStop)
             <AddressLink address={s.address} location={s.location} />
           </p>
           {s.note ? <p className="text-[0.9375rem] text-text-muted">{s.note}</p> : null}
+          {s.cleanings?.length ? (
+            <ul className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5" aria-label="Cleanings due">
+              {s.cleanings.map((c) => (
+                <li
+                  key={c.name}
+                  className="inline-flex items-center gap-1 text-[0.9375rem] font-medium text-text"
+                >
+                  <CleaningIcon kind={c.kind} className="size-[1.125rem] shrink-0" />
+                  {c.name}
+                </li>
+              ))}
+            </ul>
+          ) : null}
           {s.status !== "scheduled" || s.lock || !s.location ? (
             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
               {s.status !== "scheduled" ? <StatusBadge status={s.status} /> : null}

@@ -17,7 +17,7 @@ import {
 import type { Markup } from "./media";
 import { contrastRatio } from "./settings";
 
-export type ReportTemplateKey = "homeowner" | "partner" | "insurance";
+export type ReportTemplateKey = "homeowner" | "partner";
 
 // ---------------------------------------------------------------------------
 // Snapshot: built by the database (app.report_snapshot) from synced rows when a report is

@@ -80,7 +80,8 @@ export function MarkupOverlay({
             </g>
           );
         }
-        const size = Math.max(10, 24 * unit);
+        // Its own size (owner, 2026-10-20), 1 being the standard.
+        const size = Math.max(10, 24 * unit) * (s.s ?? 1);
         return (
           <text
             key={i}

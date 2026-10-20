@@ -25,7 +25,7 @@ select results_eq(
   'pool: a pool service price book (services, chemicals, repairs)');
 select is((select count(*) from price_book_item where company_id = (select id from pool_shop)
             and name like 'Leak detection%'), 0::bigint, 'pool: no detection fees');
-select is((select count(*) from report_template where company_id = (select id from pool_shop)), 3::bigint,
+select is((select count(*) from report_template where company_id = (select id from pool_shop)), 2::bigint,
   'pool: report templates, for if it adds leak detection');
 
 -- The owner adds leak detection: its setup arrives, the pool setup isn't doubled.

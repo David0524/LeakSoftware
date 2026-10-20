@@ -26114,5 +26114,204 @@
       ],
       "result": "I confirm A&B Pools finished the work today."
     }
+  ],
+  "clampTextSize": [
+    {
+      "args": [
+        1
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        0.1
+      ],
+      "result": 0.5
+    },
+    {
+      "args": [
+        9
+      ],
+      "result": 3
+    },
+    {
+      "args": [
+        1.234
+      ],
+      "result": 1.23
+    },
+    {
+      "args": [
+        "x"
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": 1
+    },
+    {
+      "args": [
+        2.5
+      ],
+      "result": 2.5
+    }
+  ],
+  "moveText": [
+    {
+      "args": [
+        {
+          "type": "text",
+          "color": "yellow",
+          "x": 0.2,
+          "y": 0.2,
+          "text": "Leak"
+        },
+        {
+          "x": 1.4,
+          "y": 0.6
+        }
+      ],
+      "result": {
+        "type": "text",
+        "color": "yellow",
+        "x": 1,
+        "y": 0.6,
+        "text": "Leak"
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "text",
+          "color": "red",
+          "x": 0.2,
+          "y": 0.2,
+          "text": "Leak",
+          "s": 2
+        },
+        {
+          "x": -1,
+          "y": 0.33333
+        }
+      ],
+      "result": {
+        "type": "text",
+        "color": "red",
+        "x": 0,
+        "y": 0.3333,
+        "text": "Leak",
+        "s": 2
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "arrow",
+          "color": "red",
+          "x1": 0,
+          "y1": 0,
+          "x2": 1,
+          "y2": 1
+        },
+        {
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "result": {
+        "type": "arrow",
+        "color": "red",
+        "x1": 0,
+        "y1": 0,
+        "x2": 1,
+        "y2": 1
+      }
+    }
+  ],
+  "resizeText": [
+    {
+      "args": [
+        {
+          "type": "text",
+          "color": "yellow",
+          "x": 0.2,
+          "y": 0.2,
+          "text": "Leak"
+        },
+        1.8
+      ],
+      "result": {
+        "type": "text",
+        "color": "yellow",
+        "x": 0.2,
+        "y": 0.2,
+        "text": "Leak",
+        "s": 1.8
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "text",
+          "color": "yellow",
+          "x": 0.2,
+          "y": 0.2,
+          "text": "Leak",
+          "s": 2
+        },
+        1
+      ],
+      "result": {
+        "type": "text",
+        "color": "yellow",
+        "x": 0.2,
+        "y": 0.2,
+        "text": "Leak"
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "text",
+          "color": "white",
+          "x": 0.2,
+          "y": 0.2,
+          "text": "Leak"
+        },
+        7
+      ],
+      "result": {
+        "type": "text",
+        "color": "white",
+        "x": 0.2,
+        "y": 0.2,
+        "text": "Leak",
+        "s": 3
+      }
+    },
+    {
+      "args": [
+        {
+          "type": "circle",
+          "color": "red",
+          "cx": 0.5,
+          "cy": 0.5,
+          "rx": 0.1,
+          "ry": 0.1
+        },
+        2
+      ],
+      "result": {
+        "type": "circle",
+        "color": "red",
+        "cx": 0.5,
+        "cy": 0.5,
+        "rx": 0.1,
+        "ry": 0.1
+      }
+    }
   ]
 }

@@ -98,6 +98,8 @@ export interface LiveStopInput {
   checklistDone: number;
   checklistTotal: number;
   next: { customer: string; time: string | null } | null;
+  /** The pool's access notes: gate code, which gate, dogs (property.access_notes). */
+  access?: string | null;
 }
 
 export interface LiveStopContent {
@@ -117,9 +119,32 @@ export interface LiveStopContent {
   compact: string;
   /** One sentence for VoiceOver and TalkBack. */
   spoken: string;
+  /**
+   * The stop's access notes on one line ("Side gate code 4821. Dog in yard."), with a key on
+   * the Lock Screen, until the stop is done (owner, 2026-10-20: gate key, "go through right
+   * gate", "has dogs" belong on the Live Activity). Null when there are none.
+   */
+  access: string | null;
+}
+
+/** Access notes as one short line: spaces and line breaks collapsed, at most 90 characters. */
+export function accessLine(notes: string | null | undefined): string | null {
+  const one = (notes ?? "").replace(/\s+/g, " ").trim();
+  if (!one) return null;
+  return one.length > 90 ? `${one.slice(0, 89).trimEnd()}…` : one;
 }
 
 export function liveStopContent(s: LiveStopInput): LiveStopContent {
+  const base = liveStopBase(s);
+  const access = s.phase === "done" ? null : accessLine(s.access);
+  return {
+    ...base,
+    access,
+    spoken: access ? `${base.spoken} Access: ${access}` : base.spoken,
+  };
+}
+
+function liveStopBase(s: LiveStopInput): Omit<LiveStopContent, "access"> {
   const of = `Stop ${s.stop} of ${s.stops}`;
   const detail = [of, s.address].filter(Boolean).join(" · ");
   const next = s.next ? `Next: ${s.next.customer}${s.next.time ? ` at ${s.next.time}` : ""}` : null;

@@ -183,8 +183,8 @@ select is((select count(*) from test_type where company_id = (select id from sig
   'signup: default test types copied');
 select is((select count(*) from price_book_item where company_id = (select id from signup)), 26::bigint,
   'signup: both packages: both sample price books (10 leak, 16 pool)');
-select is((select enabled from report_template where company_id = (select id from signup) and key = 'insurance'),
-  false, 'signup: insurance template exists but is disabled');
+select is((select count(*) from report_template where company_id = (select id from signup) and key = 'insurance'),
+  0::bigint, 'signup: no insurance template (removed 2026-10-20)');
 select is((select status from subscription where company_id = (select id from signup)), 'trialing',
   'signup: trial starts');
 select ok((select trial_ends_at between now() + interval '29 days 23 hours' and now() + interval '30 days 1 hour'

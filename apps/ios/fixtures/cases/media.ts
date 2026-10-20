@@ -1,4 +1,8 @@
 import {
+  clampTextSize,
+  type MarkupShape,
+  moveText,
+  resizeText,
   MARKUP_COLORS,
   MEDIA_KIND_LABELS,
   MEDIA_LIMITS,
@@ -564,5 +568,36 @@ export const media: ModuleCases = {
         [p, "A&B Pools", ""] as [SignaturePurpose, string, string | null],
       ],
     ),
+  ),
+  // Markup text moves and changes size (owner, 2026-10-20).
+  clampTextSize: rule(
+    (s: unknown) => clampTextSize(s),
+    [[1], [0.1], [9], [1.234], ["x"], [null], [2.5]],
+  ),
+  moveText: rule(
+    (shape: MarkupShape, at: { x: number; y: number }) => moveText(shape, at),
+    [
+      [
+        { type: "text", color: "yellow", x: 0.2, y: 0.2, text: "Leak" },
+        { x: 1.4, y: 0.6 },
+      ],
+      [
+        { type: "text", color: "red", x: 0.2, y: 0.2, text: "Leak", s: 2 },
+        { x: -1, y: 0.33333 },
+      ],
+      [
+        { type: "arrow", color: "red", x1: 0, y1: 0, x2: 1, y2: 1 },
+        { x: 0.5, y: 0.5 },
+      ],
+    ],
+  ),
+  resizeText: rule(
+    (shape: MarkupShape, size: number) => resizeText(shape, size),
+    [
+      [{ type: "text", color: "yellow", x: 0.2, y: 0.2, text: "Leak" }, 1.8],
+      [{ type: "text", color: "yellow", x: 0.2, y: 0.2, text: "Leak", s: 2 }, 1],
+      [{ type: "text", color: "white", x: 0.2, y: 0.2, text: "Leak" }, 7],
+      [{ type: "circle", color: "red", cx: 0.5, cy: 0.5, rx: 0.1, ry: 0.1 }, 2],
+    ],
   ),
 };

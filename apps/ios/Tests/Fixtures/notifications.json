@@ -633,7 +633,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "…",
-        "spoken": "Up next: Smith. Stop 3 of 7."
+        "spoken": "Up next: Smith. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -661,7 +662,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "…",
-        "spoken": "Up next: Smith. Stop 3 of 7."
+        "spoken": "Up next: Smith. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -689,7 +691,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "…",
-        "spoken": "Up next: Smith. Stop 3 of 7."
+        "spoken": "Up next: Smith. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -717,7 +720,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "…",
-        "spoken": "Up next: Smith. Stop 3 of 7."
+        "spoken": "Up next: Smith. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -745,7 +749,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "…",
-        "spoken": "Up next: Smith. Stop 3 of 7."
+        "spoken": "Up next: Smith. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -773,7 +778,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "…",
-        "spoken": "Up next: Smith. Stop 3 of 7."
+        "spoken": "Up next: Smith. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -801,7 +807,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "…",
-        "spoken": "Up next: Smith. Stop 3 of 7."
+        "spoken": "Up next: Smith. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -826,7 +833,8 @@
         "next": null,
         "progress": 0.2857142857142857,
         "compact": "…",
-        "spoken": "Up next: Smith. Stop 3 of 7."
+        "spoken": "Up next: Smith. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -854,7 +862,8 @@
         "next": "Next: Lee",
         "progress": 0.2857142857142857,
         "compact": "…",
-        "spoken": "Up next: Smith. Stop 3 of 7."
+        "spoken": "Up next: Smith. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -882,7 +891,8 @@
         "next": "Next: Lee",
         "progress": 0.2857142857142857,
         "compact": "…",
-        "spoken": "Up next: Smith. Stop 3 of 7."
+        "spoken": "Up next: Smith. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -910,7 +920,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "…",
-        "spoken": "Up next: Smith. Stop 3 of 7."
+        "spoken": "Up next: Smith. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -938,7 +949,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0,
         "compact": "…",
-        "spoken": "Up next: Smith. Stop 1 of 1."
+        "spoken": "Up next: Smith. Stop 1 of 1.",
+        "access": null
       }
     },
     {
@@ -963,7 +975,8 @@
         "next": null,
         "progress": 0.8571428571428571,
         "compact": "…",
-        "spoken": "Up next: Smith. Stop 7 of 7."
+        "spoken": "Up next: Smith. Stop 7 of 7.",
+        "access": null
       }
     },
     {
@@ -991,7 +1004,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 1,
         "compact": "…",
-        "spoken": "Up next: Smith. Stop 9 of 7."
+        "spoken": "Up next: Smith. Stop 9 of 7.",
+        "access": null
       }
     },
     {
@@ -1019,7 +1033,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0,
         "compact": "…",
-        "spoken": "Up next: Smith. Stop 0 of 0."
+        "spoken": "Up next: Smith. Stop 0 of 0.",
+        "access": null
       }
     },
     {
@@ -1048,7 +1063,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "9:00",
-        "spoken": "Up next: Smith at 9:00 AM. Stop 3 of 7."
+        "spoken": "Up next: Smith at 9:00 AM. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1077,7 +1093,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "…",
-        "spoken": "Up next: Smith. Stop 3 of 7."
+        "spoken": "Up next: Smith. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1106,7 +1123,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "1:15",
-        "spoken": "Up next: Smith at 1:15 pm. Stop 3 of 7."
+        "spoken": "Up next: Smith at 1:15 pm. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1134,7 +1152,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7."
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1162,7 +1181,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "…",
-        "spoken": "On the way to Smith. Stop 3 of 7."
+        "spoken": "On the way to Smith. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1190,7 +1210,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "…",
-        "spoken": "On the way to Smith. Stop 3 of 7."
+        "spoken": "On the way to Smith. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1218,7 +1239,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "12:05",
-        "spoken": "On the way to Smith, arriving at 12:05 pm. Stop 3 of 7."
+        "spoken": "On the way to Smith, arriving at 12:05 pm. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1246,7 +1268,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "14:05",
-        "spoken": "On the way to Smith, arriving at 14:05. Stop 3 of 7."
+        "spoken": "On the way to Smith, arriving at 14:05. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1274,7 +1297,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7."
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1302,7 +1326,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7."
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1327,7 +1352,8 @@
         "next": null,
         "progress": 0.2857142857142857,
         "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7."
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1355,7 +1381,8 @@
         "next": "Next: Lee",
         "progress": 0.2857142857142857,
         "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7."
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1383,7 +1410,8 @@
         "next": "Next: Lee",
         "progress": 0.2857142857142857,
         "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7."
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1411,7 +1439,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7."
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1439,7 +1468,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0,
         "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 1 of 1."
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 1 of 1.",
+        "access": null
       }
     },
     {
@@ -1464,7 +1494,8 @@
         "next": null,
         "progress": 0.8571428571428571,
         "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 7 of 7."
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 7 of 7.",
+        "access": null
       }
     },
     {
@@ -1492,7 +1523,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 1,
         "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 9 of 7."
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 9 of 7.",
+        "access": null
       }
     },
     {
@@ -1520,7 +1552,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0,
         "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 0 of 0."
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 0 of 0.",
+        "access": null
       }
     },
     {
@@ -1549,7 +1582,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7."
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1578,7 +1612,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7."
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1607,7 +1642,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.2857142857142857,
         "compact": "9:42",
-        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7."
+        "spoken": "On the way to Smith, arriving at 9:42 AM. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1635,7 +1671,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM."
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -1663,7 +1700,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM."
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -1691,7 +1729,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM."
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -1719,7 +1758,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM."
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -1747,7 +1787,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM."
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -1775,7 +1816,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM."
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -1803,7 +1845,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM."
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -1828,7 +1871,8 @@
         "next": null,
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7."
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7.",
+        "access": null
       }
     },
     {
@@ -1856,7 +1900,8 @@
         "next": "Next: Lee",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Lee."
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Lee.",
+        "access": null
       }
     },
     {
@@ -1884,7 +1929,8 @@
         "next": "Next: Lee",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Lee."
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Lee.",
+        "access": null
       }
     },
     {
@@ -1912,7 +1958,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.35714285714285715,
         "compact": "•",
-        "spoken": "At Smith. Stop 3 of 7. Next: Jones at 10:30 AM."
+        "spoken": "At Smith. Stop 3 of 7. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -1940,7 +1987,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.5,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 1 of 1. Next: Jones at 10:30 AM."
+        "spoken": "At Smith. Checklist 4 of 9. Stop 1 of 1. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -1965,7 +2013,8 @@
         "next": null,
         "progress": 0.9285714285714286,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 7 of 7."
+        "spoken": "At Smith. Checklist 4 of 9. Stop 7 of 7.",
+        "access": null
       }
     },
     {
@@ -1993,7 +2042,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 1,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 9 of 7. Next: Jones at 10:30 AM."
+        "spoken": "At Smith. Checklist 4 of 9. Stop 9 of 7. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2021,7 +2071,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 0 of 0. Next: Jones at 10:30 AM."
+        "spoken": "At Smith. Checklist 4 of 9. Stop 0 of 0. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2050,7 +2101,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM."
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2079,7 +2131,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM."
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2108,7 +2161,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.35714285714285715,
         "compact": "4/9",
-        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM."
+        "spoken": "At Smith. Checklist 4 of 9. Stop 3 of 7. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2136,7 +2190,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM."
+        "spoken": "Smith done. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2164,7 +2219,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM."
+        "spoken": "Smith done. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2192,7 +2248,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM."
+        "spoken": "Smith done. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2220,7 +2277,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM."
+        "spoken": "Smith done. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2248,7 +2306,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM."
+        "spoken": "Smith done. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2276,7 +2335,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM."
+        "spoken": "Smith done. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2304,7 +2364,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM."
+        "spoken": "Smith done. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2329,7 +2390,8 @@
         "next": "That was the last stop today.",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. That was the last stop today."
+        "spoken": "Smith done. That was the last stop today.",
+        "access": null
       }
     },
     {
@@ -2357,7 +2419,8 @@
         "next": "Next: Lee",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Lee."
+        "spoken": "Smith done. Next: Lee.",
+        "access": null
       }
     },
     {
@@ -2385,7 +2448,8 @@
         "next": "Next: Lee",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Lee."
+        "spoken": "Smith done. Next: Lee.",
+        "access": null
       }
     },
     {
@@ -2413,7 +2477,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM."
+        "spoken": "Smith done. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2441,7 +2506,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 1,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM."
+        "spoken": "Smith done. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2466,7 +2532,8 @@
         "next": "That was the last stop today.",
         "progress": 1,
         "compact": "✓",
-        "spoken": "Smith done. That was the last stop today."
+        "spoken": "Smith done. That was the last stop today.",
+        "access": null
       }
     },
     {
@@ -2494,7 +2561,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 1,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM."
+        "spoken": "Smith done. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2522,7 +2590,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM."
+        "spoken": "Smith done. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2551,7 +2620,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM."
+        "spoken": "Smith done. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2580,7 +2650,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM."
+        "spoken": "Smith done. Next: Jones at 10:30 AM.",
+        "access": null
       }
     },
     {
@@ -2609,7 +2680,8 @@
         "next": "Next: Jones at 10:30 AM",
         "progress": 0.42857142857142855,
         "compact": "✓",
-        "spoken": "Smith done. Next: Jones at 10:30 AM."
+        "spoken": "Smith done. Next: Jones at 10:30 AM.",
+        "access": null
       }
     }
   ],
@@ -2730,6 +2802,44 @@
         1
       ],
       "result": true
+    }
+  ],
+  "accessLine": [
+    {
+      "args": [
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "  Right gate.  Has dogs. "
+      ],
+      "result": "Right gate. Has dogs."
+    },
+    {
+      "args": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "result": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "args": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "result": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "args": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "result": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…"
     }
   ]
 }

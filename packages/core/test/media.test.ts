@@ -138,3 +138,36 @@ describe("arrowShape", () => {
     expect(b.shaftEnd).toEqual([0, 0]);
   });
 });
+
+describe("markup text can move and change size", () => {
+  it("keeps a size within bounds, and standard size isn't stored", async () => {
+    const { parseMarkup, clampTextSize } = await import("../src");
+    const m = parseMarkup({
+      version: 1,
+      shapes: [
+        { type: "text", color: "red", x: 0.5, y: 0.5, text: "Crack", s: 2 },
+        { type: "text", color: "red", x: 0.5, y: 0.5, text: "Big", s: 9 },
+        { type: "text", color: "red", x: 0.5, y: 0.5, text: "Plain", s: 1 },
+        { type: "text", color: "red", x: 0.5, y: 0.5, text: "Odd", s: "x" },
+      ],
+    });
+    expect(m.shapes.map((x) => (x.type === "text" ? x.s : null))).toEqual([
+      2,
+      3,
+      undefined,
+      undefined,
+    ]);
+    expect(clampTextSize(0.1)).toBe(0.5);
+    expect(clampTextSize(1.234)).toBe(1.23);
+  });
+
+  it("moves and resizes only text, kept on the photo", async () => {
+    const { moveText, resizeText } = await import("../src");
+    const t = { type: "text", color: "yellow", x: 0.2, y: 0.2, text: "Leak" } as const;
+    expect(moveText(t, { x: 1.4, y: 0.6 })).toEqual({ ...t, x: 1, y: 0.6 });
+    expect(resizeText(t, 1.8)).toEqual({ ...t, s: 1.8 });
+    expect(resizeText({ ...t, s: 2 }, 1)).toEqual(t);
+    const arrow = { type: "arrow", color: "red", x1: 0, y1: 0, x2: 1, y2: 1 } as const;
+    expect(moveText(arrow, { x: 0.5, y: 0.5 })).toBe(arrow);
+  });
+});

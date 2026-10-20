@@ -30,16 +30,14 @@ export const metadata: Metadata = { title: "Report Templates · Sundeck Pro" };
 
 interface Template {
   id: string;
-  key: "homeowner" | "partner" | "insurance";
+  key: "homeowner" | "partner";
   name: string;
   enabled: boolean;
   tone: string;
 }
 
-const ABOUT: Record<Exclude<Template["key"], "partner">, string> = {
-  homeowner: "For the pool owner: plain words, what was found, what it means, and what to do next.",
-  insurance: "For insurance claims.",
-};
+const ABOUT =
+  "For the pool owner: plain words, what was found, what it means, and what to do next.";
 
 interface SavedReport {
   id: string;
@@ -86,11 +84,9 @@ export default async function ReportTemplatesPage() {
     listConfig<SavedReport>(office, "saved_report"),
     getCompany(office),
   ]);
-  const order = ["homeowner", "insurance"];
-  // The partner report is gone (owner, 2026-10-18); its sent reports still open.
-  const shown = templates
-    .filter((t) => t.key !== "partner")
-    .sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+  // The homeowner report only: the partner report is gone (owner, 2026-10-18; its sent reports
+  // still open), and so is the insurance one (owner, 2026-10-20).
+  const shown = templates.filter((t) => t.key === "homeowner");
   // Pool care shops have only visit reports; the leak report and saved reports are leak
   // detection's (2026-10-20).
   const leak = offersLeak(company.settings);
@@ -118,40 +114,30 @@ export default async function ReportTemplatesPage() {
     >
       {leak ? (
         <Grouped>
-          {shown.map((t) =>
-            t.key === "insurance" ? (
-              <SheetRow
-                key={t.id}
-                title={t.name}
-                label={t.name}
-                detail={ABOUT.insurance}
-                value="Coming soon"
-              />
-            ) : (
-              <SheetRow
-                key={t.id}
-                title={t.name}
-                label={t.name}
-                detail={ABOUT[t.key as "homeowner"]}
-                value={t.enabled ? "On" : "Off"}
-              >
-                <SettingsForm action={saveReportTemplate} primary full>
-                  <input type="hidden" name="id" value={t.id} />
-                  <SettingsFields labelWidth="5rem">
-                    <SField label="Name" name="name" id={`name-${t.id}`} defaultValue={t.name} />
-                  </SettingsFields>
-                  <SettingsFields>
-                    <SSwitch
-                      label="Techs can send this report"
-                      name="enabled"
-                      id={`enabled-${t.id}`}
-                      defaultChecked={t.enabled}
-                    />
-                  </SettingsFields>
-                </SettingsForm>
-              </SheetRow>
-            ),
-          )}
+          {shown.map((t) => (
+            <SheetRow
+              key={t.id}
+              title={t.name}
+              label={t.name}
+              detail={ABOUT}
+              value={t.enabled ? "On" : "Off"}
+            >
+              <SettingsForm action={saveReportTemplate} primary full>
+                <input type="hidden" name="id" value={t.id} />
+                <SettingsFields labelWidth="5rem">
+                  <SField label="Name" name="name" id={`name-${t.id}`} defaultValue={t.name} />
+                </SettingsFields>
+                <SettingsFields>
+                  <SSwitch
+                    label="Techs can send this report"
+                    name="enabled"
+                    id={`enabled-${t.id}`}
+                    defaultChecked={t.enabled}
+                  />
+                </SettingsFields>
+              </SettingsForm>
+            </SheetRow>
+          ))}
         </Grouped>
       ) : null}
 

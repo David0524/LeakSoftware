@@ -10,7 +10,6 @@ export const metadata: Metadata = { title: "Reports · Sundeck Pro" };
 const TEMPLATES = {
   homeowner: "Homeowner report",
   partner: "Pool company report",
-  insurance: "Insurance report",
   maintenance: "Visit report",
 } as const;
 
