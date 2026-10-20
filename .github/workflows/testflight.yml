@@ -26,6 +26,8 @@ jobs:
     timeout-minutes: 60
     env:
       APP_STORE_APP_ID: "6824555420"
+      # The package's widget extension keeps Apple's entry point (Package.swift, ITMS-90898).
+      SUNDECK_APP_STORE: "1"
     steps:
       - uses: actions/checkout@v4
 

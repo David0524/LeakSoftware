@@ -67,6 +67,11 @@ targets:
         INFOPLIST_FILE: ../LiveActivity-Info.plist
         GENERATE_INFOPLIST_FILE: YES
         SKIP_INSTALL: YES
+        # Apple requires app extensions to start at _NSExtensionMain (ITMS-90898, build 1005).
+        # The widget's @main lives in the package, not in this target's own code, so it's kept
+        # from dead stripping by hand (-u _main and no dead stripping).
+        OTHER_LDFLAGS: ["$(inherited)", "-e", "_NSExtensionMain", "-u", "_main"]
+        DEAD_CODE_STRIPPING: NO
 schemes:
   SundeckPro:
     build:
