@@ -408,6 +408,7 @@ const ARCHIVABLE = new Set([
   "exclusion_reason",
   "severity_level",
   "saved_report",
+  "team_profile",
 ]);
 
 export async function removeConfigRow(_: FormState, form: FormData): Promise<FormState> {
@@ -571,6 +572,41 @@ async function saveInspectionQuestion(
   );
   if (error) return failed(error);
   return done("/settings/components", id ? "Saved." : `Added ${name}.`);
+}
+
+/**
+ * A person's profile (owner, 2026-10-20): name, phone, email, address, emergency contact and
+ * notes, kept by owners and admins. `user` links it to a team member; without it, someone who
+ * doesn't use the app.
+ */
+export async function saveTeamProfile(_: FormState, form: FormData): Promise<FormState> {
+  const { office, supabase } = await owner();
+  const id = text(form, "id");
+  const name = text(form, "name");
+  if (!name) return { fields: { name: "Enter a name." } };
+  const email = text(form, "email");
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return { fields: { email: "Enter an email like name@example.com." } };
+  const values = {
+    name,
+    phone: text(form, "phone") || null,
+    email: email || null,
+    address: text(form, "address") || null,
+    emergency_name: text(form, "emergency_name") || null,
+    emergency_phone: text(form, "emergency_phone") || null,
+    notes: text(form, "notes") || null,
+  };
+  const user = text(form, "user");
+  const { error } = await upsert(
+    supabase,
+    "team_profile",
+    office.company.id,
+    id,
+    values,
+    user ? { user_id: user } : {},
+  );
+  if (error) return failed(error);
+  return done("/settings/team", id ? "Saved." : `Added ${name}.`);
 }
 
 /** Thresholds for built-in calculators, and fields for custom test types. */

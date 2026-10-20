@@ -16,6 +16,7 @@ import {
   cleaningKind,
   cleaningShortLabel,
   stopDone,
+  todayUndo,
   visitReportMode,
 } from "@leakbook/core";
 import { completeSendPrompt } from "@/lib/next-step";
@@ -229,7 +230,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                         jobId={j.id}
                         customer={j.customer?.name ?? "this stop"}
                         done={done}
-                        undoable={j.type !== "maintenance" && j.stop_done_on === ctx.today}
+                        undo={todayUndo(j, ctx.today)?.label ?? null}
                         prompt={completeSendPrompt({
                           jobType: j.type,
                           reportMode,

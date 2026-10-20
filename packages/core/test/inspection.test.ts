@@ -19,6 +19,9 @@ import {
   type JobComponent,
   type TestFieldSchema,
   removeItemConfirm,
+  centerLayout,
+  offsetPath,
+  parseDiagramLayout,
 } from "../src";
 
 const type = (key: string, over: Partial<ComponentType> = {}): ComponentType => ({
@@ -575,5 +578,59 @@ describe("landmarks resize and flip", () => {
     expect(core.clampLandmarkSize(3)).toBe(10);
     expect(core.clampLandmarkSize(60)).toBe(44);
     expect(core.clampLandmarkSize(22.26)).toBe(22.3);
+  });
+});
+
+describe("centered pools (owner, 2026-10-20)", () => {
+  it("draws a centered pool in the middle of the diagram, mirrored or not", () => {
+    // Mirrored, the centered pool still sits in the middle: the L-shape's arm swaps sides.
+    expect(poolDiagram("l_shape", false, { centered: true, mirror: true }).pool).toBe(
+      "M 136 14 H 76 Q 70 14 70 20 V 48 H 26 Q 20 48 20 54 V 80 Q 20 86 26 86 H 136 Q 142 86 142 80 V 20 Q 142 14 136 14 Z",
+    );
+    expect(poolDiagram("rectangle", false).pool).toBe(
+      "M16 18 H124 Q130 18 130 24 V76 Q130 82 124 82 H16 Q10 82 10 76 V24 Q10 18 16 18 Z",
+    );
+    expect(poolDiagram("rectangle", false, { centered: true }).pool).toBe(
+      "M 26 18 H 134 Q 140 18 140 24 V 76 Q 140 82 134 82 H 26 Q 20 82 20 76 V 24 Q 20 18 26 18 Z",
+    );
+    expect(offsetPath("", 10)).toBe("");
+  });
+
+  it("moves what's placed along when a pool is centered, once", () => {
+    const layout = centerLayout({
+      mirror: true,
+      spa: { x: 0.5, y: 0.2, r: 13 },
+      landmarks: [{ kind: "tree", x: 0.98, y: 0.5 }],
+      drawing: [
+        { type: "line", x1: 0.1, y1: 0.1, x2: 0.2, y2: 0.3 },
+        { type: "circle", cx: 0.5, cy: 0.5, rx: 0.1, ry: 0.1 },
+        {
+          type: "pen",
+          points: [
+            [0.1, 0.4],
+            [0.2, 0.5],
+          ],
+        },
+      ],
+    });
+    expect(layout).toEqual({
+      mirror: true,
+      centered: true,
+      spa: { x: 0.5625, y: 0.2, r: 13 },
+      landmarks: [{ kind: "tree", x: 1, y: 0.5 }],
+      drawing: [
+        { type: "line", x1: 0.1625, y1: 0.1, x2: 0.2625, y2: 0.3 },
+        { type: "circle", cx: 0.5625, cy: 0.5, rx: 0.1, ry: 0.1 },
+        {
+          type: "pen",
+          points: [
+            [0.1625, 0.4],
+            [0.2625, 0.5],
+          ],
+        },
+      ],
+    });
+    expect(centerLayout(layout)).toBe(layout);
+    expect(parseDiagramLayout({ centered: true, mirror: "yes" })).toEqual({ centered: true });
   });
 });

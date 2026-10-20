@@ -4,6 +4,7 @@ import { THEME_SCRIPT } from "@/lib/theme";
 import { body, display } from "./fonts";
 import startupImage from "./splash.json";
 import "./globals.css";
+import { PhoneFormatting } from "@/components/phone-format";
 
 export const metadata: Metadata = {
   title: "Sundeck Pro",
@@ -36,7 +37,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <PhoneFormatting />
+      </body>
     </html>
   );
 }

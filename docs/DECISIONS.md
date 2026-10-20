@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-20 (owner: tech profiles, centered pool shapes, the sync note, Reopen Visit on Today, phone numbers)
+- **Profiles for each person** (Settings › Team › Profiles): name, phone, email, address, emergency contact (name and phone) and notes. Owners and admins read and write them, on the website and their phones; techs don't see them, their own included. Team members get one each, and Add Person keeps one for someone who doesn't use the app.
+- **Pool shapes are drawn in the middle of the diagram** and of their buttons. Pools saved before sat 10 units left to leave room for the spa; those with nothing placed on them moved now, the rest move with their spa, landmarks and drawing the next time their shape is saved. Finding pins already placed and sent reports keep where they were.
+- **The "needs to sync" note shows only after 8 seconds** of changes waiting, so a quick sync doesn't flash it.
+- **A completed maintenance visit has Reopen Visit on Today**, as on its page; leak and repair stops keep Mark Not Complete.
+- **Phone numbers format as they're typed** on every phone field: "(602) 555-0142", "+1 (602) …" with a leading 1; numbers from other countries (starting "+") and extensions are left as typed.
+
 ## 2026-10-20 (owner, from TestFlight: "live activity logo appears black"; "use our lighter blue for live activities"; "It doesn't seem to allow me to access photos from my camera roll")
 - **Live Activity and Android's current-stop notification in the water blue** (#1F6FAE) instead of navy: white text, white progress and check; the Dynamic Island keeps its black, with the water blue's light shade for its text and keyline.
 - **The Live Activity's logo** is drawn in its own colors where the Lock Screen tints Live Activities, and at the size it shows (the 512 by 749 file is redrawn to 144 pixels tall).

@@ -101,6 +101,8 @@ begin
     values (c, prop, j, t, 20000, 2.5, 7.6);
   insert into saved_report (company_id, name, sections)
     values (c, 'No leak found ' || label, '{"summary": "We found no leak."}');
+  insert into team_profile (company_id, user_id, name, phone, emergency_name, emergency_phone)
+    values (c, t, 'Tech ' || label, '(602) 555-0101', 'Pat ' || label, '(602) 555-0102');
   -- Company texting: a number per shop, made unique by the label.
   insert into phone_line (company_id, number)
     values (c, '+1555' || lpad((abs(hashtext(label)) % 10000000)::text, 7, '0'));
@@ -172,7 +174,16 @@ begin
       format('%s: %s own company rows', label, case when can_write then 'updates' else 'cannot update' end));
   end if;
 
-  if t.insert_columns is not null then
+  if t.insert_columns is not null and not can_read then
+    -- Nothing to copy from (a manager-only table, read as a tech): row security refuses the
+    -- insert before any other column is checked.
+    return next throws_ok(
+      format('insert into public.%I (id, company_id) values (gen_random_uuid(), %L)', tbl, other_company),
+      '42501', null, format('%s: cannot insert into other company', label));
+    return next throws_ok(
+      format('insert into public.%I (id, company_id) values (gen_random_uuid(), %L)', tbl, my_company),
+      '42501', null, format('%s: cannot insert into own company', label));
+  elsif t.insert_columns is not null then
     select string_agg(format('%I', c), ', ') into cols from unnest(t.insert_columns) c;
     return next throws_ok(
       format('insert into public.%I (id, company_id, %s) select gen_random_uuid(), %L, %s from public.%I where company_id = %L limit 1',

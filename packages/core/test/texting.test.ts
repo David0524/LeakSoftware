@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { conversationPreview, formatPhone, inBusinessHours, optKeyword, toE164 } from "../src";
+import {
+  conversationPreview,
+  formatPhone,
+  inBusinessHours,
+  optKeyword,
+  toE164,
+  formatPhoneTyping,
+  phoneCaret,
+} from "../src";
 
 describe("phone numbers", () => {
   it("reads US numbers however they're typed", () => {
@@ -52,5 +60,53 @@ describe("keywords and previews", () => {
     expect(conversationPreview({ kind: "text", body: "", pictures: 2 })).toBe("2 pictures");
     expect(conversationPreview({ kind: "call", status: "missed" })).toBe("Missed call");
     expect(conversationPreview({ kind: "call", status: "voicemail" })).toBe("Voicemail");
+  });
+});
+
+describe("phone numbers as they're typed (owner, 2026-10-20)", () => {
+  it("adds the parentheses, space and dash", () => {
+    const steps = [
+      "6",
+      "60",
+      "602",
+      "6025",
+      "60255",
+      "602555",
+      "6025550",
+      "60255501",
+      "6025550142",
+    ];
+    expect(steps.map(formatPhoneTyping)).toEqual([
+      "(6",
+      "(60",
+      "(602",
+      "(602) 5",
+      "(602) 55",
+      "(602) 555",
+      "(602) 555-0",
+      "(602) 555-01",
+      "(602) 555-0142",
+    ]);
+    expect(formatPhoneTyping("(602) 555-0142")).toBe("(602) 555-0142");
+    expect(formatPhoneTyping("602.555.0142")).toBe("(602) 555-0142");
+    expect(formatPhoneTyping("")).toBe("");
+  });
+
+  it("keeps a leading 1 as the country code", () => {
+    expect(formatPhoneTyping("16025550142")).toBe("+1 (602) 555-0142");
+    expect(formatPhoneTyping("+1 602")).toBe("+1 (602");
+  });
+
+  it("leaves other numbers as typed", () => {
+    expect(formatPhoneTyping("+44 20 7946 0958")).toBe("+44 20 7946 0958");
+    expect(formatPhoneTyping("602 555 0142 ext 5")).toBe("602 555 0142 ext 5");
+    expect(formatPhoneTyping("60255501421")).toBe("60255501421");
+  });
+
+  it("puts the caret after the same digit", () => {
+    expect(phoneCaret("(602) 555-0142", 3)).toBe(4);
+    expect(phoneCaret("(602) 555-0142", 4)).toBe(7);
+    expect(phoneCaret("(602) 555-0142", 10)).toBe(14);
+    expect(phoneCaret("(602", 0)).toBe(0);
   });
 });

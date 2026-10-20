@@ -116,11 +116,13 @@ export async function markStop(_: FormState, form: FormData): Promise<FormState>
     .single();
   if (!job) return { error: "Job not found." };
   if (job.type === "maintenance") {
-    if (!complete) return { error: "Reopen the visit from its page." };
+    // Not complete: Reopen Visit, back to in progress (owner, 2026-10-20).
     const f = new FormData();
     f.set("job", jobId);
-    f.set("to", "done");
-    return changeJobStatus({}, f);
+    f.set("to", complete ? "done" : "in_progress");
+    const result = await changeJobStatus({}, f);
+    revalidatePath("/today");
+    return result;
   }
   const day = localDate(new Date(), office.company.timezone);
   const { error } = await db

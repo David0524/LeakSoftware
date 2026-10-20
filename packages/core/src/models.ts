@@ -90,6 +90,22 @@ export function markCompleteValues(
 }
 
 /**
+ * What a done stop on Today offers (owner, 2026-10-20: "Maintenance jobs don't have a reopen
+ * visit button on the Today page"): a completed maintenance visit, Reopen Visit (back to in
+ * progress); a leak or repair stop marked done today, Mark Not Complete; otherwise nothing.
+ */
+export function todayUndo(
+  job: { type: string; status: string; stop_done_on?: string | null },
+  day: string,
+): { label: "Reopen Visit" | "Mark Not Complete"; reopen: boolean } | null {
+  if (job.type === "maintenance")
+    return job.status === "done" ? { label: "Reopen Visit", reopen: true } : null;
+  return job.stop_done_on === day && (job.status === "scheduled" || job.status === "in_progress")
+    ? { label: "Mark Not Complete", reopen: false }
+    : null;
+}
+
+/**
  * Whether the job page has a Wrap-Up section (report, signatures, quotes, invoice). Maintenance
  * visits don't (owner, 2026-10-19: "For maintenance, get rid of the wrap up tab entirely"):
  * they end with Complete Job, are billed monthly, and quote repairs from Details.
