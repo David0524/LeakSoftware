@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { setPoolLocation, setShopLocation, type RouteResult } from "@/app/actions/routes";
 import { buttonClass } from "./ui";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
 function here(): Promise<{ lat: number; lng: number }> {
   return new Promise((resolve, reject) => {
@@ -44,8 +45,10 @@ export function MarkLocationHere({
         const p = await here();
         setResult(
           target === "shop"
-            ? await setShopLocation(p.lat, p.lng)
-            : await setPoolLocation(target.property, p.lat, p.lng),
+            ? await whenOffline(setShopLocation(p.lat, p.lng), { error: NO_CONNECTION })
+            : await whenOffline(setPoolLocation(target.property, p.lat, p.lng), {
+                error: NO_CONNECTION,
+              }),
         );
       } catch (e) {
         setResult({ error: (e as Error).message });

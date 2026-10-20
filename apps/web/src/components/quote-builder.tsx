@@ -19,6 +19,7 @@ import {
 import type { QuoteRow } from "@/lib/data";
 import { useConfirm } from "./sheet";
 import { Button, Field, Select, buttonClass } from "./ui";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
 // The phone's Quote tab for a browser (M9.5): price the findings from the price book, add
 // custom lines, adjust quantities and prices, and give a discount. Sending is in QuotePanel.
@@ -30,7 +31,7 @@ function useRun(): { pending: boolean; error: string | null; run: Run } {
   const [error, setError] = useState<string | null>(null);
   const run: Run = (work) =>
     start(async () => {
-      const r = await work();
+      const r = await whenOffline(work(), { ok: false as const, error: NO_CONNECTION });
       setError(r.ok ? null : r.error);
     });
   return { pending, error, run };

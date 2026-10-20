@@ -56,6 +56,7 @@ import {
 import { NavPlus } from "@/components/nav-bar";
 import { Suspense } from "react";
 import { ScreenTip } from "@/components/screen-tip";
+import { scheduleDate } from "@/lib/limits";
 
 export const metadata: Metadata = { title: "Schedule · Sundeck Pro" };
 
@@ -141,7 +142,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   const view: ScheduleView =
     params.view === "week" ? "week" : params.view === "month" ? "month" : "day";
   const today = shopToday(office);
-  const date = isDateString(params.date) ? params.date : today;
+  // A bad date in the link (9999-99-99, Feb 31) shows today, not an error page.
+  const date = isDateString(params.date) && scheduleDate(params.date) ? params.date : today;
   const days = scheduleDays(view, date);
   // Settings, routes, and Needs a Time all load at once.
   const ctxP = routeContext(office);

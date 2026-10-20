@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import type { JobStatus } from "@leakbook/core";
 import { changeJobStatus } from "@/app/actions/inspection";
+import { orOffline } from "@/lib/offline";
 import { NEXT_STEP_LABELS, nextStepButtons, type NextStep } from "@/lib/next-step";
 import { CompleteJobButton, type SendPrompt } from "./job-work";
 import { requestNextStep, useDraftWritable, useTyping } from "./next-step-events";
@@ -90,7 +91,7 @@ function StartJob({ jobId }: { jobId: string }) {
             const form = new FormData();
             form.set("job", jobId);
             form.set("to", "in_progress");
-            const result = await changeJobStatus({}, form);
+            const result = await orOffline(changeJobStatus)({}, form);
             setError(result.error ?? null);
           })
         }

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { removeSignature } from "@/app/actions/media";
 import { useConfirm } from "./sheet";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
 /**
  * Remove a signature, after a confirm (apple-design: destructive actions get a warning).
@@ -30,7 +31,10 @@ export function RemoveSignature({ id, jobId, name }: { id: string; jobId: string
           )
             return;
           start(async () => {
-            const done = await removeSignature({ id, jobId });
+            const done = await whenOffline(removeSignature({ id, jobId }), {
+              ok: false as const,
+              error: NO_CONNECTION,
+            });
             setError(done.ok ? null : done.error);
           });
         }}

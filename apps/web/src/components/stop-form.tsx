@@ -4,9 +4,10 @@ import { useActionState } from "react";
 import { stopFollowups } from "@/app/actions/stop";
 import { Banner } from "./doc-ui";
 import { Button } from "./ui";
+import { orOffline } from "@/lib/offline";
 
 export function StopForm({ token, shop }: { token: string; shop: string }) {
-  const [state, action, pending] = useActionState(stopFollowups, {});
+  const [state, action, pending] = useActionState(orOffline(stopFollowups), {});
   if (state.message)
     return (
       <Banner tone="success">

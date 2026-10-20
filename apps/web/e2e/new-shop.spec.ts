@@ -126,7 +126,7 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   await page.getByLabel("Email", { exact: true }).fill(CUSTOMER.email);
   await page.getByLabel("Street address").fill("88 Lagoon Ln");
   await page.getByLabel("City").fill("Chandler");
-  await page.getByLabel("State").fill("AZ");
+  await page.getByLabel("State", { exact: true }).fill("AZ");
   await page.getByLabel("Date").fill(new Date().toISOString().slice(0, 10));
   await page.getByLabel("Tech", { exact: true }).selectOption({ label: OWNER.name });
   await page

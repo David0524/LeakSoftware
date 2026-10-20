@@ -22,6 +22,7 @@ import { redeemCode, saveOnboarding, startCheckout } from "@/app/actions/onboard
 import { Logo } from "./logo";
 import { Segmented } from "./segmented";
 import { Button, cx } from "./ui";
+import { orOffline } from "@/lib/offline";
 
 // New-shop onboarding (owner, 2026-10-16), planned with the app-onboarding-questionnaire and
 // apple-design skills: a goal, what's in the way, how Sundeck Pro helps, a few choices that set
@@ -841,7 +842,7 @@ function TrialOffer({
   title: (text: ReactNode, sub?: ReactNode) => ReactNode;
 }) {
   const content = ONBOARDING[pkg];
-  const [state, act, pending] = useActionState(startCheckout, {});
+  const [state, act, pending] = useActionState(orOffline(startCheckout), {});
   const tier = planTier(planForServices(services), people);
   const price = dollars(servicesPriceCents(services, people));
   // Every new shop ends on this payment page (owner, 2026-10-16). Without Stripe on the
@@ -921,7 +922,7 @@ function TrialOffer({
 
 /** A demo code instead of a card (VIP26): the shop gets in with no card and no charge. */
 function DemoCode() {
-  const [state, act, pending] = useActionState(redeemCode, {});
+  const [state, act, pending] = useActionState(orOffline(redeemCode), {});
   const error = state.fields?.code;
   return (
     <form action={act} className="mt-6">

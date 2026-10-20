@@ -90,7 +90,12 @@ export function AccountMenu({
             )}
           </div>
           {companies.length > 1 ? (
-            <form action={switchCompany} className="flex items-center gap-2 px-4 pb-2">
+            <form
+              action={switchCompany}
+              // Switching submits at once: nothing to discard.
+              data-no-discard
+              className="flex items-center gap-2 px-4 pb-2"
+            >
               <label htmlFor="company-switch" className="sr-only">
                 Company
               </label>

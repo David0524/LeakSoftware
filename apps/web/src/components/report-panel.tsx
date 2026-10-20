@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/reports";
 import { reviewWithCustomer } from "@/app/actions/sign-off";
 import type { ReportRow } from "@/lib/data";
+import { orOffline } from "@/lib/offline";
 import { SavedReportActions, type SavedReportOption } from "./saved-reports";
 import { CopyLink } from "./settings-forms";
 import { setDraftWritable, useNextStep } from "./next-step-events";
@@ -45,9 +46,9 @@ export function ReportPanel({
   saved?: SavedReportOption[];
   canSave?: boolean;
 }) {
-  const [draftState, draftAction, drafting] = useActionState(writeDraft, {});
-  const [sendState, sendAction, sending] = useActionState(sendReportAction, {});
-  const [reviewState, reviewAction, reviewing] = useActionState(reviewWithCustomer, {});
+  const [draftState, draftAction, drafting] = useActionState(orOffline(writeDraft), {});
+  const [sendState, sendAction, sending] = useActionState(orOffline(sendReportAction), {});
+  const [reviewState, reviewAction, reviewing] = useActionState(orOffline(reviewWithCustomer), {});
   const problems = draft?.ai_draft?.problems ?? [];
   // A submit button's name/value is not passed to a formAction, so each one sets its channel.
   const sendVia = (form: FormData, channel: "email" | "sms_device") => {
@@ -264,6 +265,8 @@ export function ReportPanel({
                     {s.title}
                   </label>
                   <textarea
+                    // Saves by itself: never counts as unsaved (Discard changes).
+                    data-autosave
                     id={`${draft.id}-${s.key}`}
                     name="text"
                     defaultValue={s.text}

@@ -13,6 +13,7 @@ import {
 } from "react";
 import { setUnread } from "@/app/actions/texting";
 import { cx } from "./ui";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
 const ACTION_WIDTH = 88;
 /** A swipe past this share of the row acts on release (a "full swipe", as in Messages). */
@@ -87,7 +88,7 @@ export function InboxRow({
     const next = !isUnread;
     setShown({ value: next, was: unread });
     start(async () => {
-      const r = await setUnread(id, next);
+      const r = await whenOffline(setUnread(id, next), { error: NO_CONNECTION });
       if (r.error) setShown(null);
       router.refresh();
     });

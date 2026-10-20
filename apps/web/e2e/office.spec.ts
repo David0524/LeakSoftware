@@ -361,7 +361,7 @@ test("the office adds a job for a new customer, with its checklist ready", async
   await page.getByLabel("Phone").fill("(480) 555-0199");
   await page.getByLabel("Street address").fill("12 Office Way");
   await page.getByLabel("City").fill("Tempe");
-  await page.getByLabel("State").fill("az");
+  await page.getByLabel("State", { exact: true }).fill("az");
   await page.getByLabel("Has a spa").check();
   const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
   await page.getByLabel("Date").fill(tomorrow);
@@ -471,7 +471,7 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
   await page.getByLabel("Name").fill(name);
   await page.getByLabel("Street address").fill("40 Phone Lane");
   await page.getByLabel("City").fill("Mesa");
-  await page.getByLabel("State").fill("AZ");
+  await page.getByLabel("State", { exact: true }).fill("AZ");
   await page.getByLabel("Date").fill(new Date().toISOString().slice(0, 10));
   await page.getByLabel("Tech", { exact: true }).selectOption({ label: "Tony Tech" });
   await page.getByRole("button", { name: "Create Job" }).click();

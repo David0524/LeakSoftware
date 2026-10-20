@@ -12,6 +12,7 @@ import {
 import { Banner } from "./doc-ui";
 import { CameraIcon, PhoneIcon } from "./icons";
 import { Button, cx, iconButtonClass } from "./ui";
+import { NO_CONNECTION, orOffline, whenOffline } from "@/lib/offline";
 
 // The Messages inbox's interactive parts (company texting, owner 2026-10-16).
 
@@ -41,7 +42,7 @@ export function Composer({
   const [chosen, setChosen] = useState(0);
   // Sent: clear the form, and open a new conversation. Done in the action, not an effect.
   const [state, action, pending] = useActionState(async (prev: SendState, data: FormData) => {
-    const next = await sendMessage(prev, data);
+    const next = await orOffline(sendMessage)(prev, data);
     if (next.sentAt) {
       form.current?.reset();
       setChosen(0);
@@ -142,7 +143,11 @@ export function CallButton({ conversationId, name }: { conversationId: string; n
         disabled={pending}
         aria-label={`Call ${name} from the company number`}
         className={iconButtonClass("disabled:opacity-50")}
-        onClick={() => start(async () => setResult(await callCustomer(conversationId)))}
+        onClick={() =>
+          start(async () =>
+            setResult(await whenOffline(callCustomer(conversationId), { error: NO_CONNECTION })),
+          )
+        }
       >
         <PhoneIcon />
       </button>
@@ -172,7 +177,7 @@ export function MarkUnreadButton({ conversationId }: { conversationId: string })
         disabled={pending}
         onClick={() =>
           start(async () => {
-            const r = await setUnread(conversationId, true);
+            const r = await whenOffline(setUnread(conversationId, true), { error: NO_CONNECTION });
             if (r.error) setError("Couldn’t mark it unread. Try again.");
             else if (window.matchMedia("(min-width: 768px)").matches) router.refresh();
             else router.push("/messages?list=1");

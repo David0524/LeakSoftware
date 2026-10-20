@@ -47,6 +47,7 @@ import {
 import { AddressLink, OpenRouteInMaps } from "./open-in-maps";
 import { Sheet } from "./sheet";
 import { Button, Notice, StatusBadge, buttonClass, cx } from "./ui";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
 // The schedule as routes (routing, owner request 2026-10-13): each tech's day in order with
 // the driving between stops. Drag a job to another place, tech, or day (mouse, touch, or
@@ -178,7 +179,7 @@ export function RouteBoard({
   function run(move: Move | null, call: () => Promise<RouteResult>) {
     start(async () => {
       if (move) optimistic(move);
-      const r = await call();
+      const r = await whenOffline(call(), { error: NO_CONNECTION });
       setResult({ ...r, at: Date.now() });
     });
   }
@@ -940,7 +941,7 @@ export function Suggestions({
   const close = useCallback(() => setState(null), []);
   function load() {
     start(async () => {
-      const r = await suggestTimes(target);
+      const r = await whenOffline(suggestTimes(target), { error: NO_CONNECTION });
       setState({ list: r.suggestions, note: r.note, error: r.error });
     });
   }

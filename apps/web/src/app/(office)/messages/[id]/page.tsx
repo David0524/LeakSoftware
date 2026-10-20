@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { isUuid } from "@/lib/uuid";
 import { JOB_TYPE_LABELS, dateFormat, formatAddress, formatPhone } from "@leakbook/core";
 import { ConversationList, Thread, conversationName } from "@/components/inbox";
 import { ScreenTip } from "@/components/screen-tip";
@@ -27,6 +28,7 @@ export const metadata: Metadata = { title: "Messages · Sundeck Pro" };
  */
 export default async function ConversationPage({ params }: PageProps<"/messages/[id]">) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const office = await getOffice();
   const [thread, line, conversations, team] = await Promise.all([
     getThread(office, id),

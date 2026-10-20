@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  startTransition,
   use,
   useActionState,
   useEffect,
@@ -9,9 +10,11 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { requestFormReset } from "react-dom";
 import { contrastGrade, contrastRatio, isHexColor } from "@leakbook/core";
 import { tokens } from "@leakbook/tokens";
 import type { FormState } from "@/app/actions/auth";
+import { orOffline } from "@/lib/offline";
 import { useConfirm } from "./sheet";
 import { Banner } from "./doc-ui";
 import {
@@ -96,8 +99,13 @@ export function SettingsForm({
   // In a sheet, a save that worked closes it. Called from the action itself (not an effect),
   // so it still happens when the save removes the row the sheet belongs to.
   const [state, formAction, pending] = useActionState(async (prev: FormState, data: FormData) => {
-    const next = await action(prev, data);
-    if (next.message && !next.error) done.current?.(next.message);
+    const next = await orOffline(action)(prev, data);
+    if (next.message && !next.error) {
+      done.current?.(next.message);
+      // Cleared only after a save that worked: one that failed keeps what was typed (a
+      // form's action prop cleared it either way, so a missing date emptied New Job).
+      if (form.current) requestFormReset(form.current);
+    }
     return next;
   }, {});
   const [ask, confirmSheet] = useConfirm();
@@ -139,7 +147,15 @@ export function SettingsForm({
     </Button>
   );
   return (
-    <form ref={form} action={formAction} className={cx(!inline && "space-y-4", className)}>
+    <form
+      ref={form}
+      onSubmit={(e) => {
+        e.preventDefault();
+        const data = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
+        startTransition(() => formAction(data));
+      }}
+      className={cx(!inline && "space-y-4", className)}
+    >
       <FieldErrors value={state.fields}>{children}</FieldErrors>
       {full ? (
         <div className="space-y-3">

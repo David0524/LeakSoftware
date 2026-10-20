@@ -3,10 +3,11 @@
 import { useActionState } from "react";
 import { manageBilling, subscribe } from "@/app/actions/billing";
 import { Button, Notice } from "./ui";
+import { orOffline } from "@/lib/offline";
 
 export function BillingButton({ kind }: { kind: "subscribe" | "manage" }) {
   const [state, action, pending] = useActionState(
-    () => (kind === "subscribe" ? subscribe() : manageBilling()),
+    orOffline(() => (kind === "subscribe" ? subscribe() : manageBilling())),
     {},
   );
   return (

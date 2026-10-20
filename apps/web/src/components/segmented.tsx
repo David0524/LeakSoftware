@@ -69,12 +69,17 @@ export function Segmented<T extends string>({
     if (segmentAt(e) !== value) return;
     dragging.current = true;
     setHeld(true);
-    e.currentTarget.setPointerCapture(e.pointerId);
   }
   function onPointerMove(e: PointerEvent<HTMLDivElement>) {
     if (!dragging.current) return;
     const next = segmentAt(e);
-    if (next !== null && next !== value) onChange(next);
+    if (next === null || next === value) return;
+    // Capture only once the thumb really moves: captured from the start, a mouse click on
+    // the chosen segment went to the track instead, so tapping the chosen checklist answer
+    // again couldn't clear it.
+    if (!e.currentTarget.hasPointerCapture(e.pointerId))
+      e.currentTarget.setPointerCapture(e.pointerId);
+    onChange(next);
   }
   function onPointerEnd() {
     dragging.current = false;

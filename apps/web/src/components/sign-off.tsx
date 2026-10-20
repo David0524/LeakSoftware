@@ -15,6 +15,7 @@ import { SignaturePad, uploadSignature } from "./media-work";
 import { Segmented } from "./segmented";
 import { Banner } from "./doc-ui";
 import { Button, FieldGroup, GroupedField, buttonClass } from "./ui";
+import { isNoConnection, NO_CONNECTION } from "@/lib/offline";
 
 /**
  * The bottom of the report on the review screen: the statement in plain words, the
@@ -76,7 +77,7 @@ export function SignOff({
       if (!done.ok) throw new Error(done.error);
       router.replace(`/jobs/${jobId}#wrap-up`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(isNoConnection(e) ? NO_CONNECTION : e instanceof Error ? e.message : String(e));
       setBusy(null);
     }
   }

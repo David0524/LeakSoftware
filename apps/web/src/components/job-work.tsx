@@ -34,6 +34,7 @@ import {
   removeItemConfirm,
 } from "@leakbook/core";
 import type { FormState } from "@/app/actions/auth";
+import { orOffline } from "@/lib/offline";
 import {
   addComponent,
   changeJobStatus,
@@ -83,7 +84,9 @@ function useRun() {
         before?.();
         const form = new FormData();
         for (const [k, v] of Object.entries(fields)) form.set(k, v);
-        const result = await action({}, form);
+        // No signal: the request never reached the server. Say so here instead of the
+        // whole page giving way to the error screen.
+        const result = await orOffline(action)({}, form);
         setError(result.error ?? Object.values(result.fields ?? {})[0] ?? null);
         after?.(result);
         resolve(result);
@@ -678,6 +681,7 @@ function WhereField({
     <div className="pt-2">
       <input
         aria-label={`Where: ${item}`}
+        data-autosave
         title="Where"
         defaultValue={value ?? ""}
         placeholder="Where? Under the deck, at the throat…"

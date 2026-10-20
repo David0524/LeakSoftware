@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import dev from "../../../config/supabase-dev.json";
+import { malformedLink } from "@/lib/limits";
 
 const url = process.env.SUPABASE_URL || dev.url;
 const key = process.env.SUPABASE_ANON_KEY || dev.publishableKey;
@@ -45,6 +46,17 @@ export async function proxy(request: NextRequest) {
     signIn.pathname = "/sign-in";
     signIn.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
     return NextResponse.redirect(signIn);
+  }
+  // A job, customer, conversation, or customer page link with a mistyped id or token answers
+  // 404 before the page starts streaming (once it streams, the status is already 200). Ids that
+  // are well formed but unknown are found out by the page itself, which shows the same Page Not
+  // Found.
+  if (malformedLink(path)) {
+    const missing = request.nextUrl.clone();
+    missing.pathname = "/_not-found";
+    const notFound = NextResponse.rewrite(missing, { status: 404 });
+    for (const c of response.cookies.getAll()) notFound.cookies.set(c);
+    return notFound;
   }
   return response;
 }

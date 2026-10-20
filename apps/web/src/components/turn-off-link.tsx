@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { turnOffLink } from "@/app/actions/links";
 import { useConfirm } from "./sheet";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
 /** Turn Off for one customer link, after an iOS-style confirmation. */
 export function TurnOffLink({ id, jobId, what }: { id: string; jobId: string; what: string }) {
@@ -24,7 +25,7 @@ export function TurnOffLink({ id, jobId, what }: { id: string; jobId: string; wh
             });
             if (!ok) return;
             start(async () => {
-              const r = await turnOffLink(id, jobId);
+              const r = await whenOffline(turnOffLink(id, jobId), { error: NO_CONNECTION });
               setError(r.error ?? null);
             });
           }}

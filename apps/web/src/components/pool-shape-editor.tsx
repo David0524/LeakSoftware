@@ -25,6 +25,7 @@ import { DiagramShapes, LandmarkArt } from "./pool-diagram";
 import { Segmented } from "./segmented";
 import { useConfirm } from "./sheet";
 import { Button, Checkbox, cx } from "./ui";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
 // The Pool Shape sheet (owner, 2026-10-19): ten tiles in two rows of five (the seven preset
 // shapes, Landmarks, Draw, and Clear), Mirror and Has a spa, and the drawing itself, where the
@@ -585,7 +586,10 @@ export function PoolShapeEditor({
         disabled={saving}
         onClick={async () => {
           setSaving(true);
-          const r = await savePoolDiagram({ jobId, propertyId, shape, hasSpa, layout: next });
+          const r = await whenOffline(
+            savePoolDiagram({ jobId, propertyId, shape, hasSpa, layout: next }),
+            { ok: false as const, error: NO_CONNECTION },
+          );
           setSaving(false);
           if (!r.ok) return setError(r.error);
           onDone();

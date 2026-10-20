@@ -4,6 +4,7 @@ import { formatCents, invoiceShareText } from "@leakbook/core";
 import { adminClient } from "./admin";
 import { EmailNotConfigured, emailConfigured, fromAddress, sendEmail } from "./email";
 import { ccList, emailRefusal } from "./usage";
+import { Refusal, dbFailure } from "./failures";
 
 // Invoices (M9): sending and receipts, shared by the office (cookie session), the phone
 // (bearer token), and Stripe webhooks (service role). `db` acts as whoever is calling; the
@@ -41,7 +42,7 @@ export interface SendInvoiceResult {
 
 async function rpc<T>(db: SupabaseClient, fn: string, args: Record<string, unknown>): Promise<T> {
   const { data, error } = await db.rpc(fn, args);
-  if (error) throw new Error(error.message);
+  if (error) throw dbFailure(error);
   return data as T;
 }
 
@@ -70,7 +71,7 @@ export async function sendInvoice(
 ): Promise<SendInvoiceResult> {
   const to = opts.to?.trim() || null;
   if (opts.channel === "email") {
-    if (!to || !/^\S+@\S+\.\S+$/.test(to)) throw new Error("Enter the customer’s email.");
+    if (!to || !/^\S+@\S+\.\S+$/.test(to)) throw new Refusal("Enter the customer’s email.");
     if (!emailConfigured()) throw new EmailNotConfigured();
   }
   const sent = await rpc<{ token: string; status: string }>(db, "send_invoice", {
@@ -97,7 +98,7 @@ export async function sendInvoice(
   const cc = ccFor(d, to!);
   const { data: inv } = await db.from("invoice").select("company_id").eq("id", invoiceId).single();
   const refusal = await emailRefusal(db, inv?.company_id as string, 1 + cc.length);
-  if (refusal) throw new Error(refusal);
+  if (refusal) throw new Refusal(refusal);
   const sentTo = [to!, ...cc].join(", ");
   const greeting = d.customer?.name ? `Hi ${d.customer.name},` : "Hello,";
   const what = `Invoice${d.number ? ` #${d.number}` : ""} for ${formatCents(d.total_cents)}`;

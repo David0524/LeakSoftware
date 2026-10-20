@@ -21,7 +21,15 @@ export interface Autosave {
   pause(): void;
   /** Save again, from a new baseline when given (the replacement text now on screen). */
   reset(initial?: string): void;
+  /**
+   * The stored value changed from outside (an answer change cleared Where, another device
+   * saved): it becomes the baseline, so typing the old text again still saves.
+   */
+  rebase(stored: string): void;
 }
+
+/** Shown when a save couldn't reach the server; the text waits and saves on reconnect. */
+export const AUTOSAVE_OFFLINE = "Not saved yet. It saves when you’re back online.";
 
 /**
  * Debounced saving of one value. `save` returns an error message, or null when it worked;
@@ -56,8 +64,9 @@ export function createAutosave({
     let error: string | null | undefined;
     try {
       error = await save(value);
-    } catch (e) {
-      error = e instanceof Error ? e.message : String(e);
+    } catch {
+      // The request didn't reach the server (no signal): keep the text for the next try.
+      error = AUTOSAVE_OFFLINE;
     }
     // Replaced while it was saving: don't count it as the baseline.
     if (paused) {
@@ -65,6 +74,9 @@ export function createAutosave({
       return;
     }
     if (error) {
+      // Nothing newer typed since: keep it waiting, so leaving the field or the screen, or
+      // the signal coming back, tries again instead of losing it.
+      if (waiting === null) waiting = value;
       onStatus?.({ error });
       return;
     }
@@ -96,6 +108,9 @@ export function createAutosave({
       waiting = null;
       paused = false;
       if (next !== undefined) saved = next;
+    },
+    rebase(stored) {
+      saved = stored;
     },
   };
 }

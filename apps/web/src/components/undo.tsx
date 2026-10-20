@@ -54,7 +54,23 @@ export function useAutosave(initial: string, save: (value: string) => Promise<st
   useEffect(() => {
     saver.setSave(save);
   });
-  useEffect(() => () => void saver.flush(), [saver]);
+  // The stored value changed from outside (e.g. an answer change cleared Where).
+  useEffect(() => saver.rebase(initial), [saver, initial]);
+  useEffect(() => {
+    // Save when the phone switches apps or locks, and when the signal comes back after a
+    // failed save (nothing typed is lost).
+    const now = () => void saver.flush();
+    const hidden = () => document.visibilityState === "hidden" && now();
+    window.addEventListener("online", now);
+    document.addEventListener("visibilitychange", hidden);
+    window.addEventListener("pagehide", now);
+    return () => {
+      window.removeEventListener("online", now);
+      document.removeEventListener("visibilitychange", hidden);
+      window.removeEventListener("pagehide", now);
+      void saver.flush();
+    };
+  }, [saver]);
   return {
     status,
     change: saver.change,

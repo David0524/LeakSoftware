@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { flushSync } from "react-dom";
 import { dateFormat } from "@leakbook/core";
 import { sendVisitReportAction } from "@/app/actions/reports";
+import { orOffline } from "@/lib/offline";
 import { CopyLink } from "./settings-forms";
 import { Button, Notice } from "./ui";
 
@@ -39,7 +40,7 @@ export function VisitReportPanel({
   }[];
   timeZone: string;
 }) {
-  const [state, action, sending] = useActionState(sendVisitReportAction, {});
+  const [state, action, sending] = useActionState(orOffline(sendVisitReportAction), {});
   const [to, setTo] = useState(customerEmail ?? "");
   // Which button sent the form (set on click, so it doesn't depend on the submitter).
   const [channel, setChannel] = useState("email");

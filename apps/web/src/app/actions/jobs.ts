@@ -20,6 +20,8 @@ import {
 } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
 import { getCompany, mayMakeJobs } from "@/lib/data";
+import { friendlyDbError, jobDateError } from "@/lib/limits";
+import { isUuid } from "@/lib/uuid";
 import { parsePlanRepeat } from "@/lib/plan-repeat";
 import { createClient } from "@/lib/supabase/server";
 import { locateProperty } from "@/server/route-days";
@@ -34,7 +36,8 @@ export async function scheduleJob(_: FormState, form: FormData): Promise<FormSta
   const date = text(form, "date");
   const time = text(form, "time");
   const hours = Number(text(form, "hours") || "2");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { fields: { date: "Choose a date." } };
+  const badDate = jobDateError(date);
+  if (badDate) return { fields: { date: badDate } };
   if (!/^\d{2}:\d{2}$/.test(time)) return { fields: { time: "Choose a start time." } };
   if (!(hours > 0 && hours <= 24)) return { fields: { hours: "Enter 0.5 to 24 hours." } };
   if (
@@ -47,18 +50,24 @@ export async function scheduleJob(_: FormState, form: FormData): Promise<FormSta
   const start = zonedTimeToIso(date, time, office.company.timezone);
   const end = new Date(new Date(start).getTime() + hours * 3_600_000).toISOString();
   const supabase = await createClient();
-  const { data: job } = await supabase
-    .from("job")
-    .select("status, scheduled_start, assigned_user_id")
-    .eq("id", id)
-    .maybeSingle();
+  // Read as the signed-in member, in this shop: an id from anywhere else finds nothing, so
+  // nobody else's techs are told about it (break testing, 2026-10-20).
+  const { data: job } = isUuid(id)
+    ? await supabase
+        .from("job")
+        .select("status, scheduled_start, assigned_user_id")
+        .eq("id", id)
+        .eq("company_id", office.company.id)
+        .maybeSingle()
+    : { data: null };
+  if (!job) return { error: "This job is gone. Refresh the page." };
   const before = job as {
     status: JobStatus;
     scheduled_start: string | null;
     assigned_user_id: string | null;
   } | null;
   const status = before?.status;
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("job")
     .update({
       assigned_user_id: text(form, "tech") || null,
@@ -68,8 +77,10 @@ export async function scheduleJob(_: FormState, form: FormData): Promise<FormSta
       ...(status === "unscheduled" ? { status: "scheduled" } : {}),
     })
     .eq("id", id)
-    .eq("company_id", office.company.id);
-  if (error) return { error: error.message };
+    .eq("company_id", office.company.id)
+    .select("id");
+  if (error) return { error: friendlyDbError(error.message) };
+  if (!updated?.length) return { error: "This job is gone. Refresh the page." };
   revalidatePath(`/jobs/${id}`);
   revalidatePath("/schedule");
   revalidatePath("/today");
@@ -240,6 +251,8 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
   for (const [k, v] of Object.entries(validateNewJob(input))) if (v) fields[FIELD[k] ?? k] = v;
   if (existing && !customerId) fields.customer = "Pick a customer.";
   if (scheduled && !input.scheduleDate) fields.date = "Pick a date.";
+  else if (scheduled && !fields.date && jobDateError(input.scheduleDate))
+    fields.date = jobDateError(input.scheduleDate)!;
   const hours = Number(text(form, "hours") || "2");
   if (scheduled && !(hours > 0 && hours <= 24)) fields.hours = "Enter 0.5 to 24 hours.";
   const tech = text(form, "tech") || null;
@@ -411,7 +424,7 @@ export async function createJobAction(_: FormState, form: FormData): Promise<For
     },
     components,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   // Coordinates for routing, from the address (when the routing service is set up).
   const { data: made } = await supabase
     .from("job")

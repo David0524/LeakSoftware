@@ -10,6 +10,7 @@ import {
 import { saveSavedReport } from "@/app/actions/settings";
 import { Sheet, useConfirm } from "./sheet";
 import { Button, Notice, cx } from "./ui";
+import { orOffline } from "@/lib/offline";
 
 export interface SavedReportOption {
   id: string;
@@ -50,7 +51,7 @@ export function SavedReportActions({
   const [picking, setPicking] = useState(false);
   const [naming, setNaming] = useState(false);
   const [confirm, confirmSheet] = useConfirm();
-  const [state, saveAction, saving] = useActionState(saveSavedReport, {});
+  const [state, saveAction, saving] = useActionState(orOffline(saveSavedReport), {});
   const [sections, setSections] = useState<FinalSection[]>([]);
   // Saved: close the naming sheet (adjusted while rendering, as React suggests for this).
   const [seen, setSeen] = useState(state);

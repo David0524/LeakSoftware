@@ -159,7 +159,7 @@ export default async function PriceBookPage() {
                   .join(" · ") || undefined
               }
               value={
-                <span className="tabular-nums">
+                <span className="inline-block max-w-48 tabular-nums [overflow-wrap:anywhere]">
                   <span className="text-text">{formatCents(item.price_cents)}</span> / {item.unit}
                 </span>
               }

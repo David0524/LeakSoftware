@@ -16,6 +16,7 @@ import {
 } from "@leakbook/core";
 import { Sheet } from "./sheet";
 import { Button, cx, Notice, Select } from "./ui";
+import { orOffline } from "@/lib/offline";
 
 // The pool chemical calculator (owner, 2026-10-16). Live: every change recalculates. Opened for
 // a pool, Submit saves the left side (gallons, readings, products) to the pool's chemical log
@@ -194,7 +195,7 @@ export function ChemCalculator({
    */
   inline?: boolean;
 }) {
-  const [submitted, submit, submitting] = useActionState(submitReadings, {});
+  const [submitted, submit, submitting] = useActionState(orOffline(submitReadings), {});
   const [gallonsText, setGallonsText] = useState(
     initialGallons ? withCommas(String(initialGallons)) : "",
   );

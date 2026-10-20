@@ -6,6 +6,7 @@ import { moveJob, type RouteResult } from "@/app/actions/routes";
 import { Suggestions } from "./route-board";
 import { Sheet } from "./sheet";
 import { Button, Checkbox, Field, Notice, Select } from "./ui";
+import { NO_CONNECTION, orOffline, whenOffline } from "@/lib/offline";
 
 type ScheduleFormProps = Parameters<typeof ScheduleForm>[0];
 
@@ -97,7 +98,7 @@ function ScheduleForm({
   /** Called with the confirmation after a save or a picked suggestion, e.g. to close a sheet. */
   onSaved?: (message: string) => void;
 }) {
-  const [state, action, pending] = useActionState(scheduleJob, {});
+  const [state, action, pending] = useActionState(orOffline(scheduleJob), {});
   const [picked, setPicked] = useState<RouteResult>({});
   const [placing, start] = useTransition();
   const saved = useRef(onSaved);
@@ -119,7 +120,10 @@ function ScheduleForm({
             onPick={(s) =>
               start(async () =>
                 setPicked(
-                  await moveJob({ job: jobId, tech: s.techId, date: s.date, index: s.position }),
+                  await whenOffline(
+                    moveJob({ job: jobId, tech: s.techId, date: s.date, index: s.position }),
+                    { error: NO_CONNECTION },
+                  ),
                 ),
               )
             }

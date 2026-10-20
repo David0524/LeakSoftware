@@ -19,6 +19,7 @@ import { supabaseAnonKey, supabaseUrl } from "@/lib/supabase/config";
 import { adminClient } from "./admin";
 import { EmailNotConfigured, emailConfigured, fromAddress, sendEmail } from "./email";
 import { ccList, emailRefusal } from "./usage";
+import { Refusal, dbFailure } from "./failures";
 import { writeNarrative } from "./narrative";
 import { renderPdf, reportPdfPath } from "./pdf";
 
@@ -39,7 +40,7 @@ export async function draftReport(
   template: ReportTemplateKey,
 ): Promise<DraftResult> {
   const { data, error } = await db.rpc("prepare_report", { target_job: jobId, template });
-  if (error) throw new Error(error.message);
+  if (error) throw dbFailure(error);
   const prepared = data as {
     report_id: string;
     version: number;
@@ -56,7 +57,7 @@ export async function draftReport(
     prompt: result.promptVersion,
     problems: result.problems,
   });
-  if (saveError) throw new Error(saveError.message);
+  if (saveError) throw dbFailure(saveError);
   return {
     reportId: prepared.report_id,
     version: prepared.version,
@@ -73,7 +74,7 @@ export async function saveReportText(db: SupabaseClient, reportId: string, final
     .update({ final_sections: final })
     .eq("id", reportId)
     .eq("status", "draft");
-  if (error) throw new Error(error.message);
+  if (error) throw dbFailure(error);
 }
 
 export type Channel = "email" | "sms_device";
@@ -135,7 +136,7 @@ export async function finishReport(
     target_report: reportId,
     unsigned_reason: unsignedReason,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw dbFailure(error);
   const token = (data as { token: string }).token;
   // Make the PDF now, after the reply, so opening it later is instant instead of a white
   // screen while it renders (owner, 2026-10-20: "a long white screen when loading").
@@ -175,7 +176,7 @@ export async function requireFinishPhoto(db: SupabaseClient, jobId: string): Pro
     .eq("job_id", jobId)
     .eq("kind", "photo")
     .is("deleted_at", null);
-  if (!count) throw new Error(FINISH_PHOTO_MESSAGE);
+  if (!count) throw new Refusal(FINISH_PHOTO_MESSAGE);
 }
 
 /**
@@ -211,7 +212,7 @@ export async function requireCompletable(db: SupabaseClient, jobId: string): Pro
     checklistToDo: toDo.count ?? 0,
     photos: photos.count ?? 0,
   });
-  if (blocker) throw new Error(blocker);
+  if (blocker) throw new Refusal(blocker);
 }
 
 /** The link of a report to send: a draft is finished first; a finished one is sent as is. */
@@ -221,9 +222,9 @@ async function finishedToken(db: SupabaseClient, reportId: string): Promise<stri
     .select("status")
     .eq("id", reportId)
     .single();
-  if (error) throw new Error(error.message);
+  if (error) throw dbFailure(error);
   if (report.status === "draft") return finishReport(db, reportId);
-  if (report.status !== "sent") throw new Error("A newer version of this report has been sent.");
+  if (report.status !== "sent") throw new Refusal("A newer version of this report has been sent.");
   const { data: link } = await db
     .from("share_link")
     .select("token")
@@ -233,7 +234,7 @@ async function finishedToken(db: SupabaseClient, reportId: string): Promise<stri
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (!link) throw new Error("This report’s link was turned off.");
+  if (!link) throw new Refusal("This report’s link was turned off.");
   return link.token as string;
 }
 
@@ -244,7 +245,7 @@ export async function sendReport(
 ): Promise<SendResult> {
   const to = opts.to?.trim() || null;
   if (opts.channel === "email") {
-    if (!to || !/^\S+@\S+\.\S+$/.test(to)) throw new Error("Enter the customer’s email.");
+    if (!to || !/^\S+@\S+\.\S+$/.test(to)) throw new Refusal("Enter the customer’s email.");
     if (!emailConfigured()) throw new EmailNotConfigured();
   }
 
@@ -256,7 +257,7 @@ export async function sendReport(
     .select("company_id, job_id, template_key, data_snapshot")
     .eq("id", reportId)
     .single();
-  if (readError) throw new Error(readError.message);
+  if (readError) throw dbFailure(readError);
   const snapshot = report.data_snapshot as ReportSnapshot;
   const shop = snapshot.company.name;
   const message = reportShareText(shop, link);
@@ -275,7 +276,7 @@ export async function sendReport(
   // The customer's other addresses get the report too, once each.
   const cc = ccList(snapshot.customer?.cc_emails, to!);
   const refusal = await emailRefusal(db, report.company_id as string, 1 + cc.length);
-  if (refusal) throw new Error(refusal);
+  if (refusal) throw new Refusal(refusal);
   let pdf: Buffer | null = null;
   try {
     pdf = await reportPdf(opts.origin, token, {

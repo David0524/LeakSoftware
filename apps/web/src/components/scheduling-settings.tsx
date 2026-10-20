@@ -7,6 +7,7 @@ import { saveScheduling, type RouteResult } from "@/app/actions/routes";
 import { Segmented } from "./segmented";
 import { FieldError, SField, SSwitch, SettingsFields, SettingsForm } from "./settings-forms";
 import { Button, GROUP_ROW, cx } from "./ui";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -143,7 +144,9 @@ export function ActionButton({
         type="button"
         kind="secondary"
         disabled={pending}
-        onClick={() => start(async () => setResult(await action()))}
+        onClick={() =>
+          start(async () => setResult(await whenOffline(action(), { error: NO_CONNECTION })))
+        }
       >
         {pending ? busyLabel : label}
       </Button>

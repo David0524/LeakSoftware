@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { markStop } from "@/app/actions/inspection";
+import { orOffline } from "@/lib/offline";
 import type { SendPrompt } from "./job-work";
 import { useConfirm } from "./sheet";
 import { buttonClass, cx } from "./ui";
@@ -38,7 +39,7 @@ export function TodayComplete({
       const form = new FormData();
       form.set("job", jobId);
       form.set("complete", String(complete));
-      const result = await markStop({}, form);
+      const result = await orOffline(markStop)({}, form);
       setError(result.error ?? null);
     });
   return (

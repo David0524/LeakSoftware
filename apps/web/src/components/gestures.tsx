@@ -78,7 +78,10 @@ export function SwipePages({
       className={className}
       onTouchStart={(e) => {
         const t = e.touches[0];
-        if (e.touches.length !== 1 || !t || skips(e.target as Element)) {
+        // Touches in a sheet or alert reach here through React's portal bubbling: a swipe in
+        // the Add Test sheet must not change the section behind it.
+        const inside = e.currentTarget.contains(e.target as Node);
+        if (e.touches.length !== 1 || !t || !inside || skips(e.target as Element)) {
           start.current = null;
           return;
         }

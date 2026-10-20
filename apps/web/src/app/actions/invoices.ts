@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { parseDollars } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
+import { discountTooLarge, friendlyDbError, lineDescriptionError } from "@/lib/limits";
+import { parseQuantity } from "@/lib/quantity";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 import { EmailNotConfigured } from "@/server/email";
@@ -45,12 +47,12 @@ export async function createInvoiceAction(_: FormState, form: FormData): Promise
 export async function addInvoiceLine(_: FormState, form: FormData): Promise<FormState> {
   const office = await getOffice();
   const description = text(form, "description");
-  const quantity = Number(text(form, "quantity") || "1");
+  const quantity = parseQuantity(text(form, "quantity"));
   const price = parseDollars(text(form, "price"));
   const fields: Record<string, string> = {};
-  if (!description) fields.description = "Describe the work.";
-  if (!(quantity > 0) || Math.round(quantity * 100) !== quantity * 100)
-    fields.quantity = "Enter a quantity like 1 or 2.5.";
+  const described = lineDescriptionError(description);
+  if (described) fields.description = described;
+  if (quantity === null) fields.quantity = "Enter a quantity like 1 or 2.5.";
   if (price === null || price < 0) fields.price = "Enter a price like 125.";
   if (Object.keys(fields).length) return { fields };
   const supabase = await createClient();
@@ -63,7 +65,7 @@ export async function addInvoiceLine(_: FormState, form: FormData): Promise<Form
     taxable: form.get("taxable") === "on",
     sort_order: Number(text(form, "sort") || "0"),
   });
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return done(form, "Line added.");
 }
 
@@ -87,14 +89,27 @@ export async function saveInvoiceDetails(_: FormState, form: FormData): Promise<
     return { fields: { discount: "Enter an amount like 50, or leave it empty." } };
   const due = text(form, "due_date");
   if (due && !/^\d{4}-\d{2}-\d{2}$/.test(due)) return { fields: { due_date: "Pick a date." } };
-  const { error } = await (
-    await createClient()
-  )
+  const supabase = await createClient();
+  // The items' subtotal, as the database totals it (deposit credits aren't discounted).
+  const { data: lines } = await supabase
+    .from("invoice_line_item")
+    .select("kind, quantity, unit_price_cents")
+    .eq("invoice_id", text(form, "invoice"))
+    .is("deleted_at", null);
+  const subtotal = ((lines ?? []) as { kind: string; quantity: number; unit_price_cents: number }[])
+    .filter((l) => l.kind === "item")
+    .reduce(
+      (sum, l) => sum + Math.round((Math.round(l.quantity * 100) * l.unit_price_cents) / 100),
+      0,
+    );
+  const tooLarge = discountTooLarge(discount, subtotal);
+  if (tooLarge) return { fields: { discount: tooLarge } };
+  const { error } = await supabase
     .from("invoice")
     .update({ discount_cents: discount, due_date: due || null, notes: text(form, "notes") || null })
     .eq("id", text(form, "invoice"))
     .eq("company_id", office.company.id);
-  if (error) return { error: error.message };
+  if (error) return { error: friendlyDbError(error.message) };
   return done(form, "Saved.");
 }
 
@@ -141,7 +156,7 @@ export async function recordPaymentAction(_: FormState, form: FormData): Promise
     target_invoice: text(form, "invoice"),
     amount,
   });
-  if (error) return { fields: { amount: error.message } };
+  if (error) return { fields: { amount: friendlyDbError(error.message) } };
   const r = data as { status: string; paid_now: boolean };
   let receipt = false;
   if (r.paid_now) receipt = await sendReceipt(text(form, "invoice"), await siteOrigin(), supabase);

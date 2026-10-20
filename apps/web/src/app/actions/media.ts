@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase/server";
 import { adminClient } from "@/server/admin";
 import { transcribeMedia } from "@/server/transcribe";
 import { transcriptionDeps } from "@/server/transcription";
+import { SIGNER_NAME_MAX } from "@/lib/limits";
 
 // Photos, videos, voice notes, and signatures from the browser (M9.5). The browser uploads
 // the file straight to storage with a one-time upload URL made here as the signed-in member
@@ -185,6 +186,8 @@ export async function finishSignature(input: {
   if (!PURPOSES.includes(input.purpose))
     return { ok: false, error: "Choose what this signature is for." };
   if (!input.signerName.trim()) return { ok: false, error: "Enter the signer’s name." };
+  if (input.signerName.trim().length > SIGNER_NAME_MAX)
+    return { ok: false, error: `Keep the name under ${SIGNER_NAME_MAX} characters.` };
   if (input.path !== signatureStoragePath(office.company.id, input.jobId, input.id))
     return { ok: false, error: "Upload not found." };
   const { error } = await db.from("signature").insert({

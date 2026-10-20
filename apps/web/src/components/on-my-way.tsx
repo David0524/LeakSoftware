@@ -5,6 +5,7 @@ import { localMinutes, onMyWayText, type OnMyWayVia } from "@leakbook/core";
 import { sendMessage } from "@/app/actions/texting";
 import { Sheet, useConfirm } from "./sheet";
 import { buttonClass } from "./ui";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
 /**
  * On My Way: a text to the customer with an arrival time (now plus the drive). By default
@@ -73,7 +74,7 @@ export function OnMyWay({
       form.set("body", text);
       if (jobId) form.set("job_id", jobId);
       setDone({ label: "Sending…", spoken: "" });
-      const sent = await sendMessage({}, form);
+      const sent = await whenOffline(sendMessage({}, form), { error: NO_CONNECTION });
       setDone(
         sent.error
           ? { label: "Not Sent", spoken: sent.error }

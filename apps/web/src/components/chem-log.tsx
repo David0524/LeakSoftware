@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { removeReading } from "@/app/actions/chemicals";
 import { useConfirm } from "./sheet";
+import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
 /** Removes a chemical log entry submitted by mistake, after a confirm. */
 export function RemoveReading({ id }: { id: string }) {
@@ -29,7 +30,7 @@ export function RemoveReading({ id }: { id: string }) {
           const form = new FormData();
           form.set("reading", id);
           start(async () => {
-            const done = await removeReading({}, form);
+            const done = await whenOffline(removeReading({}, form), { error: NO_CONNECTION });
             setError(done.error ?? null);
           });
         }}

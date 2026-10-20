@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getOffice, requireOwner } from "@/lib/auth";
+import { SIGNER_NAME_MAX } from "@/lib/limits";
 import { siteOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 import { publicClient } from "@/server/reports";
@@ -28,6 +29,8 @@ const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 
 export async function acceptQuote(_: FormState, form: FormData): Promise<FormState> {
   const token = text(form, "token");
+  if (text(form, "name").length > SIGNER_NAME_MAX)
+    return { error: `Keep your name under ${SIGNER_NAME_MAX} characters.` };
   const h = await headers();
   const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || null;
   const { data, error } = await publicClient().rpc("accept_quote_by_link", {

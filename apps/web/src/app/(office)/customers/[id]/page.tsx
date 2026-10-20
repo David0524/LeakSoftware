@@ -1,6 +1,7 @@
 import { offersLeak, offersPool } from "@leakbook/core";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { isUuid } from "@/lib/uuid";
 import {
   JOB_TYPE_LABELS,
   POOL_TYPE_LABELS,
@@ -53,6 +54,7 @@ const KIND: Record<string, string> = {
 
 export default async function CustomerPage({ params }: PageProps<"/customers/[id]">) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const office = await getOffice();
   // All three at once: each used to wait for the one before.
   const [data, team, company, line, componentTypes, priceBook] = await Promise.all([

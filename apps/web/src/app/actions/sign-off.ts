@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { UNSIGNED_CUSTOMER_AWAY } from "@leakbook/core";
 import { getOffice } from "@/lib/auth";
+import { isUuid } from "@/lib/uuid";
 import { createClient } from "@/lib/supabase/server";
 import { finishReport, saveReportText } from "@/server/reports";
 import { sectionsOf } from "./report-form";
@@ -22,20 +23,29 @@ export async function finishSignOff(input: {
   jobId: string;
   customerAway: boolean;
 }): Promise<Result> {
-  await getOffice();
+  const office = await getOffice();
+  const db = await createClient();
+  // The report's own job, read as the signed-in member in this shop: the team told below is
+  // that job's, never one named by the caller (break testing, 2026-10-20).
+  const { data: report } = isUuid(input.reportId)
+    ? await db
+        .from("report")
+        .select("job_id")
+        .eq("id", input.reportId)
+        .eq("company_id", office.company.id)
+        .maybeSingle()
+    : { data: null };
+  if (!report) return { ok: false, error: "This report is gone. Refresh the page." };
+  const jobId = (report as { job_id: string }).job_id;
   try {
-    await finishReport(
-      await createClient(),
-      input.reportId,
-      input.customerAway ? UNSIGNED_CUSTOMER_AWAY : null,
-    );
+    await finishReport(db, input.reportId, input.customerAway ? UNSIGNED_CUSTOMER_AWAY : null);
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
   // Signed (not finished without the customer): the team hears about it.
   const admin = adminClient();
-  if (admin && !input.customerAway) await notifyReportSigned(admin, input.jobId);
-  revalidatePath(`/jobs/${input.jobId}`);
+  if (admin && !input.customerAway) await notifyReportSigned(admin, jobId);
+  revalidatePath(`/jobs/${jobId}`);
   return { ok: true };
 }
 

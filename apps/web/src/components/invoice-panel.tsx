@@ -20,6 +20,7 @@ import {
 import type { InvoiceRow } from "@/lib/data";
 import { CopyLink, SField, STextArea, SettingsForm } from "./settings-forms";
 import { Button, Checkbox, Field, Notice } from "./ui";
+import { orOffline } from "@/lib/offline";
 
 const METHOD: Record<string, string> = {
   card: "Card",
@@ -74,7 +75,7 @@ function Totals({
 }
 
 function RemoveLine({ line, jobId }: { line: string; jobId: string }) {
-  const [state, action, pending] = useActionState(removeInvoiceLine, {});
+  const [state, action, pending] = useActionState(orOffline(removeInvoiceLine), {});
   return (
     <form action={action}>
       <input type="hidden" name="line" value={line} />
@@ -115,7 +116,7 @@ export function InvoicePanel({
   emailReady: boolean;
   isOwner: boolean;
 }) {
-  const [sendState, sendAction, sending] = useActionState(sendInvoiceAction, {});
+  const [sendState, sendAction, sending] = useActionState(orOffline(sendInvoiceAction), {});
   const draft = invoice.status === "draft";
   const live = invoice.lines.filter((l) => l.kind === "item");
   const totals = draft ? invoiceTotals(invoice.lines, invoice.discount_cents, taxRateBps) : invoice;
