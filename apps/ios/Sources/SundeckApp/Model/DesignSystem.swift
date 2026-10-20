@@ -58,9 +58,12 @@ public enum TypeRole: String, CaseIterable, Sendable {
     /// The system text style the role scales with (Dynamic Type).
     public enum Scale: Sendable { case largeTitle, title, title3, headline, body, subheadline, footnote, caption2 }
 
+    /// The navigation bar's inline title is Barlow too, like the large title it folds into, so a
+    /// screen's title keeps one face as it scrolls (owner, 2026-10-20: "'Schedule' has different
+    /// fonts depending on if the map is hidden or not").
     public var face: Face {
         switch self {
-        case .largeTitle, .sectionHeading, .cardTitle, .subHeading, .sectionLabel: .display
+        case .largeTitle, .sectionHeading, .cardTitle, .subHeading, .sectionLabel, .navTitle: .display
         default: .body
         }
     }

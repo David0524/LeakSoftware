@@ -6,6 +6,7 @@ import { Card, T } from "../../ui/components";
 import { NotOnMapTag } from "../../ui/NotOnMap";
 import { useMenu } from "../../ui/Select";
 import { color, face, gutter, MAX_TEXT_SCALE, space, type } from "../../ui/theme";
+import { Grip } from "../../ui/Grip";
 import { LockTag } from "../../ui/LockTag";
 import { GhostCard, type Stop } from "./RouteCard";
 import { dropTint, useDragHover, useDragSource, useDropZones } from "./ScheduleDrag";
@@ -143,6 +144,8 @@ function TrayCard({
             <Circle cx={18} cy={12} r={1.8} />
           </Svg>
         </Pressable>
+        {/* The drag grip at the trailing edge (owner, 2026-10-20). */}
+        {j.movable ? <Grip width={24} /> : null}
       </View>
     </GestureDetector>
   );

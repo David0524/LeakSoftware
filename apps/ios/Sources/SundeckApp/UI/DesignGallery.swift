@@ -137,7 +137,7 @@
                     Button("Report") {}.buttonStyle(.quiet)
                 }
                 HStack(spacing: 8) {
-                    Button("Plan Route") {}.buttonStyle(.secondary(fullWidth: true))
+                    Button("Optimize") {}.buttonStyle(.secondary(fullWidth: true))
                     Button("Apple Maps") {}.buttonStyle(.secondary(fullWidth: true))
                 }
                 Button {

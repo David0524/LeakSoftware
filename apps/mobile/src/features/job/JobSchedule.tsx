@@ -242,7 +242,7 @@ export function JobSchedule({ jobId }: { jobId: string }) {
           moveTo(job, t, d, index);
         }}
       />
-      {/* Locks (owner, 2026-10-20): what Plan Route and Plan Week leave alone. */}
+      {/* Locks (owner, 2026-10-20): what Optimize and Plan Week leave alone. */}
       <ModalSheet visible={locking != null} onClose={() => setLocking(null)} title="Lock">
         <View style={{ gap: space["2"] }}>
           <Segmented

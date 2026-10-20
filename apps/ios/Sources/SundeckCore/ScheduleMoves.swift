@@ -26,11 +26,20 @@ public struct PlanContext: Codable, Sendable {
 
 public struct ScheduleChange: Encodable, Equatable, Sendable {
     public var updates: [JobChange]
-    /// What happened, for the status line ("Moved to 9:15 AM.").
+    /// What happened, one short line for the banner ("Moved to 9:15 AM.").
     public var message: String?
+    /// What to watch for, a second smaller line (owner, 2026-10-20: the banner at the top).
+    public var detail: String?
     public var error: String?
 
     static func fail(_ error: String) -> ScheduleChange { ScheduleChange(updates: [], error: error) }
+}
+
+/// "Runs 20 min past the end of the day. A fixed time can’t be met." from notes, or nil.
+public func noteSentences(_ notes: [String?]) -> String? {
+    let list = notes.compactMap { $0 }.filter { !$0.isEmpty }
+    guard !list.isEmpty else { return nil }
+    return list.map { "\($0.prefix(1).uppercased())\($0.dropFirst())." }.joined(separator: " ")
 }
 
 private func dayStops<J: PlanJobFields>(_ ctx: PlanContext, _ techId: String, _ date: String, _ jobs: [J]) throws
@@ -43,8 +52,8 @@ private func dayStops<J: PlanJobFields>(_ ctx: PlanContext, _ techId: String, _ 
     }
 }
 
-/// Plan Route: order a tech's day (its jobs in route order) for the least driving, keep promised
-/// times, and say what changed.
+/// Optimize (once Plan Route): order a tech's day (its jobs in route order) for the least
+/// driving, keep promised times, and say what changed.
 public func planDay<J: PlanJobFields>(
     _ ctx: PlanContext, _ techId: String, _ date: String, _ jobs: [J], drive: DriveFn
 ) throws -> ScheduleChange {
@@ -57,22 +66,20 @@ public func planDay<J: PlanJobFields>(
     let planned = order.map { stops[$0] }
     let updates = try routeUpdates(date, ctx.timeZone, planned, route)
     let saved = before.driveMin - route.driveMin
-    let parts = [
-        "Planned: \(durationLabel(route.driveMin)) of driving",
-        saved > 0 ? "\(durationLabel(saved)) less than before" : nil,
-        "back at the shop by \(minutesLabel(route.backMin))",
-    ].compactMap { $0 }
-    let warnings = [
+    // One short line for the banner at the top of the screen (owner, 2026-10-20: the note under
+    // the button "looks horrible"), and what to watch for as a second line.
+    let message = [
+        "Optimized",
+        saved > 0 ? "\(durationLabel(saved)) less driving" : "\(durationLabel(route.driveMin)) driving",
+        "Back by \(minutesLabel(route.backMin))",
+    ].joined(separator: " · ")
+    let detail = noteSentences([
         route.overtimeMin != 0 ? "runs \(durationLabel(route.overtimeMin)) past the end of the day" : nil,
         route.lateMin != 0 ? "a fixed time can’t be met (\(durationLabel(route.lateMin)) late)" : nil,
-        stops.contains { $0.location == nil } ? "some pools have no location, so driving to them isn’t counted" : nil,
+        stops.contains { $0.location == nil } ? "driving to pools not on the map isn’t counted" : nil,
         ctx.depot == nil ? "the shop has no location (Settings › Scheduling)" : nil,
-    ].compactMap { $0 }
-    return ScheduleChange(
-        updates: updates,
-        message: "\(parts.joined(separator: ", "))."
-            + (warnings.isEmpty ? "" : " Note: \(warnings.joined(separator: "; ")).")
-    )
+    ])
+    return ScheduleChange(updates: updates, message: message, detail: detail)
 }
 
 /// Close up the order numbers of the day a job left (times stay as they are).

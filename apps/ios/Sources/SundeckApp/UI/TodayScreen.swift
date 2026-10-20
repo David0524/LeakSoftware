@@ -29,7 +29,12 @@
 
         var body: some View {
             ScreenScroll {
-                if let company = session.company, let day {
+                let firstSync = !sync.status.initialSyncDone && sync.status.phase == .syncing
+                if session.company != nil && (day == nil || (firstSync && day?.route == nil)) {
+                    // The first read, or the first sync still bringing the day down: the shapes
+                    // of the day, not "Nothing on your route today" (loading.md).
+                    TodaySkeleton()
+                } else if let company = session.company, let day {
                     header(day)
                     // Getting Started is off on the phone for now: inside the tab view it stops Today
                     // drawing in the simulator screenshots, cause not found yet (docs/plans/swift-app.md).
@@ -69,7 +74,7 @@
             .navigationTitle(title)
             .toolbar { NewJobToolbar(back: "Today") }
             .task(id: "\(sync.revision)|\(session.company?.id ?? "")|\(techId ?? "")|\(drive.known.count)") {
-                reload()
+                await reload()
             }
             .task(id: justDone) {
                 guard justDone != nil else { return }
@@ -113,6 +118,8 @@
                     Text(day.summaryText)
                         .textRole(.body)
                         .foregroundStyle(Color.textMuted)
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
                         .padding(.bottom, 12)
                     if let hero = day.hero(justDone: justDone) {
                         TodayHeroCard(hero: hero, day: day).padding(.bottom, 20)
@@ -145,11 +152,20 @@
             }
         }
 
-        private func reload() {
+        /// Today's day, read from the phone's database off the main thread; the last one stays on
+        /// screen until it's ready. A stop marked done slides away; a new person's day cross-fades.
+        private func reload() async {
             guard let company = session.company, let user = session.user else { return }
             let before = day
-            day = TodayDay(
-                store: sync.store, kv: sync.kv, company: company, userId: user.id, wanted: techId, drive: drive)
+            let (store, kv, wanted, drive) = (sync.store, sync.kv, techId, drive)
+            let next = await Task.detached(priority: .userInitiated) {
+                TodayDay(store: store, kv: kv, company: company, userId: user.id, wanted: wanted, drive: drive)
+            }.value
+            guard !Task.isCancelled else { return }
+            withAnimation(before == nil ? nil : Motion.snappy) { day = next }
+            // Pools on today's stops never looked up on the map: ask for them in the background.
+            MissingPins.find(
+                next.route?.jobs ?? [], companyId: company.id, queue: app.locate, api: app.api, sync: sync)
             // The card's stop just done (here, on the Lock Screen, or on another phone): shown done
             // for a minute, with On My Way to the next one.
             if let before, let day, before.techId == day.techId,
@@ -168,9 +184,9 @@
         }
     }
 
-    /// What Today shows for one person's day.
-    @MainActor
-    struct TodayDay {
+    /// What Today shows for one person's day, worked out once when the data changes (off the
+    /// main thread), never in a view's body.
+    struct TodayDay: Sendable {
         var ctx: ScheduleContext
         var techs: [TeamMember]
         var techId: String
@@ -183,6 +199,8 @@
         var routing = false
         /// The stops as Today's card reads them (core `todayHero`, owner 2026-10-20).
         var heroStops: [HeroStop] = []
+        /// The card with no stop just completed, worked out once (`hero(justDone:)`).
+        private var restingHero: TodayHero?
 
         init(
             store: LocalStore, kv: KeyValue, company: CompanyContext, userId: String, wanted: String?, drive: DriveTimes
@@ -216,6 +234,7 @@
             lineActive = companyLine(store, companyId: company.id)?.status == "active"
             routing = MapLookups.on(kv, company: try? store.get("company", company.id))
             heroStops = dayHeroStops(store, companyId: company.id, stops: route?.jobs ?? [])
+            restingHero = try? todayHero(stops: heroStops, today: ctx.today, timeZone: ctx.timeZone, justDone: nil)
         }
 
         func name(_ id: String) -> String { techs.first { $0.id == id }?.name ?? "Teammate" }
@@ -226,7 +245,8 @@
         /// rule, so the Lock Screen and the card pick the same stop. `justDone` is a stop completed
         /// in the last minute, shown done with On My Way to the next one.
         func hero(justDone: String? = nil) -> TodayHero? {
-            try? todayHero(stops: heroStops, today: ctx.today, timeZone: ctx.timeZone, justDone: justDone)
+            guard let justDone else { return restingHero }
+            return try? todayHero(stops: heroStops, today: ctx.today, timeZone: ctx.timeZone, justDone: justDone)
         }
 
         /// The stop you're on: the card's (Mark Complete moves it on).
@@ -825,5 +845,33 @@
 
     extension Array {
         subscript(routeIndex index: Int) -> Element? { indices.contains(index) ? self[index] : nil }
+    }
+
+    /// Today while its day is read or first synced: the summary line, the card's shape in water
+    /// blue and two stops, redacted (loading.md: show something as soon as possible).
+    struct TodaySkeleton: View {
+        var body: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Tuesday, October 20").textRole(.body)
+                Text("3 stops · 1 hr 20 min driving").textRole(.body)
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(Color.water.opacity(0.35))
+                    .frame(height: 220)
+                    .padding(.bottom, 8)
+                ForEach(0..<2, id: \.self) { _ in
+                    HStack(spacing: 12) {
+                        Circle().fill(Color.fill).frame(width: 32, height: 32)
+                        Text("9:00 AM  Customer name").textRole(.bodyEmphasis)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(12)
+                    .card(padding: 0)
+                }
+            }
+            .foregroundStyle(Color.textMuted)
+            .redacted(reason: .placeholder)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Loading today")
+        }
     }
 #endif

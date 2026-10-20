@@ -84,33 +84,4 @@
             .accessibilityAddTraits(on ? .isSelected : [])
         }
     }
-
-    /// A result that can be put back: the success notice with Undo at its end ("Moved 9 jobs ·
-    /// 3 hr 10 min less driving   Undo").
-    struct UndoNotice: View {
-        var text: String
-        var onUndo: () -> Void
-
-        var body: some View {
-            let shape = RoundedRectangle(cornerRadius: CGFloat(Radius.block), style: .continuous)
-            HStack(spacing: 8) {
-                Text(text)
-                    .textRole(.body)
-                    .foregroundStyle(Color.text)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Button("Undo", action: onUndo)
-                    .buttonStyle(.quiet(size: .small))
-                    .accessibilityLabel("Undo Plan Week")
-                    .accessibilityHint("Puts every job back as it was")
-            }
-            .padding(EdgeInsets(top: 8, leading: 24, bottom: 8, trailing: 8))
-            .frame(minHeight: minTarget)
-            .background(alignment: .leading) {
-                Capsule().fill(Tone.pass.color).frame(width: 4).padding(.vertical, 12).padding(.leading, 10)
-            }
-            .background(shape.fill(Color(tint: .noticeFill(.pass))))
-            .accessibilityElement(children: .contain)
-            .onAppear { AccessibilityNotification.Announcement(text).post() }
-        }
-    }
 #endif

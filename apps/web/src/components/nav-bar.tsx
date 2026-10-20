@@ -67,7 +67,10 @@ export function NavBar({
         <p
           aria-hidden={!collapsed}
           className={cx(
-            "max-w-[55vw] truncate text-[1.0625rem] font-semibold transition-opacity",
+            // The large title's face at 17 pt, so the title reads the same scrolled or not
+            // (owner, 2026-10-20: "'Schedule' has different fonts depending on if the map is
+            // hidden or not").
+            "max-w-[55vw] truncate font-display text-[1.0625rem] font-bold transition-opacity",
             collapsed ? "opacity-100" : "opacity-0",
           )}
         >

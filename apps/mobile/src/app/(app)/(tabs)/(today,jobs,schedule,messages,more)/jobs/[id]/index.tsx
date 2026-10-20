@@ -73,6 +73,7 @@ import { usePinnedSyncBar } from "../../../../../../ui/SyncBar";
 import { AddressLine, NotOnMapRow } from "../../../../../../ui/NotOnMap";
 import { ModalSheet } from "../../../../../../ui/ModalSheet";
 import { PoolForm } from "../../../../../../features/pool/PoolForm";
+import { AccessNotesRow } from "../../../../../../features/pool/AccessNotes";
 import { useRoutingOn } from "../../../../../../lib/routing";
 import { ScreenTip } from "../../../../../../ui/Tip";
 import {
@@ -664,15 +665,9 @@ function Details({
           ) : (
             <ListRow subtitle="Address not on this phone yet." />
           )}
+          {/* Right under the address, editable here (owner, 2026-10-20). */}
+          {property ? <AccessNotesRow property={property} /> : null}
           {mapStatus(property, routing) === "missing" ? <NotOnMapRow /> : null}
-          {property?.access_notes ? (
-            <ListRow>
-              <T variant="secondary" muted>
-                Access
-              </T>
-              <T>{property.access_notes}</T>
-            </ListRow>
-          ) : null}
         </Group>
       </Section>
       <ModalSheet

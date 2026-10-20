@@ -284,7 +284,7 @@ import Testing
             ["scheduled_start": "2026-10-20T15:30:00Z", "scheduled_end": "2026-10-20T16:30:00Z"])
         let (updates, message) = try planRoute(
             techId: Self.me, date: ctx.today, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
-        #expect(message.hasPrefix("Planned: "))
+        #expect(message.hasPrefix("Optimized · "))
         #expect(updates.map(\.id) == [id(1), id(2)])
         #expect(updates.map { $0["route_order"] } == [1, 2])
         let pending = sync.status.pending
@@ -298,6 +298,39 @@ import Testing
         #expect(throws: ScheduleProblem("Past days can’t be planned.")) {
             try planRoute(techId: Self.me, date: "2026-10-19", jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
         }
+    }
+
+    @Test func optimizeSavesWhatPlanRouteSavesAndSaysItInOneLine() throws {
+        try sync.write(
+            "job", id: id(1), companyId: Self.company,
+            ["scheduled_start": "2026-10-20T15:30:00Z", "scheduled_end": "2026-10-20T16:30:00Z"])
+        let planned = try planRoute(
+            techId: Self.me, date: ctx.today, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+        let optimized = try optimizeDay(
+            techId: Self.me, date: ctx.today, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+        #expect(optimized.updates == planned.updates)
+        // The same loop either way: no driving saved, so it says how much there is.
+        let parts = optimized.summary.title.components(separatedBy: " · ")
+        #expect(parts.count == 3 && parts[0] == "Optimized")
+        #expect(parts[1].hasSuffix(" driving") && parts[2].hasPrefix("Back by "))
+        #expect(optimized.summary.warning == nil)
+        #expect(throws: ScheduleProblem("Past days can’t be planned.")) {
+            try optimizeDay(techId: Self.me, date: "2026-10-19", jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())
+        }
+    }
+
+    @Test func poolsNeverLookedUpAreAskedForOnce() throws {
+        MissingPins.reset()
+        // Sam's pool has an address and no map location, and was never looked up.
+        let pool = "00000000-0000-4000-8000-000000000403"
+        #expect(jobs.filter(\.needsLocate).map(\.propertyId) == [pool])
+        #expect(MissingPins.toAsk(jobs) == [pool])
+        // Looked up for this address and not found: "Not on map", not asked again.
+        let row = try #require(try sync.store.get("property", pool))
+        let address = formatAddress(try #require(decodeProperty(row)))
+        try sync.write("property", id: pool, companyId: Self.company, ["geocoded_address": .string(address)])
+        #expect(jobs.filter(\.needsLocate).isEmpty)
+        #expect(MissingPins.toAsk(jobs).isEmpty)
     }
 
     @Test func movingAJobOntoADayAndOffTheSchedule() throws {

@@ -38,6 +38,9 @@ import {
   type StopAction,
 } from "../../../../lib/liveStop";
 import { todayList } from "../../../../lib/todayHero";
+import { useLocateMissing } from "../../../../lib/locate";
+import { useFirstLoad } from "../../../../data/hooks";
+import { SkeletonCards } from "../../../../ui/Skeleton";
 import { useCompany, useSession } from "../../../../state/session";
 import { useWalkthrough } from "../../../../state/walkthrough";
 import { openDirections, useDirectionsChoice } from "../../../../state/directions";
@@ -141,30 +144,48 @@ export default function Today() {
   const meProfile = team.find((t) => t.id === me);
   const myName = meProfile?.full_name || meProfile?.email || "your tech";
 
-  const settings = routingSettings(company.settings);
-  const depot = propertyLocation(
-    company as { latitude?: number | null; longitude?: number | null },
+  const settings = useMemo(() => routingSettings(company.settings), [company.settings]);
+  const depotAt = company as { latitude?: number | null; longitude?: number | null };
+  const depot = useMemo(
+    () => propertyLocation(depotAt),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the shop's coordinates
+    [depotAt.latitude, depotAt.longitude],
   );
   const line = useLine(company.id);
   const weather = useWeather((company as { postal_code?: string | null }).postal_code);
-  const stops = inRouteOrderViews(
-    dayJobs.filter((j) => j.assigned_user_id === shownTech || j.second_tech_id === shownTech),
+  // Kept between renders (owner, 2026-10-20: smooth), so the card's rule and the day's drive
+  // times are worked out only when the stops or drive times change.
+  const stops = useMemo(
+    () =>
+      inRouteOrderViews(
+        dayJobs.filter((j) => j.assigned_user_id === shownTech || j.second_tech_id === shownTech),
+      ),
+    [dayJobs, shownTech],
   );
-  const { drive } = useDriveTimes(company.id, [
-    depot,
-    ...stops.map((j) => propertyLocation(j.property)),
-  ]);
-  const summary = daySummary(
-    stops.map((j) => ({
-      id: j.id,
-      location: propertyLocation(j.property),
-      startMin: j.scheduled_start ? localMinutes(j.scheduled_start, tz) : null,
-      endMin: j.scheduled_end ? localMinutes(j.scheduled_end, tz) : null,
-    })),
-    depot,
-    workDay(settings),
-    drive,
+  const points = useMemo(
+    () => [depot, ...stops.map((j) => propertyLocation(j.property))],
+    [depot, stops],
   );
+  const { drive } = useDriveTimes(company.id, points);
+  const summary = useMemo(
+    () =>
+      daySummary(
+        stops.map((j) => ({
+          id: j.id,
+          location: propertyLocation(j.property),
+          startMin: j.scheduled_start ? localMinutes(j.scheduled_start, tz) : null,
+          endMin: j.scheduled_end ? localMinutes(j.scheduled_end, tz) : null,
+        })),
+        depot,
+        workDay(settings),
+        drive,
+      ),
+    [stops, depot, settings, drive, tz],
+  );
+  // Pools on today's stops with an address but no map location are looked up in the background.
+  const pools = useMemo(() => stops.map((j) => j.property), [stops]);
+  useLocateMissing(company.id, pools);
+  const loading = useFirstLoad(jobs.length > 0);
   // A notification's request for a stop that isn't on your route today: nothing to do.
   const askedHere = !asked || shownTech !== me || stops.some((j) => j.id === asked.jobId);
   useEffect(() => {
@@ -279,7 +300,10 @@ export default function Today() {
         />
       ) : null}
 
-      {stops.length === 0 ? (
+      {loading ? (
+        // Placeholder cards while the first download fills the phone, not an empty day.
+        <SkeletonCards />
+      ) : stops.length === 0 ? (
         <Empty>
           <Text style={[type.body, styles.center, { color: color.textMuted }]}>
             Nothing on {mine ? "your" : "this"} route today.{" "}

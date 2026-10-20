@@ -39,13 +39,24 @@ import { loadRoutes, routeContext, routeKey, type RouteContext } from "@/server/
 import { geocodeAddress, routingConfigured } from "@/server/routing";
 import type { FormState } from "./auth";
 
-// Planning routes from the schedule (routing, owner request 2026-10-13). Plan Route orders
+// Planning routes from the schedule (routing, owner request 2026-10-13). Optimize orders
 // one tech's day; moving a job puts it on a tech's day at a place in the order; suggestions
 // fit a job into routes already planned. Times customers were promised never move.
 
 export interface RouteResult {
   error?: string;
+  /** One short line for the banner: "Optimized · 1 hr 6 min less driving · Back by 4:28 PM". */
   message?: string;
+  /** What to watch for, as a second, smaller line: "Runs 20 min past the end of the day." */
+  detail?: string;
+}
+
+/** Notes as sentences: "Runs 20 min late. A fixed time can’t be met." */
+function sentences(notes: (string | null)[]): string | undefined {
+  const list = notes.filter((n): n is string => !!n);
+  return list.length
+    ? list.map((n) => `${n.charAt(0).toUpperCase()}${n.slice(1)}.`).join(" ")
+    : undefined;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -83,7 +94,7 @@ function dayStops(ctx: RouteContext, techId: string, date: string, jobs: PlanJob
 }
 
 // ---------------------------------------------------------------------------
-// Plan Route
+// Optimize (owner, 2026-10-20: "Change 'plan route' to 'optimize'")
 // ---------------------------------------------------------------------------
 
 /** Order a tech's day for the least driving, keep promised times, and save the times. */
@@ -109,23 +120,21 @@ export async function planRoute(techId: string, date: string): Promise<RouteResu
   if (error) return { error };
   refresh();
 
+  // One short line for the banner at the top of the screen (owner, 2026-10-20: the note under
+  // the button "looks horrible"), and what to watch for as a second line.
   const saved = before.driveMin - route.driveMin;
-  const parts = [
-    `Planned: ${durationLabel(route.driveMin)} of driving`,
-    saved > 0 ? `${durationLabel(saved)} less than before` : null,
-    `back at the shop by ${minutesLabel(route.backMin)}`,
-  ].filter(Boolean);
-  const warnings = [
+  const message = [
+    "Optimized",
+    saved > 0 ? `${durationLabel(saved)} less driving` : `${durationLabel(route.driveMin)} driving`,
+    `Back by ${minutesLabel(route.backMin)}`,
+  ].join(" · ");
+  const detail = sentences([
     route.overtimeMin ? `runs ${durationLabel(route.overtimeMin)} past the end of the day` : null,
     route.lateMin ? `a fixed time can’t be met (${durationLabel(route.lateMin)} late)` : null,
-    stops.some((s) => !s.location)
-      ? "some pools have no location, so driving to them isn’t counted"
-      : null,
+    stops.some((s) => !s.location) ? "driving to pools not on the map isn’t counted" : null,
     !ctx.depot ? "the shop has no location (Settings › Scheduling)" : null,
-  ].filter(Boolean);
-  return {
-    message: `${parts.join(", ")}.${warnings.length ? ` Note: ${warnings.join("; ")}.` : ""}`,
-  };
+  ]);
+  return { message, detail };
 }
 
 // ---------------------------------------------------------------------------
@@ -314,13 +323,13 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
   }
 
   const t = route.stops[index]!;
-  const notes = [
-    t.lateMin ? `it can’t make its fixed time (${durationLabel(t.lateMin)} late)` : null,
-    route.overtimeMin ? `the day runs ${durationLabel(route.overtimeMin)} late` : null,
-    route.lateMin - t.lateMin > 0 ? "a fixed time after it can’t be met" : null,
-  ].filter(Boolean);
   return {
-    message: `Moved to ${minutesLabel(t.startMin)}.${notes.length ? ` Note: ${notes.join("; ")}.` : ""}`,
+    message: `Moved to ${minutesLabel(t.startMin)}.`,
+    detail: sentences([
+      t.lateMin ? `it can’t make its fixed time (${durationLabel(t.lateMin)} late)` : null,
+      route.overtimeMin ? `the day runs ${durationLabel(route.overtimeMin)} late` : null,
+      route.lateMin - t.lateMin > 0 ? "a fixed time after it can’t be met" : null,
+    ]),
   };
 }
 

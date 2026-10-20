@@ -28,6 +28,8 @@
         @State private var linkError: String?
         /// The job's pool, open in Pool Details (owner, 2026-10-20: the address opens it to edit).
         @State private var editingPool = false
+        /// The pool's access notes, open in their own sheet (owner, 2026-10-20).
+        @State private var editingAccess = false
         @FocusState private var focus: Field?
         @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -92,6 +94,13 @@
                 // the map lookup after an address change.
                 if let property = job.property {
                     PoolSheet(propertyId: property.id, row: property) { saves += 1 }
+                }
+            }
+            .sheet(isPresented: $editingAccess) {
+                if let property = job.property {
+                    AccessNotesSheet(propertyId: property.id, notes: property["access_notes"]?.string ?? "") {
+                        saves += 1
+                    }
                 }
             }
             .confirmationDialog("Cancel this job?", isPresented: $confirmCancel, titleVisibility: .visible) {
@@ -279,8 +288,16 @@
                 if missing {
                     NotOnMapRow()
                 }
-                if let access = details.accessNotes {
-                    StackedRow(caption: "Access", value: access)
+                // Right under the address, editable here (owner, 2026-10-20: "You should be able
+                // to edit access notes on the job screen underneath the address").
+                if job.property != nil {
+                    Button {
+                        editingAccess = true
+                    } label: {
+                        AccessNotesRow(notes: details.accessNotes)
+                    }
+                    .buttonStyle(.row)
+                    .accessibilityHint("Opens Access Notes")
                 }
             }
         }
@@ -450,6 +467,118 @@
                     linkError = "Couldn’t turn the link off. Try again."
                 }
                 turningOff.remove(link.id)
+            }
+        }
+    }
+
+    /// The Pool group's Access Notes row: the notes under a caption, or "Add Access Notes" in
+    /// `link` when there are none, with a chevron since it opens a sheet.
+    struct AccessNotesRow: View {
+        var notes: String?
+
+        var body: some View {
+            HStack(spacing: CGFloat(Spacing.rowItems)) {
+                if let notes {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Access Notes").textRole(.secondary).foregroundStyle(Color.textMuted)
+                        Text(notes).textRole(.body).foregroundStyle(Color.text).multilineTextAlignment(.leading)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Text("Add Access Notes")
+                        .textRole(.body)
+                        .foregroundStyle(Color.link)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                Chevron()
+            }
+            .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+            .padding(.vertical, CGFloat(Spacing.rowVertical))
+            .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
+            .contentShape(Rectangle())
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    /// Access Notes, as a sheet from the job page: one growing field, Cancel and Save in the
+    /// navigation bar, saved on the pool (property.access_notes) through the sync layer; blank
+    /// clears them. Today's card and the Lock Screen pick them up from the same row.
+    struct AccessNotesSheet: View {
+        var propertyId: String
+        var notes: String
+        var saved: () -> Void
+        @Environment(Session.self) private var session
+        @Environment(SyncService.self) private var sync
+        @Environment(\.dismiss) private var dismiss
+        @State private var text = ""
+        @State private var loaded = false
+        @State private var error: String?
+        @State private var confirm = false
+        @FocusState private var focused: Bool
+
+        private var dirty: Bool { loaded && text != notes }
+
+        var body: some View {
+            NavigationStack {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Grouped {
+                            TextField(
+                                "Access Notes", text: $text,
+                                prompt: Text("Gate code, dog, where to park.").foregroundStyle(Color.placeholder),
+                                axis: .vertical
+                            )
+                            .lineLimit(3...10)
+                            .textRole(.body)
+                            .foregroundStyle(Color.text)
+                            .focused($focused)
+                            .padding(.horizontal, CGFloat(Spacing.rowHorizontal))
+                            .padding(.vertical, CGFloat(Spacing.rowVertical))
+                            .frame(minHeight: minTarget)
+                            .accessibilityLabel("Access Notes")
+                        }
+                        if let error { Notice(kind: .error, text: error) }
+                    }
+                    .padding(.horizontal, CGFloat(Spacing.pageMargin))
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
+                }
+                .scrollDismissesKeyboard(.interactively)
+                .background(Color.bg)
+                .navigationTitle("Access Notes")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { if dirty { confirm = true } else { dismiss() } }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") { save() }.disabled(!dirty)
+                    }
+                }
+                .confirmationDialog("Discard changes?", isPresented: $confirm, titleVisibility: .visible) {
+                    Button("Discard Changes", role: .destructive) { dismiss() }
+                }
+            }
+            .sheetPresentation(dirty: dirty, detents: [.medium, .large])
+            .onAppear {
+                guard !loaded else { return }
+                text = notes
+                loaded = true
+                focused = true
+            }
+        }
+
+        private func save() {
+            guard let companyId = session.company?.id else { return }
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            do {
+                try sync.write(
+                    "property", id: propertyId, companyId: companyId,
+                    ["access_notes": trimmed.isEmpty ? .null : .string(trimmed)])
+                saved()
+                dismiss()
+            } catch {
+                self.error = String(describing: error)
             }
         }
     }

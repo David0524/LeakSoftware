@@ -221,7 +221,8 @@ test("Plan Week places a tech's own waiting jobs on a week ahead, and Undo puts 
   if (await fromTray.count()) await fromTray.uncheck();
   await sheet.getByRole("button", { name: "Plan Week" }).click();
 
-  const result = page.getByTestId("plan-week-result");
+  // The result is a banner at the top of the screen, with Undo (owner, 2026-10-20).
+  const result = page.getByTestId("top-banner");
   await expect(result).toContainText(/^Moved \d+ jobs?/);
   for (const id of waiting) {
     const j = await row(id);

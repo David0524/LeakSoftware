@@ -9,7 +9,8 @@ import {
   type ReactNode,
 } from "react";
 import {
-  AccessibilityInfo,
+  InteractionManager,
+  LayoutAnimation,
   Pressable,
   StyleSheet,
   Text,
@@ -74,14 +75,15 @@ import {
   FilterPills,
   Group,
   ListRow,
-  Notice,
   Screen,
   SearchField,
   Segmented,
   T,
   TabBarSpace,
+  useReduceMotion,
   type ScrollMetrics,
 } from "../../ui/components";
+import { useResultBanner } from "../../ui/ResultBanner";
 import { Glass } from "../../ui/Glass";
 import { haptics } from "../../ui/haptics";
 import { ModalSheet } from "../../ui/ModalSheet";
@@ -100,6 +102,7 @@ import {
   tint,
   type,
 } from "../../ui/theme";
+import { Grip } from "../../ui/Grip";
 import { WebIcon } from "../../ui/WebIcon";
 import { DayMap } from "./DayMap";
 
@@ -124,8 +127,6 @@ interface Suggested {
   /** What was planned, for the note on what was left out. */
   asked: RoutePlanCard[];
 }
-
-type Result = { message?: string; error?: string; undo?: PlanUndo[]; tone?: "success" | "info" };
 
 export function ServiceRoutes({
   viewControl,
@@ -180,7 +181,12 @@ export function ServiceRoutes({
       : (routes.find((r) => r.plans.length)?.day ?? days[0] ?? 1);
   const current = routes.find((r) => r.day === day);
 
-  const [result, setResult] = useState<Result | null>(null);
+  // What a change did, in the banner at the top (owner, 2026-10-20), with Undo.
+  const banner = useResultBanner();
+  const fail = (message: string) => banner.show({ tone: "error", message });
+  const reduceMotion = useReduceMotion();
+  /** Suggest Days is being worked out: its row says so first. */
+  const [suggesting, setSuggesting] = useState(false);
   const [moving, setMoving] = useState<Moving | null>(null);
   const [sheet, setSheet] = useState<"add" | "suggest" | null>(null);
 
@@ -209,25 +215,43 @@ export function ServiceRoutes({
       return;
     }
     const row = rows.get(m.plan.planId);
-    if (!row) return setResult({ error: "This plan is gone. Pull down to refresh." });
+    if (!row) return fail("This plan is gone. Pull down to refresh.");
+    if (!reduceMotion)
+      LayoutAnimation.configureNext(
+        LayoutAnimation.create(260, LayoutAnimation.Types.easeInEaseOut, "opacity"),
+      );
     const error = write([moveWrite(row, m, today)]);
-    if (error) return setResult({ error });
-    haptics.success();
-    const message = movedMessage(m.to);
-    AccessibilityInfo.announceForAccessibility(message);
-    setResult({ message, undo: [undoRow(row)], tone: "success" });
+    if (error) return fail(error);
+    const before = [undoRow(row)];
+    banner.show({ tone: "success", message: movedMessage(m.to), undo: () => undo(before) });
   }
 
   function undo(list: PlanUndo[]) {
     const error = write(list);
-    if (error) return setResult({ error });
+    if (error) return fail(error);
     haptics.light();
-    setResult({ message: PUT_BACK, tone: "info" });
+    banner.show({ tone: "info", message: PUT_BACK });
   }
 
+  /** Suggest Days: "Suggesting…" first, then the suggestions once that's on screen. */
   function suggest(ids: string[], forTechs: string[], asked: RoutePlanCard[]) {
     setSheet(null);
-    setResult(null);
+    banner.dismiss();
+    setSuggesting(true);
+    requestAnimationFrame(() => {
+      void InteractionManager.runAfterInteractions(() =>
+        setTimeout(() => {
+          try {
+            suggestNow(ids, forTechs, asked);
+          } finally {
+            setSuggesting(false);
+          }
+        }, 0),
+      );
+    });
+  }
+
+  function suggestNow(ids: string[], forTechs: string[], asked: RoutePlanCard[]) {
     const wanted = new Set(ids);
     const asPlan = (c: RoutePlanCard) => ({
       id: c.planId,
@@ -246,7 +270,7 @@ export function ServiceRoutes({
       drive: estimateDriveMinutes,
     });
     if (!r.suggestions.length)
-      return setResult({ message: nothingSuggested(leftOutNote(asked, r.left)), tone: "info" });
+      return banner.show({ tone: "info", message: nothingSuggested(leftOutNote(asked, r.left)) });
     haptics.selection();
     setSuggested({ list: r.suggestions, left: r.left, asked });
   }
@@ -264,9 +288,8 @@ export function ServiceRoutes({
     }
     setSuggested(null);
     const error = write(writes);
-    if (error) return setResult({ error });
-    haptics.success();
-    setResult({ message: keptMessage(writes.length), undo: before, tone: "success" });
+    if (error) return fail(error);
+    banner.show({ tone: "success", message: keptMessage(writes.length), undo: () => undo(before) });
   }
 
   // --- Moving ----------------------------------------------------------------------
@@ -288,7 +311,7 @@ export function ServiceRoutes({
       if (plan.kind === "none") return;
       if (plan.kind === "refuse") {
         haptics.light();
-        setResult({ error: plan.error });
+        fail(plan.error);
         return;
       }
       move({ plan: held.plan, ...plan });
@@ -320,30 +343,6 @@ export function ServiceRoutes({
       </Screen>
     );
 
-  const notice = result?.error ? (
-    <Notice tone="error">{result.error}</Notice>
-  ) : result?.message ? (
-    <Notice tone={result.tone === "info" ? "info" : "success"}>
-      <View style={styles.result}>
-        <Text
-          style={[type.body, face.medium, { flex: 1, color: color.text }]}
-          maxFontSizeMultiplier={MAX_TEXT_SCALE}
-        >
-          {result.message}
-        </Text>
-        {result.undo?.length ? (
-          <Button
-            kind="quiet"
-            title="Undo"
-            accessibilityLabel={`Undo, ${result.message}`}
-            onPress={() => undo(result.undo!)}
-            style={{ paddingHorizontal: 12, marginRight: -8 }}
-          />
-        ) : null}
-      </View>
-    </Notice>
-  ) : null;
-
   return (
     <DragContext.Provider value={drag.api}>
       <Screen
@@ -356,6 +355,7 @@ export function ServiceRoutes({
         overlay={
           <>
             {drag.overlay}
+            {banner.element}
             {suggested ? (
               <SuggestBar
                 count={suggested.list.length}
@@ -396,14 +396,12 @@ export function ServiceRoutes({
           </ListRow>
           <View style={(suggested || !tech) && { opacity: 0.5 }}>
             <ListRow
-              title="Suggest Days"
+              title={suggesting ? "Suggesting…" : "Suggest Days"}
               tone="link"
               onPress={suggested || !tech ? undefined : () => setSheet("suggest")}
             />
           </View>
         </Group>
-
-        {notice}
 
         <View style={{ gap: space["3"] }}>
           <DaySegments routes={routes} day={day} onPick={setPickedDay} />
@@ -832,21 +830,6 @@ function DaySegments({
           </Pressable>
         );
       })}
-    </View>
-  );
-}
-
-/** Six dots: the card can be dragged. */
-function Grip() {
-  return (
-    <View style={styles.grip} accessible={false} importantForAccessibility="no-hide-descendants">
-      {[0, 1, 2].map((row) => (
-        <View key={row} style={{ flexDirection: "row", gap: 4 }}>
-          {[0, 1].map((c) => (
-            <View key={c} style={[styles.dot, { backgroundColor: tint(color.textMuted, 0.7) }]} />
-          ))}
-        </View>
-      ))}
     </View>
   );
 }
@@ -1346,7 +1329,6 @@ function SuggestBar({
 }
 
 const styles = StyleSheet.create({
-  result: { flexDirection: "row", alignItems: "center", gap: space["3"], flex: 1 },
   track: {
     flexDirection: "row",
     alignSelf: "stretch",
@@ -1393,14 +1375,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   pill: { borderRadius: shape.pill, paddingHorizontal: 10, paddingVertical: 2 },
-  grip: {
-    width: minTap,
-    height: minTap,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-  },
-  dot: { width: 3.5, height: 3.5, borderRadius: 2 },
   ghost: { position: "absolute", left: 0, top: 0, borderRadius: shape.card },
   hidden: { position: "absolute", left: 0, right: 0, top: 0, opacity: 0 },
   moveAddress: { alignItems: "center" },

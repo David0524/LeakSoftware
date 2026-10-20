@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { signedInClient } from "./backend";
 import { OWNER, RUN, signIn } from "./helpers";
 
-// Routing (owner request, 2026-10-13): Plan Route orders a tech's day for the least driving
+// Routing (owner request, 2026-10-13): Optimize orders a tech's day for the least driving
 // and keeps a promised time; jobs move between the tray and a tech's day by Move… and by
 // dragging; Suggest Times fits a job into the routes already planned; addresses link to
 // directions; Today shows a tech's route. No routing key in CI: drive times
@@ -151,10 +151,16 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   ]);
   await expect(route.getByText(/^3 stops · .* driving · back by /)).toBeVisible();
 
-  // 1. Plan Route: Goodyear no longer sits between the east-side stops, and the promised
-  //    2:00 PM stays.
-  await route.getByRole("button", { name: "Plan Route" }).click();
-  await expect(page.getByText(/^Planned: .* less than before/)).toBeVisible();
+  // 1. Optimize (owner, 2026-10-20: was Plan Route): Goodyear no longer sits between the
+  //    east-side stops, and the promised 2:00 PM stays. The result is a banner at the top of
+  //    the screen.
+  await route.getByRole("button", { name: "Optimize" }).click();
+  const banner = page.getByTestId("top-banner");
+  await expect(banner).toContainText(/^Optimized · .* less driving · Back by \d/);
+  await expect(page.getByRole("status").filter({ has: banner })).toHaveCount(1);
+  // A tap puts it away.
+  await banner.click();
+  await expect(banner).toHaveCount(0);
   await expect(
     route.getByRole("article", { name: `2:00 PM, ${name("scottsdale")}` }),
   ).toBeVisible();
@@ -248,6 +254,24 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   expect(await mapsTarget(page, href, { "user-agent": IPHONE, cookie: "lb_maps=google" })).toMatch(
     /^https:\/\/www\.google\.com\/maps\//,
   );
+
+  // 6. The access notes are edited right under the address (owner, 2026-10-20), and only they
+  //    change.
+  const access = page.getByTestId("access-notes-row");
+  await access.getByRole("button").click();
+  const notes = page.getByRole("dialog", { name: "Access Notes" });
+  const field = notes.getByLabel("Access notes");
+  const was = await field.inputValue();
+  await field.fill("Gate code 4321. Dog in the yard.");
+  await notes.getByRole("button", { name: "Save" }).click();
+  await expect(notes).toHaveCount(0);
+  await expect(access).toContainText("Gate code 4321. Dog in the yard.");
+  await expect(page.getByTestId("pool-row")).toContainText("455 N Galvin");
+  // Put it back as it was.
+  await access.getByRole("button").click();
+  await notes.getByLabel("Access notes").fill(was);
+  await notes.getByRole("button", { name: "Save" }).click();
+  await expect(access).toContainText(was || "Add Access Notes");
 });
 
 test("on a phone, a stop drags by its grip to another place in the day", async ({ browser }) => {
@@ -359,12 +383,13 @@ test("Today shows a tech's route with directions", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Today · Priya Shah" })).toBeVisible();
   await expect(page.getByTestId("today-summary")).toContainText(/stops? · .* driving/);
   // The card at the top for the stop she's on (owner, 2026-10-20): the Live Activity's words and
-  // a segment per stop. On My Way and Start Job are hers to press, so an owner doesn't get them.
+  // a segment per stop. On My Way and Start are hers to press, so an owner doesn't get them.
   const hero = page.getByTestId("today-hero");
   await expect(hero).toBeVisible();
   await expect(hero).toContainText(/Stop \d+ of \d+/);
   await expect(hero.getByTestId("hero-progress")).toHaveAttribute("aria-label", /\d+ of \d+/);
-  await expect(hero.getByRole("button", { name: /On My Way|Start Job/ })).toHaveCount(0);
+  await expect(hero.getByRole("button", { name: /^(On My Way|Start)$/ })).toHaveCount(0);
+  await expect(hero.getByTestId("hero-start-row")).toHaveCount(0);
   // In the list, that stop is one row marked Now.
   await expect(
     page.getByTestId("today-stop").filter({ has: page.getByText("Now", { exact: true }) }),

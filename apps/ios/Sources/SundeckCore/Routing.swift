@@ -6,7 +6,7 @@ import Foundation
 // zone (8:00 AM = 480); days are "YYYY-MM-DD".
 
 /// A point on the map.
-public struct LatLng: Codable, Equatable, Sendable {
+public struct LatLng: Codable, Hashable, Sendable {
     public var lat: Double
     public var lng: Double
 
@@ -45,6 +45,25 @@ public func estimateDriveMinutes(_ a: LatLng?, _ b: LatLng?) -> Int {
 
 /// Rounded to 4 decimals (about 11 m), the key drive times are cached under between two points.
 public func pointKey(_ p: LatLng) -> String { "\(ECMA.toFixed(p.lat, 4)),\(ECMA.toFixed(p.lng, 4))" }
+
+/// The same drive times, each pair of points worked out once (planning asks for the same legs
+/// many thousands of times; `DriveTimes` builds two point keys per question). Not for sharing
+/// between threads: one per planning run.
+public func rememberingDrive(_ drive: @escaping DriveFn) -> DriveFn {
+    final class Memo { var minutes: [Leg: Int] = [:] }
+    struct Leg: Hashable {
+        var from: LatLng?
+        var to: LatLng?
+    }
+    let memo = Memo()
+    return { a, b in
+        let leg = Leg(from: a, to: b)
+        if let m = memo.minutes[leg] { return m }
+        let m = drive(a, b)
+        memo.minutes[leg] = m
+        return m
+    }
+}
 
 /// Drive times: known times (from the server's cache) where there are some, else the estimate.
 public struct DriveTimes: Sendable {
@@ -196,10 +215,36 @@ private func permutations(_ n: Int) -> [[Int]] {
 public func optimizeRoute(_ stops: [RouteStop], depot: LatLng?, day: WorkDay, drive: DriveFn) -> (
     order: [Int], route: TimedRoute
 ) {
-    func cost(_ order: [Int]) -> Int {
-        routeCost(timeRoute(order.map { stops[$0] }, depot: depot, day: day, drive: drive))
-    }
     let n = stops.count
+    // Every order of 8 stops is 40,320 routes, so each leg's drive is looked up once (stops 0..<n,
+    // the shop at n) and an order is costed with plain arithmetic: the same sums as
+    // `routeCost(timeRoute(…))`, which turned each leg into two point keys (owner, 2026-10-20:
+    // "The Liquid Glass literally freezes up when I press 'plan route'").
+    let points = stops.map(\.location) + [depot]
+    let width = n + 1
+    var legs = [Int](repeating: 0, count: width * width)
+    for a in 0..<width {
+        for b in 0..<width { legs[a * width + b] = drive(points[a], points[b]) }
+    }
+    func cost(_ order: [Int]) -> Int {
+        var clock = day.startMin
+        var at = n
+        var driveTotal = 0
+        var lateTotal = 0
+        for i in order {
+            let s = stops[i]
+            let d = legs[at * width + i]
+            driveTotal += d
+            let arrive = clock + d
+            let start = max(arrive, max(s.fixedStartMin ?? 0, s.earliestMin ?? 0))
+            if let fixed = s.fixedStartMin { lateTotal += max(0, arrive - fixed) }
+            clock = start + s.durationMin
+            if s.location != nil { at = i }
+        }
+        let back = legs[at * width + n]
+        driveTotal += back
+        return driveTotal + lateTotal * 20 + max(0, clock + back - day.endMin) * 5
+    }
     var best = Array(0..<n)
     var bestCost = cost(best)
     if n <= 8 {

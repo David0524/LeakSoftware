@@ -12,6 +12,7 @@ import { CleaningNames } from "../maintenance/Cleanings";
 import { Button, Card, StatusChip, T } from "../../ui/components";
 import { LockTag } from "../../ui/LockTag";
 import { AddressLine } from "../../ui/NotOnMap";
+import { Grip } from "../../ui/Grip";
 import { WebIcon } from "../../ui/WebIcon";
 import {
   cardShadow,
@@ -27,7 +28,7 @@ import {
 import { dropTint, useDragHover, useDragSource, useDropZones } from "./ScheduleDrag";
 
 // Schedule › Day: one card per person's route (spec 5.6; the website's route-board.tsx
-// DayColumn and StopCard): the summary, Plan Route and the maps button, then the stops with
+// DayColumn and StopCard): the summary, Optimize and the maps button, then the stops with
 // the driving between them, drawn as Today's stops (owner, 2026-10-20: "make the schedule cards
 // a little more appealing. Refer to what the today page looks like"): a soft card with the
 // stop's number in a round badge, the time, the customer, the kind of stop as a pill, the
@@ -98,7 +99,7 @@ export function Leg({ text, late }: { text: string; late?: number }) {
 }
 
 /**
- * A route's summary line, the overtime warning, then Plan Route and the maps button: in the
+ * A route's summary line, the overtime warning, then Optimize and the maps button: in the
  * route's card, or under the day's map when one tech's day leads the screen (the website's
  * DayFacts and DayButtons).
  */
@@ -138,11 +139,14 @@ export function RouteFacts({
         <View style={styles.buttons}>
           {c.open ? (
             <View style={styles.half}>
+              {/* "Optimize" (owner, 2026-10-20: "Change 'plan route' to 'optimize'"), with its
+                  progress shown first while the day is worked out. */}
               <Button
                 kind="secondary"
-                title="Plan Route"
+                title={busy ? "Optimizing…" : "Optimize"}
+                accessibilityLabel={busy ? "Optimizing" : `Optimize ${c.title}’s route`}
                 onPress={onPlan}
-                disabled={busy}
+                loading={busy}
                 wide
                 style={{ paddingHorizontal: 8 }}
               />
@@ -322,9 +326,11 @@ function StopFace({
             title="Move…"
             accessibilityLabel={`Move ${s.customer}`}
             onPress={() => onMove(s)}
-            style={{ paddingHorizontal: 8, marginRight: -4 }}
+            style={{ paddingHorizontal: 8 }}
           />
         ) : null}
+        {/* The drag grip at the trailing edge (owner, 2026-10-20); shown under the finger too. */}
+        {s.movable ? <Grip width={28} /> : null}
       </View>
       <View style={styles.body}>
         <View style={styles.chips}>
@@ -455,7 +461,7 @@ function StopCard({
 /** Needs a Time's card under the finger while it's dragged. */
 export function GhostCard({ stop: s }: { stop: Stop }) {
   return (
-    <View style={[styles.face, styles.clip, { backgroundColor: color.surface }]}>
+    <View style={[styles.face, styles.clip, { backgroundColor: color.surface, paddingRight: 36 }]}>
       <Text
         numberOfLines={1}
         style={[type.bodyEmphasis, { color: color.text }]}
@@ -479,6 +485,9 @@ export function GhostCard({ stop: s }: { stop: Stop }) {
           {s.address}
         </T>
       ) : null}
+      <View style={styles.ghostGrip}>
+        <Grip width={28} />
+      </View>
     </View>
   );
 }
@@ -536,5 +545,6 @@ const styles = StyleSheet.create({
   },
   pill: { borderRadius: shape.pill, paddingHorizontal: 10, paddingVertical: 2 },
   access: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
+  ghostGrip: { position: "absolute", right: 4, top: 0, bottom: 0, justifyContent: "center" },
   swipeAction: { width: 88, alignItems: "center", justifyContent: "center" },
 });

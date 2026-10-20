@@ -158,7 +158,7 @@ export function useDriveTimes(
     .join(";");
   const keys = useMemo(() => (pointsKey ? pointsKey.split(";") : []), [pointsKey]);
   const id = `${companyId}:${keys.join(";")}`;
-  const [, setVersion] = useState(0);
+  const [version, setVersion] = useState(0);
   const [live, setLive] = useState(() => asked.has(id));
 
   useEffect(() => {
@@ -182,9 +182,15 @@ export function useDriveTimes(
     };
   }, [companyId, id, keys]);
 
-  const drive: DriveFn = (a, b) => {
-    if (!a || !b) return 0;
-    return known.get(`${pointKey(a)}>${pointKey(b)}`) ?? estimateDriveMinutes(a, b);
-  };
+  // The same function until new drive times arrive, so what's worked out from it (each route's
+  // summary) is kept between renders (owner, 2026-10-20: a smooth schedule).
+  const drive = useMemo<DriveFn>(
+    () => (a, b) => {
+      if (!a || !b) return 0;
+      return known.get(`${pointKey(a)}>${pointKey(b)}`) ?? estimateDriveMinutes(a, b);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- version marks new drive times
+    [version],
+  );
   return { drive, live };
 }

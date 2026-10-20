@@ -118,7 +118,8 @@ test("a customer to add moves to Jake's Tuesday with Move…, and Undo puts it b
     await sheet.getByRole("radio", { name: "Jake Turner" }).click();
     await sheet.getByRole("button", { name: "Move to Tuesday" }).click();
 
-    const notice = page.getByTestId("routes-notice").filter({ visible: true });
+    // Results show as a banner at the top of the screen (owner, 2026-10-20).
+    const notice = page.getByTestId("top-banner");
     await expect(notice).toContainText("Moved to Tuesday. Its coming visits moved too.");
     const tuesday = page
       .getByTestId("route-day")
@@ -131,7 +132,7 @@ test("a customer to add moves to Jake's Tuesday with Move…, and Undo puts it b
 
     // Undo puts it back in Customers to Add.
     await notice.getByRole("button", { name: "Undo" }).click();
-    await expect(notice).toContainText("Put back as it was.");
+    await expect(page.getByTestId("top-banner")).toContainText("Put back as it was.");
     await expect(toAdd.getByRole("button", { name: new RegExp(NAME) })).toBeVisible();
     await expect(tuesday.getByRole("button", { name: new RegExp(NAME) })).toHaveCount(0);
     await expect.poll(async () => (await row()).assigned_user_id).toBeNull();

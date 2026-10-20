@@ -1,5 +1,5 @@
 import { POOL_TYPE_LABELS, type PoolType, type Property } from "@leakbook/core";
-import { savePool } from "@/app/actions/jobs";
+import { saveAccessNotes, savePool } from "@/app/actions/jobs";
 import { AddressField } from "./address-field";
 import {
   SettingsFields,
@@ -78,6 +78,24 @@ export function PoolDetailsForm({ pool: p }: { pool: Property }) {
           name="access_notes"
           defaultValue={p.access_notes ?? ""}
           hint="Gate code, dog, where to park."
+        />
+      </SettingsFields>
+    </SettingsForm>
+  );
+}
+
+/** Just the pool's access notes, in the job page's Access Notes sheet. */
+export function AccessNotesForm({ pool: p }: { pool: Pick<Property, "id" | "access_notes"> }) {
+  return (
+    <SettingsForm action={saveAccessNotes} primary full>
+      <input type="hidden" name="property" value={p.id} />
+      <SettingsFields labelWidth="6.5rem">
+        <STextArea
+          label="Access notes"
+          name="access_notes"
+          defaultValue={p.access_notes ?? ""}
+          hint="Gate code, dog, where to park."
+          maxLength={2000}
         />
       </SettingsFields>
     </SettingsForm>

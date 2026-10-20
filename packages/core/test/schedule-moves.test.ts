@@ -57,7 +57,7 @@ describe("planDay", () => {
     expect(r.updates).toHaveLength(3);
     expect(r.updates.map((u) => u.route_order)).toEqual([1, 2, 3]);
     expect(r.updates.every((u) => u.scheduled_start && u.scheduled_end)).toBe(true);
-    expect(r.message).toMatch(/^Planned: .* of driving/);
+    expect(r.message).toMatch(/^Optimized · .+ · Back by \d{1,2}:\d{2} [AP]M$/);
   });
 
   it("refuses past days and empty days", () => {

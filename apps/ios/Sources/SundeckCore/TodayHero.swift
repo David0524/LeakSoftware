@@ -174,11 +174,12 @@ public enum HeroAction: String, Codable, CaseIterable, Sendable {
     case startJob = "start_job"
     case openChecklist = "open_checklist"
 
-    /// "On My Way", "Start Job", "Open Checklist" (`HERO_ACTION_LABELS`).
+    /// "On My Way", "Start", "Open Checklist" (`HERO_ACTION_LABELS`; owner, 2026-10-20: "Change
+    /// 'start job' to 'start'").
     public var label: String {
         switch self {
         case .onMyWay: "On My Way"
-        case .startJob: "Start Job"
+        case .startJob: "Start"
         case .openChecklist: "Open Checklist"
         }
     }

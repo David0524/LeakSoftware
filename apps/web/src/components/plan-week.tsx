@@ -8,7 +8,8 @@ import {
   type WeekUndoRow,
 } from "@/app/actions/week-plan";
 import { Sheet } from "./sheet";
-import { Button, Notice, cx } from "./ui";
+import { showBanner } from "./top-banner";
+import { Button, cx } from "./ui";
 
 // Plan Week (owner, 2026-10-20, docs/plans/route-maps.md: "build routes from scratch"): puts the
 // week's movable jobs on days for the least driving, for one tech or everyone, with one Undo for
@@ -19,7 +20,10 @@ export const PLAN_WEEK_HELP =
 
 const EVERYONE = "all";
 
-/** The Plan Week button, its sheet, and the result (with Undo) under the button's row. */
+/**
+ * The Plan Week button and its sheet. The result shows as a banner at the top of the screen,
+ * with Undo (owner, 2026-10-20: results "on a banner on the top of the screen").
+ */
 export function PlanWeek({
   dates,
   techs,
@@ -43,8 +47,6 @@ export function PlanWeek({
   const [tech, setTech] = useState(fallback);
   const [withTray, setWithTray] = useState(true);
   const [pending, start] = useTransition();
-  const [result, setResult] = useState<WeekPlanResult & { undone?: boolean }>({});
-  const [undo, setUndo] = useState<WeekUndoRow[] | null>(null);
   const close = useCallback(() => setOpen(false), []);
   const options = [
     ...techs.map((t) => ({ value: t.id, label: t.name })),
@@ -52,22 +54,34 @@ export function PlanWeek({
   ];
   const everyDayPast = dates.length === 0;
 
+  function report(r: WeekPlanResult) {
+    if (r.error) {
+      showBanner({ tone: "error", message: r.error });
+      return;
+    }
+    if (!r.message) return;
+    const rows = r.undo;
+    showBanner({
+      message: r.message,
+      // One Undo puts the whole week back.
+      action: rows?.length ? { label: "Undo", onAction: () => putBack(rows) } : undefined,
+    });
+  }
+
   function plan() {
     setOpen(false);
     start(async () => {
       const r = await planWeek({ dates, tech, tray: waiting > 0 && withTray });
-      setResult(r);
-      setUndo(r.error ? null : (r.undo ?? null));
+      // With the refreshed week, not before it.
+      start(() => report(r));
     });
   }
 
-  function putBack() {
-    const rows = undo;
-    if (!rows) return;
+  function putBack(rows: WeekUndoRow[]) {
     start(async () => {
       const r = await undoPlanWeek(rows);
-      setResult({ ...r, undone: true });
-      if (!r.error) setUndo(null);
+      if (r.error) showBanner({ tone: "error", message: r.error });
+      else if (r.message) showBanner({ message: r.message });
     });
   }
 
@@ -78,38 +92,23 @@ export function PlanWeek({
         kind="secondary"
         aria-haspopup="dialog"
         disabled={pending || everyDayPast}
-        className={buttonClassName}
+        aria-busy={pending || undefined}
+        className={cx("gap-2", pending && "disabled:opacity-100", buttonClassName)}
         onClick={() => {
-          setResult({});
           // The sheet starts from the tech the maps show.
           setTech(fallback);
           setWithTray(true);
           setOpen(true);
         }}
       >
+        {pending ? (
+          <span
+            aria-hidden="true"
+            className="size-4 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none motion-reduce:border-r-current motion-reduce:opacity-60"
+          />
+        ) : null}
         {pending ? "Planning…" : "Plan Week"}
       </Button>
-      <div aria-live="polite" className="basis-full empty:hidden">
-        {pending ? null : result.error ? (
-          <div className="mt-3">
-            <Notice tone="error">{result.error}</Notice>
-          </div>
-        ) : result.message ? (
-          <div data-testid="plan-week-result" className="mt-3">
-            <Notice tone="success">
-              {/* The result, with Undo at its end (one Undo puts the whole week back). */}
-              <span className="-my-2 flex flex-wrap items-center justify-between gap-x-3">
-                <span className="py-2 font-medium">{result.message}</span>
-                {undo?.length ? (
-                  <Button type="button" kind="quiet" onClick={putBack} className="-mr-2 px-4">
-                    Undo
-                  </Button>
-                ) : null}
-              </span>
-            </Notice>
-          </div>
-        ) : null}
-      </div>
       <Sheet open={open} onClose={close} title="Plan Week">
         <div className="space-y-4 pt-1">
           {/* Who to plan for, as an iOS checklist: Everyone, then each tech. */}

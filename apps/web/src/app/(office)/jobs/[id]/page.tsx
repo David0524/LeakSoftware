@@ -103,7 +103,7 @@ import { JobSchedule } from "@/components/schedule-form";
 import { emailConfigured } from "@/server/email";
 import { routingConfigured } from "@/server/routing";
 import { NotOnMapRow, NotOnMapTag } from "@/components/not-on-map";
-import { PoolDetailsForm } from "@/components/pool-details";
+import { AccessNotesForm, PoolDetailsForm } from "@/components/pool-details";
 import { SheetRow } from "@/components/settings-list";
 
 export const metadata: Metadata = { title: "Job · Sundeck Pro" };
@@ -203,7 +203,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
               <>
                 {/* iOS Settings-style groups: customer, pool, and who's on it (two columns
                     on wide screens), then the On Site form. */}
-                <div className="grid items-start gap-x-6 gap-y-6 lg:grid-cols-2">
+                <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-x-6 gap-y-6 lg:grid-cols-2">
                   <div className="space-y-6">
                     <Grouped title="Customer">
                       {job.customer ? (
@@ -285,16 +285,30 @@ export default async function JobPage({ params }: PageProps<"/jobs/[id]">) {
                         >
                           <PoolDetailsForm pool={job.property} />
                         </SheetRow>
+                        {/* Under the address: the access notes, edited here (owner,
+                            2026-10-20). */}
+                        <SheetRow
+                          title="Access Notes"
+                          testId="access-notes-row"
+                          label={
+                            job.property.access_notes ? (
+                              <>
+                                <span className="block text-[0.9375rem] text-text-muted">
+                                  Access Notes
+                                </span>
+                                <span className="block whitespace-pre-line">
+                                  {job.property.access_notes}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-link">Add Access Notes</span>
+                            )
+                          }
+                        >
+                          <AccessNotesForm pool={job.property} />
+                        </SheetRow>
                         {mapStatus(job.property, routingConfigured()) === "missing" ? (
                           <NotOnMapRow />
-                        ) : null}
-                        {job.property.access_notes ? (
-                          <Row>
-                            <span className="min-w-0 flex-1">
-                              <span className="block text-[0.9375rem] text-text-muted">Access</span>
-                              <span className="block">{job.property.access_notes}</span>
-                            </span>
-                          </Row>
                         ) : null}
                       </Grouped>
                     ) : null}
@@ -1303,8 +1317,9 @@ function ContactRow({
   if (!phone && !email) return null;
   return (
     <Row
-      label={phone ?? email}
-      detail={phone && email ? email : undefined}
+      label={phone ?? <span className="block truncate">{email}</span>}
+      // A long address ends in "…" rather than running under the buttons (Email has it whole).
+      detail={phone && email ? <span className="block truncate">{email}</span> : undefined}
       value={
         <span className="flex gap-2">
           {phone ? (

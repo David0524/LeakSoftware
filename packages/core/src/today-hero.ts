@@ -192,7 +192,7 @@ export function heroActions(
 
 export const HERO_ACTION_LABELS = {
   on_my_way: "On My Way",
-  start_job: "Start Job",
+  start_job: "Start",
   open_checklist: "Open Checklist",
 } as const;
 

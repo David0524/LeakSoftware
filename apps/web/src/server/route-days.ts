@@ -1,4 +1,5 @@
 import "server-only";
+import { after } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   daySummary,
@@ -115,7 +116,13 @@ export async function loadRoutes(
       byKey.set(key, day);
     }
   }
-  await locateStops(office, jobs);
+  // Pools not on the map yet are looked up. A page doesn't wait for it (lookups can take a few
+  // seconds, and the schedule should open at once; owner, 2026-10-20): they finish after the
+  // response, and the next load has them. Planning (live) waits, so its route counts them.
+  // The signed-in client is made now: a page's `after` can't read cookies.
+  const lookups = await createClient();
+  if (live) await locateStops(office, jobs, lookups);
+  else after(() => locateStops(office, jobs, lookups));
   const points = [ctx.depot, ...jobs.map((j) => propertyLocation(j.property))].filter(
     (p): p is LatLng => !!p,
   );
@@ -169,17 +176,27 @@ const LOOKUPS_PER_LOAD = 10;
  * 2026-10-19: "It should be able to navigate based on the provided address"), so pools added
  * on a phone are placed too. The jobs' properties get the coordinates in place.
  */
-async function locateStops(office: Office, jobs: JobRow[]): Promise<void> {
+async function locateStops(office: Office, jobs: JobRow[], db: SupabaseClient): Promise<void> {
   if (!routingConfigured()) return;
   const missing = [
     ...new Map(
       jobs
-        .filter((j) => j.property && !propertyLocation(j.property) && j.property.address_line1)
+        // Not yet tried at this address (a miss is kept, so the next ten get their turn).
+        .filter(
+          (j) =>
+            j.property &&
+            !propertyLocation(j.property) &&
+            j.property.address_line1 &&
+            (j.property as { geocoded_address?: string | null }).geocoded_address !==
+              formatAddress(j.property),
+        )
         .map((j) => [j.property!.id, j.property!]),
     ).values(),
   ].slice(0, LOOKUPS_PER_LOAD);
   const found = await Promise.all(
-    missing.map(async (p) => [p.id, await lookUpProperty(office, p.id)] as const),
+    missing.map(
+      async (p) => [p.id, await locatePropertyWith(db, office.company.id, p.id)] as const,
+    ),
   );
   for (const [id, at] of found) {
     if (!at) continue;
@@ -225,7 +242,16 @@ export async function locatePropertyWith(
   // pool by GPS, or set by hand: only a changed address needs a new lookup.
   if (!address || p.geocoded_address === address) return null;
   const found = await geocodeAddress(db, companyId, address);
-  if (!found) return null;
+  if (!found) {
+    // Not found: kept with the address, so the same address isn't tried again on every load;
+    // changing it tries again (owner, 2026-10-20).
+    await db
+      .from("property")
+      .update({ geocoded_address: address })
+      .eq("id", propertyId)
+      .is("latitude", null);
+    return null;
+  }
   const { error } = await db
     .from("property")
     .update({

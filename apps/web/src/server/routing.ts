@@ -17,6 +17,8 @@ export interface RoutingProvider {
   name: string;
   /** Coordinates for a street address, or null when it can't be found. */
   geocode(address: string): Promise<LatLng | null>;
+  /** A paid lookup for what `geocode` missed (Mapbox's permanent geocoding), when there is one. */
+  paidGeocode?(address: string): Promise<LatLng | null>;
   /** Real addresses that start with what's typed, nearest `near` first (temporary results). */
   suggest(text: string, near: LatLng | null): Promise<AddressSuggestion[]>;
   /** Minutes of driving between every pair of points (rows: from, columns: to). */
@@ -240,7 +242,9 @@ export function freeGeocoder(fetchImpl: typeof fetch = fetch): Pick<RoutingProvi
 /** Mapbox for suggestions and drive times; pools are looked up for free (freeGeocoder). */
 function routingProvider(): RoutingProvider | null {
   const token = process.env.MAPBOX_TOKEN;
-  return token ? { ...mapbox(token), geocode: freeGeocoder().geocode } : null;
+  if (!token) return null;
+  const m = mapbox(token);
+  return { ...m, geocode: freeGeocoder().geocode, paidGeocode: m.geocode };
 }
 
 /**
@@ -250,7 +254,7 @@ function routingProvider(): RoutingProvider | null {
 export async function mapboxBudget(
   db: SupabaseClient,
   companyId: string,
-  api: "static_image" | "geocode_temp" | "matrix_element" | "map_load",
+  api: "static_image" | "geocode_temp" | "matrix_element" | "map_load" | "geocode_paid",
   units: number,
 ): Promise<boolean> {
   const { data, error } = await db.rpc("mapbox_take", {
@@ -333,24 +337,23 @@ export async function suggestAddresses(
 }
 
 /**
- * Find coordinates for an address, or null without a routing key or a match. The shop and
- * database are kept in the signature for callers; lookups are free, so nothing is counted.
+ * Find coordinates for an address, or null without a routing key or a match. The free lookups
+ * (Census, OpenStreetMap) come first and aren't counted; an address they miss gets one try with
+ * Mapbox's paid permanent geocoding, at most 100 a month for every shop (owner, 2026-10-20).
  */
 export async function geocodeAddress(
-  _db: SupabaseClient,
-  _companyId: string,
+  db: SupabaseClient,
+  companyId: string,
   address: string,
   provider: RoutingProvider | null = routingProvider(),
 ): Promise<LatLng | null> {
   if (!provider || !address.trim()) return null;
-  // Lookups are free (Census, then OpenStreetMap), so they don't use the shop's Mapbox
-  // allowance: a busy day of drive times never leaves a pool unfound (owner, 2026-10-20).
-
-  try {
-    return await provider.geocode(address);
-  } catch {
-    return null;
-  }
+  // The free lookups don't use the shop's daily Mapbox allowance: a busy day of drive times
+  // never leaves a pool unfound.
+  const free = await provider.geocode(address).catch(() => null);
+  if (free || !provider.paidGeocode) return free;
+  if (!(await mapboxBudget(db, companyId, "geocode_paid", 1))) return null;
+  return provider.paidGeocode(address).catch(() => null);
 }
 
 /**

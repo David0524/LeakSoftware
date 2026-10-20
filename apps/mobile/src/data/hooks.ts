@@ -64,3 +64,14 @@ export function useSyncRefresh(): { refreshing: boolean; onRefresh: () => void }
     },
   };
 }
+
+/**
+ * True until this sign-in's first download has finished and nothing is on the phone yet: the
+ * screens show placeholder cards instead of an empty state (owner, 2026-10-20). Re-renders only
+ * when that changes, not on every sync step.
+ */
+export function useFirstLoad(hasRows: boolean): boolean {
+  const { sync } = getServices();
+  const done = useSyncExternalStore(sync.subscribe, () => sync.status.initialSyncDone);
+  return !done && !hasRows;
+}

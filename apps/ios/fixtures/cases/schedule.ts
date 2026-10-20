@@ -7,6 +7,7 @@ import {
   isDateString,
   monthGrid,
   moveJobChange,
+  noteSentences,
   planDay,
   renumberDay,
   scheduleDays,
@@ -292,6 +293,11 @@ export const schedule: ModuleCases = {
       ],
     ],
   ),
+  noteSentences: rule(noteSentences, [
+    [[]],
+    [[null, false, undefined]],
+    [["runs 20 min past the end of the day", null, "a fixed time can’t be met (5 min late)"]],
+  ]),
   renumberDay: rule(
     (techId: string, jobs: PlanJob[], leaving: string) => renumberDay(techId, jobs, leaving),
     [

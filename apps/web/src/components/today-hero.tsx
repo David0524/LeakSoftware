@@ -52,7 +52,7 @@ const ROUND =
 /**
  * Today's card for the stop the tech is on (owner, 2026-10-20; docs/plans/today-hero.md): the
  * Live Activity in the app, in its water blue. The name opens the job; the address opens
- * directions; the main button is the moment's (On My Way, Start Job, Open Checklist). Owners and
+ * directions; the main button is the moment's (Start, Open Checklist). Owners and
  * admins looking at a tech's day get Call and Directions only.
  */
 export function TodayHeroCard({
@@ -83,6 +83,27 @@ export function TodayHeroCard({
       ? heroHeadline(hero)
       : `${heroHeadline(hero)} · Stop ${hero.stop} of ${hero.stops}`;
   const kind = job ? [job.typeLabel, drive].filter(Boolean).join(" · ") : "";
+  // Message, Call and Directions (and On My Way when it's the tech's to send) for the stop.
+  const contact =
+    target && hero.moment !== "done" ? (
+      <Contact
+        job={target}
+        onMyWay={
+          actions.onMyWay ? (
+            <OnMyWay
+              {...onMyWay}
+              icon
+              phone={target.phone}
+              customer={target.customer}
+              driveMin={target.driveMin ?? 0}
+              jobId={target.id}
+              buttonClassName={ROUND}
+            />
+          ) : null
+        }
+      />
+    ) : null;
+  const startRow = actions.primary === "start_job" && !!target && !actions.complete;
   return (
     <section
       aria-label={c.spoken}
@@ -159,52 +180,52 @@ export function TodayHeroCard({
         </ul>
       ) : null}
 
-      {/* The next stop, with Message, Call and Directions on its line (owner, 2026-10-20: "find
-          a better place for the call/direction icon … so we can shorten the card"). */}
-      {c.next || (target && hero.moment !== "done") ? (
-        <div className="mt-3 flex items-center gap-3">
-          <p className={cx("min-w-0 flex-1 text-[0.9375rem]", SOFT)}>{c.next}</p>
-          {target && hero.moment !== "done" ? (
-            <Contact
-              job={target}
-              onMyWay={
-                actions.onMyWay ? (
-                  <OnMyWay
-                    {...onMyWay}
-                    icon
-                    phone={target.phone}
-                    customer={target.customer}
-                    driveMin={target.driveMin ?? 0}
-                    jobId={target.id}
-                    buttonClassName={ROUND}
-                  />
-                ) : null
-              }
-            />
-          ) : null}
-        </div>
-      ) : null}
-
-      {/* One row, equal widths: style, not size, marks the main action (buttons.md). */}
-      {(actions.primary && target) || (actions.complete && job) ? (
-        <div className="mt-4 flex gap-2.5 [&>*]:min-w-0 [&>*]:flex-1">
-          {actions.primary && target ? (
-            <div>
-              <Primary action={actions.primary} job={target} />
+      {/* Before leaving and while driving, Start sits left of the round buttons on one row,
+          under the next stop (owner, 2026-10-20: "Place 'Start Job' to the left of the three
+          icons. Just to condense space"). On site, and for someone looking at a tech's day,
+          the round buttons stay on the Next line. */}
+      {startRow ? (
+        <>
+          {c.next ? <p className={cx("mt-3 text-[0.9375rem]", SOFT)}>{c.next}</p> : null}
+          <div className="mt-3 flex items-center gap-2" data-testid="hero-start-row">
+            {/* Fills the row on phones; a comfortable width, not the whole card, when wider. */}
+            <div className="min-w-28 flex-1 sm:max-w-xs">
+              <Primary action="start_job" job={target!} inline />
+            </div>
+            {contact}
+          </div>
+        </>
+      ) : (
+        <>
+          {c.next || contact ? (
+            <div className="mt-3 flex items-center gap-3">
+              <p className={cx("min-w-0 flex-1 text-[0.9375rem]", SOFT)}>{c.next}</p>
+              {contact}
             </div>
           ) : null}
-          {actions.complete && job ? (
-            <TodayComplete
-              jobId={job.id}
-              customer={job.customer}
-              done={job.done}
-              undo={job.undo}
-              prompt={job.prompt}
-              buttonClassName={cx(BUTTON, "bg-white/18 text-white hover:bg-white/28")}
-            />
+
+          {/* One row, equal widths: style, not size, marks the main action (buttons.md). */}
+          {(actions.primary && target) || (actions.complete && job) ? (
+            <div className="mt-4 flex gap-2.5 [&>*]:min-w-0 [&>*]:flex-1">
+              {actions.primary && target ? (
+                <div>
+                  <Primary action={actions.primary} job={target} />
+                </div>
+              ) : null}
+              {actions.complete && job ? (
+                <TodayComplete
+                  jobId={job.id}
+                  customer={job.customer}
+                  done={job.done}
+                  undo={job.undo}
+                  prompt={job.prompt}
+                  buttonClassName={cx(BUTTON, "bg-white/18 text-white hover:bg-white/28")}
+                />
+              ) : null}
+            </div>
           ) : null}
-        </div>
-      ) : null}
+        </>
+      )}
 
       <div
         className="mt-5 flex gap-1"
@@ -279,10 +300,19 @@ function Contact({ job, onMyWay }: { job: HeroJob; onMyWay?: React.ReactNode }) 
   );
 }
 
-function Primary({ action, job }: { action: "start_job" | "open_checklist"; job: HeroJob }) {
+function Primary({
+  action,
+  job,
+  inline = false,
+}: {
+  action: "start_job" | "open_checklist";
+  job: HeroJob;
+  /** Beside the round buttons: their 44 pt height, so the row lines up. */
+  inline?: boolean;
+}) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const button = cx(BUTTON, ON_WATER);
+  const button = cx(BUTTON, ON_WATER, inline && "min-h-11");
   if (action === "open_checklist")
     return (
       <Link href={`/jobs/${job.id}#checklist`} className={button}>
@@ -290,7 +320,7 @@ function Primary({ action, job }: { action: "start_job" | "open_checklist"; job:
       </Link>
     );
   return (
-    <span>
+    <span className="block">
       <button
         type="button"
         disabled={pending}

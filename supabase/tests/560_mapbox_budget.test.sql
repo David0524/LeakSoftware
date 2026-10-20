@@ -26,7 +26,8 @@ select throws_ok(format('select mapbox_take(%L, ''nope'', 1)', (select cb from i
 reset role;
 select is((select limits from (select array_agg(api || '=' || monthly_limit order by api) as limits
   from app.mapbox_budget where api <> 'matrix_element') x),
-  '{geocode_temp=90000,map_load=45000,static_image=45000}', 'about 90% of the free tiers');
+  '{geocode_paid=100,geocode_temp=90000,map_load=45000,static_image=45000}',
+  'about 90% of the free tiers, and 100 paid lookups a month');
 
 select * from finish();
 rollback;

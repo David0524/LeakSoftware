@@ -58,7 +58,7 @@ public struct WeekPlanInput {
 }
 
 /// The rows Plan Week saves, what to say, and the rows that put it back.
-public struct WeekPlanOutcome {
+public struct WeekPlanOutcome: Sendable {
     public var updates: [JobUpdate]
     public var message: String
     public var undo: [WeekUndoRow]

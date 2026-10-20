@@ -136,7 +136,7 @@ function Body() {
         <div className="grid items-start gap-8 lg:grid-cols-[1fr_1.35fr]">
           <Feature
             title="One click. Best route."
-            text="Plan Route reorders a tech’s day for the least driving, keeps promised times where they are, and gets everyone home on time."
+            text="Optimize reorders a tech’s day for the least driving, keeps promised times where they are, and gets everyone home on time."
           >
             <PlanRouteDemo />
           </Feature>

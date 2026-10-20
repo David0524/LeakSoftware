@@ -12,4 +12,5 @@ export const THEME_SCRIPT = `(function(){try{
 var d=document.documentElement;
 function apply(){d.dataset.theme=localStorage.getItem("${THEME_STORAGE_KEY}")==="dark"?"dark":"light";}
 apply();addEventListener("${THEME_EVENT}",apply);addEventListener("storage",apply);
+if(localStorage.getItem("sundeck.schedule.dayMapOpen")==="0")d.dataset.mapsFolded="";
 }catch(e){document.documentElement.dataset.theme="light";}})()`;

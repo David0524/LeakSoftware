@@ -200,6 +200,32 @@ export async function savePool(_: FormState, form: FormData): Promise<FormState>
   return { message: "Saved." };
 }
 
+/**
+ * A pool's access notes alone, from the job page's Access Notes row (owner, 2026-10-20: "edit
+ * access notes on the job screen underneath the address"). Nothing else on the pool changes.
+ */
+export async function saveAccessNotes(_: FormState, form: FormData): Promise<FormState> {
+  const office = await getOffice();
+  const id = text(form, "property");
+  const notes = text(form, "access_notes");
+  if (notes.length > 2000) return { fields: { access_notes: "Keep it under 2,000 characters." } };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("property")
+    .update({ access_notes: notes || null })
+    .eq("id", id)
+    .eq("company_id", office.company.id)
+    .select("customer_id")
+    .maybeSingle();
+  if (error) return { error: error.message };
+  if (!data) return { error: "This pool is gone. Refresh the page." };
+  revalidatePath(`/customers/${data.customer_id}`);
+  revalidatePath("/jobs", "layout");
+  revalidatePath("/schedule");
+  revalidatePath("/today");
+  return { message: "Saved." };
+}
+
 /** Owners: delete a customer with no open work (the database checks). */
 export async function deleteCustomer(_: FormState, form: FormData): Promise<FormState> {
   await getOffice();

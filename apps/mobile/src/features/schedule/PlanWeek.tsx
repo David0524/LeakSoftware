@@ -1,24 +1,32 @@
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { InteractionManager, StyleSheet, View } from "react-native";
 import type { JobChange } from "@leakbook/core";
-import { EVERYONE, PLAN_WEEK_HELP, type WeekPlanOutcome } from "../../lib/weekPlan";
-import { Button, Group, ListRow, Notice, SwitchControl, T } from "../../ui/components";
+import type { BannerNote } from "../../lib/resultBanner";
+import {
+  EVERYONE,
+  PLAN_WEEK_HELP,
+  PLAN_WEEK_UNDONE,
+  type WeekPlanOutcome,
+} from "../../lib/weekPlan";
+import { Button, Group, ListRow, SwitchControl, T } from "../../ui/components";
 import { ModalSheet } from "../../ui/ModalSheet";
-import { color, face, MAX_TEXT_SCALE, minTap, space, type } from "../../ui/theme";
+import { color, minTap, space } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
 
 // Plan Week (owner, 2026-10-20, docs/plans/route-maps.md: "build routes from scratch"), the
 // website's plan-week.tsx on Android: one full-width button above the week, a sheet with who to
-// plan for and whether Needs a Time joins in, and the result with one Undo for the whole change.
-// No alert or confirmation: Undo covers it. Owners and admins.
+// plan for and whether Needs a Time joins in, and the result with one Undo for the whole change
+// in Schedule's banner (owner, 2026-10-20). No alert or confirmation: Undo covers it. Owners and
+// admins. The button shows "Planning…" first; the week is worked out once that's on screen.
 
-/** The Plan Week button, its sheet, and the result (with Undo) under it. */
+/** The Plan Week button and its sheet; the result goes to Schedule's banner. */
 export function PlanWeek({
   techs,
   defaultTech,
   waiting,
   onPlan,
   onUndo,
+  onResult,
 }: {
   techs: { id: string; name: string }[];
   /** The tech chip picked on Schedule, else Everyone. */
@@ -29,29 +37,46 @@ export function PlanWeek({
   onPlan: (tech: string, tray: boolean) => WeekPlanOutcome;
   /** Writes the saved rows back; an error, or null when it worked. */
   onUndo: (rows: JobChange[]) => string | null;
+  /** Shows the result (with Undo) in the banner at the top of the screen. */
+  onResult: (note: BannerNote) => void;
 }) {
   const fallback = defaultTech && techs.some((t) => t.id === defaultTech) ? defaultTech : EVERYONE;
   const [open, setOpen] = useState(false);
   const [tech, setTech] = useState(fallback);
   const [withTray, setWithTray] = useState(true);
-  const [result, setResult] = useState<{ message?: string; error?: string } | null>(null);
-  const [undo, setUndo] = useState<JobChange[] | null>(null);
+  const [busy, setBusy] = useState(false);
 
   function plan() {
     setOpen(false);
-    const r = onPlan(tech, waiting > 0 && withTray);
-    setResult(r.error ? { error: r.error } : { message: r.message });
-    setUndo(r.error || !r.undo.length ? null : r.undo);
+    setBusy(true);
+    const forTech = tech;
+    const tray = waiting > 0 && withTray;
+    // After the sheet has gone and "Planning…" shows, so the tap never freezes.
+    requestAnimationFrame(() => {
+      void InteractionManager.runAfterInteractions(() =>
+        setTimeout(() => {
+          try {
+            const r = onPlan(forTech, tray);
+            if (r.error) return onResult({ tone: "error", message: r.error });
+            const rows = r.undo;
+            onResult({
+              tone: "success",
+              message: r.message ?? "Week planned",
+              undo: rows.length ? () => putBack(rows) : undefined,
+            });
+          } finally {
+            setBusy(false);
+          }
+        }, 0),
+      );
+    });
   }
 
-  function putBack() {
-    if (!undo) return;
-    const error = onUndo(undo);
-    if (error) setResult({ error });
-    else {
-      setResult({ message: "Put back as it was." });
-      setUndo(null);
-    }
+  function putBack(rows: JobChange[]) {
+    const error = onUndo(rows);
+    onResult(
+      error ? { tone: "error", message: error } : { tone: "info", message: PLAN_WEEK_UNDONE },
+    );
   }
 
   const row = (value: string, label: string) => {
@@ -77,41 +102,16 @@ export function PlanWeek({
     <View style={{ gap: space["3"] }}>
       <Button
         kind="secondary"
-        title="Plan Week"
+        title={busy ? "Planning…" : "Plan Week"}
+        loading={busy}
         wide
         onPress={() => {
-          setResult(null);
           // The sheet starts from the tech the schedule shows.
           setTech(fallback);
           setWithTray(true);
           setOpen(true);
         }}
       />
-      {result?.error ? (
-        <Notice tone="error">{result.error}</Notice>
-      ) : result?.message ? (
-        <Notice tone="success">
-          {/* The result, with Undo at its end (one Undo puts the whole week back). */}
-          <View style={styles.result}>
-            <Text
-              style={[type.body, face.medium, { flex: 1, color: color.text }]}
-              maxFontSizeMultiplier={MAX_TEXT_SCALE}
-            >
-              {result.message}
-            </Text>
-            {undo ? (
-              <Button
-                kind="quiet"
-                title="Undo"
-                accessibilityLabel={`Undo, ${result.message}`}
-                onPress={putBack}
-                style={{ paddingHorizontal: 12, marginRight: -8 }}
-              />
-            ) : null}
-          </View>
-        </Notice>
-      ) : null}
-
       <ModalSheet visible={open} onClose={() => setOpen(false)} title="Plan Week">
         {/* Who to plan for, as an iOS checklist: Everyone, then each tech. */}
         <View
@@ -153,7 +153,6 @@ export function PlanWeek({
 }
 
 const styles = StyleSheet.create({
-  result: { flexDirection: "row", alignItems: "center", gap: space["3"], flex: 1 },
   label: { paddingHorizontal: space["4"] },
   switchRow: {
     flexDirection: "row",

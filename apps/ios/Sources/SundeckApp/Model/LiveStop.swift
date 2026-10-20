@@ -31,7 +31,6 @@ public struct LiveStopTarget: Codable, Equatable, Sendable {
 /// How far a job's checklist is, as the Live Activity counts it: answered items of all, and for
 /// a pool inspection only the questions its gates leave open (2026-10-20). Website
 /// `checklistCount`.
-@MainActor
 public func checklistCount(_ store: LocalStore, companyId: String, job: ScheduleJob) -> (done: Int, total: Int) {
     let inspection = JobInspection(store, jobId: job.id)
     if job.type == .inspection {
@@ -47,8 +46,8 @@ public func checklistCount(_ store: LocalStore, companyId: String, job: Schedule
 }
 
 /// A day's stops as the card and the Live Activity read them (core `HeroStop`). Only started
-/// jobs need their checklist counted (the figure shows it at the pool).
-@MainActor
+/// jobs need their checklist counted (the figure shows it at the pool). Reads only the store, so
+/// Today builds it off the main thread.
 public func dayHeroStops(_ store: LocalStore, companyId: String, stops: [ScheduleJob], counted: String? = nil)
     -> [HeroStop]
 {

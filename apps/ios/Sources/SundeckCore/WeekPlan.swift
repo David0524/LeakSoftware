@@ -105,6 +105,15 @@ public func planWeek(
     days input: [WeekDay], jobs inputJobs: [WeekJob], depot: LatLng?, day: WorkDay, drive: DriveFn,
     limit: Int = planWeekLimit
 ) -> WeekPlan {
+    // The week tries every job in every place of every day: each leg's drive is worked out once.
+    withoutActuallyEscaping(drive) { drive in
+        planWeekRun(days: input, jobs: inputJobs, depot: depot, day: day, drive: rememberingDrive(drive), limit: limit)
+    }
+}
+
+private func planWeekRun(
+    days input: [WeekDay], jobs inputJobs: [WeekJob], depot: LatLng?, day: WorkDay, drive: DriveFn, limit: Int
+) -> WeekPlan {
     let days = ECMA.sort(input) { a, b in
         let d = ECMA.localeCompare(a.date, b.date)
         return Double(d != 0 ? d : ECMA.localeCompare(a.techId, b.techId))

@@ -60,7 +60,7 @@ import {
   tint,
   type,
 } from "./theme";
-import { BAR_HEIGHT, barState, setLargeTitle } from "./Bar";
+import { BAR_HEIGHT, barState, setLargeTitle, TITLE_HANDOFF } from "./Bar";
 import { haptics } from "./haptics";
 import { Icon, type IconName } from "./Icon";
 import { WebIcon, type WebIconName } from "./WebIcon";
@@ -279,6 +279,21 @@ export function Screen({
 }) {
   const { header, ref, scrollProps, contentContainerStyle } = useScreenChrome(chrome);
   const headerHeight = useHeaderHeightSafe();
+  // Once the large title has gone under the bar, the page keeps room to stay scrolled past it,
+  // so folding something away (Schedule's map) never snaps the page to the top and flips the
+  // title back to large (owner, 2026-10-20).
+  const routeKey = useRoute().key;
+  const holdTitle = drawnChrome && scroll && Boolean(chrome.title);
+  const [collapsed, setCollapsed] = useState(false);
+  const [viewHeight, setViewHeight] = useState(0);
+  useEffect(() => {
+    if (!holdTitle) return;
+    const y = barState(routeKey).y;
+    const id = y.addListener(({ value }) => setCollapsed(value >= TITLE_HANDOFF[1]));
+    return () => y.removeListener(id);
+  }, [holdTitle, routeKey]);
+  const hold =
+    holdTitle && collapsed && viewHeight > 0 ? { minHeight: viewHeight + TITLE_HANDOFF[1] } : null;
   useEffect(() => {
     if (scrollRef) scrollRef.current = ref.current;
   });
@@ -298,11 +313,13 @@ export function Screen({
               });
             },
             onContentSizeChange: (_w: number, h: number) => onScrollMetrics({ contentHeight: h }),
-            onLayout: (e: { nativeEvent: { layout: LayoutRectangle } }) =>
-              onScrollMetrics({ viewHeight: e.nativeEvent.layout.height }),
           }
         : null)}
-      contentContainerStyle={[contentContainerStyle, styles.stack]}
+      onLayout={(e: { nativeEvent: { layout: LayoutRectangle } }) => {
+        setViewHeight(e.nativeEvent.layout.height);
+        onScrollMetrics?.({ viewHeight: e.nativeEvent.layout.height });
+      }}
+      contentContainerStyle={[contentContainerStyle, styles.stack, hold]}
       scrollEnabled={scrollEnabled}
       refreshControl={refreshControl}
     >

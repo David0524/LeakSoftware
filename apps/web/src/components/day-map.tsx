@@ -49,6 +49,10 @@ const OPEN_EVENT = "sundeck:day-map-open";
 
 function writeOpen(open: boolean) {
   openHere = open;
+  // The hint the page reads before it's drawn (lib/theme.ts), so a folded map is folded from
+  // the first frame instead of folding once the page is live (owner, 2026-10-20: smooth).
+  if (open) delete document.documentElement.dataset.mapsFolded;
+  else document.documentElement.dataset.mapsFolded = "";
   try {
     localStorage.setItem(OPEN_KEY, open ? "1" : "0");
   } catch {
@@ -285,7 +289,7 @@ function Disclosure({ open }: { open: boolean }) {
 /**
  * A tech's day as a map. `column`: at the top of a tech's day, with Enlarge over the map's
  * corner; on phones a Map row above it folds it away (remembered on the device). `week`: one
- * of the week's row of small maps, with Enlarge and the caller's `action` (Plan Route) under
+ * of the week's row of small maps, with Enlarge and the caller's `action` (Optimize) under
  * it.
  */
 export function DayMap({
@@ -308,7 +312,7 @@ export function DayMap({
   /** "Monday". */
   day: string;
   variant?: "column" | "week";
-  /** Week: the day's Plan Route, beside Enlarge. */
+  /** Week: the day's Optimize, beside Enlarge. */
   action?: ReactNode;
   /** Column: spacing around it (default: a gap above). */
   className?: string;
@@ -423,7 +427,7 @@ export function DayMap({
         <div
           id={boxId}
           className={cx(
-            "grid transition-[grid-template-rows,opacity,visibility] duration-300 ease-out motion-reduce:transition-none",
+            "day-map-box grid transition-[grid-template-rows,opacity,visibility] duration-300 ease-out motion-reduce:transition-none",
             open ? "grid-rows-[1fr]" : "max-sm:invisible max-sm:grid-rows-[0fr] max-sm:opacity-0",
           )}
         >

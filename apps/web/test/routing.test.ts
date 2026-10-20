@@ -157,6 +157,29 @@ describe("Mapbox's free tier", () => {
   });
 });
 
+describe("paid lookups", () => {
+  it("try Mapbox only for what the free lookups miss, within the month's 100", async () => {
+    const paid: string[] = [];
+    const provider = {
+      ...fakeProvider(),
+      async paidGeocode(address: string) {
+        paid.push(address);
+        return TEMPE;
+      },
+    };
+    const f = fakeDb(10, { geocode_paid: 1 });
+    // Found for free: Mapbox isn't asked.
+    expect(await geocodeAddress(f.db, "co", "455 N Galvin Pkwy", provider)).toEqual(ZOO);
+    expect(paid).toEqual([]);
+    // Missed: one paid try, counted.
+    expect(await geocodeAddress(f.db, "co", "170 Beeline Hwy", provider)).toEqual(TEMPE);
+    expect(f.month.geocode_paid).toBe(1);
+    // The month's paid lookups are used: not found.
+    expect(await geocodeAddress(f.db, "co", "77 Nowhere Ln", provider)).toBeNull();
+    expect(paid).toEqual(["170 Beeline Hwy"]);
+  });
+});
+
 describe("drive times", () => {
   it("asks the routing service once, then uses the cache", async () => {
     const { db } = fakeDb();

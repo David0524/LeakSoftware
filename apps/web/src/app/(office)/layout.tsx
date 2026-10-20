@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Logo } from "@/components/logo";
 import { DesktopNav, TabBar } from "@/components/nav-links";
 import { AccountMenu } from "@/components/account-menu";
+import { BannerHost } from "@/components/top-banner";
 import { accessNotice } from "@leakbook/core";
 import { cx } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
@@ -52,6 +53,10 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
       </Suspense>
       <Suspense fallback={null}>
         <AccessBanner />
+      </Suspense>
+      {/* Results (Optimize, moves, Plan Week) as a short banner under the navigation bar. */}
+      <Suspense fallback={null}>
+        <BannerHost />
       </Suspense>
       {/* Room for the phone navigation bar above and the tab bar below. */}
       <main

@@ -2,7 +2,7 @@ import type { NativeStackNavigationOptions } from "expo-router/native-stack";
 import { createElement } from "react";
 import { Platform } from "react-native";
 import { DrawnHeader } from "./Bar";
-import { color, face, font, ios } from "./theme";
+import { color, font, ios } from "./theme";
 
 // The navigation bar on every screen (spec 3.1, 8.2). iPhone: the native bar with large titles
 // in Barlow, translucent so the page scrolls under it. Android and the browser preview: the
@@ -47,7 +47,7 @@ export function stackScreenOptions(): NativeStackNavigationOptions {
   return {
     ...translucentBar,
     headerTintColor: color.link,
-    headerTitleStyle: { ...face.semiBold, fontSize: 17, color: color.text },
+    headerTitleStyle: { fontFamily: font.displayBold, fontSize: 18, color: color.text },
     headerLargeTitleEnabled: true,
     headerLargeTitleStyle: { fontFamily: font.displayExtraBold, fontSize: 34, color: color.text },
     // Before scrolling, the large title sits on the page's own gray, as on the website.

@@ -57,9 +57,19 @@ export interface JobChange {
 
 export interface ScheduleChange {
   updates: JobChange[];
-  /** What happened, for the status line ("Moved to 9:15 AM."). */
+  /** What happened, one short line for the banner ("Moved to 9:15 AM."). */
   message?: string;
+  /** What to watch for, a second smaller line (owner, 2026-10-20: the banner at the top). */
+  detail?: string;
   error?: string;
+}
+
+/** "Runs 20 min past the end of the day. A fixed time can’t be met." from notes, or undefined. */
+export function noteSentences(notes: (string | null | false | undefined)[]): string | undefined {
+  const list = notes.filter((n): n is string => !!n);
+  return list.length
+    ? list.map((n) => `${n.charAt(0).toUpperCase()}${n.slice(1)}.`).join(" ")
+    : undefined;
 }
 
 function dayStops(ctx: PlanContext, techId: string, date: string, jobs: PlanJob[]) {
@@ -74,7 +84,7 @@ function dayStops(ctx: PlanContext, techId: string, date: string, jobs: PlanJob[
 }
 
 /**
- * Plan Route: order a tech's day (its jobs in route order) for the least driving, keep
+ * Optimize (once Plan Route): order a tech's day (its jobs in route order) for the least driving, keep
  * promised times, and say what changed.
  */
 export function planDay(
@@ -93,23 +103,20 @@ export function planDay(
   const planned = order.map((i) => stops[i]!);
   const updates = routeUpdates(date, ctx.timeZone, planned, route);
   const saved = before.driveMin - route.driveMin;
-  const parts = [
-    `Planned: ${durationLabel(route.driveMin)} of driving`,
-    saved > 0 ? `${durationLabel(saved)} less than before` : null,
-    `back at the shop by ${minutesLabel(route.backMin)}`,
-  ].filter(Boolean);
-  const warnings = [
+  // One short line for the banner at the top of the screen (owner, 2026-10-20: the note under
+  // the button "looks horrible"), and what to watch for as a second line, as the website says.
+  const message = [
+    "Optimized",
+    saved > 0 ? `${durationLabel(saved)} less driving` : `${durationLabel(route.driveMin)} driving`,
+    `Back by ${minutesLabel(route.backMin)}`,
+  ].join(" · ");
+  const detail = noteSentences([
     route.overtimeMin ? `runs ${durationLabel(route.overtimeMin)} past the end of the day` : null,
     route.lateMin ? `a fixed time can’t be met (${durationLabel(route.lateMin)} late)` : null,
-    stops.some((s) => !s.location)
-      ? "some pools have no location, so driving to them isn’t counted"
-      : null,
+    stops.some((s) => !s.location) ? "driving to pools not on the map isn’t counted" : null,
     !ctx.depot ? "the shop has no location (Settings › Scheduling)" : null,
-  ].filter(Boolean);
-  return {
-    updates,
-    message: `${parts.join(", ")}.${warnings.length ? ` Note: ${warnings.join("; ")}.` : ""}`,
-  };
+  ]);
+  return detail ? { updates, message, detail } : { updates, message };
 }
 
 /** Close up the order numbers of the day a job left (times stay as they are). */

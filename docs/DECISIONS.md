@@ -2,6 +2,17 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-20 (owner: "Go with option 1, cap at 100")
+- **Addresses the free lookups miss get one try with Mapbox's paid permanent geocoding**, at most 100 a month for every shop together (`app.mapbox_budget` `geocode_paid`; $5 per 1,000, so at most $0.50 a month). Free lookups (Census, then OpenStreetMap) always come first and aren't counted.
+
+## 2026-10-20 (owner, TestFlight 1010: "Place 'Start Job' to the left of the three icons"; "Change 'plan route' to 'optimize'. Change 'start job' to 'start'"; the planner's note "looks horrible. Display it on a banner on the top of the screen"; "Smooth out the scheduling screen"; "The Liquid Glass literally freezes up when I press 'plan route'"; "the whole app can honestly be smoother"; "Schedule dragging should be on the right side of the card"; "edit access notes on the job screen underneath the address"; "still getting address not found on real addresses")
+- **Today's card:** Start sits left of the round buttons on one row before leaving and while driving; the button says "Start".
+- **"Plan Route" is "Optimize"**, and its result ("Optimized · 1 hr 6 min less driving · Back by 4:28 PM") and the Schedule's other results show as a short banner at the top of the screen that goes away by itself, not a block in the page.
+- **Smoothness:** planning runs off the main thread on the iPhone and after the tap's frame on Android; buttons show their progress at once; Schedule and Today show placeholders while loading; pool lookups run after the page is sent, never before it.
+- **Drag grips are on the right of every card.**
+- **Access notes are edited from the job page**, under the address.
+- **Pool lookups:** a miss is remembered with its address, so it isn't retried on every load (only a changed address tries again), and the apps ask for lookups of their unplaced stops as the website does. All existing unplaced pools were looked up once.
+
 ## 2026-10-20 (owner: "I think the live activity only starts when you have the app open at the day start time. It should run anytime you have the app open during the work day")
 - **The Live Activity (iPhone) and the ongoing stop notification (Android) start whenever the app is opened during the work day**: a work day, after the working day's start, with a stop not done, and nothing showing. A tech who removes it keeps it off only while the app stays in the background; opening the app brings it back. Before, a removal (or what looked like one after the app was closed) kept it off until the next work day.
 

@@ -48,9 +48,10 @@ import {
  * Today's card for the stop the tech is on (owner, 2026-10-20; docs/plans/today-hero.md), as
  * the website's today-hero.tsx: the Live Activity (here, Android's current-stop notification)
  * brought into the app, in its water blue. The name opens the job, the address opens
- * directions, and the main button is the moment's (On My Way, Start Job, Open Checklist with
- * Mark Complete). Message, Call and Directions sit on the "Next: …" line, which keeps the card
- * a row shorter (owner, 2026-10-20). Someone looking at another tech's day gets no main button.
+ * directions, and the main button is the moment's (Start, or Open Checklist with Mark
+ * Complete). Before leaving and while driving, Start shares one row with the round buttons
+ * (On My Way, Message, Call, Directions); on site they sit on the "Next: …" line (owner,
+ * 2026-10-20). Someone looking at another tech's day gets no main button.
  * It reads as one item with the Live Activity's spoken sentence; its buttons follow.
  */
 export function TodayHeroCard({
@@ -147,6 +148,39 @@ export function TodayHeroCard({
     getServices().sync.write("job", j.id, j.company_id, startJobValues(j, new Date()));
     haptics.light();
   }
+
+  // On My Way (a car), Message, Call and Directions for the card's stop.
+  const rounds =
+    contact && target ? (
+      <>
+        {actions.onMyWay ? onMyWay(target) : null}
+        {phone ? (
+          <RoundButton
+            onWater
+            icon="message"
+            label={`Text ${targetName}`}
+            onPress={() => textCustomer(phone)}
+          />
+        ) : null}
+        {phone ? (
+          <RoundButton
+            onWater
+            icon="phone"
+            label={`Call ${targetName}`}
+            onPress={() => void Linking.openURL(`tel:${phone}`)}
+          />
+        ) : null}
+        {target.property ? (
+          <RoundButton
+            onWater
+            icon="directions"
+            label={`Directions to ${targetName}`}
+            onPress={() => onDirections(target)}
+          />
+        ) : null}
+      </>
+    ) : null;
+  const startRow = actions.primary === "start_job" && target ? target : null;
 
   return (
     <View testID="today-hero" style={[styles.card, { backgroundColor: color.water, padding: pad }]}>
@@ -262,87 +296,76 @@ export function TodayHeroCard({
         </View>
       ) : null}
 
-      {/* The next stop, with On My Way, Message, Call and Directions on its line (owner, 2026-10-20: "find
-          a better place for the call/direction icon … so we can shorten the card"). Without a
-          next stop the circles sit alone at the right. */}
-      {c.next || contact ? (
-        <View style={styles.nextLine}>
+      {/* Before leaving and while driving, "Next: …" sits alone, then one row: Start, taking the
+          rest of the width, and the round buttons after it (owner, 2026-10-20: "Place 'Start'
+          to the left of the three icons. Just to condense space."). On site the round buttons
+          sit on the Next line and Open Checklist and Mark Complete share the row below. */}
+      {startRow ? (
+        <>
           {c.next ? (
             <Text
-              style={[type.secondary, styles.nextText, { color: soft }]}
+              style={[type.secondary, styles.nextAlone, { color: soft }]}
               maxFontSizeMultiplier={MAX_TEXT_SCALE}
             >
               {c.next}
             </Text>
           ) : null}
-          {contact && target ? (
-            <View style={styles.round}>
-              {actions.onMyWay ? onMyWay(target) : null}
-              {phone ? (
-                <RoundButton
-                  onWater
-                  icon="message"
-                  label={`Text ${targetName}`}
-                  onPress={() => textCustomer(phone)}
-                />
-              ) : null}
-              {phone ? (
-                <RoundButton
-                  onWater
-                  icon="phone"
-                  label={`Call ${targetName}`}
-                  onPress={() => void Linking.openURL(`tel:${phone}`)}
-                />
-              ) : null}
-              {target.property ? (
-                <RoundButton
-                  onWater
-                  icon="directions"
-                  label={`Directions to ${targetName}`}
-                  onPress={() => onDirections(target)}
-                />
-              ) : null}
-            </View>
-          ) : null}
-        </View>
-      ) : null}
-
-      {/* One row, equal widths: style, not size, marks the main action (buttons.md). */}
-      {(target && actions.primary) || (actions.complete && job) ? (
-        <View style={[styles.buttons, stacked && styles.buttonsStacked]}>
-          {actions.primary && target ? (
-            <View style={stacked ? undefined : styles.slot}>
-              {actions.primary === "start_job" ? (
-                <Button
-                  kind="onWater"
-                  title={HERO_ACTION_LABELS.start_job}
-                  accessibilityLabel={`${HERO_ACTION_LABELS.start_job} for ${targetName}`}
-                  onPress={() => startJob(target)}
-                />
-              ) : null}
-              {actions.primary === "open_checklist" ? (
-                <Button
-                  kind="onWater"
-                  title={HERO_ACTION_LABELS.open_checklist}
-                  onPress={() => router.push(`/jobs/${target.id}?section=checklist`)}
-                />
-              ) : null}
-            </View>
-          ) : null}
-          {actions.complete && job ? (
-            <View style={stacked ? undefined : styles.slot}>
-              <TodayComplete
-                job={job}
-                customer={job.customer?.name ?? "this stop"}
-                customerName={job.customer?.name ?? null}
-                day={day}
-                done={false}
-                onWater
+          <View style={[styles.startRow, stacked && styles.buttonsStacked]}>
+            <View style={stacked ? undefined : styles.startSlot}>
+              <Button
+                kind="onWater"
+                title={HERO_ACTION_LABELS.start_job}
+                accessibilityLabel={`${HERO_ACTION_LABELS.start_job} job for ${targetName}`}
+                onPress={() => startJob(startRow)}
               />
             </View>
+            {rounds ? <View style={styles.roundRow}>{rounds}</View> : null}
+          </View>
+        </>
+      ) : (
+        <>
+          {c.next || rounds ? (
+            <View style={styles.nextLine}>
+              {c.next ? (
+                <Text
+                  style={[type.secondary, styles.nextText, { color: soft }]}
+                  maxFontSizeMultiplier={MAX_TEXT_SCALE}
+                >
+                  {c.next}
+                </Text>
+              ) : null}
+              {rounds ? <View style={styles.round}>{rounds}</View> : null}
+            </View>
           ) : null}
-        </View>
-      ) : null}
+
+          {/* One row, equal widths: style, not size, marks the main action (buttons.md). */}
+          {(target && actions.primary === "open_checklist") || (actions.complete && job) ? (
+            <View style={[styles.buttons, stacked && styles.buttonsStacked]}>
+              {actions.primary === "open_checklist" && target ? (
+                <View style={stacked ? undefined : styles.slot}>
+                  <Button
+                    kind="onWater"
+                    title={HERO_ACTION_LABELS.open_checklist}
+                    onPress={() => router.push(`/jobs/${target.id}?section=checklist`)}
+                  />
+                </View>
+              ) : null}
+              {actions.complete && job ? (
+                <View style={stacked ? undefined : styles.slot}>
+                  <TodayComplete
+                    job={job}
+                    customer={job.customer?.name ?? "this stop"}
+                    customerName={job.customer?.name ?? null}
+                    day={day}
+                    done={false}
+                    onWater
+                  />
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+        </>
+      )}
 
       {/* One segment per stop: done, this one, still to come. Read as "2 of 7 stops done". */}
       <View
@@ -408,6 +431,19 @@ const styles = StyleSheet.create({
     gap: space["3"],
   },
   nextText: { flex: 1, minWidth: 0 },
+  nextAlone: { marginTop: space["3"] },
+  // Start, then the round buttons, 6 apart: four circles and Start fit a 375 pt phone. At large
+  // text sizes, or on a narrower phone, the circles wrap under it, at the right.
+  startRow: {
+    marginTop: space["3"],
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 6,
+  },
+  // Start takes what the round buttons leave, never under 100.
+  startSlot: { flex: 1, minWidth: 100 },
+  roundRow: { flexShrink: 0, marginLeft: "auto", flexDirection: "row", gap: 6 },
   round: { flexShrink: 0, marginLeft: "auto", flexDirection: "row", gap: space["2"] },
   buttons: { marginTop: space["4"], flexDirection: "row", gap: 10 },
   // At the largest text sizes the two buttons stack, each the full width.

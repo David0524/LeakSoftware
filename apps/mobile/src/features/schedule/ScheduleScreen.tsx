@@ -1,6 +1,14 @@
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
-import { Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { useCallback, useMemo, useState } from "react";
+import {
+  InteractionManager,
+  LayoutAnimation,
+  Linking,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import {
   addDays,
   addMonths,
@@ -42,6 +50,9 @@ import {
   useTeam,
 } from "../../data/schedule";
 import { getServices } from "../../lib/services";
+import { useFirstLoad } from "../../data/hooks";
+import { useLocateMissing } from "../../lib/locate";
+import { bannerText } from "../../lib/resultBanner";
 import { mapsAppFor, openDirections, useDirectionsChoice } from "../../state/directions";
 import { useCompany, useSession } from "../../state/session";
 import {
@@ -56,12 +67,15 @@ import {
   Segmented,
   StatusChip,
   T,
+  useReduceMotion,
 } from "../../ui/components";
 import { dayMap, weekdayName } from "../../lib/dayMap";
 import { useRoutingOn } from "../../lib/routing";
 import { buildWeekPlan, planWaitingCount } from "../../lib/weekPlan";
 import { haptics } from "../../ui/haptics";
 import { ModalSheet } from "../../ui/ModalSheet";
+import { useResultBanner } from "../../ui/ResultBanner";
+import { SkeletonCards } from "../../ui/Skeleton";
 import { ScreenTip } from "../../ui/Tip";
 import { color, face, minTap, space, type } from "../../ui/theme";
 import { DatePicker, MonthCalendar, monthTitle } from "./Calendar";
@@ -79,12 +93,30 @@ const VIEW_NAMES = { day: "Day", week: "Week", month: "Month", routes: "Routes" 
 
 /**
  * Schedule (spec 5.6; the website's schedule page and route board): Day, Week, or Month. Day
- * shows each person's route with the driving between stops, Plan Route and Move…; Week lists
+ * shows each person's route with the driving between stops, Optimize and Move…; Week lists
  * the days; Month counts each day. Planning, moving, and suggestions are worked out on the phone
  * from its own jobs and saved through the sync layer, so they work offline too. Stops drag and
  * drop (touch and hold): to a place in a day, another tech's day, a day in the week strip, or
- * Needs a Time, through the same move as Move… (owner, 2026-10-20).
+ * Needs a Time, through the same move as Move… (owner, 2026-10-20). What a change did shows in
+ * a banner at the top (ui/ResultBanner); planning shows its button's progress first and runs
+ * once that frame is drawn, and what's worked out from the jobs is kept between renders, so the
+ * screen stays smooth (owner, 2026-10-20).
  */
+
+/** Run heavy planning after the button's progress state is on screen, so a tap never freezes. */
+function afterPaint(fn: () => void) {
+  requestAnimationFrame(() => {
+    void InteractionManager.runAfterInteractions(() => setTimeout(fn, 0));
+  });
+}
+
+/** Animate the stops into their new order (none with Reduce Motion). */
+function animateReorder(reduceMotion: boolean) {
+  if (!reduceMotion)
+    LayoutAnimation.configureNext(
+      LayoutAnimation.create(260, LayoutAnimation.Types.easeInEaseOut, "opacity"),
+    );
+}
 export function ScheduleScreen() {
   const company = useCompany();
   const { membership, user } = useSession();
@@ -93,7 +125,9 @@ export function ScheduleScreen() {
   const manager = isManagerRole(role);
   const canAdd = canMakeJobs(role, company.settings);
   const seesAll = seesAllJobs(role, company.settings);
-  const ctx = planContext(company);
+  // The shop's planning context, kept between renders; planning reads a fresh one (with now).
+  const ctx = useMemo(() => planContext(company), [company]);
+  const live = () => planContext(company);
   const routing = useRoutingOn();
   const tz = ctx.timeZone;
   const today = ctx.today;
@@ -111,7 +145,16 @@ export function ScheduleScreen() {
   const [date, setDate] = useState(today);
   const [wanted, setWanted] = useState<string | null>(null);
   const [goTo, setGoTo] = useState(false);
-  const [result, setResult] = useState<{ message?: string; error?: string } | null>(null);
+  const banner = useResultBanner();
+  const reduceMotion = useReduceMotion();
+  const loading = useFirstLoad(jobs.length > 0);
+  /** The route being optimized: its button shows "Optimizing…". */
+  const [planning, setPlanning] = useState<string | null>(null);
+  const fail = useCallback(
+    (error: string) => banner.show({ tone: "error", message: error }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- show is stable
+    [],
+  );
   const [moving, setMoving] = useState<MoveTarget | null>(null);
   const [suggesting, setSuggesting] = useState<{
     job: JobView;
@@ -120,19 +163,23 @@ export function ScheduleScreen() {
   } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const days = scheduleDays(view, date);
-  const { routes, unassigned } = routesFor(jobs, days, tz);
+  const days = useMemo(() => scheduleDays(view, date), [view, date]);
+  const { routes, unassigned } = useMemo(() => routesFor(jobs, days, tz), [jobs, days, tz]);
   const byId = useMemo(() => new Map(jobs.map((j) => [j.id, j])), [jobs]);
 
   // Every active tech gets a route, plus anyone with work these days; a tech limited to their
   // own jobs sees only their own. Me first.
-  const techs = team
-    .filter(
-      (t) =>
-        (seesAll || t.user_id === me) &&
-        (t.status === "active" || days.some((d) => routes.has(routeKey(t.user_id, d)))),
-    )
-    .sort((a, b) => Number(b.user_id === me) - Number(a.user_id === me));
+  const techs = useMemo(
+    () =>
+      team
+        .filter(
+          (t) =>
+            (seesAll || t.user_id === me) &&
+            (t.status === "active" || days.some((d) => routes.has(routeKey(t.user_id, d)))),
+        )
+        .sort((a, b) => Number(b.user_id === me) - Number(a.user_id === me)),
+    [team, seesAll, me, days, routes],
+  );
   const tech =
     wanted === "all" && techs.length > 1
       ? "all"
@@ -141,10 +188,18 @@ export function ScheduleScreen() {
         : (techs.find((t) => days.some((d) => routes.has(routeKey(t.user_id, d))))?.user_id ??
           techs[0]?.user_id ??
           "all");
-  const shown = techs.filter((t) => tech === "all" || t.user_id === tech);
-  const movers = (
-    seesAll ? team.filter((t) => t.status === "active") : team.filter((t) => t.user_id === me)
-  ).map((t) => ({ id: t.user_id, name: t.name }));
+  const shown = useMemo(
+    () => techs.filter((t) => tech === "all" || t.user_id === tech),
+    [techs, tech],
+  );
+  const movers = useMemo(
+    () =>
+      (seesAll
+        ? team.filter((t) => t.status === "active")
+        : team.filter((t) => t.user_id === me)
+      ).map((t) => ({ id: t.user_id, name: t.name })),
+    [team, seesAll, me],
+  );
 
   // Drag and drop: the same move as Move… (owner, 2026-10-20). A job from Needs a Time dropped
   // on a day in the week strip joins the tech in view (or yours, when everyone's in view).
@@ -155,7 +210,7 @@ export function ScheduleScreen() {
       if (plan.kind === "none") return;
       if (plan.kind === "refuse") {
         haptics.light();
-        setResult({ error: plan.error });
+        fail(plan.error);
         return;
       }
       if (plan.kind === "tray") {
@@ -169,12 +224,18 @@ export function ScheduleScreen() {
   });
 
   // Drive times for everything in view (the cache on the server when online).
-  const points = [
-    ctx.depot,
-    ...[...routes.values()].flat().map((j) => propertyLocation(j.property)),
-  ];
+  const depotLat = ctx.depot?.lat;
+  const depotLng = ctx.depot?.lng;
+  const points = useMemo(
+    () => [
+      depotLat != null && depotLng != null ? { lat: depotLat, lng: depotLng } : null,
+      ...[...routes.values()].flat().map((j) => propertyLocation(j.property)),
+    ],
+    [routes, depotLat, depotLng],
+  );
   const { drive } = useDriveTimes(company.id, points);
   const hours = workDay(ctx.settings);
+  const settingsKey = JSON.stringify(ctx.settings);
   const depotAddress = formatAddress(company as unknown as Parameters<typeof formatAddress>[0]);
 
   const toStop = (
@@ -252,40 +313,90 @@ export function ScheduleScreen() {
     };
   };
 
-  const tray = manager ? needsATime(jobs, today, tz) : null;
-  const trayStops = (tray ?? []).map((j) => {
-    const booked = j.scheduled_start
-      ? `No tech yet · booked ${formatDay(localDate(new Date(j.scheduled_start), tz))} at ${formatTime(j.scheduled_start, tz)}`
-      : null;
-    const s = toStop(j, null, null, 0, null);
-    return { ...s, note: [booked, s.note].filter(Boolean).join(" · ") || null };
-  });
+  // Worked out once per change to the jobs, the view or the drive times, not on every render
+  // (a drag's hover, a sheet opening).
+  const tray = useMemo(
+    () => (manager ? needsATime(jobs, today, tz) : null),
+    [manager, jobs, today, tz],
+  );
+  const trayStops = useMemo(
+    () =>
+      (tray ?? []).map((j) => {
+        const booked = j.scheduled_start
+          ? `No tech yet · booked ${formatDay(localDate(new Date(j.scheduled_start), tz))} at ${formatTime(j.scheduled_start, tz)}`
+          : null;
+        const s = toStop(j, null, null, 0, null);
+        return { ...s, note: [booked, s.note].filter(Boolean).join(" · ") || null };
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- toStop reads team, routing, cleanings
+    [tray, tz, team, routing, visitCleanings],
+  );
 
-  const shownRoutes = view === "day" ? shown.map((t) => routeFor(t.user_id, t.name, date)) : [];
+  const shownRoutes = useMemo(
+    () => (view === "day" ? shown.map((t) => routeFor(t.user_id, t.name, date)) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- routeFor reads these; ctx and hours are rebuilt each render
+    [
+      view,
+      shown,
+      date,
+      routes,
+      drive,
+      team,
+      routing,
+      visitCleanings,
+      tz,
+      today,
+      depotLat,
+      depotLng,
+      settingsKey,
+    ],
+  );
   // One tech's day: its map, summary and buttons lead, right under the tech chips (owner,
   // 2026-10-20: "uses the maps all the time"), then Needs a Time and the stops.
   const lead =
     view === "day" && shownRoutes.length === 1 && shownRoutes[0]!.stops.length
       ? shownRoutes[0]!
       : null;
-  const leadMap = lead
-    ? dayMap({
-        stops: lead.stops.map((s) => ({ id: s.id, location: s.location, status: s.status })),
-        depot: ctx.depot,
-        date: lead.date,
-        today,
-      })
-    : null;
+  const leadMap = useMemo(
+    () =>
+      lead
+        ? dayMap({
+            stops: lead.stops.map((s) => ({ id: s.id, location: s.location, status: s.status })),
+            depot: depotLat != null && depotLng != null ? { lat: depotLat, lng: depotLng } : null,
+            date: lead.date,
+            today,
+          })
+        : null,
+    [lead, depotLat, depotLng, today],
+  );
+  const leadStops = useMemo(
+    () => lead?.stops.map((s) => ({ id: s.id, time: s.time, customer: s.customer })) ?? [],
+    [lead],
+  );
+
+  // Pools in view with an address but no map location are looked up in the background.
+  const poolsInView = useMemo(
+    () => [
+      ...[...routes.values()].flat().map((j) => j.property),
+      ...(tray ?? []).map((j) => j.property),
+    ],
+    [routes, tray],
+  );
+  useLocateMissing(company.id, poolsInView);
 
   // Plan Week: owners and admins, for the days of the week still to come.
   // (Weekends and days off are left out when it runs, as on the website.)
   const weekDates = view === "week" && manager ? days.filter((d) => d >= today) : [];
   const weekWaiting = planWaitingCount(tray ?? [], weekDates, tz);
 
-  const unlocated = days.some((d) =>
-    shown.some((t) =>
-      (routes.get(routeKey(t.user_id, d)) ?? []).some((j) => !propertyLocation(j.property)),
-    ),
+  const unlocated = useMemo(
+    () =>
+      days.some((d) =>
+        shown.some((t) =>
+          (routes.get(routeKey(t.user_id, d)) ?? []).some((j) => !propertyLocation(j.property)),
+        ),
+      ),
+    [days, shown, routes],
   );
 
   // ---------------------------------------------------------------------------
@@ -300,35 +411,50 @@ export function ScheduleScreen() {
     }));
   }
 
-  /** Saves a planned change; false when it was refused or failed. */
+  /** Saves a planned change and shows it in the banner; false when it was refused or failed. */
   function save(change: {
     updates: Parameters<typeof saveJobChanges>[1];
     message?: string;
+    detail?: string;
     error?: string;
   }): boolean {
     if (change.error) {
-      setResult({ error: change.error });
+      fail(change.error);
       return false;
     }
     try {
+      animateReorder(reduceMotion);
       saveJobChanges(company.id, change.updates);
-      haptics.success();
-      setResult({ message: change.message });
+      if (change.message) {
+        // Core gives the short line and its notes apart; older wording is split by bannerText.
+        const text = bannerText(change.message);
+        banner.show({ tone: "success", ...text, detail: change.detail ?? text.detail });
+      } else haptics.success();
       return true;
     } catch (e) {
-      setResult({ error: e instanceof Error ? e.message : String(e) });
+      fail(e instanceof Error ? e.message : String(e));
       return false;
     }
   }
 
+  /** Optimize: "Optimizing…" first, then the planning once that's on screen. */
   function plan(r: Route) {
-    save(planDay(ctx, r.techId, r.date, dayJobsOf(r.techId, r.date), drive));
+    if (planning) return;
+    setPlanning(r.key);
+    banner.dismiss();
+    afterPaint(() => {
+      try {
+        save(planDay(live(), r.techId, r.date, dayJobsOf(r.techId, r.date), drive));
+      } finally {
+        setPlanning(null);
+      }
+    });
   }
 
   /** Plan Week, worked out on the phone and saved in one go; its undo rows put it back. */
   function planTheWeek(forTech: string, withTray: boolean) {
     const r = buildWeekPlan({
-      ctx,
+      ctx: live(),
       dates: weekDates,
       tech: forTech,
       tray: withTray,
@@ -339,9 +465,8 @@ export function ScheduleScreen() {
     });
     if (r.error) return r;
     try {
+      animateReorder(reduceMotion);
       if (r.updates.length) saveJobChanges(company.id, r.updates);
-      haptics.success();
-      setResult(null);
       return r;
     } catch (e) {
       return { ...r, error: e instanceof Error ? e.message : String(e), undo: [] };
@@ -364,7 +489,7 @@ export function ScheduleScreen() {
     const fromDate = job.scheduled_start ? localDate(new Date(job.scheduled_start), tz) : null;
     return save(
       moveJobChange(
-        ctx,
+        live(),
         {
           job: { ...job, property: job.property ?? null },
           tech: techId,
@@ -399,15 +524,16 @@ export function ScheduleScreen() {
   function suggest(s: Stop) {
     const j = byId.get(s.id);
     if (!j) return;
-    const dates = suggestionDates(ctx);
+    const now = live();
+    const dates = suggestionDates(now);
     if (dates.length === 0) {
-      setResult({ error: "No working days are set (Settings › Scheduling)." });
+      fail("No working days are set (Settings › Scheduling).");
       return;
     }
     const { routes: ahead } = routesFor(jobs, dates, tz);
     const people = team.filter((t) => t.status === "active" && (seesAll || t.user_id === me));
     const found = suggestTimes(
-      ctx,
+      now,
       {
         id: j.id,
         location: propertyLocation(j.property),
@@ -450,39 +576,56 @@ export function ScheduleScreen() {
         ? monthTitle(date)
         : `${formatDay(days[0]!)} – ${formatDay(days[days.length - 1]!)}`;
 
-  const weekList = (d: string) =>
-    shown
-      .flatMap((t) =>
-        (routes.get(routeKey(t.user_id, d)) ?? [])
-          .filter((j) => j.assigned_user_id === t.user_id)
-          .map((j) => ({ j, tech: t.name })),
-      )
-      .concat(
-        tech === "all" ? (unassigned.get(d) ?? []).map((j) => ({ j, tech: "No tech yet" })) : [],
-      );
+  const weekLists = useMemo(
+    () =>
+      new Map(
+        days.map((d) => [
+          d,
+          shown
+            .flatMap((t) =>
+              (routes.get(routeKey(t.user_id, d)) ?? [])
+                .filter((j) => j.assigned_user_id === t.user_id)
+                .map((j) => ({ j, tech: t.name })),
+            )
+            .concat(
+              tech === "all"
+                ? (unassigned.get(d) ?? []).map((j) => ({ j, tech: "No tech yet" }))
+                : [],
+            ),
+        ]),
+      ),
+    [days, shown, routes, unassigned, tech],
+  );
+  const weekList = (d: string) => weekLists.get(d) ?? [];
 
-  const monthCounts = Object.fromEntries(
-    days.map((d) => {
-      const list = shown.flatMap((t) =>
-        (routes.get(routeKey(t.user_id, d)) ?? []).filter((j) => j.assigned_user_id === t.user_id),
-      );
-      const extra = tech === "all" ? (unassigned.get(d)?.length ?? 0) : 0;
-      return [
-        d,
-        {
-          jobs: list.filter((j) => j.type !== "maintenance").length + extra,
-          cleanings: list.filter((j) => j.type === "maintenance").length,
-          due: list.flatMap((j) => visitCleanings.get(j.id) ?? []),
-        },
-      ];
-    }),
+  const monthCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        days.map((d) => {
+          const list = shown.flatMap((t) =>
+            (routes.get(routeKey(t.user_id, d)) ?? []).filter(
+              (j) => j.assigned_user_id === t.user_id,
+            ),
+          );
+          const extra = tech === "all" ? (unassigned.get(d)?.length ?? 0) : 0;
+          return [
+            d,
+            {
+              jobs: list.filter((j) => j.type !== "maintenance").length + extra,
+              cleanings: list.filter((j) => j.type === "maintenance").length,
+              due: list.flatMap((j) => visitCleanings.get(j.id) ?? []),
+            },
+          ];
+        }),
+      ),
+    [days, shown, routes, unassigned, tech, visitCleanings],
   );
   const inView =
     view === "day"
       ? shownRoutes.reduce((n, r) => n + r.stops.length, 0)
       : days.reduce((n, d) => n + weekList(d).length, 0);
 
-  /** The day in the phone's maps app, as the secondary button beside Plan Route. */
+  /** The day in the phone's maps app, as the secondary button beside Optimize. */
   const mapsButton = (r: Route) => {
     const directions = r.stops.length
       ? dayDirections(
@@ -538,7 +681,12 @@ export function ScheduleScreen() {
         scrollEnabled={!drag.dragging}
         scrollRef={drag.scrollRef}
         onScrollMetrics={drag.onScrollMetrics}
-        overlay={drag.overlay}
+        overlay={
+          <>
+            {drag.overlay}
+            {banner.element}
+          </>
+        }
         subtitle={
           <Text style={[type.body, { color: color.textMuted }]}>
             {title}
@@ -607,12 +755,6 @@ export function ScheduleScreen() {
           </T>
         ) : null}
 
-        {result?.error ? (
-          <Notice tone="error">{result.error}</Notice>
-        ) : result?.message ? (
-          <Notice tone="success">{result.message}</Notice>
-        ) : null}
-
         {/* Swipe sideways for the day, week, or month before or after (owner, 2026-10-19);
             Previous and Next above stay the visible way. */}
         <SwipeNav
@@ -627,7 +769,7 @@ export function ScheduleScreen() {
                   company={company.id}
                   pins={leadMap.pins}
                   missing={leadMap.missing}
-                  stops={lead.stops.map((s) => ({ id: s.id, time: s.time, customer: s.customer }))}
+                  stops={leadStops}
                   tech={lead.title}
                   day={weekdayName(lead.date)}
                 />
@@ -635,7 +777,7 @@ export function ScheduleScreen() {
               <View>
                 <RouteFacts
                   route={lead}
-                  busy={false}
+                  busy={planning === lead.key}
                   onPlan={() => plan(lead)}
                   mapsButton={mapsButton(lead)}
                 />
@@ -652,7 +794,7 @@ export function ScheduleScreen() {
                 <RouteCard
                   key={r.key}
                   route={r}
-                  busy={false}
+                  busy={planning === r.key}
                   lead={r.key === lead?.key}
                   onPlan={() => plan(r)}
                   onMove={openMove}
@@ -672,6 +814,7 @@ export function ScheduleScreen() {
               waiting={weekWaiting}
               onPlan={planTheWeek}
               onUndo={undoTheWeek}
+              onResult={banner.show}
             />
           ) : null}
 
@@ -746,7 +889,10 @@ export function ScheduleScreen() {
             />
           ) : null}
 
-          {inView === 0 ? (
+          {/* Placeholder cards while the first download fills the phone. */}
+          {loading ? <SkeletonCards /> : null}
+
+          {inView === 0 && !loading ? (
             <T muted>
               No jobs scheduled{" "}
               {view === "day" ? "this day" : view === "week" ? "this week" : "this month"}.

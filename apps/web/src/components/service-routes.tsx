@@ -64,7 +64,9 @@ import { DayMap } from "./day-map";
 import { NotOnMapTag } from "./not-on-map";
 import { Segmented } from "./segmented";
 import { Sheet } from "./sheet";
-import { Button, ButtonLink, Notice, cx, pillClass } from "./ui";
+import { showBanner } from "./top-banner";
+import { useFlip } from "./use-flip";
+import { Button, ButtonLink, cx, pillClass } from "./ui";
 
 // Routes on Schedule (owner, 2026-10-20, docs/plans/route-maps.md part 3, PayThePoolMan's route
 // screen): which weekday each pool customer is serviced on, and by whom. Wide screens: Customers
@@ -130,6 +132,7 @@ export function ServiceRoutes({
   const [saved, optimistic] = useOptimistic(plans, apply);
   const [pending, start] = useTransition();
   const [work, setWork] = useState<"Saving…" | "Suggesting…">("Saving…");
+  const suggesting = pending && work === "Suggesting…";
   const [suggested, setSuggested] = useState<Suggested | null>(null);
   const shown = useMemo(
     () => (suggested ? withSuggestions(saved, suggested.list) : saved),
@@ -150,9 +153,7 @@ export function ServiceRoutes({
     phoneDay != null && days.includes(phoneDay)
       ? phoneDay
       : (routes.find((r) => r.plans.length)?.day ?? days[0] ?? 1);
-  const [notice, setNotice] = useState<
-    (RouteDayResult & { tone?: "info" | "success" | "error" }) | null
-  >(null);
+
   const [moving, setMoving] = useState<Moving | null>(null);
   const [sheet, setSheet] = useState<"add" | "suggest" | null>(null);
   const [dragging, setDragging] = useState<RoutePlanCard | null>(null);
@@ -169,6 +170,9 @@ export function ServiceRoutes({
   );
 
   useEffect(() => () => clearTimeout(spring.current?.timer), []);
+  // Customers slide to their new day or place after a move (and not while being dragged).
+  const board = useRef<HTMLDivElement>(null);
+  useFlip(board, !!dragging);
 
   /** Save a move (or, while suggestions are showing, change the suggestion). */
   function move(m: { plan: RoutePlanCard; from: number | null; to: number; tech: string }) {
@@ -201,6 +205,20 @@ export function ServiceRoutes({
       const r = await undoServiceDays(rows);
       setNotice(r.error ? { error: r.error, tone: "error" } : { message: r.message, tone: "info" });
     });
+  }
+
+  // Results show as a banner at the top of the screen, with Undo after a change (owner,
+  // 2026-10-20); the page itself doesn't move.
+  function setNotice(n: (RouteDayResult & { tone?: "info" | "success" | "error" }) | null) {
+    if (!n) return;
+    if (n.error) showBanner({ tone: "error", message: n.error });
+    else if (n.message) {
+      const rows = n.undo;
+      showBanner({
+        message: n.message,
+        action: rows?.length ? { label: "Undo", onAction: () => undo(rows) } : undefined,
+      });
+    }
   }
 
   function suggest(ids: string[], forTechs: string[], asked: RoutePlanCard[]) {
@@ -301,32 +319,6 @@ export function ServiceRoutes({
       </section>
     );
 
-  const noticeView = (
-    <div aria-live="polite" className="mb-4 empty:hidden" data-testid="routes-notice">
-      {pending ? (
-        <Notice>{work}</Notice>
-      ) : notice?.error ? (
-        <Notice tone="error">{notice.error}</Notice>
-      ) : notice?.message ? (
-        <Notice tone={notice.tone === "info" ? "info" : "success"}>
-          <span className="-my-2 flex flex-wrap items-center justify-between gap-x-3">
-            <span className="py-2 font-medium">{notice.message}</span>
-            {notice.undo?.length ? (
-              <Button
-                type="button"
-                kind="quiet"
-                onClick={() => undo(notice.undo!)}
-                className="-mr-2 px-4"
-              >
-                Undo
-              </Button>
-            ) : null}
-          </span>
-        </Notice>
-      ) : null}
-    </div>
-  );
-
   const pills =
     techs.length > 1 ? (
       <nav
@@ -363,120 +355,120 @@ export function ServiceRoutes({
       }}
       autoScroll={{ threshold: { x: 0.15, y: 0.15 }, acceleration: 12 }}
     >
-      {/* Wide screens: Customers to Add beside the week. */}
-      <div className="max-lg:hidden lg:grid lg:grid-cols-[16.5rem_minmax(0,1fr)] lg:items-start lg:gap-5">
-        <AddList
-          plans={toAdd}
-          suggestedIds={suggestedIds}
-          canMove={canMove}
-          onMove={(p) => openMove(p, null)}
-          prefix="d"
-        />
-        <div className="min-w-0">
-          <div className="mb-4 flex min-h-11 items-center gap-3">
-            <div className="min-w-0 flex-1">
-              {pills ?? <h2 className="font-display text-xl font-bold">{techName}’s Routes</h2>}
+      <div ref={board}>
+        {/* Wide screens: Customers to Add beside the week. */}
+        <div className="max-lg:hidden lg:grid lg:grid-cols-[16.5rem_minmax(0,1fr)] lg:items-start lg:gap-5">
+          <AddList
+            plans={toAdd}
+            suggestedIds={suggestedIds}
+            canMove={canMove}
+            onMove={(p) => openMove(p, null)}
+            prefix="d"
+          />
+          <div className="min-w-0">
+            <div className="mb-4 flex min-h-11 items-center gap-3">
+              <div className="min-w-0 flex-1">
+                {pills ?? <h2 className="font-display text-xl font-bold">{techName}’s Routes</h2>}
+              </div>
+              <Button
+                type="button"
+                kind="secondary"
+                aria-haspopup="dialog"
+                disabled={pending || !!suggested || !tech}
+                onClick={() => setSheet("suggest")}
+                className="shrink-0"
+              >
+                {suggesting ? "Suggesting…" : "Suggest Days"}
+              </Button>
             </div>
-            <Button
-              type="button"
-              kind="secondary"
-              aria-haspopup="dialog"
-              disabled={pending || !!suggested || !tech}
-              onClick={() => setSheet("suggest")}
-              className="shrink-0"
+            <ol
+              aria-label={`${techName}’s days`}
+              className="grid gap-3 overflow-x-auto pb-2"
+              style={{ gridTemplateColumns: `repeat(${routes.length}, minmax(9.75rem, 1fr))` }}
             >
-              Suggest Days
-            </Button>
-          </div>
-          {noticeView}
-          <ol
-            aria-label={`${techName}’s days`}
-            className="grid gap-3 overflow-x-auto pb-2"
-            style={{ gridTemplateColumns: `repeat(${routes.length}, minmax(9.75rem, 1fr))` }}
-          >
-            {routes.map((r) => (
-              <DayColumn
-                key={r.day}
-                route={r}
-                tech={techName}
-                maps={maps}
-                suggestedIds={suggestedIds}
-                canMove={canMove}
-                onMove={openMove}
-              />
-            ))}
-          </ol>
-        </div>
-      </div>
-
-      {/* Phones and narrow windows: one day at a time. */}
-      <div className="lg:hidden">
-        {pills ? <div className="mb-3">{pills}</div> : null}
-        <ul className="grouped mb-4">
-          <li>
-            <button
-              type="button"
-              aria-haspopup="dialog"
-              onClick={() => setSheet("add")}
-              className="flex min-h-11 w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-text/[0.03] active:bg-text/[0.06]"
-            >
-              <span className="flex-1">Customers to Add</span>
-              <span className="text-text-muted tabular-nums">{toAdd.length}</span>
-              <span aria-hidden="true" className="text-xl leading-none text-text-muted/70">
-                ›
-              </span>
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              aria-haspopup="dialog"
-              disabled={pending || !!suggested || !tech}
-              onClick={() => setSheet("suggest")}
-              className="flex min-h-11 w-full items-center px-4 py-2.5 text-left text-link hover:bg-text/[0.03] active:bg-text/[0.06] disabled:opacity-50"
-            >
-              Suggest Days
-            </button>
-          </li>
-        </ul>
-        {noticeView}
-        <DaySegments routes={routes} day={day} onPick={setPhoneDay} dragging={!!dragging} />
-        {current ? (
-          <section aria-label={`${techName}, ${WEEKDAY_NAMES[current.day]}`} className="mt-4">
-            {maps && current.plans.length ? (
-              <DayMap
-                company={maps.company}
-                pins={current.pins}
-                stops={mapStops(current)}
-                missing={current.missing}
-                tech={techName}
-                day={WEEKDAY_NAMES[current.day]}
-                className="mb-2"
-              />
-            ) : null}
-            <DayFacts route={current} />
-            <ol className="mt-3 space-y-1.5">
-              {current.plans.length ? (
-                current.plans.map((p, i) => (
-                  <PlanCard
-                    key={p.planId}
-                    id={`p:${p.planId}@${current.day}`}
-                    plan={p}
-                    number={i + 1}
-                    suggested={suggestedIds.has(p.planId)}
-                    disabled={!canMove(p)}
-                    onMove={() => openMove(p, current.day)}
-                    grip
-                  />
-                ))
-              ) : (
-                <li className="rounded-[1.25rem] bg-text/[0.04] p-4 text-center text-text-muted">
-                  No pools on {WEEKDAY_NAMES[current.day]} yet.
-                </li>
-              )}
+              {routes.map((r) => (
+                <DayColumn
+                  key={r.day}
+                  route={r}
+                  tech={techName}
+                  maps={maps}
+                  suggestedIds={suggestedIds}
+                  canMove={canMove}
+                  onMove={openMove}
+                />
+              ))}
             </ol>
-          </section>
-        ) : null}
+          </div>
+        </div>
+
+        {/* Phones and narrow windows: one day at a time. */}
+        <div className="lg:hidden">
+          {pills ? <div className="mb-3">{pills}</div> : null}
+          <ul className="grouped mb-4">
+            <li>
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                onClick={() => setSheet("add")}
+                className="flex min-h-11 w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-text/[0.03] active:bg-text/[0.06]"
+              >
+                <span className="flex-1">Customers to Add</span>
+                <span className="text-text-muted tabular-nums">{toAdd.length}</span>
+                <span aria-hidden="true" className="text-xl leading-none text-text-muted/70">
+                  ›
+                </span>
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                disabled={pending || !!suggested || !tech}
+                onClick={() => setSheet("suggest")}
+                className="flex min-h-11 w-full items-center px-4 py-2.5 text-left text-link hover:bg-text/[0.03] active:bg-text/[0.06] disabled:opacity-50"
+              >
+                {suggesting ? "Suggesting…" : "Suggest Days"}
+              </button>
+            </li>
+          </ul>
+          <DaySegments routes={routes} day={day} onPick={setPhoneDay} dragging={!!dragging} />
+          {current ? (
+            <section aria-label={`${techName}, ${WEEKDAY_NAMES[current.day]}`} className="mt-4">
+              {maps && current.plans.length ? (
+                <DayMap
+                  company={maps.company}
+                  pins={current.pins}
+                  stops={mapStops(current)}
+                  missing={current.missing}
+                  tech={techName}
+                  day={WEEKDAY_NAMES[current.day]}
+                  className="mb-2"
+                />
+              ) : null}
+              <DayFacts route={current} />
+              <ol data-flip-list={`p-${current.day}`} className="mt-3 space-y-1.5">
+                {current.plans.length ? (
+                  current.plans.map((p, i) => (
+                    <PlanCard
+                      key={p.planId}
+                      id={`p:${p.planId}@${current.day}`}
+                      plan={p}
+                      number={i + 1}
+                      suggested={suggestedIds.has(p.planId)}
+                      disabled={!canMove(p)}
+                      onMove={() => openMove(p, current.day)}
+                      grip
+                    />
+                  ))
+                ) : (
+                  <li className="rounded-[1.25rem] bg-text/[0.04] p-4 text-center text-text-muted">
+                    No pools on {WEEKDAY_NAMES[current.day]} yet.
+                  </li>
+                )}
+              </ol>
+            </section>
+          ) : null}
+        </div>
       </div>
 
       {suggested ? (
@@ -611,7 +603,7 @@ function DayColumn({
           day={name}
         />
       ) : null}
-      <ol className="mt-2 min-h-24 flex-1 space-y-1.5">
+      <ol data-flip-list={`d-${r.day}`} className="mt-2 min-h-24 flex-1 space-y-1.5">
         {r.plans.length ? (
           r.plans.map((p, i) => (
             <PlanCard
@@ -670,7 +662,8 @@ function PlanCard({
   void _keys;
   const note = repeatNote(p);
   return (
-    <li>
+    // The layout and the plan, not the day: a customer moved to another day slides there.
+    <li data-flip={id.split("@")[0]}>
       <div
         ref={setNodeRef}
         data-testid="route-customer"
@@ -807,7 +800,10 @@ function AddList({
       ) : list.length === 0 ? (
         <p className="px-1 py-2 text-text-muted">No customers to add match “{query.trim()}”.</p>
       ) : (
-        <ol className={cx("space-y-1.5", !inSheet && "overflow-y-auto")}>
+        <ol
+          data-flip-list={`${prefix}-add`}
+          className={cx("space-y-1.5", !inSheet && "overflow-y-auto")}
+        >
           {list.map((p) => (
             <PlanCard
               key={p.planId}

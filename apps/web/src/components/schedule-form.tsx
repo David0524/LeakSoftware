@@ -115,7 +115,8 @@ function ScheduleForm({
     if (state.message && !state.error) saved.current?.(state.message);
   }, [state]);
   useEffect(() => {
-    if (picked.message && !picked.error) saved.current?.(picked.message);
+    if (picked.message && !picked.error)
+      saved.current?.([picked.message, picked.detail].filter(Boolean).join(" "));
   }, [picked]);
   return (
     <div className="space-y-4">
@@ -133,7 +134,12 @@ function ScheduleForm({
           />
           {placing ? <p role="status">Scheduling…</p> : null}
           {picked.error ? <Notice tone="error">{picked.error}</Notice> : null}
-          {picked.message ? <Notice tone="success">{picked.message}</Notice> : null}
+          {picked.message ? (
+            <Notice tone="success">
+              {picked.message}
+              {picked.detail ? ` ${picked.detail}` : ""}
+            </Notice>
+          ) : null}
         </div>
       ) : null}
       <form action={action} className="space-y-3">
@@ -168,7 +174,7 @@ function ScheduleForm({
             error={state.fields?.hours}
           />
         </div>
-        {/* Locks (owner, 2026-10-20): what Plan Route and Plan Week leave alone. */}
+        {/* Locks (owner, 2026-10-20): what Optimize and Plan Week leave alone. */}
         <div>
           <Segmented
             label="Lock"

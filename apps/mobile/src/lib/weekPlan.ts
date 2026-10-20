@@ -24,7 +24,7 @@ import {
 // Plan Week on the phone (owner, 2026-10-20, docs/plans/route-maps.md: "build routes from
 // scratch"), the website's app/actions/week-plan.ts worked out from the phone's own jobs: the
 // week's movable jobs go on days and techs for the least driving (core planWeek), each day then
-// ordered as Plan Route orders it. The changes and the rows Undo writes back are saved through
+// ordered as Optimize orders it. The changes and the rows Undo writes back are saved through
 // the sync layer by the screen. Pure, so it's tested without a phone.
 
 /** Everyone, in the "Plan for" list. */

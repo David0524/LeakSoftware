@@ -25,7 +25,7 @@ import { createClient } from "@/lib/supabase/server";
 import { loadRoutes, needsScheduling, routeContext, routeKey } from "@/server/route-days";
 
 // Plan Week (owner, 2026-10-20, docs/plans/route-maps.md): a week's movable jobs on days and
-// techs for the least driving, each day then ordered as Plan Route orders it, with one Undo.
+// techs for the least driving, each day then ordered as Optimize orders it, with one Undo.
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

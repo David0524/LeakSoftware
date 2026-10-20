@@ -5,8 +5,11 @@
     import SwiftUI
 
     /// Schedule (spec 5.6, 6.3): Day, Week and Month from the phone's synced jobs. Day shows each
-    /// tech's route with drive times, Plan Route, the maps link and Move…; managers also see Needs a
-    /// Time with Suggest Times. A stop can also be dragged (touch and hold) to another place, tech or
+    /// tech's route with drive times, Optimize, the maps link and Move…; managers also see Needs a
+    /// Time with Suggest Times. What a change did shows as a banner at the top (`resultBanner`).
+    /// The board is built off the main thread and swapped in when ready, and Optimize and Plan
+    /// Week plan off it too, so the screen never stops while they work (owner, 2026-10-20: "The
+    /// Liquid Glass literally freezes up when I press 'plan route'"). A stop can also be dragged (touch and hold) to another place, tech or
     /// day, or to Needs a Time (owner, 2026-10-20), the same move as Move…. Every change is a write
     /// through the sync layer. Port of apps/web/src/app/(office)/schedule/page.tsx and
     /// components/route-board.tsx.
@@ -25,7 +28,14 @@
         @State private var moving: MoveTarget?
         @State private var suggesting: ScheduleJob?
         @State private var picking = false
-        @State private var result: (text: String, error: Bool)?
+        /// What the last change did, at the top of the screen (owner, 2026-10-20).
+        @State private var banner: ResultBanner?
+        /// The tech whose day Optimize is working on.
+        @State private var optimizing: String?
+        /// Plan Week is working.
+        @State private var planningRun = false
+        /// The next board animates in (stops sliding to their new places after Optimize or a move).
+        @State private var animateNext = false
         @State private var saved = 0
         @State private var failed = 0
         /// Plan Week's sheet, and the rows that put the week back (Undo on its result).
@@ -74,17 +84,11 @@
                         .accessibilityLabel("Whose schedule")
                     }
                     if let route = board.leadRoute {
-                        DayLead(route: route, board: board) { plan(route.techId, board) }
-                    }
-                    notices(board)
-                    if let result {
-                        if !result.error, let rows = weekUndo, !rows.isEmpty {
-                            // Plan Week's result with one Undo for the whole change (undo-and-redo.md).
-                            UndoNotice(text: result.text) { undoWeek(rows) }
-                        } else {
-                            Notice(kind: result.error ? .error : .success, text: result.text)
+                        DayLead(route: route, board: board, busy: optimizing == route.techId) {
+                            plan(route.techId, board)
                         }
                     }
+                    notices(board)
                     if board.ctx.isManager && view != .month {
                         NeedsATimeCard(
                             jobs: board.tray, board: board, onMove: move, onSuggest: { suggesting = $0 },
@@ -108,11 +112,15 @@
                     .frame(maxWidth: .infinity, minHeight: 240, alignment: .topLeading)
                     .contentShape(Rectangle())
                     .pageSwipe(
-                        previous: { withAnimation(Motion.smooth) { date = step(board.date, -1) } },
-                        next: { withAnimation(Motion.smooth) { date = step(board.date, 1) } })
+                        previous: { date = step(board.date, -1) },
+                        next: { date = step(board.date, 1) })
+                } else {
+                    ScheduleSkeleton()
                 }
             }
             .refreshable { await sync.syncNow() }
+            // Plan Week's result has one Undo for the whole change (undo-and-redo.md).
+            .resultBanner($banner, onUndo: weekUndo.map { rows in { undoWeek(rows) } })
             .navigationTitle("Schedule")
             .toolbar { NewJobToolbar(back: "Schedule") }
             .sensoryFeedback(.success, trigger: saved)
@@ -121,7 +129,7 @@
                 id:
                     "\(sync.revision)|\(session.company?.id ?? "")|\(view)|\(date ?? "")|\(tech ?? "")|\(drive.known.count)"
             ) {
-                reload()
+                await reload()
             }
             .task(id: session.company?.id) {
                 guard let company = session.company, let user = session.user else { return }
@@ -223,7 +231,7 @@
             ForEach(board.shownTechs) { t in
                 RouteCard(
                     tech: t, board: board, route: board.loaded.routes[routeKey(t.id, board.date)],
-                    onPlan: { plan(t.id, board) }, onMove: move,
+                    busy: optimizing == t.id, onPlan: { plan(t.id, board) }, onMove: move,
                     onDrop: { id, index in drop(id, on: .route(tech: t.id, date: board.date, index: index)) },
                     lead: board.leadRoute?.techId == t.id)
             }
@@ -232,9 +240,14 @@
         @ViewBuilder private func weekView(_ board: Board) -> some View {
             // Owners and admins: put the week's movable jobs on days for the least driving.
             if board.ctx.isManager && !planWeekDates(board.days, today: board.ctx.today).isEmpty {
-                Button("Plan Week") { planningWeek = true }
-                    .buttonStyle(.secondary(fullWidth: true))
-                    .accessibilityHint("Opens a sheet to plan this week’s routes")
+                Button {
+                    planningWeek = true
+                } label: {
+                    BusyLabel(title: "Plan Week", busyTitle: "Planning…", busy: planningRun)
+                }
+                .buttonStyle(.secondary(fullWidth: true))
+                .disabled(planningRun)
+                .accessibilityHint("Opens a sheet to plan this week’s routes")
             }
             ForEach(board.days, id: \.self) { d in
                 let list = board.weekList(d)
@@ -263,7 +276,7 @@
                             Button {
                                 openRoute(.job(item.job.id))
                             } label: {
-                                WeekRow(item: item, timeZone: board.ctx.timeZone)
+                                WeekRow(item: item, timeZone: board.ctx.timeZone, movable: canMoveJob(item.job.status))
                             }
                             .buttonStyle(.row)
                             .zoomSource(item.job.id)
@@ -293,31 +306,64 @@
 
         private func move(_ job: ScheduleJob, from: String?) { moving = MoveTarget(job: job, from: from) }
 
+        /// Optimize: the day planned off the main thread (the button shows Optimizing… at once),
+        /// then saved through the sync layer, the stops sliding into their new order, and the
+        /// result on the banner.
         private func plan(_ techId: String, _ board: Board) {
-            apply {
-                try planRoute(
-                    techId: techId, date: board.date, jobs: board.jobs, ctx: board.ctx, team: board.team, drive: drive)
+            guard optimizing == nil else { return }
+            optimizing = techId
+            let (date, jobs, ctx, team, drive) = (board.date, board.jobs, board.ctx, board.team, drive)
+            Task {
+                let outcome = await Task.detached(priority: .userInitiated) {
+                    Result {
+                        try optimizeDay(techId: techId, date: date, jobs: jobs, ctx: ctx, team: team, drive: drive)
+                    }
+                }.value
+                optimizing = nil
+                switch outcome {
+                case .success(let planned):
+                    let summary = planned.summary
+                    save(
+                        planned.updates,
+                        ResultBanner(
+                            kind: summary.warning == nil ? .success : .warning, title: summary.title,
+                            detail: summary.warning))
+                case .failure(let error):
+                    fail(error)
+                }
             }
         }
 
-        /// Plan Week, on the phone: core `planWeek` on the synced jobs, every change saved through
-        /// the sync layer in one transaction, then its result with Undo.
+        /// Plan Week, on the phone: core `planWeek` on the synced jobs, off the main thread, every
+        /// change saved through the sync layer in one transaction, then its result with Undo.
         private func planWeek(tech: String, tray: Bool, _ board: Board) {
+            guard !planningRun else { return }
+            planningRun = true
             let dates = planWeekDates(board.days, today: board.ctx.today)
-            var rows: [WeekUndoRow] = []
-            let done = apply {
-                let outcome = try planTheWeek(
-                    dates: dates, tech: tech, tray: tray, jobs: board.jobs, ctx: board.ctx, team: board.team,
-                    drive: drive)
-                rows = outcome.undo
-                return (outcome.updates, outcome.message)
+            let (jobs, ctx, team, drive) = (board.jobs, board.ctx, board.team, drive)
+            Task {
+                let outcome = await Task.detached(priority: .userInitiated) {
+                    Result {
+                        try planTheWeek(
+                            dates: dates, tech: tech, tray: tray, jobs: jobs, ctx: ctx, team: team, drive: drive)
+                    }
+                }.value
+                planningRun = false
+                switch outcome {
+                case .success(let week):
+                    let undo = week.undo.isEmpty ? nil : week.undo
+                    save(
+                        week.updates, ResultBanner(kind: .success, title: week.message, undoable: undo != nil),
+                        undo: undo)
+                case .failure(let error):
+                    fail(error)
+                }
             }
-            weekUndo = done && !rows.isEmpty ? rows : nil
         }
 
         /// Undo Plan Week: every job back as it was.
         private func undoWeek(_ rows: [WeekUndoRow]) {
-            apply { (undoWeekPlan(rows), weekPlanUndone) }
+            save(undoWeekPlan(rows), ResultBanner(kind: .success, title: weekPlanUndone))
         }
 
         /// A stop dropped on the schedule: the same move as Move…, through the sync layer. False
@@ -329,30 +375,62 @@
             }
         }
 
-        /// Saves a planning change through the sync layer and says what happened above the routes.
+        /// Saves a planning change through the sync layer and says what happened on the banner.
         /// Nil from `change` is nothing to do (a stop dropped where it was).
         @discardableResult
         private func apply(_ change: () throws -> (updates: [JobUpdate], message: String)?) -> Bool {
-            guard let company = session.company else { return false }
-            weekUndo = nil
             do {
                 guard let (updates, message) = try change() else { return true }
-                try saveJobUpdates(sync, companyId: company.id, updates)
-                result = (message, false)
-                saved += 1
-                return true
+                return save(updates, ResultBanner(kind: .success, title: message.isEmpty ? "Moved" : message))
             } catch {
-                result = (String(describing: error), true)
-                failed += 1
+                fail(error)
                 return false
             }
         }
 
-        private func reload() {
+        /// The rows, in one transaction; the next board animates in, and the banner says so.
+        @discardableResult
+        private func save(_ updates: [JobUpdate], _ result: ResultBanner, undo: [WeekUndoRow]? = nil) -> Bool {
+            guard let company = session.company else { return false }
+            do {
+                try saveJobUpdates(sync, companyId: company.id, updates)
+                weekUndo = undo
+                animateNext = !updates.isEmpty
+                banner = result
+                saved += 1
+                return true
+            } catch {
+                fail(error)
+                return false
+            }
+        }
+
+        private func fail(_ error: any Error) {
+            weekUndo = nil
+            banner = ResultBanner(kind: .error, title: String(describing: error))
+            failed += 1
+        }
+
+        /// The board for what's chosen, read from the phone's database off the main thread; the
+        /// last one stays on screen until the new one is ready, so nothing blinks. After a change
+        /// the stops slide to their new places; a new day, week or view cross-fades in.
+        private func reload() async {
             guard let company = session.company, let user = session.user else { return }
-            board = Board(
-                store: sync.store, kv: sync.kv, company: company, userId: user.id, view: view, date: date, tech: tech,
-                drive: drive)
+            let (store, kv, view, date, tech, drive) = (sync.store, sync.kv, view, date, tech, drive)
+            let next = await Task.detached(priority: .userInitiated) {
+                Board(
+                    store: store, kv: kv, company: company, userId: user.id, view: view, date: date, tech: tech,
+                    drive: drive)
+            }.value
+            guard !Task.isCancelled else { return }
+            let moved = board.map { $0.date != next.date || $0.view != next.view || $0.tech != next.tech } ?? false
+            withAnimation(animateNext || moved ? Motion.snappy : nil) { board = next }
+            animateNext = false
+            // Pools on the stops shown that were never looked up on the map: ask in the background.
+            let stops = next.shownTechs.flatMap { t in
+                next.days.flatMap { next.loaded.routes[routeKey(t.id, $0)]?.jobs ?? [] }
+            }
+            MissingPins.find(stops, companyId: company.id, queue: app.locate, api: app.api, sync: sync)
         }
     }
 
@@ -363,9 +441,9 @@
         var id: String { job.id }
     }
 
-    /// Everything the schedule shows for a view and date.
-    @MainActor
-    struct Board {
+    /// Everything the schedule shows for a view and date, worked out once when the data changes
+    /// (never in a view's body), off the main thread.
+    struct Board: Sendable {
         var ctx: ScheduleContext
         var team: [TeamMember]
         var jobs: [ScheduleJob]
@@ -384,6 +462,10 @@
         var cleanings: [String: [ScheduledCleaning]] = [:]
         /// The server looks addresses up, so "Not on map" can show (`MapLookups`).
         var routing = false
+        /// Each teammate's name by id (every stop's note reads it).
+        var names: [String: String] = [:]
+        /// The map that leads Day view with one tech chosen (`leadRoute`).
+        var leadMap: DayMapModel?
 
         init(
             store: LocalStore, kv: KeyValue, company: CompanyContext, userId: String, view: ScheduleView, date: String?,
@@ -417,10 +499,15 @@
             let shown = Set(
                 loaded.routes.values.flatMap { $0.jobs.map(\.id) } + loaded.unassigned.values.flatMap { $0.map(\.id) })
             cleanings = scheduledCleanings(store, companyId: company.id, jobIds: shown)
+            names = Dictionary(team.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
+            if let route = leadRoute {
+                leadMap = dayMapModel(
+                    jobs: route.jobs, depot: ctx.depot, date: self.date, today: ctx.today, tech: route.techName,
+                    timeZone: ctx.timeZone)
+            }
         }
 
-        func name(_ id: String) -> String { team.first { $0.id == id }?.name ?? "Teammate" }
-        var names: [String: String] { Dictionary(team.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a }) }
+        func name(_ id: String) -> String { names[id] ?? "Teammate" }
 
         var shownTechs: [TeamMember] { techs.filter { tech == "all" || $0.id == tech } }
 
@@ -699,6 +786,7 @@
                         .contentShape(Circle())
                 }
                 .accessibilityLabel("Actions for \(job.customerName)")
+                if canMoveJob(job.status) { DragGrip(width: 24) }
             }
             .well(padding: 8)
             .scheduleDragSource(job)
@@ -707,7 +795,7 @@
         }
     }
 
-    /// One tech's day (spec 5.6 item 8): the tech, the day's stops and driving, Plan Route and the
+    /// One tech's day (spec 5.6 item 8): the tech, the day's stops and driving, Optimize and the
     /// maps link on a card, then each stop as its own card with the drive between them, as on
     /// Today (owner, 2026-10-20). A stop dropped on a stop takes its place; on the tech's card or
     /// the empty day, it goes last.
@@ -715,6 +803,8 @@
         var tech: TeamMember
         var board: Board
         var route: DayRoute?
+        /// Optimize is working on this day.
+        var busy = false
         var onPlan: () -> Void
         var onMove: (ScheduleJob, String?) -> Void
         /// A stop dropped on this day (job id, place in the route or nil for last).
@@ -758,7 +848,7 @@
                 VStack(alignment: .leading, spacing: 4) {
                     CardTitle(tech.name)
                     if let route, !jobs.isEmpty {
-                        RouteFacts(route: route, board: board, onPlan: onPlan)
+                        RouteFacts(route: route, board: board, busy: busy, onPlan: onPlan)
                     } else {
                         Text(open ? "Nothing scheduled. Drop a job here." : "Nothing scheduled.")
                             .textRole(.body).foregroundStyle(Color.textMuted)
@@ -777,11 +867,13 @@
     }
 
     /// A tech's day in numbers, then what to do with it: "5 stops · 1 hr 10 min driving · back by
-    /// 3:40 PM", a warning when it runs past the end of the day, and Plan Route beside the day in
-    /// the maps app.
+    /// 3:40 PM", a warning when it runs past the end of the day, and Optimize (owner, 2026-10-20:
+    /// "Plan Route" → "Optimize") beside the day in the maps app. The numbers roll to their new
+    /// values after Optimize.
     struct RouteFacts: View {
         var route: DayRoute
         var board: Board
+        var busy = false
         var onPlan: () -> Void
         @Environment(\.openURL) private var openURL
 
@@ -793,13 +885,20 @@
                         + (route.summary.backMin.map { " · back by \(minutesLabel($0))" } ?? "")
                 )
                 .textRole(.secondary).foregroundStyle(Color.textMuted)
+                .monospacedDigit()
+                .contentTransition(.numericText())
                 if route.summary.overtimeMin > 0 {
                     Text("Runs \(durationLabel(route.summary.overtimeMin)) past the end of the day.")
                         .textRole(.secondary).fontWeight(.semibold).foregroundStyle(Color.warning)
                 }
                 HStack(spacing: 8) {
                     if board.date >= board.ctx.today {
-                        Button("Plan Route", action: onPlan).buttonStyle(.secondary(fullWidth: true))
+                        Button(action: onPlan) {
+                            BusyLabel(title: "Optimize", busyTitle: "Optimizing…", busy: busy)
+                        }
+                        .buttonStyle(.secondary(fullWidth: true))
+                        .disabled(busy)
+                        .accessibilityHint("Puts the stops in driving order")
                     }
                     if let link = dayDirections(
                         app: board.mapsApp, origin: board.ctx.origin,
@@ -827,17 +926,15 @@
     struct DayLead: View {
         var route: DayRoute
         var board: Board
+        var busy = false
         var onPlan: () -> Void
 
         var body: some View {
             VStack(alignment: .leading, spacing: 8) {
-                if let model = dayMapModel(
-                    jobs: route.jobs, depot: board.ctx.depot, date: board.date, today: board.ctx.today,
-                    tech: route.techName, timeZone: board.ctx.timeZone)
-                {
+                if let model = board.leadMap {
                     DayMapSection(model: model)
                 }
-                RouteFacts(route: route, board: board, onPlan: onPlan)
+                RouteFacts(route: route, board: board, busy: busy, onPlan: onPlan)
             }
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Route")
@@ -872,7 +969,13 @@
                     : [],
                 menu: false
             ) {
-                content.padding(EdgeInsets(top: 8, leading: 12, bottom: 12, trailing: 8))
+                HStack(spacing: 0) {
+                    content
+                    // The grip at the trailing edge (owner, 2026-10-20: "Schedule dragging should
+                    // be on the right side of the card"); the whole card still picks up.
+                    if canMoveJob(job.status) { DragGrip() }
+                }
+                .padding(EdgeInsets(top: 8, leading: 12, bottom: 12, trailing: canMoveJob(job.status) ? 0 : 8))
             }
             .clipShape(shape)
             .card(padding: 0)
@@ -1124,10 +1227,14 @@
         }
     }
 
-    /// A week row: "**8:00 AM · #1343**" over "Customer · Tech", the status chip, a chevron.
+    /// A week row: "**8:00 AM · #1343**" over "Customer · Tech", the status chip, then the drag
+    /// grip (or a chevron when it can't move).
     struct WeekRow: View {
         var item: WeekItem
         var timeZone: String
+        /// It can be dragged: the grip at the trailing edge in place of the chevron (the row still
+        /// opens the job, as rows in Mail do).
+        var movable = false
 
         var body: some View {
             HStack(spacing: 12) {
@@ -1141,9 +1248,10 @@
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 StatusChip(status: item.job.status)
-                Chevron()
+                if movable { DragGrip(width: 24) } else { Chevron() }
             }
-            .padding(.horizontal, 16)
+            .padding(.leading, 16)
+            .padding(.trailing, movable ? 8 : 16)
             .padding(.vertical, 10)
             .frame(minHeight: minTarget)
             .contentShape(Rectangle())
@@ -1249,11 +1357,14 @@
         private var movers: [TeamMember] {
             board.ctx.seesAll ? board.team.filter(\.active) : board.team.filter { $0.id == board.ctx.userId }
         }
-        /// The other stops on the chosen tech's day.
-        private var others: [ScheduleJob] {
+        /// The other stops on the chosen tech's day, worked out when the tech or day changes (not
+        /// on every render: it lays out the whole day).
+        @State private var others: [ScheduleJob] = []
+
+        private func otherStops(_ tech: String?, _ day: String) -> [ScheduleJob] {
             guard let tech else { return [] }
-            return loadRoutes(board.jobs, ctx: board.ctx, dates: [dayString], team: board.team, drive: DriveTimes())
-                .routes[routeKey(tech, dayString)]?.jobs.filter { $0.id != target.job.id } ?? []
+            return loadRoutes(board.jobs, ctx: board.ctx, dates: [day], team: board.team, drive: DriveTimes())
+                .routes[routeKey(tech, day)]?.jobs.filter { $0.id != target.job.id } ?? []
         }
 
         var body: some View {
@@ -1332,6 +1443,8 @@
                 }
             }
             .sheetPresentation(detents: [.medium, .large])
+            .onChange(of: tech) { _, t in others = otherStops(t, dayString) }
+            .onChange(of: dayString) { _, d in others = otherStops(tech, d) }
             .onAppear {
                 guard !ready else { return }
                 ready = true
@@ -1341,6 +1454,7 @@
                 let fromDate = parts.flatMap { $0.count > 1 ? $0[1] : nil }
                 let start = fromDate.flatMap { $0 >= board.ctx.today ? $0 : nil } ?? board.ctx.today
                 day = zonedInstant(start, 12 * 60, timeZone: board.ctx.timeZone) ?? Date()
+                others = otherStops(tech, dayString)
                 let at = others.firstIndex { $0.id == target.job.id }
                 place = at ?? others.count
                 if let fromTech, fromDate == start,
@@ -1380,18 +1494,16 @@
         var drive: DriveTimes
         var onUse: (Suggestion) -> Void
         @Environment(\.dismiss) private var dismiss
+        /// Worked out off the main thread when the sheet opens (it tries every gap in a week).
+        @State private var found: Result<(suggestions: [Suggestion], note: String?), any Error>?
 
         var body: some View {
-            let found = Result {
-                try suggestTimes(
-                    location: job.location, durationMin: job.minutes(board.ctx.settings), excluding: job.id,
-                    jobs: board.jobs,
-                    ctx: board.ctx, team: board.team, drive: drive)
-            }
             NavigationStack {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
                         switch found {
+                        case nil:
+                            SuggestionList(suggestions: [], onUse: { _ in }, placeholders: 3)
                         case .failure(let error):
                             Text(String(describing: error)).textRole(.secondary).foregroundStyle(Color.fail)
                         case .success(let result):
@@ -1413,6 +1525,17 @@
                 }
             }
             .sheetPresentation(detents: [.medium, .large])
+            .task(id: job.id) {
+                let (job, jobs, ctx, team, drive) = (job, board.jobs, board.ctx, board.team, drive)
+                let result = await Task.detached(priority: .userInitiated) {
+                    Result {
+                        try suggestTimes(
+                            location: job.location, durationMin: job.minutes(ctx.settings), excluding: job.id,
+                            jobs: jobs, ctx: ctx, team: team, drive: drive)
+                    }
+                }.value
+                withAnimation(Motion.snappy) { found = result }
+            }
         }
     }
 
@@ -1421,9 +1544,23 @@
     struct SuggestionList: View {
         var suggestions: [Suggestion]
         var onUse: (Suggestion) -> Void
+        /// Rows drawn as placeholders while the suggestions are worked out.
+        var placeholders = 0
 
         var body: some View {
             Grouped {
+                ForEach(0..<placeholders, id: \.self) { _ in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Tue, Oct 20 · 9:00 AM · Tony Tech").textRole(.bodyEmphasis)
+                        Text("Adds 12 min of driving, near a stop").textRole(.secondary)
+                    }
+                    .foregroundStyle(Color.textMuted)
+                    .frame(maxWidth: .infinity, minHeight: minTarget, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .redacted(reason: .placeholder)
+                    .accessibilityHidden(true)
+                }
                 ForEach(suggestions) { s in
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 2) {
@@ -1470,6 +1607,71 @@
             }
             .sheetPresentation(detents: [.medium, .large])
             .onAppear { chosen = zonedInstant(date, 12 * 60, timeZone: "UTC") ?? Date() }
+        }
+    }
+
+    /// A button's title with a spinner in front while its work runs ("Optimizing…"), so the press
+    /// answers at once.
+    struct BusyLabel: View {
+        var title: String
+        var busyTitle: String
+        var busy: Bool
+
+        var body: some View {
+            HStack(spacing: 8) {
+                if busy {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(Color.link)
+                        .transition(.opacity)
+                }
+                Text(busy ? busyTitle : title)
+                    .contentTransition(.opacity)
+            }
+            .animation(Motion.snappy, value: busy)
+        }
+    }
+
+    /// The handle on a card that can be dragged, at its trailing edge (owner, 2026-10-20): the
+    /// three lines iOS lists use for reordering, in `textMuted`. The whole card picks up with a
+    /// touch and hold; VoiceOver and Switch Control use Move instead.
+    struct DragGrip: View {
+        var width: CGFloat = 32
+
+        var body: some View {
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(Color.textMuted)
+                .frame(width: width)
+                .frame(maxHeight: .infinity)
+                .accessibilityHidden(true)
+        }
+    }
+
+    /// Schedule while its first board is read: the shapes of the controls and a day's stops,
+    /// redacted, instead of an empty page (loading.md: show something as soon as possible).
+    struct ScheduleSkeleton: View {
+        var body: some View {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Tuesday, October 20").textRole(.body)
+                RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.fill).frame(height: 56)
+                ForEach(0..<3, id: \.self) { _ in
+                    HStack(alignment: .top, spacing: 8) {
+                        Circle().fill(Color.fill).frame(width: 32, height: 32)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("9:00 AM  Customer name").textRole(.bodyEmphasis)
+                            Text("1423 Palm Court, Phoenix").textRole(.secondary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(12)
+                    .card(padding: 0)
+                }
+            }
+            .foregroundStyle(Color.textMuted)
+            .redacted(reason: .placeholder)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Loading the schedule")
         }
     }
 #endif

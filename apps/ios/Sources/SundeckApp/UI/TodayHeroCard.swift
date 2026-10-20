@@ -10,12 +10,12 @@
     /// Activity brought into the app, in its water blue, from the same rule (core `todayHero`), so
     /// the Lock Screen and the card always pick the same stop. The top names the moment ("At the
     /// pool · Stop 2 of 3", core `heroHeadline`); the customer's name opens the job; the address
-    /// opens directions; On My Way (a round car, when it's the tech's to send), Message, Call and
-    /// Directions sit on the Next line; the main button is the moment's: Start Job from the start
-    /// (owner, 2026-10-20: "not every tech is going to use every function all the time"), then
-    /// Open Checklist with Mark Complete. Owners and admins looking at a tech's day get Message,
-    /// Call and Directions only. Website
-    /// components/today-hero.tsx. A solid card in the content layer, never glass.
+    /// opens directions. Before leaving and on the way, the Next line is words only and one row
+    /// holds Start (owner, 2026-10-20: "not every tech is going to use every function all the
+    /// time"; "Change 'start job' to 'start'") with On My Way (a round car, when it's the tech's
+    /// to send), Message, Call and Directions after it. On site the round buttons sit on the Next
+    /// line, then Open Checklist with Mark Complete. Owners and admins looking at a tech's day get
+    /// Message, Call and Directions only. Website components/today-hero.tsx. A solid card in the content layer, never glass.
     struct TodayHeroCard: View {
         var hero: TodayHero
         var day: TodayDay
@@ -48,19 +48,34 @@
             let c = hero.content
             let actions = heroActions(hero.moment, mine: day.mine)
             let hasButtons = (actions.primary != nil && target != nil) || (actions.complete && job != nil)
+            // Before leaving and on the way, Start leads one row with the round buttons after it
+            // (owner, 2026-10-20: "Place 'Start Job' to the left of the three icons. Just to
+            // condense space"); the Next line is then words only.
+            let startRow = actions.primary == .startJob && target != nil
             VStack(alignment: .leading, spacing: 0) {
                 top(c)
                     .accessibilitySortPriority(4)
                 if let job, hero.moment != .done {
                     details(job, c).padding(.top, 12)
                 }
-                if c.next != nil || contact != nil {
-                    nextLine(c).padding(.top, 12)
-                }
-                if hasButtons {
-                    buttons(actions)
-                        .padding(.top, 16)
-                        .accessibilitySortPriority(3)
+                if startRow {
+                    if let next = c.next {
+                        nextText(next).padding(.top, 12)
+                    }
+                    if let target {
+                        startLine(target, onMyWay: actions.onMyWay)
+                            .padding(.top, 16)
+                            .accessibilitySortPriority(3)
+                    }
+                } else {
+                    if c.next != nil || contact != nil {
+                        nextLine(c).padding(.top, 12)
+                    }
+                    if hasButtons {
+                        buttons(actions)
+                            .padding(.top, 16)
+                            .accessibilitySortPriority(3)
+                    }
                 }
                 progress
                     .padding(.top, 16)
@@ -224,11 +239,7 @@
         private func nextLine(_ c: LiveStopContent) -> some View {
             HStack(alignment: .center, spacing: 12) {
                 if let next = c.next {
-                    Text(next)
-                        .font(.subheadline)
-                        .foregroundStyle(Self.soft)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .accessibilitySortPriority(2)
+                    nextText(next)
                 } else {
                     Spacer(minLength: 0)
                 }
@@ -237,6 +248,53 @@
                         .accessibilitySortPriority(1)
                 }
             }
+        }
+
+        private func nextText(_ next: String) -> some View {
+            Text(next)
+                .font(.subheadline)
+                .foregroundStyle(Self.soft)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilitySortPriority(2)
+        }
+
+        /// Start, taking the rest of the row (110 pt at least), then the round buttons. When
+        /// they don't fit beside it (accessibility text sizes, the narrowest phones), Start gets
+        /// its own row and the round buttons sit under it, right-aligned.
+        private func startLine(_ target: ScheduleJob, onMyWay: Bool) -> some View {
+            let rounds = contact.map { roundCount($0, onMyWay: onMyWay) } ?? 0
+            let inner = width - 2 * (width < 375 ? 16 : 20)
+            let needed: CGFloat = 110 + (rounds > 0 ? 10 + CGFloat(rounds) * minTarget + CGFloat(rounds - 1) * 8 : 0)
+            let fits = typeSize < .accessibility1 && needed <= inner
+            let layout =
+                fits
+                ? AnyLayout(HStackLayout(alignment: .center, spacing: 10))
+                : AnyLayout(VStackLayout(alignment: .trailing, spacing: 10))
+            return VStack(alignment: .leading, spacing: 6) {
+                layout {
+                    startButton(target).frame(minWidth: 110, maxWidth: .infinity)
+                    if let contact {
+                        contactButtons(contact, onMyWay: onMyWay)
+                            .accessibilitySortPriority(-1)
+                    }
+                }
+                if let startError {
+                    Text(startError)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.white)
+                }
+            }
+        }
+
+        /// How many round buttons `contactButtons` draws.
+        private func roundCount(_ job: ScheduleJob, onMyWay: Bool) -> Int {
+            (onMyWay ? 1 : 0) + (job.customerPhone != nil ? 2 : 0) + (job.address.isEmpty ? 0 : 1)
+        }
+
+        private func startButton(_ target: ScheduleJob) -> some View {
+            Button(HeroAction.startJob.label) { start(target) }
+                .buttonStyle(HeroButtonStyle(filled: true))
+                .accessibilityLabel("Start \(target.customerName)")
         }
 
         /// On My Way first (when it's the tech's to send), then Message, Call and Directions.
@@ -306,16 +364,14 @@
                 // Never the main button any more: a round car on the Next line (`heroActions`).
                 EmptyView()
             case .startJob:
-                Button(HeroAction.startJob.label) { start(target) }
-                    .buttonStyle(HeroButtonStyle(filled: true))
-                    .accessibilityLabel("Start Job for \(target.customerName)")
+                startButton(target)
             case .openChecklist:
                 Button(HeroAction.openChecklist.label) { openRoute(.jobSection(target.id, .checklist)) }
                     .buttonStyle(HeroButtonStyle(filled: true))
             }
         }
 
-        /// Start Job, through the sync layer (the job page's own write), with a light tap.
+        /// Start, through the sync layer (the job page's own write), with a light tap.
         private func start(_ job: ScheduleJob) {
             guard let company = session.company else { return }
             do {

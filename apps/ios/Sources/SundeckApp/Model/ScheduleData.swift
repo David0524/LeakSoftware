@@ -120,6 +120,11 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
     /// Its pool has an address with no map location for it (core `mapStatus` "missing"), shown as
     /// "Not on map" once the server looks addresses up (`MapLookups`).
     public var mapMissing = false
+    /// The job's pool, and whether its address has never been looked up on the map: an address
+    /// with no coordinates whose `geocoded_address` isn't this address (a pool made or imported
+    /// somewhere that didn't look it up). Today and Schedule ask the server for these.
+    public var propertyId: String?
+    public var needsLocate = false
 
     public init(_ v: JobView) {
         let j = v.job
@@ -149,6 +154,13 @@ public struct ScheduleJob: Equatable, Sendable, Identifiable, PlanJobFields {
             location = LatLng(lat: lat, lng: lng)
         }
         mapMissing = propertyMapStatus(v.property, routing: true) == .missing
+        propertyId = v.property?.id
+        if location == nil, let row = v.property, let p = decodeProperty(row),
+            !p.addressLine1.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        {
+            let formatted = formatAddress(p)
+            needsLocate = !formatted.isEmpty && row["geocoded_address"]?.string != formatted
+        }
         accessNotes = v.property?["access_notes"]?.string.flatMap {
             $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0
         }
@@ -339,6 +351,25 @@ public func planRoute(
 ) throws -> (updates: [JobUpdate], message: String) {
     try result(
         planDay(ctx.plan, techId, date, dayJobs(techId, date, jobs: jobs, ctx: ctx, team: team), drive: drive.drive))
+}
+
+/// What Optimize's banner says (owner, 2026-10-20: the inline "Planned: …" note "looks horrible.
+/// Display it on a banner on the top of the screen"): core `planDay`'s one line ("Optimized · 1 hr
+/// 6 min less driving · Back by 4:28 PM") and its notes as a second line.
+public struct OptimizeSummary: Equatable, Sendable {
+    public var title: String
+    public var warning: String?
+}
+
+/// Optimize (Plan Route, renamed by the owner on 2026-10-20): the rows `planRoute` saves, with the
+/// banner's words.
+public func optimizeDay(
+    techId: String, date: String, jobs: [ScheduleJob], ctx: ScheduleContext, team: [TeamMember], drive: DriveTimes
+) throws -> (updates: [JobUpdate], summary: OptimizeSummary) {
+    let change = try planDay(
+        ctx.plan, techId, date, dayJobs(techId, date, jobs: jobs, ctx: ctx, team: team), drive: drive.drive)
+    let (updates, message) = try result(change)
+    return (updates, OptimizeSummary(title: message, warning: change.detail))
 }
 
 /// Move…: puts a job on a tech's day at a place in the route (`tech` nil: nobody yet, it waits in

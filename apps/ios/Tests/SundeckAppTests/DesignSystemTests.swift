@@ -99,7 +99,9 @@ import Testing
         #expect(TypeRole.subHeading.brandFont == .bold && TypeRole.subHeading.size == 18)
         #expect(TypeRole.sectionLabel.brandFont == .semiBold && TypeRole.sectionLabel.uppercased)
         #expect(TypeRole.sectionLabel.scale == .footnote)
-        for role in [TypeRole.navTitle, .body, .bodyEmphasis, .bodyMedium, .secondary, .footnote, .segment, .tabLabel] {
+        // The inline navigation title is the large title's face, so a title keeps its face as it folds.
+        #expect(TypeRole.navTitle.brandFont == .semiBold && TypeRole.navTitle.size == 17)
+        for role in [TypeRole.body, .bodyEmphasis, .bodyMedium, .secondary, .footnote, .segment, .tabLabel] {
             #expect(role.brandFont == nil, "\(role) is the body face")
             #expect(!role.uppercased)
         }

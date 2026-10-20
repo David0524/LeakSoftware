@@ -26,6 +26,7 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import {
   useCallback,
+  useEffect,
   useId,
   useMemo,
   useOptimistic,
@@ -52,7 +53,9 @@ import {
 } from "@/app/actions/routes";
 import { AddressLink, OpenRouteInMaps } from "./open-in-maps";
 import { Sheet } from "./sheet";
-import { Button, Notice, StatusBadge, buttonClass, cx, pillClass } from "./ui";
+import { showBanner } from "./top-banner";
+import { useFlip } from "./use-flip";
+import { Button, StatusBadge, buttonClass, cx, pillClass } from "./ui";
 
 // The schedule as routes (routing, owner request 2026-10-13): each tech's day in order with
 // the driving between stops. Drag a job by its grip to another place, tech, or day (mouse,
@@ -187,8 +190,11 @@ export function RouteBoard({
     return lists;
   }, [columns, tray]);
   const [lists, optimistic] = useOptimistic(initial, applyMove);
-  const [pending, start] = useTransition();
-  const [result, setResult] = useState<RouteResult & { at?: number }>({});
+  // Moves and Optimize run apart, so a move made while a day is optimizing isn't held up, and
+  // only the day being optimized shows it.
+  const [, start] = useTransition();
+  const [optimizing, startOptimize] = useTransition();
+  const [planning, setPlanning] = useState<string | null>(null);
   const [dragging, setDragging] = useState<BoardStop | null>(null);
   const [moving, setMoving] = useState<BoardStop | null>(null);
   const byKey = useMemo(() => new Map(columns.map((c) => [c.key, c])), [columns]);
@@ -216,13 +222,47 @@ export function RouteBoard({
 
   const where = (id: string) => Object.keys(lists).find((k) => lists[k]!.some((s) => s.id === id));
 
-  function run(move: Move | null, call: () => Promise<RouteResult>) {
+  // The board as it is and as it's being dragged: lists that reorder slide into place.
+  const board = useRef<HTMLDivElement>(null);
+  useFlip(board, !!dragging);
+
+  // Results show as a short banner at the top of the screen (owner, 2026-10-20), in the same
+  // frame as the reordered day: set in the transition, shown once it's on screen.
+  const [result, setResult] = useState<(RouteResult & { at: number }) | null>(null);
+  const report = (r: RouteResult) => setResult({ ...r, at: Date.now() });
+  useEffect(() => {
+    if (!result) return;
+    if (result.error) showBanner({ tone: "error", message: result.error });
+    else if (result.message)
+      showBanner({
+        tone: result.detail ? "warning" : "success",
+        message: result.message,
+        detail: result.detail,
+      });
+  }, [result]);
+
+  function run(move: Move, call: () => Promise<RouteResult>) {
     start(async () => {
-      if (move) optimistic(move);
+      optimistic(move);
       const r = await call();
-      setResult({ ...r, at: Date.now() });
+      // Updates after an await join the transition only when wrapped, so the banner shows
+      // with the refreshed day, not before it.
+      start(() => report(r));
     });
   }
+
+  /** Optimize a tech's day: the button says so at once, and the rest of the page still works. */
+  function optimize(techId: string, date: string) {
+    setPlanning(`${techId}|${date}`);
+    startOptimize(async () => {
+      const r = await planRoute(techId, date);
+      startOptimize(() => {
+        report(r);
+        setPlanning(null);
+      });
+    });
+  }
+  const optimizingKey = optimizing ? planning : null;
 
   /** Move a job to a list ("techId|date", "none|date", or the tray) at a place. */
   function moveTo(job: string, to: string, index: number) {
@@ -233,7 +273,7 @@ export function RouteBoard({
     const col = byKey.get(to);
     const [tech, date] = to.split("|") as [string, string];
     if (col && !col.open) {
-      setResult({ error: "Pick today or a later day.", at: Date.now() });
+      report({ error: "Pick today or a later day." });
       return;
     }
     // No tech: the job keeps its time and waits in Needs a Time.
@@ -288,74 +328,69 @@ export function RouteBoard({
         },
       }}
     >
-      <div aria-live="polite" className="mb-4 empty:hidden">
-        {pending ? (
-          <Notice>Saving…</Notice>
-        ) : result.error ? (
-          <Notice tone="error">{result.error}</Notice>
-        ) : result.message ? (
-          <Notice tone="success">{result.message}</Notice>
-        ) : null}
-      </div>
-
-      {lead ? (
-        <DayLead
-          column={lead}
-          stops={lists[lead.key] ?? []}
-          busy={pending}
-          onPlan={() => run(null, () => planRoute(lead.techId, lead.date))}
-          maps={maps}
-          today={today}
-        />
-      ) : null}
-
-      {tray ? (
-        <Tray
-          jobs={lists[TRAY] ?? []}
-          onMove={setMoving}
-          onSuggestion={(job, s) => moveTo(job, `${s.techId}|${s.date}`, s.position)}
-        />
-      ) : null}
-
-      {mode === "day" ? (
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-[repeat(2,minmax(0,1fr))] xl:grid-cols-[repeat(3,minmax(0,1fr))]">
-          {columns.map((c) => (
-            <DayColumn
-              key={c.key}
-              column={c}
-              stops={lists[c.key] ?? []}
-              busy={pending}
-              onPlan={() => run(null, () => planRoute(c.techId!, c.date))}
-              onMove={setMoving}
-              maps={maps}
-              today={today}
-              lead={c.key === lead?.key}
-            />
-          ))}
-        </div>
-      ) : (
-        <>
-          <WeekMaps
-            columns={columns}
-            lists={lists}
-            days={weekDays ?? []}
-            workDates={workDates}
-            today={today}
+      <div ref={board}>
+        {lead ? (
+          <DayLead
+            column={lead}
+            stops={lists[lead.key] ?? []}
+            optimizing={optimizingKey === lead.key}
+            busy={optimizing}
+            onPlan={() => optimize(lead.techId, lead.date)}
             maps={maps}
-            planDates={planDates}
-            planWaiting={planWaiting}
-            busy={pending}
-            onPlan={(techId, date) => run(null, () => planRoute(techId, date))}
-          />
-          <WeekGrid
-            columns={columns}
-            lists={lists}
-            days={weekDays ?? []}
             today={today}
-            onMove={setMoving}
           />
-        </>
-      )}
+        ) : null}
+
+        {tray ? (
+          <Tray
+            jobs={lists[TRAY] ?? []}
+            onMove={setMoving}
+            onSuggestion={(job, s) => moveTo(job, `${s.techId}|${s.date}`, s.position)}
+          />
+        ) : null}
+
+        {mode === "day" ? (
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-[repeat(2,minmax(0,1fr))] xl:grid-cols-[repeat(3,minmax(0,1fr))]">
+            {columns.map((c) => (
+              <DayColumn
+                key={c.key}
+                column={c}
+                stops={lists[c.key] ?? []}
+                optimizing={optimizingKey === c.key}
+                busy={optimizing}
+                onPlan={() => optimize(c.techId!, c.date)}
+                onMove={setMoving}
+                maps={maps}
+                today={today}
+                lead={c.key === lead?.key}
+              />
+            ))}
+          </div>
+        ) : (
+          <>
+            <WeekMaps
+              columns={columns}
+              lists={lists}
+              days={weekDays ?? []}
+              workDates={workDates}
+              today={today}
+              maps={maps}
+              planDates={planDates}
+              planWaiting={planWaiting}
+              optimizingKey={optimizingKey}
+              busy={optimizing}
+              onPlan={optimize}
+            />
+            <WeekGrid
+              columns={columns}
+              lists={lists}
+              days={weekDays ?? []}
+              today={today}
+              onMove={setMoving}
+            />
+          </>
+        )}
+      </div>
 
       <DragOverlay dropAnimation={null}>
         {dragging ? (
@@ -396,7 +431,10 @@ export function RouteBoard({
 interface DayHeaderProps {
   column: BoardColumn;
   stops: BoardStop[];
+  /** Some day is being optimized (Optimize waits for it). */
   busy: boolean;
+  /** This day is. */
+  optimizing?: boolean;
   onPlan: () => void;
   maps: { company: string; depot: LatLng | null } | null;
   today: string;
@@ -428,20 +466,57 @@ function DayFacts({ column: c, stops }: { column: BoardColumn; stops: BoardStop[
   );
 }
 
-/** Plan Route and the day in the maps app: what a tech's day is for, so they lead. */
-function DayButtons({ column: c, stops, busy, onPlan }: DayHeaderProps) {
+/** Optimize and the day in the maps app: what a tech's day is for, so they lead. */
+function DayButtons({ column: c, stops, busy, optimizing = false, onPlan }: DayHeaderProps) {
   if (!c.techId || !stops.length) return null;
   return (
     <div className="mt-3 grid grid-cols-2 gap-2">
       {c.open ? (
-        <Button type="button" kind="secondary" disabled={busy} onClick={onPlan} className="px-2">
-          Plan Route
-        </Button>
+        <OptimizeButton optimizing={optimizing} disabled={busy} onClick={onPlan} className="px-2" />
       ) : null}
       {c.routeHref ? (
         <OpenRouteInMaps href={c.routeHref} app={c.routeApp} compact className="px-2" />
       ) : null}
     </div>
+  );
+}
+
+/**
+ * Optimize (owner, 2026-10-20: "Change 'plan route' to 'optimize'"): a spinner and
+ * "Optimizing…" the moment it's pressed, while the rest of the page keeps working.
+ */
+function OptimizeButton({
+  optimizing,
+  disabled,
+  onClick,
+  className,
+  label,
+}: {
+  optimizing: boolean;
+  disabled: boolean;
+  onClick: () => void;
+  className?: string;
+  /** Spoken name when several are on screen ("Optimize Tuesday’s Route"). */
+  label?: string;
+}) {
+  return (
+    <Button
+      type="button"
+      kind="secondary"
+      disabled={disabled}
+      aria-busy={optimizing || undefined}
+      aria-label={label}
+      onClick={onClick}
+      className={cx("gap-2", optimizing && "disabled:opacity-100", className)}
+    >
+      {optimizing ? (
+        <span
+          aria-hidden="true"
+          className="size-4 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none motion-reduce:border-r-current motion-reduce:opacity-60"
+        />
+      ) : null}
+      {optimizing ? "Optimizing…" : "Optimize"}
+    </Button>
   );
 }
 
@@ -497,6 +572,7 @@ function DayColumn({
   column: c,
   stops,
   busy,
+  optimizing = false,
   onPlan,
   onMove,
   maps,
@@ -506,6 +582,7 @@ function DayColumn({
   column: BoardColumn;
   stops: BoardStop[];
   busy: boolean;
+  optimizing?: boolean;
   onPlan: () => void;
   onMove: (s: BoardStop) => void;
   maps: { company: string; depot: LatLng | null } | null;
@@ -529,21 +606,29 @@ function DayColumn({
       <h2 className="font-display text-xl font-bold">{c.title}</h2>
       {/* Phones with one tech chosen show this above Needs a Time instead (DayLead). */}
       <div className={lead ? "max-sm:hidden" : undefined}>
-        <DayHeader column={c} stops={stops} busy={busy} onPlan={onPlan} maps={maps} today={today} />
+        <DayHeader
+          column={c}
+          stops={stops}
+          busy={busy}
+          optimizing={optimizing}
+          onPlan={onPlan}
+          maps={maps}
+          today={today}
+        />
       </div>
       <SortableContext
         id={c.key}
         items={stops.map((s) => s.id)}
         strategy={verticalListSortingStrategy}
       >
-        <ol ref={setNodeRef} className="mt-3 min-h-16 flex-1 space-y-1">
+        <ol ref={setNodeRef} data-flip-list={c.key} className="mt-3 min-h-16 flex-1 space-y-1">
           {stops.length === 0 ? (
             <li className="card p-4 text-center text-text-muted">
               {c.open ? "Nothing scheduled. Drop a job here." : "Nothing scheduled."}
             </li>
           ) : null}
           {stops.map((s, i) => (
-            <li key={s.id}>
+            <li key={s.id} data-flip={s.id}>
               {s.legMin != null && c.techId ? (
                 <Leg
                   minutes={s.legMin}
@@ -887,7 +972,7 @@ function StopCard({
 
 /**
  * The week as a row of day maps for one tech (PayThePoolMan's route screen, owner 2026-10-20):
- * each day's name, its map, then Enlarge and Plan Route. Pills pick whose week; Plan Week sits at
+ * each day's name, its map, then Enlarge and Optimize. Pills pick whose week; Plan Week sits at
  * the row's end for owners and admins.
  */
 function WeekMaps({
@@ -900,6 +985,7 @@ function WeekMaps({
   planDates,
   planWaiting,
   busy,
+  optimizingKey,
   onPlan,
 }: {
   columns: BoardColumn[];
@@ -911,6 +997,7 @@ function WeekMaps({
   planDates: string[] | null;
   planWaiting: number;
   busy: boolean;
+  optimizingKey: string | null;
   onPlan: (techId: string, date: string) => void;
 }) {
   const techs = useMemo(
@@ -997,16 +1084,13 @@ function WeekMaps({
                   day={day}
                   action={
                     stops.length ? (
-                      <Button
-                        type="button"
-                        kind="secondary"
+                      <OptimizeButton
+                        optimizing={optimizingKey === key}
                         disabled={busy || !col?.open}
                         onClick={() => onPlan(tech, d)}
-                        aria-label={`Plan ${day}’s Route`}
+                        label={optimizingKey === key ? undefined : `Optimize ${day}’s Route`}
                         className="min-w-0 flex-1 px-3 text-[0.9375rem]"
-                      >
-                        Plan Route
-                      </Button>
+                      />
                     ) : null
                   }
                 />
@@ -1112,9 +1196,9 @@ function WeekCell({
       )}
     >
       <SortableContext id={c.key} items={stops.map((s) => s.id)} strategy={rectSortingStrategy}>
-        <ul className="min-h-12 space-y-1.5">
+        <ul data-flip-list={c.key} className="min-h-12 space-y-1.5">
           {stops.map((s) => (
-            <li key={s.id}>
+            <li key={s.id} data-flip={s.id}>
               <WeekChip stop={s} onMove={onMove} />
             </li>
           ))}
@@ -1235,6 +1319,7 @@ function Tray({
               push the routes down; wider screens can open it all as a grid (owner,
               2026-10-18: "super cluttered on desktop"). */}
           <ul
+            data-flip-list={TRAY}
             className={cx(
               "relative -mx-4 mt-3 flex snap-x snap-mandatory scroll-px-4 items-start gap-3 overflow-x-auto px-4 pb-1",
               all &&
@@ -1244,6 +1329,7 @@ function Tray({
             {jobs.map((j) => (
               <li
                 key={j.id}
+                data-flip={j.id}
                 className={cx(
                   "w-[88%] max-w-80 shrink-0 snap-start",
                   all && "md:w-auto md:max-w-none",
@@ -1287,11 +1373,10 @@ function TrayCard({
       className={cx(
         // Positioned, so nothing absolutely placed inside (screen-reader text) escapes the
         // sideways-scrolling list and widens the page.
-        "well relative flex items-center gap-1 py-1 pr-1 pl-1",
+        "well relative flex items-center gap-1 py-1 pr-1 pl-3",
         isDragging && "opacity-40",
       )}
     >
-      <Grip label={`Drag ${j.customer}`} ref={setActivatorNodeRef} {...attributes} {...listeners} />
       {/* Two lines, with the actions behind "…", so a long list stays short (owner,
           2026-10-18: the cards were "a little too bulky"). */}
       <Link href={`/jobs/${j.id}`} className="min-w-0 flex-1 py-1 hover:underline">
@@ -1325,6 +1410,9 @@ function TrayCard({
           <circle cx="18" cy="12" r="1.8" />
         </svg>
       </button>
+      {/* The grip at the card's trailing edge, as on every card that drags (owner, 2026-10-20:
+          "Schedule dragging should be on the right side of the card"). */}
+      <Grip label={`Drag ${j.customer}`} ref={setActivatorNodeRef} {...attributes} {...listeners} />
       <Sheet open={actions} onClose={closeActions} title={j.customer}>
         <p className="mb-2 text-[0.9375rem] text-text-muted">
           {[j.number ? `#${j.number}` : null, j.address, j.note].filter(Boolean).join(" · ")}
