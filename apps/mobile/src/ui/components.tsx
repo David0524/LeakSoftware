@@ -152,6 +152,13 @@ export function T({
 // Screens: the large title, subtitle and header actions, then the content (spec 3.1)
 // ---------------------------------------------------------------------------
 
+/** A scroll view's offset and sizes, in points. */
+export interface ScrollMetrics {
+  y: number;
+  contentHeight: number;
+  viewHeight: number;
+}
+
 /** Bottom room for the floating tab bar; set by the tabs layout for every screen inside it. */
 export const TabBarSpace = createContext(0);
 
@@ -246,6 +253,8 @@ export function Screen({
   footer,
   overlay,
   keyboardBar = false,
+  scrollRef,
+  onScrollMetrics,
   ...chrome
 }: ScreenChrome & {
   /** iPhone's Previous, Next and Done bar over the keyboard (the Test and Finding sheets). */
@@ -262,13 +271,36 @@ export function Screen({
   /** Turn scrolling off for a moment, e.g. while a finger draws on a pad. */
   scrollEnabled?: boolean;
   refreshControl?: ReactElement<RefreshControlProps>;
+  /** The page's scroll view, for scrolling it from code (a held schedule stop near an edge). */
+  scrollRef?: { current: ScrollView | null };
+  /** The scroll offset and sizes as they change (the schedule's drag and drop). */
+  onScrollMetrics?: (m: Partial<ScrollMetrics>) => void;
 }) {
   const { header, ref, scrollProps, contentContainerStyle } = useScreenChrome(chrome);
   const headerHeight = useHeaderHeightSafe();
+  useEffect(() => {
+    if (scrollRef) scrollRef.current = ref.current;
+  });
+  const chromeScroll = scrollProps.onScroll;
   const body = scroll ? (
     <Animated.ScrollView
       ref={ref}
       {...scrollProps}
+      {...(onScrollMetrics
+        ? {
+            onScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+              if (typeof chromeScroll === "function") chromeScroll(e);
+              onScrollMetrics({
+                y: e.nativeEvent.contentOffset.y,
+                contentHeight: e.nativeEvent.contentSize.height,
+                viewHeight: e.nativeEvent.layoutMeasurement.height,
+              });
+            },
+            onContentSizeChange: (_w: number, h: number) => onScrollMetrics({ contentHeight: h }),
+            onLayout: (e: { nativeEvent: { layout: LayoutRectangle } }) =>
+              onScrollMetrics({ viewHeight: e.nativeEvent.layout.height }),
+          }
+        : null)}
       contentContainerStyle={[contentContainerStyle, styles.stack]}
       scrollEnabled={scrollEnabled}
       refreshControl={refreshControl}

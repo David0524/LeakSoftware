@@ -26,4 +26,6 @@ export const haptics = {
   warning: () => play(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)),
   /** A gesture reached its point: pull to refresh started, a full swipe will act on release. */
   light: () => play(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)),
+  /** Something was picked up to drag (a schedule stop held down). */
+  pickUp: () => play(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)),
 } as const;

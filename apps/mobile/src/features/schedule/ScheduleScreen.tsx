@@ -25,6 +25,7 @@ import {
   propertyLocation,
   scheduleDays,
   seesAllJobs,
+  stopDone,
   suggestTimes,
   suggestionDates,
   workDay,
@@ -67,6 +68,7 @@ import { DatePicker, MonthCalendar, monthTitle } from "./Calendar";
 import { MoveSheet, SuggestSheet, type MoveTarget } from "./MoveSheet";
 import { NeedsATime } from "./NeedsATime";
 import { RouteCard, type Route, type Stop } from "./RouteCard";
+import { DragScope, useScheduleDrag } from "./ScheduleDrag";
 import { SwipeNav } from "../../ui/SwipeNav";
 import { WeekStrip } from "./WeekStrip";
 
@@ -76,7 +78,9 @@ const VIEW_NAMES = { day: "Day", week: "Week", month: "Month" } as const;
  * Schedule (spec 5.6; the website's schedule page and route board): Day, Week, or Month. Day
  * shows each person's route with the driving between stops, Plan Route and Move…; Week lists
  * the days; Month counts each day. Planning, moving, and suggestions are worked out on the phone
- * from its own jobs and saved through the sync layer, so they work offline too.
+ * from its own jobs and saved through the sync layer, so they work offline too. Stops drag and
+ * drop (touch and hold): to a place in a day, another tech's day, a day in the week strip, or
+ * Needs a Time, through the same move as Move… (owner, 2026-10-20).
  */
 export function ScheduleScreen() {
   const company = useCompany();
@@ -136,6 +140,28 @@ export function ScheduleScreen() {
     seesAll ? team.filter((t) => t.status === "active") : team.filter((t) => t.user_id === me)
   ).map((t) => ({ id: t.user_id, name: t.name }));
 
+  // Drag and drop: the same move as Move… (owner, 2026-10-20). A job from Needs a Time dropped
+  // on a day in the week strip joins the tech in view (or yours, when everyone's in view).
+  const drag = useScheduleDrag({
+    today,
+    fallbackTech: tech !== "all" ? tech : movers.some((m) => m.id === me) ? me : null,
+    onDrop: (item, plan, zone) => {
+      if (plan.kind === "none") return;
+      if (plan.kind === "refuse") {
+        haptics.light();
+        setResult({ error: plan.error });
+        return;
+      }
+      if (plan.kind === "tray") {
+        moveTo(item.id, null, null, 0);
+        return;
+      }
+      // Dropped on another day in the strip: show that day, where it went.
+      if (moveTo(item.id, plan.tech, plan.date, plan.index) && zone?.kind === "day")
+        setDate(plan.date);
+    },
+  });
+
   // Drive times for everything in view (the cache on the server when online).
   const points = [
     ctx.depot,
@@ -150,10 +176,24 @@ export function ScheduleScreen() {
     techId: string | null,
     legMin: number | null,
     shortMin: number,
+    day: string | null,
   ): Stop => {
     const lock = jobLock(j);
     const onSecond = techId && j.assigned_user_id !== techId;
     const name = (id: string | null | undefined) => team.find((t) => t.user_id === id)?.name;
+    const tag = onSecond
+      ? `Second tech, with ${name(j.assigned_user_id) ?? "the main tech"}`
+      : j.second_tech_id
+        ? `With ${name(j.second_tech_id) ?? "the second tech"}`
+        : j.type === "repair"
+          ? "Repair"
+          : j.type === "maintenance"
+            ? "Maintenance"
+            : j.type === "inspection"
+              ? "Pool inspection"
+              : "Leak detection";
+    // Left out of drive times until its address is found (owner, 2026-10-20).
+    const notOnMap = mapStatus(j.property, routing) === "missing";
     return {
       id: j.id,
       number: j.number ?? null,
@@ -166,24 +206,12 @@ export function ScheduleScreen() {
       movable: canMoveJob(j.status),
       legMin,
       shortMin,
-      note:
-        [
-          onSecond
-            ? `Second tech, with ${name(j.assigned_user_id) ?? "the main tech"}`
-            : j.second_tech_id
-              ? `With ${name(j.second_tech_id) ?? "the second tech"}`
-              : j.type === "repair"
-                ? "Repair"
-                : j.type === "maintenance"
-                  ? "Maintenance"
-                  : j.type === "inspection"
-                    ? "Pool inspection"
-                    : "Leak detection",
-          // Left out of drive times until its address is found (owner, 2026-10-20).
-          mapStatus(j.property, routing) === "missing" ? NOT_ON_MAP.short : null,
-        ]
-          .filter(Boolean)
-          .join(" · ") || null,
+      note: [tag, notOnMap ? NOT_ON_MAP.short : null].filter(Boolean).join(" · "),
+      tag,
+      notOnMap,
+      access: j.property?.access_notes?.trim() || null,
+      done: day ? stopDone(j, day) : false,
+      mainTech: j.assigned_user_id ?? null,
       cleanings: visitCleanings.get(j.id),
     };
   };
@@ -207,7 +235,9 @@ export function ScheduleScreen() {
       techId,
       title,
       date: d,
-      stops: list.map((j, i) => toStop(j, techId, summary.legs[i] ?? null, summary.short[i] ?? 0)),
+      stops: list.map((j, i) =>
+        toStop(j, techId, summary.legs[i] ?? null, summary.short[i] ?? 0, d),
+      ),
       driveMin: summary.driveMin,
       backLegMin: list.length ? summary.driveMin - legs : null,
       back: summary.backMin != null ? minutesLabel(summary.backMin) : null,
@@ -221,7 +251,7 @@ export function ScheduleScreen() {
     const booked = j.scheduled_start
       ? `No tech yet · booked ${formatDay(localDate(new Date(j.scheduled_start), tz))} at ${formatTime(j.scheduled_start, tz)}`
       : null;
-    const s = toStop(j, null, null, 0);
+    const s = toStop(j, null, null, 0, null);
     return { ...s, note: [booked, s.note].filter(Boolean).join(" · ") || null };
   });
 
@@ -244,21 +274,24 @@ export function ScheduleScreen() {
     }));
   }
 
+  /** Saves a planned change; false when it was refused or failed. */
   function save(change: {
     updates: Parameters<typeof saveJobChanges>[1];
     message?: string;
     error?: string;
-  }) {
+  }): boolean {
     if (change.error) {
       setResult({ error: change.error });
-      return;
+      return false;
     }
     try {
       saveJobChanges(company.id, change.updates);
       haptics.success();
       setResult({ message: change.message });
+      return true;
     } catch (e) {
       setResult({ error: e instanceof Error ? e.message : String(e) });
+      return false;
     }
   }
 
@@ -268,9 +301,9 @@ export function ScheduleScreen() {
 
   function moveTo(jobId: string, techId: string | null, d: string | null, index: number) {
     const job = byId.get(jobId);
-    if (!job) return;
+    if (!job) return false;
     const fromDate = job.scheduled_start ? localDate(new Date(job.scheduled_start), tz) : null;
-    save(
+    return save(
       moveJobChange(
         ctx,
         {
@@ -391,9 +424,13 @@ export function ScheduleScreen() {
       : days.reduce((n, d) => n + weekList(d).length, 0);
 
   return (
-    <>
+    <DragScope api={drag.api} hover={drag.hover}>
       <Screen
         title="Schedule"
+        scrollEnabled={!drag.dragging}
+        scrollRef={drag.scrollRef}
+        onScrollMetrics={drag.onScrollMetrics}
+        overlay={drag.overlay}
         subtitle={
           <Text style={[type.body, { color: color.textMuted }]}>
             {title}
@@ -670,7 +707,7 @@ export function ScheduleScreen() {
           if (id) moveTo(id, s.techId, s.date, s.position);
         }}
       />
-    </>
+    </DragScope>
   );
 }
 

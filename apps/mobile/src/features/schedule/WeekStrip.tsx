@@ -4,13 +4,15 @@ import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, View } from "
 import { addDays, dateFormat, formatDay, scheduleDays } from "@leakbook/core";
 import { haptics } from "../../ui/haptics";
 import { color, face, font, gutter, MAX_TEXT_SCALE } from "../../ui/theme";
+import { dropTint, useDragHover, useDropZones } from "./ScheduleDrag";
 
 const weekdayName = dateFormat("en-US", { weekday: "short", timeZone: "UTC" });
 
 /**
  * Schedule › Day: the week's days in a strip (spec 5.6; the website's week-strip.tsx). Swipe it
  * sideways for the week before or after: it follows the finger, and letting go past a quarter
- * of its width (or with a flick) settles on that week, on the same weekday.
+ * of its width (or with a flick) settles on that week, on the same weekday. A stop dragged onto
+ * a day moves there (owner, 2026-10-20).
  */
 export function WeekStrip({
   date,
@@ -25,6 +27,8 @@ export function WeekStrip({
   const [dx] = useState(() => new Animated.Value(0));
   // A tap that ends a swipe isn't a tap on the day under the finger.
   const [swiping, setSwiping] = useState(false);
+  const { zoneRef } = useDropZones();
+  const hover = useDragHover();
   const weeks = useMemo(
     () => [-7, 0, 7].map((n) => scheduleDays("week", addDays(date, n))),
     [date],
@@ -86,9 +90,12 @@ export function WeekStrip({
                 const at = new Date(`${d}T12:00:00Z`);
                 const chosen = d === date;
                 const fg = chosen ? color.bg : d === today ? color.link : color.text;
+                const drop = i === 1 ? dropTint(hover, `day:${d}`) : undefined;
                 return (
                   <Pressable
                     key={d}
+                    ref={i === 1 ? zoneRef({ kind: "day", id: `day:${d}`, date: d }) : undefined}
+                    collapsable={false}
                     accessibilityRole="button"
                     accessibilityState={{ selected: chosen }}
                     accessibilityLabel={formatDay(d, "long")}
@@ -97,7 +104,11 @@ export function WeekStrip({
                       haptics.selection();
                       onChange(d);
                     }}
-                    style={[styles.day, chosen && { backgroundColor: color.text }]}
+                    style={[
+                      styles.day,
+                      chosen && { backgroundColor: color.text },
+                      drop && !chosen && { backgroundColor: drop },
+                    ]}
                   >
                     <Text
                       style={[styles.weekday, { color: fg }]}
