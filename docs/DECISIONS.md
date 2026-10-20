@@ -2,6 +2,14 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-20 (owner, route maps plan `docs/plans/route-maps.md`: "1. Cool by me. 2. Ok 3. Yeah. There needs to be locks for jobs whether that's day, time, or both. 4. Yes. 5. Yes")
+- **Maps by Mapbox** on the website and Android, Apple Maps on the iPhone: a map for each day on Schedule with numbered pins, Enlarge, and Plan Route.
+- **Plan Week** places a week's jobs on days and in order for the least driving, across techs when asked, with one Undo; up to 150 jobs a run.
+- **Routes** (owners and admins): Customers to Add, drag a pool customer onto a weekday to set the plan's day and tech, and Suggest Days. Visits already made for coming weeks move with the plan's new day.
+- **Locks:** each job can be locked to its day, its time, or both. Day: stays on its day, order and time may change. Time: keeps its clock time, may move to another day. Both: stays put. "The customer was told this time" becomes Both. Planning respects every lock.
+- **Day maps fold away on phones:** open on the Day view, closed on the week strip.
+- **Schedule cards look like Today's**, and stops can be dragged on phones again (website, iPhone, Android), with Move… kept. Leak detections carry their "Leak detection" tag like the other types.
+
 ## 2026-10-20 (owner, Today hero plan `docs/plans/today-hero.md`: "1. Agreed 2. Sure 3. Yes 4. Yes 5. Yes")
 - **Today opens with a card for the stop you're on**, on every platform: the Live Activity's stop, words and figure (scheduled time, arrival time, checklist count, or ✓), the customer's name (opens the job), job type and stop count, the address (opens directions, "Not on map" when it isn't), the access notes on one line with a key, the next stop, and one progress segment per stop. Its main button is the moment's: On My Way, Start Job, or Open Checklist with Mark Complete. One rule in core (`todayHero`) picks the stop for the card, the Live Activity and Android's notification. No timer or countdown.
 - **Water blue card, white text, white main button with blue text.**

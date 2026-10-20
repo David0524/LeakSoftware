@@ -5,7 +5,7 @@ the maps up top for route building. This owner uses the maps all time. We need i
 something like that. We also need to be able to build routes from scratch. Where you have jobs
 for the week and it auto calculates the best way to route them."
 
-Status: plan, waiting on the owner. Every platform gets it: the website (desktop and phones), the
+Status: approved 2026-10-20 (all five recommendations; owner on 3: "There needs to be locks for jobs whether that's day, time, or both"). Every platform gets it: the website (desktop and phones), the
 iPhone app and the Android app.
 
 ## What PayThePoolMan does
@@ -67,6 +67,19 @@ on a weekday sets their service day. For us that's the plan's weekday.
 - **Suggest Days** does it automatically: it spreads the customers across the tech's working days
   by area and evens out the stops per day. Nothing changes until the owner presses Keep.
 
+## Locks (owner, 2026-10-20)
+
+Every job can be locked to its **day**, its **time**, or **both**, by hand from the job and the
+schedule card ("Lock: None · Day · Time · Both"):
+
+- **Day:** it stays on its day; Plan Route may still change its order and time that day.
+- **Time:** it keeps its clock time; Plan Week may move it to another day at that time.
+- **Both:** it stays where it is.
+
+"The customer was told this time" becomes Both. Started and finished jobs and two-tech jobs stay
+put as before. Plan Route, Plan Week and Suggest Days all respect locks, and a locked card shows
+a lock with what it holds ("Day locked", "Time locked", "Locked").
+
 ## Decisions for the owner
 
 1. **Maps provider.** Recommended: Mapbox, which we already pay for lookups and drive times. The
@@ -89,3 +102,68 @@ on a weekday sets their service day. For us that's the plan's weekday.
 1. Day maps on Schedule (week and day, all platforms), with Enlarge and Plan Route.
 2. Plan Week with Undo, core logic in packages/core with Swift fixtures.
 3. Routes: Customers to Add, set a plan's weekday and tech by dragging, Suggest Days.
+
+## Design (2026-10-20, owner: "consider the design and UX. This is of utmost importance")
+
+Planned with the Apple design guidelines (`maps.md`, `drag-and-drop.md`, `sheets.md`,
+`segmented-controls.md`, `undo-and-redo.md`).
+
+### Maps
+
+- **Small maps are previews; Enlarge is a real map.** "In general, make your map interactive"
+  (`maps.md › Best practices`). A day's small map is an image (fast, nothing to load); tapping it
+  or Enlarge opens a map you can pan and zoom: Apple Maps on the iPhone, Mapbox's map on the
+  website and Android. Pins match the list: the shop as a house, stops numbered in route order,
+  water blue to do, orange for the stop you're on, green when done, and a faint line in stop
+  order. Tapping a pin highlights its row and the reverse.
+- **Muted map style** so the pins carry the color, and a dark map in dark mode.
+- **Never broken:** a map that can't load (no key, the day's allowance, no connection) leaves
+  the card as it was without the map, never an empty box or an error icon. Stops without a
+  location are listed under the map: "2 stops aren't on the map".
+
+### Plan Week
+
+- One **Plan Week** button on the week view (owners and admins). It opens a sheet: who to plan
+  for (each tech or Everyone), one line on what stays put, and the button. The result shows where
+  Plan Route's results show, with **Undo** beside it. No alert, no confirmation: Undo covers it
+  (`undo-and-redo.md`).
+
+### Locks
+
+- On the job's schedule: **Lock** as a segmented control, None · Day · Time · Both, with one line
+  under it saying what the choice keeps. On cards: a small padlock and "Day locked", "Time
+  locked" or "Locked".
+
+### Routes (owners and admins)
+
+A fourth segment on Schedule: **Day · Week · Month · Routes**.
+
+```
+Desktop
+┌ Customers to Add (12) ─┐ ┌ [Avonte] [Maria] [Everyone]        Suggest Days ┐
+│ Search                 │ │ Monday        Tuesday       Wednesday  …        │
+│ ▢ Abraham, Ezra      ⠿ │ │ [map]         [map]         [map]               │
+│   3612 Chelsea Dr      │ │ 14 pools ·    11 pools ·    9 pools ·           │
+│ ▢ Afuola, Kalasa     ⠿ │ │ 6 hr 20 min   5 hr 5 min    4 hr 10 min         │
+│ …                      │ │ 1 Perry, Tyler  1 …         1 …                 │
+└────────────────────────┘ │ 2 Barber, Dale  …                               │
+                           └─────────────────────────────────────────────────┘
+Phone
+  Routes            [Suggest Days]
+  [Avonte] [Maria]                      tech pills
+  [Mon|Tue|Wed|Thu|Fri]                 segmented: the day
+  [map, folds away]
+  14 pools · 6 hr 20 min
+  1 Perry, Tyler  ⠿ …
+  12 customers to add ›                 opens a sheet
+```
+
+- **Customers to Add:** running plans with no tech, newest first, with search. Each card is the
+  schedule card's style (name, address, "No map location" when it has none).
+- **Moving a customer:** drag a card onto a day (or onto a day's segment on a phone, which
+  springs open), or tap the card's **Move…** for a sheet: Day (segmented) and Tech. A move shows
+  "Moved to Tuesday. Its coming visits moved too." with **Undo**.
+- **Suggest Days:** a sheet: suggest for Customers to Add, or rebuild the tech's whole week.
+  Suggestions appear in place, marked "Suggested", with a bar at the bottom: "12 suggested ·
+  Keep · Cancel". Nothing changes until Keep, and Keep has Undo.
+- Plans serviced on several days a week appear on each of their days; Suggest Days leaves them.
