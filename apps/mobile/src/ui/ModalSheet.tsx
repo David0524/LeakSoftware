@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import {
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,6 +9,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardAvoider } from "./keyboard";
 import { color, face, ios, minTap, shape, space, type } from "./theme";
 
 /**
@@ -20,8 +19,9 @@ import { color, face, ios, minTap, shape, space, type } from "./theme";
  * the middle. iPhone uses the system page sheet (swipe down closes it); Android and the
  * browser preview draw it, at most 92% of the screen tall.
  *
- * `locked` (unsaved changes): the scrim and the system back button don't close it; Cancel
- * calls `onClose`, which should ask first.
+ * `locked` (unsaved changes): the scrim doesn't close it; Cancel and Android's back button
+ * call `onClose`, which should ask first (owner, 2026-10-20: back asks instead of being
+ * ignored). Fields and buttons stay above the keyboard, edge to edge on Android too.
  */
 export function ModalSheet({
   visible,
@@ -84,9 +84,7 @@ export function ModalSheet({
         <View style={[styles.flex, { backgroundColor: color.bg }]}>
           <View style={[styles.grabber, { backgroundColor: color.grabber }]} />
           {bar}
-          <KeyboardAvoidingView style={styles.flex} behavior="padding">
-            {body}
-          </KeyboardAvoidingView>
+          <KeyboardAvoider style={styles.flex}>{body}</KeyboardAvoider>
         </View>
       </Modal>
     );
@@ -97,7 +95,8 @@ export function ModalSheet({
       transparent
       animationType="slide"
       statusBarTranslucent
-      onRequestClose={locked ? () => {} : onClose}
+      navigationBarTranslucent
+      onRequestClose={onClose}
     >
       <Pressable
         accessibilityLabel="Close"
@@ -105,11 +104,7 @@ export function ModalSheet({
         style={[StyleSheet.absoluteFill, { backgroundColor: color.scrim }]}
         onPress={locked ? undefined : onClose}
       />
-      <KeyboardAvoidingView
-        style={styles.dock}
-        behavior={Platform.OS === "android" ? undefined : "padding"}
-        pointerEvents="box-none"
-      >
+      <KeyboardAvoider style={styles.dock} pointerEvents="box-none">
         <View
           accessibilityViewIsModal
           style={[styles.panel, { backgroundColor: color.bg, maxHeight: height * 0.92 }]}
@@ -118,7 +113,7 @@ export function ModalSheet({
           {bar}
           {body}
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAvoider>
     </Modal>
   );
 }

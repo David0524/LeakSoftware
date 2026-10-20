@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { Linking, Platform } from "react-native";
 import { tokens } from "@leakbook/tokens";
 import { API_URL } from "./config";
+import { requestStopAction } from "./liveStop";
 import { getServices } from "./services";
 
 // Notifications (owner, 2026-10-19; docs/plans/live-activities-and-notifications.md): this
@@ -59,8 +60,19 @@ export function setUpNotifications(): Promise<void> {
         lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
       });
     }
+    // On My Way and Mark Complete open the app on that stop and do it there (owner,
+    // 2026-10-20), beside Call; a tap on the notification itself opens the job.
     await Notifications.setNotificationCategoryAsync(STOP_CATEGORY, [
-      { identifier: "open_job", buttonTitle: "Open Job", options: { opensAppToForeground: true } },
+      {
+        identifier: "on_my_way",
+        buttonTitle: "On My Way",
+        options: { opensAppToForeground: true },
+      },
+      {
+        identifier: "mark_complete",
+        buttonTitle: "Mark Complete",
+        options: { opensAppToForeground: true },
+      },
       { identifier: "call", buttonTitle: "Call", options: { opensAppToForeground: true } },
     ]);
   })().catch(() => undefined);
@@ -132,13 +144,24 @@ export async function notificationsAllowed(): Promise<boolean> {
   }
 }
 
-/** A tap on a notification or one of its buttons: open the job or the conversation, or call. */
+/**
+ * A tap on a notification or one of its buttons: open the job or the conversation, call, or
+ * (the current stop's On My Way and Mark Complete) open Today on that stop and do it there.
+ */
 export function handleResponse(response: Notifications.NotificationResponse) {
   const data = (response.notification.request.content.data ?? {}) as {
     job?: string;
     conversation?: string;
     phone?: string;
   };
+  if (
+    (response.actionIdentifier === "on_my_way" || response.actionIdentifier === "mark_complete") &&
+    data.job
+  ) {
+    requestStopAction(data.job, response.actionIdentifier);
+    router.navigate("/");
+    return;
+  }
   if (response.actionIdentifier === "call" && data.phone) {
     void Linking.openURL(`tel:${data.phone}`);
     return;

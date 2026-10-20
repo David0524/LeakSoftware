@@ -1,5 +1,4 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import {
   saveChecklistResult,
@@ -17,6 +16,7 @@ import {
   Screen,
   T,
 } from "../../../../../../../ui/components";
+import { checklistOrder } from "../../../../../../../features/inspection/ChecklistTab";
 import { OutcomeChip } from "../../../../../../../features/inspection/OutcomeChip";
 import {
   confirmDeleteFinding,
@@ -32,13 +32,16 @@ import {
   type Verdict,
 } from "../../../../../../../features/inspection/verdict";
 import { space } from "../../../../../../../ui/theme";
+import { useAutosaveText } from "../../../../../../../ui/useAutosave";
 
 const TO_DO = "todo";
 
 /**
  * A checklist item (apps only, spec 5.4): what the website's checklist row has no room for on
  * a phone. Its result and where, the method, the reason it was skipped, notes, photos and voice
- * notes, and the tests and findings on it. Each change saves at once, offline.
+ * notes, and the tests and findings on it. Each change saves at once, offline; Where and notes
+ * save 1 second after typing stops (owner, 2026-10-20). Previous Item and Next Item in a bar at
+ * the bottom walk the checklist in its order.
  */
 export default function ComponentScreen() {
   const { id: jobId, componentId } = useLocalSearchParams<{ id: string; componentId: string }>();
@@ -49,8 +52,19 @@ export default function ComponentScreen() {
   const component = insp.componentById.get(componentId);
   const result = insp.resultByComponent.get(componentId);
   const type = component ? config.componentTypeById.get(component.component_type_id) : undefined;
-  const [where, setWhere] = useState<string | null>(null);
-  const [notes, setNotes] = useState<string | null>(null);
+  const save = (values: Parameters<typeof saveChecklistResult>[5]) =>
+    saveChecklistResult(services.sync, company.id, jobId, componentId, result, values);
+  const where = useAutosaveText(result?.location_text ?? "", (v) =>
+    save({ location_text: v.trim() || null }),
+  );
+  const notes = useAutosaveText(result?.notes ?? "", (v) => save({ notes: v.trim() || null }));
+  // The checklist's order, for Previous Item and Next Item.
+  const order = checklistOrder(insp.components, (c) =>
+    config.componentTypeById.get(c.component_type_id),
+  );
+  const at = order.findIndex((c) => c.id === componentId);
+  const before = at > 0 ? order[at - 1] : undefined;
+  const after = at >= 0 ? order[at + 1] : undefined;
 
   if (!component || !type) {
     return (
@@ -64,9 +78,6 @@ export default function ComponentScreen() {
   const tests = insp.tests.filter((t) => t.job_component_id === componentId);
   const findings = insp.findings.filter((f) => f.job_component_id === componentId);
   const needsWhere = type.answer !== "yes_no" && (verdict === "leaking" || verdict === "attention");
-  const save = (values: Parameters<typeof saveChecklistResult>[5]) =>
-    saveChecklistResult(services.sync, company.id, jobId, componentId, result, values);
-
   function choose(v: Verdict | null) {
     haptics.selection();
     save({
@@ -77,7 +88,29 @@ export default function ComponentScreen() {
   }
 
   return (
-    <Screen title={comp.label}>
+    <Screen
+      title={comp.label}
+      footer={
+        <View style={styles.steps}>
+          <Button
+            title="Previous Item"
+            kind="secondary"
+            wide
+            disabled={!before}
+            style={styles.step}
+            onPress={() => before && router.replace(`/jobs/${jobId}/component/${before.id}`)}
+          />
+          <Button
+            title="Next Item"
+            kind="secondary"
+            wide
+            disabled={!after}
+            style={styles.step}
+            onPress={() => after && router.replace(`/jobs/${jobId}/component/${after.id}`)}
+          />
+        </View>
+      }
+    >
       <View style={styles.form}>
         <Select
           label="Result"
@@ -91,14 +124,11 @@ export default function ComponentScreen() {
         {needsWhere ? (
           <Field
             label="Where"
-            value={where ?? result?.location_text ?? ""}
-            onChangeText={setWhere}
-            onBlur={() => {
-              if (where !== null && where.trim() !== (result?.location_text ?? ""))
-                save({ location_text: where.trim() || null });
-              setWhere(null);
-            }}
+            value={where.value}
+            onChangeText={where.onChangeText}
+            onBlur={where.onBlur}
             placeholder="Where? Under the deck, at the throat…"
+            hint={where.justSaved ? "Saved" : undefined}
           />
         ) : null}
         {verdict === "na" && config.exclusionReasons.length ? (
@@ -125,15 +155,12 @@ export default function ComponentScreen() {
         ) : null}
         <Field
           label="Notes (optional)"
-          value={notes ?? result?.notes ?? ""}
-          onChangeText={setNotes}
-          onBlur={() => {
-            if (notes !== null && notes.trim() !== (result?.notes ?? ""))
-              save({ notes: notes.trim() || null });
-            setNotes(null);
-          }}
+          value={notes.value}
+          onChangeText={notes.onChangeText}
+          onBlur={notes.onBlur}
           multiline
           placeholder="What you saw"
+          hint={notes.justSaved ? "Saved" : undefined}
         />
       </View>
 
@@ -205,4 +232,6 @@ export default function ComponentScreen() {
 const styles = StyleSheet.create({
   form: { gap: space["4"] },
   part: { gap: space["2"] },
+  steps: { flexDirection: "row", gap: space["2"] },
+  step: { flex: 1 },
 });

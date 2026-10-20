@@ -37,6 +37,7 @@ import {
 } from "../../../../ui/components";
 import { PadBlock } from "../../../../features/report/PadBlock";
 import { ReportTests } from "../../../../features/report/ReportTests";
+import { confirmDiscard, useBackPrompt } from "../../../../ui/sheet";
 import { color, face, space } from "../../../../ui/theme";
 
 /**
@@ -69,12 +70,22 @@ export default function ReviewScreen() {
   // setting, 2026-10-19).
   const needsPhoto = useNeedsFinishPhoto(id);
 
+  // A drawn signature isn't thrown away without asking: Cancel and Android's back button
+  // (owner, 2026-10-20). Finishing leaves without asking.
+  const signed = strokes.length > 0 && busy === null;
+  function cancel() {
+    if (!signed) return router.back();
+    confirmDiscard(() => router.back());
+  }
+  useBackPrompt(signed, cancel);
+
   const bar = (
     <Stack.Screen
       options={{
         title: "Review and Sign",
         headerBackVisible: false,
-        headerLeft: () => <HeaderButton title="Cancel" onPress={() => router.back()} />,
+        gestureEnabled: !signed,
+        headerLeft: () => <HeaderButton title="Cancel" onPress={cancel} />,
       }}
     />
   );

@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import {
   CHECKLIST_SECTION_LABELS,
@@ -23,11 +23,14 @@ import {
 } from "../../data/inspection";
 import { useJobMedia } from "../../data/media";
 import { useSession } from "../../state/session";
-import { Button, Check, T } from "../../ui/components";
+import { Button, Segmented, T } from "../../ui/components";
 import { confirmDestructive } from "../../ui/confirm";
 import { haptics } from "../../ui/haptics";
-import { Select, useMenu } from "../../ui/Select";
-import { color, face, font, MAX_TEXT_SCALE, minTap, shape, space, type } from "../../ui/theme";
+import { Select } from "../../ui/Select";
+import { useNoSwipe } from "../../ui/SwipeNav";
+import { UndoRow, useUndoWindow } from "../../ui/Undo";
+import { useAutosaveText } from "../../ui/useAutosave";
+import { color, face, font, MAX_TEXT_SCALE, minTap, shape, space } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
 import { currentVerdict, verdictOptions, verdictValues, type Verdict } from "./verdict";
 
@@ -37,9 +40,30 @@ const SECTIONS = Object.keys(CHECKLIST_SECTION_LABELS) as ChecklistSection[];
 const ADD_ANOTHER = "another:";
 
 /**
+ * The checklist's items in the order it shows them: by section, then the item type's order,
+ * then the item's own (the item page's Previous Item and Next Item follow it).
+ */
+export function checklistOrder(
+  components: JobComponent[],
+  typeOf: (c: JobComponent) => ComponentType | undefined,
+): JobComponent[] {
+  const at = (c: JobComponent) => SECTIONS.indexOf(typeOf(c)?.section ?? "other");
+  return components
+    .filter((c) => typeOf(c))
+    .sort(
+      (a, b) =>
+        at(a) - at(b) ||
+        (typeOf(a)?.sort_order ?? 0) - (typeOf(b)?.sort_order ?? 0) ||
+        a.sort_order - b.sort_order,
+    );
+}
+
+/**
  * The checklist as on the website (spec 5.4): one folding block per section with its summary,
- * a verdict pill per item, "Where" under leaks, Mark Remaining, then Add an item. Tapping an
- * item's name opens its own screen (method, notes, photos). Works offline.
+ * each item's answers in one tap (owner, 2026-10-20: a segmented control under its name;
+ * tapping the chosen answer again clears it), "Where" under leaks, Mark Remaining (with Undo),
+ * then Add an item. Remove is behind Edit. Tapping an item's name opens its own screen
+ * (method, notes, photos). Works offline.
  */
 export function ChecklistTab({ job, property }: { job: Job; property?: Property }) {
   const { services } = useSession();
@@ -197,6 +221,12 @@ function ChecklistGroup({
   }, [open, turn]);
   const title = CHECKLIST_SECTION_LABELS[section];
   const toDo = rows.filter((r) => currentVerdict(r.result) === null);
+  // Mark Remaining's Undo (owner, 2026-10-20): "Marked N" and Undo for 5 seconds, in its place.
+  const undo = useUndoWindow();
+  const results = useRef(insp.resultByComponent);
+  useEffect(() => {
+    results.current = insp.resultByComponent;
+  });
   const tone =
     summary.tone === "pass"
       ? color.pass
@@ -207,6 +237,7 @@ function ChecklistGroup({
           : color.textMuted;
 
   function markRest() {
+    const marked = toDo.map((r) => r.component.id);
     services.sync.batch(() => {
       for (const r of toDo)
         saveChecklistResult(
@@ -219,6 +250,20 @@ function ChecklistGroup({
         );
     });
     haptics.success();
+    // Undo clears what it marked, back to To do.
+    undo.start(`Marked ${marked.length}`, () =>
+      services.sync.batch(() => {
+        for (const id of marked)
+          saveChecklistResult(
+            services.sync,
+            job.company_id,
+            job.id,
+            id,
+            results.current.get(id),
+            verdictValues(null, user?.id ?? null),
+          );
+      }),
+    );
   }
 
   return (
@@ -261,7 +306,14 @@ function ChecklistGroup({
               />
             </View>
           ))}
-          {toDo.length > 0 ? (
+          {undo.shown ? (
+            <>
+              <Hairline inset={0} />
+              <View style={styles.markRest}>
+                <UndoRow text={undo.shown.text} onUndo={undo.undo} />
+              </View>
+            </>
+          ) : toDo.length > 0 ? (
             <>
               <Hairline inset={0} />
               <Pressable
@@ -293,7 +345,7 @@ function Hairline({ inset }: { inset: number }) {
   );
 }
 
-/** One item: its name (opens the item's screen) and the verdict pill, or a check. */
+/** One item: its name (opens the item's screen), then its answers in a segmented control. */
 function ChecklistItem({
   job,
   component,
@@ -312,14 +364,11 @@ function ChecklistItem({
   const result = insp.resultByComponent.get(component.id);
   const verdict = currentVerdict(result);
   const options = verdictOptions(itemType);
-  const menu = useMenu();
   const needsWhere =
     itemType.answer !== "yes_no" && (verdict === "leaking" || verdict === "attention");
-  const check = itemType.answer === "done";
   const open = () => router.push(`/jobs/${job.id}/component/${component.id}`);
 
   function choose(v: Verdict | null) {
-    haptics.selection();
     saveChecklistResult(services.sync, job.company_id, job.id, component.id, result, {
       ...verdictValues(v, user?.id ?? null),
       ...(v === null || v === "ok" || v === "na" ? { location_text: null } : {}),
@@ -357,122 +406,41 @@ function ChecklistItem({
     );
   }
 
-  if (check) {
-    const done = verdict === "ok";
-    const other = verdict && !done ? options.find((o) => o.value === verdict)?.label : null;
-    const sub = [photoText, other, result?.notes].filter(Boolean).join(" · ");
-    return (
-      <View style={styles.checkRow}>
-        <Pressable
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: done }}
-          accessibilityLabel={component.label}
-          onPress={() => choose(done ? null : "ok")}
-          style={styles.checkHit}
-        >
-          <Check done={done} />
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityHint="Opens the item: notes and photos"
-          onPress={open}
-          style={styles.name}
-        >
-          <Text
-            style={[styles.itemName, { color: done ? color.textMuted : color.text }]}
-            maxFontSizeMultiplier={MAX_TEXT_SCALE}
-          >
-            {component.label}
-          </Text>
-          {sub ? (
-            <T variant="footnote" muted numberOfLines={1}>
-              {sub}
-            </T>
-          ) : null}
-        </Pressable>
-      </View>
-    );
-  }
-
   const sub = [photoText, result?.method, result?.notes].filter(Boolean).join(" · ");
-  const chosen = verdict ? options.find((o) => o.value === verdict)?.label : null;
-  const pill =
-    verdict === "ok"
-      ? color.pass
-      : verdict === "leaking"
-        ? color.fail
-        : verdict === "attention"
-          ? color.warning
-          : verdict === "na"
-            ? color.excluded
-            : color.fill;
 
   return (
     <View style={styles.item}>
-      <View style={styles.itemRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityHint="Opens the item: method, notes, and photos"
-          onPress={open}
-          style={styles.name}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityHint="Opens the item: method, notes, and photos"
+        onPress={open}
+        style={styles.name}
+      >
+        <Text
+          style={[styles.itemName, { color: color.text }]}
+          maxFontSizeMultiplier={MAX_TEXT_SCALE}
         >
-          <Text
-            style={[styles.itemName, { color: color.text }]}
-            maxFontSizeMultiplier={MAX_TEXT_SCALE}
-          >
-            {component.label}
-          </Text>
-          {sub ? (
-            <T variant="footnote" muted numberOfLines={1}>
-              {sub}
-            </T>
-          ) : null}
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${component.label}, ${chosen ?? "To Do"}`}
-          accessibilityHint="Choose the result"
-          onPress={() =>
-            menu.open({
-              title: component.label,
-              items: [
-                ...options.map((o) => ({
-                  label: o.label,
-                  checked: o.value === verdict,
-                  onPress: () => {
-                    if (o.value !== verdict) choose(o.value);
-                  },
-                })),
-                { label: "Remove Item…", destructive: true, onPress: remove },
-              ],
-            })
-          }
-          style={({ pressed }) => [
-            styles.pill,
-            { backgroundColor: pill },
-            pressed && { opacity: 0.8 },
-          ]}
-        >
-          <Text
-            style={[styles.pillText, { color: verdict ? color.onStatus : color.text }]}
-            maxFontSizeMultiplier={1.6}
-            numberOfLines={1}
-          >
-            {chosen ?? "To Do"}
-          </Text>
-          <View style={styles.pillChevron}>
-            <WebIcon
-              name="chevronDown"
-              size={16}
-              color={verdict ? color.onStatus : color.text}
-              strokeWidth={2.5}
-            />
-          </View>
-        </Pressable>
-      </View>
+          {component.label}
+        </Text>
+        {sub ? (
+          <T variant="footnote" muted numberOfLines={1}>
+            {sub}
+          </T>
+        ) : null}
+      </Pressable>
+      {/* The answers in one tap, full width, 44 tall; the chosen one again clears it. */}
+      <Segmented
+        compact
+        accessibilityLabel={`${component.label}: ${
+          verdict ? (options.find((o) => o.value === verdict)?.label ?? "To Do") : "To Do"
+        }`}
+        options={options.map((o) => ({ value: o.value as string, label: o.label }))}
+        value={verdict}
+        onChange={(v) => choose(v as Verdict)}
+        onReselect={() => choose(null)}
+      />
       {needsWhere && result ? (
         <WhereField
-          key={result.location_text ?? ""}
           item={component.label}
           value={result.location_text ?? ""}
           onSave={(where) =>
@@ -487,12 +455,14 @@ function ChecklistItem({
           {result.exclusion_reason}
         </T>
       ) : null}
-      {menu.element}
     </View>
   );
 }
 
-/** "Where?" under a Leaking or Attention item, saved when it loses focus. */
+/**
+ * "Where?" under a Leaking or Attention item, saved 1 second after typing stops and when it
+ * loses focus or the screen is left (owner, 2026-10-20), with a short "Saved".
+ */
 function WhereField({
   item,
   value,
@@ -502,27 +472,36 @@ function WhereField({
   value: string;
   onSave: (where: string) => void;
 }) {
-  const [text, setText] = useState(value);
+  const field = useAutosaveText(value, (v) => onSave(v.trim()));
   const [focused, setFocused] = useState(false);
+  const noSwipe = useNoSwipe();
   return (
-    <TextInput
-      accessibilityLabel={`Where: ${item}`}
-      value={text}
-      onChangeText={setText}
-      onFocus={() => setFocused(true)}
-      onBlur={() => {
-        setFocused(false);
-        if (text.trim() !== value) onSave(text.trim());
-      }}
-      placeholder="Where? Under the deck, at the throat…"
-      placeholderTextColor={color.placeholder}
-      maxFontSizeMultiplier={MAX_TEXT_SCALE}
-      style={[
-        styles.where,
-        { backgroundColor: color.bg, borderColor: color.controlBorder, color: color.text },
-        focused && { borderColor: color.focus, borderWidth: 2 },
-      ]}
-    />
+    <View style={{ gap: 2 }}>
+      <TextInput
+        {...noSwipe}
+        accessibilityLabel={`Where: ${item}`}
+        value={field.value}
+        onChangeText={field.onChangeText}
+        onFocus={() => setFocused(true)}
+        onBlur={() => {
+          setFocused(false);
+          field.onBlur();
+        }}
+        placeholder="Where? Under the deck, at the throat…"
+        placeholderTextColor={color.placeholder}
+        maxFontSizeMultiplier={MAX_TEXT_SCALE}
+        style={[
+          styles.where,
+          { backgroundColor: color.bg, borderColor: color.controlBorder, color: color.text },
+          focused && { borderColor: color.focus, borderWidth: 2 },
+        ]}
+      />
+      {field.justSaved ? (
+        <T variant="footnote" muted>
+          Saved
+        </T>
+      ) : null}
+    </View>
   );
 }
 
@@ -538,19 +517,8 @@ const styles = StyleSheet.create({
   },
   summary: { fontFamily: font.displaySemiBold, fontSize: 15, lineHeight: 20 },
   item: { paddingHorizontal: space["4"], paddingVertical: space["2"], gap: space["2"] },
-  itemRow: { flexDirection: "row", alignItems: "center", gap: space["3"], minHeight: minTap },
-  name: { flex: 1, minHeight: minTap, justifyContent: "center" },
+  name: { minHeight: minTap, justifyContent: "center" },
   itemName: { ...face.medium, fontSize: 17, lineHeight: 21 },
-  pill: {
-    minHeight: minTap,
-    borderRadius: shape.pill,
-    paddingLeft: space["3"],
-    paddingRight: 32,
-    justifyContent: "center",
-    maxWidth: 170,
-  },
-  pillText: { ...type.secondary, ...face.semiBold },
-  pillChevron: { position: "absolute", right: 10, top: 0, bottom: 0, justifyContent: "center" },
   where: {
     minHeight: minTap,
     borderWidth: 1,
@@ -560,15 +528,6 @@ const styles = StyleSheet.create({
     ...face.regular,
     fontSize: 17,
   },
-  checkRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space["1"],
-    paddingLeft: space["2"],
-    paddingRight: space["1"],
-    paddingVertical: space["1"],
-  },
-  checkHit: { width: minTap, height: minTap, alignItems: "center", justifyContent: "center" },
   editRow: { flexDirection: "row", justifyContent: "flex-end", marginBottom: -space["1"] },
   editButton: { minHeight: minTap, justifyContent: "center", paddingHorizontal: space["2"] },
   editText: { ...face.semiBold, fontSize: 17, lineHeight: 22 },

@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { useRef, useState } from "react";
+import { StyleSheet, TextInput, View } from "react-native";
 import {
   FINDING_STATUS_LABELS,
   validateFinding,
@@ -24,21 +24,22 @@ import {
   T,
   Toggle,
 } from "../../../../../../ui/components";
-import { confirmDestructive } from "../../../../../../ui/confirm";
 import { confirmDeleteFinding } from "../../../../../../features/inspection/remove";
 import { haptics } from "../../../../../../ui/haptics";
 import { PoolDiagram } from "../../../../../../ui/PoolDiagram";
 import { Select } from "../../../../../../ui/Select";
 import { ShapePicker } from "../../../../../../ui/ShapePicker";
-import { useSheetLock } from "../../../../../../ui/sheet";
+import { confirmDiscard, useSheetLock } from "../../../../../../ui/sheet";
 import { color, space } from "../../../../../../ui/theme";
 
 const STATUSES = Object.keys(FINDING_STATUS_LABELS) as FindingStatus[];
 
 /**
  * Add Finding / Edit Finding (spec 6.2): what, severity, item, where, status, the pool's
- * shape and spa (saved at once), the pin on the diagram, notes, photos, then Add Finding or
- * Save Finding; editing ends with Delete Finding.
+ * shape and spa (saved at once), the pin on the diagram, notes, photos; editing ends with
+ * Delete Finding. Add Finding or Save Finding sits in a bar pinned at the bottom, above the
+ * keyboard (owner, 2026-10-20: one-handed use, item 3). Add Photo on a new finding saves it
+ * first. Cancel, and Android's back button, ask first when anything changed.
  */
 export default function FindingScreen() {
   const params = useLocalSearchParams<{ id: string; findingId: string; component?: string }>();
@@ -49,8 +50,11 @@ export default function FindingScreen() {
   const insp = useJobInspection(company.id, jobId);
   const job = useRow<Job>("job", jobId);
   const property = useRow<Property>("property", job?.property_id);
-  const existing =
-    params.findingId === "new" ? undefined : insp.findings.find((f) => f.id === params.findingId);
+  // Add Photo on a new finding saves it first; the sheet then edits that finding.
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const findingId = params.findingId === "new" ? savedId : params.findingId;
+  const existing = findingId ? insp.findings.find((f) => f.id === findingId) : undefined;
+  const whereRef = useRef<TextInput>(null);
 
   const [title, setTitle] = useState(existing?.title ?? "");
   const [componentId, setComponentId] = useState<string>(
@@ -71,24 +75,19 @@ export default function FindingScreen() {
   // close the sheet by accident. The pool's shape and spa save at once, so they don't count.
   const snapshot = () =>
     JSON.stringify({ title, componentId, severity, location, pin, status, notes });
-  const [initial] = useState(snapshot);
+  const [initial, setInitial] = useState(snapshot);
   const dirty = snapshot() !== initial;
-  useSheetLock(dirty);
+  useSheetLock(dirty, cancel);
 
   function cancel() {
     if (!dirty) return router.back();
-    confirmDestructive({
-      title: "Discard changes?",
-      confirm: "Discard Changes",
-      cancel: "Keep Editing",
-      onConfirm: () => router.back(),
-    });
+    confirmDiscard(() => router.back());
   }
 
   const bar = (
     <Stack.Screen
       options={{
-        title: existing ? "Edit Finding" : "Add Finding",
+        title: existing || savedId ? "Edit Finding" : "Add Finding",
         headerBackVisible: false,
         headerLeft: () => <HeaderButton title="Cancel" onPress={cancel} />,
         headerRight: undefined,
@@ -105,10 +104,14 @@ export default function FindingScreen() {
     );
   }
 
-  function save() {
+  /**
+   * Save with the checks; `stay` keeps the sheet open (Add Photo on a new finding). Returns
+   * the finding's id, or null when the checks failed (the errors show).
+   */
+  function save(stay = false): string | null {
     const e = validateFinding({ title, severity_key: severity });
     setErrors(e);
-    if (Object.keys(e).length > 0) return;
+    if (Object.keys(e).length > 0) return null;
     const values: Record<string, JsonValue> = {
       title: title.trim(),
       job_component_id: componentId || null,
@@ -119,10 +122,15 @@ export default function FindingScreen() {
       status,
       notes: notes.trim() || null,
     };
-    if (existing) services.sync.write("finding", existing.id, company.id, values);
-    else services.sync.insert("finding", company.id, { ...values, job_id: jobId });
+    let id = existing?.id ?? savedId;
+    if (id) services.sync.write("finding", id, company.id, values);
+    else id = services.sync.insert("finding", company.id, { ...values, job_id: jobId });
     haptics.success();
-    router.back();
+    if (stay) {
+      setSavedId(id);
+      setInitial(snapshot());
+    } else router.back();
+    return id;
   }
 
   const shape = (property?.diagram_shape as DiagramShape | null | undefined) ?? null;
@@ -132,7 +140,17 @@ export default function FindingScreen() {
   const sevColor = config.severityByKey.get(severity)?.color ?? color.fail;
 
   return (
-    <Screen>
+    <Screen
+      // iPhone: Previous, Next and Done over the keyboard.
+      keyboardBar
+      footer={
+        <Button
+          title={existing || savedId ? "Save Finding" : "Add Finding"}
+          wide
+          onPress={() => save()}
+        />
+      }
+    >
       {bar}
       <View style={styles.form}>
         <Field
@@ -142,6 +160,9 @@ export default function FindingScreen() {
           error={errors.title}
           placeholder="Crack at the skimmer throat"
           autoCapitalize="sentences"
+          returnKeyType="next"
+          submitBehavior="submit"
+          onSubmitEditing={() => whereRef.current?.focus()}
         />
         <Select
           label="Severity"
@@ -163,7 +184,9 @@ export default function FindingScreen() {
           onChange={setComponentId}
         />
         <Field
+          ref={whereRef}
           label="Where (optional)"
+          returnKeyType="done"
           value={location}
           onChangeText={setLocation}
           placeholder="Two feet left of the skimmer"
@@ -212,15 +235,19 @@ export default function FindingScreen() {
           </View>
         ) : null}
         <Field label="Notes (optional)" value={notes} onChangeText={setNotes} multiline />
+        {/* Shown from the start: Add Photo saves a new finding first (owner, 2026-10-20). */}
         <MediaSection
           title="Photos"
-          target={{ jobId, findingId: existing?.id }}
-          disabledReason={existing ? undefined : "Add the finding first, then its photos."}
+          target={{ jobId, findingId: findingId ?? undefined }}
+          unsaved={!findingId}
+          beforeCapture={() => {
+            const id = existing ? existing.id : save(true);
+            return id ? { jobId, findingId: id } : null;
+          }}
         />
         {Object.keys(errors).length > 0 ? (
           <Notice tone="error">Fix the highlighted fields.</Notice>
         ) : null}
-        <Button title={existing ? "Save Finding" : "Add Finding"} wide onPress={save} />
         {existing ? (
           <View style={[styles.delete, { borderTopColor: color.separator }]}>
             <Button

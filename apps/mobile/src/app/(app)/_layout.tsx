@@ -1,6 +1,7 @@
 import { router, Stack } from "expo-router";
 import { PushSetup } from "../../features/notifications/PushSetup";
 import { VisitReportQueue } from "../../features/maintenance/VisitReport";
+import { ReportRequestQueue } from "../../features/report/ReportTab";
 import { LiveStopNotification } from "../../features/today/LiveStop";
 import { HeaderButton } from "../../ui/components";
 import { stackScreenOptions } from "../../ui/navigation";
@@ -21,6 +22,8 @@ export default function AppLayout() {
       <PushSetup />
       <LiveStopNotification />
       <VisitReportQueue />
+      {/* Finish Report and sending tapped offline go once the signal is back (2026-10-20). */}
+      <ReportRequestQueue />
       <Stack screenOptions={stackScreenOptions()}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false, title: "Back" }} />
         <Stack.Screen

@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Pressable, StyleSheet, View, type GestureResponderEvent } from "react-native";
 import Svg, { Circle, G, Path, Rect, Text as SvgText } from "react-native-svg";
 import { tokens } from "@leakbook/tokens";
+import { useNoSwipe } from "./SwipeNav";
 import {
   parseDiagramLayout,
   poolDiagram,
@@ -87,6 +88,7 @@ export function PoolDiagram({
   const pinName = (label: string) =>
     label === "!" ? "This finding’s pin" : label ? `Pin ${label}` : "Another finding’s pin";
   const pinSummary = pins.length ? pins.map((p) => pinName(p.label)).join(", ") : "No pins";
+  const noSwipe = useNoSwipe();
 
   return (
     <View
@@ -95,6 +97,7 @@ export function PoolDiagram({
         { backgroundColor: color.surface },
         outlined && { borderWidth: 1, borderColor: color.controlBorder, maxWidth: 448 },
       ]}
+      {...(onPlace ? noSwipe : null)}
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
       accessible={!onPlace}
       accessibilityLabel={onPlace ? undefined : title}

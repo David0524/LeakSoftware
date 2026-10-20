@@ -1,8 +1,21 @@
+import { useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSyncStatus } from "../data/hooks";
 import type { SyncStatus } from "../lib/sync-service";
+import { BAR_HEIGHT } from "./Bar";
 import { Chevron } from "./components";
-import { color, MAX_TEXT_SCALE, minTap, shape, space, tint, type } from "./theme";
+import {
+  color,
+  drawnChrome,
+  gutter,
+  MAX_TEXT_SCALE,
+  minTap,
+  shape,
+  space,
+  tint,
+  type,
+} from "./theme";
 
 function ago(ms: number): string {
   const s = Math.round((Date.now() - ms) / 1000);
@@ -49,6 +62,38 @@ export function SyncBar({
       <Chevron />
     </Pressable>
   );
+}
+
+/**
+ * The sync bar pinned under the navigation bar (owner, 2026-10-20: one-handed use, item 12), so
+ * "Offline · 3 changes on this phone" stays in view on Today and the job page instead of
+ * scrolling away. It still hides when everything is saved. On the drawn bar (Android) it
+ * floats under the bar and the page starts below it (`height`); on iPhone, where the native
+ * large title sits there, it stays the first thing in the page (`inline`).
+ */
+export function usePinnedSyncBar(onPress: () => void): {
+  overlay: ReactNode;
+  inline: ReactNode;
+  height: number;
+} {
+  const insets = useSafeAreaInsets();
+  const { healthy } = syncSummary(useSyncStatus());
+  const [measured, setMeasured] = useState(0);
+  if (!drawnChrome) return { overlay: null, inline: <SyncBar onPress={onPress} />, height: 0 };
+  if (healthy) return { overlay: null, inline: null, height: 0 };
+  return {
+    overlay: (
+      <View
+        pointerEvents="box-none"
+        onLayout={(e) => setMeasured(e.nativeEvent.layout.height)}
+        style={[styles.pinned, { top: insets.top + BAR_HEIGHT, backgroundColor: color.bg }]}
+      >
+        <SyncBar onPress={onPress} />
+      </View>
+    ),
+    inline: null,
+    height: measured,
+  };
 }
 
 /**
@@ -119,4 +164,11 @@ const styles = StyleSheet.create({
     minHeight: minTap,
   },
   dot: { width: 10, height: 10, borderRadius: 5 },
+  pinned: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    paddingHorizontal: gutter,
+    paddingVertical: space["2"],
+  },
 });

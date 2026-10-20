@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { strokePath, type SignatureStroke } from "@leakbook/core";
+import { useNoSwipe } from "./SwipeNav";
 import { color } from "./theme";
 
 /**
@@ -25,6 +26,8 @@ export function SignaturePad({
   // Page position of the pad's corner, taken when a stroke starts (locationX can jump to a
   // child's coordinates on iOS; page coordinates do not).
   const origin = useRef({ x: 0, y: 0 });
+  // Signing sideways never changes the job section (owner, 2026-10-20).
+  const noSwipe = useNoSwipe();
 
   return (
     <View
@@ -32,6 +35,7 @@ export function SignaturePad({
         styles.pad,
         { height, backgroundColor: color.paper, borderColor: color.controlBorder },
       ]}
+      {...noSwipe}
       onStartShouldSetResponder={() => true}
       onMoveShouldSetResponder={() => true}
       onResponderTerminationRequest={() => false}

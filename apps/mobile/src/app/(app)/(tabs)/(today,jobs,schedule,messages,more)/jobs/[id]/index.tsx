@@ -1,15 +1,7 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useRoute } from "expo-router/react-navigation";
 import { useEffect, useRef, useState } from "react";
-import {
-  Animated,
-  KeyboardAvoidingView,
-  Linking,
-  Platform,
-  StyleSheet,
-  TextInput,
-  View,
-} from "react-native";
+import { Animated, Linking, StyleSheet, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   JOB_TYPE_LABELS,
@@ -35,9 +27,12 @@ import {
   type Property,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
-import { useRow } from "../../../../../../data/hooks";
+import { useRow, useSyncStatus } from "../../../../../../data/hooks";
+import { reportsOnline, useJobReports } from "../../../../../../data/reports";
+import { AUTOSAVE_DELAY_MS } from "../../../../../../lib/autosave";
+import { NEXT_STEP_LABELS, nextStepButtons, type NextStep } from "../../../../../../lib/nextStep";
 import { liveStopStarted } from "../../../../../../lib/liveStop";
-import { useJobInspection } from "../../../../../../data/inspection";
+import { useInspectionConfig, useJobInspection } from "../../../../../../data/inspection";
 import { useConversations, useLine } from "../../../../../../data/texting";
 import { openDirections, useDirectionsChoice } from "../../../../../../state/directions";
 import { useCompany, useSession } from "../../../../../../state/session";
@@ -59,12 +54,18 @@ import { BAR_HEIGHT, barState } from "../../../../../../ui/Bar";
 import { confirmDestructive } from "../../../../../../ui/confirm";
 import { Glass } from "../../../../../../ui/Glass";
 import {
-  ChecklistComplete,
   CompleteBlockedNotice,
+  confirmCompleteVisit,
   useCompleteJobBlocker,
 } from "../../../../../../features/job/CompleteJob";
-import { SwipeNav } from "../../../../../../ui/SwipeNav";
-import { SyncBar } from "../../../../../../ui/SyncBar";
+import {
+  NEXT_STEP_BAR_HEIGHT,
+  NextStepBar,
+  type NextStepButton,
+} from "../../../../../../features/job/NextStepBar";
+import { KeyboardAvoider } from "../../../../../../ui/keyboard";
+import { SwipeNav, useNoSwipe } from "../../../../../../ui/SwipeNav";
+import { usePinnedSyncBar } from "../../../../../../ui/SyncBar";
 import { ScreenTip } from "../../../../../../ui/Tip";
 import {
   color,
@@ -86,10 +87,14 @@ import { FindingsTab } from "../../../../../../features/inspection/FindingsTab";
 import { TestsTab } from "../../../../../../features/inspection/TestsTab";
 import { JobSchedule, showsJobSchedule } from "../../../../../../features/job/JobSchedule";
 import { JobTimeline } from "../../../../../../features/job/Timeline";
-import { MediaSection } from "../../../../../../features/media/MediaSection";
+import { MediaSection, type MediaControls } from "../../../../../../features/media/MediaSection";
 import { InvoiceSection } from "../../../../../../features/invoice/InvoiceSection";
 import { QuoteTab } from "../../../../../../features/quote/QuoteTab";
-import { ReportTab, Signatures } from "../../../../../../features/report/ReportTab";
+import {
+  ReportTab,
+  Signatures,
+  type ReportControls,
+} from "../../../../../../features/report/ReportTab";
 
 type JobSection = "details" | "checklist" | "findings" | "photos" | "wrapup";
 
@@ -100,7 +105,8 @@ const lastSection = new Map<string, JobSection>();
  * The job page (spec 5.4): the header with the status and its next steps, then the section
  * switcher (Details, Checklist, Findings, Photos, Wrap-Up), pinned under the bar once
  * scrolled. The sections hold the existing parts for now; each gets the website's look in the
- * screen-by-screen restyle.
+ * screen-by-screen restyle. The Next Step bar above the tab bar holds the likely next step
+ * (owner, 2026-10-20: one-handed use, item 1), and the sync bar stays pinned under the bar.
  */
 export default function JobDetail() {
   const { id, section: asked } = useLocalSearchParams<{ id: string; section?: string }>();
@@ -118,6 +124,12 @@ export default function JobDetail() {
   // Complete Job waits for the checklist or a photo when the shop asks (owner, 2026-10-19).
   const blocker = useCompleteJobBlocker({ id, company_id: company.id });
   const [completeAsked, setCompleteAsked] = useState<"header" | "checklist" | null>(null);
+  const config = useInspectionConfig(company.id);
+  const reports = useJobReports(company.id, id);
+  const offline = useSyncStatus().phase === "offline";
+  const mediaControls = useRef<MediaControls | null>(null);
+  const reportControls = useRef<ReportControls | null>(null);
+  const sync = usePinnedSyncBar(() => router.push("/more/sync"));
   const {
     header: titleBlock,
     ref: scroll,
@@ -126,6 +138,7 @@ export default function JobDetail() {
   } = useScreenChrome({
     // The customer's name on top, the job number smaller below (owner, 2026-10-20).
     title: job ? (customer?.name ?? (job.number ? `Job #${job.number}` : "New Job")) : "Job",
+    topInset: sync.height,
   });
   const barY = barState(useRoute().key).y;
 
@@ -164,15 +177,55 @@ export default function JobDetail() {
   function changeStatus(to: JobStatus, from: "header" | "checklist" = "header") {
     if (to === "done" && blocker) return setCompleteAsked(from);
     setCompleteAsked(null);
-    const values: Record<string, JsonValue> = { status: to };
-    if (to === "in_progress" && !job!.started_at) values.started_at = new Date().toISOString();
-    update(values);
-    // Automatic visit reports: sent once the completed visit reaches the server.
-    if (to === "done") queueAutoVisitReport(job!, company.settings);
-    // Start Job: the current stop's ongoing notification moves to the pool.
-    if (to === "in_progress") liveStopStarted(job!.id);
+    const apply = () => {
+      const values: Record<string, JsonValue> = { status: to };
+      if (to === "in_progress" && !job!.started_at) values.started_at = new Date().toISOString();
+      update(values);
+      // Automatic visit reports: sent once the completed visit reaches the server.
+      if (to === "done") queueAutoVisitReport(job!, company.settings);
+      // Start Job: the current stop's ongoing notification moves to the pool.
+      if (to === "in_progress") liveStopStarted(job!.id);
+    };
+    // Completing asks first when it sends the visit report (owner, 2026-10-20).
+    if (to === "done") return confirmCompleteVisit(job!, customer?.name, company.settings, apply);
+    apply();
   }
-  const transitions = userTransitions(job.status, job.type).filter((to) => to !== "canceled");
+  // Start Job moved to the Next Step bar (owner, 2026-10-20); the other moves stay here.
+  const startable = job.status === "scheduled" || job.status === "unscheduled";
+  const transitions = userTransitions(job.status, job.type).filter(
+    (to) => to !== "canceled" && !(to === "in_progress" && startable),
+  );
+
+  // The Next Step bar: first match wins (lib/nextStep).
+  const noDraft = !reports.some(
+    (r) => r.template_key === "homeowner" && r.status === "draft" && r.final_sections,
+  );
+  const steps = nextStepButtons({
+    section: shown,
+    status: job.status,
+    jobType: job.type,
+    hasTestTypes: config.testTypes.length > 0,
+    noDraft,
+    canWriteDraft: reportsOnline && !offline,
+  });
+  const act: Record<NextStep, () => void> = {
+    start: () => changeStatus("in_progress"),
+    complete: () => changeStatus("done", "checklist"),
+    "add-test": () => router.push(`/jobs/${job.id}/test/new`),
+    "add-finding": () => router.push(`/jobs/${job.id}/finding/new`),
+    "add-photo": () => mediaControls.current?.photo(),
+    "add-video": () => mediaControls.current?.video(),
+    "write-draft": () => reportControls.current?.writeDraft(),
+    review: () =>
+      reportControls.current
+        ? reportControls.current.review()
+        : router.push(`/jobs/${job.id}/review?template=homeowner`),
+  };
+  const barButtons: NextStepButton[] = steps.map((step, i) => ({
+    title: NEXT_STEP_LABELS[step],
+    kind: i === 0 ? "primary" : "secondary",
+    onPress: act[step],
+  }));
 
   const switcher = (
     <Segmented
@@ -190,21 +243,29 @@ export default function JobDetail() {
   const pinned =
     drawnChrome && switcherY != null
       ? barY.interpolate({
-          inputRange: [switcherY - barBottom - 1, switcherY - barBottom],
+          inputRange: [
+            switcherY - barBottom - sync.height - 1,
+            switcherY - barBottom - sync.height,
+          ],
           outputRange: [0, 1],
           extrapolate: "clamp",
         })
       : null;
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: color.bg }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    // Fields stay above the keyboard, edge to edge on Android too (owner, 2026-10-20).
+    <KeyboardAvoider style={{ flex: 1, backgroundColor: color.bg }}>
       <Animated.ScrollView
         ref={scroll}
         {...scrollProps}
-        contentContainerStyle={contentContainerStyle}
+        contentContainerStyle={[
+          contentContainerStyle,
+          // The last row scrolls clear of the Next Step bar.
+          barButtons.length > 0 && {
+            paddingBottom:
+              (contentContainerStyle.paddingBottom as number) + NEXT_STEP_BAR_HEIGHT + space["2"],
+          },
+        ]}
         stickyHeaderIndices={drawnChrome ? undefined : [1]}
       >
         <View style={styles.header}>
@@ -248,13 +309,15 @@ export default function JobDetail() {
           onPrevious={() => {
             const to = sections[shownAt - 1];
             if (to) setSection(to.value);
+            return Boolean(to);
           }}
           onNext={() => {
             const to = sections[shownAt + 1];
             if (to) setSection(to.value);
+            return Boolean(to);
           }}
         >
-          <SyncBar onPress={() => router.push("/more/sync")} />
+          {sync.inline}
           {shown === "details" ? (
             <Details
               job={job}
@@ -296,14 +359,10 @@ export default function JobDetail() {
                 <ScreenTip screen="job" pkg={maintenance ? "pool" : "leak"} />
               )}
               <ChecklistTab job={job} property={property} />
-              {/* Complete Job ends a visit, right under its list (owner, 2026-10-19). */}
-              {maintenance && (job.status === "scheduled" || job.status === "in_progress") ? (
-                <ChecklistComplete
-                  jobId={job.id}
-                  blocker={blocker}
-                  asked={completeAsked === "checklist"}
-                  onPress={() => changeStatus("done", "checklist")}
-                />
+              {/* Complete Job is in the Next Step bar (owner, 2026-10-20); what stops it shows
+                  here, under the list. */}
+              {completeAsked === "checklist" && blocker ? (
+                <CompleteBlockedNotice jobId={job.id} message={blocker} />
               ) : null}
             </View>
           ) : null}
@@ -331,6 +390,7 @@ export default function JobDetail() {
               <MediaSection
                 target={{ jobId: job.id }}
                 layout="cards"
+                controls={mediaControls}
                 targets={[
                   ...[...insp.findings]
                     .sort((a, b) => a.id.localeCompare(b.id))
@@ -349,7 +409,7 @@ export default function JobDetail() {
                   Read and edit it before sending.
                 </T>
                 {job.type === "detection" ? <ScreenTip screen="report" pkg="leak" /> : null}
-                <ReportTab job={job} customer={customer} />
+                <ReportTab job={job} customer={customer} controls={reportControls} />
               </View>
               <View style={styles.part}>
                 <T variant="sectionHeading">Signatures</T>
@@ -369,17 +429,19 @@ export default function JobDetail() {
           ) : null}
         </SwipeNav>
       </Animated.ScrollView>
+      {sync.overlay}
       {pinned ? (
         <Animated.View
           pointerEvents="box-none"
-          style={[styles.pinned, { top: barBottom, opacity: pinned }]}
+          style={[styles.pinned, { top: barBottom + sync.height, opacity: pinned }]}
         >
           <Glass variant="bar" style={styles.pinnedBar}>
             {switcher}
           </Glass>
         </Animated.View>
       ) : null}
-    </KeyboardAvoidingView>
+      <NextStepBar buttons={barButtons} />
+    </KeyboardAvoider>
   );
 }
 
@@ -402,6 +464,8 @@ function Details({
   const line = useLine(company.id);
   const conversations = useConversations(company.id);
   const [choice] = useDirectionsChoice();
+  // Typing never changes the job section (owner, 2026-10-20).
+  const noSwipe = useNoSwipe();
   const [notes, setNotes] = useState<string | null>(null);
   const [fee, setFee] = useState<string | null>(null);
   const [gallons, setGallons] = useState<string | null>(null);
@@ -620,6 +684,7 @@ function Details({
               <T style={{ flex: 1 }}>{jobFeeLabel(job.type)}</T>
               <T muted>$</T>
               <TextInput
+                {...noSwipe}
                 accessibilityLabel={`${jobFeeLabel(job.type)} in dollars`}
                 value={fee ?? (job.fee_cents != null ? (job.fee_cents / 100).toFixed(2) : "")}
                 onChangeText={setFee}
@@ -644,6 +709,7 @@ function Details({
               <View style={styles.feeRow}>
                 <T style={{ flex: 1 }}>Pool gallons</T>
                 <TextInput
+                  {...noSwipe}
                   accessibilityLabel="Pool gallons"
                   value={gallonsShown}
                   onChangeText={(v) => {
@@ -680,6 +746,7 @@ function Details({
               Job notes
             </T>
             <TextInput
+              {...noSwipe}
               accessibilityLabel="Job notes"
               value={notes ?? job.summary_notes ?? ""}
               onChangeText={(v) => {
@@ -687,7 +754,7 @@ function Details({
                 setSaved(false);
                 pending.current = v;
                 if (notesTimer.current) clearTimeout(notesTimer.current);
-                notesTimer.current = setTimeout(() => flush.current(), 1500);
+                notesTimer.current = setTimeout(() => flush.current(), AUTOSAVE_DELAY_MS);
               }}
               onBlur={() => {
                 flush.current();
