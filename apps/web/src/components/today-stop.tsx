@@ -49,9 +49,10 @@ export function TodayStop({
       className={cx("card", current && "ring-2 ring-link")}
       data-testid="today-stop"
     >
-      {/* The whole row opens and closes the card; the chevron is its button for keyboards and
-          screen readers. Open, the name is a link to the job instead of an Open Job button
-          (owner, 2026-10-20: "We're wasting space by keeping as a new button"). */}
+      {/* The rest of the row (number, time, chevron) opens and closes the card; the chevron is
+          its button for keyboards and screen readers. The name is a link to the job instead of
+          an Open Job button (owner, 2026-10-20: "We're wasting space by keeping as a new
+          button"). */}
       <div
         onClick={() => setOpen(!open)}
         className="flex min-h-14 w-full cursor-pointer items-center gap-2 px-3 py-2 text-left"
@@ -83,29 +84,26 @@ export function TodayStop({
           className={cx("flex min-w-0 flex-1 flex-wrap items-center gap-x-2", done && "opacity-70")}
         >
           <span className="font-display text-[1.0625rem] font-bold">{time}</span>
-          {open ? (
-            <Link
-              href={href}
-              onClick={(e) => e.stopPropagation()}
-              className="-my-2 flex min-h-11 min-w-0 flex-1 items-center gap-0.5 font-semibold text-link"
+          {/* The name opens the job, open or closed (owner, 2026-10-20). */}
+          <Link
+            href={href}
+            onClick={(e) => e.stopPropagation()}
+            className="-my-2 flex min-h-11 min-w-0 flex-1 items-center gap-0.5 font-semibold text-link"
+          >
+            <span className="truncate">{name}</span>
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              className="size-4 shrink-0"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              <span className="truncate">{name}</span>
-              <svg
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-                className="size-4 shrink-0"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M9 6l6 6-6 6" />
-              </svg>
-            </Link>
-          ) : (
-            <span className="min-w-0 flex-1 truncate font-semibold">{name}</span>
-          )}
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+          </Link>
           {extra}
         </span>
         <button

@@ -43,13 +43,16 @@ test("homeowner report: draft, edit, email, and the customer's link", async ({ p
   const note = `Checked by the e2e run ${RUN}.`;
   const summary = panel.getByLabel("Summary", { exact: true });
   await summary.fill(`${await summary.inputValue()}\n\n${note}`);
-  await panel.getByRole("button", { name: "Save Text" }).click();
-  await expect(panel.getByText("Saved.", { exact: true })).toBeVisible();
+  // The text saves by itself a second after typing stops (owner, 2026-10-20: no Save Text).
+  await expect(panel.getByText("Saved", { exact: true })).toBeVisible();
 
-  // The draft folds away and comes back with the edits still there.
-  await panel.getByRole("button", { name: "Hide Draft" }).click();
+  // The text folds away under Report Text and comes back with the edits still there, also
+  // after a reload.
+  const reportText = panel.getByRole("button", { name: "Report Text" });
+  await reportText.click();
   await expect(summary).toBeHidden();
-  await panel.getByRole("button", { name: "Show Draft" }).click();
+  await page.reload();
+  await panel.getByRole("button", { name: "Report Text" }).click();
   await expect(summary).toHaveValue(new RegExp(note.replace(/[.]/g, "\\.")));
 
   const to = `customer-${RUN}@example.com`;

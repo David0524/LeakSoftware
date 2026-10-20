@@ -139,7 +139,10 @@ test("a new shop signs up and runs the whole loop, then subscribes", async ({
   // 4. Inspect: start, one leak with where, the rest not leaking; a finding.
   await page.getByRole("button", { name: "Start Job" }).click();
   await expect(page.getByRole("button", { name: "Move Back to Scheduled" })).toBeVisible();
-  await page.getByLabel("Skimmer", { exact: true }).selectOption("leaking");
+  await page
+    .getByRole("radiogroup", { name: "Skimmer", exact: true })
+    .getByRole("radio", { name: "Leaking", exact: true })
+    .click();
   const where = page.getByLabel("Where: Skimmer");
   await where.fill("Throat seam");
   await where.blur();

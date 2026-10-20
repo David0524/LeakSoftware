@@ -269,6 +269,27 @@ export async function markRest(_: FormState, form: FormData): Promise<FormState>
   return done(jobId);
 }
 
+/**
+ * Undo after "Mark N Remaining …" (owner, 2026-10-20): the items it marked go back to do.
+ * Only items still holding the shortcut's answer are cleared, so one changed since stays.
+ */
+export async function unmarkRest(_: FormState, form: FormData): Promise<FormState> {
+  const { office, db } = await ctx();
+  const jobId = text(form, "job");
+  const ids = text(form, "components").split(",").filter(Boolean);
+  if (ids.length === 0) return { message: "Nothing to clear." };
+  const { error } = await db
+    .from("checklist_item_result")
+    .update(verdictValues(null, office.user.id))
+    .eq("job_id", jobId)
+    .eq("status", "inspected")
+    .eq("outcome", "ok")
+    .in("job_component_id", ids)
+    .is("deleted_at", null);
+  if (error) return { error: error.message };
+  return done(jobId);
+}
+
 /** Where on a Leaking or Attention item ("Seam at the skimmer throat"). */
 export async function saveWhere(_: FormState, form: FormData): Promise<FormState> {
   const { db } = await ctx();

@@ -71,15 +71,27 @@ test("a weekly cleaning plan puts visits on the route, and a visit is marked don
   await expect(page.getByText("Wrap-Up", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Start Job" }).click();
   await expect(page.getByText(/^0 done · 0 need attention · 0 skipped · 7 to do$/)).toBeVisible();
-  // Each item is a check (owner, 2026-10-18: no menu); the box is hidden, so tap its row.
-  await page.getByRole("checkbox").first().locator("..").click();
+  // Each item's answers are a segmented control: Done · Needs Attention · Skipped (owner,
+  // 2026-10-20).
+  const first = page.locator("#part-checklist").getByRole("radiogroup").first();
+  await first.getByRole("radio", { name: "Done", exact: true }).click();
   await expect(page.getByText(/^1 done · 0 need attention · 0 skipped · 6 to do$/)).toBeVisible();
-  await expect(page.getByRole("checkbox").first()).toBeChecked();
+  await expect(first.getByRole("radio", { name: "Done", exact: true })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
   await page.getByRole("button", { name: /^Mark 6 Remaining Done$/ }).click();
   await expect(page.getByText(/^7 done · 0 need attention · 0 skipped · 0 to do$/)).toBeVisible();
+  // For five seconds the shortcut's place holds "Marked 6" and Undo (owner, 2026-10-20).
+  await expect(page.getByText("Marked 6", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Complete Job" })).toHaveCount(2);
   await page.getByRole("button", { name: "Complete Job" }).last().click();
-  await expect(page.getByText("Done", { exact: true }).first()).toBeVisible();
+  // An Automatic shop asks before the visit report goes out (owner, 2026-10-20).
+  const ask = page.getByRole("alertdialog", { name: "Ready to send the visit report?" });
+  const reopen = page.getByRole("button", { name: "Reopen Visit" });
+  await expect(ask.or(reopen)).toBeVisible();
+  if (await ask.isVisible()) await ask.getByRole("button", { name: "Complete and Send" }).click();
+  await expect(reopen).toBeVisible();
   await page.goto(`/customers/${job!.bill_to_customer_id}`);
   await expect(page.getByTestId("plan")).toContainText("1 done");
 

@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import {
   MEDIA_KIND_LABELS,
   MARKUP_COLORS,
@@ -37,8 +44,10 @@ import {
 } from "@/app/actions/media";
 import { MarkupOverlay } from "./markup";
 import { Segmented } from "./segmented";
+import { useNextStep } from "./next-step-events";
 import { useConfirm } from "./sheet";
-import { Button, Field, Select, buttonClass, cx } from "./ui";
+import { Button, Field, Select, buttonClass, cx, iconButtonClass } from "./ui";
+import { SavedNote, useAutosave } from "./undo";
 
 // Photos, videos, voice notes, markup, and signatures from a browser (M9.5): the phone app's
 // capture screens. Files go straight to storage; the server records them.
@@ -162,8 +171,37 @@ export function MediaCapture({
   /** "finding:<id>" or "component:<id>" with a label, for "Attach to". */
   targets: { value: string; label: string }[];
 }) {
-  const [attachTo, setAttachTo] = useState("");
+  // "Attach to" remembers the last choice for the job while the browser tab is open (owner,
+  // 2026-10-20).
+  const remembered = `attach-to:${jobId}`;
+  const last = useSyncExternalStore(
+    () => () => {},
+    () => {
+      try {
+        return sessionStorage.getItem(remembered);
+      } catch {
+        return null;
+      }
+    },
+    // The server can't see the tab's memory.
+    () => null,
+  );
+  const [chosen, setChosen] = useState<string | null>(null);
+  const attachTo = chosen ?? (last && targets.some((t) => t.value === last) ? last : "");
+  const setAttachTo = (value: string) => {
+    setChosen(value);
+    try {
+      sessionStorage.setItem(remembered, value);
+    } catch {
+      // Private browsing: remembered for this page only.
+    }
+  };
   const [busy, setBusy] = useState<string | null>(null);
+  const photoInput = useRef<HTMLInputElement>(null);
+  const videoInput = useRef<HTMLInputElement>(null);
+  // The Next Step bar's Add Photo and Add Video open the same capture (owner, 2026-10-20).
+  useNextStep("add-photo", () => photoInput.current?.click());
+  useNextStep("add-video", () => videoInput.current?.click());
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
 
   async function run(label: string, work: () => Promise<string>) {
@@ -217,8 +255,8 @@ export function MediaCapture({
     });
   }
 
-  // No `capture`: phones then offer Take Photo or Video, Photo Library (the camera roll),
-  // or Choose File. With `capture` they went straight to the camera.
+  // Add Photo and Add Video go straight to the camera (`capture`), and Library is its own
+  // button next to them (owner, 2026-10-20), for the camera roll or a file.
   const pick = (accept: string, multiple = false) => ({
     type: "file" as const,
     accept,
@@ -226,6 +264,12 @@ export function MediaCapture({
     disabled: busy !== null,
     className: "sr-only",
   });
+  function addFiles(files: File[]) {
+    const photos = files.filter((f) => !f.type.startsWith("video/"));
+    const videos = files.filter((f) => f.type.startsWith("video/"));
+    if (photos.length) addPhotos(photos);
+    else if (videos[0]) addVideo(videos[0]);
+  }
 
   return (
     <div className="space-y-3 card p-4">
@@ -239,12 +283,14 @@ export function MediaCapture({
           className="max-w-md"
         />
       ) : null}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         <label className={cx(TILE, "cursor-pointer focus-within:outline-3")}>
           <TileIcon d={CAMERA} />
           Add Photo
           <input
-            {...pick("image/*", true)}
+            ref={photoInput}
+            {...pick("image/*")}
+            capture="environment"
             onChange={(e) => {
               const files = [...(e.target.files ?? [])];
               e.target.value = "";
@@ -253,10 +299,24 @@ export function MediaCapture({
           />
         </label>
         <label className={cx(TILE, "cursor-pointer focus-within:outline-3")}>
+          <TileIcon d={LIBRARY} />
+          Library
+          <input
+            {...pick("image/*,video/*", true)}
+            onChange={(e) => {
+              const files = [...(e.target.files ?? [])];
+              e.target.value = "";
+              if (files.length) addFiles(files);
+            }}
+          />
+        </label>
+        <label className={cx(TILE, "cursor-pointer focus-within:outline-3")}>
           <TileIcon d={VIDEO} />
           Add Video
           <input
+            ref={videoInput}
             {...pick("video/*")}
+            capture="environment"
             onChange={(e) => {
               const file = e.target.files?.[0];
               e.target.value = "";
@@ -297,8 +357,8 @@ export function MediaCapture({
   );
 }
 
-// Add Photo, Add Video, and Voice Note sit in one row of equal tiles (icon over label), so
-// they fit a phone's width without wrapping to three rows.
+// Add Photo, Library, Add Video, and Voice Note sit in one row of equal tiles (icon over
+// label), so they fit a phone's width without wrapping.
 const TILE = cx(
   "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-2xl bg-link/10 px-1 py-1.5 text-link transition-colors hover:bg-link/20",
   "text-center text-[0.9375rem] leading-tight font-semibold",
@@ -309,6 +369,8 @@ const CAMERA =
 const VIDEO =
   "M3 7h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM16 11l6-3v8l-6-3";
 const MIC = "M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3";
+const LIBRARY =
+  "M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM3 16l5-5 4 4 3-3 6 6M15.5 9.5a1 1 0 1 0 0-.01";
 
 function TileIcon({ d }: { d: string }) {
   return (
@@ -394,14 +456,14 @@ function VoiceNote({
           Voice Note
         </button>
         {error ? (
-          <p role="alert" className="col-span-3 text-[0.9375rem] text-status-fail">
+          <p role="alert" className="col-span-4 text-[0.9375rem] text-status-fail">
             {error}
           </p>
         ) : null}
       </>
     );
   return (
-    <div className="col-span-3 flex flex-wrap items-center gap-3">
+    <div className="col-span-4 flex flex-wrap items-center gap-3">
       <span className="font-semibold" aria-live="polite">
         <span className="mr-2 inline-block size-3 rounded-full bg-status-fail" aria-hidden />
         Recording {formatDuration(elapsed)}
@@ -447,9 +509,24 @@ export function MediaActions({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirm, confirmSheet] = useConfirm();
+  const kind = MEDIA_KIND_LABELS[media.kind];
+  async function remove() {
+    const ok = await confirm({
+      title: `Remove this ${kind.toLowerCase()} from the job?`,
+      message: "The original stays on file.",
+      confirmLabel: `Delete ${kind}`,
+      destructive: true,
+    });
+    if (!ok) return;
+    setBusy(true);
+    const r = await deleteMedia({ jobId, mediaId: media.id });
+    setBusy(false);
+    if (!r.ok) setError(r.error);
+  }
   return (
     <>
-      <div className="flex flex-wrap gap-3">
+      {/* Delete is behind More, away from Mark Up (owner, 2026-10-20). */}
+      <div className="flex flex-wrap items-center gap-3">
         {media.kind === "photo" && media.url ? (
           <button
             type="button"
@@ -460,27 +537,11 @@ export function MediaActions({
             {media.shapes.length ? "Edit Markup" : "Mark Up"}
           </button>
         ) : null}
-        <button
-          type="button"
+        <MoreMenu
+          label={`More: ${media.label}`}
           disabled={busy}
-          className={buttonClass("danger")}
-          aria-label={`Delete: ${media.label}`}
-          onClick={async () => {
-            const ok = await confirm({
-              title: `Remove this ${MEDIA_KIND_LABELS[media.kind].toLowerCase()} from the job?`,
-              message: "The original stays on file.",
-              confirmLabel: `Delete ${MEDIA_KIND_LABELS[media.kind]}`,
-              destructive: true,
-            });
-            if (!ok) return;
-            setBusy(true);
-            const r = await deleteMedia({ jobId, mediaId: media.id });
-            setBusy(false);
-            if (!r.ok) setError(r.error);
-          }}
-        >
-          Delete
-        </button>
+          items={[{ label: `Delete ${kind}`, destructive: true, onSelect: () => void remove() }]}
+        />
       </div>
       {error ? (
         <p role="alert" className="text-status-fail">
@@ -498,6 +559,16 @@ export function MediaActions({
           height={media.height}
           shapes={media.shapes}
           caption={media.caption ?? ""}
+          onCaptionSave={async (caption) => {
+            // The caption saves by itself (owner, 2026-10-20), with the markup as last saved.
+            const r = await saveMarkup({
+              jobId,
+              mediaId: media.id,
+              markup: { version: 1, shapes: media.shapes },
+              caption,
+            });
+            return r.ok ? null : r.error;
+          }}
           onCancel={() => setEditing(false)}
           onSave={async (shapes, caption) => {
             const r = await saveMarkup({
@@ -513,6 +584,92 @@ export function MediaActions({
         />
       ) : null}
     </>
+  );
+}
+
+/**
+ * A round "More" (…) button whose pull-down menu holds less common actions, as iOS's
+ * (apple-design: menus). Escape or a tap outside closes it.
+ */
+function MoreMenu({
+  label,
+  items,
+  disabled = false,
+}: {
+  label: string;
+  items: { label: string; destructive?: boolean; onSelect: () => void }[];
+  disabled?: boolean;
+}) {
+  // Fixed to the screen (from the button's place), so a card's rounded clipping can't cut it.
+  const [open, setOpen] = useState<{ left: number; bottom: number } | null>(null);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: Event) => {
+      if (
+        e instanceof KeyboardEvent ? e.key === "Escape" : !box.current?.contains(e.target as Node)
+      )
+        setOpen(null);
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", close);
+    box.current?.querySelector<HTMLElement>("[role=menuitem]")?.focus();
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
+  return (
+    <div ref={box}>
+      <button
+        type="button"
+        aria-label={label}
+        aria-haspopup="menu"
+        aria-expanded={!!open}
+        disabled={disabled}
+        onClick={(e) => {
+          if (open) return setOpen(null);
+          const r = e.currentTarget.getBoundingClientRect();
+          setOpen({
+            left: Math.max(16, Math.min(r.left, window.innerWidth - 240)),
+            bottom: window.innerHeight - r.top + 8,
+          });
+        }}
+        className={iconButtonClass("disabled:opacity-50")}
+      >
+        <svg viewBox="0 0 24 24" className="size-6" fill="currentColor" aria-hidden="true">
+          <circle cx="6" cy="12" r="1.8" />
+          <circle cx="12" cy="12" r="1.8" />
+          <circle cx="18" cy="12" r="1.8" />
+        </svg>
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          aria-label={label}
+          style={open}
+          className="glass-sheet fixed z-40 w-56 overflow-hidden rounded-xl py-1 shadow-lg"
+        >
+          {items.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(null);
+                item.onSelect();
+              }}
+              className={cx(
+                "block min-h-11 w-full px-4 text-left hover:bg-text/[0.06] focus-visible:bg-text/[0.06] focus-visible:outline-none",
+                item.destructive ? "text-status-fail" : "text-text",
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -564,6 +721,7 @@ export function MarkupEditor({
   canvasLabel = "Photo",
   onCancel,
   onSave,
+  onCaptionSave,
 }: {
   background: ReactNode;
   width: number;
@@ -574,6 +732,8 @@ export function MarkupEditor({
   canvasLabel?: string;
   onCancel: () => void;
   onSave: (shapes: MarkupShape[], caption: string) => Promise<string | null>;
+  /** Saves the caption alone a second after typing stops, and when the field is left. */
+  onCaptionSave?: (caption: string) => Promise<string | null>;
 }) {
   const [history, setHistory] = useState<MarkupShape[][]>([shapes]);
   const draft = history[history.length - 1]!;
@@ -587,7 +747,11 @@ export function MarkupEditor({
   const [saving, setSaving] = useState(false);
   const start = useRef<{ x: number; y: number } | null>(null);
   const [confirm, confirmSheet] = useConfirm();
-  const dirty = history.length > 1 || caption !== (savedCaption ?? "");
+  const captionSave = useAutosave((savedCaption ?? "").trim(), (v) =>
+    onCaptionSave ? onCaptionSave(v) : Promise.resolve(null),
+  );
+  // A caption that saves by itself is never lost, so Cancel asks only about the markup.
+  const dirty = history.length > 1 || (!onCaptionSave && caption !== (savedCaption ?? ""));
   const push = (next: MarkupShape[]) => setHistory((h) => [...h, next]);
   // Text can be moved and resized after it's placed (owner, 2026-10-20): the Text tool selects
   // a label with a tap, a drag moves it, and Size changes it.
@@ -877,12 +1041,19 @@ export function MarkupEditor({
           </Button>
         </div>
         {savedCaption !== undefined ? (
-          <Field
-            label="Caption (optional)"
-            name="caption"
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-          />
+          <div>
+            <Field
+              label="Caption (optional)"
+              name="caption"
+              value={caption}
+              onChange={(e) => {
+                setCaption(e.target.value);
+                if (onCaptionSave) captionSave.change(e.target.value.trim());
+              }}
+              onBlur={() => void captionSave.flush()}
+            />
+            {onCaptionSave ? <SavedNote status={captionSave.status} className="block" /> : null}
+          </div>
         ) : null}
         {error ? (
           <p role="alert" className="text-status-fail">

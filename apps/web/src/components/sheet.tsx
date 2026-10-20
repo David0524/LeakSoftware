@@ -127,6 +127,12 @@ interface ConfirmOptions {
   /** The action's name, e.g. "Delete Test". */
   confirmLabel: string;
   destructive?: boolean;
+  /**
+   * A centered iOS alert (Cancel and the action side by side, the action bold as the
+   * default) instead of an action sheet: for a question about what happens next, such as
+   * sending the visit report (owner, 2026-10-20).
+   */
+  alert?: boolean;
 }
 
 /**
@@ -147,7 +153,13 @@ export function useConfirm(): [(o: ConfirmOptions) => Promise<boolean>, ReactNod
     pending?.resolve(ok);
     setPending(null);
   };
-  const sheet = pending ? <ActionSheet {...pending} onDone={finish} /> : null;
+  const sheet = pending ? (
+    pending.alert ? (
+      <Alert {...pending} onDone={finish} />
+    ) : (
+      <ActionSheet {...pending} onDone={finish} />
+    )
+  ) : null;
   return [confirm, sheet];
 }
 
@@ -212,6 +224,78 @@ function ActionSheet({
         >
           Cancel
         </button>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function Alert({
+  title,
+  message,
+  confirmLabel,
+  destructive,
+  onDone,
+}: ConfirmOptions & { onDone: (ok: boolean) => void }) {
+  const titleId = useId();
+  const messageId = useId();
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const before = document.activeElement as HTMLElement | null;
+    confirmRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onDone(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      before?.focus?.();
+    };
+  }, [onDone]);
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-black/40 motion-safe:animate-[fade-in_0.2s_ease-out]"
+      />
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={message ? messageId : undefined}
+        className="glass-sheet relative w-full max-w-[17.5rem] overflow-hidden rounded-[0.875rem] text-center motion-safe:animate-[fade-in_0.2s_ease-out]"
+      >
+        <div className="px-4 pt-5 pb-4">
+          <p id={titleId} className="text-[1.0625rem] font-semibold">
+            {title}
+          </p>
+          {message ? (
+            <p id={messageId} className="mt-1 text-[0.8125rem]">
+              {message}
+            </p>
+          ) : null}
+        </div>
+        <div className="grid grid-cols-2 border-t-[0.5px] border-separator">
+          <button
+            type="button"
+            onClick={() => onDone(false)}
+            className="min-h-11 border-r-[0.5px] border-separator px-2 text-[1.0625rem] text-link"
+          >
+            Cancel
+          </button>
+          <button
+            ref={confirmRef}
+            type="button"
+            onClick={() => onDone(true)}
+            className={cx(
+              "min-h-11 px-2 text-[1.0625rem] font-semibold",
+              destructive ? "text-status-fail" : "text-link",
+            )}
+          >
+            {confirmLabel}
+          </button>
+        </div>
       </div>
     </div>,
     document.body,

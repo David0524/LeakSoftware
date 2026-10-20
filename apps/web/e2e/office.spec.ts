@@ -78,10 +78,17 @@ test("owner views the M4 sample job", async ({ page }) => {
 
   // Checklist: verdicts by section, the leaking line with where, the drain with its reason.
   await openChecklist(page);
-  await expect(page.getByLabel("Return 3", { exact: true })).toHaveValue("leaking");
+  // Each item's answers are a segmented control (owner, 2026-10-20).
+  await expect(
+    page
+      .getByRole("radiogroup", { name: "Return 3", exact: true })
+      .getByRole("radio", { name: "Leaking" }),
+  ).toHaveAttribute("aria-checked", "true");
   await expect(page.getByLabel("Where: Return 3")).toHaveValue(/Under the deck/);
   await expect(
-    page.getByRole("listitem").filter({ has: page.getByLabel("Main drain 1", { exact: true }) }),
+    page
+      .getByRole("listitem")
+      .filter({ has: page.getByRole("radiogroup", { name: "Main drain 1", exact: true }) }),
   ).toContainText("No diver on site");
   await expect(
     page.getByText(/\d+ not leaking · 1 attention · 1 leaking · 1 not applicable · 0 to do/),
@@ -487,10 +494,13 @@ test("on a phone: a tech starts a job, fills the checklist, and records a test a
 
   // Checklist: one item leaking with where, the rest marked with the section shortcuts.
   await jobSection(tech, "Checklist");
-  const verdict = tech.locator("#part-checklist select[aria-label]").first();
-  const itemName = (await verdict.getAttribute("aria-label"))!;
-  await verdict.selectOption("leaking");
-  await expect(verdict).toHaveValue("leaking");
+  // One tap on the item's segmented answers (owner, 2026-10-20).
+  const verdict = tech.locator("#part-checklist").getByRole("radiogroup").first();
+  const labelId = (await verdict.getAttribute("aria-labelledby"))!;
+  const itemName = (await tech.locator(`[id="${labelId}"]`).innerText()).trim();
+  const leaking = verdict.getByRole("radio", { name: "Leaking", exact: true });
+  await leaking.click();
+  await expect(leaking).toHaveAttribute("aria-checked", "true");
   const where = tech.getByLabel(`Where: ${itemName}`);
   await where.fill("Under the deck by the steps");
   await where.blur();
