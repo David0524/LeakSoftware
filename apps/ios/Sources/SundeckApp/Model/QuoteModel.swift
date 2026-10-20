@@ -142,7 +142,8 @@ public struct QuoteSectionModel: Equatable, Sendable {
         store: LocalStore, companyId: String, settings: JSONValue?, role: String?, job: JobView,
         timeZone: String, webURL: URL? = AppConfig.webURL
     ) {
-        shows = job.type == .detection || job.type == .maintenance
+        // Every job but a repair (pool inspections too, 2026-10-20), as the website.
+        shows = job.type != .repair
         isManager = isManagerRole(role)
         let quotes = jobQuotes(store, companyId: companyId, jobId: job.id)
         showsStart = !quotes.contains { $0.quote.status == .draft || $0.quote.status == .accepted }

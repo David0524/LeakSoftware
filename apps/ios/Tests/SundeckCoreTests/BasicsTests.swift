@@ -15,7 +15,7 @@ import Testing
             "parseGallons", "requiresFinishedChecklist", "FINISH_CHECKLIST_MESSAGE", "completeJobBlocker",
             "jobHasWrapUp", "stopDone", "markCompleteValues", "isHexColor", "parseReminderDays",
             "SAVED_REPORT_SECTIONS", "savedReportSections", "applySavedReport", "replaceSavedReportQuestion",
-            "savedReportFrom",
+            "savedReportFrom", "JOB_TYPE_LABELS", "reportTitle", "reportShareText",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -64,6 +64,13 @@ import Testing
         checkRule(module, "JOB_STATUS_LABELS") { _ in labelTable(\JobStatus.label) }
         checkRule(module, "jobActionLabel") { c in jobActionLabel(from: try c.arg(0), to: try c.arg(1)) }
         checkRule(module, "jobFeeLabel") { c in jobFeeLabel(try c.arg(0, as: String?.self)) }
+        checkRule(module, "JOB_TYPE_LABELS") { _ in labelTable(\JobType.label) }
+        checkRule(module, "reportTitle") { c in reportTitle(try c.arg(0, as: String?.self)) }
+        checkRule(module, "reportShareText") { c in
+            reportShareText(
+                try c.arg(0), try c.arg(1), withQuote: try c.arg(2, as: Bool?.self) ?? false,
+                jobType: try c.arg(3, as: String?.self))
+        }
     }
 
     @Test func phones() {

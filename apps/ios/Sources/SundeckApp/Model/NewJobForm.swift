@@ -17,9 +17,10 @@ public struct BookingQuestion: Equatable, Sendable, Identifiable {
 
     public var id: String { key }
 
-    /// The questions in the settings, skipping any that are malformed.
-    static func list(_ settings: JSONValue) -> [BookingQuestion] {
-        (settings["intake_questions"]?.array ?? []).compactMap { q in
+    /// The questions in the settings that `jobType` asks (`intakeQuestionsFor`: a question
+    /// without job types is for leak detection), skipping any that are malformed.
+    static func list(_ settings: JSONValue, for jobType: JobType = .detection) -> [BookingQuestion] {
+        intakeQuestionsFor(settings["intake_questions"]?.array ?? [], jobType).compactMap { q in
             guard let key = q["key"]?.string, let label = q["label"]?.string,
                 let kind = q["type"]?.string.flatMap(Kind.init(rawValue:))
             else { return nil }
@@ -100,7 +101,8 @@ public final class NewJobForm {
 
     // MARK: - Fields
 
-    /// Leak detection, a pool service visit, or a repair. Changing it resets Hours (`jobTypeChanged`).
+    /// Leak detection, a pool inspection, a pool service visit, or a repair. Changing it resets
+    /// Hours, and Pool Inspection fills in its price (`jobTypeChanged`).
     public var jobType: JobType
     public var mode: Mode = .new
     public private(set) var customerId: String?
@@ -180,6 +182,8 @@ public final class NewJobForm {
     public var seesAll: Bool { seesAllJobs(company.role, company.settings) }
     public var jobTypes: [JobTypeOption] { newJobTypes(company.services) }
     public var isLeak: Bool { jobType == .detection }
+    /// A pool inspection (owner, 2026-10-20): asks its own From the Customer questions.
+    public var isInspection: Bool { jobType == .inspection }
     public var isMaintenance: Bool { jobType == .maintenance }
     /// Owners and admins can start a maintenance plan here (the server checks again).
     public var canPlan: Bool { isManagerRole(company.role) }
@@ -187,25 +191,27 @@ public final class NewJobForm {
     public var showsRepeat: Bool { isMaintenance && canPlan }
     /// A plan that repeats rather than one visit: Start Plan, which needs a connection.
     public var isPlan: Bool { showsRepeat && repeatChoice != nil }
-    public var questions: [BookingQuestion] { BookingQuestion.list(company.settings) }
-    /// From the Customer on leak detection: Gallons and the booking questions (else a Notes card).
-    public var showsBooking: Bool { isLeak }
+    /// The booking questions this kind of job asks.
+    public var questions: [BookingQuestion] { BookingQuestion.list(company.settings, for: jobType) }
+    /// From the Customer on leak detection and pool inspections: Gallons and the booking
+    /// questions (else a Notes card).
+    public var showsBooking: Bool { isLeak || isInspection }
 
     /// The title over what the customer said: a repair's and leak detection's (owner, 2026-10-19).
     public static let fromCustomerTitle = "From the Customer"
 
     // Gallons (owner, 2026-10-19: replaces "Size of the pool"), saved on the pool.
 
-    /// Leak detection asks in From the Customer; other jobs in a new pool's card.
-    public var gallonsInBooking: Bool { isLeak }
-    public var gallonsInPool: Bool { !isLeak && newPool }
+    /// Leak detection and pool inspections ask in From the Customer; other jobs in a new pool's card.
+    public var gallonsInBooking: Bool { showsBooking }
+    public var gallonsInPool: Bool { !showsBooking && newPool }
     public static let gallonsLabel = "Gallons (optional)"
     public static let gallonsHint = "Saved on the pool for the Chemical calculator."
 
     private var gallonsKey: String { newPool ? "new" : propertyId ?? "new" }
-    /// The picked pool's gallons, on leak detection (a new pool has none yet).
+    /// The picked pool's gallons, in From the Customer (a new pool has none yet).
     private var knownGallons: Int? {
-        guard isLeak, !newPool else { return nil }
+        guard gallonsInBooking, !newPool else { return nil }
         return selectedProperty?["approx_gallons"]?.number.map { Int($0) }
     }
 
@@ -287,6 +293,22 @@ public final class NewJobForm {
             }
     }
 
+    /// The price book's Pool inspection price (the first active item in category "Inspection"),
+    /// filled in when Pool Inspection is picked.
+    public var inspectionFeeCents: Cents? {
+        rows("price_book_item")
+            .filter {
+                $0["active"]?.bool == true && ($0["deleted_at"]?.string ?? "").isEmpty
+                    && $0["category"]?.string == "Inspection"
+            }
+            .enumerated()
+            .sorted { a, b in
+                let (x, y) = (a.element["sort_order"]?.number ?? 0, b.element["sort_order"]?.number ?? 0)
+                return x == y ? a.offset < b.offset : x < y
+            }
+            .first?.element["price_cents"]?.number.map { Int($0) }
+    }
+
     /// From the Customer (owner, 2026-10-19): the price book items the owner picked for booking a
     /// repair (Show when booking a repair), or every active item when none are picked yet.
     public var repairItems: [FeeItem] {
@@ -357,8 +379,12 @@ public final class NewJobForm {
         propertyId = nil
     }
 
-    /// After the job type changes: Hours goes back to that type's default, as on the website.
-    public func jobTypeChanged() { hours = defaultHours }
+    /// After the job type changes: Hours goes back to that type's default, and Pool Inspection
+    /// fills in its price from the price book when none is typed, as on the website.
+    public func jobTypeChanged() {
+        hours = defaultHours
+        if isInspection, trim(fee).isEmpty, let cents = inspectionFeeCents { fee = dollarsText(cents) }
+    }
 
     /// Detection price: fills the fee from the price book.
     public func pickFee(_ item: FeeItem) { fee = dollarsText(item.cents) }
@@ -543,7 +569,8 @@ public final class NewJobForm {
         let secondTech = showsSecondTech ? self.secondTech : nil
         let ccEmails = splitEmails(otherEmails)
         let notes = trim(self.notes)
-        let leak = isLeak
+        // Only this kind of job's questions are kept (answers to another kind's stay behind).
+        let asked = showsBooking ? Set(questions.map(\.key)) : []
         // From the Customer: the item's name, kept with the job (website `intake.repair_item`).
         let gallons = gallonsValue
         let repairName = jobType == .repair ? repairItem?.name : nil
@@ -570,11 +597,12 @@ public final class NewJobForm {
             if let end { job["scheduled_end"] = .string(end) }
             job["fee_cents"] = feeCents.map { .number(Double($0)) } ?? .null
             job["second_tech_id"] = secondTech.map { .string($0) } ?? .null
-            // Intake answers belong to leak detection.
+            // Intake answers belong to leak detection and pool inspections, each its own questions.
+            let intake = answers.filter { asked.contains($0.key) }
             if let repairName {
                 job["intake"] = .object([repairItemKey: .string(repairName)])
             } else {
-                job["intake"] = leak && !answers.isEmpty ? .object(answers) : .null
+                job["intake"] = intake.isEmpty ? .null : .object(intake)
             }
             job["summary_notes"] = notes.isEmpty ? .null : .string(notes)
             let jobId = try store.insert("job", companyId: companyId, job)

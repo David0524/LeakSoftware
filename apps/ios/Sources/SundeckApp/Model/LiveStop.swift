@@ -83,7 +83,15 @@ public func liveStopInput(
     let next = stops.dropFirst(index + 1).first { !$0.doneOn(ctx.today) }
     let inspection = JobInspection(store, jobId: job.id)
     let tally = checklistTally(inspection.components, inspection.results)
-    let total = tally.pass + tally.attention + tally.leaking + tally.notApplicable + tally.pending
+    var total = tally.pass + tally.attention + tally.leaking + tally.notApplicable + tally.pending
+    var toDo = tally.pending
+    // A pool inspection counts only the questions its gates leave open (2026-10-20).
+    if job.type == .inspection {
+        let progress = InspectionChecklist(
+            config: InspectionConfig(store, companyId: company.id), inspection: inspection
+        ).progress
+        (total, toDo) = (progress.total, progress.toDo)
+    }
     let phase: LiveStopPhase =
         job.doneOn(ctx.today)
         ? .done : job.status == .inProgress ? .onSite : target.eta != nil ? .driving : .ahead
@@ -92,7 +100,7 @@ public func liveStopInput(
         phase: phase, customer: job.customerName, address: job.address.isEmpty ? nil : job.address,
         stop: index + 1, stops: stops.count, eta: phase == .driving ? target.eta : nil,
         scheduled: phase == .ahead && !scheduled.isEmpty ? scheduled : nil,
-        checklistDone: total - tally.pending, checklistTotal: total,
+        checklistDone: total - toDo, checklistTotal: total,
         next: next.map {
             let time = formatTime($0.scheduledStart, timeZone: ctx.timeZone)
             return LiveStopNext(customer: $0.customerName, time: time.isEmpty ? nil : time)

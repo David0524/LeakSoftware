@@ -1,4 +1,7 @@
 import {
+  JOB_TYPE_LABELS,
+  reportShareText,
+  reportTitle,
   SAVED_REPORT_SECTIONS,
   applySavedReport,
   replaceSavedReportQuestion,
@@ -119,7 +122,7 @@ export const basics: ModuleCases = {
   ),
   jobFeeLabel: rule(
     (t: string | null) => jobFeeLabel(t),
-    [["detection"], ["repair"], ["maintenance"], [null], [""], ["Detection"]],
+    [["detection"], ["repair"], ["maintenance"], ["inspection"], [null], [""], ["Detection"]],
   ),
   toE164: rule(
     (s: string | null) => toE164(s),
@@ -392,6 +395,24 @@ export const basics: ModuleCases = {
         ],
       ],
       [[]],
+    ],
+  ),
+
+  JOB_TYPE_LABELS: rule(() => JOB_TYPE_LABELS, [[]]),
+  reportTitle: rule(
+    (t: string | null) => reportTitle(t),
+    [["inspection"], ["detection"], ["repair"], ["maintenance"], [null], ["Inspection"]],
+  ),
+  reportShareText: rule(
+    (shop: string, link: string, withQuote?: boolean, jobType?: string | null) =>
+      reportShareText(shop, link, withQuote, jobType),
+    [
+      ["Blue Pools", "https://x.co/r/abc"],
+      ["Blue Pools", "https://x.co/r/abc", true],
+      ["Blue Pools", "https://x.co/r/abc", false, "inspection"],
+      ["Blue Pools", "https://x.co/r/abc", true, "inspection"],
+      ["Blue Pools", "https://x.co/r/abc", false, "detection"],
+      ["Blue Pools", "https://x.co/r/abc", false, null],
     ],
   ),
 };

@@ -20,6 +20,11 @@ import Testing
             "SPA_R_MIN", "SPA_R_MAX", "CLEARED_DIAGRAM", "isDiagramShape",
             "spaSizeFor",
             "clampSpaR", "drawnPath", "drawnShapeFrom",
+            // Pool inspection (PoolInspection.swift).
+            "INSPECTION_SECTIONS", "NOT_PRESENT_LABEL", "isInspectionAnswer", "choiceOptions", "inspectionValue",
+            "inspectionAnswerText", "inspectionAnswerValues", "toggleChoice", "inspectionTone", "foldedItems",
+            "isGate", "inspectionProgress", "inspectionProgressText", "intakeQuestionsFor", "optionsToText",
+            "optionsFromText",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -180,6 +185,7 @@ import Testing
     struct ResultArg: Decodable {
         var status: ChecklistStatus?
         var outcome: ChecklistOutcome?
+        var value: JSONValue?
     }
 
     @Test func verdicts() {
@@ -188,7 +194,7 @@ import Testing
         checkRule(module, "verdictLabel") { c in
             let r = try c.arg(0, as: ResultArg?.self)
             let answer = try c.arg(1, as: ComponentAnswer?.self) ?? .leak
-            return verdictLabel(status: r?.status, outcome: r?.outcome, answer: answer)
+            return verdictLabel(status: r?.status, outcome: r?.outcome, answer: answer, value: r?.value)
         }
         checkRule(module, "verdictOptions") { c in verdictOptions(try c.arg(0, as: ComponentAnswer?.self)) }
         checkRule(module, "currentVerdict") { c in
@@ -207,6 +213,61 @@ import Testing
                 try c.arg(0, as: [ChecklistAnswer?].self), service: try c.arg(1, as: Bool?.self) ?? false)
         }
         checkRule(module, "markRemainingLabel") { c in markRemainingLabel(try c.arg(0, as: [ComponentAnswer?].self)) }
+    }
+
+    /// The question's answer kind as a case writes it ("leak" and unknown kinds aren't inspection ones).
+    private func answerKind(_ c: FixtureCase, _ index: Int) throws -> ComponentAnswer? {
+        try c.arg(index, as: String?.self).flatMap(ComponentAnswer.init(rawValue:))
+    }
+
+    struct AnswerType: Decodable {
+        var answer: String?
+        var options: JSONValue?
+    }
+
+    struct ProgressArg: Decodable {
+        var answered: Int
+        var total: Int
+        var attention: Int
+        var leaking: Int
+    }
+
+    @Test func poolInspection() {
+        checkRule(module, "INSPECTION_SECTIONS") { _ in inspectionSections.map(\.rawValue) }
+        checkRule(module, "NOT_PRESENT_LABEL") { _ in notPresentLabel }
+        checkRule(module, "isInspectionAnswer") { c in isInspectionAnswer(try c.arg(0, as: String?.self)) }
+        checkRule(module, "choiceOptions") { c in choiceOptions(c.args.first) }
+        checkRule(module, "inspectionValue") { c in inspectionValue(try answerKind(c, 0), c.args[1]) }
+        checkRule(module, "inspectionAnswerText") { c in inspectionAnswerText(try answerKind(c, 0), c.args[1]) }
+        checkRule(module, "inspectionAnswerValues") { c in
+            let type = try c.arg(0, as: AnswerType.self)
+            return inspectionAnswerValues(
+                answer: type.answer.flatMap(ComponentAnswer.init(rawValue:)), options: type.options,
+                value: try c.arg(1, as: InspectionValue?.self), userId: try c.arg(2, as: String?.self),
+                now: try instant(try c.arg(3, as: String.self)))
+        }
+        checkRule(module, "toggleChoice") { c in toggleChoice(try c.arg(0), try c.arg(1), try c.arg(2)) }
+        checkRule(module, "inspectionTone") { c in
+            let r = try c.arg(0, as: ResultArg?.self)
+            return inspectionTone(status: r?.status, outcome: r?.outcome)
+        }
+        checkRule(module, "foldedItems") { c in foldedItems(try c.arg(0)).sorted() }
+        checkRule(module, "isGate") { c in isGate(c.args[0]["options"]) }
+        checkRule(module, "inspectionProgress") { c in
+            inspectionProgress(try c.arg(0), folded: try c.arg(1, as: [String]?.self).map(Set.init))
+        }
+        checkRule(module, "inspectionProgressText") { c in
+            let p = try c.arg(0, as: ProgressArg.self)
+            return inspectionProgressText(
+                InspectionProgress(
+                    answered: p.answered, total: p.total, toDo: p.total - p.answered, attention: p.attention,
+                    leaking: p.leaking))
+        }
+        checkRule(module, "optionsToText") { c in optionsToText(c.args.first) }
+        checkRule(module, "optionsFromText") { c in optionsFromText(try c.arg(0)) }
+        checkRule(module, "intakeQuestionsFor") { c in
+            intakeQuestionsFor(try c.arg(0, as: [JSONValue].self), try c.arg(1))
+        }
     }
 }
 

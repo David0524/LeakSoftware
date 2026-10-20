@@ -212,7 +212,7 @@ export function NewJobForm({
             <div className="self-end">
               <Checkbox name="has_spa" label="Has a spa" />
             </div>
-            {detection ? null : <GallonsField known={null} />}
+            {detection || kind === "inspection" ? null : <GallonsField known={null} />}
             <div className={cx("sm:col-span-2", maintenance && "hidden")}>
               <ShapePicker
                 name="diagram_shape"

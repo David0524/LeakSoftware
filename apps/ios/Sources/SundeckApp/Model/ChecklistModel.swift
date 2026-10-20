@@ -115,6 +115,8 @@ public struct ChecklistModel: Equatable, Sendable {
     public var isEmpty: Bool
     public var tally: ChecklistTally
     public var sections: [ChecklistSectionRows]
+    /// A pool inspection's eight sections (they have their own rows; `sections` leaves them out).
+    public var inspection: InspectionChecklist
     /// "Add an item": active types not on the job yet, for this kind of job and this pool.
     public var missing: [ComponentType]
 
@@ -122,7 +124,8 @@ public struct ChecklistModel: Equatable, Sendable {
         self.jobType = jobType
         isEmpty = inspection.components.isEmpty
         tally = checklistTally(inspection.components, inspection.results)
-        let checklistType: JobType = jobType == .maintenance ? .maintenance : .detection
+        self.inspection = InspectionChecklist(config: config, inspection: inspection)
+        let checklistType = checklistJobType(jobType)
 
         // Items whose type this phone doesn't have are left out (Expo renders nothing for them).
         let typed = inspection.components.enumerated().compactMap { index, c in
@@ -150,7 +153,7 @@ public struct ChecklistModel: Equatable, Sendable {
     }
 
     /// Edit sits over the checklist once it has items (owner, 2026-10-19).
-    public var canEdit: Bool { !sections.isEmpty }
+    public var canEdit: Bool { !sections.isEmpty || !inspection.isEmpty }
 
     /// "Add an item": another of each type on the list that repeats, then the missing types.
     public var addOptions: [ChecklistAddOption] {
@@ -162,8 +165,11 @@ public struct ChecklistModel: Equatable, Sendable {
             + missing.map { ChecklistAddOption(type: $0, label: $0.name) }
     }
 
-    /// The line under "Checklist", in maintenance or leak words.
-    public var tallyText: String { Self.tallyText(tally, jobType: jobType) }
+    /// The line under "Checklist", in maintenance, leak, or pool inspection words (an inspection
+    /// counts only the questions its gates leave open).
+    public var tallyText: String {
+        jobType == .inspection ? inspection.tallyText : Self.tallyText(tally, jobType: jobType)
+    }
 
     public static func tallyText(_ t: ChecklistTally, jobType: JobType) -> String {
         jobType == .maintenance

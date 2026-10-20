@@ -360,17 +360,19 @@
                     ForEach(form.questions) { question in
                         switch question.kind {
                         case .multi:
-                            VStack(alignment: .leading, spacing: 0) {
+                            // Tap all that apply, as pills (Pool Inspection's features, 2026-10-20).
+                            VStack(alignment: .leading, spacing: 8) {
                                 FieldLabel(question.label)
-                                ForEach(question.options, id: \.self) { option in
-                                    SwitchRow(
-                                        option,
-                                        isOn: Binding(
-                                            get: { form.isPicked(question.key, option) },
-                                            set: { form.setPicked(question.key, option, $0) })
-                                    )
-                                    .padding(.horizontal, -16)
+                                FlowRow(spacing: 8) {
+                                    ForEach(question.options, id: \.self) { option in
+                                        let on = form.isPicked(question.key, option)
+                                        ChoicePill(title: option, isOn: on) {
+                                            form.setPicked(question.key, option, !on)
+                                        }
+                                    }
                                 }
+                                .accessibilityElement(children: .contain)
+                                .accessibilityLabel(question.label)
                             }
                         case .single:
                             SelectField(

@@ -66,6 +66,18 @@ public let repairItemLabel = "What they need"
 
 public enum JobType: String, Codable, CaseIterable, Sendable {
     case detection, repair, maintenance
+    /// Pool Inspection (owner, 2026-10-20; PoolInspection.swift).
+    case inspection
+
+    /// "Leak detection", "Repair", "Maintenance", "Pool inspection" (`JOB_TYPE_LABELS`).
+    public var label: String {
+        switch self {
+        case .detection: "Leak detection"
+        case .repair: "Repair"
+        case .maintenance: "Maintenance"
+        case .inspection: "Pool inspection"
+        }
+    }
 }
 
 /// What the job's price is called (owner, 2026-10-19): a detection fee on leak detection, a
@@ -80,10 +92,14 @@ public struct JobTypeOption: Codable, Equatable, Sendable {
     public let label: String
 }
 
-/// The jobs New Job offers: the package's own, then Repair, which every shop gets.
+/// The jobs New Job offers: the package's own (Leak Detection and Pool Inspection, Pool Service,
+/// or all three), then Repair, which every shop gets.
 public func newJobTypes(_ services: Services) -> [JobTypeOption] {
     var options: [JobTypeOption] = []
-    if services != .pool { options.append(JobTypeOption(value: .detection, label: "Leak Detection")) }
+    if services != .pool {
+        options.append(JobTypeOption(value: .detection, label: "Leak Detection"))
+        options.append(JobTypeOption(value: .inspection, label: "Pool Inspection"))
+    }
     if services != .leak { options.append(JobTypeOption(value: .maintenance, label: "Pool Service")) }
     options.append(JobTypeOption(value: .repair, label: "Repair"))
     return options

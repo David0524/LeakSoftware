@@ -15,6 +15,8 @@
         @State private var saveError: String?
         /// Edit, as in an iOS list: every item gets Remove (owner, 2026-10-19).
         @State private var editing: Bool
+        /// A pool inspection question's camera button: photos attached to that question.
+        @State private var capture: CaptureController
 
         /// Complete Job at the end of a visit's list (the job page's status change, with its
         /// checks), and why it was last stopped.
@@ -26,6 +28,7 @@
             self.complete = complete
             self.blocked = blocked
             _editing = State(initialValue: editing)
+            _capture = State(initialValue: CaptureController(target: MediaTarget(jobId: job.id)))
         }
 
         /// The visit's day, else today (website: `plan_date ?? today`).
@@ -83,6 +86,13 @@
                     } else {
                         let photos = photoCounts()
                         VStack(spacing: 12) {
+                            // A pool inspection's sections, with their own rows (2026-10-20).
+                            ForEach(model.inspection.sections) { section in
+                                InspectionSectionGroup(
+                                    section: section, photos: photos, editing: editing, answer: answer,
+                                    saveText: saveText, saveNotes: saveNotes, addPhotos: addPhotos,
+                                    remove: { remove($0.component, $0.result) })
+                            }
                             ForEach(model.sections) { section in
                                 ChecklistGroup(
                                     jobId: job.id, section: section, photos: photos, editing: editing,
@@ -102,6 +112,7 @@
                         .padding(.top, 24)
                     }
                 }
+                .captureFlow(capture)
                 .alert(
                     "Couldn’t Save",
                     isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })
@@ -195,12 +206,47 @@
             }
         }
 
-        private func remove(_ item: ChecklistItemRow) {
+        private func remove(_ item: ChecklistItemRow) { remove(item.component, item.result) }
+
+        private func remove(_ component: JobComponent, _ result: ChecklistItemResult?) {
             guard let company = session.company else { return }
             run {
-                try InspectionWrites.removeComponent(
-                    sync, companyId: company.id, component: item.component, result: item.result)
+                try InspectionWrites.removeComponent(sync, companyId: company.id, component: component, result: result)
             }
+        }
+
+        // MARK: Pool inspection
+
+        private func answer(_ question: InspectionQuestionRow, _ value: InspectionValue?) {
+            guard let company = session.company else { return }
+            run {
+                try InspectionWrites.setAnswer(
+                    sync, companyId: company.id, jobId: job.id, question: question, value: value,
+                    userId: session.user?.id)
+            }
+        }
+
+        private func saveText(_ question: InspectionQuestionRow, _ draft: String) {
+            guard let company = session.company else { return }
+            run {
+                try InspectionWrites.saveTextAnswer(
+                    sync, companyId: company.id, jobId: job.id, question: question, draft: draft,
+                    userId: session.user?.id)
+            }
+        }
+
+        private func saveNotes(_ question: InspectionQuestionRow, _ draft: String) {
+            guard let company = session.company else { return }
+            run {
+                try InspectionWrites.saveNotes(
+                    sync, companyId: company.id, jobId: job.id, question: question, draft: draft)
+            }
+        }
+
+        /// Take a photo or choose from the library, attached to the question.
+        private func addPhotos(_ question: InspectionQuestionRow) {
+            capture.target = MediaTarget(jobId: job.id, componentId: question.id)
+            capture.choosing = .photo
         }
     }
 

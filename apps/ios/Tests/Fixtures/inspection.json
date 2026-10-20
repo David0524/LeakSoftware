@@ -9261,6 +9261,50 @@
             "sort_order": 25,
             "active": true,
             "deleted_at": ""
+          },
+          {
+            "id": "insp_gate",
+            "company_id": "c",
+            "key": "insp_gate",
+            "name": "Insp_gate",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 2,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_equipment",
+            "answer": "choice",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ]
+          },
+          {
+            "id": "insp_text",
+            "company_id": "c",
+            "key": "insp_text",
+            "name": "Insp_text",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 1,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_heaters",
+            "answer": "text"
           }
         ],
         {
@@ -9523,6 +9567,50 @@
             "sort_order": 25,
             "active": true,
             "deleted_at": ""
+          },
+          {
+            "id": "insp_gate",
+            "company_id": "c",
+            "key": "insp_gate",
+            "name": "Insp_gate",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 2,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_equipment",
+            "answer": "choice",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ]
+          },
+          {
+            "id": "insp_text",
+            "company_id": "c",
+            "key": "insp_text",
+            "name": "Insp_text",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 1,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_heaters",
+            "answer": "text"
           }
         ],
         {
@@ -9791,6 +9879,50 @@
             "sort_order": 25,
             "active": true,
             "deleted_at": ""
+          },
+          {
+            "id": "insp_gate",
+            "company_id": "c",
+            "key": "insp_gate",
+            "name": "Insp_gate",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 2,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_equipment",
+            "answer": "choice",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ]
+          },
+          {
+            "id": "insp_text",
+            "company_id": "c",
+            "key": "insp_text",
+            "name": "Insp_text",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 1,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_heaters",
+            "answer": "text"
           }
         ],
         {
@@ -10060,6 +10192,50 @@
             "sort_order": 25,
             "active": true,
             "deleted_at": ""
+          },
+          {
+            "id": "insp_gate",
+            "company_id": "c",
+            "key": "insp_gate",
+            "name": "Insp_gate",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 2,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_equipment",
+            "answer": "choice",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ]
+          },
+          {
+            "id": "insp_text",
+            "company_id": "c",
+            "key": "insp_text",
+            "name": "Insp_text",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 1,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_heaters",
+            "answer": "text"
           }
         ],
         {
@@ -10317,6 +10493,50 @@
             "sort_order": 25,
             "active": true,
             "deleted_at": ""
+          },
+          {
+            "id": "insp_gate",
+            "company_id": "c",
+            "key": "insp_gate",
+            "name": "Insp_gate",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 2,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_equipment",
+            "answer": "choice",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ]
+          },
+          {
+            "id": "insp_text",
+            "company_id": "c",
+            "key": "insp_text",
+            "name": "Insp_text",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 1,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_heaters",
+            "answer": "text"
           }
         ],
         {
@@ -10531,6 +10751,50 @@
             "sort_order": 25,
             "active": true,
             "deleted_at": ""
+          },
+          {
+            "id": "insp_gate",
+            "company_id": "c",
+            "key": "insp_gate",
+            "name": "Insp_gate",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 2,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_equipment",
+            "answer": "choice",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ]
+          },
+          {
+            "id": "insp_text",
+            "company_id": "c",
+            "key": "insp_text",
+            "name": "Insp_text",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 1,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_heaters",
+            "answer": "text"
           }
         ],
         {
@@ -10746,6 +11010,50 @@
             "sort_order": 25,
             "active": true,
             "deleted_at": ""
+          },
+          {
+            "id": "insp_gate",
+            "company_id": "c",
+            "key": "insp_gate",
+            "name": "Insp_gate",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 2,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_equipment",
+            "answer": "choice",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ]
+          },
+          {
+            "id": "insp_text",
+            "company_id": "c",
+            "key": "insp_text",
+            "name": "Insp_text",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 1,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_heaters",
+            "answer": "text"
           }
         ],
         {
@@ -10948,6 +11256,50 @@
             "sort_order": 25,
             "active": true,
             "deleted_at": ""
+          },
+          {
+            "id": "insp_gate",
+            "company_id": "c",
+            "key": "insp_gate",
+            "name": "Insp_gate",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 2,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_equipment",
+            "answer": "choice",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ]
+          },
+          {
+            "id": "insp_text",
+            "company_id": "c",
+            "key": "insp_text",
+            "name": "Insp_text",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 1,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_heaters",
+            "answer": "text"
           }
         ],
         {
@@ -11017,6 +11369,265 @@
           "instance_number": 1,
           "label": "Light",
           "sort_order": 4001
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "skimmer",
+            "company_id": "c",
+            "key": "skimmer",
+            "name": "Skimmer",
+            "allows_multiple": true,
+            "default_count": 2,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true
+          },
+          {
+            "id": "return",
+            "company_id": "c",
+            "key": "return",
+            "name": "Return",
+            "allows_multiple": true,
+            "default_count": 4,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 20,
+            "active": true
+          },
+          {
+            "id": "spa",
+            "company_id": "c",
+            "key": "spa",
+            "name": "Spa",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "spa",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 70,
+            "active": true
+          },
+          {
+            "id": "light",
+            "company_id": "c",
+            "key": "light",
+            "name": "Light",
+            "allows_multiple": true,
+            "default_count": 1,
+            "applies_to": "both",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 40,
+            "active": true
+          },
+          {
+            "id": "retired",
+            "company_id": "c",
+            "key": "retired",
+            "name": "Retired",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": false
+          },
+          {
+            "id": "gone",
+            "company_id": "c",
+            "key": "gone",
+            "name": "Gone",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 10,
+            "active": true,
+            "deleted_at": "2026-10-01T00:00:00Z"
+          },
+          {
+            "id": "vinyl_liner",
+            "company_id": "c",
+            "key": "vinyl_liner",
+            "name": "Vinyl_liner",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 30,
+            "active": true,
+            "applies_to_pool_type": "vinyl"
+          },
+          {
+            "id": "filter_clean",
+            "company_id": "c",
+            "key": "filter_clean",
+            "name": "Filter_clean",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance",
+            "on_schedule": true
+          },
+          {
+            "id": "skim",
+            "company_id": "c",
+            "key": "skim",
+            "name": "Skim",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "brush",
+            "company_id": "c",
+            "key": "brush",
+            "name": "Brush",
+            "allows_multiple": false,
+            "default_count": 3,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 5,
+            "active": true,
+            "job_type": "maintenance"
+          },
+          {
+            "id": "drain",
+            "company_id": "c",
+            "key": "drain",
+            "name": "Drain",
+            "allows_multiple": true,
+            "default_count": 0,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 15,
+            "active": true
+          },
+          {
+            "id": "tie_a",
+            "company_id": "c",
+            "key": "tie_a",
+            "name": "Tie_a",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true
+          },
+          {
+            "id": "tie_b",
+            "company_id": "c",
+            "key": "tie_b",
+            "name": "Tie_b",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 25,
+            "active": true,
+            "deleted_at": ""
+          },
+          {
+            "id": "insp_gate",
+            "company_id": "c",
+            "key": "insp_gate",
+            "name": "Insp_gate",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 2,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_equipment",
+            "answer": "choice",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ]
+          },
+          {
+            "id": "insp_text",
+            "company_id": "c",
+            "key": "insp_text",
+            "name": "Insp_text",
+            "allows_multiple": false,
+            "default_count": 1,
+            "applies_to": "pool",
+            "methods": [
+              "Visual"
+            ],
+            "sort_order": 1,
+            "active": true,
+            "job_type": "inspection",
+            "section": "insp_heaters",
+            "answer": "text"
+          }
+        ],
+        {
+          "address_line1": "1 Main St",
+          "has_pool": true,
+          "has_spa": false
+        },
+        "inspection"
+      ],
+      "result": [
+        {
+          "component_type_id": "insp_text",
+          "instance_number": 1,
+          "label": "Insp_text",
+          "sort_order": 101
+        },
+        {
+          "component_type_id": "insp_gate",
+          "instance_number": 1,
+          "label": "Insp_gate",
+          "sort_order": 201
         }
       ]
     },
@@ -11997,6 +12608,115 @@
         "done"
       ],
       "result": "Skipped"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "ok",
+          "value": "Yes"
+        },
+        "choice"
+      ],
+      "result": "Yes"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "attention",
+          "value": "No"
+        },
+        "choice"
+      ],
+      "result": "No"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": null,
+          "value": "N/A"
+        },
+        "choice"
+      ],
+      "result": "N/A"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": null,
+          "value": null
+        },
+        "choice"
+      ],
+      "result": "Not applicable"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "ok",
+          "value": null
+        },
+        "choice"
+      ],
+      "result": "Answered"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "ok",
+          "value": [
+            "Pool skimmer",
+            "Spa drain"
+          ]
+        },
+        "multi"
+      ],
+      "result": "Pool skimmer, Spa drain"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "ok",
+          "value": []
+        },
+        "multi"
+      ],
+      "result": "Answered"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "ok",
+          "value": "Gas, 400k BTU"
+        },
+        "text"
+      ],
+      "result": "Gas, 400k BTU"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": null,
+          "value": "Yes"
+        },
+        "choice"
+      ],
+      "result": "To do"
+    },
+    {
+      "args": [
+        null,
+        "text"
+      ],
+      "result": "To do"
     }
   ],
   "verdictOptions": [
@@ -21137,6 +21857,102 @@
           "hasSpa": true,
           "accessNotes": " gate 4821 ",
           "timing": {
+            "kind": "later"
+          },
+          "assignedUserId": "u1",
+          "jobType": "inspection"
+        }
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "M",
+          "phone": null,
+          "email": null
+        },
+        "property": {
+          "address_line1": "1 St",
+          "city": null,
+          "state": null,
+          "postal_code": null,
+          "pool_type": "vinyl",
+          "has_pool": true,
+          "has_spa": true,
+          "access_notes": "gate 4821"
+        },
+        "job": {
+          "type": "inspection",
+          "assigned_user_id": "u1",
+          "status": "unscheduled"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        },
+        {
+          "poolType": "vinyl",
+          "hasSpa": true,
+          "accessNotes": " gate 4821 ",
+          "timing": {
+            "kind": "later"
+          },
+          "assignedUserId": "u1",
+          "jobType": "maintenance"
+        }
+      ],
+      "result": {
+        "customer": {
+          "kind": "homeowner",
+          "name": "M",
+          "phone": null,
+          "email": null
+        },
+        "property": {
+          "address_line1": "1 St",
+          "city": null,
+          "state": null,
+          "postal_code": null,
+          "pool_type": "vinyl",
+          "has_pool": true,
+          "has_spa": true,
+          "access_notes": "gate 4821"
+        },
+        "job": {
+          "type": "maintenance",
+          "assigned_user_id": "u1",
+          "status": "unscheduled"
+        }
+      }
+    },
+    {
+      "args": [
+        {
+          "customerName": "M",
+          "customerPhone": "",
+          "customerEmail": "",
+          "addressLine1": "1 St",
+          "city": "",
+          "state": "",
+          "postalCode": "",
+          "scheduleDate": "",
+          "scheduleTime": ""
+        },
+        {
+          "poolType": "vinyl",
+          "hasSpa": true,
+          "accessNotes": " gate 4821 ",
+          "timing": {
             "kind": "scheduled",
             "date": "2026-07-01",
             "time": "",
@@ -23264,6 +24080,5416 @@
         ]
       ],
       "result": "Mark 1 Remaining Not Leaking"
+    }
+  ],
+  "INSPECTION_SECTIONS": [
+    {
+      "args": [],
+      "result": [
+        "insp_equipment",
+        "insp_self_cleaning",
+        "insp_heaters",
+        "insp_electrical",
+        "insp_fencing",
+        "insp_covers",
+        "insp_visual",
+        "insp_plumbing"
+      ]
+    }
+  ],
+  "NOT_PRESENT_LABEL": [
+    {
+      "args": [],
+      "result": "Not present"
+    }
+  ],
+  "isInspectionAnswer": [
+    {
+      "args": [
+        "choice"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "multi"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "text"
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        "leak"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "yes_no"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "done"
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        "Choice"
+      ],
+      "result": false
+    }
+  ],
+  "choiceOptions": [
+    {
+      "args": [
+        null
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "Yes"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        {
+          "label": "Yes"
+        }
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        []
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Yes",
+            "flag": "ok"
+          },
+          {
+            "label": "No",
+            "flag": "attention"
+          },
+          {
+            "label": "N/A",
+            "flag": "na"
+          }
+        ]
+      ],
+      "result": [
+        {
+          "label": "Yes",
+          "flag": "ok"
+        },
+        {
+          "label": "No",
+          "flag": "attention"
+        },
+        {
+          "label": "N/A",
+          "flag": "na"
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Yes"
+          },
+          {
+            "label": "No",
+            "fold": true
+          }
+        ]
+      ],
+      "result": [
+        {
+          "label": "Yes"
+        },
+        {
+          "label": "No",
+          "fold": true
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Yes",
+            "flag": "ok"
+          },
+          {
+            "label": " "
+          },
+          {
+            "label": 3
+          },
+          null,
+          "No",
+          {
+            "label": "No",
+            "flag": "bad",
+            "fold": "yes"
+          },
+          {
+            "label": " Gate ",
+            "fold": true,
+            "flag": "na"
+          },
+          {
+            "label": "Off",
+            "fold": false,
+            "extra": 1
+          }
+        ]
+      ],
+      "result": [
+        {
+          "label": "Yes",
+          "flag": "ok"
+        },
+        {
+          "label": "No"
+        },
+        {
+          "label": " Gate ",
+          "flag": "na",
+          "fold": true
+        },
+        {
+          "label": "Off"
+        }
+      ]
+    }
+  ],
+  "inspectionValue": [
+    {
+      "args": [
+        "choice",
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "choice",
+        "Yes"
+      ],
+      "result": "Yes"
+    },
+    {
+      "args": [
+        "choice",
+        "  "
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "choice",
+        ""
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "choice",
+        [
+          "a",
+          2,
+          "b"
+        ]
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "choice",
+        []
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "choice",
+        5
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "multi",
+        null
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "multi",
+        "Yes"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "multi",
+        "  "
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "multi",
+        ""
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "multi",
+        [
+          "a",
+          2,
+          "b"
+        ]
+      ],
+      "result": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "args": [
+        "multi",
+        []
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "multi",
+        5
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "text",
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "text",
+        "Yes"
+      ],
+      "result": "Yes"
+    },
+    {
+      "args": [
+        "text",
+        "  "
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "text",
+        ""
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "text",
+        [
+          "a",
+          2,
+          "b"
+        ]
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "text",
+        []
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "text",
+        5
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "leak",
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "leak",
+        "Yes"
+      ],
+      "result": "Yes"
+    },
+    {
+      "args": [
+        "leak",
+        "  "
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "leak",
+        ""
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "leak",
+        [
+          "a",
+          2,
+          "b"
+        ]
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "leak",
+        []
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "leak",
+        5
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        "Yes"
+      ],
+      "result": "Yes"
+    },
+    {
+      "args": [
+        null,
+        "  "
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        ""
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        [
+          "a",
+          2,
+          "b"
+        ]
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        []
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        5
+      ],
+      "result": null
+    }
+  ],
+  "inspectionAnswerText": [
+    {
+      "args": [
+        "choice",
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "choice",
+        "Yes"
+      ],
+      "result": "Yes"
+    },
+    {
+      "args": [
+        "choice",
+        "  "
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "choice",
+        [
+          "Pool main drain",
+          "Pool skimmer"
+        ]
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "choice",
+        [
+          "x",
+          1
+        ]
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "choice",
+        []
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "multi",
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "multi",
+        "Yes"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "multi",
+        "  "
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "multi",
+        [
+          "Pool main drain",
+          "Pool skimmer"
+        ]
+      ],
+      "result": "Pool main drain, Pool skimmer"
+    },
+    {
+      "args": [
+        "multi",
+        [
+          "x",
+          1
+        ]
+      ],
+      "result": "x"
+    },
+    {
+      "args": [
+        "multi",
+        []
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "text",
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "text",
+        "Yes"
+      ],
+      "result": "Yes"
+    },
+    {
+      "args": [
+        "text",
+        "  "
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "text",
+        [
+          "Pool main drain",
+          "Pool skimmer"
+        ]
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "text",
+        [
+          "x",
+          1
+        ]
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "text",
+        []
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        "Yes"
+      ],
+      "result": "Yes"
+    },
+    {
+      "args": [
+        null,
+        "  "
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        [
+          "Pool main drain",
+          "Pool skimmer"
+        ]
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        [
+          "x",
+          1
+        ]
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        null,
+        []
+      ],
+      "result": null
+    }
+  ],
+  "inspectionAnswerValues": [
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes",
+              "flag": "ok"
+            },
+            {
+              "label": "No",
+              "flag": "attention"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        null,
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes",
+              "flag": "ok"
+            },
+            {
+              "label": "No",
+              "flag": "attention"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        "",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes",
+              "flag": "ok"
+            },
+            {
+              "label": "No",
+              "flag": "attention"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        "  ",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes",
+              "flag": "ok"
+            },
+            {
+              "label": "No",
+              "flag": "attention"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        "Yes",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Yes",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes",
+              "flag": "ok"
+            },
+            {
+              "label": "No",
+              "flag": "attention"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        "No",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "attention",
+        "value": "No",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes",
+              "flag": "ok"
+            },
+            {
+              "label": "No",
+              "flag": "attention"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        "N/A",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "excluded",
+        "outcome": null,
+        "value": "N/A",
+        "method": null,
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes",
+              "flag": "ok"
+            },
+            {
+              "label": "No",
+              "flag": "attention"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        "Leaking",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Leaking",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes",
+              "flag": "ok"
+            },
+            {
+              "label": "No",
+              "flag": "attention"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        "Not Leaking",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Not Leaking",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes",
+              "flag": "ok"
+            },
+            {
+              "label": "No",
+              "flag": "attention"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        "Unknown",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Unknown",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes",
+              "flag": "ok"
+            },
+            {
+              "label": "No",
+              "flag": "attention"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        " padded ",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": " padded ",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes",
+              "flag": "ok"
+            },
+            {
+              "label": "No",
+              "flag": "attention"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        [
+          "No",
+          "Yes"
+        ],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "attention",
+        "value": "No",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes",
+              "flag": "ok"
+            },
+            {
+              "label": "No",
+              "flag": "attention"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        [],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes",
+              "flag": "ok"
+            },
+            {
+              "label": "No",
+              "flag": "attention"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        [
+          "Pool skimmer",
+          "Pool main drain"
+        ],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Pool skimmer",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Leaking",
+              "flag": "leaking"
+            },
+            {
+              "label": "Not Leaking",
+              "flag": "ok"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        null,
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Leaking",
+              "flag": "leaking"
+            },
+            {
+              "label": "Not Leaking",
+              "flag": "ok"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        "",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Leaking",
+              "flag": "leaking"
+            },
+            {
+              "label": "Not Leaking",
+              "flag": "ok"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        "  ",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Leaking",
+              "flag": "leaking"
+            },
+            {
+              "label": "Not Leaking",
+              "flag": "ok"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        "Yes",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Yes",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Leaking",
+              "flag": "leaking"
+            },
+            {
+              "label": "Not Leaking",
+              "flag": "ok"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        "No",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "No",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Leaking",
+              "flag": "leaking"
+            },
+            {
+              "label": "Not Leaking",
+              "flag": "ok"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        "N/A",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "excluded",
+        "outcome": null,
+        "value": "N/A",
+        "method": null,
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Leaking",
+              "flag": "leaking"
+            },
+            {
+              "label": "Not Leaking",
+              "flag": "ok"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        "Leaking",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "leaking",
+        "value": "Leaking",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Leaking",
+              "flag": "leaking"
+            },
+            {
+              "label": "Not Leaking",
+              "flag": "ok"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        "Not Leaking",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Not Leaking",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Leaking",
+              "flag": "leaking"
+            },
+            {
+              "label": "Not Leaking",
+              "flag": "ok"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        "Unknown",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Unknown",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Leaking",
+              "flag": "leaking"
+            },
+            {
+              "label": "Not Leaking",
+              "flag": "ok"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        " padded ",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": " padded ",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Leaking",
+              "flag": "leaking"
+            },
+            {
+              "label": "Not Leaking",
+              "flag": "ok"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        [
+          "No",
+          "Yes"
+        ],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "No",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Leaking",
+              "flag": "leaking"
+            },
+            {
+              "label": "Not Leaking",
+              "flag": "ok"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        [],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Leaking",
+              "flag": "leaking"
+            },
+            {
+              "label": "Not Leaking",
+              "flag": "ok"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        [
+          "Pool skimmer",
+          "Pool main drain"
+        ],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Pool skimmer",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes"
+            },
+            {
+              "label": "No",
+              "fold": true
+            }
+          ]
+        },
+        null,
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes"
+            },
+            {
+              "label": "No",
+              "fold": true
+            }
+          ]
+        },
+        "",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes"
+            },
+            {
+              "label": "No",
+              "fold": true
+            }
+          ]
+        },
+        "  ",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes"
+            },
+            {
+              "label": "No",
+              "fold": true
+            }
+          ]
+        },
+        "Yes",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Yes",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes"
+            },
+            {
+              "label": "No",
+              "fold": true
+            }
+          ]
+        },
+        "No",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "No",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes"
+            },
+            {
+              "label": "No",
+              "fold": true
+            }
+          ]
+        },
+        "N/A",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "N/A",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes"
+            },
+            {
+              "label": "No",
+              "fold": true
+            }
+          ]
+        },
+        "Leaking",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Leaking",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes"
+            },
+            {
+              "label": "No",
+              "fold": true
+            }
+          ]
+        },
+        "Not Leaking",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Not Leaking",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes"
+            },
+            {
+              "label": "No",
+              "fold": true
+            }
+          ]
+        },
+        "Unknown",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Unknown",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes"
+            },
+            {
+              "label": "No",
+              "fold": true
+            }
+          ]
+        },
+        " padded ",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": " padded ",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes"
+            },
+            {
+              "label": "No",
+              "fold": true
+            }
+          ]
+        },
+        [
+          "No",
+          "Yes"
+        ],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "No",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes"
+            },
+            {
+              "label": "No",
+              "fold": true
+            }
+          ]
+        },
+        [],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes"
+            },
+            {
+              "label": "No",
+              "fold": true
+            }
+          ]
+        },
+        [
+          "Pool skimmer",
+          "Pool main drain"
+        ],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Pool skimmer",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "multi",
+          "options": [
+            {
+              "label": "Pool main drain"
+            },
+            {
+              "label": "Pool skimmer"
+            },
+            {
+              "label": "Spa drain"
+            }
+          ]
+        },
+        null,
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "multi",
+          "options": [
+            {
+              "label": "Pool main drain"
+            },
+            {
+              "label": "Pool skimmer"
+            },
+            {
+              "label": "Spa drain"
+            }
+          ]
+        },
+        "",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "multi",
+          "options": [
+            {
+              "label": "Pool main drain"
+            },
+            {
+              "label": "Pool skimmer"
+            },
+            {
+              "label": "Spa drain"
+            }
+          ]
+        },
+        "  ",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "multi",
+          "options": [
+            {
+              "label": "Pool main drain"
+            },
+            {
+              "label": "Pool skimmer"
+            },
+            {
+              "label": "Spa drain"
+            }
+          ]
+        },
+        "Yes",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": [
+          "Yes"
+        ],
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "multi",
+          "options": [
+            {
+              "label": "Pool main drain"
+            },
+            {
+              "label": "Pool skimmer"
+            },
+            {
+              "label": "Spa drain"
+            }
+          ]
+        },
+        "No",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": [
+          "No"
+        ],
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "multi",
+          "options": [
+            {
+              "label": "Pool main drain"
+            },
+            {
+              "label": "Pool skimmer"
+            },
+            {
+              "label": "Spa drain"
+            }
+          ]
+        },
+        "N/A",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": [
+          "N/A"
+        ],
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "multi",
+          "options": [
+            {
+              "label": "Pool main drain"
+            },
+            {
+              "label": "Pool skimmer"
+            },
+            {
+              "label": "Spa drain"
+            }
+          ]
+        },
+        "Leaking",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": [
+          "Leaking"
+        ],
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "multi",
+          "options": [
+            {
+              "label": "Pool main drain"
+            },
+            {
+              "label": "Pool skimmer"
+            },
+            {
+              "label": "Spa drain"
+            }
+          ]
+        },
+        "Not Leaking",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": [
+          "Not Leaking"
+        ],
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "multi",
+          "options": [
+            {
+              "label": "Pool main drain"
+            },
+            {
+              "label": "Pool skimmer"
+            },
+            {
+              "label": "Spa drain"
+            }
+          ]
+        },
+        "Unknown",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": [
+          "Unknown"
+        ],
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "multi",
+          "options": [
+            {
+              "label": "Pool main drain"
+            },
+            {
+              "label": "Pool skimmer"
+            },
+            {
+              "label": "Spa drain"
+            }
+          ]
+        },
+        " padded ",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": [
+          " padded "
+        ],
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "multi",
+          "options": [
+            {
+              "label": "Pool main drain"
+            },
+            {
+              "label": "Pool skimmer"
+            },
+            {
+              "label": "Spa drain"
+            }
+          ]
+        },
+        [
+          "No",
+          "Yes"
+        ],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": [
+          "No",
+          "Yes"
+        ],
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "multi",
+          "options": [
+            {
+              "label": "Pool main drain"
+            },
+            {
+              "label": "Pool skimmer"
+            },
+            {
+              "label": "Spa drain"
+            }
+          ]
+        },
+        [],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "multi",
+          "options": [
+            {
+              "label": "Pool main drain"
+            },
+            {
+              "label": "Pool skimmer"
+            },
+            {
+              "label": "Spa drain"
+            }
+          ]
+        },
+        [
+          "Pool skimmer",
+          "Pool main drain"
+        ],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": [
+          "Pool skimmer",
+          "Pool main drain"
+        ],
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "text",
+          "options": null
+        },
+        null,
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "text",
+          "options": null
+        },
+        "",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "text",
+          "options": null
+        },
+        "  ",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "text",
+          "options": null
+        },
+        "Yes",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Yes",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "text",
+          "options": null
+        },
+        "No",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "No",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "text",
+          "options": null
+        },
+        "N/A",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "N/A",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "text",
+          "options": null
+        },
+        "Leaking",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Leaking",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "text",
+          "options": null
+        },
+        "Not Leaking",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Not Leaking",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "text",
+          "options": null
+        },
+        "Unknown",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Unknown",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "text",
+          "options": null
+        },
+        " padded ",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "padded",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "text",
+          "options": null
+        },
+        [
+          "No",
+          "Yes"
+        ],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "No,Yes",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "text",
+          "options": null
+        },
+        [],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "text",
+          "options": null
+        },
+        [
+          "Pool skimmer",
+          "Pool main drain"
+        ],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Pool skimmer,Pool main drain",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "leak",
+          "options": null
+        },
+        null,
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "leak",
+          "options": null
+        },
+        "",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "leak",
+          "options": null
+        },
+        "  ",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "leak",
+          "options": null
+        },
+        "Yes",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Yes",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "leak",
+          "options": null
+        },
+        "No",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "No",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "leak",
+          "options": null
+        },
+        "N/A",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "N/A",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "leak",
+          "options": null
+        },
+        "Leaking",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Leaking",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "leak",
+          "options": null
+        },
+        "Not Leaking",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Not Leaking",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "leak",
+          "options": null
+        },
+        "Unknown",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Unknown",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "leak",
+          "options": null
+        },
+        " padded ",
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "padded",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "leak",
+          "options": null
+        },
+        [
+          "No",
+          "Yes"
+        ],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "No,Yes",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "leak",
+          "options": null
+        },
+        [],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "pending",
+        "outcome": null,
+        "value": null,
+        "method": null,
+        "inspected_at": null,
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "leak",
+          "options": null
+        },
+        [
+          "Pool skimmer",
+          "Pool main drain"
+        ],
+        "u1",
+        "2026-10-20T15:04:05.123Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Pool skimmer,Pool main drain",
+        "method": "Visual",
+        "inspected_at": "2026-10-20T15:04:05.123Z",
+        "inspected_by": "u1"
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": [
+            {
+              "label": "Yes",
+              "flag": "ok"
+            },
+            {
+              "label": "No",
+              "flag": "attention"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        },
+        "No",
+        null,
+        "2026-01-01T00:00:00.000Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "attention",
+        "value": "No",
+        "method": "Visual",
+        "inspected_at": "2026-01-01T00:00:00.000Z",
+        "inspected_by": null
+      }
+    },
+    {
+      "args": [
+        {
+          "answer": "choice",
+          "options": "bad"
+        },
+        "Yes",
+        "u1",
+        "2026-01-01T00:00:00.000Z"
+      ],
+      "result": {
+        "status": "inspected",
+        "outcome": "ok",
+        "value": "Yes",
+        "method": "Visual",
+        "inspected_at": "2026-01-01T00:00:00.000Z",
+        "inspected_by": "u1"
+      }
+    }
+  ],
+  "toggleChoice": [
+    {
+      "args": [
+        [
+          {
+            "label": "Pool main drain"
+          },
+          {
+            "label": "Pool skimmer"
+          },
+          {
+            "label": "Spa drain"
+          }
+        ],
+        [],
+        "Pool skimmer"
+      ],
+      "result": [
+        "Pool skimmer"
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Pool main drain"
+          },
+          {
+            "label": "Pool skimmer"
+          },
+          {
+            "label": "Spa drain"
+          }
+        ],
+        [
+          "Spa drain"
+        ],
+        "Pool main drain"
+      ],
+      "result": [
+        "Pool main drain",
+        "Spa drain"
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Pool main drain"
+          },
+          {
+            "label": "Pool skimmer"
+          },
+          {
+            "label": "Spa drain"
+          }
+        ],
+        [
+          "Spa drain",
+          "Pool main drain"
+        ],
+        "Pool skimmer"
+      ],
+      "result": [
+        "Pool main drain",
+        "Pool skimmer",
+        "Spa drain"
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Pool main drain"
+          },
+          {
+            "label": "Pool skimmer"
+          },
+          {
+            "label": "Spa drain"
+          }
+        ],
+        [
+          "Pool main drain",
+          "Pool skimmer"
+        ],
+        "Pool main drain"
+      ],
+      "result": [
+        "Pool skimmer"
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Pool main drain"
+          },
+          {
+            "label": "Pool skimmer"
+          },
+          {
+            "label": "Spa drain"
+          }
+        ],
+        [
+          "Pool skimmer"
+        ],
+        "Pool skimmer"
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Pool main drain"
+          },
+          {
+            "label": "Pool skimmer"
+          },
+          {
+            "label": "Spa drain"
+          }
+        ],
+        [
+          "Spa drain",
+          "Gone"
+        ],
+        "Pool main drain"
+      ],
+      "result": [
+        "Gone",
+        "Pool main drain",
+        "Spa drain"
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Pool main drain"
+          },
+          {
+            "label": "Pool skimmer"
+          },
+          {
+            "label": "Spa drain"
+          }
+        ],
+        [
+          "Spa drain"
+        ],
+        "Unknown"
+      ],
+      "result": [
+        "Unknown",
+        "Spa drain"
+      ]
+    },
+    {
+      "args": [
+        [],
+        [
+          "b"
+        ],
+        "a"
+      ],
+      "result": [
+        "b",
+        "a"
+      ]
+    }
+  ],
+  "inspectionTone": [
+    {
+      "args": [
+        null
+      ],
+      "result": "pending"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": null
+        }
+      ],
+      "result": "pending"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "ok"
+        }
+      ],
+      "result": "pending"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "leaking"
+        }
+      ],
+      "result": "pending"
+    },
+    {
+      "args": [
+        {
+          "status": "pending",
+          "outcome": "attention"
+        }
+      ],
+      "result": "pending"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": null
+        }
+      ],
+      "result": "pass"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "ok"
+        }
+      ],
+      "result": "pass"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "leaking"
+        }
+      ],
+      "result": "leaking"
+    },
+    {
+      "args": [
+        {
+          "status": "inspected",
+          "outcome": "attention"
+        }
+      ],
+      "result": "attention"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": null
+        }
+      ],
+      "result": "not_applicable"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "ok"
+        }
+      ],
+      "result": "not_applicable"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "leaking"
+        }
+      ],
+      "result": "not_applicable"
+    },
+    {
+      "args": [
+        {
+          "status": "excluded",
+          "outcome": "attention"
+        }
+      ],
+      "result": "not_applicable"
+    }
+  ],
+  "foldedItems": [
+    {
+      "args": [
+        [
+          {
+            "id": "g1",
+            "section": "insp_equipment",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "g2",
+            "section": "insp_equipment",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "g3",
+            "section": "insp_equipment",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Leaking",
+                "flag": "leaking"
+              },
+              {
+                "label": "Not Leaking",
+                "flag": "ok"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "Leaking",
+            "result": {
+              "status": "inspected",
+              "outcome": "leaking"
+            }
+          },
+          {
+            "id": "h1",
+            "section": "insp_equipment",
+            "group_label": "Booster pump",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "Yes",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "h2",
+            "section": "insp_equipment",
+            "group_label": "Booster pump",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "attention"
+            }
+          },
+          {
+            "id": "s1",
+            "section": "insp_heaters",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "s2",
+            "section": "insp_heaters",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "u1",
+            "section": "insp_equipment",
+            "group_label": null,
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "u2",
+            "section": "insp_equipment",
+            "group_label": null,
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "N/A",
+            "result": {
+              "status": "excluded",
+              "outcome": null
+            }
+          },
+          {
+            "id": "lone",
+            "section": "insp_covers",
+            "group_label": "Alone",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "e1",
+            "section": "insp_fencing",
+            "group_label": "",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "e2",
+            "section": "insp_fencing",
+            "group_label": "",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "n1",
+            "section": "insp_plumbing",
+            "group_label": "Not a gate",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "attention"
+            }
+          },
+          {
+            "id": "n2",
+            "section": "insp_plumbing",
+            "group_label": "Not a gate",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": null
+          }
+        ]
+      ],
+      "result": [
+        "g2",
+        "g3"
+      ]
+    },
+    {
+      "args": [
+        []
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "h1",
+            "section": "insp_equipment",
+            "group_label": "Booster pump",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "Yes",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "h2",
+            "section": "insp_equipment",
+            "group_label": "Booster pump",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "attention"
+            }
+          }
+        ]
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "section": null,
+            "group_label": "G",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "b",
+            "section": null,
+            "group_label": "G",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          }
+        ]
+      ],
+      "result": [
+        "b"
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "section": "x",
+            "group_label": "G",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": [
+              "No"
+            ],
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "b",
+            "section": "x",
+            "group_label": "G",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          }
+        ]
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "section": "x",
+            "group_label": "G",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "",
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "b",
+            "section": "x",
+            "group_label": "G",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          }
+        ]
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "section": "x",
+            "group_label": "G",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "b",
+            "section": "x",
+            "group_label": "G",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "c",
+            "section": "x",
+            "group_label": "H",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "d",
+            "section": "x",
+            "group_label": "H",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "e",
+            "section": "x",
+            "group_label": "G",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          }
+        ]
+      ],
+      "result": [
+        "d"
+      ]
+    }
+  ],
+  "isGate": [
+    {
+      "args": [
+        {
+          "options": [
+            {
+              "label": "Yes"
+            },
+            {
+              "label": "No",
+              "fold": true
+            }
+          ]
+        }
+      ],
+      "result": true
+    },
+    {
+      "args": [
+        {
+          "options": [
+            {
+              "label": "Yes",
+              "flag": "ok"
+            },
+            {
+              "label": "No",
+              "flag": "attention"
+            },
+            {
+              "label": "N/A",
+              "flag": "na"
+            }
+          ]
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {}
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "options": null
+        }
+      ],
+      "result": false
+    },
+    {
+      "args": [
+        {
+          "options": "x"
+        }
+      ],
+      "result": false
+    }
+  ],
+  "inspectionProgress": [
+    {
+      "args": [
+        [
+          {
+            "id": "g1",
+            "section": "insp_equipment",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "g2",
+            "section": "insp_equipment",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "g3",
+            "section": "insp_equipment",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Leaking",
+                "flag": "leaking"
+              },
+              {
+                "label": "Not Leaking",
+                "flag": "ok"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "Leaking",
+            "result": {
+              "status": "inspected",
+              "outcome": "leaking"
+            }
+          },
+          {
+            "id": "h1",
+            "section": "insp_equipment",
+            "group_label": "Booster pump",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "Yes",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "h2",
+            "section": "insp_equipment",
+            "group_label": "Booster pump",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "attention"
+            }
+          },
+          {
+            "id": "s1",
+            "section": "insp_heaters",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "s2",
+            "section": "insp_heaters",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "u1",
+            "section": "insp_equipment",
+            "group_label": null,
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "u2",
+            "section": "insp_equipment",
+            "group_label": null,
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "N/A",
+            "result": {
+              "status": "excluded",
+              "outcome": null
+            }
+          },
+          {
+            "id": "lone",
+            "section": "insp_covers",
+            "group_label": "Alone",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "e1",
+            "section": "insp_fencing",
+            "group_label": "",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "e2",
+            "section": "insp_fencing",
+            "group_label": "",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "n1",
+            "section": "insp_plumbing",
+            "group_label": "Not a gate",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "attention"
+            }
+          },
+          {
+            "id": "n2",
+            "section": "insp_plumbing",
+            "group_label": "Not a gate",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": null
+          }
+        ]
+      ],
+      "result": {
+        "answered": 8,
+        "total": 12,
+        "toDo": 4,
+        "attention": 2,
+        "leaking": 0
+      }
+    },
+    {
+      "args": [
+        []
+      ],
+      "result": {
+        "answered": 0,
+        "total": 0,
+        "toDo": 0,
+        "attention": 0,
+        "leaking": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "g1",
+            "section": "insp_equipment",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "g2",
+            "section": "insp_equipment",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "g3",
+            "section": "insp_equipment",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Leaking",
+                "flag": "leaking"
+              },
+              {
+                "label": "Not Leaking",
+                "flag": "ok"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "Leaking",
+            "result": {
+              "status": "inspected",
+              "outcome": "leaking"
+            }
+          },
+          {
+            "id": "h1",
+            "section": "insp_equipment",
+            "group_label": "Booster pump",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "Yes",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "h2",
+            "section": "insp_equipment",
+            "group_label": "Booster pump",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "attention"
+            }
+          },
+          {
+            "id": "s1",
+            "section": "insp_heaters",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "s2",
+            "section": "insp_heaters",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "u1",
+            "section": "insp_equipment",
+            "group_label": null,
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "u2",
+            "section": "insp_equipment",
+            "group_label": null,
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "N/A",
+            "result": {
+              "status": "excluded",
+              "outcome": null
+            }
+          },
+          {
+            "id": "lone",
+            "section": "insp_covers",
+            "group_label": "Alone",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "e1",
+            "section": "insp_fencing",
+            "group_label": "",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "e2",
+            "section": "insp_fencing",
+            "group_label": "",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "n1",
+            "section": "insp_plumbing",
+            "group_label": "Not a gate",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "attention"
+            }
+          },
+          {
+            "id": "n2",
+            "section": "insp_plumbing",
+            "group_label": "Not a gate",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": null
+          }
+        ],
+        []
+      ],
+      "result": {
+        "answered": 9,
+        "total": 14,
+        "toDo": 5,
+        "attention": 2,
+        "leaking": 1
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "g1",
+            "section": "insp_equipment",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "g2",
+            "section": "insp_equipment",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "g3",
+            "section": "insp_equipment",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Leaking",
+                "flag": "leaking"
+              },
+              {
+                "label": "Not Leaking",
+                "flag": "ok"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "Leaking",
+            "result": {
+              "status": "inspected",
+              "outcome": "leaking"
+            }
+          },
+          {
+            "id": "h1",
+            "section": "insp_equipment",
+            "group_label": "Booster pump",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "Yes",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "h2",
+            "section": "insp_equipment",
+            "group_label": "Booster pump",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "attention"
+            }
+          },
+          {
+            "id": "s1",
+            "section": "insp_heaters",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "s2",
+            "section": "insp_heaters",
+            "group_label": "Solar",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "u1",
+            "section": "insp_equipment",
+            "group_label": null,
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "u2",
+            "section": "insp_equipment",
+            "group_label": null,
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "N/A",
+            "result": {
+              "status": "excluded",
+              "outcome": null
+            }
+          },
+          {
+            "id": "lone",
+            "section": "insp_covers",
+            "group_label": "Alone",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "e1",
+            "section": "insp_fencing",
+            "group_label": "",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "e2",
+            "section": "insp_fencing",
+            "group_label": "",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": {
+              "status": "pending",
+              "outcome": null
+            }
+          },
+          {
+            "id": "n1",
+            "section": "insp_plumbing",
+            "group_label": "Not a gate",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "attention"
+            }
+          },
+          {
+            "id": "n2",
+            "section": "insp_plumbing",
+            "group_label": "Not a gate",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": null,
+            "result": null
+          }
+        ],
+        [
+          "g1",
+          "h2",
+          "missing"
+        ]
+      ],
+      "result": {
+        "answered": 7,
+        "total": 12,
+        "toDo": 5,
+        "attention": 1,
+        "leaking": 1
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "h1",
+            "section": "insp_equipment",
+            "group_label": "Booster pump",
+            "options": [
+              {
+                "label": "Yes"
+              },
+              {
+                "label": "No",
+                "fold": true
+              }
+            ],
+            "value": "Yes",
+            "result": {
+              "status": "inspected",
+              "outcome": "ok"
+            }
+          },
+          {
+            "id": "h2",
+            "section": "insp_equipment",
+            "group_label": "Booster pump",
+            "options": [
+              {
+                "label": "Yes",
+                "flag": "ok"
+              },
+              {
+                "label": "No",
+                "flag": "attention"
+              },
+              {
+                "label": "N/A",
+                "flag": "na"
+              }
+            ],
+            "value": "No",
+            "result": {
+              "status": "inspected",
+              "outcome": "attention"
+            }
+          }
+        ]
+      ],
+      "result": {
+        "answered": 2,
+        "total": 2,
+        "toDo": 0,
+        "attention": 1,
+        "leaking": 0
+      }
+    }
+  ],
+  "inspectionProgressText": [
+    {
+      "args": [
+        {
+          "answered": 12,
+          "total": 49,
+          "attention": 1,
+          "leaking": 0
+        }
+      ],
+      "result": "12 of 49 answered"
+    },
+    {
+      "args": [
+        {
+          "answered": 0,
+          "total": 0,
+          "attention": 0,
+          "leaking": 0
+        }
+      ],
+      "result": "All answered"
+    },
+    {
+      "args": [
+        {
+          "answered": 5,
+          "total": 5,
+          "attention": 0,
+          "leaking": 0
+        }
+      ],
+      "result": "All answered"
+    },
+    {
+      "args": [
+        {
+          "answered": 5,
+          "total": 5,
+          "attention": 1,
+          "leaking": 0
+        }
+      ],
+      "result": "1 needs attention"
+    },
+    {
+      "args": [
+        {
+          "answered": 5,
+          "total": 5,
+          "attention": 2,
+          "leaking": 0
+        }
+      ],
+      "result": "2 need attention"
+    },
+    {
+      "args": [
+        {
+          "answered": 5,
+          "total": 5,
+          "attention": 0,
+          "leaking": 3
+        }
+      ],
+      "result": "3 leaking"
+    },
+    {
+      "args": [
+        {
+          "answered": 5,
+          "total": 5,
+          "attention": 2,
+          "leaking": 1
+        }
+      ],
+      "result": "1 leaking · 2 need attention"
+    },
+    {
+      "args": [
+        {
+          "answered": 6,
+          "total": 5,
+          "attention": 0,
+          "leaking": 0
+        }
+      ],
+      "result": "All answered"
+    }
+  ],
+  "intakeQuestionsFor": [
+    {
+      "args": [
+        [
+          {
+            "key": "a",
+            "label": "Leak where?",
+            "type": "text"
+          },
+          {
+            "key": "b",
+            "label": "Features",
+            "type": "multi",
+            "options": [
+              "Spa"
+            ],
+            "job_types": [
+              "inspection"
+            ]
+          },
+          {
+            "key": "c",
+            "label": "Both",
+            "type": "single",
+            "options": [
+              "x"
+            ],
+            "job_types": [
+              "detection",
+              "inspection"
+            ]
+          },
+          {
+            "key": "d",
+            "label": "Empty list",
+            "type": "text",
+            "job_types": []
+          },
+          {
+            "key": "e",
+            "label": "Repairs",
+            "type": "text",
+            "job_types": [
+              "repair"
+            ]
+          }
+        ],
+        "detection"
+      ],
+      "result": [
+        {
+          "key": "a",
+          "label": "Leak where?",
+          "type": "text"
+        },
+        {
+          "key": "c",
+          "label": "Both",
+          "type": "single",
+          "options": [
+            "x"
+          ],
+          "job_types": [
+            "detection",
+            "inspection"
+          ]
+        },
+        {
+          "key": "d",
+          "label": "Empty list",
+          "type": "text",
+          "job_types": []
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "key": "a",
+            "label": "Leak where?",
+            "type": "text"
+          },
+          {
+            "key": "b",
+            "label": "Features",
+            "type": "multi",
+            "options": [
+              "Spa"
+            ],
+            "job_types": [
+              "inspection"
+            ]
+          },
+          {
+            "key": "c",
+            "label": "Both",
+            "type": "single",
+            "options": [
+              "x"
+            ],
+            "job_types": [
+              "detection",
+              "inspection"
+            ]
+          },
+          {
+            "key": "d",
+            "label": "Empty list",
+            "type": "text",
+            "job_types": []
+          },
+          {
+            "key": "e",
+            "label": "Repairs",
+            "type": "text",
+            "job_types": [
+              "repair"
+            ]
+          }
+        ],
+        "inspection"
+      ],
+      "result": [
+        {
+          "key": "b",
+          "label": "Features",
+          "type": "multi",
+          "options": [
+            "Spa"
+          ],
+          "job_types": [
+            "inspection"
+          ]
+        },
+        {
+          "key": "c",
+          "label": "Both",
+          "type": "single",
+          "options": [
+            "x"
+          ],
+          "job_types": [
+            "detection",
+            "inspection"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "key": "a",
+            "label": "Leak where?",
+            "type": "text"
+          },
+          {
+            "key": "b",
+            "label": "Features",
+            "type": "multi",
+            "options": [
+              "Spa"
+            ],
+            "job_types": [
+              "inspection"
+            ]
+          },
+          {
+            "key": "c",
+            "label": "Both",
+            "type": "single",
+            "options": [
+              "x"
+            ],
+            "job_types": [
+              "detection",
+              "inspection"
+            ]
+          },
+          {
+            "key": "d",
+            "label": "Empty list",
+            "type": "text",
+            "job_types": []
+          },
+          {
+            "key": "e",
+            "label": "Repairs",
+            "type": "text",
+            "job_types": [
+              "repair"
+            ]
+          }
+        ],
+        "repair"
+      ],
+      "result": [
+        {
+          "key": "e",
+          "label": "Repairs",
+          "type": "text",
+          "job_types": [
+            "repair"
+          ]
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "key": "a",
+            "label": "Leak where?",
+            "type": "text"
+          },
+          {
+            "key": "b",
+            "label": "Features",
+            "type": "multi",
+            "options": [
+              "Spa"
+            ],
+            "job_types": [
+              "inspection"
+            ]
+          },
+          {
+            "key": "c",
+            "label": "Both",
+            "type": "single",
+            "options": [
+              "x"
+            ],
+            "job_types": [
+              "detection",
+              "inspection"
+            ]
+          },
+          {
+            "key": "d",
+            "label": "Empty list",
+            "type": "text",
+            "job_types": []
+          },
+          {
+            "key": "e",
+            "label": "Repairs",
+            "type": "text",
+            "job_types": [
+              "repair"
+            ]
+          }
+        ],
+        "maintenance"
+      ],
+      "result": []
+    }
+  ],
+  "optionsToText": [
+    {
+      "args": [
+        null
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        []
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Yes",
+            "flag": "ok"
+          },
+          {
+            "label": "No",
+            "flag": "attention"
+          },
+          {
+            "label": "N/A",
+            "flag": "na"
+          }
+        ]
+      ],
+      "result": "Yes\nNo (needs attention)\nN/A (not applicable)"
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Leaking",
+            "flag": "leaking"
+          },
+          {
+            "label": "Not Leaking",
+            "flag": "ok"
+          },
+          {
+            "label": "N/A",
+            "flag": "na"
+          }
+        ]
+      ],
+      "result": "Leaking (leaking)\nNot Leaking\nN/A (not applicable)"
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Yes"
+          },
+          {
+            "label": "No",
+            "fold": true
+          }
+        ]
+      ],
+      "result": "Yes\nNo (folds the group)"
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "Yes",
+            "flag": "ok"
+          },
+          {
+            "label": "No",
+            "flag": "attention",
+            "fold": true
+          },
+          {
+            "label": "Leaking",
+            "flag": "leaking"
+          },
+          {
+            "label": "Not applicable",
+            "flag": "na"
+          },
+          {
+            "label": " "
+          }
+        ]
+      ],
+      "result": "Yes\nNo (needs attention, folds the group)\nLeaking (leaking)\nNot applicable (not applicable)"
+    }
+  ],
+  "optionsFromText": [
+    {
+      "args": [
+        "Yes\n\nNo (Needs attention, folds the group)\nYes\nSand / media\nN/A (not applicable)"
+      ],
+      "result": [
+        {
+          "label": "Yes"
+        },
+        {
+          "label": "No",
+          "flag": "attention",
+          "fold": true
+        },
+        {
+          "label": "Sand / media"
+        },
+        {
+          "label": "N/A",
+          "flag": "na"
+        }
+      ]
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        "  Leaking (leaking)  \r\nOK (ok)\nGate (folds the group, LEAKING)"
+      ],
+      "result": [
+        {
+          "label": "Leaking",
+          "flag": "leaking"
+        },
+        {
+          "label": "OK"
+        },
+        {
+          "label": "Gate",
+          "flag": "leaking",
+          "fold": true
+        }
+      ]
+    },
+    {
+      "args": [
+        "A (b) (not applicable)\nB (x(y))\nC ()\n(leaking)\nD(needs attention)"
+      ],
+      "result": [
+        {
+          "label": "A (b)",
+          "flag": "na"
+        },
+        {
+          "label": "B (x(y))"
+        },
+        {
+          "label": "C"
+        },
+        {
+          "label": "D",
+          "flag": "attention"
+        }
+      ]
+    },
+    {
+      "args": [
+        "Paren ) (leaking)\nTrail (leaking) x\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\nyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "result": [
+        {
+          "label": "Paren )",
+          "flag": "leaking"
+        },
+        {
+          "label": "Trail (leaking) x"
+        },
+        {
+          "label": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+        }
+      ]
+    },
+    {
+      "args": [
+        "Multi word, comma (needs attention , folds the group , extra)"
+      ],
+      "result": [
+        {
+          "label": "Multi word, comma",
+          "flag": "attention",
+          "fold": true
+        }
+      ]
     }
   ]
 }

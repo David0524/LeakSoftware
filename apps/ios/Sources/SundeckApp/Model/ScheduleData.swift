@@ -249,7 +249,7 @@ public func routePoints(_ jobs: [ScheduleJob], depot: LatLng?) -> [String] {
     return keys
 }
 
-/// The note on a stop: "Second tech, with Tony", "With Sam", "Repair", "Maintenance".
+/// The note on a stop: "Second tech, with Tony", "With Sam", "Repair", "Maintenance", "Pool inspection".
 public func stopNote(_ j: ScheduleJob, routeTech: String?, names: [String: String]) -> String? {
     if let routeTech, j.assignedUserId != routeTech {
         return "Second tech, with \(j.assignedUserId.flatMap { names[$0] } ?? "the main tech")"
@@ -258,6 +258,7 @@ public func stopNote(_ j: ScheduleJob, routeTech: String?, names: [String: Strin
     switch j.type {
     case .repair: return "Repair"
     case .maintenance: return "Maintenance"
+    case .inspection: return "Pool inspection"
     case .detection: return nil
     }
 }

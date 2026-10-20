@@ -76,7 +76,7 @@ public enum InspectionWrites {
         _ sync: SyncService, companyId: String, jobId: String, types: [ComponentType], property: Property,
         jobType: JobType
     ) throws {
-        let planned = planComponents(types, property, jobType == .maintenance ? .maintenance : .detection)
+        let planned = planComponents(types, property, checklistJobType(jobType))
         try sync.batch {
             for p in planned { try insertComponent(sync, companyId: companyId, jobId: jobId, p) }
         }

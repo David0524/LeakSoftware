@@ -43,11 +43,13 @@ public enum ChecklistSection: String, Codable, CaseIterable, Sendable {
     }
 }
 
-/// How an item is answered: a leak verdict, yes or no, or a maintenance task.
+/// How an item is answered: a leak verdict, yes or no, a maintenance task, or a pool inspection
+/// question's option, options, or text (PoolInspection.swift).
 public enum ComponentAnswer: String, Codable, Sendable {
     case leak
     case yesNo = "yes_no"
     case done
+    case choice, multi, text
 
     /// An answer kind this app doesn't know reads as a leak verdict, the default.
     public init(from decoder: Decoder) throws {
@@ -76,8 +78,14 @@ public struct ComponentType: Codable, Equatable, Sendable {
     /// leak: a verdict (not leaking, leaking, attention, not applicable); yes_no: yes or no;
     /// done: a maintenance task (done, needs attention, skipped).
     public var answer: ComponentAnswer?
-    /// Which jobs get the item: leak detection (default) or maintenance visits.
+    /// Which jobs get the item: leak detection (default), maintenance visits, or pool inspections.
     public var jobType: JobType?
+    /// The small header it sits under ("Filtration System").
+    public var groupLabel: String?
+    /// A choice or multi question's options (`choiceOptions` reads them).
+    public var options: JSONValue?
+    /// A banner shown before it, word for word.
+    public var notice: String?
     /// Only for this pool type (vinyl checks); nil for every pool.
     public var appliesToPoolType: String?
     /// Done every few months (filter, salt cell): kept off new visits; a maintenance plan's
@@ -95,6 +103,8 @@ public struct ComponentType: Codable, Equatable, Sendable {
         case companyId = "company_id"
         case deletedAt = "deleted_at"
         case jobType = "job_type"
+        case groupLabel = "group_label"
+        case options, notice
         case appliesToPoolType = "applies_to_pool_type"
         case onSchedule = "on_schedule"
         case allowsMultiple = "allows_multiple"
@@ -156,9 +166,11 @@ public struct ChecklistItemResult: Codable, Equatable, Sendable {
     public var notes: String?
     public var inspectedAt: String?
     public var inspectedBy: String?
+    /// A pool inspection answer: an option's label, a list of labels, or text.
+    public var value: JSONValue?
 
     enum CodingKeys: String, CodingKey {
-        case id, status, outcome, method, notes
+        case id, status, outcome, method, notes, value
         case companyId = "company_id"
         case deletedAt = "deleted_at"
         case jobId = "job_id"
@@ -1250,11 +1262,15 @@ extension ECMA {
 
 // MARK: - Verdicts
 
-/// Badge text for an item, in the design partner's words. Yes/no items read "Yes" or "No".
-public func verdictLabel(status: ChecklistStatus?, outcome: ChecklistOutcome?, answer: ComponentAnswer = .leak)
-    -> String
-{
+/// Badge text for an item, in the design partner's words. Yes/no items read "Yes" or "No"; a
+/// pool inspection question reads its answer.
+public func verdictLabel(
+    status: ChecklistStatus?, outcome: ChecklistOutcome?, answer: ComponentAnswer = .leak, value: JSONValue? = nil
+) -> String {
     guard let status, status != .pending else { return "To do" }
+    if answer.isInspection {
+        return inspectionAnswerText(answer, value) ?? (status == .excluded ? "Not applicable" : "Answered")
+    }
     if answer == .done {
         if status == .excluded { return "Skipped" }
         return outcome == .attention ? "Needs attention" : "Done"

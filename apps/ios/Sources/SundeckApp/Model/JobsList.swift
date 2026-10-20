@@ -107,14 +107,8 @@ public enum JobFilter: String, CaseIterable, Hashable, Sendable {
     }
 }
 
-/// "Leak detection", "Repair", "Maintenance" (JOB_TYPE_LABELS).
-public func jobTypeLabel(_ type: JobType) -> String {
-    switch type {
-    case .detection: "Leak detection"
-    case .repair: "Repair"
-    case .maintenance: "Maintenance"
-    }
-}
+/// "Leak detection", "Repair", "Maintenance", "Pool inspection" (JOB_TYPE_LABELS).
+public func jobTypeLabel(_ type: JobType) -> String { type.label }
 
 /// One row of the Jobs list, as the website's phone list draws it.
 public struct JobListRow: Identifiable, Equatable, Sendable {

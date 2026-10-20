@@ -24,9 +24,17 @@ public func finishPhotoBlock(_ store: LocalStore, settings: JSONValue?, jobId: S
 }
 
 /// Checklist items still to do on the job on this phone: its results still pending, as the
-/// website's `requireCompletable` counts them.
+/// website's `requireCompletable` counts them. A pool inspection counts only the questions its
+/// gates leave open (`inspectionProgress().toDo`, 2026-10-20).
 public func jobChecklistToDo(_ store: LocalStore, jobId: String) -> Int {
-    ((try? store.list("checklist_item_result", jobId: jobId)) ?? [])
+    if let job = try? store.get("job", jobId), job["type"]?.string == JobType.inspection.rawValue,
+        let companyId = job["company_id"]?.string
+    {
+        return checklistToDo(
+            config: InspectionConfig(store, companyId: companyId), inspection: JobInspection(store, jobId: jobId),
+            jobType: .inspection)
+    }
+    return ((try? store.list("checklist_item_result", jobId: jobId)) ?? [])
         .filter {
             $0["job_id"]?.string == jobId && $0["status"]?.string == "pending" && $0["deleted_at"]?.string == nil
         }

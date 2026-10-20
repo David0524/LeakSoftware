@@ -136,12 +136,74 @@ public func priceBookGroups(_ store: LocalStore, companyId: String) -> [(title: 
     return order.map { key in (titled ? (key.isEmpty ? "Other items" : key) : nil, groups[key] ?? []) }
 }
 
-/// Checklist components for one checklist (pool visits or leak inspections), with what they
-/// apply to and their methods.
-public func componentItems(_ store: LocalStore, companyId: String, pool: Bool) -> [ConfigItem] {
+/// The checklists Settings › Checklist Components lists: pool visits, leak inspections, and pool
+/// inspections (2026-10-20).
+public enum ChecklistList: String, CaseIterable, Hashable, Sendable {
+    case pool, leak, inspection
+
+    public var label: String {
+        switch self {
+        case .pool: "Pool Visits"
+        case .leak: "Leak Inspections"
+        case .inspection: "Pool Inspections"
+        }
+    }
+
+    /// The job type whose checklist it is.
+    var jobType: String {
+        switch self {
+        case .pool: "maintenance"
+        case .leak: "detection"
+        case .inspection: "inspection"
+        }
+    }
+
+    /// The lists a shop sees, for what it does.
+    public static func lists(_ services: Services) -> [ChecklistList] {
+        switch services {
+        case .both: [.pool, .leak, .inspection]
+        case .leak: [.leak, .inspection]
+        case .pool: [.pool]
+        }
+    }
+}
+
+/// A pool inspection question's answer kinds, as Settings names them.
+public let inspectionAnswerLabels: [(ComponentAnswer, String)] = [
+    (.choice, "One choice"), (.multi, "Several choices"), (.text, "Text"),
+]
+
+/// Checklist components for one checklist, in groups: a pool inspection's by section (with each
+/// question's group and answer kind), the others in one list with what they apply to and their
+/// methods.
+public func componentGroups(_ store: LocalStore, companyId: String, list: ChecklistList) -> [(
+    title: String?, items: [ConfigItem]
+)] {
+    let rows = configRows(store, "component_type", companyId)
+        .filter { ($0["job_type"]?.string ?? "detection") == list.jobType }
+    guard list == .inspection else { return [(nil, componentItems(rows, pool: list == .pool))] }
+    return inspectionSections.compactMap { section in
+        let here = rows.filter { $0["section"]?.string == section.rawValue }
+        guard !here.isEmpty else { return nil }
+        return (
+            section.label,
+            here.map { r in
+                let answer = r["answer"]?.string.flatMap(ComponentAnswer.init(rawValue:))
+                let detail = [
+                    r["group_label"]?.string.flatMap { $0.isEmpty ? nil : $0 },
+                    inspectionAnswerLabels.first { $0.0 == answer }?.1,
+                ].compactMap { $0 }.joined(separator: " · ")
+                return item(r, name: r["name"]?.string ?? "Question", detail: detail.isEmpty ? nil : detail)
+            }
+        )
+    }
+}
+
+/// Pool visit or leak inspection components, with what they apply to and their methods.
+private func componentItems(_ rows: [Row], pool: Bool) -> [ConfigItem] {
     let applies = ["pool": "Pool", "spa": "Spa", "both": "Pool and spa"]
-    return configRows(store, "component_type", companyId)
-        .filter { ($0["job_type"]?.string == "maintenance") == pool }
+    return
+        rows
         .map { r in
             let a = r["applies_to"]?.string.flatMap { applies[$0] }
             let methods = (r["methods"]?.array ?? []).compactMap(\.string).joined(separator: ", ")
@@ -196,7 +258,7 @@ public func teamMembers(_ store: LocalStore, kv: KeyValue, companyId: String, me
 }
 
 /// The list pages' subtitles, as the website's.
-public func settingsSubtitle(_ page: SettingsPage, services: Services, poolChecklist: Bool = false) -> String? {
+public func settingsSubtitle(_ page: SettingsPage, services: Services, list: ChecklistList = .leak) -> String? {
     switch page {
     case .priceBook:
         let what =
@@ -208,9 +270,17 @@ public func settingsSubtitle(_ page: SettingsPage, services: Services, poolCheck
             }
         return "\(what) Prices are suggestions; a tech can adjust within the discount limit."
     case .components:
-        return poolChecklist
-            ? "What techs do on every pool visit. Changes apply to new visits; visits already started keep their checklist."
-            : "What every leak inspection checks. Changes apply to new jobs; jobs already started keep their checklist."
+        switch list {
+        case .pool:
+            return
+                "What techs do on every pool visit. Changes apply to new visits; visits already started keep their checklist."
+        case .inspection:
+            return
+                "Every question of a pool inspection. Changes apply to new jobs; jobs already started keep their checklist."
+        case .leak:
+            return
+                "What every leak inspection checks. Changes apply to new jobs; jobs already started keep their checklist."
+        }
     case .tests:
         return
             "Tests techs record on the phone. Pressure and bucket tests do the math; set the pass and fail lines your shop uses."
@@ -292,8 +362,78 @@ public struct ConfigItemForm: Equatable, Sendable {
     public var error: String? { name.trimmingCharacters(in: .whitespaces).isEmpty ? "Enter a name." : nil }
 }
 
+/// A pool inspection question's form in Settings (2026-10-20; website settings/components
+/// `InspectionFields`): the question, its group, choices (`optionsToText`), banner, order, and
+/// whether new checklists get it. Section and answer kind show but are set on the website.
+public struct InspectionQuestionForm: Equatable, Sendable {
+    public var name = ""
+    public var section: ChecklistSection = .inspEquipment
+    public var group = ""
+    public var answer: ComponentAnswer = .choice
+    public var options = ""
+    public var notice = ""
+    public var order = "3500"
+    public var active = true
+
+    public init() {}
+
+    public init(_ row: Row) {
+        name = row["name"]?.string ?? ""
+        section = row["section"]?.string.flatMap(ChecklistSection.init(rawValue:)) ?? .inspEquipment
+        group = row["group_label"]?.string ?? ""
+        answer =
+            row["answer"]?.string.flatMap(ComponentAnswer.init(rawValue:)).flatMap { $0.isInspection ? $0 : nil }
+            ?? .choice
+        options = optionsToText(row["options"])
+        notice = row["notice"]?.string ?? ""
+        order = String(Int(row["sort_order"]?.number ?? 0))
+        active = row["active"]?.bool ?? true
+    }
+
+    /// "One choice", "Several choices", "Text".
+    public var answerLabel: String { inspectionAnswerLabels.first { $0.0 == answer }?.1 ?? "One choice" }
+    /// A text question has no choices.
+    public var asksOptions: Bool { answer != .text }
+
+    /// The first field to fix, in the website's words.
+    public var error: String? {
+        if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "Enter a name." }
+        if asksOptions && optionsFromText(options).count < 2 { return "Enter at least two choices." }
+        return nil
+    }
+
+    /// The columns the phone may write.
+    public var values: Row {
+        func blank(_ s: String) -> JSONValue {
+            let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
+            return t.isEmpty ? .null : .string(t)
+        }
+        var row: Row = [
+            "name": .string(name.trimmingCharacters(in: .whitespacesAndNewlines)), "group_label": blank(group),
+            "notice": blank(notice), "sort_order": .number(Double(Int(order) ?? 0)), "active": .bool(active),
+        ]
+        if asksOptions {
+            row["options"] = .array(
+                optionsFromText(options).map { o in
+                    var v: [String: JSONValue] = ["label": .string(o.label)]
+                    if let flag = o.flag { v["flag"] = .string(flag.rawValue) }
+                    if o.fold == true { v["fold"] = true }
+                    return .object(v)
+                })
+        }
+        return row
+    }
+}
+
 @MainActor
 public enum ConfigWrites {
+    /// Saves a pool inspection question (an existing row; new questions are added on the website).
+    public static func saveInspectionQuestion(
+        _ sync: SyncService, companyId: String, id: String, _ form: InspectionQuestionForm
+    ) throws {
+        try sync.write("component_type", id: id, companyId: companyId, form.values)
+    }
+
     public static func savePriceItem(_ sync: SyncService, companyId: String, id: String?, _ form: PriceItemForm)
         throws
     {

@@ -1199,6 +1199,12 @@
     },
     {
       "args": [
+        "inspection"
+      ],
+      "result": "Price"
+    },
+    {
+      "args": [
         null
       ],
       "result": "Price"
@@ -2001,6 +2007,10 @@
           "label": "Leak Detection"
         },
         {
+          "value": "inspection",
+          "label": "Pool Inspection"
+        },
+        {
           "value": "repair",
           "label": "Repair"
         }
@@ -2014,6 +2024,10 @@
         {
           "value": "detection",
           "label": "Leak Detection"
+        },
+        {
+          "value": "inspection",
+          "label": "Pool Inspection"
         },
         {
           "value": "maintenance",
@@ -3801,6 +3815,108 @@
         []
       ],
       "result": {}
+    }
+  ],
+  "JOB_TYPE_LABELS": [
+    {
+      "args": [],
+      "result": {
+        "detection": "Leak detection",
+        "repair": "Repair",
+        "maintenance": "Maintenance",
+        "inspection": "Pool inspection"
+      }
+    }
+  ],
+  "reportTitle": [
+    {
+      "args": [
+        "inspection"
+      ],
+      "result": "Pool Inspection Report"
+    },
+    {
+      "args": [
+        "detection"
+      ],
+      "result": "Leak Detection Report"
+    },
+    {
+      "args": [
+        "repair"
+      ],
+      "result": "Leak Detection Report"
+    },
+    {
+      "args": [
+        "maintenance"
+      ],
+      "result": "Leak Detection Report"
+    },
+    {
+      "args": [
+        null
+      ],
+      "result": "Leak Detection Report"
+    },
+    {
+      "args": [
+        "Inspection"
+      ],
+      "result": "Leak Detection Report"
+    }
+  ],
+  "reportShareText": [
+    {
+      "args": [
+        "Blue Pools",
+        "https://x.co/r/abc"
+      ],
+      "result": "Blue Pools: your leak detection report: https://x.co/r/abc"
+    },
+    {
+      "args": [
+        "Blue Pools",
+        "https://x.co/r/abc",
+        true
+      ],
+      "result": "Blue Pools: your leak detection report and repair estimate: https://x.co/r/abc"
+    },
+    {
+      "args": [
+        "Blue Pools",
+        "https://x.co/r/abc",
+        false,
+        "inspection"
+      ],
+      "result": "Blue Pools: your pool inspection report: https://x.co/r/abc"
+    },
+    {
+      "args": [
+        "Blue Pools",
+        "https://x.co/r/abc",
+        true,
+        "inspection"
+      ],
+      "result": "Blue Pools: your pool inspection report and repair estimate: https://x.co/r/abc"
+    },
+    {
+      "args": [
+        "Blue Pools",
+        "https://x.co/r/abc",
+        false,
+        "detection"
+      ],
+      "result": "Blue Pools: your leak detection report: https://x.co/r/abc"
+    },
+    {
+      "args": [
+        "Blue Pools",
+        "https://x.co/r/abc",
+        false,
+        null
+      ],
+      "result": "Blue Pools: your leak detection report: https://x.co/r/abc"
     }
   ]
 }
