@@ -121,6 +121,12 @@ const SHAPES = {
   directions: { line: "M3 11l18-8-8 18-2-8z" },
   // The website's not-on-map warning (not-on-map.tsx).
   warning: { line: "M12 3l9.5 17h-19zM12 10v4.5M12 17.5v.01" },
+  // Today's Reorder (docs/plans/today-reorder.md): the drag handle, as iOS's reorder control,
+  // and the lock on a stop that can't move.
+  grip: { line: "M5 8h14M5 12h14M5 16h14" },
+  lock: {
+    line: "M8 11V8a4 4 0 0 1 8 0v3M7 11h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z",
+  },
 } satisfies Record<string, Shape>;
 
 export type WebIconName = keyof typeof SHAPES;

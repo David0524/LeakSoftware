@@ -31,6 +31,7 @@ import { TodayComplete } from "../job/CompleteJob";
 import { Button, RoundButton, useReduceMotion } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { NotOnMapTag } from "../../ui/NotOnMap";
+import { UndoRow } from "../../ui/Undo";
 import { WebIcon } from "../../ui/WebIcon";
 import {
   color,
@@ -63,6 +64,7 @@ export function TodayHeroCard({
   notOnMap,
   onMyWay,
   onDirections,
+  doLater,
 }: {
   hero: TodayHero;
   /** The stop on the card (the one just done, in the done moment). */
@@ -79,6 +81,15 @@ export function TodayHeroCard({
   /** On My Way for a stop, as the card's main button. */
   onMyWay: (job: JobView) => ReactNode;
   onDirections: (job: JobView) => void;
+  /**
+   * Do Later for the card's stop (docs/plans/today-reorder.md): a secondary button beside the
+   * main one in the Up next and On the way moments; afterwards "Moved to 2:15 PM" and Undo in
+   * its place for 5 seconds. `onPress` null: this stop can't move.
+   */
+  doLater?: {
+    onPress: ((job: JobView) => void) | null;
+    undo: { text: string; onUndo: () => void } | null;
+  };
 }) {
   const c = hero.content;
   const actions = heroActions(hero.moment, mine);
@@ -125,6 +136,11 @@ export function TodayHeroCard({
   const conversations = useConversations(company.id);
   // Message, Call and Directions for the card's stop, while it's still to come or under way.
   const contact = Boolean(target && hero.moment !== "done" && (phone || target.property));
+  const later =
+    doLater?.onPress && job && (hero.moment === "ahead" || hero.moment === "driving")
+      ? doLater.onPress
+      : null;
+  const laterUndo = doLater?.undo ?? null;
 
   /** Text the customer as the job page does: the shop's number when it's on, else the phone's
    *  own texts. */
@@ -304,7 +320,7 @@ export function TodayHeroCard({
       ) : null}
 
       {/* One row, equal widths: style, not size, marks the main action (buttons.md). */}
-      {(target && actions.primary) || (actions.complete && job) ? (
+      {(target && actions.primary) || (actions.complete && job) || later || laterUndo ? (
         <View style={[styles.buttons, stacked && styles.buttonsStacked]}>
           {actions.primary && target ? (
             <View style={stacked ? undefined : styles.slot}>
@@ -324,6 +340,20 @@ export function TodayHeroCard({
                   onPress={() => router.push(`/jobs/${target.id}?section=checklist`)}
                 />
               ) : null}
+            </View>
+          ) : null}
+          {laterUndo ? (
+            <View style={stacked ? undefined : styles.slot}>
+              <UndoRow text={laterUndo.text} onUndo={laterUndo.onUndo} onWater />
+            </View>
+          ) : later && job ? (
+            <View style={stacked ? undefined : styles.slot}>
+              <Button
+                kind="onWaterTinted"
+                title="Do Later"
+                accessibilityLabel={`Do Later, ${job.customer?.name ?? "this stop"}`}
+                onPress={() => later(job)}
+              />
             </View>
           ) : null}
           {actions.complete && job ? (
