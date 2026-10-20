@@ -58,14 +58,19 @@ import Testing
 @Suite @MainActor struct MoreModelTests {
     @Test func moreListFollowsRoleAndPackage() {
         #expect(moreLinks(role: "tech", services: .leak) == [.customers, .invoices])
-        #expect(moreLinks(role: "owner", services: .both) == [.customers, .invoices, .chemicals, .settings])
-        #expect(moreLinks(role: "admin", services: .pool) == [.customers, .invoices, .chemicals, .settings])
+        #expect(
+            moreLinks(role: "owner", services: .both) == [.dashboard, .customers, .invoices, .chemicals, .settings])
+        #expect(
+            moreLinks(role: "admin", services: .pool) == [.dashboard, .customers, .invoices, .chemicals, .settings])
     }
 
     @Test func settingsGroupsHideLeakPagesForPoolShops() {
         let pool = settingsGroups(.pool)
-        #expect(pool.map(\.title) == ["Your shop", "Money", "Checklists"])
-        #expect(pool[2].pages == [.components])
+        #expect(pool.map(\.title) == ["Your shop", "Money", "Checklists and reports"])
+        #expect(pool[2].pages == [.components, .reports])
+        #expect(
+            reportTemplatesSubtitle(["services": "pool"]) == "What goes to the customer after each maintenance visit.")
+        #expect(reportTemplatesSubtitle(["services": "both"]) == reportTemplatesSubtitle)
         #expect(settingsGroups(.leak)[2].pages == [.components, .tests, .severities, .exclusions, .reports])
         #expect(SettingsPage.priceBook.detail(.pool) == "Services, chemicals, and repairs for quotes")
     }
@@ -271,6 +276,26 @@ import Testing
     }
 
     /// Filters, search and sort on Invoices (owner, 2026-10-20: "add some filtering and sorting").
+    /// The owner's dashboard (owner, 2026-10-20): the RPC's reply, its lines and status rows.
+    @Test func dashboardReadsTheRPCReply() throws {
+        let json = """
+            {"statuses": {"scheduled": 2, "quote_sent": 1, "paid": 0, "done": 4}, "outstanding_cents": 1000,
+             "months": [
+               {"month": "2026-09", "quotes_sent": 3, "quotes_accepted": 2, "invoiced_cents": 50000,
+                "outstanding_cents": 1000, "collected_cents": 40000},
+               {"month": "2026-10", "quotes_sent": 0, "quotes_accepted": 0, "invoiced_cents": 0,
+                "outstanding_cents": 0, "collected_cents": 12500}]}
+            """
+        let data = try JSONDecoder().decode(DashboardData.self, from: Data(json.utf8))
+        #expect(DashboardText.subtitle(data) == "Last 6 months · Sep 2026 – Oct 2026")
+        let rows = dashboardStatusRows(data)
+        #expect(rows.map(\.status) == [.scheduled, .quoteSent, .done])
+        #expect(rows.map(\.filter) == [.scheduled, .followUp, .done])
+        #expect(DashboardText.monthQuotes(data.months[0]) == "2 of 3 quotes accepted (67%)")
+        #expect(DashboardText.monthQuotes(data.months[1]) == "0 of 0 quotes accepted")
+        #expect(DashboardText.monthMoney(data.months[0]) == "Invoiced $500.00 · still owed $10.00")
+    }
+
     @Test func invoicesFilterSearchAndSort() throws {
         let s = try seeded()
         let list = invoiceList(s.sync.store, companyId: "c1")

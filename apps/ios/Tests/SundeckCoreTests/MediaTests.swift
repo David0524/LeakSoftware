@@ -13,7 +13,7 @@ import Testing
             "textShape", "shapeAtTap", "arrowHead", "arrowShape", "SIGNATURE_PURPOSE_LABELS", "MIN_INK",
             "enabledSignaturePurposes", "reportSignOffPurposes", "signatureStoragePath", "inkLength", "strokePath",
             "signatureSvg", "signatureStatement", "REPORT_BLOCKS", "testOutcomeLabel",
-            "PEN_POINTS_MAX", "penShape", "penPath",
+            "PEN_POINTS_MAX", "penShape", "penPath", "clampTextSize", "moveText", "resizeText",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -44,6 +44,9 @@ import Testing
             shapeFromDrag(try c.arg(0), try c.arg(1), try c.arg(2), try c.arg(3))
         }
         checkRule(module, "textShape") { c in textShape(try c.arg(0), try c.arg(1), try c.arg(2)) }
+        checkRule(module, "clampTextSize") { c in clampTextSize(try c.arg(0, as: JSONValue?.self)) }
+        checkRule(module, "moveText") { c in moveText(try c.arg(0), try c.arg(1)) }
+        checkRule(module, "resizeText") { c in resizeText(try c.arg(0), try c.arg(1)) }
         checkRule(module, "shapeAtTap") { c in shapeAtTap(try c.arg(0), try c.arg(1), try c.arg(2), try c.arg(3)) }
         checkRule(module, "arrowShape") { c in
             arrowShape(try c.arg(0), try c.arg(1), try c.arg(2), try c.arg(3), try c.arg(4))

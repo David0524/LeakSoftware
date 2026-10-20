@@ -182,7 +182,7 @@ private func sha256(_ count: Int) throws -> String {
         draft.tool = .text
         draft.color = .white
         draft.release(from: start, to: start)
-        #expect(draft.labelError == "Type the label first.")
+        #expect(draft.labelError == "Type a label first, then tap the photo. Tap a label to move it.")
         #expect(draft.shapes.count == 3)
         draft.label = "Crack"
         #expect(draft.labelError == nil)

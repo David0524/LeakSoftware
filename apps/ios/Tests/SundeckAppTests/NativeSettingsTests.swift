@@ -191,8 +191,9 @@ import Testing
                         ])
                 }, done: true, cursor: [:], serverHLC: "1760000000005-0000-srv"))
         let items = reportTemplateItems(s.sync.store, companyId: "c1")
-        #expect(items.map(\.key) == ["homeowner", "insurance"])
-        #expect(items.map(\.value) == ["On", "Coming soon"] && items[0].editable && !items[1].editable)
+        // Only the homeowner report (the insurance and partner reports are gone).
+        #expect(items.map(\.key) == ["homeowner"])
+        #expect(items.map(\.value) == ["On"] && items[0].editable)
         try ShopSettingsWrites.saveReportTemplate(
             s.sync, companyId: "c1", id: "rt1", name: " Pool Owner Report ", enabled: false)
         let row = try s.sync.store.get("report_template", "rt1")
@@ -416,5 +417,33 @@ import Testing
             _ = try await VisitReportServer.send(
                 sync: s.sync, api: self.api(host), jobId: "j1", channel: .email, to: "pat@home.test")
         }
+    }
+
+    /// Markup text moves and changes size (owner, 2026-10-20).
+    @Test func markupTextMovesAndResizes() {
+        var draft = MarkupDraft(saved: [], width: 400, height: 300)
+        draft.tool = .text
+        draft.label = "Crack"
+        draft.release(from: MarkupPoint(x: 0.5, y: 0.5), to: MarkupPoint(x: 0.5, y: 0.5))
+        #expect(draft.selected == 0)
+        let canvas = CGSize(width: 400, height: 300)
+        // A tap just above the baseline hits it; far away doesn't.
+        #expect(draft.textIndex(at: MarkupPoint(x: 0.5, y: 0.47), canvas: canvas) == 0)
+        #expect(draft.textIndex(at: MarkupPoint(x: 0.05, y: 0.05), canvas: canvas) == nil)
+        #expect(draft.textBox(0, canvas: canvas) != nil)
+        // Dragged from where the finger took hold.
+        let moved = draft.moved(0, from: MarkupPoint(x: 0.5, y: 0.47), to: MarkupPoint(x: 0.7, y: 0.57))
+        draft.place(0, moved!)
+        #expect(draft.shapes == [.text(color: .red, x: 0.7, y: 0.6, text: "Crack")])
+        // Resizing is one Undo step while it lasts; the size is kept within bounds.
+        let steps = draft.history.count
+        draft.resizeSelected(1.5)
+        draft.resizeSelected(9)
+        #expect(draft.history.count == steps + 1 && draft.selectedSize == 3)
+        draft.endResize()
+        draft.resizeSelected(1)
+        #expect(draft.history.count == steps + 2 && draft.shapes == [.text(color: .red, x: 0.7, y: 0.6, text: "Crack")])
+        draft.deleteSelected()
+        #expect(draft.shapes.isEmpty && draft.selected == nil)
     }
 }

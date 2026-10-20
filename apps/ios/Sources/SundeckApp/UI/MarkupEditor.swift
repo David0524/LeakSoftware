@@ -54,6 +54,10 @@
         @State private var saving = false
         @State private var caption: String
         @FocusState private var labelFocused: Bool
+        /// The label a Text-tool drag took hold of, and where the finger started.
+        @State private var dragging: (index: Int, start: MarkupPoint)?
+        /// A pinch on the selected label: its size when the pinch began.
+        @State private var pinchBase: Double?
 
         init(
             title: String, canvasLabel: String, ratio: Double, space: CGSize? = nil, saved: [MarkupShape],
@@ -113,26 +117,60 @@
             GeometryReader { area in
                 let width = min(area.size.width, area.size.height / ratio)
                 let height = width * ratio
-                ZStack {
+                let canvas = CGSize(width: width, height: height)
+                ZStack(alignment: .topLeading) {
                     background
-                    MarkupLayer(shapes: live.map { draft.shapes + [$0] } ?? draft.shapes, space: space)
+                    MarkupLayer(shapes: shownShapes, space: space)
+                    // The selected label's dashed box (Text tool).
+                    if draft.tool == .text, dragging == nil, let i = draft.selected,
+                        let box = draft.textBox(i, canvas: canvas)
+                    {
+                        RoundedRectangle(cornerRadius: 6)
+                            .strokeBorder(Color.white, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+                            .shadow(color: .black.opacity(0.5), radius: 0.5)
+                            .frame(width: box.width, height: box.height)
+                            .offset(x: box.minX, y: box.minY)
+                            .allowsHitTesting(false)
+                    }
                 }
                 .frame(width: width, height: height)
                 .contentShape(Rectangle())
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
+                            if draft.tool == .text {
+                                textDragChanged(value, width, height)
+                                return
+                            }
                             // The live stroke is drawn as the finger moves.
                             if stroke.isEmpty { stroke = [point(value.startLocation, width, height)] }
                             stroke.append(point(value.location, width, height))
                             live = draft.live(stroke: stroke)
                         }
                         .onEnded { value in
+                            if draft.tool == .text {
+                                textDragEnded(value, width, height)
+                                return
+                            }
                             if stroke.isEmpty { stroke = [point(value.startLocation, width, height)] }
                             stroke.append(point(value.location, width, height))
                             live = nil
                             draft.release(stroke: stroke)
                             stroke = []
+                        }
+                )
+                // A pinch resizes the selected label.
+                .simultaneousGesture(
+                    MagnifyGesture()
+                        .onChanged { value in
+                            guard draft.tool == .text, draft.selected != nil else { return }
+                            let base = pinchBase ?? draft.selectedSize
+                            pinchBase = base
+                            draft.resizeSelected(base * value.magnification)
+                        }
+                        .onEnded { _ in
+                            pinchBase = nil
+                            draft.endResize()
                         }
                 )
                 .accessibilityElement()
@@ -170,6 +208,22 @@
                             if value.count > Markup.textMax { draft.label = String(value.prefix(Markup.textMax)) }
                         }
                         FieldHint(text: draft.labelError ?? MarkupDraft.labelHint, error: draft.labelError != nil)
+                    }
+                    // The selected label's size, and Delete Label (owner, 2026-10-20).
+                    if draft.selected != nil {
+                        HStack(spacing: 12) {
+                            Text("Size").textRole(.bodyMedium).foregroundStyle(Color.text)
+                            Slider(
+                                value: Binding(get: { draft.selectedSize }, set: { draft.resizeSelected($0) }),
+                                in: markupTextSizeMin...markupTextSizeMax, step: 0.1
+                            ) { editing in
+                                if !editing { draft.endResize() }
+                            }
+                            .accessibilityLabel("Label size")
+                            .keepsHorizontalDrags()
+                            Button("Delete Label", role: .destructive) { draft.deleteSelected() }
+                                .buttonStyle(.quiet)
+                        }
                     }
                 }
 
@@ -215,6 +269,50 @@
             .padding(.top, 12)
             .padding(.bottom, 8)
             .background(Color.bg)
+        }
+
+        /// The markup as drawn now: the label being dragged in its new place, or the shape being drawn.
+        private var shownShapes: [MarkupShape] {
+            if let dragging, let live, draft.shapes.indices.contains(dragging.index) {
+                var shapes = draft.shapes
+                shapes[dragging.index] = live
+                return shapes
+            }
+            return live.map { draft.shapes + [$0] } ?? draft.shapes
+        }
+
+        /// Text tool: a drag that starts on a label selects and moves it.
+        private func textDragChanged(_ value: DragGesture.Value, _ width: CGFloat, _ height: CGFloat) {
+            let canvas = CGSize(width: width, height: height)
+            let start = point(value.startLocation, width, height)
+            if dragging == nil, stroke.isEmpty {
+                stroke = [start]
+                if let hit = draft.textIndex(at: start, canvas: canvas) {
+                    draft.selected = hit
+                    dragging = (hit, start)
+                }
+            }
+            if let dragging {
+                live = draft.moved(dragging.index, from: dragging.start, to: point(value.location, width, height))
+            }
+        }
+
+        private func textDragEnded(_ value: DragGesture.Value, _ width: CGFloat, _ height: CGFloat) {
+            defer {
+                dragging = nil
+                live = nil
+                stroke = []
+            }
+            if let dragging {
+                if let live { draft.place(dragging.index, live) }
+                return
+            }
+            // A tap away from every label places a new one (the label typed above).
+            let at = point(value.startLocation, width, height)
+            if draft.textIndex(at: at, canvas: CGSize(width: width, height: height)) == nil {
+                draft.selected = nil
+                draft.release(from: at, to: at)
+            }
         }
 
         private func point(_ location: CGPoint, _ width: CGFloat, _ height: CGFloat) -> MarkupPoint {

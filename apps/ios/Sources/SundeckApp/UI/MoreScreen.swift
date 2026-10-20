@@ -16,6 +16,11 @@
         case sync
         case myPhone
         case notifications
+        case dashboard
+        /// Jobs on one filter (the dashboard's status rows).
+        case jobs(JobFilter)
+        /// Invoices on one filter (the dashboard's Owed to you).
+        case invoicesFiltered(InvoiceFilter)
     }
 
     /// The screens the More tab pushes.
@@ -38,6 +43,9 @@
             case .sync: SettingsView(showWelcome: {}, showReauth: showReauth)
             case .myPhone: MyPhoneScreen()
             case .notifications: NotificationsScreen()
+            case .dashboard: DashboardScreen()
+            case .jobs(let filter): JobsView(filter: filter)
+            case .invoicesFiltered(let filter): InvoicesScreen(filter: filter)
             }
         }
     }
@@ -153,6 +161,7 @@
 
         private func route(_ link: MoreLink) -> MoreRoute {
             switch link {
+            case .dashboard: .dashboard
             case .customers: .customers
             case .invoices: .invoices
             case .chemicals: .chemicals(nil)

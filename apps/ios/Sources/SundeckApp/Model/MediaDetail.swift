@@ -193,8 +193,18 @@ public struct MarkupDraft: Equatable, Sendable {
     /// The photo's width / height (Expo's 1 / ratio), so a tapped circle is round on screen.
     public var aspect: Double
 
-    public static let labelMissing = "Type the label first."
-    public static let labelHint = "Then tap the photo where it goes."
+    public static let labelMissing = "Type a label first, then tap the photo. Tap a label to move it."
+    public static let labelHint = "Then tap the photo where it goes. Tap a label to select it; drag it to move it."
+
+    /// The Text tool's selected label (owner, 2026-10-20: "adjust text location and size"):
+    /// tapped or just placed; drag moves it, Size and a pinch resize it.
+    public var selected: Int? {
+        get { selectedIndex.flatMap { shapes.indices.contains($0) && isText(shapes[$0]) ? $0 : nil } }
+        set { selectedIndex = newValue }
+    }
+    private var selectedIndex: Int?
+    /// The label being resized: its size changes are one Undo step.
+    private var resizing: Int?
     public static let labelPlaceholder = "Crack"
 
     public init(saved: [MarkupShape], width: Double?, height: Double?) {
@@ -249,6 +259,7 @@ public struct MarkupDraft: Equatable, Sendable {
         guard let gesture else {
             if let shape = textShape(color, start, label) {
                 push(shapes + [shape])
+                selectedIndex = shapes.count - 1
                 labelError = nil
             } else {
                 labelError = Self.labelMissing
@@ -277,7 +288,100 @@ public struct MarkupDraft: Equatable, Sendable {
         }
     }
 
-    private mutating func push(_ next: [MarkupShape]) { history.append(next) }
+    private mutating func push(_ next: [MarkupShape]) {
+        history.append(next)
+        resizing = nil
+    }
+
+    private func isText(_ shape: MarkupShape) -> Bool {
+        if case .text = shape { return true }
+        return false
+    }
+
+    // MARK: Moving and sizing text
+
+    /// A label's font size on a canvas this wide, in points (the renderer's).
+    private static func fontSize(_ size: Double?, canvasWidth: Double) -> Double {
+        max(10, 24 * canvasWidth / 400) * (size ?? 1)
+    }
+
+    /// The label under a point (fractions) on a canvas of this size (points), topmost first.
+    public func textIndex(at p: MarkupPoint, canvas: CGSize) -> Int? {
+        let w = Double(canvas.width)
+        let h = Double(canvas.height)
+        for i in shapes.indices.reversed() {
+            guard case .text(_, let x, let y, let text, let size) = shapes[i] else { continue }
+            let px = Self.fontSize(size, canvasWidth: w)
+            let halfW = max(22, Double(text.utf16.count) * px * 0.62 / 2)
+            let halfH = max(22, px * 0.75)
+            let dx = (p.x - x) * w
+            // Text sits on its baseline: most of it is above y.
+            let dy = (p.y - y) * h + px * 0.35
+            if abs(dx) <= halfW && abs(dy) <= halfH { return i }
+        }
+        return nil
+    }
+
+    /// The dashed box around a label, in points on the canvas.
+    public func textBox(_ i: Int, canvas: CGSize) -> CGRect? {
+        guard shapes.indices.contains(i), case .text(_, let x, let y, let text, let size) = shapes[i] else {
+            return nil
+        }
+        let w = Double(canvas.width)
+        let h = Double(canvas.height)
+        let px = Self.fontSize(size, canvasWidth: w)
+        let bw = Double(text.utf16.count) * px * 0.62 + 16
+        let bh = px * 1.3
+        return CGRect(x: x * w - bw / 2, y: y * h - bh * 0.8, width: bw, height: bh)
+    }
+
+    /// Label `i` dragged from where the finger took hold (`start`) to `p`.
+    public func moved(_ i: Int, from start: MarkupPoint, to p: MarkupPoint) -> MarkupShape? {
+        guard shapes.indices.contains(i), case .text(_, let x, let y, _, _) = shapes[i] else { return nil }
+        return moveText(shapes[i], MarkupPoint(x: x + p.x - start.x, y: y + p.y - start.y))
+    }
+
+    /// Puts a moved label in place, as one Undo step.
+    public mutating func place(_ i: Int, _ shape: MarkupShape) {
+        guard shapes.indices.contains(i), shape != shapes[i] else { return }
+        var next = shapes
+        next[i] = shape
+        push(next)
+        selectedIndex = i
+    }
+
+    /// The selected label at a new size; changes while the same label is being sized are one
+    /// Undo step.
+    public mutating func resizeSelected(_ size: Double) {
+        guard let i = selected else { return }
+        var next = shapes
+        next[i] = resizeText(shapes[i], size)
+        guard next != shapes else { return }
+        if resizing == i && history.count > 1 {
+            history[history.count - 1] = next
+        } else {
+            history.append(next)
+        }
+        resizing = i
+    }
+
+    /// The slider or pinch let go: the next size change is a new Undo step.
+    public mutating func endResize() { resizing = nil }
+
+    /// The selected label's size (1 when unset).
+    public var selectedSize: Double {
+        guard let i = selected, case .text(_, _, _, _, let size) = shapes[i] else { return 1 }
+        return size ?? 1
+    }
+
+    /// Delete Label.
+    public mutating func deleteSelected() {
+        guard let i = selected else { return }
+        var next = shapes
+        next.remove(at: i)
+        push(next)
+        selectedIndex = nil
+    }
 }
 
 /// JavaScript's `trim()` emptiness check for the label (Expo clears the error when `v.trim()`).

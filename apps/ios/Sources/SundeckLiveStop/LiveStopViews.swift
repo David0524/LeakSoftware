@@ -91,6 +91,27 @@
         }
     }
 
+    /// The stop's access notes on one line with a key (owner, 2026-10-20: gate code, which gate,
+    /// dogs), in the brand's warning amber on navy.
+    public struct LiveStopAccess: View {
+        public var text: String
+
+        public init(text: String) { self.text = text }
+
+        public var body: some View {
+            HStack(spacing: 6) {
+                Image(systemName: "key.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color(red: 1, green: 0.78, blue: 0.35))
+                Text(text)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(LiveStopStyle.text)
+                    .lineLimit(1)
+            }
+            .accessibilityHidden(true)
+        }
+    }
+
     /// The large figure ("9:42 AM", "4 of 9", or the check) over its small label.
     public struct LiveStopFigure: View {
         public var content: LiveStopContent
@@ -173,6 +194,7 @@
                                 .foregroundStyle(LiveStopStyle.text)
                                 .lineLimit(1)
                         }
+                        if let access = content.access { LiveStopAccess(text: access) }
                     }
                     Spacer(minLength: 4)
                     LiveStopFigure(content: content)
@@ -216,6 +238,7 @@
                         Text(next).font(.system(size: 14, weight: .medium)).foregroundStyle(LiveStopStyle.text)
                             .lineLimit(1)
                     }
+                    if let access = content.access { LiveStopAccess(text: access) }
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(content.spoken)

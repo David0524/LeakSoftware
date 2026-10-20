@@ -34,7 +34,8 @@
             "driving",
             LiveStopInput(
                 phase: .driving, customer: "Grace Holloway", address: "2 Palm Ct, Mesa", stop: 3, stops: 7,
-                eta: "9:42 AM", checklistDone: 0, checklistTotal: 0, next: next)
+                eta: "9:42 AM", checklistDone: 0, checklistTotal: 0, next: next,
+                access: "Side gate code 4821. Dog in yard.")
         ),
         (
             "on-site",

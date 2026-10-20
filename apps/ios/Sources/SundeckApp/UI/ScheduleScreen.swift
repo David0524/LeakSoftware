@@ -216,7 +216,11 @@
                         }
                     }
                     if !list.isEmpty {
-                        GroupedRows(list.map { WeekItem(job: $0.job, tech: $0.tech) }) { item in
+                        GroupedRows(
+                            list.map {
+                                WeekItem(job: $0.job, tech: $0.tech, cleanings: board.cleanings[$0.job.id] ?? [])
+                            }
+                        ) { item in
                             Button {
                                 openRoute(.job(item.job.id))
                             } label: {
@@ -298,6 +302,9 @@
         var tech: String
         var tray: [ScheduleJob]
         var mapsApp: MapsApp
+        /// Each visit's plan cleanings on its checklist (owner, 2026-10-20: "The filter/salt
+        /// cells don't show up on the dates they're due").
+        var cleanings: [String: [ScheduledCleaning]] = [:]
 
         init(
             store: LocalStore, kv: KeyValue, company: CompanyContext, userId: String, view: ScheduleView, date: String?,
@@ -327,6 +334,9 @@
             }
             tray = ctx.isManager ? needsATime(jobs, ctx: ctx) : []
             mapsApp = MapsApp(kv)
+            let shown = Set(
+                loaded.routes.values.flatMap { $0.jobs.map(\.id) } + loaded.unassigned.values.flatMap { $0.map(\.id) })
+            cleanings = scheduledCleanings(store, companyId: company.id, jobIds: shown)
         }
 
         func name(_ id: String) -> String { team.first { $0.id == id }?.name ?? "Teammate" }
@@ -380,6 +390,28 @@
             }
             if tech == "all" { jobs += loaded.unassigned[d]?.count ?? 0 }
             return (jobs, cleanings)
+        }
+
+        /// The cleanings on a day's shown visits, by name, once each (the month cell's VoiceOver).
+        func cleaningNames(_ d: String) -> [String] {
+            var names: [String] = []
+            var jobs = shownTechs.flatMap { loaded.routes[routeKey($0.id, d)]?.jobs ?? [] }
+            if tech == "all" { jobs += loaded.unassigned[d] ?? [] }
+            for j in jobs {
+                for c in cleanings[j.id] ?? [] where !names.contains(c.name) { names.append(c.name) }
+            }
+            return names
+        }
+
+        /// The kinds of cleaning on a day's shown visits, once each, for the month cell's icons.
+        func cleaningKinds(_ d: String) -> [CleaningKind] {
+            var kinds: [CleaningKind] = []
+            var jobs = shownTechs.flatMap { loaded.routes[routeKey($0.id, d)]?.jobs ?? [] }
+            if tech == "all" { jobs += loaded.unassigned[d] ?? [] }
+            for j in jobs {
+                for c in cleanings[j.id] ?? [] where !kinds.contains(c.kind) { kinds.append(c.kind) }
+            }
+            return kinds
         }
     }
 
@@ -602,7 +634,7 @@
                             short: route.summary.short[routeIndex: i] ?? 0)
                         StopWell(
                             job: j, note: stopNote(j, routeTech: tech.id, names: board.names),
-                            timeZone: board.ctx.timeZone
+                            timeZone: board.ctx.timeZone, cleanings: board.cleanings[j.id] ?? []
                         ) { onMove(j, routeKey(tech.id, board.date)) }
                     }
                     LegLine(minutes: route.summary.backLegMin, label: "back to the shop", short: 0)
@@ -627,6 +659,7 @@
         var job: ScheduleJob
         var note: String?
         var timeZone: String
+        var cleanings: [ScheduledCleaning] = []
         var onMove: () -> Void
         @Environment(\.openRoute) private var openRoute
 
@@ -656,6 +689,7 @@
                     }
                 }
                 AddressButton(place: job.place)
+                ScheduledCleaningsRow(cleanings: cleanings)
                 if let note { Text(note).textRole(.secondary).foregroundStyle(Color.textMuted) }
                 let lock = job.lock.flatMap { $0 == .started ? nil : $0 }
                 if job.status != .scheduled || lock != nil || job.location == nil {
@@ -678,7 +712,28 @@
     struct WeekItem: Identifiable {
         var job: ScheduleJob
         var tech: String
+        var cleanings: [ScheduledCleaning] = []
         var id: String { job.id }
+    }
+
+    /// A visit's plan cleanings: the cleaning icon and name, in a row that wraps.
+    struct ScheduledCleaningsRow: View {
+        var cleanings: [ScheduledCleaning]
+
+        var body: some View {
+            if !cleanings.isEmpty {
+                FlowRow(spacing: 12) {
+                    ForEach(Array(cleanings.enumerated()), id: \.offset) { _, c in
+                        HStack(spacing: 4) {
+                            CleaningIcon(kind: c.kind, size: 18).foregroundStyle(Color.text)
+                            Text(c.name).textRole(.secondary).fontWeight(.medium).foregroundStyle(Color.text)
+                        }
+                    }
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Cleanings due: " + cleanings.map(\.name).joined(separator: ", "))
+            }
+        }
     }
 
     /// A week row: "**8:00 AM · #1343**" over "Customer · Tech", the status chip, a chevron.
@@ -694,6 +749,7 @@
                     (Text(item.job.customerName).foregroundStyle(Color.text)
                         + Text(" · \(item.tech)").foregroundStyle(Color.textMuted))
                         .textRole(.secondary)
+                    ScheduledCleaningsRow(cleanings: item.cleanings)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 StatusChip(status: item.job.status)
@@ -739,6 +795,15 @@
                                 if c.cleanings > 0 {
                                     Text("\(c.cleanings) clean").textRole(.footnote).foregroundStyle(Color.textMuted)
                                 }
+                                // The day's plan cleanings, as their icons (owner, 2026-10-20).
+                                let kinds = board.cleaningKinds(d)
+                                if !kinds.isEmpty {
+                                    HStack(spacing: 2) {
+                                        ForEach(kinds, id: \.self) { CleaningIcon(kind: $0, size: 14) }
+                                    }
+                                    .foregroundStyle(Color.text)
+                                    .padding(.top, 2)
+                                }
                             }
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
@@ -759,6 +824,8 @@
                                 formatDay(d, long: true),
                                 c.jobs > 0 ? "\(c.jobs) \(c.jobs == 1 ? "job" : "jobs")" : nil,
                                 c.cleanings > 0 ? "\(c.cleanings) \(c.cleanings == 1 ? "cleaning" : "cleanings")" : nil,
+                                board.cleaningNames(d).isEmpty
+                                    ? nil : "cleanings due: " + board.cleaningNames(d).joined(separator: ", "),
                             ].compactMap { $0 }.joined(separator: ", "))
                     }
                 }

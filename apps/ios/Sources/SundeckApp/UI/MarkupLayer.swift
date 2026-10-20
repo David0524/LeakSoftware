@@ -102,8 +102,9 @@
                 context.stroke(
                     path, with: .color(color.color),
                     style: StrokeStyle(lineWidth: stroke, lineCap: .round, lineJoin: .round))
-            case .text(let color, let x, let y, let text):
-                let size = max(10, 24 * scale)
+            case .text(let color, let x, let y, let text, let s):
+                // Its own size (owner, 2026-10-20), 1 when unset.
+                let size = max(10, 24 * scale) * CGFloat(s ?? 1)
                 let font = Font.system(size: size, weight: .bold)
                 // SVG's baseline at y with a centered anchor: the text sits just above the point.
                 let at = CGPoint(x: x * w, y: y * h)

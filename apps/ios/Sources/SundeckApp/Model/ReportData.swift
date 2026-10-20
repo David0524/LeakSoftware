@@ -5,7 +5,7 @@ import SundeckSync
 /// A report version on the job. Port of ReportRecord in apps/mobile/src/data/reports.ts.
 public struct ReportRecord: Decodable, Equatable, Sendable, Identifiable {
     public enum Template: String, Codable, Sendable {
-        case homeowner, partner, insurance
+        case homeowner, partner
     }
 
     public enum Status: String, Codable, Sendable {

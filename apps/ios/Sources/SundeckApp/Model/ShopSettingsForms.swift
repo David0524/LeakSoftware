@@ -303,8 +303,8 @@ public enum OnMyWayChoice: String, CaseIterable, Hashable, Sendable {
 
 // MARK: - Report templates
 
-/// Settings › Report Templates: the homeowner report (name, on or off) and the insurance one
-/// (coming soon); the partner report is gone (owner, 2026-10-18).
+/// Settings › Report Templates: the homeowner report (name, on or off). The partner report is
+/// gone (owner, 2026-10-18), and so is the insurance one (owner, 2026-10-20).
 public struct ReportTemplateItem: Identifiable, Equatable, Sendable {
     public var id: String
     public var key: String
@@ -312,28 +312,31 @@ public struct ReportTemplateItem: Identifiable, Equatable, Sendable {
     public var enabled: Bool
 
     public var detail: String {
-        key == "insurance"
-            ? "For insurance claims."
-            : "For the pool owner: plain words, what was found, what it means, and what to do next."
+        "For the pool owner: plain words, what was found, what it means, and what to do next."
     }
 
-    public var value: String { key == "insurance" ? "Coming soon" : enabled ? "On" : "Off" }
-    public var editable: Bool { key != "insurance" }
+    public var value: String { enabled ? "On" : "Off" }
+    public var editable: Bool { true }
 }
 
 public let reportTemplatesSubtitle =
     "Which reports techs can send, and what they’re called. Each report is written from the job’s checklist, tests, and findings."
 
+/// A pool-only shop's Report Templates holds just its visit reports.
+public let visitReportsSubtitle = "What goes to the customer after each maintenance visit."
+
+public func reportTemplatesSubtitle(_ settings: JSONValue?) -> String {
+    offersLeak(settings) ? reportTemplatesSubtitle : visitReportsSubtitle
+}
+
 public func reportTemplateItems(_ store: LocalStore, companyId: String) -> [ReportTemplateItem] {
-    let order = ["homeowner", "insurance"]
-    return ((try? store.list("report_template")) ?? [])
+    ((try? store.list("report_template")) ?? [])
         .filter { $0["company_id"]?.string == companyId && $0["deleted_at"]?.string == nil }
         .compactMap { r -> ReportTemplateItem? in
-            guard let id = r["id"]?.string, let key = r["key"]?.string, key != "partner" else { return nil }
+            guard let id = r["id"]?.string, let key = r["key"]?.string, key == "homeowner" else { return nil }
             return ReportTemplateItem(
                 id: id, key: key, name: r["name"]?.string ?? key, enabled: r["enabled"]?.bool ?? false)
         }
-        .sorted { (order.firstIndex(of: $0.key) ?? 9) < (order.firstIndex(of: $1.key) ?? 9) }
 }
 
 // MARK: - Writes

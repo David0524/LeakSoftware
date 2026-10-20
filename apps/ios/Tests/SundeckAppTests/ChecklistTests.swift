@@ -610,11 +610,14 @@ import Testing
         #expect(rows.map(\.name) == ["Clean filter", "Clean salt cell", "Replace filter"])
         #expect(rows.map(\.kind) == [.filter, .saltCell, .filterReplace])
 
-        // Today: due within a week of the visit's day, just the icon and how soon.
-        let today = stopCleanings(rows, planId: "sp1", visitDay: "2026-10-19")
-        #expect(today.map(CleaningText.short) == ["Today", "4 days"])
-        #expect(today.map(CleaningText.spoken) == ["Clean filter due today", "Clean salt cell due in 4 days"])
-        #expect(stopCleanings(rows, planId: "other", visitDay: "2026-10-19").isEmpty)
+        // Today: only the cleanings on the visit's checklist, just the icon and how soon.
+        let today = stopCleanings(rows, onVisit: ["pc1"], visitDay: "2026-10-19")
+        #expect(today.map(CleaningText.short) == ["Today"])
+        #expect(today.map(CleaningText.spoken) == ["Clean filter due today"])
+        #expect(stopCleanings(rows, onVisit: [], visitDay: "2026-10-19").isEmpty)
+        // Schedule: the checklist's plan cleanings, by visit.
+        let scheduled = scheduledCleanings(store, companyId: "c1", jobIds: ["v1", "other"])
+        #expect(scheduled == ["v1": [ScheduledCleaning(name: "Clean filter", kind: .filter)]])
 
         // The visit's Regular cleanings: on this visit, or cadence and next; a replace filter's age.
         let job = try #require(try store.get("job", "v1"))

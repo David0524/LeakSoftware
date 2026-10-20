@@ -79,13 +79,45 @@ public func planCleanings(_ store: LocalStore, companyId: String, planIds: Set<S
         }
 }
 
-/// Today's pills for one stop: its plan's cleanings due within a week of the visit's day
-/// (website today/page.tsx `dueAt`).
-public func stopCleanings(_ cleanings: [PlanCleaningRow], planId: String?, visitDay: String) -> [VisitCleaning] {
-    cleanings.filter { $0.planId == planId }.compactMap { c in
-        guard let due = cleaningCountdown(c.nextDue, visitDay), due.soon else { return nil }
+/// Today's pills for one stop: the plan's cleanings on its checklist (`onVisit`, by plan
+/// cleaning id), with how each stands against its due date (website today/page.tsx `dueAt`;
+/// owner, 2026-10-20: what Today shows is what the checklist has).
+public func stopCleanings(_ cleanings: [PlanCleaningRow], onVisit: Set<String>, visitDay: String) -> [VisitCleaning] {
+    cleanings.filter { onVisit.contains($0.id) }.compactMap { c in
+        guard let due = cleaningCountdown(c.nextDue, visitDay) else { return nil }
         return VisitCleaning(id: c.id, name: c.name, kind: c.kind, due: due)
     }
+}
+
+/// A cleaning a plan put on a visit's checklist, for Schedule (owner, 2026-10-20: "The
+/// filter/salt cells don't show up on the dates they're due").
+public struct ScheduledCleaning: Equatable, Sendable {
+    public var name: String
+    public var kind: CleaningKind
+}
+
+/// The plan cleanings on these visits' checklists (job_component rows with plan_cleaning_id),
+/// by job, in checklist order (website `visitCleanings`).
+public func scheduledCleanings(_ store: LocalStore, companyId: String, jobIds: Set<String>)
+    -> [String: [ScheduledCleaning]]
+{
+    guard !jobIds.isEmpty else { return [:] }
+    let types = Dictionary(
+        ((try? store.list("component_type", companyId: companyId, includeDeleted: true)) ?? []).map { ($0.id, $0) },
+        uniquingKeysWith: { a, _ in a })
+    var out: [String: [ScheduledCleaning]] = [:]
+    let rows = ((try? store.list("job_component", companyId: companyId)) ?? []).filter {
+        $0["plan_cleaning_id"]?.string != nil && $0["deleted_at"]?.string == nil
+            && jobIds.contains($0["job_id"]?.string ?? "")
+    }
+    for row in rows.sorted(by: { ($0["sort_order"]?.number ?? 0) < ($1["sort_order"]?.number ?? 0) }) {
+        guard let job = row["job_id"]?.string else { continue }
+        let type = types[row["component_type_id"]?.string ?? ""]
+        let name = type?["name"]?.string ?? row["label"]?.string ?? "Cleaning"
+        out[job, default: []].append(
+            ScheduledCleaning(name: name, kind: cleaningKind(key: type?["key"]?.string, name: name)))
+    }
+    return out
 }
 
 /// One row of a visit's Regular cleanings (website jobs/[id]/page.tsx `Cleanings`).

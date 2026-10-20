@@ -401,7 +401,7 @@ import Testing
                         table: "report", xid: "2",
                         row: [
                             "id": "r2", "company_id": .string(Self.company), "job_id": .string(id(2)),
-                            "template_key": "insurance", "version": 1, "status": "draft",
+                            "template_key": "partner", "version": 1, "status": "draft",
                             "updated_at": "2026-10-16T20:00:00Z",
                         ]),
                     PulledRow(
@@ -417,7 +417,7 @@ import Testing
         #expect(all[1].customer == "Riley Rivera" && all[1].job == "Job #1041")
         #expect(all[1].detail == "Homeowner report · version 2 · 1 Palm Ct")
         #expect(all[1].value == "Sent Oct 15, 2026")
-        #expect(all[0].value == "Draft" && all[0].detail == "Insurance report · 2 Palm Ct")
+        #expect(all[0].value == "Draft" && all[0].detail == "Pool company report · 2 Palm Ct")
         #expect(reportList(sync.store, companyId: Self.company, filter: .draft, timeZone: "UTC").map(\.id) == ["r2"])
         #expect(ReportFilter.sent.empty == "No reports sent yet.")
     }

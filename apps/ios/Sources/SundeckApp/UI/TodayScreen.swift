@@ -144,18 +144,20 @@
             let pick = wanted ?? userId
             techId = ctx.isManager && techs.contains { $0.id == pick } ? pick : userId
             route = loaded.routes[routeKey(techId, ctx.today)]
-            // Each stop's plan cleanings due within a week of its day (website `dueAt`); a
-            // plan whose cleanings aren't on this phone yet shows the visit's checklist ones.
+            // Each stop's plan cleanings on its checklist, with their countdown (website `dueAt`);
+            // a plan whose cleanings aren't on this phone yet shows the visit's checklist ones.
             let config = InspectionConfig(store, companyId: company.id)
             let stops = (route?.jobs ?? []).filter { $0.type == .maintenance }
             let plans = planCleanings(
                 store, companyId: company.id, planIds: Set(stops.compactMap(\.servicePlanId)))
             for job in stops {
                 let day = job.planDate ?? ctx.today
+                let inspection = JobInspection(store, jobId: job.id)
                 let found =
                     plans.contains { $0.planId == job.servicePlanId }
-                    ? stopCleanings(plans, planId: job.servicePlanId, visitDay: day)
-                    : visitCleanings(JobInspection(store, jobId: job.id), config, day: day)
+                    ? stopCleanings(
+                        plans, onVisit: Set(inspection.components.compactMap(\.planCleaningId)), visitDay: day)
+                    : visitCleanings(inspection, config, day: day)
                 if !found.isEmpty { cleanings[job.id] = found }
             }
             mapsApp = MapsApp(kv)
@@ -217,6 +219,28 @@
                     .accessibilityHint(expanded ? "Folds the stop" : "Shows the address and buttons")
                     .accessibilityAction { toggle(expanded) }
                     .accessibilityAction(named: "Open Job") { openRoute(.job(job.id)) }
+                // The pool's access notes (gate code, which gate, dogs) under the header, open or
+                // closed (owner, 2026-10-20): one line closed, all of it open; gone once done.
+                if !done, let notes = job.accessNotes?.trimmingCharacters(in: .whitespacesAndNewlines), !notes.isEmpty {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Image(systemName: "key.fill")
+                            .font(.system(size: 15))
+                            .foregroundStyle(Color.warning)
+                            .accessibilityHidden(true)
+                        Text(notes)
+                            .lineLimit(expanded ? nil : 1)
+                            .fontWeight(.medium)
+                            .foregroundStyle(Color.text)
+                    }
+                    .textRole(.secondary)
+                    .padding(.leading, 52)
+                    .padding(.trailing, 12)
+                    .padding(.bottom, expanded ? 4 : 10)
+                    .padding(.top, -4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(CleaningText.accessSpoken(notes))
+                }
                 if expanded {
                     VStack(alignment: .leading, spacing: 4) {
                         AddressButton(place: job.place)
@@ -224,19 +248,6 @@
                             FlowRow(spacing: 16) { ForEach(cleanings) { CleaningDueLabel(cleaning: $0) } }
                                 .accessibilityElement(children: .contain)
                                 .accessibilityLabel("Cleanings due")
-                        }
-                        if let notes = job.accessNotes {
-                            // A plain muted line with a key, no fill (owner, 2026-10-19).
-                            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                                Image(systemName: "key")
-                                    .font(.system(size: 15))
-                                    .accessibilityHidden(true)
-                                Text(notes).lineLimit(2)
-                            }
-                            .textRole(.secondary)
-                            .foregroundStyle(Color.textMuted)
-                            .accessibilityElement(children: .ignore)
-                            .accessibilityLabel(CleaningText.accessSpoken(notes))
                         }
                         buttons(done: done)
                     }

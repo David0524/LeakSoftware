@@ -172,6 +172,8 @@ import Testing
         #expect(ahead.phase == .ahead && ahead.scheduled == "11:00 AM" && ahead.eta == nil)
         #expect(ahead.stop == 2 && ahead.next == nil)
         #expect(liveStopContent(ahead).headline == "Up next: Riley Rivera")
+        // The pool's access notes ride along until the stop is done (owner, 2026-10-20).
+        #expect(ahead.access == "Gate code 4417" && liveStopContent(ahead).access == "Gate code 4417")
 
         // A job not on the phone: no activity.
         #expect(

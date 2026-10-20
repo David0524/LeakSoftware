@@ -16,9 +16,12 @@
         @State private var loaded = false
         @State private var shared: SharedFile?
         @State private var unbilled: [UnbilledMonth] = []
-        @State private var filter = InvoiceFilter.all
+        @State private var filter: InvoiceFilter
         @State private var sort = InvoiceSort.newest
         @State private var search = ""
+
+        /// `filter` opens on one (the dashboard's Owed to you opens Unpaid); All by default.
+        init(filter: InvoiceFilter = .all) { _filter = State(initialValue: filter) }
 
         var body: some View {
             let company = session.company

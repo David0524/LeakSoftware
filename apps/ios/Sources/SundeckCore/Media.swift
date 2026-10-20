@@ -211,12 +211,14 @@ public struct MarkupPoint: Codable, Equatable, Sendable {
 public enum MarkupShape: Codable, Equatable, Sendable {
     case arrow(color: MarkupColor, x1: Double, y1: Double, x2: Double, y2: Double)
     case circle(color: MarkupColor, cx: Double, cy: Double, rx: Double, ry: Double)
-    case text(color: MarkupColor, x: Double, y: Double, text: String)
+    /// Text centered on (x, y); `s` is its size (owner, 2026-10-20: "adjust text location and
+    /// size"), 0.5 to 3, nil for the standard size 1.
+    case text(color: MarkupColor, x: Double, y: Double, text: String, s: Double? = nil)
     /// Freehand (owner, 2026-10-19: "Mark up should have a pen"): stored as `points: [[x, y]]`.
     case pen(color: MarkupColor, points: [MarkupPoint])
 
     enum CodingKeys: String, CodingKey {
-        case type, color, x1, y1, x2, y2, cx, cy, rx, ry, x, y, text, points
+        case type, color, x1, y1, x2, y2, cx, cy, rx, ry, x, y, text, points, s
     }
 
     public init(from decoder: Decoder) throws {
@@ -227,7 +229,9 @@ public enum MarkupShape: Codable, Equatable, Sendable {
         case "arrow": self = .arrow(color: color, x1: try d(.x1), y1: try d(.y1), x2: try d(.x2), y2: try d(.y2))
         case "circle": self = .circle(color: color, cx: try d(.cx), cy: try d(.cy), rx: try d(.rx), ry: try d(.ry))
         case "text":
-            self = .text(color: color, x: try d(.x), y: try d(.y), text: try c.decode(String.self, forKey: .text))
+            self = .text(
+                color: color, x: try d(.x), y: try d(.y), text: try c.decode(String.self, forKey: .text),
+                s: try c.decodeIfPresent(Double.self, forKey: .s))
         case "pen":
             let pairs = try c.decode([[Double]].self, forKey: .points)
             self = .pen(color: color, points: pairs.filter { $0.count >= 2 }.map { MarkupPoint(x: $0[0], y: $0[1]) })
@@ -254,12 +258,13 @@ public enum MarkupShape: Codable, Equatable, Sendable {
             try c.encode(cy, forKey: .cy)
             try c.encode(rx, forKey: .rx)
             try c.encode(ry, forKey: .ry)
-        case .text(let color, let x, let y, let text):
+        case .text(let color, let x, let y, let text, let size):
             try c.encode("text", forKey: .type)
             try c.encode(color, forKey: .color)
             try c.encode(x, forKey: .x)
             try c.encode(y, forKey: .y)
             try c.encode(text, forKey: .text)
+            try c.encodeIfPresent(size, forKey: .s)
         case .pen(let color, let points):
             try c.encode("pen", forKey: .type)
             try c.encode(color, forKey: .color)
@@ -315,7 +320,8 @@ private func validShape(_ s: JSONValue) -> MarkupShape? {
     case "text":
         let text = s["text"]?.string.map { String(utf16Prefix: ECMA.trim($0), Markup.textMax) } ?? ""
         guard let x = unit(s["x"]), let y = unit(s["y"]), !text.isEmpty else { return nil }
-        return .text(color: color, x: x, y: y, text: text)
+        let size = clampTextSize(s["s"])
+        return .text(color: color, x: x, y: y, text: text, s: size == 1 ? nil : size)
     case "pen":
         guard let raw = s["points"]?.array else { return nil }
         let points =
@@ -340,6 +346,32 @@ public func parseMarkup(_ value: JSONValue?) -> Markup {
 }
 
 private func clampUnit(_ v: Double) -> Double { ECMA.round(min(max(v, 0), 1) * 10000) / 10000 }
+
+public let markupTextSizeMin = 0.5
+public let markupTextSizeMax = 3.0
+
+/// A text size kept within bounds, to two decimals; 1 for anything that isn't a number.
+public func clampTextSize(_ s: JSONValue?) -> Double {
+    guard case .number(let n)? = s, n.isFinite else { return 1 }
+    return clampTextSize(n)
+}
+
+public func clampTextSize(_ n: Double) -> Double {
+    ECMA.round(min(markupTextSizeMax, max(markupTextSizeMin, n.isFinite ? n : 1)) * 100) / 100
+}
+
+/// A text label moved to `at` (dragged), kept on the photo. Other shapes come back unchanged.
+public func moveText(_ shape: MarkupShape, _ at: MarkupPoint) -> MarkupShape {
+    guard case .text(let color, _, _, let text, let size) = shape else { return shape }
+    return .text(color: color, x: clampUnit(at.x), y: clampUnit(at.y), text: text, s: size)
+}
+
+/// A text label at a new size (pinched, or the size control), kept within bounds.
+public func resizeText(_ shape: MarkupShape, _ size: Double) -> MarkupShape {
+    guard case .text(let color, let x, let y, let text, _) = shape else { return shape }
+    let s = clampTextSize(size)
+    return .text(color: color, x: x, y: y, text: text, s: s == 1 ? nil : s)
+}
 
 /// Build a shape from a drag gesture (start and end as fractions of the image).
 public func shapeFromDrag(_ type: MarkupGesture, _ color: MarkupColor, _ start: MarkupPoint, _ end: MarkupPoint)

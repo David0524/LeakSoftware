@@ -75,12 +75,15 @@
         @Environment(AppEnvironment.self) private var app
         @Environment(\.openRoute) private var openRoute
         @Environment(\.openURL) private var openURL
+        @State private var filter: JobFilter
         @State private var mode = JobsMode.jobs
-        @State private var filter = JobFilter.open
         @State private var reportFilter = ReportFilter.all
         @State private var search = ""
         @State private var rows: [JobListRow] = []
         @State private var reports: [ReportListRow] = []
+
+        /// `filter` opens on a status (the dashboard's rows); Open by default.
+        init(filter: JobFilter = .open) { _filter = State(initialValue: filter) }
 
         var body: some View {
             let company = session.company

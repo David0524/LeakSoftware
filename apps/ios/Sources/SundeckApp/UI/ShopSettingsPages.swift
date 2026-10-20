@@ -515,21 +515,26 @@
 
         var body: some View {
             ScreenScroll {
-                Text(reportTemplatesSubtitle).textRole(.body).foregroundStyle(Color.textMuted)
+                let leak = offersLeak(session.company?.settings)
+                Text(reportTemplatesSubtitle(session.company?.settings)).textRole(.body).foregroundStyle(
+                    Color.textMuted)
                 if let notice { Notice(kind: .success, text: notice) }
-                Grouped {
-                    ForEach(items) { item in
-                        Button {
-                            if item.editable { editing = item }
-                        } label: {
-                            ListRow(item.name, detail: item.detail, value: item.value, chevron: item.editable)
+                // A pool-only shop has only its visit reports here (owner, 2026-10-20).
+                if leak {
+                    Grouped {
+                        ForEach(items) { item in
+                            Button {
+                                if item.editable { editing = item }
+                            } label: {
+                                ListRow(item.name, detail: item.detail, value: item.value, chevron: item.editable)
+                            }
+                            .buttonStyle(.row)
+                            .disabled(!item.editable)
                         }
-                        .buttonStyle(.row)
-                        .disabled(!item.editable)
                     }
                 }
                 VisitReportSettingGroup()
-                SavedReportsGroup()
+                if leak { SavedReportsGroup() }
             }
             .refreshable { await sync.syncNow() }
             .navigationTitle(SettingsPage.reports.title)

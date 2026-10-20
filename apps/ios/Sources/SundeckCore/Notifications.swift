@@ -114,10 +114,13 @@ public struct LiveStopInput: Codable, Hashable, Sendable {
     public var checklistDone: Int
     public var checklistTotal: Int
     public var next: LiveStopNext?
+    /// The pool's access notes: gate code, which gate, dogs (property.access_notes).
+    public var access: String?
 
     public init(
         phase: LiveStopPhase, customer: String, address: String?, stop: Int, stops: Int, eta: String?,
-        scheduled: String? = nil, checklistDone: Int, checklistTotal: Int, next: LiveStopNext?
+        scheduled: String? = nil, checklistDone: Int, checklistTotal: Int, next: LiveStopNext?,
+        access: String? = nil
     ) {
         self.phase = phase
         self.customer = customer
@@ -129,6 +132,7 @@ public struct LiveStopInput: Codable, Hashable, Sendable {
         self.checklistDone = checklistDone
         self.checklistTotal = checklistTotal
         self.next = next
+        self.access = access
     }
 }
 
@@ -150,9 +154,30 @@ public struct LiveStopContent: Codable, Equatable, Sendable {
     public var compact: String
     /// One sentence for VoiceOver.
     public var spoken: String
+    /// The stop's access notes on one line, with a key on the Lock Screen, until the stop is
+    /// done (owner, 2026-10-20); nil when there are none.
+    public var access: String? = nil
+}
+
+/// Access notes as one short line: spaces and line breaks collapsed, at most 90 characters.
+public func accessLine(_ notes: String?) -> String? {
+    let one = ECMA.trim((notes ?? "").replacing(/\s+/, with: " "))
+    if one.isEmpty { return nil }
+    let units = Array(one.utf16)
+    guard units.count > 90 else { return one }
+    var cut = String(decoding: units.prefix(89), as: UTF16.self)
+    while let last = cut.last, last.isWhitespace { cut.removeLast() }
+    return cut + "…"
 }
 
 public func liveStopContent(_ s: LiveStopInput) -> LiveStopContent {
+    var content = liveStopBase(s)
+    content.access = s.phase == .done ? nil : accessLine(s.access)
+    if let access = content.access { content.spoken += " Access: \(access)" }
+    return content
+}
+
+private func liveStopBase(_ s: LiveStopInput) -> LiveStopContent {
     let of = "Stop \(s.stop) of \(s.stops)"
     let detail = [of, s.address].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
     let next = s.next.map { n in "Next: \(n.customer)\((n.time?.isEmpty == false) ? " at \(n.time!)" : "")" }

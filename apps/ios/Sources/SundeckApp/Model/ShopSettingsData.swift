@@ -64,17 +64,15 @@ public enum SettingsPage: String, CaseIterable, Hashable, Sendable {
 }
 
 /// The settings groups, as the website's `settingsGroups()`; leak-only pages hidden for pool
-/// shops. Sundeck Pro Billing is left out of the apps (decision 12).
+/// shops, which keep Report Templates for their visit reports (owner, 2026-10-20). Sundeck Pro
+/// Billing is left out of the apps (decision 12).
 public func settingsGroups(_ services: Services) -> [(title: String, pages: [SettingsPage])] {
-    let leakOnly: Set<SettingsPage> = [.tests, .severities, .exclusions, .reports]
+    let leakOnly: Set<SettingsPage> = [.tests, .severities, .exclusions]
     let keep = { (pages: [SettingsPage]) in pages.filter { services != .pool || !leakOnly.contains($0) } }
     return [
         ("Your shop", keep([.company, .team, .importCustomers, .scheduling, .phone])),
         ("Money", keep([.priceBook, .payments])),
-        (
-            services == .pool ? "Checklists" : "Checklists and reports",
-            keep([.components, .tests, .severities, .exclusions, .reports])
-        ),
+        ("Checklists and reports", keep([.components, .tests, .severities, .exclusions, .reports])),
     ]
 }
 

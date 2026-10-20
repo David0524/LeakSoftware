@@ -96,7 +96,7 @@ public func liveStopInput(
         next: next.map {
             let time = formatTime($0.scheduledStart, timeZone: ctx.timeZone)
             return LiveStopNext(customer: $0.customerName, time: time.isEmpty ? nil : time)
-        })
+        }, access: job.accessNotes)
 }
 
 /// How long the activity stays on the Lock Screen after the stop is done.

@@ -14,6 +14,7 @@ import Testing
             "weightAmount", "saturationIndex", "calculateChemistry", "doseSummary", "launchCards", "seenTips",
             "tipFor", "gettingStarted", "READING_LABELS", "READING_LIMITS", "readingSummary",
             "waterTestRows", "INVOICE_FILTERS", "INVOICE_SORTS", "invoiceOverdue", "filterInvoices",
+            "monthLabel", "acceptanceRate", "dashboardTotals",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -78,6 +79,12 @@ import Testing
             number: 1, status: .void, totalCents: 1000, amountPaidCents: 0, dueDate: nil, sentAt: nil, customer: nil,
             jobNumber: nil),
     ]
+
+    @Test func dashboard() {
+        checkRule(module, "monthLabel") { c in monthLabel(try c.arg(0), long: try c.arg(1)) }
+        checkRule(module, "acceptanceRate") { c in acceptanceRate(try c.arg(0), try c.arg(1)) }
+        checkRule(module, "dashboardTotals") { c in dashboardTotals(try c.arg(0)) }
+    }
 
     @Test func invoiceFilters() {
         checkRule(module, "INVOICE_FILTERS") { _ in
