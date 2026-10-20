@@ -178,7 +178,7 @@ export function ScheduleScreen() {
                   ? "Maintenance"
                   : j.type === "inspection"
                     ? "Pool inspection"
-                    : null,
+                    : "Leak detection",
           // Left out of drive times until its address is found (owner, 2026-10-20).
           mapStatus(j.property, routing) === "missing" ? NOT_ON_MAP.short : null,
         ]

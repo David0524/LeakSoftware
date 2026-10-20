@@ -258,8 +258,8 @@ public func routePoints(_ jobs: [ScheduleJob], depot: LatLng?) -> [String] {
     return keys
 }
 
-/// The note on a stop: "Second tech, with Tony", "With Sam", "Repair", "Maintenance", "Pool inspection",
-/// then " · Not on map" when its address wasn't found and the server looks addresses up (owner,
+/// The note on a stop: "Second tech, with Tony", "With Sam", "Leak detection", "Repair", "Maintenance",
+/// "Pool inspection",/// then " · Not on map" when its address wasn't found and the server looks addresses up (owner,
 /// 2026-10-20: it's left out of drive times until it is).
 public func stopNote(_ j: ScheduleJob, routeTech: String?, names: [String: String], routing: Bool = false) -> String? {
     let note: String? = {
@@ -271,7 +271,7 @@ public func stopNote(_ j: ScheduleJob, routeTech: String?, names: [String: Strin
         case .repair: return "Repair"
         case .maintenance: return "Maintenance"
         case .inspection: return "Pool inspection"
-        case .detection: return nil
+        case .detection: return "Leak detection"
         }
     }()
     let parts = [note, routing && j.mapMissing ? NotOnMap.short : nil].compactMap { $0 }

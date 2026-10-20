@@ -89,7 +89,7 @@ function toStop(j: JobRow, ctx: RouteContext, route?: DayRoute, i = 0): BoardSto
                 ? "Maintenance"
                 : j.type === "inspection"
                   ? "Pool inspection"
-                  : null,
+                  : "Leak detection",
         // Left out of drive times until its address is found (owner, 2026-10-20).
         mapStatus(j.property, routingConfigured()) === "missing" ? NOT_ON_MAP.short : null,
       ]

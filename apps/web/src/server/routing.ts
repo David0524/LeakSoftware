@@ -62,7 +62,10 @@ export function mapbox(token: string, fetchImpl: typeof fetch = fetch): RoutingP
       if (near) url.searchParams.set("proximity", `${near.lng},${near.lat}`);
       url.searchParams.set("access_token", token);
       const res = await fetchImpl(url);
-      if (!res.ok) throw new Error(`Mapbox suggestions ${res.status}`);
+      if (!res.ok)
+        throw new Error(
+          `Mapbox suggestions ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`,
+        );
       const body = (await res.json()) as { features?: { properties?: MapboxProperties }[] };
       return (body.features ?? []).flatMap((f) => {
         const p = f.properties;
@@ -161,19 +164,31 @@ export async function suggestAddresses(
   text: string,
   near: LatLng | null,
   provider: RoutingProvider | null = routingProvider(),
+  /** Told why nothing came back: no key, the day's allowance, or the service's error. */
+  onProblem: (problem: string) => void = () => {},
 ): Promise<AddressSuggestion[]> {
   const q = text.trim().slice(0, 120);
-  if (!provider || q.length < 4) return [];
+  if (q.length < 4) return [];
+  if (!provider) {
+    onProblem("No routing key");
+    return [];
+  }
   const { data, error } = await db.rpc("routing_use", {
     target_company: companyId,
     use_kind: "suggest",
     how_many: 1,
     day_limit: suggestLimit(),
   });
-  if (error || data !== true) return [];
+  if (error || data !== true) {
+    onProblem(error ? `Allowance check: ${error.message}` : "Day's allowance used");
+    return [];
+  }
   try {
     return await provider.suggest(q, near);
-  } catch {
+  } catch (e) {
+    const problem = e instanceof Error ? e.message : String(e);
+    console.error(`Address suggestions: ${problem}`);
+    onProblem(problem);
     return [];
   }
 }

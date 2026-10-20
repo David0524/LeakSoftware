@@ -17,11 +17,15 @@ export async function POST(request: Request) {
   if (!role) return jsonError("You’re not on this shop’s team.", 403);
   const companyId = body!.company_id as string;
   const q = typeof body!.q === "string" ? body!.q : "";
+  let problem: string | null = null;
   const suggestions = await suggestAddresses(
     session.db,
     companyId,
     q,
     await shopLocation(session.db, companyId),
+    undefined,
+    (p) => (problem = p),
   );
-  return Response.json({ suggestions });
+  // Why nothing came back, for the team's own shop (no key, the allowance, the service's error).
+  return Response.json(problem ? { suggestions, problem } : { suggestions });
 }
