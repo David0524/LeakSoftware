@@ -106,7 +106,8 @@ export function MarkupLayer({
             </G>
           );
         }
-        const size = Math.max(10, 24 * scale);
+        // Its own size (owner, 2026-10-20), 1 being the standard.
+        const size = Math.max(10, 24 * scale) * (s.s ?? 1);
         const text = {
           x: s.x * width,
           y: s.y * height,

@@ -46,17 +46,17 @@ import { EditSheet, FormActions, ManagersOnly, SettingsList, useEditSheet } from
 
 interface Template {
   id: string;
-  key: "homeowner" | "partner" | "insurance";
+  key: string;
   name: string;
   enabled: boolean;
   deleted_at?: string | null;
 }
 
-const ABOUT: Record<"homeowner" | "insurance", string> = {
+const ABOUT: Record<"homeowner", string> = {
   homeowner: "For the pool owner: plain words, what was found, what it means, and what to do next.",
-  insurance: "For insurance claims.",
 };
-const ORDER = ["homeowner", "insurance"];
+// The insurance report is gone (owner, 2026-10-20: "Remove the insurance stuff").
+const ORDER = ["homeowner"];
 
 export function ReportTemplates() {
   return (
@@ -69,7 +69,7 @@ export function ReportTemplates() {
 function TemplatesPage() {
   const company = useCompany();
   const templates = useRows<Template>("report_template", company.id)
-    .filter((t) => t.key !== "partner" && !t.deleted_at)
+    .filter((t) => t.key === "homeowner" && !t.deleted_at)
     .sort((a, b) => ORDER.indexOf(a.key) - ORDER.indexOf(b.key));
   const sheet = useEditSheet<Template>();
   // A pool-only shop has no leak reports: only its visit reports are set here.
@@ -99,24 +99,15 @@ function TemplatesPage() {
       >
         {leak ? (
           <Group>
-            {templates.map((t) =>
-              t.key === "insurance" ? (
-                <ListRow
-                  key={t.id}
-                  title={t.name}
-                  subtitle={ABOUT.insurance}
-                  detail="Coming soon"
-                />
-              ) : (
-                <ListRow
-                  key={t.id}
-                  title={t.name}
-                  subtitle={ABOUT.homeowner}
-                  detail={t.enabled ? "On" : "Off"}
-                  onPress={() => sheet.open(t)}
-                />
-              ),
-            )}
+            {templates.map((t) => (
+              <ListRow
+                key={t.id}
+                title={t.name}
+                subtitle={ABOUT.homeowner}
+                detail={t.enabled ? "On" : "Off"}
+                onPress={() => sheet.open(t)}
+              />
+            ))}
           </Group>
         ) : null}
 

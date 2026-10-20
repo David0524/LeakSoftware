@@ -291,7 +291,8 @@ function Leg({ text, late }: { text: string; late?: string | null }) {
  * One stop (owner, 2026-10-19: "keep these cards on Today collapsed except for the job you are
  * on. Then a tap on an old job or future job expands it"), as the website's TodayStop: one row
  * (number, or a green check when done; time; customer; state) that opens to the address,
- * cleanings, access notes, Mark Complete, Open Job, call, and On My Way.
+ * cleanings, Mark Complete, call, and On My Way. Access notes show under the row, open or
+ * closed.
  */
 function Stop({
   job,
@@ -400,6 +401,25 @@ function Stop({
           <WebIcon name="chevronDown" size={20} color={color.textMuted} strokeWidth={2.2} />
         </Animated.View>
       </Pressable>
+      {/* Gate code, which gate, dogs: on the card open or closed (owner, 2026-10-20). */}
+      {job.property?.access_notes?.trim() && !done ? (
+        <View
+          accessible
+          accessibilityLabel={`Access: ${job.property.access_notes.trim()}`}
+          style={styles.access}
+        >
+          <View style={styles.accessIcon}>
+            <WebIcon name="key" size={18} color={color.warning} />
+          </View>
+          <Text
+            numberOfLines={expanded ? undefined : 1}
+            style={[type.secondary, face.medium, { flex: 1, color: color.text }]}
+            maxFontSizeMultiplier={MAX_TEXT_SCALE}
+          >
+            {job.property.access_notes.trim()}
+          </Text>
+        </View>
+      ) : null}
       {expanded ? (
         <View style={styles.body}>
           {job.property ? (
@@ -415,24 +435,6 @@ function Stop({
           ) : null}
           {/* Just the icon and how soon (owner, 2026-10-19), as the website. */}
           {done ? null : <CleaningsDue job={job} />}
-          {job.property?.access_notes ? (
-            <View
-              accessible
-              accessibilityLabel={`Access: ${job.property.access_notes}`}
-              style={styles.access}
-            >
-              <View style={styles.accessIcon}>
-                <WebIcon name="key" size={18} color={color.textMuted} />
-              </View>
-              <Text
-                numberOfLines={2}
-                style={[type.secondary, { flex: 1, color: color.textMuted }]}
-                maxFontSizeMultiplier={MAX_TEXT_SCALE}
-              >
-                {job.property.access_notes}
-              </Text>
-            </View>
-          ) : null}
           <View style={styles.buttons}>
             {/* Every stop: done for the day without the full process (owner, 2026-10-19). */}
             <TodayComplete
@@ -521,6 +523,15 @@ const styles = StyleSheet.create({
   numberText: { fontFamily: font.displayBold, fontSize: 17, fontVariant: ["tabular-nums"] },
   time: { fontFamily: font.displayBold, fontSize: 17 },
   actions: { marginLeft: "auto", flexDirection: "row", gap: space["2"] },
-  access: { marginTop: space["1"], flexDirection: "row", alignItems: "flex-start", gap: 6 },
+  // Lined up with the time and name, under the stop's number.
+  access: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+    marginTop: -space["1"],
+    paddingLeft: space["3"] + 32 + space["2"],
+    paddingRight: space["3"],
+    paddingBottom: space["2"],
+  },
   accessIcon: { marginTop: 1 },
 });

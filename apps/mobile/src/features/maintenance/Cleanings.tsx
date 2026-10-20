@@ -83,22 +83,84 @@ function visitDay(job: Job, timezone: string): string {
   return job.plan_date ?? localDate(new Date(), timezone);
 }
 
-/** The cleanings due within a week of a visit (the website's Today dueAt). */
+/**
+ * The plan's cleanings on a visit's checklist (the items a plan cleaning put there,
+ * `plan_cleaning_id`), with how they stand against their due date: what Today shows (owner,
+ * 2026-10-20: what Today shows is what the checklist has; the website's Today dueAt).
+ */
 export function useCleaningsDue(job: Job): VisitCleaning[] {
   const company = useCompany();
   const config = useInspectionConfig(job.company_id);
   const byPlan = usePlanCleanings(job.company_id);
+  const components = useJobRows<JobComponent & { deleted_at?: string | null }>(
+    "job_component",
+    job.company_id,
+    job.id,
+  );
   const day = visitDay(job, company.timezone);
-  return useMemo(
-    () =>
-      (job.service_plan_id ? (byPlan.get(job.service_plan_id) ?? []) : [])
-        .map((c) => ({
-          id: c.id,
-          ...cleaningType(config.componentTypeById.get(c.component_type_id)),
-          due: cleaningCountdown(c.next_due, day),
-        }))
-        .filter((c) => c.due.soon),
-    [byPlan, config.componentTypeById, job.service_plan_id, day],
+  return useMemo(() => {
+    const here = new Set(
+      components
+        .filter((c) => c.job_id === job.id && !c.deleted_at && c.plan_cleaning_id)
+        .map((c) => c.plan_cleaning_id),
+    );
+    return (job.service_plan_id ? (byPlan.get(job.service_plan_id) ?? []) : [])
+      .filter((c) => here.has(c.id))
+      .map((c) => ({
+        id: c.id,
+        ...cleaningType(config.componentTypeById.get(c.component_type_id)),
+        due: cleaningCountdown(c.next_due, day),
+      }));
+  }, [byPlan, components, config.componentTypeById, job.id, job.service_plan_id, day]);
+}
+
+/**
+ * Every visit's plan cleanings on this phone (filter, salt cell, filter replacement: the
+ * checklist items with `plan_cleaning_id`), by job, in checklist order, so Schedule shows them on
+ * the date they're due (owner, 2026-10-20: "The filter/salt cells don't show up on the dates
+ * they're due"). The database puts each one on the first visit on or after its due date.
+ */
+export function useVisitCleanings(
+  companyId: string,
+): Map<string, { kind: CleaningKind; name: string }[]> {
+  const rows = useRows<JobComponent & { deleted_at?: string | null }>("job_component", companyId);
+  const config = useInspectionConfig(companyId);
+  return useMemo(() => {
+    const out = new Map<string, { kind: CleaningKind; name: string; order: number }[]>();
+    for (const r of rows) {
+      if (!r.plan_cleaning_id || r.deleted_at) continue;
+      const type = config.componentTypeById.get(r.component_type_id);
+      if (!type) continue;
+      const list = out.get(r.job_id) ?? [];
+      list.push({ ...cleaningType(type), order: type.sort_order ?? 0 });
+      out.set(r.job_id, list);
+    }
+    return new Map(
+      [...out].map(([job, list]) => [
+        job,
+        list.sort((a, b) => a.order - b.order).map(({ kind, name }) => ({ kind, name })),
+      ]),
+    );
+  }, [rows, config.componentTypeById]);
+}
+
+/** A visit's cleanings as their icons and names ("Clean filter"), for Schedule's stops. */
+export function CleaningNames({ list }: { list: { kind: CleaningKind; name: string }[] }) {
+  if (!list.length) return null;
+  return (
+    <View style={styles.due} accessibilityLabel="Cleanings due">
+      {list.map((c) => (
+        <View key={c.name} style={styles.dueItem}>
+          <CleaningIcon kind={c.kind} size={18} />
+          <Text
+            style={[type.secondary, face.medium, { color: color.text }]}
+            maxFontSizeMultiplier={MAX_TEXT_SCALE}
+          >
+            {c.name}
+          </Text>
+        </View>
+      ))}
+    </View>
   );
 }
 

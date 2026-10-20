@@ -223,11 +223,18 @@ function StopCard({
             : null,
         }
       : null,
+    access: job.property?.access_notes ?? null,
   };
   const c = liveStopContent(input);
   // Title: the headline. Text: the figure with its label, then the detail and next lines for
   // the expanded view. Never a timer or a stopwatch (owner, 2026-10-19).
-  const body = [[c.figureLabel, c.figure].filter(Boolean).join(" "), c.detail, c.next]
+  // Access notes (gate code, dogs) right under it, until the stop is done (owner, 2026-10-20).
+  const body = [
+    [c.figureLabel, c.figure].filter(Boolean).join(" "),
+    c.access ? `Access: ${c.access}` : null,
+    c.detail,
+    c.next,
+  ]
     .filter(Boolean)
     .join("\n");
   const phone = job.customer?.phone ?? null;

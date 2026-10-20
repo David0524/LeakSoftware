@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { addMonths, dateFormat, formatDay, monthGrid } from "@leakbook/core";
+import { addMonths, dateFormat, formatDay, monthGrid, type CleaningKind } from "@leakbook/core";
+import { CleaningIcon } from "../maintenance/Cleanings";
 import { Card, RoundButton, T } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { color, face, font, MAX_TEXT_SCALE, space } from "../../ui/theme";
@@ -34,7 +35,10 @@ export function MonthCalendar({
   /** "2026-10" */
   month: string;
   today: string;
-  counts: Record<string, { jobs: number; cleanings: number }>;
+  counts: Record<
+    string,
+    { jobs: number; cleanings: number; due?: { kind: CleaningKind; name: string }[] }
+  >;
   onPick: (date: string) => void;
 }) {
   return (
@@ -57,6 +61,7 @@ export function MonthCalendar({
                 c.cleanings
                   ? `${c.cleanings} ${c.cleanings === 1 ? "cleaning" : "cleanings"}`
                   : null,
+                ...(c.due ?? []).map((x) => `${x.name} due`),
               ]
                 .filter(Boolean)
                 .join(", ");
@@ -94,6 +99,14 @@ export function MonthCalendar({
                     >
                       {c.cleanings} clean
                     </Text>
+                  ) : null}
+                  {c.due?.length ? (
+                    // The filter and salt cell cleanings due that day, as their icons.
+                    <View style={styles.dueIcons}>
+                      {[...new Set(c.due.map((x) => x.kind))].map((k) => (
+                        <CleaningIcon key={k} kind={k} size={14} tone={color.link} />
+                      ))}
+                    </View>
                   ) : null}
                 </Pressable>
               );
@@ -193,6 +206,13 @@ const styles = StyleSheet.create({
   weekdays: { flexDirection: "row", paddingVertical: 4 },
   cellText: { flex: 1, textAlign: "center" },
   week: { flexDirection: "row", gap: 4 },
+  dueIcons: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 2,
+    marginTop: 2,
+  },
   monthCell: {
     flex: 1,
     minHeight: 64,

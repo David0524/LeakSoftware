@@ -324,9 +324,9 @@ function ReportRow({
   const template =
     report.template_key === "homeowner"
       ? "Homeowner report"
-      : report.template_key === "partner"
-        ? "Partner report"
-        : "Insurance report";
+      : report.template_key === "maintenance"
+        ? "Visit report"
+        : "Partner report";
   return (
     <GroupedRow
       first={first}

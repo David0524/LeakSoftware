@@ -29,6 +29,7 @@ import {
   type SuggestedTime,
 } from "@leakbook/core";
 import { jobLock, useJobViews, type JobView } from "../../data/jobs";
+import { useVisitCleanings } from "../maintenance/Cleanings";
 import {
   needsATime,
   planContext,
@@ -86,6 +87,8 @@ export function ScheduleScreen() {
   const today = ctx.today;
   const jobs = useJobViews(company.id);
   const team = useTeam(company.id);
+  // The plan's cleanings on each visit, on the date they're due (owner, 2026-10-20).
+  const visitCleanings = useVisitCleanings(company.id);
   const [choice] = useDirectionsChoice();
   const app = mapsAppFor(choice);
 
@@ -167,6 +170,7 @@ export function ScheduleScreen() {
             : j.type === "maintenance"
               ? "Maintenance"
               : null,
+      cleanings: visitCleanings.get(j.id),
     };
   };
 
@@ -361,6 +365,7 @@ export function ScheduleScreen() {
         {
           jobs: list.filter((j) => j.type !== "maintenance").length + extra,
           cleanings: list.filter((j) => j.type === "maintenance").length,
+          due: list.flatMap((j) => visitCleanings.get(j.id) ?? []),
         },
       ];
     }),

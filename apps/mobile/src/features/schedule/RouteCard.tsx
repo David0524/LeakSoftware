@@ -4,7 +4,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
-import { durationLabel, type JobStatus, type LatLng } from "@leakbook/core";
+import { durationLabel, type CleaningKind, type JobStatus, type LatLng } from "@leakbook/core";
+import { CleaningNames } from "../maintenance/Cleanings";
 import { Button, Card, StatusChip, T } from "../../ui/components";
 import { color, face, MAX_TEXT_SCALE, space, type } from "../../ui/theme";
 
@@ -26,6 +27,8 @@ export interface Stop {
   legMin: number | null;
   shortMin: number;
   note: string | null;
+  /** The plan's cleanings on this visit's checklist: filter, salt cell (owner, 2026-10-20). */
+  cleanings?: { kind: CleaningKind; name: string }[];
 }
 
 export interface Route {
@@ -198,6 +201,7 @@ function StopWell({
           {s.note}
         </T>
       ) : null}
+      {s.cleanings?.length ? <CleaningNames list={s.cleanings} /> : null}
       {s.status !== "scheduled" || s.lock || !s.location ? (
         <View style={styles.chips}>
           {s.status !== "scheduled" ? <StatusChip status={s.status} /> : null}
