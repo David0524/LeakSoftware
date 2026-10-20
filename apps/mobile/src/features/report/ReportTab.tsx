@@ -1,12 +1,14 @@
 import { router } from "expo-router";
 import { File, Paths } from "expo-file-system";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Linking, Pressable, Share, StyleSheet, Text, View } from "react-native";
+import * as WebBrowser from "expo-web-browser";
+import { Pressable, Share, StyleSheet, Text, View } from "react-native";
 import { SvgXml } from "react-native-svg";
 import {
   SIGNATURE_PURPOSE_LABELS,
   enabledSignaturePurposes,
   formatSchedule,
+  isManagerRole,
   splitEmails,
   type Customer,
   type FinalSection,
@@ -15,6 +17,7 @@ import {
 import type { JsonValue } from "@leakbook/sync";
 import { useRows } from "../../data/hooks";
 import {
+  REPORT_STEPS,
   finishReportFromPhone,
   reportsOnline,
   sendReportFromPhone,
@@ -28,8 +31,11 @@ import { getServices } from "../../lib/services";
 import { useCompany, useSession } from "../../state/session";
 import { Button, Card, Field, Notice, T } from "../../ui/components";
 import { confirmDestructive } from "../../ui/confirm";
+import { haptics } from "../../ui/haptics";
 import { color, face, MAX_TEXT_SCALE, minTap, space } from "../../ui/theme";
+import { StepList } from "../../ui/Progress";
 import { WebIcon } from "../../ui/WebIcon";
+import { SaveAsSavedReportSheet, UseSavedReportSheet } from "./SavedReportPicker";
 import { FinishPhotoNotice, useNeedsFinishPhoto } from "../media/FinishPhoto";
 
 type Template = "homeowner" | "partner";
@@ -88,7 +94,8 @@ function LinkButton({
  */
 export function ReportTab({ job, customer }: { job: Job; customer: Customer | undefined }) {
   const company = useCompany();
-  const { services } = useSession();
+  const { services, membership } = useSession();
+  const canManage = isManagerRole(membership?.role);
   const signatures = useJobSignatures(company.id, job.id);
   const reports = useJobReports(company.id, job.id);
   const templateRows = useRows<TemplateRow>("report_template", company.id);
@@ -106,6 +113,11 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState<"draft" | "email" | "text" | "finish" | null>(null);
+  // The step of the wait on the server (StepList).
+  const [step, setStep] = useState(0);
+  const [picking, setPicking] = useState(false);
+  const [savingAs, setSavingAs] = useState(false);
+  const [sendingId, setSendingId] = useState<string | null>(null);
   const [status, setStatus] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const [sendStatus, setSendStatus] = useState<{ tone: "success" | "error"; text: string } | null>(
     null,
@@ -123,6 +135,22 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
   const hasDraft = Boolean(draft?.final_sections);
   const sections = draft?.final_sections ?? [];
   const problems = draft?.ai_draft?.problems ?? [];
+  // The draft as it reads now, unsaved edits included.
+  const current: FinalSection[] = sections.map((s) =>
+    edits[s.key] === undefined ? s : { ...s, text: edits[s.key]! },
+  );
+
+  /** Use Saved Report: the saved text goes in word for word, saved like an edit. */
+  function applySaved(next: FinalSection[], name: string) {
+    if (!draft) return;
+    services.sync.write("report", draft.id, company.id, {
+      final_sections: next as unknown as JsonValue,
+    });
+    setEdits({});
+    setSaved(false);
+    haptics.success();
+    setStatus({ tone: "success", text: `Used “${name}”. Read it over before sending.` });
+  }
 
   /** Other emails are saved on the customer, so later reports and quotes use them too. */
   function saveOtherEmails() {
@@ -159,6 +187,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
 
   async function run(kind: "draft" | "email" | "text" | "finish", reportId = draft?.id) {
     setBusy(kind);
+    setStep(0);
     const sending = kind === "email" || kind === "text";
     (sending ? setSendStatus : setStatus)(null);
     setPhotoAsked(null);
@@ -168,7 +197,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
     }
     try {
       if (kind === "draft") {
-        const r = await writeReportDraft(job.id, template);
+        const r = await writeReportDraft(job.id, template, setStep);
         setEdits({});
         setOpen(true);
         setStatus({
@@ -179,7 +208,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
         });
       } else if (kind === "finish") {
         saveEdits();
-        await finishReportFromPhone(reportId!, false);
+        await finishReportFromPhone(reportId!, false, setStep);
         setStatus({ tone: "success", text: "Report finished. Send it to the customer below." });
       } else {
         saveEdits();
@@ -190,6 +219,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
           reportId!,
           kind === "email" ? "email" : "sms_device",
           kind === "email" ? email : (customer?.phone ?? null),
+          setStep,
         );
         if (kind === "text") {
           await Share.share({ message: r.message });
@@ -240,15 +270,24 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
           title={busy === "email" ? "Sending…" : "Send by Email"}
           kind={primary ? "primary" : "secondary"}
           disabled={busy !== null || !reportsOnline}
-          onPress={() => void run("email", reportId)}
+          onPress={() => {
+            setSendingId(reportId);
+            void run("email", reportId);
+          }}
         />
         <Button
           title="Send by Text"
           kind="secondary"
           disabled={busy !== null || !reportsOnline}
-          onPress={() => void run("text", reportId)}
+          onPress={() => {
+            setSendingId(reportId);
+            void run("text", reportId);
+          }}
         />
       </View>
+      {(busy === "email" || busy === "text") && sendingId === reportId ? (
+        <StepList steps={REPORT_STEPS.send} at={step} label="Sending the report" />
+      ) : null}
     </View>
   );
 
@@ -285,7 +324,7 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
             <LinkButton
               title={`View version ${finished.version}`}
               underline
-              onPress={() => void Linking.openURL(`${API_URL}/r/${finished.token}`)}
+              onPress={() => void WebBrowser.openBrowserAsync(`${API_URL}/r/${finished.token}`)}
             />
           ) : null}
         </View>
@@ -313,6 +352,13 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
           onPress={() => router.push(`/jobs/${job.id}/review?template=${template}`)}
         />
       ) : null}
+      {busy === "draft" || busy === "finish" ? (
+        <StepList
+          steps={busy === "draft" ? REPORT_STEPS.draft : REPORT_STEPS.finish}
+          at={step}
+          label={busy === "draft" ? "Writing the draft" : "Finishing the report"}
+        />
+      ) : null}
       {status ? <Notice tone={status.tone}>{status.text}</Notice> : null}
       {photoAsked === "finish" && needsPhoto ? <FinishPhotoNotice jobId={job.id} /> : null}
 
@@ -326,6 +372,12 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
               ))}
             </Notice>
           ) : null}
+          <Button
+            title="Use Saved Report"
+            kind="secondary"
+            disabled={busy !== null}
+            onPress={() => setPicking(true)}
+          />
           {sections.map((s) => (
             <Field
               key={`${draft.id}-${s.key}`}
@@ -353,6 +405,28 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
               </T>
             ) : null}
           </View>
+          {canManage ? (
+            <LinkButton title="Save as Saved Report" onPress={() => setSavingAs(true)} />
+          ) : null}
+          <UseSavedReportSheet
+            open={picking}
+            onClose={() => setPicking(false)}
+            sections={current}
+            onApply={applySaved}
+            canManage={canManage}
+          />
+          <SaveAsSavedReportSheet
+            open={savingAs}
+            onClose={() => setSavingAs(false)}
+            sections={current}
+            onSaved={(name) => {
+              setSavingAs(false);
+              setStatus({
+                tone: "success",
+                text: `Saved as “${name}”. The team can use it on any report.`,
+              });
+            }}
+          />
 
           <Divider />
           <View style={styles.part}>
@@ -423,7 +497,11 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
               title="Download PDF"
               kind="quiet"
               style={{ marginLeft: -space["3"], paddingHorizontal: space["3"] }}
-              onPress={() => void Linking.openURL(`${API_URL}/r/${finished.token}/pdf`)}
+              onPress={() =>
+                router.push(
+                  `/jobs/${job.id}/pdf?token=${finished.token}&version=${finished.version}`,
+                )
+              }
             />
           ) : null}
         </View>
@@ -457,13 +535,15 @@ export function ReportTab({ job, customer }: { job: Job; customer: Customer | un
                       title="Report"
                       kind="quiet"
                       small
-                      onPress={() => void Linking.openURL(`${API_URL}/r/${r.token}`)}
+                      onPress={() => void WebBrowser.openBrowserAsync(`${API_URL}/r/${r.token}`)}
                     />
                     <Button
                       title="PDF"
                       kind="quiet"
                       small
-                      onPress={() => void Linking.openURL(`${API_URL}/r/${r.token}/pdf`)}
+                      onPress={() =>
+                        router.push(`/jobs/${job.id}/pdf?token=${r.token}&version=${r.version}`)
+                      }
                     />
                   </View>
                 ) : null}

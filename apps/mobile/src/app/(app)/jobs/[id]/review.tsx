@@ -20,7 +20,8 @@ import {
 } from "@leakbook/core";
 import { useRow } from "../../../../data/hooks";
 import { useInspectionConfig, useJobInspection } from "../../../../data/inspection";
-import { finishReportFromPhone, useJobReports } from "../../../../data/reports";
+import { REPORT_STEPS, finishReportFromPhone, useJobReports } from "../../../../data/reports";
+import { StepList } from "../../../../ui/Progress";
 import { FinishPhotoNotice, useNeedsFinishPhoto } from "../../../../features/media/FinishPhoto";
 import { currentPosition, storeSignatureSvg } from "../../../../lib/media";
 import { useCompany, useSession } from "../../../../state/session";
@@ -62,6 +63,7 @@ export default function ReviewScreen() {
   const [strokes, setStrokes] = useState<SignatureStroke[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"sign" | "away" | null>(null);
+  const [step, setStep] = useState(0);
   const [drawing, setDrawing] = useState(false);
   // Signing finishes the report, so it waits for a photo when the shop requires one (owner
   // setting, 2026-10-19).
@@ -134,7 +136,8 @@ export default function ReviewScreen() {
       return;
     }
     try {
-      await finishReportFromPhone(draft.id, customerAway);
+      setStep(0);
+      await finishReportFromPhone(draft.id, customerAway, setStep);
       router.back();
     } catch (e) {
       if (customerAway) {
@@ -298,6 +301,9 @@ export default function ReviewScreen() {
               disabled={busy !== null || needsPhoto}
               onPress={() => void finish(false)}
             />
+            {busy && draft ? (
+              <StepList steps={REPORT_STEPS.finish} at={step} label="Finishing the report" />
+            ) : null}
             {purposes.length ? (
               <>
                 <T variant="secondary" muted>

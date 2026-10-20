@@ -84,13 +84,20 @@ export async function call<T>(path: string, body: unknown): Promise<T> {
 }
 
 /** Saves the job to the server, then has it write the draft; the report syncs down. */
-export async function writeReportDraft(jobId: string, template: "homeowner" | "partner") {
+export async function writeReportDraft(
+  jobId: string,
+  template: "homeowner" | "partner",
+  onStep: (step: number) => void = () => {},
+) {
   const { sync } = getServices();
+  onStep(0);
   await sync.syncNow();
+  onStep(1);
   const result = await call<{ reportId: string; problems: NarrativeProblem[] }>(
     `/api/jobs/${jobId}/reports`,
     { template },
   );
+  onStep(2);
   await sync.syncNow();
   return result;
 }
@@ -100,17 +107,21 @@ export async function sendReportFromPhone(
   reportId: string,
   channel: "email" | "sms_device",
   to: string | null,
+  onStep: (step: number) => void = () => {},
 ) {
   const { sync } = getServices();
+  onStep(0);
   await sync.syncNow();
   if (sync.hasPendingWrites("report", reportId))
     throw new ReportServerError(
       "Your edits haven’t reached the server yet. Try again with signal.",
     );
+  onStep(1);
   const result = await call<{ link: string; message: string; emailed: boolean }>(
     `/api/reports/${reportId}/send`,
     { channel, to },
   );
+  onStep(2);
   await sync.syncNow();
   return result;
 }
@@ -119,16 +130,30 @@ export async function sendReportFromPhone(
  * Finishes a report after the customer signed on this phone (or with Customer Not Here).
  * The signature and any edits must reach the server first, so the report carries them.
  */
-export async function finishReportFromPhone(reportId: string, customerAway: boolean) {
+export async function finishReportFromPhone(
+  reportId: string,
+  customerAway: boolean,
+  onStep: (step: number) => void = () => {},
+) {
   const { sync } = getServices();
+  onStep(0);
   await sync.syncNow();
   if (sync.hasPendingWrites("report", reportId) || sync.hasPendingWrites("signature"))
     throw new ReportServerError(
       "The signature or your edits haven’t reached the server yet. Finish when you have signal.",
     );
+  onStep(1);
   const result = await call<{ token: string }>(`/api/reports/${reportId}/finish`, {
     customerAway,
   });
+  onStep(2);
   await sync.syncNow();
   return result;
 }
+
+/** The steps each wait on the server shows (StepList), in order. */
+export const REPORT_STEPS = {
+  draft: ["Saving your work", "Writing the report", "Getting it ready"],
+  send: ["Saving your work", "Sending the report", "Getting it ready"],
+  finish: ["Saving your work", "Finishing the report", "Getting it ready"],
+} as const;
