@@ -9,7 +9,7 @@ import { durationLabel, type CleaningKind, type JobStatus, type LatLng } from "@
 import type { DragItem } from "../../lib/scheduleDrag";
 import { CleaningNames } from "../maintenance/Cleanings";
 import { Button, Card, StatusChip, T } from "../../ui/components";
-import { NotOnMapTag } from "../../ui/NotOnMap";
+import { AddressLine } from "../../ui/NotOnMap";
 import { WebIcon } from "../../ui/WebIcon";
 import {
   cardShadow,
@@ -315,9 +315,8 @@ function StopFace({
               </Text>
             </View>
           ) : null}
-          {s.notOnMap ? (
-            <NotOnMapTag />
-          ) : !s.location ? (
+          {/* Not found on the map: a symbol after the address (below). */}
+          {!s.notOnMap && !s.location ? (
             <Text
               style={[type.footnote, face.semiBold, { color: color.warning }]}
               maxFontSizeMultiplier={MAX_TEXT_SCALE}
@@ -327,16 +326,18 @@ function StopFace({
           ) : null}
         </View>
         {s.address ? (
-          <Text
-            accessibilityRole="link"
-            accessibilityLabel={`${s.address}, directions`}
-            onPress={ghost ? undefined : () => onDirections?.(s)}
-            numberOfLines={2}
-            style={[type.secondary, { color: color.link, alignSelf: "flex-start" }]}
-            maxFontSizeMultiplier={MAX_TEXT_SCALE}
-          >
-            {s.address}
-          </Text>
+          <AddressLine notOnMap={s.notOnMap} lineHeight={type.secondary.lineHeight!}>
+            <Text
+              accessibilityRole="link"
+              accessibilityLabel={`${s.address}, directions`}
+              onPress={ghost ? undefined : () => onDirections?.(s)}
+              numberOfLines={2}
+              style={[type.secondary, { color: color.link, alignSelf: "flex-start" }]}
+              maxFontSizeMultiplier={MAX_TEXT_SCALE}
+            >
+              {s.address}
+            </Text>
+          </AddressLine>
         ) : null}
         {/* Gate code, which gate, dogs, as on Today. */}
         {s.access && !s.done ? (

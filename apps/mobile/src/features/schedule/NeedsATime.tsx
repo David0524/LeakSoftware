@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } fr
 import { GestureDetector } from "react-native-gesture-handler";
 import Svg, { Circle } from "react-native-svg";
 import { Card, T } from "../../ui/components";
+import { NotOnMapTag } from "../../ui/NotOnMap";
 import { useMenu } from "../../ui/Select";
 import { color, face, gutter, MAX_TEXT_SCALE, space, type } from "../../ui/theme";
 import { GhostCard, type Stop } from "./RouteCard";
@@ -113,9 +114,20 @@ function TrayCard({
             <Text style={face.semiBold}>{j.customer}</Text>
             <Text style={{ color: color.textMuted }}>{j.number ? ` · #${j.number}` : ""}</Text>
           </Text>
-          <T variant="secondary" muted numberOfLines={1}>
-            {[j.address, j.note].filter(Boolean).join(" · ")}
-          </T>
+          {/* The address, the not-on-map symbol right after it, then the note. */}
+          <View style={styles.addressLine}>
+            {j.address ? (
+              <T variant="secondary" muted numberOfLines={1} style={{ flexShrink: 1 }}>
+                {j.address}
+              </T>
+            ) : null}
+            {j.notOnMap ? <NotOnMapTag lineHeight={type.secondary.lineHeight!} /> : null}
+            {j.note ? (
+              <T variant="secondary" muted numberOfLines={1} style={{ flexShrink: 1 }}>
+                {j.address ? `· ${j.note}` : j.note}
+              </T>
+            ) : null}
+          </View>
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -135,6 +147,7 @@ function TrayCard({
 }
 
 const styles = StyleSheet.create({
+  addressLine: { flexDirection: "row", alignItems: "center", gap: 4 },
   card: {
     borderRadius: 16,
     flexDirection: "row",

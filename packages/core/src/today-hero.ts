@@ -206,3 +206,23 @@ export function heroDrive(moment: HeroMoment, driveMin: number | null | undefine
 export function heroSegmentsSpoken(h: Pick<TodayHero, "doneCount" | "stops">): string {
   return `${h.doneCount} of ${h.stops} ${h.stops === 1 ? "stop" : "stops"} done`;
 }
+
+/**
+ * The card's headline: the moment, since the customer's name is right under it (owner,
+ * 2026-10-20: "At Derek Jeter" over "Derek Jeter" said it twice). The Lock Screen keeps
+ * `content.headline`, which has the name. Day done keeps its own ("All 6 stops done").
+ */
+export function heroHeadline(h: Pick<TodayHero, "moment" | "content">): string {
+  switch (h.moment) {
+    case "ahead":
+      return "Up next";
+    case "driving":
+      return "On the way";
+    case "on_site":
+      return "At the pool";
+    case "done":
+      return "Done";
+    default:
+      return h.content.headline;
+  }
+}

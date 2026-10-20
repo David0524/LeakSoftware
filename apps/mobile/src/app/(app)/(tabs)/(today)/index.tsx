@@ -4,7 +4,6 @@ import { Animated, Linking, Pressable, RefreshControl, StyleSheet, Text, View } 
 import {
   LOCK_LABELS,
   canMakeJobs,
-  dayDirections,
   daySummary,
   durationLabel,
   formatAddress,
@@ -42,9 +41,8 @@ import {
 import { todayList } from "../../../../lib/todayHero";
 import { useCompany, useSession } from "../../../../state/session";
 import { useWalkthrough } from "../../../../state/walkthrough";
-import { mapsAppFor, openDirections, useDirectionsChoice } from "../../../../state/directions";
+import { openDirections, useDirectionsChoice } from "../../../../state/directions";
 import {
-  Button,
   Empty,
   FilterPills,
   HeaderButton,
@@ -56,7 +54,7 @@ import {
 } from "../../../../ui/components";
 import { haptics } from "../../../../ui/haptics";
 import { usePinnedSyncBar } from "../../../../ui/SyncBar";
-import { NotOnMapTag } from "../../../../ui/NotOnMap";
+import { AddressLine } from "../../../../ui/NotOnMap";
 import { useRoutingOn } from "../../../../lib/routing";
 import { ScreenTip } from "../../../../ui/Tip";
 import { WebIcon } from "../../../../ui/WebIcon";
@@ -185,16 +183,6 @@ export default function Today() {
   const { done: doneStops, rest, nowId } = todayList(stops, today, hero);
   const [doneOpen, setDoneOpen] = useState(false);
   const heroAt = heroJob ? stops.indexOf(heroJob) : -1;
-  const depotAddress = formatAddress(company as unknown as Parameters<typeof formatAddress>[0]);
-  const directions = dayDirections(
-    mapsAppFor(choice),
-    depot || depotAddress ? { address: depotAddress, location: depot } : null,
-    stops.map((j) => ({
-      address: j.property ? formatAddress(j.property) : "",
-      location: propertyLocation(j.property),
-      done: stopDone(j, today),
-    })),
-  );
   const backLeg = summary.driveMin - summary.legs.reduce((a, b) => a + b, 0);
 
   /** On My Way for a stop: in its row, or as the card's main button. */
@@ -272,18 +260,6 @@ export default function Today() {
               <HeaderButton title="New Job" icon="add" onPress={() => router.push("/jobs/new")} />
             )
           : undefined
-      }
-      headerActions={
-        directions ? (
-          <Button
-            kind="secondary"
-            icon="pin"
-            title={
-              directions.app === "google" ? "Open Route in Google Maps" : "Next Stop in Apple Maps"
-            }
-            onPress={() => void Linking.openURL(directions.href)}
-          />
-        ) : undefined
       }
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
       topInset={sync.height}
@@ -500,8 +476,9 @@ function Stop({
             <WebIcon name="chevronRight" size={16} color={color.link} strokeWidth={2.4} />
           </Pressable>
           {next ? <Pill label="Now" color={color.water} /> : null}
-          {/* Most stops are scheduled; the chip shows other states. */}
-          {job.status !== "scheduled" ? <StatusChip status={job.status} /> : null}
+          {/* Most stops are scheduled; the chip shows other states. The Now row leaves it to the
+              card, which already says it, so the name isn't cut short (2026-10-20). */}
+          {job.status !== "scheduled" && !next ? <StatusChip status={job.status} /> : null}
           {lock && lock !== "started" ? (
             <T variant="footnote" muted style={face.semiBold}>
               {LOCK_LABELS[lock]}
@@ -540,17 +517,21 @@ function Stop({
       {expanded ? (
         <View style={styles.body}>
           {job.property ? (
-            <Text
-              accessibilityRole="link"
-              accessibilityHint="Directions"
-              onPress={onDirections}
-              style={[type.secondary, { color: color.link, alignSelf: "flex-start" }]}
-              maxFontSizeMultiplier={MAX_TEXT_SCALE}
+            <AddressLine
+              notOnMap={mapStatus(job.property, routing) === "missing"}
+              lineHeight={type.secondary.lineHeight!}
             >
-              {formatAddress(job.property)}
-            </Text>
+              <Text
+                accessibilityRole="link"
+                accessibilityHint="Directions"
+                onPress={onDirections}
+                style={[type.secondary, { color: color.link, alignSelf: "flex-start" }]}
+                maxFontSizeMultiplier={MAX_TEXT_SCALE}
+              >
+                {formatAddress(job.property)}
+              </Text>
+            </AddressLine>
           ) : null}
-          {mapStatus(job.property, routing) === "missing" ? <NotOnMapTag /> : null}
           {/* Just the icon and how soon (owner, 2026-10-19), as the website. */}
           {done ? null : <CleaningsDue job={job} />}
           <View style={styles.buttons}>

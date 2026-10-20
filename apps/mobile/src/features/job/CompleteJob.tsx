@@ -126,7 +126,9 @@ export function TodayComplete({
     setAsked(false);
     const complete = () => {
       sync.write("job", job.id, job.company_id, markCompleteValues(job, day));
-      haptics.success();
+      // A light tap on Today's card (docs/design/2026-10-20-today-card.md).
+      if (onWater) haptics.light();
+      else haptics.success();
       if (job.type === "maintenance") queueAutoVisitReport(job, company.settings);
     };
     // Asks first when completing sends the visit report (Automatic shops).

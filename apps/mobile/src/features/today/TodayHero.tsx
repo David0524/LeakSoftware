@@ -1,6 +1,14 @@
 import { router } from "expo-router";
-import type { ReactNode } from "react";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  Animated,
+  Linking,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import {
   HERO_ACTION_LABELS,
   JOB_TYPE_LABELS,
@@ -8,17 +16,21 @@ import {
   formatAddress,
   heroActions,
   heroDrive,
+  heroHeadline,
   heroSegmentsSpoken,
-  heroSubtitle,
   propertyLocation,
+  toE164,
   type TodayHero,
 } from "@leakbook/core";
 import type { JobView } from "../../data/jobs";
+import { useConversations, useLine } from "../../data/texting";
+import { useCompany } from "../../state/session";
 import { getServices } from "../../lib/services";
 import { startJobValues } from "../../lib/todayHero";
 import { TodayComplete } from "../job/CompleteJob";
-import { Button, RoundButton } from "../../ui/components";
+import { Button, RoundButton, useReduceMotion } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
+import { NotOnMapTag } from "../../ui/NotOnMap";
 import { WebIcon } from "../../ui/WebIcon";
 import {
   color,
@@ -37,8 +49,9 @@ import {
  * the website's today-hero.tsx: the Live Activity (here, Android's current-stop notification)
  * brought into the app, in its water blue. The name opens the job, the address opens
  * directions, and the main button is the moment's (On My Way, Start Job, Open Checklist with
- * Mark Complete). Someone looking at another tech's day gets Call and Directions only. It reads
- * as one item with the Live Activity's spoken sentence; its buttons follow.
+ * Mark Complete). Message, Call and Directions sit on the "Next: …" line, which keeps the card
+ * a row shorter (owner, 2026-10-20). Someone looking at another tech's day gets no main button.
+ * It reads as one item with the Live Activity's spoken sentence; its buttons follow.
  */
 export function TodayHeroCard({
   hero,
@@ -71,13 +84,61 @@ export function TodayHeroCard({
   const actions = heroActions(hero.moment, mine);
   const target = hero.moment === "done" ? next : job;
   const drive = job ? heroDrive(hero.moment, driveMin) : null;
-  const subtitle = job ? heroSubtitle(JOB_TYPE_LABELS[job.type] ?? "Job", hero) : "";
+  // "At the pool · Stop 2 of 3"; under the name, "Leak detection · 14 min drive".
+  const top =
+    hero.moment === "day_done"
+      ? heroHeadline(hero)
+      : `${heroHeadline(hero)} · Stop ${hero.stop} of ${hero.stops}`;
+  const kind = job ? [JOB_TYPE_LABELS[job.type] ?? "Job", drive].filter(Boolean).join(" · ") : "";
   const address = job?.property ? formatAddress(job.property) : "";
   const details = job && hero.moment !== "done";
+  const notes = job
+    ? [job.customer?.notes, job.property?.notes]
+        .map((n) => n?.trim())
+        .filter(Boolean)
+        .join(" · ")
+    : "";
   const phone = target?.customer?.phone ?? null;
   const targetName = target?.customer?.name ?? "Customer";
   const white = color.paper;
-  const soft = tint(white, 0.85);
+  // Secondary text: white at 92% is 4.8:1 on water blue (85% was 4.3:1).
+  const soft = tint(white, 0.92);
+  const reduceMotion = useReduceMotion();
+  const { width, fontScale } = useWindowDimensions();
+  // 20 of padding, 16 on phones narrower than 375.
+  const pad = width < 375 ? 16 : 20;
+  // At the largest text sizes the figure moves under the name: the top becomes one column.
+  const stacked = fontScale >= 1.6;
+  // When the moment changes, the text and figure cross-fade in 0.3 s (none with Reduce Motion).
+  const [fade] = useState(() => new Animated.Value(1));
+  const shown = `${hero.moment}|${c.figure}`;
+  const last = useRef(shown);
+  useEffect(() => {
+    if (last.current === shown) return;
+    last.current = shown;
+    if (reduceMotion) return fade.setValue(1);
+    fade.setValue(0);
+    Animated.timing(fade, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+  }, [shown, reduceMotion, fade]);
+  const company = useCompany();
+  const line = useLine(company.id);
+  const conversations = useConversations(company.id);
+  // Message, Call and Directions for the card's stop, while it's still to come or under way.
+  const contact = Boolean(target && hero.moment !== "done" && (phone || target.property));
+
+  /** Text the customer as the job page does: the shop's number when it's on, else the phone's
+   *  own texts. */
+  function textCustomer(number: string) {
+    if (line?.status === "active" && target?.customer) {
+      const e164 = toE164(number);
+      const conversation = e164 ? conversations.find((x) => x.phone === e164) : undefined;
+      router.push(
+        conversation
+          ? `/messages/${conversation.id}`
+          : `/messages/new?customer=${target.customer.id}&job=${target.id}`,
+      );
+    } else void Linking.openURL(`sms:${number.replace(/[^\d+]/g, "")}`);
+  }
 
   function startJob(j: JobView) {
     getServices().sync.write("job", j.id, j.company_id, startJobValues(j, new Date()));
@@ -85,141 +146,147 @@ export function TodayHeroCard({
   }
 
   return (
-    <View testID="today-hero" style={[styles.card, { backgroundColor: color.water }]}>
-      {/* One item for TalkBack: the Live Activity's sentence. A tap opens the job; the name is
-          drawn as the link. */}
+    <View testID="today-hero" style={[styles.card, { backgroundColor: color.water, padding: pad }]}>
+      {/* One item for TalkBack: the Live Activity's sentence. A tap opens the job. */}
       <Pressable
         accessibilityRole={job ? "link" : "text"}
         accessibilityLabel={c.spoken}
         accessibilityHint={job ? "Opens the job" : undefined}
         disabled={!job}
         onPress={() => job && router.push(`/jobs/${job.id}`)}
-        style={({ pressed }) => [styles.top, pressed && { opacity: 0.8 }]}
+        style={({ pressed }) => pressed && { opacity: 0.8 }}
       >
-        <View style={styles.topText}>
-          <Text
-            style={[type.secondary, face.semiBold, { color: soft }]}
-            maxFontSizeMultiplier={MAX_TEXT_SCALE}
-          >
-            {c.headline}
-          </Text>
-          {job ? (
-            <Text style={[styles.name, { color: white }]} maxFontSizeMultiplier={MAX_TEXT_SCALE}>
-              {job.customer?.name ?? "Customer"}
-            </Text>
-          ) : null}
-          {subtitle ? (
-            <Text style={[type.secondary, { color: soft }]} maxFontSizeMultiplier={MAX_TEXT_SCALE}>
-              {subtitle}
-            </Text>
-          ) : null}
-        </View>
-        <View style={styles.figureBox}>
-          <Text
-            style={[styles.figure, tabular, { color: white, fontSize: c.figure === "✓" ? 40 : 36 }]}
-            maxFontSizeMultiplier={MAX_TEXT_SCALE}
-          >
-            {c.figure}
-          </Text>
-          {c.figureLabel ? (
+        <Animated.View style={[styles.top, stacked && styles.topStacked, { opacity: fade }]}>
+          <View style={stacked ? styles.topTextStacked : styles.topText}>
             <Text
-              style={[type.secondary, { color: soft, textAlign: "right" }]}
+              style={[type.secondary, face.semiBold, { color: soft }]}
               maxFontSizeMultiplier={MAX_TEXT_SCALE}
             >
-              {c.figureLabel}
+              {top}
             </Text>
-          ) : null}
-        </View>
+            {job ? (
+              <Text
+                numberOfLines={2}
+                style={[styles.name, { color: white }]}
+                maxFontSizeMultiplier={MAX_TEXT_SCALE}
+              >
+                {job.customer?.name ?? "Customer"}
+              </Text>
+            ) : null}
+            {kind ? (
+              <Text
+                style={[type.secondary, { color: soft }]}
+                maxFontSizeMultiplier={MAX_TEXT_SCALE}
+              >
+                {kind}
+              </Text>
+            ) : null}
+          </View>
+          <View style={stacked ? styles.figureStacked : styles.figureBox}>
+            <Text
+              style={[
+                styles.figure,
+                tabular,
+                { color: white, fontSize: c.figure === "✓" ? 28 : 22 },
+                !stacked && { textAlign: "right" },
+              ]}
+              maxFontSizeMultiplier={MAX_TEXT_SCALE}
+            >
+              {c.figure}
+            </Text>
+            {c.figureLabel ? (
+              <Text
+                style={[type.footnote, { color: soft }, !stacked && { textAlign: "right" }]}
+                maxFontSizeMultiplier={MAX_TEXT_SCALE}
+              >
+                {c.figureLabel}
+              </Text>
+            ) : null}
+          </View>
+        </Animated.View>
       </Pressable>
 
       {details ? (
         <View style={styles.details}>
           {address ? (
-            <Text style={[type.body, { color: white }]} maxFontSizeMultiplier={MAX_TEXT_SCALE}>
-              <Text
-                accessibilityRole="link"
-                accessibilityLabel={`${address}, directions in Maps`}
-                onPress={() => onDirections(job)}
-                style={[face.medium, styles.underline, { textDecorationColor: tint(white, 0.5) }]}
-              >
-                {address}
-              </Text>
-              {drive ? <Text style={{ color: soft }}> · {drive}</Text> : null}
-            </Text>
-          ) : null}
-          {notOnMap ? (
-            <View accessible accessibilityLabel={NOT_ON_MAP.title} style={styles.iconLine}>
-              <WebIcon name="warning" size={16} color={white} />
-              <Text
-                style={[type.secondary, face.semiBold, { color: white }]}
-                maxFontSizeMultiplier={MAX_TEXT_SCALE}
-              >
-                {NOT_ON_MAP.title}
-              </Text>
-            </View>
+            // Plain text that opens directions, as iOS shows a tappable address; a warning
+            // symbol right after it when the map can't find it (owner, 2026-10-20).
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={`${address}${notOnMap ? `, ${NOT_ON_MAP.title}` : ""}, directions in Maps`}
+              onPress={() => onDirections(job)}
+              style={({ pressed }) => [styles.detail, pressed && { opacity: 0.6 }]}
+            >
+              <DetailIcon name="pin" lineHeight={type.body.lineHeight} />
+              <View style={[styles.detailText, styles.addressLine]}>
+                <Text
+                  style={[type.body, face.medium, styles.addressText, { color: white }]}
+                  maxFontSizeMultiplier={MAX_TEXT_SCALE}
+                >
+                  {address}
+                </Text>
+                {notOnMap ? (
+                  <NotOnMapTag size={17} lineHeight={type.body.lineHeight} onWater />
+                ) : null}
+              </View>
+            </Pressable>
           ) : null}
           {c.access ? (
-            <View accessible accessibilityLabel={`Access: ${c.access}`} style={styles.iconLine}>
-              <View style={styles.keyIcon}>
-                <WebIcon name="key" size={16} color={white} />
-              </View>
+            <View accessible accessibilityLabel={`Access: ${c.access}`} style={styles.detail}>
+              <DetailIcon name="key" lineHeight={type.secondary.lineHeight} />
               <Text
-                numberOfLines={1}
-                style={[type.secondary, { color: white, flex: 1 }]}
+                style={[type.secondary, styles.detailText, { color: white }]}
                 maxFontSizeMultiplier={MAX_TEXT_SCALE}
               >
                 {c.access}
               </Text>
             </View>
           ) : null}
+          {/* The customer's notes, then the pool's (owner, 2026-10-20: "you have to have
+              customer notes there"), two lines at most; the job has the rest. */}
+          {notes ? (
+            <View accessible accessibilityLabel={`Notes: ${notes}`} style={styles.detail}>
+              <DetailIcon name="note" lineHeight={type.secondary.lineHeight} />
+              <Text
+                numberOfLines={2}
+                style={[type.secondary, styles.detailText, { color: white }]}
+                maxFontSizeMultiplier={MAX_TEXT_SCALE}
+              >
+                {notes}
+              </Text>
+            </View>
+          ) : null}
         </View>
       ) : null}
-      {c.next ? (
-        <Text
-          style={[type.secondary, { color: soft, marginTop: space["2"] }]}
-          maxFontSizeMultiplier={MAX_TEXT_SCALE}
-        >
-          {c.next}
-        </Text>
-      ) : null}
 
-      {target || actions.complete ? (
-        <View style={styles.buttons}>
-          {actions.primary === "on_my_way" && target ? onMyWay(target) : null}
-          {actions.primary === "start_job" && target ? (
-            <Button
-              kind="onWater"
-              title={HERO_ACTION_LABELS.start_job}
-              accessibilityLabel={`${HERO_ACTION_LABELS.start_job} for ${targetName}`}
-              onPress={() => startJob(target)}
-              style={styles.primary}
-            />
+      {/* The next stop, with Message, Call and Directions on its line (owner, 2026-10-20: "find
+          a better place for the call/direction icon … so we can shorten the card"). Without a
+          next stop the circles sit alone at the right. */}
+      {c.next || contact ? (
+        <View style={styles.nextLine}>
+          {c.next ? (
+            <Text
+              style={[type.secondary, styles.nextText, { color: soft }]}
+              maxFontSizeMultiplier={MAX_TEXT_SCALE}
+            >
+              {c.next}
+            </Text>
           ) : null}
-          {actions.primary === "open_checklist" && target ? (
-            <Button
-              kind="onWater"
-              title={HERO_ACTION_LABELS.open_checklist}
-              onPress={() => router.push(`/jobs/${target.id}?section=checklist`)}
-              style={styles.primary}
-            />
-          ) : null}
-          {actions.complete && job ? (
-            <TodayComplete
-              job={job}
-              customer={job.customer?.name ?? "this stop"}
-              customerName={job.customer?.name ?? null}
-              day={day}
-              done={false}
-              onWater
-            />
-          ) : null}
-          {target && hero.moment !== "done" ? (
+          {contact && target ? (
             <View style={styles.round}>
               {phone ? (
                 <RoundButton
                   onWater
+                  icon="message"
+                  label={`Text ${targetName}`}
+                  onPress={() => textCustomer(phone)}
+                />
+              ) : null}
+              {phone ? (
+                <RoundButton
+                  onWater
                   icon="phone"
-                  label={`Call ${targetName}, ${phone}`}
+                  label={`Call ${targetName}`}
                   onPress={() => void Linking.openURL(`tel:${phone}`)}
                 />
               ) : null}
@@ -231,6 +298,44 @@ export function TodayHeroCard({
                   onPress={() => onDirections(target)}
                 />
               ) : null}
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+
+      {/* One row, equal widths: style, not size, marks the main action (buttons.md). */}
+      {(target && actions.primary) || (actions.complete && job) ? (
+        <View style={[styles.buttons, stacked && styles.buttonsStacked]}>
+          {actions.primary && target ? (
+            <View style={stacked ? undefined : styles.slot}>
+              {actions.primary === "on_my_way" ? onMyWay(target) : null}
+              {actions.primary === "start_job" ? (
+                <Button
+                  kind="onWater"
+                  title={HERO_ACTION_LABELS.start_job}
+                  accessibilityLabel={`${HERO_ACTION_LABELS.start_job} for ${targetName}`}
+                  onPress={() => startJob(target)}
+                />
+              ) : null}
+              {actions.primary === "open_checklist" ? (
+                <Button
+                  kind="onWater"
+                  title={HERO_ACTION_LABELS.open_checklist}
+                  onPress={() => router.push(`/jobs/${target.id}?section=checklist`)}
+                />
+              ) : null}
+            </View>
+          ) : null}
+          {actions.complete && job ? (
+            <View style={stacked ? undefined : styles.slot}>
+              <TodayComplete
+                job={job}
+                customer={job.customer?.name ?? "this stop"}
+                customerName={job.customer?.name ?? null}
+                day={day}
+                done={false}
+                onWater
+              />
             </View>
           ) : null}
         </View>
@@ -260,6 +365,15 @@ export function TodayHeroCard({
   );
 }
 
+/** A detail line's symbol: 15 pt in a 20 pt column, centered on the text's first line. */
+function DetailIcon({ name, lineHeight }: { name: "pin" | "key" | "note"; lineHeight?: number }) {
+  return (
+    <View style={[styles.detailIcon, { height: lineHeight }]}>
+      <WebIcon name={name} size={15} color={color.paper} />
+    </View>
+  );
+}
+
 /** Where a stop's directions start: its address and map location. */
 export function heroPlace(job: JobView) {
   return {
@@ -269,29 +383,33 @@ export function heroPlace(job: JobView) {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 22,
-    padding: space["5"],
-    marginBottom: space["6"],
-  },
+  card: { borderRadius: 22, marginBottom: space["6"] },
   top: { flexDirection: "row", alignItems: "flex-start", gap: space["4"] },
+  topStacked: { flexDirection: "column", gap: space["2"] },
   topText: { flex: 1, minWidth: 0, gap: 2 },
+  topTextStacked: { gap: 2 },
   name: { fontFamily: font.displayExtraBold, fontSize: 28, lineHeight: 34 },
   figureBox: { flexShrink: 0, alignItems: "flex-end" },
-  figure: { fontFamily: font.displayExtraBold, lineHeight: 44 },
+  figureStacked: { alignItems: "flex-start" },
+  figure: { fontFamily: font.displayBold, lineHeight: 30 },
   details: { marginTop: space["3"], gap: 6 },
-  underline: { textDecorationLine: "underline" },
-  iconLine: { flexDirection: "row", alignItems: "center", gap: space["2"] },
-  keyIcon: { flexShrink: 0 },
-  buttons: {
-    marginTop: space["4"],
+  detail: { flexDirection: "row", alignItems: "flex-start", gap: space["2"] },
+  detailIcon: { width: 20, flexShrink: 0, alignItems: "center", justifyContent: "center" },
+  detailText: { flex: 1, minWidth: 0 },
+  addressLine: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
+  addressText: { flexShrink: 1, minWidth: 0 },
+  nextLine: {
+    marginTop: space["3"],
     flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "flex-start",
-    gap: space["2"],
+    alignItems: "center",
+    gap: space["3"],
   },
-  primary: { paddingHorizontal: 24 },
-  round: { marginLeft: "auto", flexDirection: "row", gap: space["2"] },
-  progress: { marginTop: space["5"], flexDirection: "row", gap: space["1"] },
-  segment: { flex: 1, height: 6, borderRadius: shape.pill },
+  nextText: { flex: 1, minWidth: 0 },
+  round: { flexShrink: 0, marginLeft: "auto", flexDirection: "row", gap: space["2"] },
+  buttons: { marginTop: space["4"], flexDirection: "row", gap: 10 },
+  // At the largest text sizes the two buttons stack, each the full width.
+  buttonsStacked: { flexDirection: "column" },
+  slot: { flex: 1, minWidth: 0 },
+  progress: { marginTop: space["4"], flexDirection: "row", gap: space["1"] },
+  segment: { flex: 1, height: 4, borderRadius: shape.pill },
 });

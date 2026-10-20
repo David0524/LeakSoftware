@@ -138,7 +138,7 @@ export function OnMyWay({
       title={done ?? HERO_ACTION_LABELS.on_my_way}
       onPress={() => void send()}
       disabled={done === "Sending…"}
-      style={onWater ? { paddingHorizontal: 24 } : { paddingHorizontal: 12 }}
+      style={onWater ? undefined : { paddingHorizontal: 12 }}
     />
   );
 }

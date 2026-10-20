@@ -3,7 +3,6 @@ import { useMemo, useState } from "react";
 import { Linking, RefreshControl, StyleSheet, Text, View } from "react-native";
 import {
   LOCK_LABELS,
-  NOT_ON_MAP,
   addDays,
   addMonths,
   canMakeJobs,
@@ -206,7 +205,8 @@ export function ScheduleScreen() {
       movable: canMoveJob(j.status),
       legMin,
       shortMin,
-      note: [tag, notOnMap ? NOT_ON_MAP.short : null].filter(Boolean).join(" · "),
+      // Not found on the map shows as a symbol after the address, not as words (2026-10-20).
+      note: tag,
       tag,
       notOnMap,
       access: j.property?.access_notes?.trim() || null,

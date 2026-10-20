@@ -26,7 +26,7 @@ import { useTeam } from "../../../../../data/schedule";
 import { useLine } from "../../../../../data/texting";
 import { locateAfterSync } from "../../../../../lib/locate";
 import { useRoutingOn } from "../../../../../lib/routing";
-import { NotOnMapTag } from "../../../../../ui/NotOnMap";
+import { AddressLine } from "../../../../../ui/NotOnMap";
 import { useAddressSuggestions } from "../../../../../features/address/AddressSuggestions";
 import { getServices } from "../../../../../lib/services";
 import { openDirections, useDirectionsChoice } from "../../../../../state/directions";
@@ -198,7 +198,13 @@ export default function CustomerPage() {
                     accessibilityLabel={`${address}, Edit Pool Details`}
                     trailing={<T style={{ color: color.link }}>Edit</T>}
                   >
-                    <T variant="bodyEmphasis">{address}</T>
+                    <AddressLine
+                      notOnMap={mapStatus(p, routing) === "missing"}
+                      lineHeight={type.body.lineHeight!}
+                      size={17}
+                    >
+                      <T variant="bodyEmphasis">{address}</T>
+                    </AddressLine>
                     <T variant="secondary" muted>
                       {[
                         p.pool_type ? POOL_TYPE_LABELS[p.pool_type as PoolType] : null,
@@ -210,7 +216,6 @@ export default function CustomerPage() {
                         .filter(Boolean)
                         .join(" · ")}
                     </T>
-                    {mapStatus(p, routing) === "missing" ? <NotOnMapTag /> : null}
                   </ListRow>
                   {p.access_notes ? (
                     <ListRow title="Access notes" subtitle={p.access_notes} />

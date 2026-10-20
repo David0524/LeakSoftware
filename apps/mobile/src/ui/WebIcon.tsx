@@ -113,6 +113,10 @@ const SHAPES = {
   },
   // The website's KeyIcon: how to get in (a pool's access notes).
   key: { line: "M11 12l8-8M16 7l2 2M14 9l2 2", circles: [[8, 15, 4]] },
+  // A note (Today's card's customer notes, the website's NoteIcon).
+  note: {
+    line: "M5 4h14a1 1 0 0 1 1 1v10l-5 5H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM15 20v-5h5M8 9h8M8 13h5",
+  },
   // Directions (Today's card, the website's today-hero.tsx): a navigation arrow.
   directions: { line: "M3 11l18-8-8 18-2-8z" },
   // The website's not-on-map warning (not-on-map.tsx).

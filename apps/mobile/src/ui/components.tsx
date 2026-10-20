@@ -9,6 +9,7 @@ import {
   useId,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactElement,
   type ReactNode,
   type Ref,
@@ -504,9 +505,9 @@ function buttonColors(kind: ButtonKind, pressed: boolean) {
     case "quiet":
       return { bg: pressed ? color.iconTint : "transparent", fg: color.link, dim: false };
     case "onWater":
-      return { bg: pressed ? tint(color.paper, 0.9) : color.paper, fg: color.water, dim: false };
+      return { bg: color.paper, fg: color.water, dim: false };
     case "onWaterTinted":
-      return { bg: tint(color.paper, pressed ? 0.28 : 0.18), fg: color.paper, dim: false };
+      return { bg: tint(color.paper, 0.18), fg: color.paper, dim: false };
   }
 }
 
@@ -540,6 +541,10 @@ export function Button({
   /** When the label alone doesn't say what it acts on ("Remove Skimmer 2"). */
   accessibilityLabel?: string;
 }) {
+  // Today's card buttons are 50 pt capsules that fill their share of the row and press in
+  // (0.96 and 85%; no scale with Reduce Motion), as docs/design/2026-10-20-today-card.md.
+  const card = kind === "onWater" || kind === "onWaterTinted";
+  const reduceMotion = useReduceMotion();
   return (
     <Pressable
       accessibilityRole="button"
@@ -547,14 +552,17 @@ export function Button({
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
       onPress={onPress}
       disabled={disabled || loading}
-      android_ripple={{ color: color.ripple }}
+      android_ripple={card ? undefined : { color: color.ripple }}
       style={({ pressed }) => {
         const c = buttonColors(kind, pressed);
         return [
           styles.button,
-          { backgroundColor: c.bg, alignSelf: wide ? "stretch" : "flex-start" },
+          { backgroundColor: c.bg, alignSelf: wide || card ? "stretch" : "flex-start" },
           small && styles.buttonSmall,
           c.dim && { opacity: 0.9 },
+          card && styles.buttonCard,
+          card && pressed && { opacity: 0.85 },
+          card && pressed && !reduceMotion && { transform: [{ scale: 0.96 }] },
           disabled && { opacity: 0.5 },
           style,
         ];
@@ -856,14 +864,29 @@ export function Choice<V extends string>({
 // Segmented controls (spec 3.9): our own, 44 pt, the same on iPhone and Android
 // ---------------------------------------------------------------------------
 
-function useReduceMotion(): boolean {
-  const [on, setOn] = useState(false);
-  useEffect(() => {
-    void AccessibilityInfo.isReduceMotionEnabled().then(setOn);
-    const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", setOn);
-    return () => sub.remove();
-  }, []);
-  return on;
+// Reduce Motion, read once for the whole app and shared by every control that moves.
+let reduceMotionOn = false;
+const reduceMotionListeners = new Set<() => void>();
+let reduceMotionWatched = false;
+function watchReduceMotion(listener: () => void) {
+  reduceMotionListeners.add(listener);
+  if (!reduceMotionWatched) {
+    reduceMotionWatched = true;
+    const set = (on: boolean) => {
+      reduceMotionOn = on;
+      reduceMotionListeners.forEach((l) => l());
+    };
+    void AccessibilityInfo.isReduceMotionEnabled().then(set);
+    AccessibilityInfo.addEventListener("reduceMotionChanged", set);
+  }
+  return () => {
+    reduceMotionListeners.delete(listener);
+  };
+}
+
+/** Whether the phone asks for less motion (Reduce Motion, or Android's Remove animations). */
+export function useReduceMotion(): boolean {
+  return useSyncExternalStore(watchReduceMotion, () => reduceMotionOn);
 }
 
 /**
@@ -1857,6 +1880,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   buttonSmall: { paddingHorizontal: space["3"] },
+  buttonCard: { minHeight: 50, paddingHorizontal: space["4"] },
   buttonText: { ...face.semiBold, fontSize: 17, lineHeight: 22 },
   buttonTextSmall: { ...face.semiBold, fontSize: 15, lineHeight: 20 },
   round: {

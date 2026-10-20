@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   heroActions,
+  heroHeadline,
   heroDrive,
   heroSegmentsSpoken,
   heroSubtitle,
@@ -121,5 +122,16 @@ describe("the card's buttons and lines", () => {
     expect(heroDrive("ahead", 60)).toBe("1 hr drive");
     expect(heroDrive("driving", 14)).toBeNull();
     expect(heroDrive("ahead", 0)).toBeNull();
+  });
+});
+
+describe("heroHeadline", () => {
+  it("names the moment, not the customer the card already names", () => {
+    const content = { headline: "All 3 stops done" } as never;
+    expect(heroHeadline({ moment: "ahead", content })).toBe("Up next");
+    expect(heroHeadline({ moment: "driving", content })).toBe("On the way");
+    expect(heroHeadline({ moment: "on_site", content })).toBe("At the pool");
+    expect(heroHeadline({ moment: "done", content })).toBe("Done");
+    expect(heroHeadline({ moment: "day_done", content })).toBe("All 3 stops done");
   });
 });
