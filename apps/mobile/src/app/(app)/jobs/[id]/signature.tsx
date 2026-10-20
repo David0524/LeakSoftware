@@ -29,6 +29,7 @@ import {
   Segmented,
   T,
 } from "../../../../ui/components";
+import { useDiscardChanges } from "../../../../ui/discard";
 import { haptics } from "../../../../ui/haptics";
 import { PadBlock } from "../../../../features/report/PadBlock";
 import { face, space } from "../../../../ui/theme";
@@ -57,6 +58,14 @@ export default function SignatureScreen() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [drawing, setDrawing] = useState(false);
+  // A drawn signature or a typed name or role isn't thrown away without asking (owner,
+  // 2026-10-20).
+  const leave = useDiscardChanges(
+    !saving &&
+      (strokes.length > 0 ||
+        (name !== null && name.trim() !== (customer?.name ?? "").trim()) ||
+        role.trim() !== ""),
+  );
 
   const bar = (
     <Stack.Screen
@@ -115,7 +124,7 @@ export default function SignatureScreen() {
         { localPath, storagePath },
       );
       haptics.success();
-      router.back();
+      leave(() => router.back());
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setSaving(false);

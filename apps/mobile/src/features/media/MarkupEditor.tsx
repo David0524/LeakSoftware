@@ -25,6 +25,7 @@ import { Button, Field, Segmented, T } from "../../ui/components";
 import { MarkupLayer } from "../../ui/MarkupLayer";
 import { Slider } from "../../ui/Slider";
 import { KeyboardAvoider } from "../../ui/keyboard";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 import { confirmDiscard, useBackPrompt, useSheetLock } from "../../ui/sheet";
 import { color, face, markupColor, minTap, space, type } from "../../ui/theme";
 
@@ -76,6 +77,8 @@ export function MarkupEditor({
   const [caption, setCaption] = useState(savedCaption ?? "");
   const dirty = history.length > 1 || caption !== (savedCaption ?? "");
   const [saving, setSaving] = useState(false);
+  // Leaving the screen another way (a notification) asks too (owner, 2026-10-20).
+  const leave = useUnsavedChanges(dirty && !saving);
 
   // Pen first and on by default (owner, 2026-10-19), as on the website.
   const [tool, setTool] = useState<Tool>("pen");
@@ -171,7 +174,7 @@ export function MarkupEditor({
 
   function cancel() {
     if (!dirty) return onCancel();
-    confirmDiscard(onCancel);
+    confirmDiscard(() => leave(onCancel));
   }
 
   return (
@@ -207,7 +210,7 @@ export function MarkupEditor({
               disabled={saving}
               onPress={() => {
                 setSaving(true);
-                onSave(draft, caption);
+                leave(() => onSave(draft, caption));
               }}
               style={({ pressed }) => [styles.barButton, pressed && { opacity: 0.5 }]}
             >

@@ -1,6 +1,5 @@
-import { router, useNavigation } from "expo-router";
-import { usePreventRemove } from "expo-router/react-navigation";
-import { useMemo, useRef, useState } from "react";
+import { router } from "expo-router";
+import { useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import {
   POOL_TYPE_LABELS,
@@ -56,7 +55,7 @@ import {
   Toggle,
   Segmented,
 } from "../../../../../ui/components";
-import { confirmDestructive } from "../../../../../ui/confirm";
+import { useDiscardChanges } from "../../../../../ui/discard";
 import { haptics } from "../../../../../ui/haptics";
 import { DateField, TimeField } from "../../../../../features/schedule/DateField";
 import { ShapePicker } from "../../../../../ui/ShapePicker";
@@ -80,7 +79,6 @@ export default function NewJob() {
 }
 
 function NewJobForm() {
-  const navigation = useNavigation();
   const company = useCompany();
   const { services, user, membership } = useSession();
   const seesAll = seesAllJobs(membership?.role, company.settings);
@@ -242,16 +240,7 @@ function NewJobForm() {
   );
 
   // New Job is a pushed screen (spec decision 3): leaving it with entries asks first.
-  const created = useRef(false);
-  usePreventRemove(dirty, ({ data }) => {
-    if (created.current) return navigation.dispatch(data.action);
-    confirmDestructive({
-      title: "Discard this new job?",
-      confirm: "Discard Job",
-      cancel: "Keep Editing",
-      onConfirm: () => navigation.dispatch(data.action),
-    });
-  });
+  const leave = useDiscardChanges(dirty);
 
   /**
    * Start a maintenance plan (owners and admins), with a new customer and pool if needed, in
@@ -325,8 +314,7 @@ function NewJobForm() {
       if (gallons && typeof pool === "string")
         sync.write("property", pool, company.id, { approx_gallons: gallons });
       haptics.success();
-      created.current = true;
-      router.replace(`/customers/${(data as { customer: string }).customer}`);
+      leave(() => router.replace(`/customers/${(data as { customer: string }).customer}`));
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setPlanError(
@@ -433,8 +421,7 @@ function NewJobForm() {
     // A new pool is found on the map from its address once it's up.
     if (newPool) void locateAfterSync(company.id, { property_id: newPool });
     haptics.success();
-    created.current = true;
-    router.replace(`/jobs/${jobId}`);
+    leave(() => router.replace(`/jobs/${jobId}`));
   }
 
   return (

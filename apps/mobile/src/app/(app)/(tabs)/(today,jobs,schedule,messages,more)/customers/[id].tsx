@@ -43,7 +43,8 @@ import {
 } from "../../../../../ui/components";
 import { confirmDestructive } from "../../../../../ui/confirm";
 import { haptics } from "../../../../../ui/haptics";
-import { ModalSheet } from "../../../../../ui/ModalSheet";
+import { formChanged } from "../../../../../lib/discard";
+import { ModalSheet, useUnsavedChanges } from "../../../../../ui/ModalSheet";
 import { Select } from "../../../../../ui/Select";
 import { color, face, MAX_TEXT_SCALE, space, type } from "../../../../../ui/theme";
 
@@ -349,6 +350,9 @@ function ContactForm({ customer, onSaved }: { customer: CustomerFields; onSaved:
     notes: customer.notes ?? "",
     optOut: Boolean(customer.marketing_opt_out),
   });
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const [startF] = useState(f);
+  useUnsavedChanges(formChanged(startF, f));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const set = (k: keyof typeof f) => (v: string) => setF({ ...f, [k]: v });
 
@@ -445,6 +449,9 @@ function PoolForm({ pool, onSaved }: { pool: Property; onSaved: () => void }) {
     approx_gallons: pool.approx_gallons ? pool.approx_gallons.toLocaleString("en-US") : "",
     access_notes: pool.access_notes ?? "",
   });
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const [startF] = useState(f);
+  useUnsavedChanges(formChanged(startF, f));
   const [error, setError] = useState<string | undefined>();
   const [gallonsError, setGallonsError] = useState<string | undefined>();
   const set = (k: keyof typeof f) => (v: string) => setF({ ...f, [k]: v });

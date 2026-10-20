@@ -30,6 +30,7 @@ import { color, face, MAX_TEXT_SCALE, space, tabular } from "../../ui/theme";
 import { Divider } from "../report/ReportTab";
 import { DateField } from "../schedule/DateField";
 import { LinkRow } from "../quote/QuoteTab";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 const INVOICEABLE = ["in_progress", "report_sent", "quote_sent", "quote_accepted", "invoiced"];
 
@@ -273,6 +274,14 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
   const email = (to ?? customer?.email ?? "").trim();
   const [busy, setBusy] = useState<"email" | "link" | null>(null);
   const [sendMessage, setSendMessage] = useState<Message>(null);
+  // A line or details typed but not added or saved ask before leaving (owner, 2026-10-20).
+  useUnsavedChanges(
+    Boolean(line.description.trim() || line.price.trim()) ||
+      (line.quantity.trim() !== "1" && line.quantity.trim() !== "") ||
+      (discount.trim() ? parseDollars(discount) : 0) !== (invoice.discount_cents ?? 0) ||
+      due.trim() !== (invoice.due_date ?? "") ||
+      notes.trim() !== (invoice.notes ?? "").trim(),
+  );
 
   function addLine() {
     const quantity = parseLineQuantity(line.quantity);
@@ -458,6 +467,8 @@ function DraftParts({ invoice, customer }: { invoice: JobInvoice; customer?: Cus
 /** Managers: a check, cash, or anything paid outside Sundeck Pro. */
 function RecordPayment({ invoice, balance }: { invoice: JobInvoice; balance: number }) {
   const [amount, setAmount] = useState<string | null>(null);
+  // An amount typed but not recorded asks before leaving (owner, 2026-10-20).
+  useUnsavedChanges(Boolean(amount?.trim()));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message>(null);
 

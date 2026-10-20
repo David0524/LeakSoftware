@@ -3,8 +3,9 @@ import { StyleSheet, View } from "react-native";
 import { call } from "../../data/reports";
 import { useSession, useSyncStatus } from "../../state/session";
 import { Button, Field, ListRow, Notice } from "../../ui/components";
-import { ModalSheet } from "../../ui/ModalSheet";
+import { ModalSheet, useUnsavedChanges } from "../../ui/ModalSheet";
 import { space } from "../../ui/theme";
+import { formChanged } from "../../lib/discard";
 
 // The website's messages (apps/web/src/server/feature-requests.ts).
 const EMPTY = "Tell us what you’d like Sundeck Pro to do.";
@@ -46,6 +47,10 @@ function RequestForm({ onDone }: { onDone: () => void }) {
   const [thanks, setThanks] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = { text: thanks ? "" : text };
+  const [startEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   async function send() {
     const request = text.trim();
     if (!request) return setFieldError(EMPTY);

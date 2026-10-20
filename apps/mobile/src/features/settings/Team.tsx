@@ -37,6 +37,8 @@ import {
   SettingsList,
   useEditSheet,
 } from "./SettingsList";
+import { formChanged } from "../../lib/discard";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 // Settings › Team (the website's settings/team): what techs can do (owners), open invites, and
 // the people, each person's role and access changed in a sheet. Memberships and the shop's
@@ -273,6 +275,10 @@ function InviteForm({ owner, onDone }: { owner: boolean; onDone: (message: strin
   const [role, setRole] = useState<Role>("tech");
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = { email, role };
+  const [startEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   async function create() {
     const address = email.trim().toLowerCase();
     if (!/^\S+@\S+\.\S+$/.test(address)) return setError("Enter a valid email.");
@@ -335,6 +341,10 @@ function MemberForm({
   const roles = assignableRoles(owner ? "owner" : "admin");
   const [role, setRole] = useState<Role>(member.role);
   const [status, setStatus] = useState(member.status);
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = { role, status };
+  const [startEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   function save() {
     // Only owners change roles (the database refuses it for anyone else too).
     getServices().sync.write("membership", member.membership_id, company.id, {

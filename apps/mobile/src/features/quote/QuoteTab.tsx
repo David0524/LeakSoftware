@@ -39,6 +39,7 @@ import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { color, face, MAX_TEXT_SCALE, minTap, shape, space, tabular } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 const PAYMENT_LABELS: Record<string, string> = {
   pending: "processing",
@@ -173,6 +174,12 @@ function QuoteBuilder({ job, quote }: { job: Job; quote: JobQuote }) {
   const [discount, setDiscountText] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  // A line or discount typed but not added or saved asks before leaving (owner, 2026-10-20).
+  useUnsavedChanges(
+    Boolean(custom.description.trim() || custom.price.trim()) ||
+      (discount !== null &&
+        (discount.trim() === "" ? 0 : parseDollars(discount)) !== (quote.discount_cents ?? 0)),
+  );
   // Owners and admins may discount past the techs' limit (owner, 2026-10-18).
   const isOwner = isManagerRole(membership?.role);
   const limitBps = company.settings.tech_discount_limit_bps ?? 0;
@@ -465,6 +472,13 @@ function LineEditor({
   const [description, setDescription] = useState<string | null>(null);
   const [quantity, setQuantity] = useState<string | null>(null);
   const [price, setPrice] = useState<string | null>(null);
+
+  // Edits not saved yet (they save when the field is left) ask before leaving (2026-10-20).
+  useUnsavedChanges(
+    (description !== null && description.trim() !== l.description) ||
+      (quantity !== null && Number(quantity.replace(",", ".")) !== Number(l.quantity)) ||
+      (price !== null && parseDollars(price) !== l.unit_price_cents),
+  );
 
   function commit() {
     if (description !== null && description.trim() && description.trim() !== l.description)

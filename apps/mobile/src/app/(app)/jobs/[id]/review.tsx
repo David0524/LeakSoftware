@@ -37,7 +37,7 @@ import {
 } from "../../../../ui/components";
 import { PadBlock } from "../../../../features/report/PadBlock";
 import { ReportTests } from "../../../../features/report/ReportTests";
-import { confirmDiscard, useBackPrompt } from "../../../../ui/sheet";
+import { useDiscardChanges } from "../../../../ui/discard";
 import { color, face, space } from "../../../../ui/theme";
 
 /**
@@ -74,10 +74,10 @@ export default function ReviewScreen() {
   // (owner, 2026-10-20). Finishing leaves without asking.
   const signed = strokes.length > 0 && busy === null;
   function cancel() {
-    if (!signed) return router.back();
-    confirmDiscard(() => router.back());
+    router.back();
   }
-  useBackPrompt(signed, cancel);
+  // Every way out asks first (owner, 2026-10-20).
+  const leave = useDiscardChanges(signed);
 
   const bar = (
     <Stack.Screen
@@ -143,13 +143,13 @@ export default function ReviewScreen() {
     }
     if (!draft) {
       // Offline or before the draft: the report is finished from the Report tab later.
-      router.back();
+      leave(() => router.back());
       return;
     }
     try {
       setStep(0);
       await finishReportFromPhone(draft.id, customerAway, setStep);
-      router.back();
+      leave(() => router.back());
     } catch (e) {
       if (customerAway) {
         setError(e instanceof Error ? e.message : String(e));
@@ -157,7 +157,7 @@ export default function ReviewScreen() {
         return;
       }
       // Signed, but not finished yet: the Report tab offers Finish Report.
-      router.back();
+      leave(() => router.back());
     }
   }
 

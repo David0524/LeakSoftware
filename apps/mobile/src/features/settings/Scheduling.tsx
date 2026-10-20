@@ -34,6 +34,8 @@ import { haptics } from "../../ui/haptics";
 import { color, face, minTap, MAX_TEXT_SCALE, space, type } from "../../ui/theme";
 import { TimeField } from "../schedule/DateField";
 import { ManagersOnly } from "./SettingsList";
+import { formChanged } from "../../lib/discard";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 // Settings › Scheduling and Routes (the website's settings/scheduling): the working day, the
 // usual cleaning frequencies, the shop's location (where every route starts and ends), and how
@@ -96,6 +98,10 @@ function WorkingDay({ onSaved }: { onSaved: Said }) {
   const [days, setDays] = useState<number[]>(s.workDays);
   const [window, setWindow] = useState<Window>(String(s.windowMin) as Window);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+  // Unsaved entries ask before leaving (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = { ...f, days: [...days].sort(), window };
+  const [startEntries, setStartEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   const set = (k: keyof typeof f) => (v: string) => setF((x) => ({ ...x, [k]: v }));
 
   function save() {
@@ -133,6 +139,7 @@ function WorkingDay({ onSaved }: { onSaved: Said }) {
       },
     });
     haptics.success();
+    setStartEntries(entries);
     onSaved("Saved.");
   }
 
@@ -258,6 +265,10 @@ function CleaningDefaults({ types, onSaved }: { types: ComponentType[]; onSaved:
   const [months, setMonths] = useState<Record<string, number>>(() =>
     Object.fromEntries(types.map((t) => [t.key, cleaningDefaultMonths(company.settings, t.key)])),
   );
+  // Unsaved entries ask before leaving (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = months;
+  const [startEntries, setStartEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   function save() {
     const settings = company.settings as unknown as Record<string, JsonValue>;
     const maintenance = (settings.maintenance ?? {}) as Record<string, JsonValue>;
@@ -274,6 +285,7 @@ function CleaningDefaults({ types, onSaved }: { types: ComponentType[]; onSaved:
       },
     });
     haptics.success();
+    setStartEntries(entries);
     onSaved("Saved for new plans.");
   }
   return (

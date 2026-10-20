@@ -21,6 +21,8 @@ import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { color, space } from "../../ui/theme";
 import { ManagersOnly } from "./SettingsList";
+import { formChanged } from "../../lib/discard";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 // Settings › Company and Branding (the website's settings/company): the company profile,
 // reminders and reviews, report terms, the next job number, and branding. The company row is
@@ -92,6 +94,10 @@ function Profile({ row, onSaved }: { row: Row; onSaved: Said }) {
     review_url: str(row, "review_url"),
     timezone: company.timezone,
   });
+  // Unsaved entries ask before leaving (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = f;
+  const [startEntries, setStartEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   const [error, setError] = useState<string | undefined>();
   const set = (k: keyof typeof f) => (v: string) => setF((x) => ({ ...x, [k]: v }));
   const zones = US_ZONES.includes(company.timezone) ? US_ZONES : [company.timezone, ...US_ZONES];
@@ -124,6 +130,7 @@ function Profile({ row, onSaved }: { row: Row; onSaved: Said }) {
     });
     if (moved) void locateAfterSync(company.id, { shop: true });
     haptics.success();
+    setStartEntries(entries);
     onSaved("Saved.");
   }
 
@@ -208,6 +215,10 @@ function Followups({ row, onSaved }: { row: Row; onSaved: Said }) {
   const [reviews, setReviews] = useState(settings.review_requests ?? true);
   const [errors, setErrors] = useState<{ quote?: string; invoice?: string }>({});
 
+  // Unsaved entries ask before leaving (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = { quote, invoice, reviews };
+  const [startEntries, setStartEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   function save() {
     const quoteDays = parseReminderDays(quote);
     const invoiceDays = parseReminderDays(invoice);
@@ -224,6 +235,7 @@ function Followups({ row, onSaved }: { row: Row; onSaved: Said }) {
       },
     });
     haptics.success();
+    setStartEntries(entries);
     onSaved("Saved.");
   }
 
@@ -271,11 +283,16 @@ function ReportTerms({ row, onSaved }: { row: Row; onSaved: Said }) {
   const write = useWriteCompany();
   const [text, setText] = useState(str(row, "report_disclaimer"));
   const [error, setError] = useState<string | undefined>();
+  // Unsaved entries ask before leaving (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = { text };
+  const [startEntries, setStartEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   function save() {
     if (text.length > 20_000) return setError("Keep it under 20,000 characters.");
     setError(undefined);
     write({ report_disclaimer: text.trim() || null });
     haptics.success();
+    setStartEntries(entries);
     onSaved("Saved.");
   }
   return (
@@ -307,6 +324,8 @@ function JobNumbers({ onSaved }: { onSaved: Said }) {
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
   const value = next ?? String(last + 1);
+  // A number typed but not saved asks before leaving (owner, 2026-10-20).
+  useUnsavedChanges(next !== null && next.trim() !== String(last + 1));
   async function save() {
     const n = Number(value.trim());
     if (!Number.isInteger(n) || n < 1 || n > 2_000_000_000)
@@ -365,6 +384,10 @@ function Branding({ row, onSaved }: { row: Row; onSaved: Said }) {
       .then(({ data }) => setLogoUrl(data?.signedUrl ?? null));
   }, [logoPath]);
 
+  // Unsaved entries ask before leaving (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = { primary, secondary };
+  const [startEntries, setStartEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   function save() {
     const e = {
       primary: isHexColor(primary.trim()) ? undefined : "Use a color like #12263A.",
@@ -378,6 +401,7 @@ function Branding({ row, onSaved }: { row: Row; onSaved: Said }) {
       brand_secondary: secondary.trim() ? secondary.trim().toUpperCase() : null,
     });
     haptics.success();
+    setStartEntries(entries);
     onSaved("Saved.");
   }
 

@@ -18,6 +18,7 @@ import {
   createChecklist,
   removeComponent,
   saveChecklistResult,
+  saveWhere,
   useInspectionConfig,
   useJobInspection,
 } from "../../data/inspection";
@@ -445,9 +446,7 @@ function ChecklistItem({
           item={component.label}
           value={result.location_text ?? ""}
           onSave={(where) =>
-            saveChecklistResult(services.sync, job.company_id, job.id, component.id, result, {
-              location_text: where || null,
-            })
+            saveWhere(services.sync, job.company_id, job.id, component.id, where || null)
           }
         />
       ) : null}

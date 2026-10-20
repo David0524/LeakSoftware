@@ -8,6 +8,8 @@ import { FieldGroup, FieldRow, Group, ListRow, T, Toggle } from "../../ui/compon
 import { haptics } from "../../ui/haptics";
 import { space } from "../../ui/theme";
 import { EditSheet, FormActions, ManagersOnly, SettingsList, useEditSheet } from "./SettingsList";
+import { formChanged } from "../../lib/discard";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 // Settings › Exclusion Reasons and Severities (the website's settings/exclusions and
 // settings/severities).
@@ -73,6 +75,10 @@ function ReasonForm({ reason, onDone }: { reason?: ExclusionReason; onDone: (m: 
   const [order, setOrder] = useState(String(reason?.sort_order ?? 0));
   const [active, setActive] = useState(reason?.active ?? true);
   const [error, setError] = useState<string | undefined>();
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = { label, order, active };
+  const [startEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   function save() {
     if (!label.trim()) {
       setError("Enter a reason.");
@@ -203,6 +209,9 @@ function SeverityForm({ level, onDone }: { level?: SeverityLevel; onDone: (m: st
     mention: level?.must_mention ?? false,
     active: level?.active ?? true,
   });
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const [startF] = useState(f);
+  useUnsavedChanges(formChanged(startF, f));
   const [errors, setErrors] = useState<Record<string, string>>({});
   function save() {
     const e: Record<string, string> = {};

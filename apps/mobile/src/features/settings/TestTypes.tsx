@@ -16,6 +16,8 @@ import {
 } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { EditSheet, FormActions, ManagersOnly, SettingsList, useEditSheet } from "./SettingsList";
+import { formChanged } from "../../lib/discard";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 // Settings › Test Types (the website's settings/tests): the built-in calculators' pass and
 // fail lines, and the fields of the shop's own tests, one per line.
@@ -113,6 +115,10 @@ function TestForm({ t, onDone }: { t?: TestType; onDone: (m: string) => void }) 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
 
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = { name, order, lines, options, outcomes: [...outcomes].sort(), active };
+  const [startEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   function toggle(o: Outcome, on: boolean) {
     const next = new Set(outcomes);
     if (on) next.add(o);

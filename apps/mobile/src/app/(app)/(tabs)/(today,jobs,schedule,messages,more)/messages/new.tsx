@@ -7,6 +7,7 @@ import { sendCompanyText, useLine } from "../../../../../data/texting";
 import { Composer } from "../../../../../features/messages/Composer";
 import { useCompany } from "../../../../../state/session";
 import { Field, Notice, Screen } from "../../../../../ui/components";
+import { useDiscardChanges } from "../../../../../ui/discard";
 
 /**
  * New Message (spec 5.7): the first text from the company number, to a customer (started from
@@ -23,6 +24,8 @@ export default function NewMessage() {
   );
   const [to, setTo] = useState("");
   const [error, setError] = useState<string | undefined>();
+  // A number typed asks before leaving (owner, 2026-10-20); the message itself is the Composer's.
+  const leave = useDiscardChanges(to.trim() !== "");
 
   async function send(body: string, picture: { uri: string; type: string } | null) {
     if (!customer && to.replace(/\D/g, "").length < 10) {
@@ -37,7 +40,7 @@ export default function NewMessage() {
         jobId: job,
         picture: picture ? { companyId: company.id, ...picture } : undefined,
       });
-      router.replace(`/messages/${sent.conversationId}`);
+      leave(() => router.replace(`/messages/${sent.conversationId}`));
       return true;
     } catch (e) {
       Alert.alert("Not Sent", e instanceof Error ? e.message : String(e));

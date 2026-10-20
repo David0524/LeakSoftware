@@ -70,6 +70,7 @@ import {
 import { KeyboardAvoider } from "../../../../../../ui/keyboard";
 import { SwipeNav, useNoSwipe } from "../../../../../../ui/SwipeNav";
 import { usePinnedSyncBar } from "../../../../../../ui/SyncBar";
+import { useUnsavedChanges } from "../../../../../../ui/ModalSheet";
 import { ScreenTip } from "../../../../../../ui/Tip";
 import {
   color,
@@ -536,6 +537,15 @@ function Details({
     setGallons(null);
   }
 
+  // A fee or gallons typed but not saved yet asks before leaving (owner, 2026-10-20); notes
+  // save by themselves.
+  const savedFee = job.fee_cents != null ? (job.fee_cents / 100).toFixed(2) : "";
+  useUnsavedChanges(
+    (fee !== null && (fee.trim() ? parseDollars(fee) : null) !== (job.fee_cents ?? null)) ||
+      (gallons !== null &&
+        (gallons ? parseGallons(gallons) : null) !== (property?.approx_gallons ?? null)),
+  );
+
   return (
     <>
       <Section title="Customer">
@@ -690,7 +700,7 @@ function Details({
               <TextInput
                 {...noSwipe}
                 accessibilityLabel={`${jobFeeLabel(job.type)} in dollars`}
-                value={fee ?? (job.fee_cents != null ? (job.fee_cents / 100).toFixed(2) : "")}
+                value={fee ?? savedFee}
                 onChangeText={setFee}
                 onBlur={saveFee}
                 keyboardType="decimal-pad"

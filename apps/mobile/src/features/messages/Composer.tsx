@@ -15,6 +15,7 @@ import { Button, T } from "../../ui/components";
 import { Glass } from "../../ui/Glass";
 import { color, MAX_TEXT_SCALE, minTap, shape, space, type } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 /** Where the floating tab bar's top is, from the bottom of the screen. */
 export function useTabBarTop(): number {
@@ -56,6 +57,8 @@ export function Composer({
   const [body, setBody] = useState("");
   const [picture, setPicture] = useState<{ uri: string; type: string } | null>(null);
   const [sending, setSending] = useState(false);
+  // A message typed but not sent asks before leaving (owner, 2026-10-20).
+  useUnsavedChanges(!sending && (Boolean(body.trim()) || picture !== null));
   const barTop = useTabBarTop();
   const keyboard = useKeyboardHeight();
 

@@ -38,6 +38,8 @@ import { savedReportPreview } from "../report/SavedReportPicker";
 import { haptics } from "../../ui/haptics";
 import { space } from "../../ui/theme";
 import { EditSheet, FormActions, ManagersOnly, SettingsList, useEditSheet } from "./SettingsList";
+import { formChanged } from "../../lib/discard";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 // Settings › Report Templates (the website's settings/reports): which reports techs can send,
 // and what they're called. report_template rows are synced; owners and admins save through
@@ -176,6 +178,10 @@ function TemplateForm({ template, onDone }: { template: Template; onDone: (m: st
   const [name, setName] = useState(template.name);
   const [enabled, setEnabled] = useState(template.enabled);
   const [error, setError] = useState<string | undefined>();
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = { name, enabled };
+  const [startEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   function save() {
     if (!name.trim()) return setError("Enter a name.");
     getServices().sync.write("report_template", template.id, company.id, {
@@ -251,6 +257,10 @@ function SavedReportForm({
     savedReportSections(saved?.sections),
   );
   const [error, setError] = useState<string | undefined>();
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = { name, text };
+  const [startEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   function save() {
     if (!name.trim()) return setError("Enter a name.");
     if (name.trim().length > 80) return setError("Use 80 characters or fewer.");

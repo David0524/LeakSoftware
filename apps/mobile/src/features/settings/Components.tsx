@@ -20,6 +20,8 @@ import {
 import { haptics } from "../../ui/haptics";
 import { Select } from "../../ui/Select";
 import { EditSheet, FormActions, ManagersOnly, SettingsList, useEditSheet } from "./SettingsList";
+import { formChanged } from "../../lib/discard";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 // Settings › Checklist Components (the website's settings/components): pool visits and leak
 // inspections have their own checklists; a shop that does both switches between them.
@@ -152,6 +154,9 @@ function TypeForm({
     schedule: t?.on_schedule ?? false,
     active: t?.active ?? true,
   });
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const [startF] = useState(f);
+  useUnsavedChanges(formChanged(startF, f));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const set = (k: keyof typeof f) => (v: string) => setF({ ...f, [k]: v });
 

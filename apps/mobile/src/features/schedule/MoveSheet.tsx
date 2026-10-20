@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { durationLabel, formatDay, type SuggestedTime } from "@leakbook/core";
 import { Button, Group, Notice, T } from "../../ui/components";
-import { ModalSheet } from "../../ui/ModalSheet";
+import { ModalSheet, useUnsavedChanges } from "../../ui/ModalSheet";
 import { useMenu } from "../../ui/Select";
 import { color, MAX_TEXT_SCALE, minTap, space, type } from "../../ui/theme";
 import { WebIcon } from "../../ui/WebIcon";
 import { DatePicker } from "./Calendar";
+import { formChanged } from "../../lib/discard";
 
 // Move {Customer} and Suggested Times (spec 6.3; the website's route-board.tsx MoveSheet and
 // Suggestions).
@@ -122,6 +123,10 @@ function MoveForm({
   const [picking, setPicking] = useState(false);
   const others = tech ? placesFor(tech, date, job.id) : [];
   const [place, setPlace] = useState(() => others.length);
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = { tech, date, place };
+  const [startEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   const at = Math.min(place, others.length);
   const nobody = "Nobody yet (waits in Needs a Time)";
   const techName = tech ? (techs.find((t) => t.id === tech)?.name ?? "Teammate") : nobody;

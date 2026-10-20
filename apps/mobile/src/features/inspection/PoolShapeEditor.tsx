@@ -29,6 +29,8 @@ import { confirmDestructive } from "../../ui/confirm";
 import { haptics } from "../../ui/haptics";
 import { DiagramShapes, LandmarkArt } from "../../ui/PoolDiagram";
 import { color, face, minTap, shape as radii, space, type } from "../../ui/theme";
+import { formChanged } from "../../lib/discard";
+import { useUnsavedChanges } from "../../ui/ModalSheet";
 
 // The Pool Shape sheet (owner, 2026-10-19), as the website's PoolShapeEditor
 // (apps/web/src/components/pool-shape-editor.tsx): ten tiles in two rows of five (the seven
@@ -123,6 +125,10 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
   );
   const [drawing, setDrawing] = useState<DrawnShape[]>(layout.drawing ?? []);
   const [landmarks, setLandmarks] = useState<Landmark[]>(layout.landmarks ?? []);
+  // Unsaved entries ask before closing (owner, 2026-10-20: "Discard changes?" everywhere).
+  const entries = { shape, hasSpa, mirror, spa, drawing, landmarks };
+  const [startEntries] = useState(entries);
+  useUnsavedChanges(formChanged(startEntries, entries));
   const [panel, setPanel] = useState<"landmarks" | "draw" | null>(null);
   const [tool, setTool] = useState<Tool>("line");
   const [placing, setPlacing] = useState<LandmarkKind | null>(null);
