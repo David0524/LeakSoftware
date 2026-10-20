@@ -455,7 +455,11 @@ export function Empty({ children }: { children: ReactNode }) {
 // Buttons and pills (spec 3.7, 3.8, 3.10)
 // ---------------------------------------------------------------------------
 
-type ButtonKind = "primary" | "secondary" | "quiet" | "danger";
+/**
+ * `onWater` and `onWaterTinted` sit on Today's water-blue card (owner, 2026-10-20): the main
+ * button white with water-blue text, the others white at 18% with white text.
+ */
+type ButtonKind = "primary" | "secondary" | "quiet" | "danger" | "onWater" | "onWaterTinted";
 
 function buttonColors(kind: ButtonKind, pressed: boolean) {
   switch (kind) {
@@ -467,6 +471,10 @@ function buttonColors(kind: ButtonKind, pressed: boolean) {
       return { bg: pressed ? color.dangerPressed : color.dangerTint, fg: color.fail, dim: false };
     case "quiet":
       return { bg: pressed ? color.iconTint : "transparent", fg: color.link, dim: false };
+    case "onWater":
+      return { bg: pressed ? tint(color.paper, 0.9) : color.paper, fg: color.water, dim: false };
+    case "onWaterTinted":
+      return { bg: tint(color.paper, pressed ? 0.28 : 0.18), fg: color.paper, dim: false };
   }
 }
 
@@ -547,10 +555,13 @@ export function RoundButton({
   icon,
   label,
   onPress,
+  onWater = false,
 }: {
   icon: WebIconName;
   label: string;
   onPress: () => void;
+  /** On Today's water-blue card: white at 18% with a white icon. */
+  onWater?: boolean;
 }) {
   return (
     <Pressable
@@ -560,10 +571,16 @@ export function RoundButton({
       android_ripple={{ color: color.ripple, borderless: true }}
       style={({ pressed }) => [
         styles.round,
-        { backgroundColor: pressed ? color.tintedPressed : color.iconTint },
+        {
+          backgroundColor: onWater
+            ? tint(color.paper, pressed ? 0.28 : 0.18)
+            : pressed
+              ? color.tintedPressed
+              : color.iconTint,
+        },
       ]}
     >
-      <WebIcon name={icon} size={20} color={color.link} />
+      <WebIcon name={icon} size={20} color={onWater ? color.paper : color.link} />
     </Pressable>
   );
 }

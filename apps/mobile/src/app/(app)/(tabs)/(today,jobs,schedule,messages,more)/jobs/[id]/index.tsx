@@ -32,7 +32,6 @@ import { useRow, useSyncStatus } from "../../../../../../data/hooks";
 import { reportsOnline, useJobReports } from "../../../../../../data/reports";
 import { AUTOSAVE_DELAY_MS } from "../../../../../../lib/autosave";
 import { NEXT_STEP_LABELS, nextStepButtons, type NextStep } from "../../../../../../lib/nextStep";
-import { liveStopStarted } from "../../../../../../lib/liveStop";
 import {
   useChecklistProgress,
   useInspectionConfig,
@@ -125,7 +124,8 @@ export default function JobDetail() {
   const insp = useJobInspection(company.id, id);
   const insets = useSafeAreaInsets();
   const [section, setSectionState] = useState<JobSection>(
-    () => (asked === "wrapup" ? "wrapup" : lastSection.get(id)) ?? "details",
+    // Wrap-Up from a report link; Checklist from Today's card's Open Checklist (2026-10-20).
+    () => (asked === "wrapup" || asked === "checklist" ? asked : lastSection.get(id)) ?? "details",
   );
   const [switcherY, setSwitcherY] = useState<number | null>(null);
   // Complete Job waits for the checklist or a photo when the shop asks (owner, 2026-10-19).
@@ -192,8 +192,6 @@ export default function JobDetail() {
       update(values);
       // Automatic visit reports: sent once the completed visit reaches the server.
       if (to === "done") queueAutoVisitReport(job!, company.settings);
-      // Start Job: the current stop's ongoing notification moves to the pool.
-      if (to === "in_progress") liveStopStarted(job!.id);
     };
     // Completing asks first when it sends the visit report (owner, 2026-10-20).
     if (to === "done") return confirmCompleteVisit(job!, customer?.name, company.settings, apply);

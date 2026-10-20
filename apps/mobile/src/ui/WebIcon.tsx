@@ -113,6 +113,8 @@ const SHAPES = {
   },
   // The website's KeyIcon: how to get in (a pool's access notes).
   key: { line: "M11 12l8-8M16 7l2 2M14 9l2 2", circles: [[8, 15, 4]] },
+  // Directions (Today's card, the website's today-hero.tsx): a navigation arrow.
+  directions: { line: "M3 11l18-8-8 18-2-8z" },
   // The website's not-on-map warning (not-on-map.tsx).
   warning: { line: "M12 3l9.5 17h-19zM12 10v4.5M12 17.5v.01" },
 } satisfies Record<string, Shape>;

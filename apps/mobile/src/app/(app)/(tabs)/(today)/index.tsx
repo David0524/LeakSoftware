@@ -29,13 +29,17 @@ import { GettingStarted } from "../../../../features/today/GettingStarted";
 import { CleaningsDue } from "../../../../features/maintenance/Cleanings";
 import { TodayComplete } from "../../../../features/job/CompleteJob";
 import { OnMyWay } from "../../../../features/today/OnMyWay";
+import { TodayHeroCard, heroPlace } from "../../../../features/today/TodayHero";
+import { useTodayHero } from "../../../../features/today/useTodayHero";
 import { WeatherBadge } from "../../../../features/today/WeatherBadge";
 import {
   clearStopAction,
+  liveJustDone,
   pendingStopAction,
   useLiveStopVersion,
   type StopAction,
 } from "../../../../lib/liveStop";
+import { todayList } from "../../../../lib/todayHero";
 import { useCompany, useSession } from "../../../../state/session";
 import { useWalkthrough } from "../../../../state/walkthrough";
 import { mapsAppFor, openDirections, useDirectionsChoice } from "../../../../state/directions";
@@ -44,6 +48,7 @@ import {
   Empty,
   FilterPills,
   HeaderButton,
+  Pill,
   RoundButton,
   Screen,
   StatusChip,
@@ -73,7 +78,9 @@ import {
  * order with drive estimates from the shared routing rules; the server's drive times, the
  * weather and On My Way come with the full route (S8). The sync bar stays pinned under the bar
  * and the tip comes after the stops, so the first stop's buttons are in view at launch (owner,
- * 2026-10-20).
+ * 2026-10-20). It opens with a card for the stop you're on, from the same rule as the current-
+ * stop notification; done stops fold into one "N done" row, and the card's stop is one row
+ * marked Now (owner, 2026-10-20; docs/plans/today-hero.md).
  */
 export default function Today() {
   const company = useCompany();
@@ -165,8 +172,19 @@ export default function Today() {
   useEffect(() => {
     if (asked && !askedHere) clearStopAction(asked.nonce);
   }, [asked, askedHere]);
-  // The stop you're on: the first not done today (Mark Complete moves it on).
-  const next = stops.find((j) => !stopDone(j, today));
+  // The card for the stop you're on (core todayHero, as the notification). A stop completed in
+  // the last minute shows done first, on your own day.
+  const routing = useRoutingOn();
+  const { hero, job: heroJob } = useTodayHero({
+    companyId: company.id,
+    stops,
+    today,
+    timeZone: tz,
+    justDone: mine ? liveJustDone() : null,
+  });
+  const { done: doneStops, rest, nowId } = todayList(stops, today, hero);
+  const [doneOpen, setDoneOpen] = useState(false);
+  const heroAt = heroJob ? stops.indexOf(heroJob) : -1;
   const depotAddress = formatAddress(company as unknown as Parameters<typeof formatAddress>[0]);
   const directions = dayDirections(
     mapsAppFor(choice),
@@ -178,6 +196,59 @@ export default function Today() {
     })),
   );
   const backLeg = summary.driveMin - summary.legs.reduce((a, b) => a + b, 0);
+
+  /** On My Way for a stop: in its row, or as the card's main button. */
+  function onMyWayFor(j: JobView, opts: { onWater?: boolean; trigger?: number } = {}) {
+    return (
+      <OnMyWay
+        phone={j.customer?.phone ?? null}
+        customer={j.customer?.name ?? null}
+        customerId={j.customer?.id ?? null}
+        tech={myName}
+        shop={company.name}
+        driveMin={summary.legs[stops.indexOf(j)] ?? 0}
+        windowMin={settings.windowMin}
+        timeZone={tz}
+        via={onMyWayVia(company.settings)}
+        lineActive={line?.status === "active"}
+        isManager={manager}
+        jobId={j.id}
+        trigger={opts.trigger}
+        onWater={opts.onWater}
+      />
+    );
+  }
+
+  function stopRow(j: JobView, withLeg: boolean) {
+    const i = stops.indexOf(j);
+    return (
+      <View key={j.id} style={styles.stopWrap}>
+        {withLeg ? (
+          <Leg
+            text={`${durationLabel(summary.legs[i] ?? 0)} ${i === 0 ? "from the shop" : "drive"}`}
+            late={summary.short[i] ? durationLabel(summary.short[i]!) : null}
+          />
+        ) : null}
+        <Stop
+          job={j}
+          n={i + 1}
+          next={j.id === nowId}
+          timeZone={tz}
+          day={today}
+          action={mine && asked?.jobId === j.id ? asked : null}
+          onMyWay={
+            mine
+              ? onMyWayFor(j, {
+                  trigger:
+                    asked?.jobId === j.id && asked.action === "on_my_way" ? asked.nonce : undefined,
+                })
+              : null
+          }
+          onDirections={() => openDirections(heroPlace(j), choice)}
+        />
+      </View>
+    );
+  }
 
   async function refresh() {
     haptics.light();
@@ -253,54 +324,56 @@ export default function Today() {
             {durationLabel(summary.driveMin)} driving
             {summary.backMin != null ? ` · back by ${minutesLabel(summary.backMin)}` : ""}
           </T>
-          {stops.map((j, i) => (
-            <View key={j.id} style={styles.stopWrap}>
-              <Leg
-                text={`${durationLabel(summary.legs[i] ?? 0)} ${i === 0 ? "from the shop" : "drive"}`}
-                late={summary.short[i] ? durationLabel(summary.short[i]!) : null}
-              />
-              <Stop
-                job={j}
-                n={i + 1}
-                next={j.id === next?.id}
-                timeZone={tz}
-                day={today}
-                action={mine && asked?.jobId === j.id ? asked : null}
-                onMyWay={
-                  mine ? (
-                    <OnMyWay
-                      phone={j.customer?.phone ?? null}
-                      customer={j.customer?.name ?? null}
-                      customerId={j.customer?.id ?? null}
-                      tech={myName}
-                      shop={company.name}
-                      driveMin={summary.legs[i] ?? 0}
-                      windowMin={settings.windowMin}
-                      timeZone={tz}
-                      via={onMyWayVia(company.settings)}
-                      lineActive={line?.status === "active"}
-                      isManager={manager}
-                      jobId={j.id}
-                      trigger={
-                        asked?.jobId === j.id && asked.action === "on_my_way"
-                          ? asked.nonce
-                          : undefined
-                      }
-                    />
-                  ) : null
-                }
-                onDirections={() =>
-                  openDirections(
-                    {
-                      address: j.property ? formatAddress(j.property) : "",
-                      location: propertyLocation(j.property),
-                    },
-                    choice,
-                  )
-                }
-              />
+          {hero ? (
+            <TodayHeroCard
+              hero={hero}
+              job={heroJob}
+              next={rest[0]}
+              mine={mine}
+              day={today}
+              driveMin={heroAt >= 0 ? (summary.legs[heroAt] ?? null) : null}
+              notOnMap={!!heroJob && mapStatus(heroJob.property, routing) === "missing"}
+              onMyWay={(j) => onMyWayFor(j, { onWater: true })}
+              onDirections={(j) => openDirections(heroPlace(j), choice)}
+            />
+          ) : null}
+          {doneStops.length ? (
+            <View style={styles.stopWrap}>
+              <Pressable
+                testID="today-done"
+                accessibilityRole="button"
+                accessibilityLabel={`${doneStops.length} done`}
+                accessibilityState={{ expanded: doneOpen }}
+                onPress={() => setDoneOpen(!doneOpen)}
+                style={({ pressed }) => [
+                  styles.doneRow,
+                  { backgroundColor: color.surface },
+                  cardShadow(),
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <WebIcon name="check" size={18} color={color.pass} strokeWidth={3} />
+                <Text
+                  style={[type.bodyEmphasis, { flex: 1, color: color.textMuted }]}
+                  maxFontSizeMultiplier={MAX_TEXT_SCALE}
+                >
+                  {doneStops.length} done
+                </Text>
+                <View style={{ transform: [{ rotate: doneOpen ? "90deg" : "0deg" }] }}>
+                  <WebIcon
+                    name="chevronRight"
+                    size={20}
+                    color={color.textMuted}
+                    strokeWidth={2.2}
+                  />
+                </View>
+              </Pressable>
             </View>
-          ))}
+          ) : null}
+          {doneOpen || (asked && doneStops.some((j) => j.id === asked.jobId))
+            ? doneStops.map((j) => stopRow(j, false))
+            : null}
+          {rest.map((j) => stopRow(j, true))}
           <Leg text={`${durationLabel(backLeg)} back to the shop`} />
         </View>
       )}
@@ -327,7 +400,8 @@ function Leg({ text, late }: { text: string; late?: string | null }) {
 
 /**
  * One stop (owner, 2026-10-19: "keep these cards on Today collapsed except for the job you are
- * on. Then a tap on an old job or future job expands it"), as the website's TodayStop: one row
+ * on. Then a tap on an old job or future job expands it"; 2026-10-20: the card above shows the
+ * stop you're on, so its row stays closed, marked Now), as the website's TodayStop: one row
  * (number, or a green check when done; time; customer; state) that opens to the address,
  * cleanings, Mark Complete, call, and On My Way. Access notes show under the row, open or
  * closed.
@@ -344,7 +418,7 @@ function Stop({
 }: {
   job: JobView;
   n: number;
-  /** The stop you're on: open, and ringed. */
+  /** The stop on Today's card: ringed and marked Now, and closed, since the card shows it. */
   next: boolean;
   timeZone: string;
   day: string;
@@ -355,10 +429,10 @@ function Stop({
 }) {
   const done = stopDone(job, day);
   const routing = useRoutingOn();
-  const [opened, setExpanded] = useState(next);
+  const [opened, setExpanded] = useState(false);
   // Asked from the notification: open, and its buttons act as they appear.
   const expanded = opened || action !== null;
-  const [turn] = useState(() => new Animated.Value(next ? 1 : 0));
+  const [turn] = useState(() => new Animated.Value(0));
   useEffect(() => {
     Animated.timing(turn, {
       toValue: expanded ? 1 : 0,
@@ -425,6 +499,7 @@ function Stop({
             </Text>
             <WebIcon name="chevronRight" size={16} color={color.link} strokeWidth={2.4} />
           </Pressable>
+          {next ? <Pill label="Now" color={color.water} /> : null}
           {/* Most stops are scheduled; the chip shows other states. */}
           {job.status !== "scheduled" ? <StatusChip status={job.status} /> : null}
           {lock && lock !== "started" ? (
@@ -527,6 +602,16 @@ const styles = StyleSheet.create({
   },
   dots: { height: 16, borderLeftWidth: 2, borderStyle: "dotted" },
   stop: { borderRadius: shape.card, overflow: "hidden" },
+  // Done stops folded into one row (owner, 2026-10-20), as the website's "N done".
+  doneRow: {
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space["2"],
+    paddingHorizontal: space["4"],
+    paddingVertical: space["2"],
+    borderRadius: shape.card,
+  },
   stopTop: {
     minHeight: 56,
     flexDirection: "row",

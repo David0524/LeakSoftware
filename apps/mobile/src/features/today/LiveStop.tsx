@@ -1,29 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppState, Platform } from "react-native";
 import {
-  formatTime,
-  liveStopContent,
   liveStopRuns,
   localDate,
   localMinutes,
-  minutesLabel,
   stopDone,
-  type LiveStopInput,
+  todayHero,
+  type LiveStopContent,
   type LiveStopPhase,
 } from "@leakbook/core";
 import { useSyncStatus } from "../../data/hooks";
-import { useChecklistProgress } from "../../data/inspection";
 import { inRouteOrderViews, useJobViews, type JobView } from "../../data/jobs";
 import {
   LIVE_STOP_ID,
   dismissLiveStopFor,
   hideLiveStop,
   liveDismissedOn,
-  liveOnMyWay,
+  liveJustDone,
+  setLiveJustDone,
   useLiveStopVersion,
 } from "../../lib/liveStop";
+import { heroStops } from "../../lib/todayHero";
 import { NOTIFICATION_COLOR, Notifications, STOP_CATEGORY, STOP_CHANNEL } from "../../lib/push";
 import { useCompany, useSession } from "../../state/session";
+import { useTodayHero } from "./useTodayHero";
 
 // The Android Live Activity (owner, 2026-10-19: "Make the live notification look beautiful
 // please. Include our logo.", "Do not include a timer or stop watch", and "Live Activity should
@@ -34,6 +34,8 @@ import { useCompany, useSession } from "../../state/session";
 // it shows the stop done for a minute, then moves to the next; it ends after the last stop.
 // Swiped away, it stays away until the next work day. Checked at launch, coming back to the
 // app, after a sync, and each minute while open. The app shows it itself (no signal needed).
+// Which stop and moment come from core todayHero (owner, 2026-10-20), as Today's card, and On
+// My Way is read from the job (job.on_my_way_at, arrive_at), so a second phone agrees.
 
 /** How long a done stop shows before the next one (or the end of the day). */
 const DONE_MS = 60_000;
@@ -48,10 +50,7 @@ export function LiveStopNotification() {
 interface Shown {
   job: JobView;
   phase: LiveStopPhase;
-  stop: number;
-  stops: number;
-  next: JobView | undefined;
-  arriveMin: number | null;
+  content: LiveStopContent;
 }
 
 function LiveStopDay() {
@@ -99,27 +98,36 @@ function LiveStopDay() {
     [jobs, tz, today, me],
   );
   const left = stops.filter((s) => !stopDone(s, today));
-  const onMyWay = liveOnMyWay();
 
-  // The stop on the way (On My Way), else one already started, else the first not done.
-  const target =
-    (onMyWay && left.find((s) => s.id === onMyWay.jobId)) ??
-    left.find((s) => s.status === "in_progress") ??
-    left[0];
-  // Mark Complete: the stop shows done for a minute, then the next one (or the day ends).
-  const [justDone, setJustDone] = useState<string | null>(null);
+  // The stop on the way (On My Way today), else one already started, else the first not done:
+  // core todayHero, as Today's card.
+  const target = useMemo(
+    () => todayHero({ stops: heroStops(stops), today, timeZone: tz })?.stopId ?? null,
+    [stops, today, tz],
+  );
+  // Mark Complete: the stop shows done for a minute, then the next one (or the day ends). Today's
+  // card shows the same minute (lib/liveStop).
+  const justDone = liveJustDone();
   const last = useRef<string | null>(null);
   useEffect(() => {
     const was = last.current ? stops.find((s) => s.id === last.current) : undefined;
-    if (was && stopDone(was, today)) setJustDone(was.id);
-    last.current = target?.id ?? null;
-  }, [target?.id, stops, today]);
+    if (was && stopDone(was, today)) setLiveJustDone(was.id);
+    last.current = target;
+  }, [target, stops, today]);
   useEffect(() => {
     if (!justDone) return;
     // Not a timer on screen: when the minute is up, the next stop takes its place.
-    const t = setTimeout(() => setJustDone(null), DONE_MS);
+    const t = setTimeout(() => setLiveJustDone(null), DONE_MS);
     return () => clearTimeout(t);
   }, [justDone]);
+
+  const { hero, job } = useTodayHero({
+    companyId: company.id,
+    stops,
+    today,
+    timeZone: tz,
+    justDone,
+  });
 
   const runs = liveStopRuns({
     settings: company.settings,
@@ -128,30 +136,13 @@ function LiveStopDay() {
     stopsLeft: left.length,
   });
   const dismissedToday = liveDismissedOn() === today;
-  const doneJob = justDone ? stops.find((s) => s.id === justDone) : undefined;
 
   let shown: Shown | null = null;
-  if (!dismissedToday && doneJob) {
-    const at = stops.indexOf(doneJob);
-    shown = {
-      job: doneJob,
-      phase: "done",
-      stop: at + 1,
-      stops: stops.length,
-      next: left[0],
-      arriveMin: null,
-    };
-  } else if (!dismissedToday && target && (runs || onMyWay?.jobId === target.id)) {
-    const at = stops.indexOf(target);
-    const driving = onMyWay?.jobId === target.id && target.status !== "in_progress";
-    shown = {
-      job: target,
-      phase: target.status === "in_progress" ? "on_site" : driving ? "driving" : "ahead",
-      stop: at + 1,
-      stops: stops.length,
-      next: left.find((s) => s !== target && stops.indexOf(s) > at),
-      arriveMin: driving ? (onMyWay?.arriveMin ?? null) : null,
-    };
+  if (!dismissedToday && hero && job && hero.moment !== "day_done") {
+    const phase = hero.moment as LiveStopPhase;
+    // A done stop shows its minute; a stop on the way shows before the day starts too.
+    if (phase === "done" || runs || phase === "driving")
+      shown = { job, phase, content: hero.content };
   }
 
   // Swiped away: once it was up, it's gone from the tray without us taking it down. A done
@@ -164,7 +155,7 @@ function LiveStopDay() {
         if (!up.current || list.some((n) => n.request.identifier === LIVE_STOP_ID)) return;
         const phase = up.current;
         up.current = null;
-        if (phase === "done") setJustDone(null);
+        if (phase === "done") setLiveJustDone(null);
         else dismissLiveStopFor(today);
       })
       .catch(() => undefined);
@@ -182,7 +173,6 @@ function LiveStopDay() {
     <StopCard
       key={shown.job.id}
       shown={shown}
-      timeZone={tz}
       onUp={(phase) => {
         up.current = phase;
       }}
@@ -190,43 +180,10 @@ function LiveStopDay() {
   );
 }
 
-/** One stop's notification: its checklist count comes from its own rows. */
-function StopCard({
-  shown,
-  timeZone,
-  onUp,
-}: {
-  shown: Shown;
-  timeZone: string;
-  onUp: (phase: LiveStopPhase) => void;
-}) {
+/** One stop's notification, from todayHero's content (the checklist count included). */
+function StopCard({ shown, onUp }: { shown: Shown; onUp: (phase: LiveStopPhase) => void }) {
   const { job } = shown;
-  // A pool inspection counts only the questions its gates leave open (2026-10-20).
-  const { tally, inspection } = useChecklistProgress(job.company_id, job.id, job.type);
-  const total =
-    inspection?.total ??
-    tally.pass + tally.attention + tally.leaking + tally.notApplicable + tally.pending;
-  const input: LiveStopInput = {
-    phase: shown.phase,
-    customer: job.customer?.name ?? "Customer",
-    address: job.property?.address_line1 ?? null,
-    stop: shown.stop,
-    stops: shown.stops,
-    eta: shown.arriveMin != null ? minutesLabel(shown.arriveMin) : null,
-    scheduled: job.scheduled_start ? formatTime(job.scheduled_start, timeZone) : null,
-    checklistDone: inspection?.answered ?? total - tally.pending,
-    checklistTotal: total,
-    next: shown.next
-      ? {
-          customer: shown.next.customer?.name ?? "Customer",
-          time: shown.next.scheduled_start
-            ? formatTime(shown.next.scheduled_start, timeZone)
-            : null,
-        }
-      : null,
-    access: job.property?.access_notes ?? null,
-  };
-  const c = liveStopContent(input);
+  const c = shown.content;
   // Title: the headline. Text: the figure with its label, then the detail and next lines for
   // the expanded view. Never a timer or a stopwatch (owner, 2026-10-19).
   // Access notes (gate code, dogs) right under it, until the stop is done (owner, 2026-10-20).

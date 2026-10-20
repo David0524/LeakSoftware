@@ -4,52 +4,25 @@ import { Notifications } from "./push";
 import { getServices } from "./services";
 
 // What the current stop's ongoing notification (features/today/LiveStop.tsx) remembers on this
-// phone, across restarts: an On My Way tap (that stop is on the way, arriving then), and the
-// day the tech swiped the notification away (it stays away until the next work day). Which
-// stop it shows comes from the day's route itself (owner, 2026-10-19: "Live Activity should
-// begin at the beginning of the workday").
+// phone: the day the tech swiped it away (it stays away until the next work day, across
+// restarts), and a stop just completed (shown done for a minute, on the notification and on
+// Today's card). Which stop it shows comes from the day's route itself (owner, 2026-10-19), and
+// whether that stop is on the way from the job's own On My Way (job.on_my_way_at, arrive_at,
+// synced; owner, 2026-10-20), so every phone and the website agree.
 
 export const LIVE_STOP_ID = "current-stop";
-const KEY = "liveStop";
+/** Where an older build kept its On My Way tap on the phone; now it's on the job. */
+const OLD_KEY = "liveStop";
 const DISMISSED_KEY = "liveStop:dismissedOn";
 
-export interface LiveStopState {
-  jobId: string;
-  /** On My Way's arrival, as minutes into the shop's day. */
-  arriveMin: number | null;
-}
-
 const listeners = new Set<() => void>();
-let current: LiveStopState | null | undefined;
 let dismissed: string | null | undefined;
+let justDone: string | null = null;
 let version = 0;
-
-function read(): LiveStopState | null {
-  if (current !== undefined) return current;
-  try {
-    current = JSON.parse(getServices().kv.get(KEY) ?? "null") as LiveStopState | null;
-  } catch {
-    current = null;
-  }
-  return current;
-}
 
 function changed() {
   version++;
   listeners.forEach((l) => l());
-}
-
-function write(next: LiveStopState | null) {
-  current = next;
-  const { kv } = getServices();
-  if (next) kv.set(KEY, JSON.stringify(next));
-  else kv.remove(KEY);
-  changed();
-}
-
-/** The On My Way tap, if any. */
-export function liveOnMyWay(): LiveStopState | null {
-  return read();
 }
 
 /** The shop-local day the notification was swiped away, if any. */
@@ -66,19 +39,25 @@ export function dismissLiveStopFor(day: string) {
 }
 
 /**
- * On My Way: this stop is on the way, arriving at `arriveMin`. A tap is a request to see it,
- * so it also brings back a notification swiped away today.
+ * On My Way was sent (it's recorded on the job). A tap is a request to see the stop, so it
+ * also brings back a notification swiped away today.
  */
-export function startLiveStop(jobId: string, arriveMin: number | null) {
+export function startLiveStop() {
   dismissed = null;
   getServices().kv.remove(DISMISSED_KEY);
-  write({ jobId, arriveMin });
+  changed();
 }
 
-/** Start Job: the stop is at the pool now (its status says so); its On My Way is kept. */
-export function liveStopStarted(jobId: string) {
-  const now = read();
-  if (now && now.jobId !== jobId) write(null);
+/** The stop completed in the last minute, if any (core todayHero's `justDone`). */
+export function liveJustDone(): string | null {
+  return justDone;
+}
+
+/** A stop was just completed (or its minute is up: null). */
+export function setLiveJustDone(jobId: string | null) {
+  if (justDone === jobId) return;
+  justDone = jobId;
+  changed();
 }
 
 /** Takes the notification down (not a dismissal: it comes back when it should show). */
@@ -89,13 +68,15 @@ export async function hideLiveStop() {
 
 /** Sign out: forget this person's stop and take the notification down. */
 export async function endLiveStop() {
-  write(null);
+  justDone = null;
   dismissed = null;
+  getServices().kv.remove(OLD_KEY);
   getServices().kv.remove(DISMISSED_KEY);
+  changed();
   await hideLiveStop();
 }
 
-/** Re-render when the On My Way tap or the dismissal changes. */
+/** Re-render when the dismissal, the stop just done or a stop action changes. */
 export function useLiveStopVersion(): number {
   return useSyncExternalStore(
     (l) => {
