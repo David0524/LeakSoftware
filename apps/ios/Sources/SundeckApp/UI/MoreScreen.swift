@@ -90,7 +90,6 @@
             let company = session.company
             List {
                 Section {
-                    RootLargeTitle(stackSpacing: 0).plainListRow()
                     PageHeader(subtitle: displayName).plainListRow()
                 }
                 Section {

@@ -5,9 +5,8 @@
     // One search across the shop (owner, 2026-10-20; docs/plans/search-and-activity.md section 1;
     // website components/shop-search.tsx PhoneSearch): the field under the Jobs title, where
     // iPhone apps put search; typing shows the grouped results over the list, Cancel returns to
-    // it. The tab roots draw their large title in the bar's row (RootTitle.swift), so the field
-    // is drawn in the page under it, as the system search bar looks, rather than in the bar's
-    // drawer (which would push the bar's row down under the title).
+    // it. The field is drawn in the page under the large title, as the system search bar looks,
+    // so the bar's row keeps only the logo and the buttons (RootTitle.swift).
 
     /// The iOS search field: filled, rounded, the magnifier inside, a clear button once typed in,
     /// and Cancel beside it while searching.

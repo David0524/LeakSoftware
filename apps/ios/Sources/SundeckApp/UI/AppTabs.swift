@@ -202,8 +202,8 @@
         private func stack<Root: View>(_ tab: AppTab, @ViewBuilder root: () -> Root) -> some View {
             NavigationStack(path: Binding(get: { paths[tab] ?? NavigationPath() }, set: { paths[tab] = $0 })) {
                 root()
-                    // Only the tab's own page: its large title has the logo above it
-                    // (RootTitle.swift). Screens pushed onto the stack don't.
+                    // Only the tab's own page has the logo on its bar's leading edge
+                    // (RootTitle.swift). Screens pushed onto the stack have Back there.
                     .environment(\.brandInBar, true)
                     .navigationDestination(for: Route.self) { route in
                         switch route {

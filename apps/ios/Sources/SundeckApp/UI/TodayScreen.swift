@@ -110,7 +110,6 @@
         /// Today as it usually is: the header, whose day, the card and the stops, and the tip.
         private var page: some View {
             ScreenScroll {
-                RootLargeTitle(stackSpacing: 24)
                 // Only this flag, not the whole sync status: Today doesn't redraw on every sync.
                 let firstSync = sync.firstSyncRunning
                 if session.company != nil && (day == nil || (firstSync && day?.route == nil)) {

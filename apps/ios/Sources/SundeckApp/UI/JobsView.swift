@@ -109,7 +109,6 @@
             let company = session.company
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 20) {
-                    RootLargeTitle().padding(.horizontal, 16)
                     if mode == .jobs {
                         ShopSearchField(text: $query, focused: $searchFocused, active: searching) { cancelSearch() }
                             .padding(.horizontal, 16)

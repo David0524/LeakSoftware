@@ -28,4 +28,12 @@ import Testing
         #expect(SundeckLogoArt.light.map(\.hex) == ["#1F6FAE", "#12263A", "#1F6FAE"])
         #expect(SundeckLogoArt.dark.suffix(2).allSatisfy { $0.hex == "#FFFFFF" })
     }
+
+    /// Scrolled, the tab bar keeps only the pin mark (owner, 2026-10-21): the wordmark is the
+    /// last `wordmarkLayers` layers of both lockups (the same two shapes), the pin the rest.
+    @Test func theWordmarkIsTheLastLayers() {
+        let n = SundeckLogoArt.wordmarkLayers
+        #expect(SundeckLogoArt.light.suffix(n).map(\.d) == SundeckLogoArt.dark.suffix(n).map(\.d))
+        #expect(SundeckLogoArt.light.count > n && SundeckLogoArt.dark.count > n)
+    }
 }

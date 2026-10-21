@@ -31,7 +31,6 @@
             let working = line?.status == "active"
             List {
                 Section {
-                    RootLargeTitle(stackSpacing: 0).plainListRow()
                     if let line, working {
                         PageHeader(subtitle: "Your company number: \(formatPhone(line.number))").plainListRow()
                     }

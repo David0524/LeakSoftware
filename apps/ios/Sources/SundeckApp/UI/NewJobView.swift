@@ -91,7 +91,6 @@
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: form.jobType) { form.jobTypeChanged() }
             .navigationTitle("New Job")
-            // Explicit: the tab roots it's pushed from have an inline bar (RootTitle.swift).
             .navigationBarTitleDisplayMode(.large)
             // Back with something typed asks "Discard changes?" (owner, 2026-10-20: everywhere).
             .discardOnBack(dirty: form.isDirty && saved == 0, back: back)

@@ -526,7 +526,8 @@
 
     @MainActor
     func snapshot(
-        _ name: String, dark: Bool = false, largeText: Bool = false, height: CGFloat? = nil, _ view: some View
+        _ name: String, dark: Bool = false, largeText: Bool = false, height: CGFloat? = nil,
+        scrolled: CGFloat? = nil, _ view: some View
     ) async throws {
         // The app's bar and tab styles (set once at launch in the app).
         Chrome.install()
@@ -550,6 +551,15 @@
             try await Task.sleep(for: .milliseconds(100))
             window.layoutIfNeeded()
         }
+        // Scrolled down the page by `scrolled` points (the tab bar's logo collapsing to its mark).
+        if let scrolled, let scroll = pageScrollView(in: window) {
+            scroll.setContentOffset(
+                CGPoint(x: scroll.contentOffset.x, y: scroll.contentOffset.y + scrolled), animated: false)
+            for _ in 0..<6 {
+                try await Task.sleep(for: .milliseconds(100))
+                window.layoutIfNeeded()
+            }
+        }
         let image = UIGraphicsImageRenderer(bounds: window.bounds).image { context in
             if scene != nil {
                 window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
@@ -565,6 +575,23 @@
         }
         // A blank picture means nothing was drawn.
         #expect(!isBlank(image), "\(name) rendered blank")
+    }
+
+    /// The page's vertical scroll view: the widest one that scrolls up and down.
+    @MainActor
+    func pageScrollView(in root: UIView) -> UIScrollView? {
+        let width = root.bounds.width - 1
+        var found: [UIScrollView] = []
+        func walk(_ view: UIView) {
+            if let scroll = view as? UIScrollView, scroll.bounds.width >= width,
+                scroll.contentSize.height > scroll.bounds.height - scroll.adjustedContentInset.top
+            {
+                found.append(scroll)
+            }
+            view.subviews.forEach(walk)
+        }
+        walk(view)
+        return found.first
     }
 
     /// Whether every sampled pixel has the same color. Walks rows by bytesPerRow: rows are padded,
@@ -605,6 +632,25 @@
             try await snapshot("02-jobs", NavigationStack { JobsView() }.app(env))
             try await snapshot("02-jobs-dark", dark: true, NavigationStack { JobsView() }.app(env))
             try await snapshot("02-jobs-large-text", largeText: true, NavigationStack { JobsView() }.app(env))
+        }
+
+        /// The tab pages' bar (owner, 2026-10-21): at rest, the Sundeck Pro lockup on the bar's
+        /// leading edge under the status bar, the sort and "+" buttons in the same row, the large
+        /// title under the bar; scrolled, the title in the bar and only the pin mark kept.
+        @Test func tabBarLogo() async throws {
+            let env = try sampleEnvironment()
+            try seedRoute(env.session.sync.store)
+            env.session.reloadCompanies()
+            func jobs() -> some View { NavigationStack { JobsView() }.environment(\.brandInBar, true).app(env) }
+            try await snapshot("tab-bar-logo-rest-jobs", jobs())
+            try await snapshot("tab-bar-logo-rest-jobs-dark", dark: true, jobs())
+            try await snapshot("tab-bar-logo-scrolled-jobs", scrolled: 160, jobs())
+            try await snapshot("tab-bar-logo-scrolled-jobs-dark", dark: true, scrolled: 160, jobs())
+            try await snapshot("tab-bar-logo-rest-jobs-large-text", largeText: true, jobs())
+            try await snapshot("tab-bar-logo-rest-today", MainView().app(env))
+            try await snapshot("tab-bar-logo-rest-today-dark", dark: true, MainView().app(env))
+            try await snapshot("tab-bar-logo-scrolled-today", scrolled: 160, MainView().app(env))
+            try await snapshot("tab-bar-logo-scrolled-today-dark", dark: true, scrolled: 160, MainView().app(env))
         }
 
         @Test func emptyJobs() async throws {
