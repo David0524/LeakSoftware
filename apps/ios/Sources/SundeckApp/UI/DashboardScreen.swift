@@ -13,8 +13,9 @@
     /// More › Dashboard (owners and admins; owner, 2026-10-20: "Dashboard should be in the apps";
     /// website app/(office)/dashboard): four stat cards, collected by month as a chart, jobs by
     /// status (each opens Jobs on it), and each month in a grouped list. From the
-    /// `owner_dashboard` RPC, so it needs a connection. Under the stat cards, the latest Activity
-    /// with See All (owner, 2026-10-20: "a shortcut to it on the owner's dashboard page").
+    /// `owner_dashboard` RPC, so it needs a connection. Activity is a button at the trailing side
+    /// of the navigation bar (owner, 2026-10-21: "make activity a dropdown on the right side at
+    /// the same level as the title text"), opening a sheet with the latest events and See All.
     struct DashboardScreen: View {
         @Environment(Session.self) private var session
         @Environment(AppEnvironment.self) private var app
@@ -25,6 +26,7 @@
         /// The latest few events (`activity_feed`), or whether they couldn't load.
         @State private var activity: ActivityPage?
         @State private var activityFailed = false
+        @State private var showActivity = false
         private let preview: Bool
 
         /// `data` shows those numbers without asking the server (screenshots).
@@ -50,6 +52,17 @@
             }
             .navigationTitle(DashboardText.title)
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ActivityBarButton { showActivity = true }
+                }
+            }
+            .sheet(isPresented: $showActivity) {
+                LatestActivitySheet(page: activity, failed: activityFailed)
+            }
+            .onChange(of: showActivity) { _, shown in
+                if shown { Task { await loadActivity() } }
+            }
             .task(id: session.company?.id) {
                 await load()
                 await loadActivity()
@@ -122,7 +135,6 @@
                         note: "\(DashboardText.months) months")
                 }
             }
-            if !preview { LatestActivity(page: activity, failed: activityFailed) }
             collectedChart(d)
             jobsByStatus(d)
             Grouped(label: DashboardText.byMonth) {

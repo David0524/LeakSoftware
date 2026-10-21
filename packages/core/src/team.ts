@@ -112,3 +112,92 @@ export function planMovedBanner(customer: string, weekdayName: string, techName:
 
 /** After Just This Visit. */
 export const visitMovedBanner = "Moved this visit only";
+
+// ---------------------------------------------------------------------------
+// The order of techs on the Schedule (owner, 2026-10-21: "Make a way to reorder techs in the
+// schedule"; docs/design/2026-10-21-tech-order.md)
+// ---------------------------------------------------------------------------
+
+/** The words of Reorder Techs, the same on every platform. */
+export const REORDER_TECHS = {
+  action: "Reorder Techs",
+  title: "Reorder Techs",
+  done: "Done",
+  cancel: "Cancel",
+  moveUp: "Move Up",
+  moveDown: "Move Down",
+  saved: "Order saved.",
+  help: "Drag techs into the order the Schedule and Today show them.",
+} as const;
+
+const placed = (v: number | null | undefined): v is number =>
+  typeof v === "number" && Number.isFinite(v);
+
+/**
+ * The order the Schedule lists techs in (Day columns, Week rows, Whose schedule, Everyone) and
+ * Today's Whose Day. When an owner or admin has saved an order (any member's `schedule_order`
+ * is set), it wins: people with a place first, lowest first, then anyone without one (someone
+ * added since) A to Z by name. Without a saved order, the old rule: `me` (the person signed in,
+ * when given) first, then A to Z by name. Names ignore case and accents, no name last; ties
+ * keep the input order. "Me first" only applies while there's no saved order: the owner set the
+ * order on purpose.
+ */
+export function scheduleOrder<
+  T extends { user_id: string; name: string | null; schedule_order?: number | null },
+>(members: T[], me?: string | null): T[] {
+  const saved = members.some((m) => placed(m.schedule_order));
+  return members
+    .map((m, n) => ({ m, n }))
+    .sort((x, y) => {
+      const a = x.m.schedule_order;
+      const b = y.m.schedule_order;
+      if (placed(a) || placed(b)) {
+        if (!placed(a)) return 1;
+        if (!placed(b)) return -1;
+        if (a !== b) return a - b;
+      } else if (me && !saved) {
+        const mine = Number(y.m.user_id === me) - Number(x.m.user_id === me);
+        if (mine) return mine;
+      }
+      return byName(x.m.name, y.m.name) || x.n - y.n;
+    })
+    .map((x) => x.m);
+}
+
+/** One `schedule_order` to write (on the membership with this id). */
+export interface ScheduleOrderWrite {
+  id: string;
+  schedule_order: number;
+}
+
+/**
+ * The writes that save a reordered list: `ordered` holds the ids top to bottom, and each gets
+ * its place (1 first). Only rows whose place changed are written; ids not in `members` are
+ * skipped. `members` are the rows as saved now.
+ */
+export function scheduleOrderWrites(
+  members: { id: string; schedule_order?: number | null }[],
+  ordered: string[],
+): ScheduleOrderWrite[] {
+  const now = new Map(members.map((m) => [m.id, m.schedule_order ?? null]));
+  const writes: ScheduleOrderWrite[] = [];
+  ordered.forEach((id, i) => {
+    if (!now.has(id)) return;
+    if (now.get(id) !== i + 1) writes.push({ id, schedule_order: i + 1 });
+  });
+  return writes;
+}
+
+/**
+ * The list with the item at `from` moved to `to` (both clamped to the list). Reorder Techs'
+ * drag, Move Up (`to = from - 1`) and Move Down (`to = from + 1`).
+ */
+export function moveInList<T>(list: T[], from: number, to: number): T[] {
+  if (from < 0 || from >= list.length) return list;
+  const target = Math.max(0, Math.min(list.length - 1, to));
+  if (target === from) return list;
+  const next = [...list];
+  const [item] = next.splice(from, 1);
+  next.splice(target, 0, item!);
+  return next;
+}

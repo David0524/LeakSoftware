@@ -23,6 +23,7 @@ import {
   weekday,
   jobLock,
   asksPlanMove,
+  scheduleOrder,
 } from "@leakbook/core";
 import { lockTag } from "@/lib/day-map";
 import { PlanWeek } from "@/components/plan-week";
@@ -71,6 +72,7 @@ import { redirect } from "next/navigation";
 import { loadRouteCustomers } from "@/app/actions/service-days";
 import { CustomersToAdd } from "@/components/customers-to-add";
 import { TechDot } from "@/components/tech-dot";
+import { ReorderTechs } from "@/components/reorder-techs";
 
 export const metadata: Metadata = { title: "Schedule · Sundeck Pro" };
 
@@ -245,14 +247,23 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   // in Needs a Time.
   // A tech limited to their own jobs sees only their own route (and can move jobs only
   // within it).
-  const techs = team
-    .filter(
+  // In the shop's saved order (Reorder Techs, owner 2026-10-21); without one, the signed-in
+  // person first ("Me"), then A to Z (core scheduleOrder).
+  const techs = scheduleOrder(
+    team.filter(
       (t) =>
         (ctx.seesAll || t.user_id === office.user.id) &&
         (t.status === "active" || days.some((d) => routes.has(routeKey(t.user_id, d)))),
-    )
-    // The signed-in person first ("Me"), then everyone else.
-    .sort((a, b) => Number(b.user_id === office.user.id) - Number(a.user_id === office.user.id));
+    ),
+    office.user.id,
+  );
+  // Reorder Techs: owners and admins, with the active techs in the order shown.
+  const reorder =
+    office.isManager && ctx.seesAll
+      ? techs
+          .filter((t) => t.status === "active")
+          .map((t) => ({ id: t.membership_id, name: t.name, color: t.color }))
+      : [];
   // Phones: one tech at a time, picked from chips like Today's (owner: the page shouldn't be
   // long); Everyone shows them all. Desktop always shows everyone (owner, 2026-10-14).
   const wanted = typeof params.tech === "string" ? params.tech : "";
@@ -267,7 +278,10 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           "all");
   const onPhone = (techId: string) => tech === "all" || techId === tech;
   const movers = ctx.seesAll
-    ? team.filter((t) => t.status === "active")
+    ? scheduleOrder(
+        team.filter((t) => t.status === "active"),
+        office.user.id,
+      )
     : team.filter((t) => t.user_id === office.user.id);
   const columns: BoardColumn[] = [];
   for (const t of techs)
@@ -387,36 +401,45 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
 
         {view === "day" ? <WeekStrip date={date} today={today} tech={tech} /> : null}
 
-        {/* Whose schedule: under the days of the week. */}
+        {/* Whose schedule: under the days of the week, with Reorder Techs at its end (owners
+            and admins). On a computer, where every tech shows, Reorder Techs stands alone. */}
+        {reorder.length > 1 ? (
+          <div className="mb-2 flex justify-end max-sm:hidden">
+            <ReorderTechs techs={reorder} />
+          </div>
+        ) : null}
         {techs.length > 1 ? (
-          <nav
-            aria-label="Whose schedule"
-            className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:hidden"
-          >
-            {[
-              ...techs.map((t) => ({
-                id: t.user_id,
-                name: t.user_id === office.user.id ? "Me" : t.name,
-                color: t.color as string | null,
-              })),
-              { id: "all", name: "Everyone", color: null },
-            ].map((t) => (
-              <Link
-                key={t.id}
-                href={href(date, view, t.id)}
-                aria-current={t.id === tech ? "page" : undefined}
-                className={pillClass(t.id === tech, "gap-2")}
-              >
-                {t.color ? (
-                  <TechDot
-                    color={t.color}
-                    className={cx(t.id === tech && "ring-2 ring-white/90")}
-                  />
-                ) : null}
-                {t.name}
-              </Link>
-            ))}
-          </nav>
+          <div className="mb-4 flex items-center gap-2 sm:hidden">
+            <nav
+              aria-label="Whose schedule"
+              className="-ml-4 flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1 pl-4"
+            >
+              {[
+                ...techs.map((t) => ({
+                  id: t.user_id,
+                  name: t.user_id === office.user.id ? "Me" : t.name,
+                  color: t.color as string | null,
+                })),
+                { id: "all", name: "Everyone", color: null },
+              ].map((t) => (
+                <Link
+                  key={t.id}
+                  href={href(date, view, t.id)}
+                  aria-current={t.id === tech ? "page" : undefined}
+                  className={pillClass(t.id === tech, "gap-2")}
+                >
+                  {t.color ? (
+                    <TechDot
+                      color={t.color}
+                      className={cx(t.id === tech && "ring-2 ring-white/90")}
+                    />
+                  ) : null}
+                  {t.name}
+                </Link>
+              ))}
+            </nav>
+            {reorder.length > 1 ? <ReorderTechs techs={reorder} /> : null}
+          </div>
         ) : null}
 
         {!ctx.depot && columns.some((c) => c.start.label === "shop") ? (

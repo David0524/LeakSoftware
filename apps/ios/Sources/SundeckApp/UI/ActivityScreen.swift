@@ -211,29 +211,85 @@
         }
     }
 
-    /// The Dashboard's Activity card (owners and admins): the latest 3 events, then See All.
-    struct LatestActivity: View {
-        var page: ActivityPage?
-        var failed: Bool
-        @Environment(Session.self) private var session
+    /// The Dashboard's Activity button, at the trailing side of the navigation bar (owner,
+    /// 2026-10-21: "make activity a dropdown on the right side at the same level as the title
+    /// text"): a tinted pill with a chevron, and the blue dot when something is new, as the
+    /// website's.
+    struct ActivityBarButton: View {
+        var action: () -> Void
         @Environment(ActivityBadge.self) private var badge: ActivityBadge?
 
         var body: some View {
-            VStack(alignment: .leading, spacing: CGFloat(Spacing.labelToGroup)) {
-                HStack(alignment: .center, spacing: 8) {
-                    SectionLabel(ActivityText.title)
-                    if badge?.unread == true { ActivityDot() }
-                    Spacer(minLength: 0)
-                    NavigationLink(value: MoreRoute.activity) {
-                        Text(SearchText.seeAll).textRole(.secondary).foregroundStyle(Color.link)
-                            .frame(minHeight: minTarget)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(SearchText.seeAll) \(ActivityText.title)")
+            let unread = badge?.unread == true
+            Button(action: action) {
+                HStack(spacing: 6) {
+                    if unread { Circle().fill(Color.brandPrimary).frame(width: 10, height: 10) }
+                    Text(ActivityText.title).textRole(.bodyEmphasis)
+                    Image(systemName: "chevron.down").font(.footnote.weight(.semibold))
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, -12)
+                .padding(.horizontal, 14)
+                .frame(minHeight: minTarget)
+            }
+            .buttonStyle(ActivityPillStyle())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(ActivityText.buttonLabel(unread: unread))
+            .accessibilityAddTraits(.isButton)
+        }
+    }
+
+    private struct ActivityPillStyle: ButtonStyle {
+        @Environment(\.drawsGlass) private var drawsGlass
+
+        func makeBody(configuration: Configuration) -> some View {
+            configuration.label
+                .foregroundStyle(Color.link)
+                .background {
+                    // On iOS 26 the toolbar puts the button on its own glass.
+                    if !usesGlass(drawsGlass) {
+                        Capsule().fill(configuration.isPressed ? Color.tintedPressed : Color.tinted)
+                    }
+                }
+                .contentShape(Capsule())
+        }
+    }
+
+    /// The Dashboard's Activity sheet (owners and admins): the latest 3 events, then See All
+    /// (owner, 2026-10-20: "a shortcut to it on the owner's dashboard page").
+    struct LatestActivitySheet: View {
+        var page: ActivityPage?
+        var failed: Bool
+        @Environment(\.openRoute) private var openRoute
+        @Environment(\.dismiss) private var dismiss
+
+        var body: some View {
+            NavigationStack {
+                ScrollView {
+                    LatestActivityRows(page: page, failed: failed) { route in
+                        dismiss()
+                        openRoute(route)
+                    }
+                    .padding(16)
+                }
+                .background(Color.bg)
+                .navigationTitle(ActivityText.title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
+                }
+            }
+            .sheetPresentation(detents: [.medium, .large])
+        }
+    }
+
+    /// The sheet's rows and See All; `open` closes the sheet and opens a route behind it.
+    struct LatestActivityRows: View {
+        var page: ActivityPage?
+        var failed: Bool
+        var open: (Route) -> Void
+        @Environment(Session.self) private var session
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 12) {
                 if let page {
                     if page.events.isEmpty {
                         EmptyState(text: ActivityText.empty)
@@ -247,12 +303,17 @@
                                 }
                             }
                         }
+                        .environment(\.openRoute, open)
                     }
                 } else if failed {
                     EmptyState(text: ActivityText.offline)
                 } else {
                     ProgressView().frame(maxWidth: .infinity, minHeight: minTarget)
                 }
+                Button(SearchText.seeAll) { open(.more(.activity)) }
+                    .buttonStyle(.quiet)
+                    .frame(maxWidth: .infinity)
+                    .accessibilityLabel("\(SearchText.seeAll) \(ActivityText.title)")
             }
         }
     }

@@ -427,7 +427,10 @@
             let jobs = scheduleJobs(store, companyId: company.id)
             let loaded = loadRoutes(jobs, ctx: ctx, dates: [ctx.today], team: team, drive: drive)
             let today = ctx.today
-            techs = team.filter { $0.active || loaded.routes[routeKey($0.id, today)] != nil }
+            // Whose day, in the Schedule's order (core scheduleOrder: the shop's saved order, else
+            // Me first, then A to Z).
+            techs = scheduleTeam(
+                team.filter { $0.active || loaded.routes[routeKey($0.id, today)] != nil }, me: userId)
             let pick = wanted ?? userId
             techId = ctx.isManager && techs.contains { $0.id == pick } ? pick : userId
             route = loaded.routes[routeKey(techId, ctx.today)]

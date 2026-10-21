@@ -53,7 +53,14 @@ export function ActivityIcon({ symbol }: { symbol: ActivitySymbol }) {
 }
 
 /** One event: its row content, tappable when it opens something. */
-export function ActivityItem({ row }: { row: ActivityRow }) {
+export function ActivityItem({
+  row,
+  onOpen,
+}: {
+  row: ActivityRow;
+  /** Before it opens what it's about (the Dashboard's Activity sheet closes). */
+  onOpen?: () => void;
+}) {
   const path = activityPath(row.open);
   const body = (
     <>
@@ -82,7 +89,10 @@ export function ActivityItem({ row }: { row: ActivityRow }) {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      onPress={() => router.push(path as never)}
+      onPress={() => {
+        onOpen?.();
+        router.push(path as never);
+      }}
       android_ripple={{ color: color.ripple }}
       style={({ pressed }) => [
         styles.row,

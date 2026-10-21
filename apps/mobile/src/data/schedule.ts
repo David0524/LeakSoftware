@@ -52,6 +52,8 @@ export interface TeamMember {
   color: TechColor;
   /** When they were turned off (Team's second list, most recent first). */
   disabled_at: string | null;
+  /** Their place on the Schedule (Reorder Techs); read with core scheduleOrder. */
+  schedule_order: number | null;
 }
 
 /** The shop's people (memberships with their names), by name, as the website lists them. */
@@ -63,6 +65,7 @@ export function useTeam(companyId: string): TeamMember[] {
     status: TeamMember["status"];
     color?: string | null;
     disabled_at?: string | null;
+    schedule_order?: number | null;
     deleted_at?: string | null;
   }>("membership", companyId);
   const profiles = getServices().sync.team();
@@ -81,6 +84,7 @@ export function useTeam(companyId: string): TeamMember[] {
           email: p?.email ?? null,
           color: techColor(m.color),
           disabled_at: m.disabled_at ?? null,
+          schedule_order: typeof m.schedule_order === "number" ? m.schedule_order : null,
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));

@@ -23,13 +23,18 @@ import {
   JOB_TYPE_LABELS,
   directionsHref,
   type HeroStop,
+  scheduleOrder,
 } from "@leakbook/core";
 import { TodayHeroCard, type HeroJob } from "@/components/today-hero";
 import { TodayDays } from "@/components/today-days";
 import { SWIPE_ACTION } from "@/components/swipe-row";
 import { NotOnMapTag } from "@/components/not-on-map";
 import { LockTag } from "@/components/lock-tag";
-import { lockTag } from "@/lib/day-map";
+import { dayMap, lockTag, weekdayName } from "@/lib/day-map";
+import { mapsConfigured, resolveMapProvider } from "@/lib/map-provider";
+import { MapProviderScope } from "@/components/map-provider-scope";
+import { TodayMap } from "@/components/today-map";
+import { TodayActivity, TodayActivityLoading } from "./today-activity";
 import { routingConfigured } from "@/server/routing";
 import { completeSendPrompt } from "@/lib/next-step";
 import { Suspense } from "react";
@@ -84,8 +89,11 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
     getLine(office),
     getCompany(office),
   ]);
-  const techs = team.filter(
-    (t) => t.status === "active" || routes.has(routeKey(t.user_id, ctx.today)),
+  // Whose Day, in the Schedule's order (core scheduleOrder: the shop's saved order, else Me
+  // first, then A to Z).
+  const techs = scheduleOrder(
+    team.filter((t) => t.status === "active" || routes.has(routeKey(t.user_id, ctx.today))),
+    office.user.id,
   );
   const wanted = typeof params.tech === "string" ? params.tech : office.user.id;
   const techId =
@@ -99,6 +107,8 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
     ).values(),
   ];
   const routing = routingConfigured();
+  // Today's Map beside the day on a computer (owner, 2026-10-21): the Schedule's day map.
+  const mapCompany = mapsConfigured() ? office.company.id : null;
   // Completing a visit in an Automatic shop sends its report: ask first (owner, 2026-10-20).
   const reportMode = visitReportMode(company.settings);
   // The plan's cleanings on each visit's checklist, with how they stand against their due date
@@ -390,11 +400,41 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
       );
     };
 
+    // The day as a map (docs/plans/route-maps.md): the start, then the stops in order, the one
+    // you're on marked. A stop done today counts as done, as in the list.
+    const mapStops = jobs.map((j) => ({
+      id: j.id,
+      location: propertyLocation(j.property),
+      status: stopDone(j, ctx.today) ? "completed" : j.status,
+      time: j.scheduled_start ? formatTime(j.scheduled_start, ctx.timeZone) : null,
+      customer: j.customer?.name ?? "Customer",
+    }));
+    const map =
+      route && jobs.length
+        ? dayMap({
+            stops: mapStops,
+            depot: route.start.at,
+            startLabel: route.start.label,
+            date: ctx.today,
+            today: ctx.today,
+          })
+        : null;
+
     return {
       id: dayTech,
       label: dayTech === office.user.id ? "Me" : (tech?.name ?? "Teammate"),
       color: tech?.color ?? null,
       title: mine ? "Today" : `Today · ${tech?.name ?? "Teammate"}`,
+      map: (
+        <TodayMap
+          company={mapCompany}
+          pins={map?.pins ?? null}
+          stops={mapStops}
+          missing={map?.missing ?? 0}
+          tech={tech?.name ?? office.user.name ?? "Tech"}
+          day={weekdayName(ctx.today)}
+        />
+      ),
       content: (
         <>
           {jobs.length === 0 ? (
@@ -481,7 +521,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
   };
 
   return (
-    <>
+    <MapProviderScope provider={resolveMapProvider()}>
       <TodayDays
         days={dayIds.map(dayFor)}
         initial={techId}
@@ -499,14 +539,23 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
             <GettingStarted />
           </Suspense>
         }
+        // Computers: Activity under the map (owner, 2026-10-21). It streams in on its own, so
+        // the day never waits for it.
+        aside={
+          <Suspense fallback={<TodayActivityLoading />}>
+            <TodayActivity />
+          </Suspense>
+        }
+        footer={
+          // After the stops, so the first stop's buttons are on screen at launch (owner,
+          // 2026-10-20).
+          <div className="mt-6">
+            <Suspense fallback={null}>
+              <ScreenTip screen="today" />
+            </Suspense>
+          </div>
+        }
       />
-      {/* After the stops, so the first stop's buttons are on screen at launch (owner,
-          2026-10-20). */}
-      <div className="mt-6">
-        <Suspense fallback={null}>
-          <ScreenTip screen="today" />
-        </Suspense>
-      </div>
-    </>
+    </MapProviderScope>
   );
 }

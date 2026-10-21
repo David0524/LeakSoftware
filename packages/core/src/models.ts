@@ -275,6 +275,11 @@ export interface Membership extends Base {
   color?: string | null;
   /** When they were turned off (set by the server), for Team's order. */
   disabled_at?: string | null;
+  /**
+   * Their place on the Schedule, 1 first (owners and admins, Reorder Techs; owner, 2026-10-21).
+   * Null: never placed. Read with scheduleOrder.
+   */
+  schedule_order?: number | null;
 }
 
 /**

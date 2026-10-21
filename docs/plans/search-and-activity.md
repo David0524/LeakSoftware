@@ -63,7 +63,22 @@ it.
 ## 2. Activity
 
 A list of what happened in the shop, newest first: **More › Activity** on every platform, and an
-**Activity** row on the owner's Dashboard (the latest 3 events, then **See All**).
+**Activity** button on the owner's Dashboard (the latest 3 events, then **See All**).
+
+The Dashboard's Activity is a button at the right of the title row, at the title's level (owner,
+2026-10-21: "make activity a dropdown on the right side at the same level as the title text. It
+is currently eating up space in the dashboard"), not a section in the page: a tinted pill
+"Activity" with a chevron down and the blue dot when there's something new (read as "Activity,
+new activity", `activityButtonLabel`). It opens the latest 3 events, then **See All** (to
+Activity), or "Activity shows when you’re online." / the empty words:
+- Desktop website: a popover under the button, right-aligned, 24 rem wide, scrolling past 32 rem;
+  focus moves into it, and Escape (focus back to the button), a click outside, tabbing out, or
+  leaving the page closes it (`aria-expanded`, `aria-controls`).
+- Mobile website: the button sits in the navigation bar's row beside the large title and opens a
+  sheet ("Activity", Close).
+- iPhone: a toolbar item at the trailing side of the navigation bar opening a sheet (medium and
+  large detents, Close); a row or See All closes it and opens behind it.
+- Android: the same as the mobile website, in the bar's right slot, opening the app's sheet.
 
 ### Events
 

@@ -127,6 +127,9 @@ const SHAPES = {
   warning: { line: "M12 3l9.5 17h-19zM12 10v4.5M12 17.5v.01" },
   // Today's Reorder (docs/plans/today-reorder.md): the drag handle, as iOS's reorder control.
   grip: { line: "M5 8h14M5 12h14M5 16h14" },
+  // Reorder Techs' Move Up and Move Down (the website's reorder-techs.tsx arrows).
+  arrowUp: { line: "M12 19V5M6 11l6-6 6 6" },
+  arrowDown: { line: "M12 5v14M6 13l6 6 6-6" },
   // A padlock (the website's LockIcon): a job locked to its day, time, or both, and the lock on
   // a stop that can't move in Today's Reorder.
   lock: {

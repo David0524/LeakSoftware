@@ -121,6 +121,13 @@ public enum ActivityText {
     public static let offline = "Activity shows when you’re online."
     public static let empty =
         "Nothing yet. Accepted quotes, payments, reports, finished jobs, and customer texts show here."
+    /// What VoiceOver says for the blue dot: there are events since Activity was opened.
+    public static let newActivity = "New activity"
+
+    /// The Dashboard's Activity button, for VoiceOver: "Activity, new activity" with the dot.
+    public static func buttonLabel(unread: Bool) -> String {
+        unread ? "\(title), \(newActivity.lowercased())" : title
+    }
     /// Under More, beside the Activity row.
     public static let detail = "Quotes, payments, reports, jobs, and texts"
 }

@@ -55,6 +55,23 @@
                 "70-dashboard", height: 2400, NavigationStack { DashboardScreen(data: data) }.app(env))
             try await snapshot(
                 "70-dashboard-dark", dark: true, height: 2400, NavigationStack { DashboardScreen(data: data) }.app(env))
+            // Activity opens as a sheet from the bar's Activity button (owner, 2026-10-21).
+            let now = Date()
+            let iso = { (minutes: Double) in ISO8601DateFormatter().string(from: now.addingTimeInterval(-minutes * 60))
+            }
+            let page = ActivityPage(
+                events: [
+                    ActivityEvent(
+                        id: "a3", kind: "payment_received", createdAt: iso(12), jobId: "j1",
+                        customerName: "Maria Alvarez", jobNumber: 1038, amountCents: 22_500),
+                    ActivityEvent(
+                        id: "a2", kind: "job_completed", createdAt: iso(55), jobId: "j2",
+                        customerName: "Sam Ochoa", jobNumber: 1041, actorName: "Tony Reyes"),
+                    ActivityEvent(
+                        id: "a1", kind: "quote_accepted", createdAt: iso(180), jobId: "j3",
+                        customerName: "Dana Kim", jobNumber: 1036, amountCents: 145_000),
+                ], more: true)
+            try await snapshot("70-dashboard-activity", LatestActivitySheet(page: page, failed: false).app(env))
         }
     }
 #endif

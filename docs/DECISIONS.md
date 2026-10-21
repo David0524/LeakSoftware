@@ -2,6 +2,22 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-21 (owner: "Make a way to reorder techs in the schedule.")
+- **Owners and admins set the order of techs** with **Reorder Techs** on the Schedule, on all four platforms: a sheet with the active techs (color dot, Move Up, Move Down, a grip to drag), Done saves and Cancel discards. Saved per shop in `membership.schedule_order`, like a tech's color. Spec: `docs/design/2026-10-21-tech-order.md`.
+- **The order is used everywhere techs are listed on the Schedule and Today:** Day columns, Week rows, Whose schedule, the Move sheet and Plan Week, and Today's Whose Day.
+- **Me first only until an order is saved.** Once an owner sets one, it wins for everyone, Me included, because it was set on purpose. People added since go after it, A to Z.
+
+## 2026-10-21 (owner, after a $5.44 Mapbox invoice: "Leave it on I guess. As long as I won't be charged a lot more this month")
+- **Paid lookups stay on at 100 a month** (at most $0.50). The $5.44 came from Oct 16 to 20, before the counter existed, when pools were looked up with Mapbox's permanent geocoding uncounted; since Oct 20 the dev database counts 5.
+
+## 2026-10-21 (owner: "On dashboard, make activity a dropdown on the right side at the same level as the title text. It is currently eating up space in the dashboard.")
+- **The Dashboard's Activity is a dropdown in the title row**, on all four platforms: an **Activity** pill with a chevron (and the blue dot when there's something new) at the right of the "Dashboard" title, in place of the Activity section between the stats and the charts. It opens the latest 3 events and See All: a popover on the desktop website, a sheet on the mobile website, iPhone and Android. Spec: `docs/plans/search-and-activity.md`, section 2.
+
+## 2026-10-21 (owner: "The desktop today page looks awkwardly wide. Shrink to the left half of the screen and consider what to put on the right half. Maybe activity? Invoices? Something new? I'm not sure.")
+- **Desktop Today is two columns** (lg and up): the day as it is now on the left, about half the page; on the right, staying in view as the stops scroll, **Today's Map** of the day shown (the Schedule's day map: the start, the stops numbered in order, Enlarge for the live Apple map; it follows Whose Day), then **Activity** (the latest 5, See All, the new dot). Each person sees the Activity they can open, so techs get it too. Spec: `docs/design/2026-10-20-today-card.md`, Desktop.
+- **Why:** a tech's day is a route, so the map is the most useful thing beside the list; Activity is what owners check next. Invoices stay on Invoices and the Dashboard.
+- **Desktop website only:** phones (the mobile website, the iPhone and Android apps) keep the one-column Today. Between phone and desktop widths Today stays one column, capped at 42 rem.
+
 ## 2026-10-21 (owner: "Thirds is prob fine. Keep the 6 customers. No team chat")
 - **Swipes turn a page past a third of the width** (was a quarter), or on a flick, on every platform: Today's cards, Schedule's pages and date strip.
 - **The six customers the owner typed in stay** in the demo; the demo reset keeps them.

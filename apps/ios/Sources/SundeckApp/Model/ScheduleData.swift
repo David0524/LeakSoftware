@@ -86,12 +86,52 @@ public struct TeamMember: Equatable, Sendable, Identifiable {
     public var active: Bool
     /// Their color (owner, 2026-10-20: "a dot beside their name"; `membership.color`).
     public var color: TechColor = .slate
+    /// Their membership's id (what Reorder Techs writes).
+    public var membershipId: String = ""
+    /// Their place on the Schedule (`membership.schedule_order`, Reorder Techs); nil when never
+    /// placed. Read with `scheduleOrder`.
+    public var scheduleOrder: Int?
 
-    public init(id: String, name: String, active: Bool, color: TechColor = .slate) {
+    public init(
+        id: String, name: String, active: Bool, color: TechColor = .slate, membershipId: String = "",
+        scheduleOrder: Int? = nil
+    ) {
         self.id = id
         self.name = name
         self.active = active
         self.color = color
+        self.membershipId = membershipId
+        self.scheduleOrder = scheduleOrder
+    }
+}
+
+extension TeamMember: ScheduleOrdered {
+    public var orderUserId: String { id }
+    public var orderName: String? { name }
+}
+
+/// The Schedule's and Today's order of people (core `scheduleOrder`, owner 2026-10-21): the
+/// shop's saved order, else the signed-in person first, then A to Z.
+public func scheduleTeam(_ team: [TeamMember], me: String) -> [TeamMember] { scheduleOrder(team, me: me) }
+
+/// Reorder Techs' Done (owner, 2026-10-21; docs/design/2026-10-21-tech-order.md): each place
+/// that changed, written through the sync layer (row and outbox together). `ordered` is
+/// membership ids, top to bottom.
+@MainActor
+public enum TechOrderWrites {
+    @discardableResult
+    public static func save(_ sync: SyncService, companyId: String, team: [TeamMember], ordered: [String]) throws
+        -> [ScheduleOrderWrite]
+    {
+        let writes = scheduleOrderWrites(team.map { (id: $0.membershipId, scheduleOrder: $0.scheduleOrder) }, ordered)
+        guard !writes.isEmpty else { return [] }
+        try sync.batch {
+            for w in writes {
+                try sync.write(
+                    "membership", id: w.id, companyId: companyId, ["schedule_order": .number(Double(w.scheduleOrder))])
+            }
+        }
+        return writes
     }
 }
 
@@ -122,7 +162,8 @@ public func teamMembers(_ store: LocalStore, kv: KeyValue, companyId: String, us
         let status = m["status"]?.string ?? "active"
         guard status != "removed" else { return nil }
         return TeamMember(
-            id: user, name: names[user] ?? "Teammate", active: status == "active", color: colors[user] ?? .slate)
+            id: user, name: names[user] ?? "Teammate", active: status == "active", color: colors[user] ?? .slate,
+            membershipId: m["id"]?.string ?? "", scheduleOrder: m["schedule_order"]?.number.map { Int($0) })
     }
     return members.sorted { a, b in
         if (a.id == userId) != (b.id == userId) { return a.id == userId }

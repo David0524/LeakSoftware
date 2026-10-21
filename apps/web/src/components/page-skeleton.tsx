@@ -65,23 +65,31 @@ function StopBone({ wide = false }: { wide?: boolean }) {
 export function TodaySkeleton() {
   return (
     <Skeleton title="Today">
-      <Bone className="mb-4 h-4 w-60" />
-      <div className="mb-6 rounded-[22px] bg-water/15 p-5 sm:p-6" aria-hidden="true">
-        <Bone className="h-4 w-40" onWater />
-        <Bone className="mt-3 h-7 w-56" onWater />
-        <Bone className="mt-2 h-4 w-36" onWater />
-        <Bone className="mt-5 h-4 w-64" onWater />
-        <div className="mt-4 flex gap-2">
-          <Bone className="h-11 flex-1" onWater />
-          <Bone className="size-11" onWater />
-          <Bone className="size-11" onWater />
-          <Bone className="size-11" onWater />
+      {/* Computers: the day on the left, Today's Map on the right (owner, 2026-10-21). */}
+      <div className="max-w-2xl lg:grid lg:max-w-none lg:grid-cols-2 lg:items-start lg:gap-8">
+        <div className="min-w-0">
+          <Bone className="mb-4 h-4 w-60" />
+          <div className="mb-6 rounded-[22px] bg-water/15 p-5 sm:p-6" aria-hidden="true">
+            <Bone className="h-4 w-40" onWater />
+            <Bone className="mt-3 h-7 w-56" onWater />
+            <Bone className="mt-2 h-4 w-36" onWater />
+            <Bone className="mt-5 h-4 w-64" onWater />
+            <div className="mt-4 flex gap-2">
+              <Bone className="h-11 flex-1" onWater />
+              <Bone className="size-11" onWater />
+              <Bone className="size-11" onWater />
+              <Bone className="size-11" onWater />
+            </div>
+          </div>
+          <div className="space-y-3">
+            <StopBone wide />
+            <StopBone />
+            <StopBone wide />
+          </div>
         </div>
-      </div>
-      <div className="space-y-3">
-        <StopBone wide />
-        <StopBone />
-        <StopBone wide />
+        <div className="hidden lg:block">
+          <Bone className="aspect-[2/1] rounded-[1.25rem]" />
+        </div>
       </div>
     </Skeleton>
   );

@@ -61,6 +61,8 @@ export interface TeamMember {
   color: TechColor;
   /** When they were turned off, for Team's order. */
   disabled_at: string | null;
+  /** Their place on the Schedule (Reorder Techs); read with core scheduleOrder. */
+  schedule_order: number | null;
 }
 
 /** Cached per request: several parts of a page ask for the team. */
@@ -71,7 +73,7 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
     await supabase
       .from("membership")
       .select(
-        "id, user_id, role, status, color, disabled_at, profile:profile!membership_user_profile_fkey(id, full_name, email)",
+        "id, user_id, role, status, color, disabled_at, schedule_order, profile:profile!membership_user_profile_fkey(id, full_name, email)",
       )
       .eq("company_id", office.company.id)
       .is("deleted_at", null),
@@ -82,6 +84,7 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
     status: "active" | "disabled";
     color: string | null;
     disabled_at: string | null;
+    schedule_order?: number | null;
     profile: { id: string; full_name: string | null; email: string | null } | null;
   }[];
   const profiles = members.flatMap((m) => (m.profile ? [m.profile] : []));
@@ -98,6 +101,7 @@ export const getTeam = cache(async (office: Office): Promise<TeamMember[]> => {
         email: p?.email ?? null,
         color: techColor(m.color),
         disabled_at: m.disabled_at ?? null,
+        schedule_order: m.schedule_order ?? null,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));

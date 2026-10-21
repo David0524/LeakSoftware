@@ -103,5 +103,5 @@ public final class ActivityBadge {
     public init(unread: Bool = false) { self.unread = unread }
 }
 
-/// What VoiceOver reads for the dot (the website's "New activity").
-public let activityDotLabel = "New activity"
+/// What VoiceOver reads for the dot (ACTIVITY_NEW, the website's too).
+public let activityDotLabel = ActivityText.newActivity

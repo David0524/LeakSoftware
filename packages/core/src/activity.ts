@@ -58,6 +58,13 @@ export const ACTIVITY_DASHBOARD_COUNT = 3;
 export const ACTIVITY_OFFLINE = "Activity shows when you’re online.";
 export const ACTIVITY_EMPTY =
   "Nothing yet. Accepted quotes, payments, reports, finished jobs, and customer texts show here.";
+/** What a screen reader says for the blue dot: there are events since Activity was opened. */
+export const ACTIVITY_NEW = "New activity";
+
+/** The Dashboard's Activity button, for screen readers: "Activity, new activity" with the dot. */
+export function activityButtonLabel(unread: boolean): string {
+  return unread ? `${ACTIVITY_TITLE}, ${ACTIVITY_NEW.toLowerCase()}` : ACTIVITY_TITLE;
+}
 /** Under More, beside the Activity row. */
 export const ACTIVITY_DETAIL = "Quotes, payments, reports, jobs, and texts";
 

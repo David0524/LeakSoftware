@@ -53,10 +53,20 @@ test("an owner sees what a tech did, from the Dashboard and More › Activity", 
 
   const page = await (await browser.newContext()).newPage();
   await signIn(page, OWNER, "/dashboard");
-  const card = page.getByRole("region", { name: /^Activity/ });
+  // Activity is a dropdown at the right of the title row (owner, 2026-10-21), with the dot.
+  const button = page.getByRole("button", { name: "Activity, new activity" });
+  await expect(button).toHaveAttribute("aria-expanded", "false");
+  await button.click();
+  await expect(button).toHaveAttribute("aria-expanded", "true");
+  const card = page.getByRole("region", { name: "Activity" });
+  await expect(card).toBeFocused();
   const row = card.getByRole("link", { name: new RegExp(`Job completed.*${name}, by Tony`) });
   await expect(row).toBeVisible();
-  await expect(card.getByText("New activity")).toBeAttached();
+  // Escape closes it and puts focus back on the button; it opens again.
+  await page.keyboard.press("Escape");
+  await expect(card).toHaveCount(0);
+  await expect(button).toBeFocused();
+  await button.click();
 
   await card.getByRole("link", { name: "See All Activity" }).click();
   await page.waitForURL("**/activity");
@@ -71,6 +81,27 @@ test("an owner sees what a tech did, from the Dashboard and More › Activity", 
   );
   await today_.getByRole("link", { name: new RegExp(`Job completed.*${name}`) }).click();
   await page.waitForURL(`**/jobs/${jobId}`);
+});
+
+test("on a phone, the Dashboard's Activity button opens a sheet with See All", async ({
+  browser,
+}) => {
+  const page = await (
+    await browser.newContext({ viewport: { width: 390, height: 844 } })
+  ).newPage();
+  await signIn(page, OWNER, "/dashboard");
+  await expect(page.getByRole("heading", { name: "Dashboard", level: 1 })).toBeVisible();
+  // In the navigation bar's row, beside the large title.
+  const button = page.getByRole("button", { name: /^Activity/ });
+  await button.click();
+  const sheet = page.getByRole("dialog", { name: "Activity" });
+  await expect(sheet.getByTestId("activity-row").first()).toBeVisible();
+  await sheet.getByRole("button", { name: "Close" }).click();
+  await expect(sheet).toHaveCount(0);
+  await button.click();
+  await sheet.getByRole("link", { name: "See All Activity" }).click();
+  await page.waitForURL("**/activity");
+  await expect(page.getByRole("heading", { name: "Activity", level: 1 })).toBeVisible();
 });
 
 test("a tech in an Only Their Own shop doesn't see another tech's job", async ({ browser }) => {

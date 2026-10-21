@@ -100,3 +100,43 @@ Everything else supports it, and there is one main action.
 - Card: `color.brand.water` `#1F6FAE`; text white; secondary white at 92%.
 - Main button: white with `color.brand.water` text; second button and circles: white at 18%.
 - No other colors on the card. The amber key, which needed a hardcoded color, stays white.
+
+## Desktop: the day and its map side by side
+
+Owner, 2026-10-21: "The desktop today page looks awkwardly wide. Shrink to the left half of the
+screen and consider what to put on the right half. Maybe activity? Invoices? Something new?"
+The desktop website only; phones (the mobile website and both apps) keep Today in one column.
+
+```
+┌───────────────────────────────┬───────────────────────────────┐  lg (1024 pt) and up,
+│ Today                         │ TODAY’S MAP                   │  two equal columns, 32 apart,
+│ Tuesday, October 21           │ ┌───────────────────────────┐ │  inside the 80 rem page
+│ (Me)(Priya)(Jake)             │ │  ⌂ ─ ① ─ ② ─ ③            │ │
+│ 3 stops · 48 min driving      │ │               [⤢ Enlarge] │ │  2:1, radius 20
+│ ┌───────────────────────────┐ │ └───────────────────────────┘ │
+│ │ the card                  │ │ 1 stop isn’t on the map       │  15 pt secondary
+│ └───────────────────────────┘ │                               │
+│ ① Derek Jeter                 │ ACTIVITY •           See All  │  13 pt section header
+│ ┊ 14 min drive                │ ┌───────────────────────────┐ │
+│ ② Wayne Gretzky               │ │ (✓) Job completed    2:10 │ │  the latest 5, grouped list
+│ …                             │ │ …                         │ │
+└───────────────────────────────┴───────────────────────────────┘
+```
+
+- **Left: the day,** exactly as on a phone (title, Whose Day, the summary, the card, the stops),
+  about half the page, at most about 38 rem (the page is 80 rem at most), a comfortable reading width.
+- **Right, staying in view as the stops scroll:**
+  - **Today's Map** of the day on the left: the start (home or the shop), the stops as numbered
+    pins in order, the one you're on marked, Enlarge for the live Apple map with the stops
+    beside it. The Schedule's day map, so it looks and works the same. It follows Whose Day.
+    A day with no stops shows a quiet box, "No stops today"; stops with no map location, "Not
+    on the map" with the count; a site without maps, "Map not available".
+  - **Activity:** the latest 5 events in the rows Activity uses, with See All and the new dot. Each
+    person sees what they can open, so a tech sees their own work. It streams in after the day,
+    so the stops never wait; looking doesn't clear the dot (opening Activity does).
+- **Why the map:** a tech's day is a route, so where the stops are is the most useful thing
+  beside the list. Activity is what owners look at next. Invoices stay on Invoices and the
+  Dashboard: money isn't part of running the day.
+- **Between phones and computers** (640 to 1023 pt) Today stays one column, no wider than
+  42 rem, so the card and rows don't stretch.
+- Nothing on the right loads on a phone: the map mounts only on a wide window.

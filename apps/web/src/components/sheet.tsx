@@ -26,6 +26,7 @@ export function Sheet({
   children,
   cancelLabel = "Cancel",
   wide = false,
+  done,
 }: {
   open: boolean;
   onClose: () => void;
@@ -34,6 +35,8 @@ export function Sheet({
   cancelLabel?: string;
   /** Wider screens: a large dialog (a map beside its list) instead of the narrow one. */
   wide?: boolean;
+  /** A bold Done (or Save) at the trailing end of the title bar, as iOS sheets have. */
+  done?: { label: string; onClick: () => void; disabled?: boolean };
 }) {
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
@@ -176,7 +179,18 @@ export function Sheet({
             <h2 id={titleId} className="truncate px-2 font-sans text-[1.0625rem] font-semibold">
               {title}
             </h2>
-            <span />
+            {done ? (
+              <button
+                type="button"
+                onClick={done.onClick}
+                disabled={done.disabled}
+                className="min-h-11 justify-self-end rounded-full px-3 font-semibold text-link disabled:opacity-50"
+              >
+                {done.label}
+              </button>
+            ) : (
+              <span />
+            )}
           </div>
         </div>
         <div className="overflow-y-auto px-4 pb-6">{children}</div>

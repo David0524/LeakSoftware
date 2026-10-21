@@ -8,7 +8,8 @@ import Testing
 
     @Test func everyRuleIsChecked() {
         let checked: Set<String> = [
-            "constants", "firstName", "activityTime", "activityDay", "movedTo", "activityRow", "groupActivity",
+            "constants", "activityButtonLabel", "firstName", "activityTime", "activityDay", "movedTo", "activityRow",
+            "groupActivity",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -22,9 +23,11 @@ import Testing
                 "ACTIVITY_OFFLINE": .string(ActivityText.offline),
                 "ACTIVITY_EMPTY": .string(ActivityText.empty),
                 "ACTIVITY_DETAIL": .string(ActivityText.detail),
+                "ACTIVITY_NEW": .string(ActivityText.newActivity),
             ])
         }
         checkRule(module, "firstName") { c in firstName(try c.arg(0, as: String?.self)) }
+        checkRule(module, "activityButtonLabel") { c in ActivityText.buttonLabel(unread: try c.arg(0)) }
     }
 
     @Test func times() {

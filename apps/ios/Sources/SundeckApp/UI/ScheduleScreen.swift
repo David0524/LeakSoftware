@@ -43,6 +43,8 @@
         @State private var failed = 0
         /// Plan Week's sheet.
         @State private var planningWeek = false
+        /// Reorder Techs' sheet (owners and admins).
+        @State private var reorderingTechs = false
         /// The rows that put the last change back (Undo on its banner), and what Undo says.
         @State private var undo: PendingUndo?
         /// A plan visit being moved, waiting for Change Schedule or Just This Visit.
@@ -94,6 +96,10 @@
                         )
                         .padding(.horizontal, -16)
                         .accessibilityLabel("Whose schedule")
+                    }
+                    // Reorder Techs: owners and admins, under Whose schedule (the website's place).
+                    if board.ctx.isManager && board.ctx.seesAll && board.reorderTechs.count > 1 {
+                        ReorderTechsButton { reorderingTechs = true }
                     }
                     if let route = board.leadRoute {
                         DayLead(route: route, board: board, busy: optimizing == route.id) {
@@ -175,6 +181,13 @@
                                 jobs: board.jobs,
                                 ctx: board.ctx, team: board.team, drive: drive)
                         }
+                    }
+                }
+            }
+            .sheet(isPresented: $reorderingTechs) {
+                if let board {
+                    ReorderTechsSheet(techs: board.reorderTechs) { ordered in
+                        saveTechOrder(ordered, board)
                     }
                 }
             }
@@ -543,6 +556,21 @@
 
         /// Plan Week, on the phone: core `planWeek` on the synced jobs, off the main thread, every
         /// change saved through the sync layer in one transaction, then its result with Undo.
+        /// Reorder Techs' Done: the places that changed, through the sync layer; the board
+        /// reloads in the new order. An error for the sheet, or nil.
+        private func saveTechOrder(_ ordered: [String], _ board: Board) -> String? {
+            guard let company = session.company else { return nil }
+            do {
+                try TechOrderWrites.save(sync, companyId: company.id, team: board.team, ordered: ordered)
+                undo = nil
+                banner = ResultBanner(kind: .success, title: ReorderTechs.saved)
+                saved += 1
+                return nil
+            } catch {
+                return String(describing: error)
+            }
+        }
+
         private func planWeek(techs: [String], tray: Bool, _ board: Board) {
             guard !planningRun else { return }
             planningRun = true
@@ -863,10 +891,13 @@
             days = (try? scheduleDays(view, self.date)) ?? [self.date]
             loaded = loadRoutes(jobs, ctx: ctx, dates: days, team: team, drive: drive)
             let (ctx, days, loaded) = (ctx, days, loaded)
-            techs = team.filter { t in
-                (ctx.seesAll || t.id == ctx.userId)
-                    && (t.active || days.contains { loaded.routes[routeKey(t.id, $0)] != nil })
-            }
+            // In the shop's saved order (Reorder Techs, owner 2026-10-21); without one, Me first,
+            // then A to Z (core scheduleOrder).
+            techs = scheduleTeam(
+                team.filter { t in
+                    (ctx.seesAll || t.id == ctx.userId)
+                        && (t.active || days.contains { loaded.routes[routeKey(t.id, $0)] != nil })
+                }, me: ctx.userId)
             let techs = techs
             if wanted == "all" && techs.count > 1 {
                 tech = "all"
@@ -912,6 +943,9 @@
         }
 
         var shownTechs: [TeamMember] { techs.filter { tech == "all" || $0.id == tech } }
+
+        /// Reorder Techs' list: the active techs in the order shown.
+        var reorderTechs: [TeamMember] { techs.filter(\.active) }
 
         /// Day view with one tech chosen who has stops: their day, whose map leads the screen.
         var leadRoute: DayRoute? {
@@ -1987,7 +2021,9 @@
         private var zone: TimeZone { TimeZone(identifier: board.ctx.timeZone) ?? .current }
         private var dayString: String { localDay(day, timeZone: board.ctx.timeZone) }
         private var movers: [TeamMember] {
-            board.ctx.seesAll ? board.team.filter(\.active) : board.team.filter { $0.id == board.ctx.userId }
+            board.ctx.seesAll
+                ? scheduleTeam(board.team.filter(\.active), me: board.ctx.userId)
+                : board.team.filter { $0.id == board.ctx.userId }
         }
         /// The other stops on the chosen tech's day, worked out when the tech or day changes (not
         /// on every render: it lays out the whole day).

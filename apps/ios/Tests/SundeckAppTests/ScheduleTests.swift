@@ -262,6 +262,23 @@ import Testing
         #expect(team.map(\.name) == ["Dana Tech", "Sam Sample"])
     }
 
+    /// Reorder Techs (owner, 2026-10-21): Done writes the places that changed through the sync
+    /// layer, and the Schedule's order follows them, Me first only until there's a saved order.
+    @Test func reorderTechsSavesTheOrderThroughTheSyncLayer() throws {
+        #expect(scheduleTeam(team, me: Self.sam).map(\.id) == [Self.sam, Self.me])
+        #expect(scheduleTeam(team, me: Self.me).map(\.id) == [Self.me, Self.sam])
+        let pending = sync.status.pending
+        let ordered = [Self.sam, Self.me].compactMap { id in team.first { $0.id == id }?.membershipId }
+        let writes = try TechOrderWrites.save(sync, companyId: Self.company, team: team, ordered: ordered)
+        #expect(writes.map(\.scheduleOrder) == [1, 2])
+        #expect(sync.status.pending == pending + 2)
+        #expect(team.map(\.scheduleOrder) == [2, 1])
+        // The saved order wins over Me first.
+        #expect(scheduleTeam(team, me: Self.me).map(\.id) == [Self.sam, Self.me])
+        // Done again with nothing moved writes nothing.
+        #expect(try TechOrderWrites.save(sync, companyId: Self.company, team: team, ordered: ordered).isEmpty)
+    }
+
     @Test func todaysRouteIsInTimeOrderWithDriveTimes() throws {
         let loaded = loadRoutes(jobs, ctx: ctx, dates: [ctx.today], team: team, drive: DriveTimes())
         let route = try #require(loaded.routes[routeKey(Self.me, ctx.today)])

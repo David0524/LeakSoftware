@@ -10,6 +10,7 @@ import {
   JOB_STATUS_LABELS,
   SEARCH_WORDS,
   acceptanceRate,
+  activityButtonLabel,
   activityRow,
   dashboardTotals,
   formatCents,
@@ -24,6 +25,8 @@ import { getServices } from "../../../../lib/services";
 import { useCompany } from "../../../../state/session";
 import { ManagersOnly } from "../../../../features/settings/SettingsList";
 import { Button, Card, Empty, Group, ListRow, Notice, Screen, T } from "../../../../ui/components";
+import { ModalSheet } from "../../../../ui/ModalSheet";
+import { WebIcon } from "../../../../ui/WebIcon";
 import { StepList } from "../../../../ui/Progress";
 import { color, face, minTap, space, tabular } from "../../../../ui/theme";
 
@@ -59,6 +62,8 @@ function DashboardPage() {
   const [refreshing, setRefreshing] = useState(false);
   // Pull to refresh asks for the latest activity again too.
   const [pulled, setPulled] = useState(0);
+  const [activityOpen, setActivityOpen] = useState(false);
+  const dot = useActivityUnread(company.id);
 
   const fetchDashboard = useCallback(
     async (quiet: boolean) => {
@@ -112,8 +117,10 @@ function DashboardPage() {
     <Screen
       title="Dashboard"
       subtitle={range ? `Last ${MONTHS} months · ${range}` : `Last ${MONTHS} months`}
+      headerRight={() => <ActivityButton unread={dot} onPress={() => setActivityOpen(true)} />}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />}
     >
+      <LatestActivity open={activityOpen} onClose={() => setActivityOpen(false)} pulled={pulled} />
       {load.at === "loading" ? (
         <Card>
           <StepList steps={STEPS} at={load.step} label="Loading the dashboard" />
@@ -124,13 +131,13 @@ function DashboardPage() {
           <Button title="Try Again" kind="secondary" onPress={() => void fetchDashboard(false)} />
         </>
       ) : d ? (
-        <DashboardBody d={d} pulled={pulled} />
+        <DashboardBody d={d} />
       ) : null}
     </Screen>
   );
 }
 
-function DashboardBody({ d, pulled }: { d: Dashboard; pulled: number }) {
+function DashboardBody({ d }: { d: Dashboard }) {
   const totals = dashboardTotals(d.months);
   const statuses = JOB_STATUSES.map((s) => ({ status: s, n: d.statuses[s] ?? 0 })).filter(
     (s) => s.n > 0,
@@ -163,8 +170,6 @@ function DashboardBody({ d, pulled }: { d: Dashboard; pulled: number }) {
           note={`${MONTHS} months`}
         />
       </View>
-
-      <LatestActivity pulled={pulled} />
 
       <Card style={styles.card}>
         <T variant="cardTitle">Collected by Month</T>
@@ -272,48 +277,61 @@ function DashboardBody({ d, pulled }: { d: Dashboard; pulled: number }) {
 }
 
 /**
- * The latest few events, then See All (owner, 2026-10-20: "a shortcut to it on the owner's
- * dashboard page"), with the dot when there is something new; as the website's Dashboard.
+ * The Activity button at the right of the navigation bar, at the large title's level (owner,
+ * 2026-10-21: "make activity a dropdown on the right side at the same level as the title
+ * text"): a tinted pill with a chevron and the blue dot when something is new, as the
+ * website's.
  */
-function LatestActivity({ pulled }: { pulled: number }) {
+function ActivityButton({ unread, onPress }: { unread: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={activityButtonLabel(unread)}
+      onPress={onPress}
+      hitSlop={4}
+      style={({ pressed }) => [
+        styles.activityButton,
+        { backgroundColor: pressed ? color.tintedPressed : color.tinted },
+      ]}
+    >
+      {unread ? <View style={[styles.dot, { backgroundColor: color.primary }]} /> : null}
+      <T variant="bodyEmphasis" style={{ color: color.link }}>
+        {ACTIVITY_TITLE}
+      </T>
+      <WebIcon name="chevronDown" size={16} color={color.link} strokeWidth={2.6} />
+    </Pressable>
+  );
+}
+
+/**
+ * The Activity sheet: the latest few events, then See All (owner, 2026-10-20: "a shortcut to
+ * it on the owner's dashboard page"); as the website's Dashboard.
+ */
+function LatestActivity({
+  open,
+  onClose,
+  pulled,
+}: {
+  open: boolean;
+  onClose: () => void;
+  pulled: number;
+}) {
   const company = useCompany();
-  const dot = useActivityUnread(company.id);
   const [events, setEvents] = useState<ActivityEvent[] | "offline" | null>(null);
   useEffect(() => {
+    if (!open) return;
     let live = true;
     fetchActivity(getServices().supabase, company.id, null, ACTIVITY_DASHBOARD_COUNT).then(
       (page) => live && setEvents(page.events),
-      () => live && setEvents("offline"),
+      () => live && setEvents((had) => (Array.isArray(had) ? had : "offline")),
     );
     return () => {
       live = false;
     };
-  }, [company.id, pulled]);
+  }, [company.id, pulled, open]);
   const now = new Date();
   return (
-    <View style={{ gap: space["2"] }}>
-      <View style={styles.activityHead}>
-        <View style={styles.activityTitle} accessibilityRole="header">
-          <T variant="sectionLabel">{ACTIVITY_TITLE}</T>
-          {dot ? (
-            <View
-              accessible
-              accessibilityLabel="New activity"
-              style={[styles.dot, { backgroundColor: color.primary }]}
-            />
-          ) : null}
-        </View>
-        <Pressable
-          accessibilityRole="link"
-          accessibilityLabel={`${SEARCH_WORDS.seeAll} ${ACTIVITY_TITLE}`}
-          onPress={() => router.push("/activity" as never)}
-          style={({ pressed }) => [styles.seeAll, pressed && { opacity: 0.5 }]}
-        >
-          <T variant="secondary" style={{ color: color.link }}>
-            {SEARCH_WORDS.seeAll}
-          </T>
-        </Pressable>
-      </View>
+    <ModalSheet visible={open} onClose={onClose} title={ACTIVITY_TITLE} cancel="Close">
       {events === null ? null : events === "offline" ? (
         <Empty>{ACTIVITY_OFFLINE}</Empty>
       ) : events.length === 0 ? (
@@ -321,11 +339,21 @@ function LatestActivity({ pulled }: { pulled: number }) {
       ) : (
         <Group separatorInset={ACTIVITY_SEPARATOR_INSET}>
           {events.map((e) => (
-            <ActivityItem key={e.id} row={activityRow(e, now, company.timezone)} />
+            <ActivityItem key={e.id} row={activityRow(e, now, company.timezone)} onOpen={onClose} />
           ))}
         </Group>
       )}
-    </View>
+      <Button
+        title={SEARCH_WORDS.seeAll}
+        kind="quiet"
+        wide
+        accessibilityLabel={`${SEARCH_WORDS.seeAll} ${ACTIVITY_TITLE}`}
+        onPress={() => {
+          onClose();
+          router.push("/activity" as never);
+        }}
+      />
+    </ModalSheet>
   );
 }
 
@@ -398,8 +426,13 @@ const styles = StyleSheet.create({
   statusTrack: { flex: 1 },
   statusBar: { height: 12, borderTopRightRadius: 4, borderBottomRightRadius: 4 },
   count: { width: 40, textAlign: "right" },
-  activityHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
-  activityTitle: { flexDirection: "row", alignItems: "center", gap: space["2"] },
+  activityButton: {
+    minHeight: minTap,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: space["4"],
+    borderRadius: minTap / 2,
+  },
   dot: { width: 10, height: 10, borderRadius: 5 },
-  seeAll: { minHeight: minTap, justifyContent: "center", marginVertical: -12 },
 });

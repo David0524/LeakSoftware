@@ -88,6 +88,99 @@ public func teamOrder<T: TeamOrdered>(_ members: [T]) -> (active: [T], off: [T])
     return (active.map(\.element), off.map(\.element))
 }
 
+// MARK: - The order of techs on the Schedule (owner, 2026-10-21; docs/design/2026-10-21-tech-order.md)
+
+/// The words of Reorder Techs, the same on every platform (`REORDER_TECHS`).
+public enum ReorderTechs {
+    public static let action = "Reorder Techs"
+    public static let title = "Reorder Techs"
+    public static let done = "Done"
+    public static let cancel = "Cancel"
+    public static let moveUp = "Move Up"
+    public static let moveDown = "Move Down"
+    public static let saved = "Order saved."
+    public static let help = "Drag techs into the order the Schedule and Today show them."
+
+    /// The table as the TypeScript has it, by key.
+    public static let all: [String: String] = [
+        "action": action, "title": title, "done": done, "cancel": cancel, "moveUp": moveUp,
+        "moveDown": moveDown, "saved": saved, "help": help,
+    ]
+}
+
+/// What the Schedule's order reads.
+public protocol ScheduleOrdered {
+    var orderUserId: String { get }
+    var orderName: String? { get }
+    /// Their saved place, 1 first (`membership.schedule_order`); nil when never placed.
+    var scheduleOrder: Int? { get }
+}
+
+/// The order the Schedule lists techs in, and Today's Whose Day (`scheduleOrder`): a saved
+/// order wins (people with a place first, lowest first, then those without one, A to Z);
+/// without one, `me` first, then A to Z. Names ignore case and accents, no name last; ties keep
+/// the input order.
+public func scheduleOrder<T: ScheduleOrdered>(_ members: [T], me: String? = nil) -> [T] {
+    let saved = members.contains { $0.scheduleOrder != nil }
+    return ECMA.sort(Array(members.enumerated())) { x, y in
+        let a = x.element.scheduleOrder
+        let b = y.element.scheduleOrder
+        if a != nil || b != nil {
+            guard let a else { return 1 }
+            guard let b else { return -1 }
+            if a != b { return Double(a - b) }
+        } else if let me, !me.isEmpty, !saved {
+            let mine = (y.element.orderUserId == me ? 1 : 0) - (x.element.orderUserId == me ? 1 : 0)
+            if mine != 0 { return Double(mine) }
+        }
+        let n = byName(x.element.orderName, y.element.orderName)
+        return Double(n != 0 ? n : x.offset - y.offset)
+    }.map(\.element)
+}
+
+/// One `schedule_order` to write, on the membership with this id.
+public struct ScheduleOrderWrite: Codable, Equatable, Sendable {
+    public var id: String
+    public var scheduleOrder: Int
+
+    public init(id: String, scheduleOrder: Int) {
+        self.id = id
+        self.scheduleOrder = scheduleOrder
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case scheduleOrder = "schedule_order"
+    }
+}
+
+/// The writes that save a reordered list (`scheduleOrderWrites`): each id in `ordered` gets its
+/// place (1 first); only places that changed are written, and ids not in `members` are skipped.
+/// `members` are (id, saved place).
+public func scheduleOrderWrites(_ members: [(id: String, scheduleOrder: Int?)], _ ordered: [String])
+    -> [ScheduleOrderWrite]
+{
+    var now: [String: Int?] = [:]
+    for m in members where now[m.id] == nil { now[m.id] = .some(m.scheduleOrder) }
+    var writes: [ScheduleOrderWrite] = []
+    for (i, id) in ordered.enumerated() {
+        guard let saved = now[id] else { continue }
+        if saved != i + 1 { writes.append(ScheduleOrderWrite(id: id, scheduleOrder: i + 1)) }
+    }
+    return writes
+}
+
+/// The list with the item at `from` moved to `to`, clamped (`moveInList`).
+public func moveInList<T>(_ list: [T], from: Int, to: Int) -> [T] {
+    guard from >= 0, from < list.count else { return list }
+    let target = max(0, min(list.count - 1, to))
+    guard target != from else { return list }
+    var next = list
+    let item = next.remove(at: from)
+    next.insert(item, at: target)
+    return next
+}
+
 /// Where a visit is: its shop-local date ("2026-10-21") and its tech.
 public struct VisitSlot: Codable, Equatable, Sendable {
     public var date: String

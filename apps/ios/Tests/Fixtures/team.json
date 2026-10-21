@@ -568,6 +568,418 @@
       "result": "Moved this visit only"
     }
   ],
+  "scheduleOrder": [
+    {
+      "args": [
+        [
+          {
+            "user_id": "z",
+            "name": "Zed"
+          },
+          {
+            "user_id": "a",
+            "name": "ángela"
+          },
+          {
+            "user_id": "me",
+            "name": "Priya"
+          },
+          {
+            "user_id": "n",
+            "name": null
+          },
+          {
+            "user_id": "b",
+            "name": "Ben",
+            "schedule_order": null
+          }
+        ],
+        "me"
+      ],
+      "result": [
+        {
+          "user_id": "me",
+          "name": "Priya"
+        },
+        {
+          "user_id": "a",
+          "name": "ángela"
+        },
+        {
+          "user_id": "b",
+          "name": "Ben",
+          "schedule_order": null
+        },
+        {
+          "user_id": "z",
+          "name": "Zed"
+        },
+        {
+          "user_id": "n",
+          "name": null
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "user_id": "z",
+            "name": "Zed"
+          },
+          {
+            "user_id": "me",
+            "name": "Priya"
+          },
+          {
+            "user_id": "b",
+            "name": "Ben"
+          }
+        ],
+        null
+      ],
+      "result": [
+        {
+          "user_id": "b",
+          "name": "Ben"
+        },
+        {
+          "user_id": "me",
+          "name": "Priya"
+        },
+        {
+          "user_id": "z",
+          "name": "Zed"
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "user_id": "me",
+            "name": "Priya",
+            "schedule_order": 3
+          },
+          {
+            "user_id": "z",
+            "name": "Zed",
+            "schedule_order": 1
+          },
+          {
+            "user_id": "new",
+            "name": "Amy"
+          },
+          {
+            "user_id": "old",
+            "name": "  "
+          },
+          {
+            "user_id": "b",
+            "name": "Ben",
+            "schedule_order": 2
+          }
+        ],
+        "me"
+      ],
+      "result": [
+        {
+          "user_id": "z",
+          "name": "Zed",
+          "schedule_order": 1
+        },
+        {
+          "user_id": "b",
+          "name": "Ben",
+          "schedule_order": 2
+        },
+        {
+          "user_id": "me",
+          "name": "Priya",
+          "schedule_order": 3
+        },
+        {
+          "user_id": "new",
+          "name": "Amy"
+        },
+        {
+          "user_id": "old",
+          "name": "  "
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "user_id": "x",
+            "name": "Same",
+            "schedule_order": 1
+          },
+          {
+            "user_id": "y",
+            "name": "Same",
+            "schedule_order": 1
+          },
+          {
+            "user_id": "a",
+            "name": "Abe",
+            "schedule_order": 1
+          },
+          {
+            "user_id": "far",
+            "name": "Far",
+            "schedule_order": 40
+          }
+        ],
+        "y"
+      ],
+      "result": [
+        {
+          "user_id": "a",
+          "name": "Abe",
+          "schedule_order": 1
+        },
+        {
+          "user_id": "x",
+          "name": "Same",
+          "schedule_order": 1
+        },
+        {
+          "user_id": "y",
+          "name": "Same",
+          "schedule_order": 1
+        },
+        {
+          "user_id": "far",
+          "name": "Far",
+          "schedule_order": 40
+        }
+      ]
+    },
+    {
+      "args": [
+        [],
+        "me"
+      ],
+      "result": []
+    }
+  ],
+  "scheduleOrderWrites": [
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "schedule_order": 1
+          },
+          {
+            "id": "b",
+            "schedule_order": null
+          },
+          {
+            "id": "c",
+            "schedule_order": 3
+          }
+        ],
+        [
+          "a",
+          "b",
+          "c"
+        ]
+      ],
+      "result": [
+        {
+          "id": "b",
+          "schedule_order": 2
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "schedule_order": 1
+          },
+          {
+            "id": "b"
+          },
+          {
+            "id": "c",
+            "schedule_order": 3
+          }
+        ],
+        [
+          "c",
+          "a",
+          "b"
+        ]
+      ],
+      "result": [
+        {
+          "id": "c",
+          "schedule_order": 1
+        },
+        {
+          "id": "a",
+          "schedule_order": 2
+        },
+        {
+          "id": "b",
+          "schedule_order": 3
+        }
+      ]
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "a",
+            "schedule_order": 1
+          },
+          {
+            "id": "c",
+            "schedule_order": 3
+          }
+        ],
+        [
+          "a",
+          "gone",
+          "c"
+        ]
+      ],
+      "result": []
+    },
+    {
+      "args": [
+        [],
+        []
+      ],
+      "result": []
+    }
+  ],
+  "moveInList": [
+    {
+      "args": [
+        [
+          "a",
+          "b",
+          "c"
+        ],
+        0,
+        2
+      ],
+      "result": [
+        "b",
+        "c",
+        "a"
+      ]
+    },
+    {
+      "args": [
+        [
+          "a",
+          "b",
+          "c"
+        ],
+        2,
+        1
+      ],
+      "result": [
+        "a",
+        "c",
+        "b"
+      ]
+    },
+    {
+      "args": [
+        [
+          "a",
+          "b",
+          "c"
+        ],
+        1,
+        0
+      ],
+      "result": [
+        "b",
+        "a",
+        "c"
+      ]
+    },
+    {
+      "args": [
+        [
+          "a",
+          "b",
+          "c"
+        ],
+        0,
+        -1
+      ],
+      "result": [
+        "a",
+        "b",
+        "c"
+      ]
+    },
+    {
+      "args": [
+        [
+          "a",
+          "b",
+          "c"
+        ],
+        2,
+        9
+      ],
+      "result": [
+        "a",
+        "b",
+        "c"
+      ]
+    },
+    {
+      "args": [
+        [
+          "a",
+          "b",
+          "c"
+        ],
+        5,
+        0
+      ],
+      "result": [
+        "a",
+        "b",
+        "c"
+      ]
+    },
+    {
+      "args": [
+        [],
+        0,
+        0
+      ],
+      "result": []
+    }
+  ],
+  "REORDER_TECHS": [
+    {
+      "args": [],
+      "result": {
+        "action": "Reorder Techs",
+        "title": "Reorder Techs",
+        "done": "Done",
+        "cancel": "Cancel",
+        "moveUp": "Move Up",
+        "moveDown": "Move Down",
+        "saved": "Order saved.",
+        "help": "Drag techs into the order the Schedule and Today show them."
+      }
+    }
+  ],
   "MAPS_LABELS": [
     {
       "args": [],

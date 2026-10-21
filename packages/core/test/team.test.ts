@@ -4,8 +4,12 @@ import { join } from "node:path";
 import {
   MAPS_LABELS,
   PLAN_MOVE_CHOICES,
+  REORDER_TECHS,
   TECH_COLORS,
   asksPlanMove,
+  moveInList,
+  scheduleOrder,
+  scheduleOrderWrites,
   dayMapsLabel,
   nextTechColor,
   planMovedBanner,
@@ -147,5 +151,59 @@ describe("maps wording", () => {
       "Maps (Apple)",
       "Maps (Google)",
     ]);
+  });
+});
+
+describe("scheduleOrder (owner, 2026-10-21: reorder techs in the schedule)", () => {
+  const m = (user_id: string, name: string | null, schedule_order?: number | null) => ({
+    user_id,
+    name,
+    schedule_order,
+  });
+  const ids = (list: { user_id: string }[]) => list.map((x) => x.user_id);
+
+  it("without a saved order: me first, then A to Z", () => {
+    const team = [m("z", "Zed"), m("a", "ángela"), m("me", "Priya"), m("n", null), m("b", "Ben")];
+    expect(ids(scheduleOrder(team, "me"))).toEqual(["me", "a", "b", "z", "n"]);
+    expect(ids(scheduleOrder(team))).toEqual(["a", "b", "me", "z", "n"]);
+  });
+
+  it("a saved order wins, me included; people without a place follow, A to Z", () => {
+    const team = [m("me", "Priya", 3), m("z", "Zed", 1), m("new", "Amy"), m("b", "Ben", 2)];
+    expect(ids(scheduleOrder(team, "me"))).toEqual(["z", "b", "me", "new"]);
+  });
+
+  it("ties keep names, then the input order; it doesn't change the input", () => {
+    const team = [m("x", "Same", 1), m("y", "Same", 1), m("a", "Abe", 1)];
+    expect(ids(scheduleOrder(team))).toEqual(["a", "x", "y"]);
+    expect(ids(team)).toEqual(["x", "y", "a"]);
+  });
+
+  it("writes only the places that changed, 1 first", () => {
+    const rows = [
+      { id: "a", schedule_order: 1 },
+      { id: "b", schedule_order: null },
+      { id: "c", schedule_order: 3 },
+    ];
+    expect(scheduleOrderWrites(rows, ["a", "b", "c"])).toEqual([{ id: "b", schedule_order: 2 }]);
+    expect(scheduleOrderWrites(rows, ["c", "a", "b"])).toEqual([
+      { id: "c", schedule_order: 1 },
+      { id: "a", schedule_order: 2 },
+      { id: "b", schedule_order: 3 },
+    ]);
+    expect(scheduleOrderWrites(rows, ["a", "gone", "c"])).toEqual([]);
+  });
+
+  it("moves an item in a list, clamped", () => {
+    expect(moveInList(["a", "b", "c"], 0, 2)).toEqual(["b", "c", "a"]);
+    expect(moveInList(["a", "b", "c"], 2, 1)).toEqual(["a", "c", "b"]);
+    expect(moveInList(["a", "b", "c"], 0, -1)).toEqual(["a", "b", "c"]);
+    expect(moveInList(["a", "b", "c"], 2, 9)).toEqual(["a", "b", "c"]);
+    expect(moveInList(["a", "b", "c"], 5, 0)).toEqual(["a", "b", "c"]);
+  });
+
+  it("has the sheet's words", () => {
+    expect(REORDER_TECHS.action).toBe("Reorder Techs");
+    expect(REORDER_TECHS.title).toBe("Reorder Techs");
   });
 });

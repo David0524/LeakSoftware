@@ -13,18 +13,16 @@ import {
 import { Card, Empty, Grouped, PageHeader, Row } from "@/components/ui";
 import { getOffice } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { Suspense } from "react";
+import { Suspense, cache } from "react";
 import { ScreenTip } from "@/components/screen-tip";
 import { GettingStarted } from "@/components/getting-started";
 import { ActivityItem } from "@/components/activity-rows";
-import { Dot } from "@/components/nav-links";
+import { ActivityMenu } from "@/components/activity-menu";
 import { activityPage, activityUnread } from "@/lib/activity";
 import {
   ACTIVITY_DASHBOARD_COUNT,
   ACTIVITY_EMPTY,
   ACTIVITY_OFFLINE,
-  ACTIVITY_TITLE,
-  SEARCH_WORDS,
   activityRow,
 } from "@leakbook/core";
 
@@ -69,7 +67,13 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <PageHeader title="Dashboard" subtitle={`Last ${MONTHS} months · ${range}`} />
+      <PageHeader
+        title="Dashboard"
+        subtitle={`Last ${MONTHS} months · ${range}`}
+        navAction={<LatestActivity sheet />}
+        actions={<LatestActivity />}
+        actionsClassName="max-sm:hidden sm:self-start"
+      />
       <Suspense fallback={null}>
         <GettingStarted />
       </Suspense>
@@ -106,10 +110,6 @@ export default async function DashboardPage() {
           note={`${MONTHS} months`}
         />
       </dl>
-
-      <Suspense fallback={null}>
-        <LatestActivity />
-      </Suspense>
 
       <div className="mt-6 grid items-start gap-5 lg:grid-cols-2">
         <Card aria-labelledby="collected-title">
@@ -279,33 +279,36 @@ function Stat({ label, value, note }: { label: string; value: string; note: Reac
   );
 }
 
-/** The latest few events, then See All (owner, 2026-10-20: "a shortcut to it on the owner's
- * dashboard page"), with the dot when there is something new. */
-async function LatestActivity() {
+/** The latest few events and the dot, read once per request for both Activity buttons. */
+const latestActivity = cache(async () => {
   const office = await getOffice();
   const [page, dot] = await Promise.all([
     activityPage(office, null, ACTIVITY_DASHBOARD_COUNT).catch(() => null),
     activityUnread(office),
   ]);
+  return { office, page, dot };
+});
+
+/**
+ * The Activity button at the right of the title row (owner, 2026-10-21: "make activity a
+ * dropdown on the right side at the same level as the title text. It is currently eating up
+ * space in the dashboard"): the latest few events, then See All (owner, 2026-10-20: "a
+ * shortcut to it on the owner's dashboard page"), with the dot when there is something new.
+ * A popover on wider screens, a sheet on phones (`sheet`, in the navigation bar).
+ */
+function LatestActivity({ sheet = false }: { sheet?: boolean }) {
+  return (
+    <Suspense fallback={<ActivityMenu unread={false} sheet={sheet} pending />}>
+      <LatestActivityLoaded sheet={sheet} />
+    </Suspense>
+  );
+}
+
+async function LatestActivityLoaded({ sheet }: { sheet: boolean }) {
+  const { office, page, dot } = await latestActivity();
   const now = new Date();
   return (
-    <section aria-labelledby="activity-title" className="mt-6 max-w-2xl">
-      <div className="mb-2 flex items-end justify-between gap-3 px-4">
-        <h2
-          id="activity-title"
-          className="flex items-center gap-2 text-[0.8125rem] text-text-muted uppercase"
-        >
-          {ACTIVITY_TITLE}
-          {dot ? <Dot label="New activity" /> : null}
-        </h2>
-        <Link
-          href="/activity"
-          className="-my-3 inline-flex min-h-11 items-center text-[0.9375rem] text-link"
-          aria-label={`${SEARCH_WORDS.seeAll} ${ACTIVITY_TITLE}`}
-        >
-          {SEARCH_WORDS.seeAll}
-        </Link>
-      </div>
+    <ActivityMenu unread={dot} sheet={sheet}>
       {!page ? (
         <Empty>{ACTIVITY_OFFLINE}</Empty>
       ) : page.events.length === 0 ? (
@@ -317,6 +320,6 @@ async function LatestActivity() {
           ))}
         </ul>
       )}
-    </section>
+    </ActivityMenu>
   );
 }

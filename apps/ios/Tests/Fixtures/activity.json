@@ -8,8 +8,23 @@
         "ACTIVITY_DASHBOARD_COUNT": 3,
         "ACTIVITY_OFFLINE": "Activity shows when you’re online.",
         "ACTIVITY_EMPTY": "Nothing yet. Accepted quotes, payments, reports, finished jobs, and customer texts show here.",
-        "ACTIVITY_DETAIL": "Quotes, payments, reports, jobs, and texts"
+        "ACTIVITY_DETAIL": "Quotes, payments, reports, jobs, and texts",
+        "ACTIVITY_NEW": "New activity"
       }
+    }
+  ],
+  "activityButtonLabel": [
+    {
+      "args": [
+        true
+      ],
+      "result": "Activity, new activity"
+    },
+    {
+      "args": [
+        false
+      ],
+      "result": "Activity"
     }
   ],
   "firstName": [

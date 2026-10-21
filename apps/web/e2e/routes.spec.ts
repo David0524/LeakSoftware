@@ -433,4 +433,26 @@ test("Today shows a tech's route with directions", async ({ page }) => {
   expect(await mapsTarget(page, href)).toMatch(/destination=33\.4919%2C-111\.9236/);
   // The card's Directions replaces the day's route button (owner, 2026-10-20).
   await expect(hero.getByRole("link", { name: /^Directions to / })).toBeVisible();
+
+  // On a computer the day takes the left half, and Today's Map and Activity stay beside it
+  // (owner, 2026-10-21). No map service in CI, so the map's box says so.
+  await page.setViewportSize({ width: 1400, height: 900 });
+  const side = page.getByTestId("today-side");
+  await expect(side).toBeVisible();
+  await expect(side.getByRole("heading", { name: "Today’s Map" })).toBeVisible();
+  await expect(side.getByRole("heading", { name: "Activity" })).toBeVisible();
+  await expect(side.getByRole("link", { name: "See All Activity" })).toHaveAttribute(
+    "href",
+    "/activity",
+  );
+  const day = (await hero.boundingBox())!;
+  const right = (await side.boundingBox())!;
+  expect(right.x).toBeGreaterThanOrEqual(day.x + day.width);
+  expect(day.width).toBeLessThan(1400 / 2);
+  // It stays in view as the stops scroll.
+  await page.mouse.wheel(0, 600);
+  await expect(side).toBeInViewport();
+  // Phones keep one column, with no map beside it.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(side).toBeHidden();
 });

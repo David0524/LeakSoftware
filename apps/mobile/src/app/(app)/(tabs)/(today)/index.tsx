@@ -19,6 +19,7 @@ import {
   workDay,
   startLegLabel,
   backLegLabel,
+  scheduleOrder,
 } from "@leakbook/core";
 import { inRouteOrderViews, stopLockTag, useJobViews, type JobView } from "../../../../data/jobs";
 import { useDriveTimes, useTeam } from "../../../../data/schedule";
@@ -133,8 +134,8 @@ export default function Today() {
     [jobs, tz, today],
   );
 
-  // Whose day (managers): active techs and anyone with stops today, "Me" first (the website's
-  // order: the team by name).
+  // Whose day (managers): active techs and anyone with stops today, in the Schedule's order
+  // (core scheduleOrder: the shop's saved order, else "Me" first, then A to Z).
   const team = services.sync.team();
   const members = useTeam(company.id);
   const people = useMemo(() => {
@@ -143,15 +144,19 @@ export default function Today() {
       if (j.assigned_user_id) busy.add(j.assigned_user_id);
       if (j.second_tech_id) busy.add(j.second_tech_id);
     }
-    const list = members.filter(
-      (m) => m.user_id !== me && (m.status === "active" || busy.has(m.user_id)),
+    const list = scheduleOrder(
+      members.filter((m) => m.user_id === me || m.status === "active" || busy.has(m.user_id)),
+      me,
     );
     // Each with their color dot (team and week spec section 3).
-    const myColor = members.find((m) => m.user_id === me)?.color ?? null;
-    return [
-      { value: me, label: "Me", dot: myColor },
-      ...list.map((m) => ({ value: m.user_id, label: m.name, dot: m.color })),
-    ];
+    const people = list.map((m) => ({
+      value: m.user_id,
+      label: m.user_id === me ? "Me" : m.name,
+      dot: m.color as string | null,
+    }));
+    return people.some((p) => p.value === me)
+      ? people
+      : [{ value: me, label: "Me", dot: null }, ...people];
   }, [dayJobs, me, members]);
   // A notification's request shows your own day.
   const shownTech = !asked && people.some((p) => p.value === techId) ? techId : me;

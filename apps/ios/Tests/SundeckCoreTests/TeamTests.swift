@@ -10,7 +10,8 @@ import Testing
         #expect(
             Fixtures.rules(module) == [
                 "TECH_COLORS", "techColor", "nextTechColor", "teamOrder", "asksPlanMove", "PLAN_MOVE_CHOICES",
-                "planMovedBanner", "visitMovedBanner", "MAPS_LABELS", "dayMapsLabel",
+                "planMovedBanner", "visitMovedBanner", "scheduleOrder", "scheduleOrderWrites", "moveInList",
+                "REORDER_TECHS", "MAPS_LABELS", "dayMapsLabel",
             ])
     }
 
@@ -22,6 +23,26 @@ import Testing
         var orderDisabledAt: String? { raw["disabled_at"]?.string }
 
         func encode(to encoder: any Encoder) throws { try raw.encode(to: encoder) }
+    }
+
+    /// A member with a place on the Schedule, kept whole.
+    struct Placed: ScheduleOrdered, Encodable {
+        let raw: JSONValue
+        var orderUserId: String { raw["user_id"]?.string ?? "" }
+        var orderName: String? { raw["name"]?.string }
+        var scheduleOrder: Int? { raw["schedule_order"]?.number.map { Int($0) } }
+
+        func encode(to encoder: any Encoder) throws { try raw.encode(to: encoder) }
+    }
+
+    struct Saved: Decodable {
+        let id: String
+        let scheduleOrder: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case id
+            case scheduleOrder = "schedule_order"
+        }
     }
 
     struct Order: Encodable {
@@ -56,6 +77,21 @@ import Testing
             let order = teamOrder(members)
             return Order(active: order.active, off: order.off)
         }
+    }
+
+    @Test func scheduleOrders() {
+        checkRule(module, "scheduleOrder") { c in
+            let members = try c.arg(0, as: [JSONValue].self).map(Placed.init)
+            return scheduleOrder(members, me: try c.arg(1, as: String?.self))
+        }
+        checkRule(module, "scheduleOrderWrites") { c in
+            let members = try c.arg(0, as: [Saved].self).map { (id: $0.id, scheduleOrder: $0.scheduleOrder) }
+            return scheduleOrderWrites(members, try c.arg(1, as: [String].self))
+        }
+        checkRule(module, "moveInList") { c in
+            moveInList(try c.arg(0, as: [String].self), from: try c.arg(1), to: try c.arg(2))
+        }
+        checkRule(module, "REORDER_TECHS") { _ in ReorderTechs.all }
     }
 
     @Test func planMoves() {

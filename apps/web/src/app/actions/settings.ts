@@ -20,6 +20,8 @@ import {
   optionsFromText,
   type ChecklistSection,
   TECH_COLORS,
+  REORDER_TECHS,
+  scheduleOrderWrites,
 } from "@leakbook/core";
 import { OWNER_ONLY, requireManager, requireOwner } from "@/lib/auth";
 import { friendlyDbError, isWebUrl } from "@/lib/limits";
@@ -419,6 +421,38 @@ export async function setMemberColor(input: { id: string; color: string }): Prom
   // Every screen that names a tech shows their dot.
   revalidatePath("/", "layout");
   return { message: "Color changed." };
+}
+
+/**
+ * The order of techs on the Schedule and Today (Reorder Techs, owner 2026-10-21; core
+ * scheduleOrder): membership ids top to bottom. Writes only the places that changed. Owners and
+ * admins.
+ */
+export async function setScheduleOrder(ordered: string[]): Promise<FormState> {
+  const { office, supabase } = await owner();
+  if (!Array.isArray(ordered) || ordered.some((id) => typeof id !== "string"))
+    return { error: "Couldn’t save. Try again." };
+  const { data, error } = await supabase
+    .from("membership")
+    .select("id, schedule_order")
+    .eq("company_id", office.company.id)
+    .is("deleted_at", null);
+  if (error) return failed(error);
+  const writes = scheduleOrderWrites(
+    (data ?? []) as { id: string; schedule_order: number | null }[],
+    [...new Set(ordered)],
+  );
+  for (const w of writes) {
+    const r = await supabase
+      .from("membership")
+      .update({ schedule_order: w.schedule_order })
+      .eq("company_id", office.company.id)
+      .eq("id", w.id);
+    if (r.error) return failed(r.error);
+  }
+  // The Schedule and Today list techs in this order.
+  revalidatePath("/", "layout");
+  return { message: REORDER_TECHS.saved };
 }
 
 // ---------------------------------------------------------------------------

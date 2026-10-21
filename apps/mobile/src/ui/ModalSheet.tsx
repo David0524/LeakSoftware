@@ -59,6 +59,7 @@ export function ModalSheet({
   title,
   cancel = "Cancel",
   locked = false,
+  done,
   children,
 }: {
   visible: boolean;
@@ -67,6 +68,8 @@ export function ModalSheet({
   /** "Close" for read-only sheets. */
   cancel?: string;
   locked?: boolean;
+  /** A bold Done (or Save) at the right of the title bar, as iOS sheets have. */
+  done?: { label: string; onPress: () => void; disabled?: boolean };
   children: ReactNode;
 }) {
   // Forms inside report unsaved changes (useUnsavedChanges): closing then asks first.
@@ -106,7 +109,29 @@ export function ModalSheet({
       >
         {title}
       </Text>
-      <View style={styles.cancel} />
+      {done ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !!done.disabled }}
+          disabled={done.disabled}
+          onPress={done.onPress}
+          hitSlop={4}
+          style={({ pressed }) => [
+            styles.cancel,
+            { alignItems: "flex-end" },
+            (pressed || done.disabled) && { opacity: 0.5 },
+          ]}
+        >
+          <Text
+            style={[type.body, face.semiBold, { color: color.link }]}
+            maxFontSizeMultiplier={1.6}
+          >
+            {done.label}
+          </Text>
+        </Pressable>
+      ) : (
+        <View style={styles.cancel} />
+      )}
     </View>
   );
   const body = (

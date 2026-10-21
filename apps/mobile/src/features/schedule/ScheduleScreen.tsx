@@ -42,7 +42,10 @@ import {
   workDay,
   type ScheduleView,
   type SuggestedTime,
+  REORDER_TECHS,
+  scheduleOrder,
 } from "@leakbook/core";
+import { saveTechOrder } from "../../lib/techOrder";
 import { stopLockTag, useJobViews, type JobView } from "../../data/jobs";
 import { useMemberStarts } from "../../data/memberStarts";
 import { useVisitCleanings } from "../maintenance/Cleanings";
@@ -89,6 +92,7 @@ import { MoveSheet, SuggestSheet, type MoveTarget } from "./MoveSheet";
 import { NeedsATime } from "./NeedsATime";
 import { DayMap } from "./DayMap";
 import { PlanWeek } from "./PlanWeek";
+import { ReorderTechs } from "./ReorderTechs";
 import { RouteCard, RouteFacts, type Route, type Stop } from "./RouteCard";
 import { DragScope, useScheduleDrag } from "./ScheduleDrag";
 import { usePlanMove } from "./planMove";
@@ -195,16 +199,18 @@ export function ScheduleScreen() {
   const byId = useMemo(() => new Map(jobs.map((j) => [j.id, j])), [jobs]);
 
   // Every active tech gets a route, plus anyone with work these days; a tech limited to their
-  // own jobs sees only their own. Me first.
+  // own jobs sees only their own. In the shop's saved order (Reorder Techs, owner 2026-10-21);
+  // without one, Me first, then A to Z (core scheduleOrder).
   const techs = useMemo(
     () =>
-      team
-        .filter(
+      scheduleOrder(
+        team.filter(
           (t) =>
             (seesAll || t.user_id === me) &&
             (t.status === "active" || days.some((d) => routes.has(routeKey(t.user_id, d)))),
-        )
-        .sort((a, b) => Number(b.user_id === me) - Number(a.user_id === me)),
+        ),
+        me,
+      ),
     [team, seesAll, me, days, routes],
   );
   const tech =
@@ -222,7 +228,10 @@ export function ScheduleScreen() {
   const movers = useMemo(
     () =>
       (seesAll
-        ? team.filter((t) => t.status === "active")
+        ? scheduleOrder(
+            team.filter((t) => t.status === "active"),
+            me,
+          )
         : team.filter((t) => t.user_id === me)
       ).map((t) => ({ id: t.user_id, name: t.name, color: t.color })),
     [team, seesAll, me],
@@ -878,6 +887,23 @@ export function ScheduleScreen() {
             ]}
             value={tech}
             onChange={setWanted}
+          />
+        ) : null}
+        {/* Reorder Techs: owners and admins, under Whose schedule (the website's place). */}
+        {manager && seesAll ? (
+          <ReorderTechs
+            techs={techs
+              .filter((t) => t.status === "active")
+              .map((t) => ({ id: t.membership_id, name: t.name, color: t.color }))}
+            onSave={(ordered) => {
+              try {
+                saveTechOrder(getServices().sync, company.id, team, ordered);
+                banner.show({ tone: "success", message: REORDER_TECHS.saved });
+                return null;
+              } catch (e) {
+                return e instanceof Error ? e.message : String(e);
+              }
+            }}
           />
         ) : null}
 
