@@ -15,10 +15,16 @@ import { cx } from "./ui";
  */
 export function AddressField({
   fields = { city: "city", state: "state", postal_code: "postal_code" },
+  oneLine = false,
   ...props
 }: Omit<ComponentProps<typeof SField>, "onChange"> & {
   /** The names of the form's other address fields. */
   fields?: { city: string; state: string; postal_code: string };
+  /**
+   * The whole address in this one field ("123 Main St, Mesa, AZ 85201"), for a field with no
+   * city, state and ZIP of its own (a home address).
+   */
+  oneLine?: boolean;
 }) {
   const listId = useId();
   const wrap = useRef<HTMLDivElement>(null);
@@ -53,14 +59,16 @@ export function AddressField({
   function pick(s: AddressSuggestion) {
     const el = input();
     const form = el?.form;
-    if (el) el.value = s.line1;
+    if (el) el.value = oneLine ? oneLineAddress(s) : s.line1;
     const set = (name: string, value: string) => {
       const f = form?.elements.namedItem(name);
       if (f instanceof HTMLInputElement || f instanceof HTMLSelectElement) f.value = value;
     };
-    set(fields.city, s.city);
-    set(fields.state, s.state);
-    set(fields.postal_code, s.postal_code);
+    if (!oneLine) {
+      set(fields.city, s.city);
+      set(fields.state, s.state);
+      set(fields.postal_code, s.postal_code);
+    }
     setOpen(false);
     setItems([]);
     el?.focus();
@@ -138,4 +146,11 @@ export function AddressField({
       ) : null}
     </div>
   );
+}
+
+/** "123 Main St, Mesa, AZ 85201" from a suggestion. */
+export function oneLineAddress(s: AddressSuggestion): string {
+  return [s.line1, s.city, [s.state, s.postal_code].filter(Boolean).join(" ")]
+    .filter(Boolean)
+    .join(", ");
 }

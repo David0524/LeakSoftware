@@ -68,6 +68,21 @@
             .overlay { if selected { Circle().strokeBorder(Color.water, lineWidth: 3) } }
             .scaleEffect(selected ? 1.2 : 1)
             .animation(Motion.snappy, value: selected)
+            // Someone who starts from home: the house is labeled Home (never the street), under
+            // the pin so the circle stays on the point.
+            .overlay(alignment: .bottom) {
+                if annotation.home {
+                    Text(StartFromCopy.homePin)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.navy)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1)
+                        .background(Capsule().fill(.white))
+                        .fixedSize()
+                        .offset(y: size * 0.5 + 10)
+                        .accessibilityHidden(true)
+                }
+            }
         }
     }
 

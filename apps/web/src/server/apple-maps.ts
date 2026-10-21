@@ -128,7 +128,8 @@ export function appleSnapshotUrl(
         point: point(p.at),
         color: hex(TONE_COLOR[p.tone]),
         markerStyle: "large",
-        ...(p.tone === "shop" ? {} : { glyphText: p.label }),
+        // The shop's pin is plain; someone's home is a house (⌂), never its street.
+        ...(p.tone === "shop" ? (p.home ? { glyphText: "\u2302" } : {}) : { glyphText: p.label }),
       })),
     ),
   );

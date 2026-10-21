@@ -110,7 +110,9 @@
                 let store = sync.store
                 let (zip, keys) = await Task.detached(priority: .utility) {
                     let ctx = scheduleContext(store, company: company, userId: user.id)
-                    return (ctx.shopZip, routePoints(scheduleJobs(store, companyId: company.id), depot: ctx.depot))
+                    return (
+                        ctx.shopZip, routePoints(scheduleJobs(store, companyId: company.id), starts: ctx.startPoints)
+                    )
                 }.value
                 async let w = app.api.weather(zip: zip)
                 drive = await cachedDriveTimes(app, companyId: company.id, keys: keys)
@@ -186,7 +188,8 @@
                     }
                     ForEach(left, id: \.element.id) { i, job in
                         LegLine(
-                            minutes: route.summary.legs[routeIndex: i] ?? 0, label: i == 0 ? "from the shop" : "drive",
+                            minutes: route.summary.legs[routeIndex: i] ?? 0,
+                            label: i == 0 ? startLegLabel(day.startLabel) : "drive",
                             short: route.summary.short[routeIndex: i] ?? 0, inset: 16)
                         TodayStopCard(
                             number: i + 1, job: job, day: day, leg: route.summary.legs[routeIndex: i] ?? 0,
@@ -194,7 +197,7 @@
                         )
                         .equatable()
                     }
-                    LegLine(minutes: route.summary.backLegMin, label: "back to the shop", short: 0, inset: 16)
+                    LegLine(minutes: route.summary.backLegMin, label: backLegLabel(day.startLabel), short: 0, inset: 16)
                 }
             } else {
                 EmptyState(
@@ -315,7 +318,10 @@
             return route?.jobs.first { $0.id == id }
         }
 
-        /// The drive to a stop, from the shop or the stop before it.
+        /// Where this day starts and ends: home for someone who starts there, else the shop.
+        var startLabel: RouteStartLabel { ctx.start(for: techId).label }
+
+        /// The drive to a stop, from the day's start or the stop before it.
         func leg(_ job: ScheduleJob) -> Int {
             guard let route, let i = route.jobs.firstIndex(where: { $0.id == job.id }) else { return 0 }
             return route.summary.legs[routeIndex: i] ?? 0
@@ -324,7 +330,7 @@
         var directions: URL? {
             guard let route, !route.jobs.isEmpty else { return nil }
             return dayDirections(
-                app: mapsApp, origin: ctx.origin,
+                app: mapsApp, origin: ctx.origin(for: techId),
                 stops: route.jobs.map { (place: $0.place, done: $0.doneOn(ctx.today)) })
         }
 
@@ -332,7 +338,11 @@
         var summaryText: String {
             guard let route else { return "" }
             let n = route.jobs.count
-            return "\(n) \(n == 1 ? "stop" : "stops") · \(durationLabel(route.summary.driveMin)) driving"
+            // Someone who starts from home: their day's driving is counted from there.
+            return [
+                "\(n) \(n == 1 ? "stop" : "stops")", "\(durationLabel(route.summary.driveMin)) driving",
+                startLabel == .home ? startLegLabel(.home) : nil,
+            ].compactMap { $0 }.joined(separator: " · ")
         }
     }
 

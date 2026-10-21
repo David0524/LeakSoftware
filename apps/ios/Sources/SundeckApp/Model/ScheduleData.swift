@@ -24,14 +24,31 @@ public struct ScheduleContext: Sendable {
     public var nowMin: Int
     /// Sends On My Way from the tech's own phone instead of the company number.
     public var onMyWayFromPhone: Bool
+    /// The shop's member_start rows this phone has (owners and admins: everyone's; a tech: their
+    /// own). Each tech's day starts and ends at `start(for:)` (owner, 2026-10-21).
+    public var starts: [MemberStart] = []
 
     public var workDay: WorkDay { settings.workDay }
     /// What SundeckCore's planning rules read.
     public var plan: PlanContext {
-        PlanContext(timeZone: timeZone, settings: settings, depot: depot, today: today, nowMin: nowMin)
+        PlanContext(timeZone: timeZone, settings: settings, depot: depot, today: today, nowMin: nowMin, starts: starts)
+    }
+    /// Where this tech's day starts and ends: their home when they start there and it's on the
+    /// map, else the shop (core `startFor`).
+    public func start(for techId: String?) -> RouteStart { startFor(techId, starts, shop: depot) }
+    /// Every place a day can start: the shop, and each home start on the map (for drive times).
+    public var startPoints: [LatLng?] {
+        [depot] + starts.compactMap { routeStart($0, shop: nil).at }
     }
     public var origin: MapPlace? {
         depot != nil || !depotAddress.isEmpty ? MapPlace(address: depotAddress, location: depot) : nil
+    }
+    /// Where a tech's day directions start: their home's map point when they start there (never
+    /// its street in the link), else the shop.
+    public func origin(for techId: String?) -> MapPlace? {
+        let start = start(for: techId)
+        if start.label == .home, let at = start.at { return MapPlace(address: "", location: at) }
+        return origin
     }
 }
 
@@ -49,7 +66,8 @@ public func scheduleContext(_ store: LocalStore, company: CompanyContext, userId
         depotAddress: addressText(row), shopName: row["name"]?.string ?? company.name,
         shopZip: zip?.isEmpty == false ? zip : nil, seesAll: seesAllJobs(company.role, company.settings),
         isManager: isManagerRole(company.role), userId: userId, today: localDay(now, timeZone: company.timeZone),
-        nowMin: localMinutes(now, timeZone: company.timeZone), onMyWayFromPhone: onMyWayFromPhone(company.settings))
+        nowMin: localMinutes(now, timeZone: company.timeZone), onMyWayFromPhone: onMyWayFromPhone(company.settings),
+        starts: memberStarts(store, companyId: company.id))
 }
 
 /// "1423 Palm Ct, Phoenix, AZ 85016" from a row's address columns (formatAddress's rule).
@@ -283,7 +301,7 @@ public func loadRoutes(
                 SavedStop(
                     id: $0.id, location: $0.location, startMin: $0.startMin(ctx.timeZone),
                     endMin: $0.endMin(ctx.timeZone))
-            }, depot: ctx.depot, day: ctx.workDay, drive: drive.drive)
+            }, depot: ctx.start(for: d.tech).at, day: ctx.workDay, drive: drive.drive)
         routes[key] = DayRoute(
             techId: d.tech, techName: names[d.tech] ?? "Teammate", date: d.date, jobs: ordered, summary: summary)
     }
@@ -308,8 +326,14 @@ public func needsATime(_ jobs: [ScheduleJob], ctx: ScheduleContext) -> [Schedule
 
 /// The distinct points drive times are needed between (the shop and the pools).
 public func routePoints(_ jobs: [ScheduleJob], depot: LatLng?) -> [String] {
+    routePoints(jobs, starts: [depot])
+}
+
+/// The distinct points drive times are needed between: where days start (the shop, and homes
+/// for those who start there; `ScheduleContext.startPoints`) and the pools.
+public func routePoints(_ jobs: [ScheduleJob], starts: [LatLng?]) -> [String] {
     var keys: [String] = []
-    for p in [depot] + jobs.map(\.location) {
+    for p in starts + jobs.map(\.location) {
         guard let p else { continue }
         let k = pointKey(p)
         if !keys.contains(k) { keys.append(k) }

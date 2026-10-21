@@ -39,7 +39,7 @@ export function encodePolyline(points: { lat: number; lng: number }[]): string {
 }
 
 /**
- * The Mapbox Static Images address for these pins: the shop as a house, stops numbered in their
+ * The Mapbox Static Images address for these pins: the start (the shop, or home) as a house, stops numbered in their
  * colors, and a faint line through them in route order (shop, stops, back to the shop).
  */
 export function staticMapUrl(
@@ -50,7 +50,10 @@ export function staticMapUrl(
 ): string {
   const overlays = pins.map((p) => {
     const marker = p.tone === "shop" ? "home" : /^\d{1,2}$/.test(p.label) ? p.label : "circle";
-    return `pin-s-${marker}+${hex(TONE_COLOR[p.tone])}(${p.at.lng.toFixed(5)},${p.at.lat.toFixed(5)})`;
+    // Someone who starts from home: a larger house (an image's pin can't carry words; the
+    // live maps label it Home). Never the street.
+    const size = p.tone === "shop" && p.home ? "l" : "s";
+    return `pin-${size}-${marker}+${hex(TONE_COLOR[p.tone])}(${p.at.lng.toFixed(5)},${p.at.lat.toFixed(5)})`;
   });
   const shop = pins.find((p) => p.tone === "shop");
   const route = [...(shop ? [shop] : []), ...pins.filter((p) => p.tone !== "shop")];

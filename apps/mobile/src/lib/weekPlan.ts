@@ -8,6 +8,7 @@ import {
   planWeek,
   planWeekSplit,
   planWeekSummary,
+  startFor,
   propertyLocation,
   stopFor,
   weekday,
@@ -136,6 +137,8 @@ export function buildWeekPlan(input: {
         date,
         stays: [],
         earliestMin: date === ctx.today ? ctx.nowMin : null,
+        // Their day starts and ends at home when they start there (owner, 2026-10-21).
+        start: startFor(techId, ctx.starts, ctx.depot).at,
       };
       for (const j of input.dayJobs(techId, date)) {
         const own = j.assigned_user_id === techId;

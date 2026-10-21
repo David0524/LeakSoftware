@@ -5,7 +5,6 @@ import {
   localMinutes,
   lockColumns,
   pointKey,
-  propertyLocation,
   routingSettings,
   techColor,
   type Company,
@@ -19,19 +18,24 @@ import {
 import type { JsonValue } from "@leakbook/sync";
 import { getServices } from "../lib/services";
 import { useRows } from "./hooks";
+import { memberStarts, shopLocation } from "./memberStarts";
 import { inRouteOrderViews, type JobView } from "./jobs";
 
 // Routes on the phone (spec 5.1, 5.6): each tech's jobs for a day in route order, from the
 // phone's database, with drive times from the shop's cache on the server when there's a
 // signal (the same cache the website fills) and the shared estimate otherwise.
 
-/** The shop's planning context: its time zone, working day, location, and now. */
+/**
+ * The shop's planning context: its time zone, working day, location, where each person's day
+ * starts (member_start rows on this phone; startFor), and now.
+ */
 export function planContext(company: Company): PlanContext {
   const now = new Date();
   return {
     timeZone: company.timezone,
     settings: routingSettings(company.settings),
-    depot: propertyLocation(company as { latitude?: number | null; longitude?: number | null }),
+    depot: shopLocation(company),
+    starts: memberStarts(company.id),
     today: localDate(now, company.timezone),
     nowMin: localMinutes(now.toISOString(), company.timezone),
   };

@@ -3,7 +3,7 @@ import { memo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureDetector } from "react-native-gesture-handler";
 import Svg, { Circle } from "react-native-svg";
-import { durationLabel, formatDay } from "@leakbook/core";
+import { durationLabel, formatDay, startLegLabel } from "@leakbook/core";
 import type { DragItem } from "../../lib/scheduleDrag";
 import { StatusChip, T } from "../../ui/components";
 import { Grip } from "../../ui/Grip";
@@ -170,6 +170,8 @@ function WeekRoute({
     ? [
         r.stops.length === 1 ? "1 stop" : `${r.stops.length} stops`,
         r.driveMin ? `${durationLabel(r.driveMin)} driving` : null,
+        // Someone who starts from home: the day's driving is counted from there.
+        r.driveMin && r.startLabel === "home" ? startLegLabel("home") : null,
       ]
         .filter(Boolean)
         .join(" · ")

@@ -2,7 +2,15 @@ import { router } from "expo-router";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureDetector } from "react-native-gesture-handler";
-import { durationLabel, type CleaningKind, type JobStatus, type LatLng } from "@leakbook/core";
+import {
+  backLegLabel,
+  durationLabel,
+  startLegLabel,
+  type CleaningKind,
+  type JobStatus,
+  type LatLng,
+  type RouteStartLabel,
+} from "@leakbook/core";
 import type { LockTagKind } from "../../lib/dayMap";
 import type { DragItem } from "../../lib/scheduleDrag";
 import { CleaningNames } from "../maintenance/Cleanings";
@@ -71,6 +79,8 @@ export interface Route {
   /** The tech's color key (team and week spec section 3). */
   color?: string | null;
   date: string;
+  /** Where the tech's day starts and ends: "home" for someone who starts there. */
+  startLabel?: RouteStartLabel;
   stops: Stop[];
   driveMin: number;
   backLegMin: number | null;
@@ -114,6 +124,8 @@ export function RouteFacts({
     ? [
         `${c.stops.length} ${c.stops.length === 1 ? "stop" : "stops"}`,
         `${durationLabel(c.driveMin)} driving`,
+        // Someone who starts from home: the day's driving is counted from there.
+        c.startLabel === "home" ? startLegLabel("home") : null,
       ]
         .filter(Boolean)
         .join(" · ")
@@ -199,7 +211,9 @@ export function RouteCard({
         {c.stops.map((s, i) => (
           <View key={s.id} style={styles.stopWrap}>
             {s.legMin != null ? (
-              <Leg text={`${durationLabel(s.legMin)} ${i === 0 ? "from the shop" : "drive"}`} />
+              <Leg
+                text={`${durationLabel(s.legMin)} ${i === 0 ? startLegLabel(c.startLabel ?? "shop") : "drive"}`}
+              />
             ) : null}
             <StopCard
               stop={s}
@@ -228,7 +242,7 @@ export function RouteCard({
           </View>
         ))}
         {c.stops.length && c.backLegMin != null ? (
-          <Leg text={`${durationLabel(c.backLegMin)} back to the shop`} />
+          <Leg text={`${durationLabel(c.backLegMin)} ${backLegLabel(c.startLabel ?? "shop")}`} />
         ) : null}
       </View>
     </View>

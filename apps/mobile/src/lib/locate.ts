@@ -8,7 +8,11 @@ import { getServices } from "./services";
 // write reaches the server, the website finds the new one from the address (POST /api/locate),
 // and it syncs back. Offline or before the write is up, the next route plan finds it instead.
 
-export type LocateTarget = { property_id: string } | { shop: true };
+export type LocateTarget =
+  | { property_id: string }
+  | { shop: true }
+  /** Someone's home, where their day starts (member_start row `start_id`). */
+  | { home_user_id: string; start_id: string };
 
 /** Push the address change, then ask the server to place it on the map. Never throws. */
 export async function locateAfterSync(companyId: string, target: LocateTarget): Promise<void> {
@@ -16,15 +20,19 @@ export async function locateAfterSync(companyId: string, target: LocateTarget): 
   const { sync } = getServices();
   try {
     await sync.syncNow();
-    const table = "property_id" in target ? "property" : "company";
-    const id = "property_id" in target ? target.property_id : companyId;
+    const [table, id, body] =
+      "property_id" in target
+        ? (["property", target.property_id, { property_id: target.property_id }] as const)
+        : "home_user_id" in target
+          ? (["member_start", target.start_id, { home_user_id: target.home_user_id }] as const)
+          : (["company", companyId, { shop: true }] as const);
     if (sync.hasPendingWrites(table, id)) return;
     const token = await sync.accessToken();
     if (!token) return;
     const res = await fetch(`${API_URL}/api/locate`, {
       method: "POST",
       headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
-      body: JSON.stringify({ company_id: companyId, ...target }),
+      body: JSON.stringify({ company_id: companyId, ...body }),
     });
     if (res.ok) await sync.syncNow();
   } catch {

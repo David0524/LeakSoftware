@@ -40,15 +40,18 @@ import {
 import {
   PLAN_MOVE_CHOICES,
   asksPlanMove,
+  backLegLabel,
   directionsHref,
   durationLabel,
   planMovedBanner,
+  startLegLabel,
   visitMovedBanner,
   weekday,
   type CleaningKind,
   type JobLock,
   type JobStatus,
   type LatLng,
+  type RouteStart,
 } from "@leakbook/core";
 import { scheduleJob } from "@/app/actions/jobs";
 import { setServiceDay, undoServiceDays, type PlanUndo } from "@/app/actions/service-days";
@@ -148,6 +151,8 @@ export interface BoardColumn {
   /** The tech's color (Settings › Team): a dot by their name, a stripe on their cards. */
   color?: string | null;
   date: string;
+  /** Where the tech's day starts and ends: their home when they start there, else the shop. */
+  start: RouteStart;
   stops: BoardStop[];
   driveMin: number;
   backLegMin: number | null;
@@ -842,6 +847,8 @@ function daySummary(c: BoardColumn, stops: BoardStop[]): string | null {
   return [
     `${stops.length} ${stops.length === 1 ? "stop" : "stops"}`,
     `${durationLabel(c.driveMin)} driving`,
+    // Someone who starts from home: their day's driving is counted from there.
+    c.start.label === "home" ? startLegLabel("home") : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -914,7 +921,9 @@ function DayColumnMap({
   className,
 }: Pick<DayHeaderProps, "column" | "stops" | "maps" | "today"> & { className?: string }) {
   const map =
-    maps && stops.length ? dayMap({ stops, depot: maps.depot, date: c.date, today }) : null;
+    maps && stops.length
+      ? dayMap({ stops, depot: c.start.at, startLabel: c.start.label, date: c.date, today })
+      : null;
   if (!maps || !map || (!map.pins && !map.missing)) return null;
   return (
     <DayMap
@@ -1019,14 +1028,14 @@ function DayColumn({
           {stops.map((s, i) => (
             <li key={s.id} data-flip={s.id}>
               {s.legMin != null && c.techId ? (
-                <Leg minutes={s.legMin} label={i === 0 ? "from the shop" : "drive"} />
+                <Leg minutes={s.legMin} label={i === 0 ? startLegLabel(c.start.label) : "drive"} />
               ) : null}
               <StopCard stop={s} position={i + 1} onMove={onMove} color={c.color} />
             </li>
           ))}
           {c.techId && stops.length && c.backLegMin != null ? (
             <li>
-              <Leg minutes={c.backLegMin} label="back to the shop" />
+              <Leg minutes={c.backLegMin} label={backLegLabel(c.start.label)} />
             </li>
           ) : null}
         </ol>
@@ -1530,7 +1539,14 @@ function WeekMaps({
               const key = `${tech}|${d}`;
               const col = columns.find((c) => c.key === key);
               const stops = lists[key] ?? [];
-              const map = dayMap({ stops, depot: maps.depot, date: d, today });
+              const start = col?.start ?? { at: maps.depot, label: "shop" as const };
+              const map = dayMap({
+                stops,
+                depot: start.at,
+                startLabel: start.label,
+                date: d,
+                today,
+              });
               const day = weekdayName(d);
               return (
                 <li
@@ -1778,6 +1794,7 @@ function WeekCell({
       {c.techId && stops.length ? (
         <p className="mt-1 px-1 text-[0.8125rem] text-text-muted">
           {durationLabel(c.driveMin)} driving
+          {c.start.label === "home" ? ` · ${startLegLabel("home")}` : null}
         </p>
       ) : null}
     </td>

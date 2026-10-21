@@ -21,6 +21,9 @@ import {
   type TeamProfile,
 } from "../../data/teamProfiles";
 import { teamProfileValues, type TeamProfileForm } from "../../lib/teamProfile";
+import { saveMemberStart, useMemberStart } from "../../data/memberStarts";
+import { startForm, startWrite, type StartForm } from "../../lib/memberStart";
+import { StartFromFields } from "./StartFrom";
 import { API_URL } from "../../lib/config";
 import { getServices } from "../../lib/services";
 import { useCompany, useSession } from "../../state/session";
@@ -460,12 +463,20 @@ function ProfileForm({
   });
   const [errors, setErrors] = useState<Partial<Record<keyof TeamProfileForm, string>>>({});
   const set = (k: keyof TeamProfileForm) => (v: string) => setF((o) => ({ ...o, [k]: v }));
+  // Where their day starts (owner, 2026-10-21): their member_start row, owners and admins only.
+  const startRow = useMemberStart(company.id, member?.user_id);
+  const [start, setStart] = useState<StartForm>(() => startForm(startRow));
+  const [startError, setStartError] = useState<string | undefined>();
   function save() {
     const checked = teamProfileValues(f);
     if ("fields" in checked) return setErrors(checked.fields);
     setErrors({});
+    const startCheck = member ? startWrite(startRow, start) : null;
+    if (startCheck && "error" in startCheck) return setStartError(startCheck.error);
+    setStartError(undefined);
     const { sync } = getServices();
     sync.batch(() => {
+      if (member) saveMemberStart(company.id, member.user_id, startRow, start);
       saveTeamProfile(
         company.id,
         checked.values,
@@ -559,6 +570,15 @@ function ProfileForm({
             </View>
           )}
           <ColorPicker value={tech} onChange={setTech} />
+          <StartFromFields
+            form={start}
+            onChange={(next) => {
+              setStartError(undefined);
+              setStart(next);
+            }}
+            row={startRow}
+            error={startError}
+          />
           <Group>
             <View style={[styles.switchRow, !canSwitch && { opacity: 0.5 }]}>
               <T style={{ flex: 1 }}>{on ? "On" : "Off"}</T>

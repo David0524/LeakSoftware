@@ -9,6 +9,7 @@ import {
 import {
   assignableRoles,
   canMakeJobs,
+  homeMapStatus,
   requiresFinishPhoto,
   requiresFinishedChecklist,
   roleLabel,
@@ -16,6 +17,8 @@ import {
   teamOrder,
 } from "@leakbook/core";
 import { ColorPicker, MemberSwitch } from "@/components/team-controls";
+import { StartFromForm } from "@/components/start-from";
+import { loadStarts } from "@/server/member-start";
 import { TechDot } from "@/components/tech-dot";
 import { CompleteJobForm, JobVisibilityForm } from "@/components/job-visibility";
 import {
@@ -151,7 +154,7 @@ interface Invite {
 export default async function TeamSettingsPage() {
   const office = await getOffice();
   const supabase = await createClient();
-  const [team, { data: invites }, origin, company, profiles] = await Promise.all([
+  const [team, { data: invites }, origin, company, profiles, starts] = await Promise.all([
     getTeam(office),
     supabase
       .from("invite")
@@ -164,7 +167,10 @@ export default async function TeamSettingsPage() {
     siteOrigin(),
     getCompany(office),
     listConfig<Profile>(office, "team_profile"),
+    // Where each person's day starts (owners and admins see everyone's).
+    loadStarts(supabase, office.company.id, { userId: office.user.id, manager: true }),
   ]);
+  const startOf = new Map(starts.map((s) => [s.user_id, s]));
   const profileOf = new Map(profiles.filter((p) => p.user_id).map((p) => [p.user_id!, p]));
   const others = profiles.filter((p) => !p.user_id).sort((a, b) => a.name.localeCompare(b.name));
   const open = (invites ?? []) as Invite[];
@@ -209,6 +215,13 @@ export default async function TeamSettingsPage() {
       >
         <div className="space-y-6">
           <ProfileFields profile={profile} user={m.user_id} name={m.name} email={m.email} />
+          <StartFromForm
+            id={m.membership_id}
+            user={m.user_id}
+            startFrom={startOf.get(m.user_id)?.start_from === "home" ? "home" : "shop"}
+            homeAddress={startOf.get(m.user_id)?.home_address ?? ""}
+            missing={homeMapStatus(startOf.get(m.user_id)) === "missing"}
+          />
           <SettingsForm action={updateMember} submit="Save Role" full>
             <input type="hidden" name="id" value={m.membership_id} />
             <input type="hidden" name="status" value={m.status} />

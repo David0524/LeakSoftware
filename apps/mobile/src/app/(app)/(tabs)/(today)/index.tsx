@@ -17,9 +17,12 @@ import {
   propertyLocation,
   routingSettings,
   workDay,
+  startLegLabel,
+  backLegLabel,
 } from "@leakbook/core";
 import { inRouteOrderViews, stopLockTag, useJobViews, type JobView } from "../../../../data/jobs";
 import { useDriveTimes, useTeam } from "../../../../data/schedule";
+import { useRouteStart } from "../../../../data/memberStarts";
 import { useLine } from "../../../../data/texting";
 import { useWeather } from "../../../../data/weather";
 import { GettingStarted } from "../../../../features/today/GettingStarted";
@@ -154,12 +157,9 @@ export default function Today() {
   const myName = meProfile?.full_name || meProfile?.email || "your tech";
 
   const settings = useMemo(() => routingSettings(company.settings), [company.settings]);
-  const depotAt = company as { latitude?: number | null; longitude?: number | null };
-  const depot = useMemo(
-    () => propertyLocation(depotAt),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the shop's coordinates
-    [depotAt.latitude, depotAt.longitude],
-  );
+  // Where this tech's day starts and ends: the shop, or their home (owner, 2026-10-21).
+  const start = useRouteStart(company, shownTech);
+  const depot = start.at;
   const line = useLine(company.id);
   const weather = useWeather((company as { postal_code?: string | null }).postal_code);
   // Kept between renders (owner, 2026-10-20: smooth), so the card's rule and the day's drive
@@ -270,7 +270,7 @@ export default function Today() {
       <View key={j.id} style={styles.stopWrap}>
         {withLeg ? (
           <Leg
-            text={`${durationLabel(summary.legs[i] ?? 0)} ${i === 0 ? "from the shop" : "drive"}`}
+            text={`${durationLabel(summary.legs[i] ?? 0)} ${i === 0 ? startLegLabel(start.label) : "drive"}`}
           />
         ) : null}
         <Stop
@@ -394,6 +394,7 @@ export default function Today() {
             <T muted style={{ marginBottom: space["4"] - space["1"] }}>
               {stops.length} {stops.length === 1 ? "stop" : "stops"} ·{" "}
               {durationLabel(summary.driveMin)} driving
+              {start.label === "home" ? ` · ${startLegLabel("home")}` : null}
             </T>
             {hero ? (
               <TodayHeroCard
@@ -446,7 +447,7 @@ export default function Today() {
               ? doneStops.map((j) => stopRow(j, false))
               : null}
             {rest.map((j) => stopRow(j, true))}
-            <Leg text={`${durationLabel(backLeg)} back to the shop`} />
+            <Leg text={`${durationLabel(backLeg)} ${backLegLabel(start.label)}`} />
           </View>
         )}
       </SwipeNav>

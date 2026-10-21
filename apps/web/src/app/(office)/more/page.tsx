@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { NOTIFICATION_KINDS, notificationOn } from "@leakbook/core";
+import { NOTIFICATION_KINDS, START_FROM_COPY, notificationOn } from "@leakbook/core";
 import { signOut } from "@/app/actions/auth";
 import { showTipsAgain } from "@/app/actions/walkthrough";
 import { DeleteAccount } from "@/components/delete-account";
@@ -13,6 +13,7 @@ import { getCompany } from "@/lib/data";
 import { officeLinks } from "@/lib/nav";
 import { createClient } from "@/lib/supabase/server";
 import { CONTACT_EMAIL } from "@/lib/site";
+import { memberStartOf } from "@/server/member-start";
 
 export const metadata: Metadata = { title: "More · Sundeck Pro" };
 
@@ -24,13 +25,15 @@ export default async function MorePage() {
   const office = await getOffice();
   const company = await getCompany(office);
   const rest = officeLinks(office.isManager, company.settings).slice(4);
-  const { data: profile } = await (
-    await createClient()
-  )
-    .from("profile")
-    .select("two_step, notification_prefs")
-    .eq("id", office.user.id)
-    .maybeSingle();
+  const db = await createClient();
+  const [{ data: profile }, start] = await Promise.all([
+    db
+      .from("profile")
+      .select("two_step, notification_prefs")
+      .eq("id", office.user.id)
+      .maybeSingle(),
+    memberStartOf(db, office.company.id, office.user.id),
+  ]);
   const twoStep = Boolean(profile?.two_step);
   const saved = (await cookies()).get("lb_maps")?.value;
   const maps = saved === "apple" || saved === "google" ? saved : "auto";
@@ -44,6 +47,12 @@ export default async function MorePage() {
           ))}
         </Grouped>
         <Grouped title="Your account">
+          <Row
+            href="/more/profile"
+            label="My Profile"
+            value={start?.start_from === "home" ? START_FROM_COPY.home : START_FROM_COPY.shop}
+            detail={START_FROM_COPY.field}
+          />
           <Row
             href="/more/notifications"
             label="Notifications"

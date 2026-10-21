@@ -24,18 +24,22 @@ public func clearingLocation(_ values: Row, before: Row?, shop: Bool = false) ->
     return (out, true)
 }
 
-/// A pin to find: a pool (`propertyId`), or the shop.
+/// A pin to find: a pool (`propertyId`), a team member's home (`homeUserId`, for starting the
+/// day from home), or the shop.
 public struct LocateRequest: Codable, Equatable, Sendable {
     public var companyId: String
     public var propertyId: String?
+    public var homeUserId: String?
 
-    public init(companyId: String, propertyId: String?) {
+    public init(companyId: String, propertyId: String?, homeUserId: String? = nil) {
         self.companyId = companyId
         self.propertyId = propertyId
+        self.homeUserId = homeUserId
     }
 
     var body: JSONValue {
-        propertyId.map { ["company_id": .string(companyId), "property_id": .string($0)] }
+        if let homeUserId { return ["company_id": .string(companyId), "home_user_id": .string(homeUserId)] }
+        return propertyId.map { ["company_id": .string(companyId), "property_id": .string($0)] }
             ?? ["company_id": .string(companyId), "shop": true]
     }
 }

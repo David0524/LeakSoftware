@@ -15,6 +15,8 @@
         case settingsPage(SettingsPage)
         case sync
         case myPhone
+        /// My Profile: where your day starts (owner, 2026-10-21).
+        case myProfile
         case notifications
         case dashboard
         /// Jobs on one filter (the dashboard's status rows).
@@ -42,6 +44,7 @@
             case .settingsPage(let page): SettingsListScreen(page: page)
             case .sync: SettingsView(showWelcome: {}, showReauth: showReauth)
             case .myPhone: MyPhoneScreen()
+            case .myProfile: MyProfileScreen()
             case .notifications: NotificationsScreen()
             case .dashboard: DashboardScreen()
             case .jobs(let filter): JobsView(filter: filter)
@@ -169,8 +172,20 @@
             }
         }
 
+        /// My Profile's value: where your day starts.
+        private var startValue: String {
+            guard let company = session.company, let id = session.user?.id else { return StartFromCopy.shop }
+            return memberStart(sync.store, companyId: company.id, userId: id)?.startFrom == "home"
+                ? StartFromCopy.home : StartFromCopy.shop
+        }
+
         @ViewBuilder private var account: some View {
             Section {
+                NavigationLink(value: MoreRoute.myProfile) {
+                    ListRow("My Profile", detail: StartFromCopy.field, value: startValue)
+                }
+                .surfaceRow()
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 16))
                 NavigationLink(value: MoreRoute.notifications) {
                     ListRow(
                         NotificationPrefsForm.title, detail: NotificationPrefsForm.rowDetail,
@@ -328,6 +343,59 @@
                 } else {
                     result = (reply["message"]?.string ?? "We’ll email you when it’s done.", false)
                 }
+            } catch {
+                result = (String(describing: error), true)
+            }
+        }
+    }
+
+    /// My Profile (owner, 2026-10-21; the website's More › My Profile): where your day starts,
+    /// The Shop or Home, saved through the sync layer to your own member_start row.
+    struct MyProfileScreen: View {
+        @Environment(Session.self) private var session
+        @Environment(SyncService.self) private var sync
+        @Environment(AppEnvironment.self) private var app
+        @State private var form = StartFromForm()
+        @State private var original = StartFromForm()
+        @State private var saved: MemberStart?
+        @State private var loaded = false
+        @State private var result: (text: String, error: Bool)?
+
+        var body: some View {
+            ScreenScroll {
+                StartFromSection(form: $form, saved: saved, userId: session.user?.id ?? "")
+                if let result { Notice(kind: result.error ? .error : .success, text: result.text) }
+                Button(ProfileText.save) { save() }
+                    .buttonStyle(.primary(fullWidth: true, size: .field))
+                    .disabled(form == original)
+            }
+            .navigationTitle("My Profile")
+            .navigationBarTitleDisplayMode(.large)
+            .onAppear { if !loaded { load() } }
+            .onChange(of: sync.revision) { _, _ in
+                // The lookup's answer comes down with a sync: show it, keeping unsaved edits.
+                if form == original { load() } else { saved = current() }
+            }
+        }
+
+        private func current() -> MemberStart? {
+            guard let company = session.company, let id = session.user?.id else { return nil }
+            return memberStart(sync.store, companyId: company.id, userId: id)
+        }
+
+        private func load() {
+            loaded = true
+            saved = current()
+            form = StartFromForm(saved)
+            original = form
+        }
+
+        private func save() {
+            guard let company = session.company, let id = session.user?.id else { return }
+            do {
+                try StartFromWrites.save(sync, companyId: company.id, userId: id, form, locate: app.locate)
+                load()
+                result = ("Saved.", false)
             } catch {
                 result = (String(describing: error), true)
             }

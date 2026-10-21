@@ -507,8 +507,15 @@
         @State private var confirmOff = false
         @State private var error: String?
         @State private var loaded = false
+        @Environment(AppEnvironment.self) private var app
+        /// Start My Day From (owner, 2026-10-21): owners and admins set anyone's.
+        @State private var start = StartFromForm()
+        @State private var startOriginal = StartFromForm()
+        @State private var startSaved: MemberStart?
 
-        private var dirty: Bool { form != original || role != member.role || color != member.color }
+        private var dirty: Bool {
+            form != original || role != member.role || color != member.color || start != startOriginal
+        }
 
         var body: some View {
             FormSheet(title: member.name, dirty: dirty) {
@@ -577,6 +584,7 @@
                             .padding(.horizontal, 16)
                     }
                 }
+                StartFromSection(form: $start, saved: startSaved, userId: member.userId)
                 if let error { Notice(kind: .error, text: error) }
                 Button(ProfileText.save) { save() }
                     .buttonStyle(.primary(fullWidth: true, size: .field))
@@ -597,6 +605,11 @@
                 role = member.role
                 color = member.color
                 active = member.active
+                if let company = session.company {
+                    startSaved = memberStart(sync.store, companyId: company.id, userId: member.userId)
+                }
+                start = StartFromForm(startSaved)
+                startOriginal = start
             }
         }
 
@@ -627,6 +640,10 @@
                         sync, companyId: company.id, membershipId: member.id,
                         role: owner && role != member.role ? role : nil,
                         color: color != member.color ? color : nil)
+                    if start != startOriginal {
+                        try StartFromWrites.save(
+                            sync, companyId: company.id, userId: member.userId, start, locate: app.locate)
+                    }
                 }
                 done("Saved.")
                 dismiss()

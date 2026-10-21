@@ -15,7 +15,7 @@ import { requireManager } from "@/lib/auth";
 import { getTeam } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { driveTimes } from "@/server/routing";
-import { routeContext } from "@/server/route-days";
+import { routeContext, startPoints } from "@/server/route-days";
 
 // Routes (owner, 2026-10-20, docs/plans/route-maps.md part 3): which weekday each pool customer
 // is serviced on, and by whom. Saving a plan's day or tech re-makes its coming visits
@@ -204,7 +204,7 @@ export async function suggestDays(input: {
   });
   const place = all.filter((c) => wanted.has(c.planId)).map(asPlan);
   const keep = all.filter((c) => !wanted.has(c.planId)).map(asPlan);
-  const points = [ctx.depot, ...all.map((c) => c.location)].filter(
+  const points = [...startPoints(ctx), ...all.map((c) => c.location)].filter(
     (p): p is { lat: number; lng: number } => !!p,
   );
   const drive = await driveTimes(await createClient(), office.company.id, points, { live: false });
@@ -214,6 +214,8 @@ export async function suggestDays(input: {
     techs,
     workDays: ctx.settings.workDays,
     depot: ctx.depot,
+    // Each tech's days start and end at their own start (home or the shop).
+    starts: ctx.starts,
     day: workDay(ctx.settings),
     drive,
   });

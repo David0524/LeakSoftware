@@ -7,6 +7,9 @@
 
     /// The warning row in a job's Pool group: "Not found on the map" and what to do about it.
     struct NotOnMapRow: View {
+        /// What to do about it (a home address says the day starts at the shop meanwhile).
+        var detail = NotOnMap.detail
+
         var body: some View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "exclamationmark.triangle")
@@ -17,7 +20,7 @@
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(NotOnMap.title).textRole(.bodyEmphasis).foregroundStyle(Color.text)
-                    Text(NotOnMap.detail).textRole(.secondary).foregroundStyle(Color.textMuted)
+                    Text(detail).textRole(.secondary).foregroundStyle(Color.textMuted)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }

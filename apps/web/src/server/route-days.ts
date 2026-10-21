@@ -11,11 +11,13 @@ import {
   routingSettings,
   seesAllJobs,
   scheduleBounds,
+  startFor,
   workDay,
   zonedTimeToIso,
   type DaySummary,
   type DriveFn,
   type LatLng,
+  type RouteStart,
   type RoutingSettings,
 } from "@leakbook/core";
 import type { Office } from "@/lib/auth";
@@ -29,6 +31,7 @@ import {
   type TeamMember,
 } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
+import { loadStarts, type StartRow } from "./member-start";
 import { driveTimes, geocodeAddress, routingConfigured } from "./routing";
 
 // Routes as the schedule, Today, and the planning actions see them: each tech's jobs for a
@@ -37,8 +40,14 @@ import { driveTimes, geocodeAddress, routingConfigured } from "./routing";
 export interface RouteContext {
   timeZone: string;
   settings: RoutingSettings;
+  /** The shop. Each tech's route starts at techStart(ctx, techId), which may be their home. */
   depot: LatLng | null;
   depotAddress: string;
+  /**
+   * The member_start rows this person may route with: everyone's for owners and admins, only
+   * their own for a tech (everyone else then starts at the shop).
+   */
+  starts: StartRow[];
   shopName: string;
   shopZip: string | null;
   /** False for a tech when the owner limits techs to their own jobs. */
@@ -53,13 +62,19 @@ export interface RouteContext {
 export const shopToday = (office: Office) => localDate(new Date(), office.company.timezone);
 
 export async function routeContext(office: Office): Promise<RouteContext> {
-  const company = await getCompany(office);
+  const [company, starts] = await Promise.all([
+    getCompany(office),
+    createClient().then((db) =>
+      loadStarts(db, office.company.id, { userId: office.user.id, manager: office.isManager }),
+    ),
+  ]);
   const now = new Date();
   return {
     timeZone: office.company.timezone,
     settings: routingSettings(company.settings),
     depot: propertyLocation(company as { latitude?: number | null; longitude?: number | null }),
     depotAddress: formatAddress(company as unknown as Parameters<typeof formatAddress>[0]),
+    starts,
     shopName: company.name,
     shopZip: (company.postal_code as string | null) ?? null,
     seesAll: seesAllJobs(office.company.role, company.settings),
@@ -69,10 +84,27 @@ export async function routeContext(office: Office): Promise<RouteContext> {
   };
 }
 
+/** Where this tech's days start and end: their home when set and on the map, else the shop. */
+export function techStart(
+  ctx: Pick<RouteContext, "depot" | "starts">,
+  techId: string | null | undefined,
+): RouteStart {
+  return startFor(techId, ctx.starts, ctx.depot);
+}
+
+/** Every place a day can start from (the shop and each readable home), for drive times. */
+export function startPoints(ctx: Pick<RouteContext, "depot" | "starts">): LatLng[] {
+  return [ctx.depot, ...ctx.starts.map((s) => techStart(ctx, s.user_id).at)].filter(
+    (p): p is LatLng => !!p,
+  );
+}
+
 export interface DayRoute {
   techId: string;
   techName: string;
   date: string;
+  /** Where this tech's day starts and ends (home or the shop). */
+  start: RouteStart;
   /** In route order; includes jobs where this tech is the second tech. */
   jobs: JobRow[];
   summary: DaySummary;
@@ -123,17 +155,20 @@ export async function loadRoutes(
   const lookups = await createClient();
   if (live) await locateStops(office, jobs, lookups);
   else after(() => locateStops(office, jobs, lookups));
-  const points = [ctx.depot, ...jobs.map((j) => propertyLocation(j.property))].filter(
-    (p): p is LatLng => !!p,
-  );
+  const points = [
+    ...startPoints(ctx),
+    ...jobs.map((j) => propertyLocation(j.property)).filter((p): p is LatLng => !!p),
+  ];
   const drive = await driveTimes(await createClient(), office.company.id, points, { live });
   const routes = new Map<string, DayRoute>();
   for (const [key, d] of byKey) {
     const ordered = inRouteOrder(d.jobs);
+    const start = techStart(ctx, d.techId);
     routes.set(key, {
       techId: d.techId,
       techName: names.get(d.techId) ?? "Teammate",
       date: d.date,
+      start,
       jobs: ordered,
       summary: daySummary(
         ordered.map((j) => ({
@@ -142,7 +177,7 @@ export async function loadRoutes(
           startMin: j.scheduled_start ? localMinutes(j.scheduled_start, ctx.timeZone) : null,
           endMin: j.scheduled_end ? localMinutes(j.scheduled_end, ctx.timeZone) : null,
         })),
-        ctx.depot,
+        start.at,
         workDay(ctx.settings),
         drive,
       ),

@@ -35,6 +35,7 @@ import {
   propertyLocation,
   scheduleDays,
   seesAllJobs,
+  startFor,
   stopDone,
   suggestTimes,
   suggestionDates,
@@ -43,6 +44,7 @@ import {
   type SuggestedTime,
 } from "@leakbook/core";
 import { stopLockTag, useJobViews, type JobView } from "../../data/jobs";
+import { useMemberStarts } from "../../data/memberStarts";
 import { useVisitCleanings } from "../maintenance/Cleanings";
 import {
   needsATime,
@@ -134,7 +136,17 @@ export function ScheduleScreen() {
   const canAdd = canMakeJobs(role, company.settings);
   const seesAll = seesAllJobs(role, company.settings);
   // The shop's planning context, kept between renders; planning reads a fresh one (with now).
-  const ctx = useMemo(() => planContext(company), [company]);
+  // Where each tech's day starts: the shop, or their home (owner, 2026-10-21).
+  const starts = useMemberStarts(company.id);
+  const ctx = useMemo(
+    () => planContext(company),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- planContext reads the starts
+    [company, starts],
+  );
+  const startOf = useCallback(
+    (techId: string | null | undefined) => startFor(techId, ctx.starts, ctx.depot),
+    [ctx],
+  );
   const live = () => planContext(company);
   const routing = useRoutingOn();
   const tz = ctx.timeZone;
@@ -249,9 +261,10 @@ export function ScheduleScreen() {
   const points = useMemo(
     () => [
       depotLat != null && depotLng != null ? { lat: depotLat, lng: depotLng } : null,
+      ...starts.map((s) => startOf(s.user_id).at),
       ...[...routes.values()].flat().map((j) => propertyLocation(j.property)),
     ],
-    [routes, depotLat, depotLng],
+    [routes, depotLat, depotLng, starts, startOf],
   );
   const { drive } = useDriveTimes(company.id, points);
   const hours = workDay(ctx.settings);
@@ -305,6 +318,7 @@ export function ScheduleScreen() {
 
   const routeFor = (techId: string, title: string, d: string): Route => {
     const list = routes.get(routeKey(techId, d)) ?? [];
+    const start = startOf(techId);
     const summary = daySummary(
       list.map((j) => ({
         id: j.id,
@@ -312,7 +326,7 @@ export function ScheduleScreen() {
         startMin: j.scheduled_start ? localMinutes(j.scheduled_start, tz) : null,
         endMin: j.scheduled_end ? localMinutes(j.scheduled_end, tz) : null,
       })),
-      ctx.depot,
+      start.at,
       hours,
       drive,
     );
@@ -323,6 +337,7 @@ export function ScheduleScreen() {
       title,
       color: team.find((t) => t.user_id === techId)?.color ?? null,
       date: d,
+      startLabel: start.label,
       stops: list.map((j, i) =>
         toStop(j, techId, summary.legs[i] ?? null, summary.short[i] ?? 0, d),
       ),
@@ -369,6 +384,7 @@ export function ScheduleScreen() {
       depotLat,
       depotLng,
       settingsKey,
+      startOf,
     ],
   );
   // Week: every tech in view's route for each day (team and week spec section 6).
@@ -392,6 +408,7 @@ export function ScheduleScreen() {
       depotLat,
       depotLng,
       settingsKey,
+      startOf,
     ],
   );
   const weekUnassigned = useMemo(
@@ -411,18 +428,18 @@ export function ScheduleScreen() {
     view === "day" && shownRoutes.length === 1 && shownRoutes[0]!.stops.length
       ? shownRoutes[0]!
       : null;
-  const leadMap = useMemo(
-    () =>
-      lead
-        ? dayMap({
-            stops: lead.stops.map((s) => ({ id: s.id, location: s.location, status: s.status })),
-            depot: depotLat != null && depotLng != null ? { lat: depotLat, lng: depotLng } : null,
-            date: lead.date,
-            today,
-          })
-        : null,
-    [lead, depotLat, depotLng, today],
-  );
+  const leadMap = useMemo(() => {
+    if (!lead) return null;
+    // The start pin: a house labeled Home for someone who starts there.
+    const start = startOf(lead.techId);
+    return dayMap({
+      stops: lead.stops.map((s) => ({ id: s.id, location: s.location, status: s.status })),
+      depot: start.at,
+      startLabel: start.label,
+      date: lead.date,
+      today,
+    });
+  }, [lead, startOf, today]);
   const leadStops = useMemo(
     () => lead?.stops.map((s) => ({ id: s.id, time: s.time, customer: s.customer })) ?? [],
     [lead],
@@ -759,10 +776,16 @@ export function ScheduleScreen() {
 
   /** The day in the phone's maps app, as the secondary button beside Optimize. */
   const mapsButton = (r: Route) => {
+    const start = startOf(r.techId);
     const directions = r.stops.length
       ? dayDirections(
           app,
-          ctx.depot || depotAddress ? { address: depotAddress, location: ctx.depot } : null,
+          // From home by its map location only (the street never shows).
+          start.label === "home"
+            ? { address: "", location: start.at }
+            : ctx.depot || depotAddress
+              ? { address: depotAddress, location: ctx.depot }
+              : null,
           r.stops.map((s) => ({
             address: s.address,
             location: s.location,

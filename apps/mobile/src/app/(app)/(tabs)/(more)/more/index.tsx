@@ -1,11 +1,12 @@
 import Constants from "expo-constants";
 import { router } from "expo-router";
-import { MAPS_LABELS, isManagerRole, offersPool } from "@leakbook/core";
+import { MAPS_LABELS, START_FROM_COPY, isManagerRole, offersPool } from "@leakbook/core";
 import { useState, useSyncExternalStore } from "react";
 import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, View } from "react-native";
 import { notificationSummary, useNotificationPrefs } from "../../../../../data/notificationPrefs";
 import { call } from "../../../../../data/reports";
 import { API_URL } from "../../../../../lib/config";
+import { useMemberStart } from "../../../../../data/memberStarts";
 import { useSession, useSyncStatus } from "../../../../../state/session";
 import { useWalkthrough } from "../../../../../state/walkthrough";
 import { showGettingStartedAgain } from "../../../../../features/today/GettingStarted";
@@ -49,6 +50,7 @@ export default function More() {
   const status = useSyncStatus();
   const sync = syncSummary(status);
   const manager = isManagerRole(membership?.role);
+  const myStart = useMemberStart(company?.id ?? "", user?.id);
   const scheme = useSyncExternalStore(appearance.subscribe, () => appearance.scheme);
   const [directions, setDirections] = useDirectionsChoice();
   const team = services.sync.team();
@@ -104,6 +106,14 @@ export default function More() {
               onPress={() => open("/more/two-step")}
             />
           ) : null}
+          {/* Where your day starts (owner, 2026-10-21: "Techs/owners need to be able to set if
+              they start their day from home or from the shop"). */}
+          <ListRow
+            title="My Profile"
+            subtitle={START_FROM_COPY.field}
+            detail={myStart?.start_from === "home" ? START_FROM_COPY.home : START_FROM_COPY.shop}
+            onPress={() => router.push("/more/profile")}
+          />
           <ListRow title="My Mobile Number" onPress={() => router.push("/more/phone")} />
           {API_URL ? (
             <ListRow

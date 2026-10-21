@@ -5,13 +5,13 @@ import { cx } from "./ui";
  * A pool whose address wasn't found on the map (owner, 2026-10-20: "we need an indicator for
  * when address doesn't register"), as a warning row in its Pool group.
  */
-export function NotOnMapRow() {
+export function NotOnMapRow({ detail = NOT_ON_MAP.detail }: { detail?: string } = {}) {
   return (
     <li className="flex gap-3 px-4 py-3" data-testid="not-on-map">
       <WarningIcon className="mt-0.5 size-5 shrink-0 text-status-warning" />
       <span className="min-w-0 flex-1">
         <span className="block font-semibold">{NOT_ON_MAP.title}</span>
-        <span className="block text-[0.9375rem] text-text-muted">{NOT_ON_MAP.detail}</span>
+        <span className="block text-[0.9375rem] text-text-muted">{detail}</span>
       </span>
     </li>
   );

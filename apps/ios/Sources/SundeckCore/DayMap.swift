@@ -31,12 +31,16 @@ public struct MapPin: Codable, Equatable, Sendable {
     public var tone: PinTone
     /// The stop's job (none for the shop).
     public var id: String?
+    /// On the start pin (tone shop) of someone who starts from home: drawn as a house labeled
+    /// "Home" (`StartFromCopy.homePin`), never the street. nil otherwise.
+    public var home: Bool?
 
-    public init(label: String, at: LatLng, tone: PinTone, id: String? = nil) {
+    public init(label: String, at: LatLng, tone: PinTone, id: String? = nil, home: Bool? = nil) {
         self.label = label
         self.at = at
         self.tone = tone
         self.id = id
+        self.home = home
     }
 }
 
@@ -61,11 +65,17 @@ public struct DayMapPins: Codable, Equatable, Sendable {
     public var missing: Int
 }
 
-/// Pins for a day: the shop, then each located stop numbered by its place in the day (so the
-/// numbers match the list), toned done, current (the stop you're on), or still to do.
-public func dayMapPins(stops: [MapStop], depot: LatLng?, currentId: String? = nil) -> DayMapPins {
+/// Pins for a day: the start (the shop, or home for someone who starts there), then each located
+/// stop numbered by its place in the day (so the numbers match the list), toned done, current
+/// (the stop you're on), or still to do. `depot` is the tech's start (`startFor(…).at`);
+/// `startLabel` `.home` draws it as Home.
+public func dayMapPins(
+    stops: [MapStop], depot: LatLng?, currentId: String? = nil, startLabel: RouteStartLabel? = nil
+) -> DayMapPins {
     var pins: [MapPin] = []
-    if let depot { pins.append(MapPin(label: "", at: depot, tone: .shop)) }
+    if let depot {
+        pins.append(MapPin(label: "", at: depot, tone: .shop, home: startLabel == .home ? true : nil))
+    }
     var missing = 0
     for (i, s) in stops.enumerated() {
         guard let location = s.location else {
@@ -78,10 +88,17 @@ public func dayMapPins(stops: [MapStop], depot: LatLng?, currentId: String? = ni
     return DayMapPins(pins: Array(pins.prefix(mapPinLimit)), missing: missing)
 }
 
-/// The pins as the map address's `pins` value: "s:33.45,-112.07;t1:33.5,-112.1;…".
+/// A home start pin's code ("h:33.4,-111.8"); it decodes as the start pin with `home`.
+private let homeCode = "h"
+
+/// The pins as the map address's `pins` value: "s:33.45,-112.07;t1:33.5,-112.1;…" (a home start
+/// is "h:…").
 public func encodePins(_ pins: [MapPin]) -> String {
-    pins.map { "\($0.tone.code)\($0.label):\(ECMA.toFixed($0.at.lat, 5)),\(ECMA.toFixed($0.at.lng, 5))" }
-        .joined(separator: ";")
+    pins.map {
+        let code = $0.home == true && $0.tone == .shop ? homeCode : $0.tone.code
+        return "\(code)\($0.label):\(ECMA.toFixed($0.at.lat, 5)),\(ECMA.toFixed($0.at.lng, 5))"
+    }
+    .joined(separator: ";")
 }
 
 /// A pin read back from a map address (no job id).
@@ -89,11 +106,20 @@ public struct DecodedPin: Codable, Equatable, Sendable {
     public var tone: PinTone
     public var label: String
     public var at: LatLng
+    /// A home start pin ("h:"); nil otherwise.
+    public var home: Bool?
+
+    public init(tone: PinTone, label: String, at: LatLng, home: Bool? = nil) {
+        self.tone = tone
+        self.label = label
+        self.at = at
+        self.home = home
+    }
 }
 
 // ASCII digits only, anchored to the whole part, as JavaScript's /^…$/ without flags.
 private let pinPattern =
-    #"\A([stcd])([0-9]{0,3}):(-?[0-9]{1,2}(?:\.[0-9]{1,6})?),(-?[0-9]{1,3}(?:\.[0-9]{1,6})?)\z"#
+    #"\A([stcdh])([0-9]{0,3}):(-?[0-9]{1,2}(?:\.[0-9]{1,6})?),(-?[0-9]{1,3}(?:\.[0-9]{1,6})?)\z"#
 
 /// The pins back from the address, or nil when it isn't valid.
 public func decodePins(_ value: String) -> [DecodedPin]? {
@@ -108,6 +134,11 @@ public func decodePins(_ value: String) -> [DecodedPin]? {
         let group = { (i: Int) in ns.substring(with: m.range(at: i)) }
         guard let lat = Double(group(3)), let lng = Double(group(4)) else { return nil }
         if abs(lat) > 90 || abs(lng) > 180 { return nil }
+        if group(1) == homeCode {
+            if !group(2).isEmpty { return nil }
+            out.append(DecodedPin(tone: .shop, label: "", at: LatLng(lat: lat, lng: lng), home: true))
+            continue
+        }
         guard let tone = PinTone(code: group(1)) else { return nil }
         out.append(DecodedPin(tone: tone, label: group(2), at: LatLng(lat: lat, lng: lng)))
     }

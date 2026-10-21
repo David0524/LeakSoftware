@@ -149,7 +149,7 @@
                 let ctx = scheduleContext(sync.store, company: company, userId: user.id)
                 drive = await cachedDriveTimes(
                     app, companyId: company.id,
-                    keys: routePoints(scheduleJobs(sync.store, companyId: company.id), depot: ctx.depot))
+                    keys: routePoints(scheduleJobs(sync.store, companyId: company.id), starts: ctx.startPoints))
             }
             .sheet(item: $moving) { target in
                 if let board {
@@ -362,6 +362,7 @@
                     Text(
                         route.map {
                             "\($0.jobs.count) \($0.jobs.count == 1 ? "stop" : "stops") · \(durationLabel($0.summary.driveMin))"
+                                + (board.ctx.start(for: t.id).label == .home ? " · \(startLegLabel(.home))" : "")
                         } ?? "Nothing scheduled"
                     )
                     .textRole(.secondary).foregroundStyle(Color.textMuted).monospacedDigit()
@@ -884,9 +885,10 @@
                 if view == .week { toAdd = customersToAdd(plans, techIds: team.filter(\.active).map(\.id)) }
             }
             if let route = leadRoute {
+                let start = ctx.start(for: route.techId)
                 leadMap = dayMapModel(
-                    jobs: route.jobs, depot: ctx.depot, date: self.date, today: ctx.today, tech: route.techName,
-                    timeZone: ctx.timeZone)
+                    jobs: route.jobs, depot: start.at, date: self.date, today: ctx.today, tech: route.techName,
+                    timeZone: ctx.timeZone, startLabel: start.label)
             }
         }
 
@@ -1336,7 +1338,8 @@
                 if let route, !jobs.isEmpty {
                     ForEach(Array(jobs.enumerated()), id: \.element.id) { i, j in
                         LegLine(
-                            minutes: route.summary.legs[routeIndex: i] ?? 0, label: i == 0 ? "from the shop" : "drive",
+                            minutes: route.summary.legs[routeIndex: i] ?? 0,
+                            label: i == 0 ? startLegLabel(board.ctx.start(for: tech.id).label) : "drive",
                             short: route.summary.short[routeIndex: i] ?? 0, inset: 31)
                         ScheduleStopCard(
                             number: i + 1, job: j,
@@ -1348,7 +1351,9 @@
                         )
                         .scheduleDropTarget(cornerRadius: CGFloat(Radius.card)) { onDrop($0, i) }
                     }
-                    LegLine(minutes: route.summary.backLegMin, label: "back to the shop", short: 0, inset: 31)
+                    LegLine(
+                        minutes: route.summary.backLegMin, label: backLegLabel(board.ctx.start(for: tech.id).label),
+                        short: 0, inset: 31)
                 }
             }
             .accessibilityElement(children: .contain)
@@ -1405,7 +1410,12 @@
             let jobs = route.jobs
             VStack(alignment: .leading, spacing: 4) {
                 Text(
-                    "\(jobs.count) \(jobs.count == 1 ? "stop" : "stops") · \(durationLabel(route.summary.driveMin)) driving"
+                    [
+                        "\(jobs.count) \(jobs.count == 1 ? "stop" : "stops")",
+                        "\(durationLabel(route.summary.driveMin)) driving",
+                        // Someone who starts from home: their day's driving is counted from there.
+                        board.ctx.start(for: route.techId).label == .home ? startLegLabel(.home) : nil,
+                    ].compactMap { $0 }.joined(separator: " · ")
                 )
                 .textRole(.secondary).foregroundStyle(Color.textMuted)
                 .monospacedDigit()
@@ -1420,7 +1430,7 @@
                         .accessibilityHint("Puts the stops in driving order")
                     }
                     if let link = dayDirections(
-                        app: board.mapsApp, origin: board.ctx.origin,
+                        app: board.mapsApp, origin: board.ctx.origin(for: route.techId),
                         stops: jobs.map { (place: $0.place, done: $0.done) })
                     {
                         Button {

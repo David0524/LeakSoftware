@@ -36,6 +36,19 @@ describe("day map", () => {
     );
   });
 
+  it("starts at home for someone who starts there (encoded h:)", () => {
+    const home = { lat: 33.4, lng: -111.8 };
+    const m = dayMap({
+      stops: [{ id: "1", location: a, status: "scheduled" }],
+      depot: home,
+      startLabel: "home",
+      date: "2026-10-21",
+      today: "2026-10-20",
+    });
+    expect(m.pins).toBe("h:33.40000,-111.80000;t1:33.50000,-112.10000");
+    expect(m.located).toBe(1);
+  });
+
   it("has no map when no stop has a location", () => {
     const m = dayMap({
       stops: [{ id: "1", location: null, status: "scheduled" }],
