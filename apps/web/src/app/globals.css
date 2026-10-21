@@ -165,6 +165,14 @@ header:not(.glass-bar) :focus-visible {
   body:has([data-nav-brand]) [data-page-header]:not([data-stacked]) h1 {
     padding-left: 110px;
   }
+  /* Until NavBar has measured the title (before the page's script runs, as on a loading
+     screen), a word too wide for the room beside the logo is clipped at the title's edge, not
+     run past the page's; NavBar then moves the title to its own row. Sideways only, and with
+     room for the letters' overhang, so a title that fits looks the same. */
+  [data-page-header] h1 {
+    overflow-x: clip;
+    overflow-clip-margin: 0.5rem;
+  }
 }
 /* The phone navigation bar once the large title has scrolled under it. */
 /* iOS's bar material: content passes under it as a soft tint. More see-through or a strong
