@@ -210,12 +210,14 @@ export const pool: Cut = {
     {
       title: "The upsell",
       caption: "Spot a repair. Quote it on site.",
-      phone: {
-        ...iphone([
+      phone: iphone(
+        [
           { src: ios("pool-15-checklist-pump-noise"), at: 0 },
-          { src: web("pool-customer-quote"), at: 2.8, web: true, bar: navyBar },
-        ])!,
-      },
+          { src: ios("pool-17-pump-quote-draft"), at: 1.8 },
+          { src: ios("pool-18-pump-quote-sent"), at: 3.4 },
+        ],
+        { camera: [{ at: 4.4, zoom: 1.25, x: 201, y: 500 }] },
+      ),
     },
     {
       title: "Billing and the owner",
