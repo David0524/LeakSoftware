@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-21 (owner: "Merge it straight in. You got to start merging on your own going forward")
+- **Sessions merge their own finished work into the default branch** once checks and CI are green, after bringing the default branch's newer commits in first (CLAUDE.md, Checks before every commit).
+
 ## 2026-10-21 (owner: "Remove the 'Runs 28 min past the end of the day.'"; "I don't care about days running late. … times are pretty irrelevant in this business"; "make the techs slide horizontally"; "Yes, start clearing out going forward")
 
 - **No lateness warnings or clock times on all four platforms:**
