@@ -208,7 +208,7 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   await expect(tray.getByTestId("tray-job").filter({ hasText: name("tempe") })).toHaveCount(1);
 
   // 3b. Taking a job away from its tech puts it in Needs a Time, keeping its booked time.
-  // On a computer the stop is a one-line card (owner, 2026-10-20): Move… is in its menu.
+  // Move… is in the card's menu (docs/design/2026-10-21-schedule-card.md): right-click.
   // Bring Priya's column back into view first: a scroll that lands after the menu opens
   // closes it, as scrolling the page under any menu does.
   const zooLine = route
@@ -317,20 +317,42 @@ test("on a phone, a stop drags by its grip to another place in the day", async (
   await page.goto(url);
   const route = page.getByRole("region", { name: "Priya Shah" });
   await expect(route.getByTestId("stop")).toHaveCount(3);
-  // The card: its place in the route, the time and customer, the kind of visit as a pill, the
-  // address, and Move… beside the grip, both shown on a phone.
+  // The card (docs/design/2026-10-21-schedule-card.md): two lines, the time and customer, then
+  // the kind of visit and the street only; Move… is in its menu ("⋯"), not on the card.
   const tempe = route.getByRole("article", { name: `12:00 PM, ${name("tempe")}` });
-  await expect(tempe).toContainText("Leak detection");
-  await expect(tempe.getByTestId("address-link")).toContainText("3500 S Rural Rd");
-  await expect(tempe.getByRole("button", { name: "Move…" })).toBeVisible();
+  await expect(tempe).toContainText("Leak detection · 3500 S Rural Rd");
+  await expect(tempe).not.toContainText("85282");
+  await expect(tempe.getByRole("button", { name: "Move…" })).toHaveCount(0);
+  await expect(tempe.getByRole("button", { name: /^More: / })).toBeVisible();
   const grip = tempe.getByRole("button", { name: `Drag ${name("tempe")}` });
   await expect(grip).toBeVisible();
   const grip44 = (await grip.boundingBox())!;
   expect(grip44.width).toBeGreaterThanOrEqual(44);
   expect(grip44.height).toBeGreaterThanOrEqual(44);
-  // The address keeps most of the card's width (the grip sits on the top row).
-  const address = (await tempe.getByTestId("address-link").boundingBox())!;
-  expect(grip44.y + grip44.height).toBeLessThanOrEqual(address.y + 1);
+
+  // A plain drag on the card scrolls the page; it doesn't pick the job up (owner, 2026-10-21:
+  // "I can't scroll on a Scheduling tile").
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const card0 = (await tempe.boundingBox())!;
+  const room = await page.evaluate(
+    () => document.documentElement.scrollHeight - window.innerHeight,
+  );
+  if (room > 100 && card0.y + card0.height < 844) {
+    const cdp = await context.newCDPSession(page);
+    const x = card0.x + card0.width / 3;
+    const y = card0.y + card0.height / 2;
+    await cdp.send("Input.synthesizeScrollGesture", {
+      x,
+      y,
+      yDistance: -200,
+      gestureSourceType: "touch",
+      speed: 1200,
+    });
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(50);
+    await cdp.detach();
+    await expect(page.getByText("Moved.", { exact: true })).toHaveCount(0);
+    expect((await routeNames(page, "Priya Shah"))[2]).toBe(name("tempe"));
+  }
 
   // Press and hold the grip, then drag it above the first stop (touch events, as a finger).
   // The first and last stops on screen together (touch points are in the viewport).
@@ -350,7 +372,8 @@ test("on a phone, a stop drags by its grip to another place in the day", async (
   const y0 = from.y + from.height / 2;
   const y1 = first.y + 8;
   await touch("touchStart", x, y0);
-  await page.waitForTimeout(300);
+  // Held past the touch-and-hold (250 ms) before moving.
+  await page.waitForTimeout(400);
   for (let i = 1; i <= 20; i++) {
     await touch("touchMove", x, y0 + ((y1 - y0) * i) / 20);
     await page.waitForTimeout(16);

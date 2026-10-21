@@ -9,8 +9,10 @@ import {
   insertIndex,
   planDrop,
   scrolled,
+  slideFor,
   zoneAt,
   type DragItem,
+  type SlideState,
   type DropZone,
   type Slot,
 } from "../src/lib/scheduleDrag";
@@ -164,5 +166,38 @@ describe("auto-scroll near the edges", () => {
     expect(clampScroll(-10, 2000, 800)).toBe(0);
     expect(clampScroll(1500, 2000, 800)).toBe(1200);
     expect(clampScroll(50, 500, 800)).toBe(0);
+  });
+});
+
+describe("slideFor: the other stops make room as one is carried (owner, 2026-10-21)", () => {
+  const base = { closeGap: 70, openGap: 70 };
+  // A, B, C, D on route r; B (index 1) is carried.
+  const carrying = (target: { route: string; index: number } | null): SlideState => ({
+    ...base,
+    id: "B",
+    from: { route: "r", index: 1 },
+    target,
+  });
+  const shifts = (state: SlideState, route = "r") =>
+    (route === "r" ? ["A", "B", "C", "D"] : ["E", "F", "G"]).map((id, i) =>
+      slideFor(state, id, route, i),
+    );
+
+  it("keeps everything still while it hovers over its own place", () => {
+    expect(shifts(carrying({ route: "r", index: 1 }))).toEqual([0, 0, 0, 0]);
+  });
+  it("slides the stops it passes, so the gap is where it lands", () => {
+    // Down past C: C moves up into B's old place, D stays.
+    expect(shifts(carrying({ route: "r", index: 2 }))).toEqual([0, 0, -70, 0]);
+    // Up above A: A moves down.
+    expect(shifts(carrying({ route: "r", index: 0 }))).toEqual([70, 0, 0, 0]);
+  });
+  it("closes its old place and opens one on another day", () => {
+    expect(shifts(carrying({ route: "q", index: 0 }))).toEqual([0, 0, -70, -70]);
+    expect(shifts(carrying({ route: "q", index: 1 }), "q")).toEqual([0, 70, 70]);
+  });
+  it("moves nothing over Needs a Time or nothing, or when nothing is carried", () => {
+    expect(shifts(carrying(null))).toEqual([0, 0, 0, 0]);
+    expect(shifts({ ...carrying({ route: "r", index: 0 }), id: null })).toEqual([0, 0, 0, 0]);
   });
 });

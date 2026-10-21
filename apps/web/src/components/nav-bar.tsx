@@ -6,14 +6,29 @@ import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } fro
 import { Logo } from "./logo";
 
 /**
- * The phone tab bar's pages. Their bars carry the logo at the leading edge, level with the
- * "+", and the large title takes its own full-width row under the bar (owner, 2026-10-21: the
- * logo beside the title squeezed it); pushed pages keep Back.
+ * The phone tab bar's pages. The logo parks right above their large title, in the page, and
+ * scrolls away with it; the bar keeps only its buttons (owner, 2026-10-21: "The logo needs to
+ * park over the title"). Pushed pages keep Back.
  */
 const TAB_ROOTS = ["/today", "/jobs", "/schedule", "/messages", "/more"];
 
 // Local helper: ui.tsx renders NavBar, so importing from it here would be circular.
 const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(" ");
+
+/**
+ * Phones, a tab's own page: the logo above the large title, left-aligned with it (28 pt tall,
+ * 6 pt above it), part of the title block so it scrolls away with it. The light or reverse
+ * lockup follows the website's appearance; read once as "Sundeck Pro".
+ */
+export function TabLogo() {
+  const path = usePathname();
+  if (!TAB_ROOTS.includes(path)) return null;
+  return (
+    <div data-tab-logo className="mb-1.5 flex h-7 items-center sm:hidden">
+      <Logo height={28} />
+    </div>
+  );
+}
 
 /** Pages that keep the large-title bar as it is (no collapse while they're shown). */
 let stills = 0;
@@ -44,13 +59,13 @@ export function useStillNavBar(on: boolean) {
  * Phones: the iOS navigation bar (toolbars.md › large titles). The page's large title sits in
  * the content; once it scrolls under the bar, a small centered title fades in on a frosted
  * bar. Back sits on the left ("‹ Jobs") and the page's main action on the right. The tab bar's
- * own pages (Today, Jobs, Schedule, Messages, More) show the logo there instead (owner,
- * 2026-10-21: "Incorporate this logo with the text in the top left of each main page").
+ * own pages (Today, Jobs, Schedule, Messages, More) show the logo above the large title, in
+ * the page (TabLogo), never in the bar (owner, 2026-10-21).
  *
  * Without Back and without the logo, the large title sits in the bar's row, left of the
  * action, as in Apple's App Store and Music (owner, 2026-10-20: "push up towards where the
- * plus button is"). On the tab bar's pages the logo has that row, and the title sits under it
- * with the page's full width (owner, 2026-10-21). The bar sets `--nav-action` on the title
+ * plus button is"). On the tab bar's pages the bar's row holds only the buttons, and the logo
+ * and the title sit under it with the page's full width (owner, 2026-10-21). The bar sets `--nav-action` on the title
  * to the action's width, so a long or enlarged title wraps between words before it reaches the
  * "+"; when one of its words is wider than the room left (very large text), the title moves to
  * its own row under the bar instead.
@@ -107,7 +122,7 @@ export function NavBar({
     const measure = () => {
       const room = (el.parentElement ?? el).clientWidth - action.getBoundingClientRect().width;
       const words = [...el.children].map((w) => w.getBoundingClientRect().width);
-      // Under the logo's row, always its own row.
+      // Under the logo, always its own row.
       const stack = brand || Math.max(0, ...words) > room;
       setStacked(stack);
       row.toggleAttribute("data-stacked", stack);
@@ -162,12 +177,6 @@ export function NavBar({
               </svg>
               <span className="truncate @max-[3.5em]:hidden">{back.label}</span>
             </Link>
-          ) : brand ? (
-            // 28 pt tall, so the row stays 44; the light or reverse lockup follows the
-            // website's appearance. Read once as "Sundeck Pro".
-            <span className="flex h-11 items-center pl-2">
-              <Logo height={28} />
-            </span>
           ) : null}
         </div>
         <p
@@ -177,13 +186,8 @@ export function NavBar({
             // (owner, 2026-10-20: "'Schedule' has different fonts depending on if the map is
             // hidden or not").
             "truncate font-display text-[1.0625rem] font-bold transition-opacity",
-            // Hidden, it takes no room, so "‹ Jobs" shows in full above the large title. Beside
-            // the logo, it leaves the logo its room.
-            collapsed
-              ? brand
-                ? "max-w-[calc(100vw-17.5rem)] opacity-100"
-                : "max-w-[55vw] opacity-100"
-              : "max-w-0 opacity-0",
+            // Hidden, it takes no room, so "‹ Jobs" shows in full above the large title.
+            collapsed ? "max-w-[55vw] opacity-100" : "max-w-0 opacity-0",
           )}
         >
           {title}

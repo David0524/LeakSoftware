@@ -2,32 +2,18 @@ import { router } from "expo-router";
 import { memo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureDetector } from "react-native-gesture-handler";
+import Reanimated from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 import { durationLabel, formatDay, startLegLabel } from "@leakbook/core";
 import type { DragItem } from "../../lib/scheduleDrag";
-import { StatusChip, T } from "../../ui/components";
-import { Grip } from "../../ui/Grip";
-import { LockTag } from "../../ui/LockTag";
-import { NotOnMapTag } from "../../ui/NotOnMap";
+import { T } from "../../ui/components";
 import type { RowGestures } from "../../ui/RowMenu";
 import { useMenu } from "../../ui/Select";
-import { SwipeActions } from "../../ui/SwipeRow";
-import { TechDot, TechStripe } from "../../ui/TechDot";
-import { WebIcon } from "../../ui/WebIcon";
-import {
-  color,
-  face,
-  font,
-  MAX_TEXT_SCALE,
-  minTap,
-  shape,
-  space,
-  tabular,
-  type,
-} from "../../ui/theme";
+import { TechDot } from "../../ui/TechDot";
+import { color, MAX_TEXT_SCALE, minTap, shape, space, tabular, type } from "../../ui/theme";
 import type { Route, Stop } from "./RouteCard";
-import { dropTint, useDragHover, useDragSource, useDropZones } from "./ScheduleDrag";
-import { unlessSwiping } from "../../ui/swipeQuiet";
+import { cardLabel, ScheduleCardFace } from "./ScheduleCard";
+import { dropTint, useDragHover, useDragSource, useDropZones, useSlide } from "./ScheduleDrag";
 
 // Schedule › Week with the routes in it (owner, 2026-10-20: "On routes, you can't optimize or
 // rearrange placement … Let's just build that all into Week"; docs/design/2026-10-20-team-week.md
@@ -241,53 +227,6 @@ function WeekRoute({
   );
 }
 
-/** A stop as the week shows it: stripe, number, time, customer, kind, and the grip. */
-function StopFace({ stop: s, n, tech }: { stop: Stop; n: number; tech: string | null }) {
-  return (
-    <View style={styles.face}>
-      {tech !== null ? <TechStripe tech={tech} /> : null}
-      <View
-        style={[styles.badge, { backgroundColor: s.done ? color.pass : color.fill }]}
-        accessibilityElementsHidden
-        importantForAccessibility="no"
-      >
-        {s.done ? (
-          <WebIcon name="check" size={14} color={color.onStatus} strokeWidth={3} />
-        ) : (
-          <Text
-            style={[styles.badgeText, tabular, { color: color.text }]}
-            maxFontSizeMultiplier={1.6}
-          >
-            {n}
-          </Text>
-        )}
-      </View>
-      <View style={styles.text}>
-        <Text
-          numberOfLines={1}
-          style={[type.body, face.semiBold, { color: color.text }]}
-          maxFontSizeMultiplier={MAX_TEXT_SCALE}
-        >
-          {s.customer}
-        </Text>
-        <View style={styles.line}>
-          <Text
-            numberOfLines={1}
-            style={[type.secondary, tabular, { color: color.textMuted, flexShrink: 1 }]}
-            maxFontSizeMultiplier={MAX_TEXT_SCALE}
-          >
-            {[s.time, s.number ? `#${s.number}` : null, s.tag].filter(Boolean).join(" · ")}
-          </Text>
-          {s.lock ? <LockTag lock={s.lock} /> : null}
-          {s.notOnMap ? <NotOnMapTag lineHeight={type.secondary.lineHeight!} /> : null}
-        </View>
-      </View>
-      {s.status !== "scheduled" ? <StatusChip status={s.status} /> : null}
-      {s.movable ? <Grip width={28} /> : null}
-    </View>
-  );
-}
-
 function WeekStop({
   stop: s,
   n,
@@ -309,53 +248,49 @@ function WeekStop({
 }) {
   const hover = useDragHover();
   const { slotRef } = useDropZones();
+  // The schedule card (ScheduleCard.tsx); it slides aside while another stop is carried past.
+  const slide = useSlide(s.id, route, n - 1);
   // Held and let go without moving: the stop's menu; held and moved: dragged.
   const { gesture, ref } = useDragSource(
     item,
     () => (
       <View style={[styles.ghost, { backgroundColor: color.surface }]}>
-        <StopFace stop={s} n={n} tech={tech} />
+        <ScheduleCardFace stop={s} n={n} tech={tech} />
       </View>
     ),
     gestures.onLongPress,
   );
   const slot = route ? slotRef(s.id, route) : null;
-  const row = (
-    <Pressable
-      accessibilityRole="link"
-      accessibilityLabel={`Stop ${n}, ${s.time ?? "no time"}, ${s.customer}, ${s.tag}${s.done ? ", done" : ""}`}
-      accessibilityHint="Opens the job"
-      accessibilityActions={gestures.accessibilityActions}
-      onAccessibilityAction={gestures.onAccessibilityAction}
-      onPress={unlessSwiping(() => router.push(`/jobs/${s.id}`))}
-      onLongPress={item ? undefined : gestures.onLongPress}
-      android_ripple={{ color: color.ripple }}
-      style={({ pressed }) => [{ backgroundColor: pressed ? color.rowPressed : color.surface }]}
-    >
-      <StopFace stop={s} n={n} tech={tech} />
-    </Pressable>
-  );
   return (
     <GestureDetector gesture={gesture}>
-      <View
-        ref={(node) => {
+      <Reanimated.View
+        ref={(node: View | null) => {
           ref(node);
           slot?.(node);
         }}
         collapsable={false}
         style={[
           !first && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.separator },
-          hover.id === s.id && { opacity: 0.35 },
+          // Carried: its place is an empty gap.
+          hover.id === s.id && { opacity: 0 },
+          { backgroundColor: color.surface },
+          slide,
         ]}
       >
-        {gestures.leading || gestures.trailing.length ? (
-          <SwipeActions leading={gestures.leading} trailing={gestures.trailing}>
-            {row}
-          </SwipeActions>
-        ) : (
-          row
-        )}
-      </View>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={cardLabel(s, n)}
+          accessibilityHint="Opens the job"
+          accessibilityActions={gestures.accessibilityActions}
+          onAccessibilityAction={gestures.onAccessibilityAction}
+          onPress={() => router.push(`/jobs/${s.id}`)}
+          onLongPress={item ? undefined : gestures.onLongPress}
+          android_ripple={{ color: color.ripple }}
+          style={({ pressed }) => [{ backgroundColor: pressed ? color.rowPressed : color.surface }]}
+        >
+          <ScheduleCardFace stop={s} n={n} tech={tech} />
+        </Pressable>
+      </Reanimated.View>
     </GestureDetector>
   );
 }
@@ -391,25 +326,5 @@ const styles = StyleSheet.create({
     minHeight: minTap,
     justifyContent: "center",
   },
-  face: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space["2"],
-    minHeight: minTap + 12,
-    paddingLeft: space["3"] + 4,
-    paddingRight: 4,
-    paddingVertical: space["2"],
-  },
-  badge: {
-    minWidth: 26,
-    height: 26,
-    borderRadius: 13,
-    paddingHorizontal: 3,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  badgeText: { fontFamily: font.displayBold, fontSize: 15, lineHeight: 20 },
-  text: { flex: 1, minWidth: 0, gap: 1 },
-  line: { flexDirection: "row", alignItems: "center", gap: 4 },
   ghost: { borderRadius: shape.grouped, overflow: "hidden" },
 });

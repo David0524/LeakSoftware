@@ -8,6 +8,7 @@ import {
   TouchSensor,
   closestCenter,
   pointerWithin,
+  useDndMonitor,
   useDroppable,
   useSensor,
   useSensors,
@@ -35,7 +36,9 @@ import {
   useRef,
   useState,
   useTransition,
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
+  type Ref,
 } from "react";
 import {
   PLAN_MOVE_CHOICES,
@@ -67,9 +70,15 @@ import { SideSectionTitle } from "./side-section";
 import { TechDot, TechStripe } from "./tech-dot";
 import { hasLock, toggleLock } from "@/lib/row-menu";
 import { TopScroller } from "./top-scroller";
-import { RowActions, RowMenuButton, formOf, type MenuEntry, type SwipeAction } from "./row-actions";
+import {
+  RowActions,
+  RowMenuButton,
+  formOf,
+  type MenuEntry,
+  type RowActionsHandle,
+} from "./row-actions";
 import { DayMap } from "./day-map";
-import { CleaningIcon, KeyIcon } from "./icons";
+import { CleaningIcon } from "./icons";
 import { LockTag } from "./lock-tag";
 import { PlanWeek } from "./plan-week";
 import { dayMap, weekdayName } from "@/lib/day-map";
@@ -81,7 +90,7 @@ import {
   type RouteResult,
   type Suggestion,
 } from "@/app/actions/routes";
-import { AddressLink, OpenRouteInMaps } from "./open-in-maps";
+import { OpenRouteInMaps } from "./open-in-maps";
 import { Sheet, useChoice } from "./sheet";
 import { showBanner } from "./top-banner";
 import { useFlip } from "./use-flip";
@@ -99,7 +108,7 @@ type Tech = { id: string; name: string; color?: string | null };
 
 // The schedule as routes (routing, owner request 2026-10-13): each tech's day in order with
 // the driving between stops. Drag a job by its grip to another place, tech, or day (mouse,
-// touch, or keyboard; phones too, owner 2026-10-20); Move… (or a swipe left on the stop) does
+// touch, or keyboard; phones too, owner 2026-10-20); Move… on the stop does
 // the same in a sheet. Jobs waiting for a time sit in the tray with suggestions that fit them
 // into the routes already planned.
 
@@ -180,7 +189,7 @@ export interface TrayJob extends BoardStop {
 const TRAY = "tray";
 
 /**
- * What a stop's swipes and menu do (gestures.md section 12): the same as Move…, Move's Take
+ * What a stop's menu does (gestures.md section 12): the same as Move…, Move's Take
  * Off Schedule, and the job page's lock picker.
  */
 interface StopActions {
@@ -218,28 +227,6 @@ function stopMenu(s: BoardStop, a: StopActions | null): MenuEntry[] {
       external: true,
     },
   ];
-}
-
-/** A stop's swipes: Move… to the left; Lock Day and Lock Time to the right. */
-function stopSwipes(s: BoardStop, a: StopActions | null) {
-  if (!a || !s.draggable) return {};
-  const trailing: SwipeAction[] = [{ label: "Move…", tone: "blue", onSelect: () => a.move(s) }];
-  const lock = s.schedule?.lock;
-  const leading: SwipeAction[] | undefined = s.schedule
-    ? [
-        {
-          label: hasLock(lock!, "day") ? "Unlock Day" : "Lock Day",
-          tone: "orange",
-          onSelect: () => a.lock(s, "day"),
-        },
-        {
-          label: hasLock(lock!, "time") ? "Unlock Time" : "Lock Time",
-          tone: "orange",
-          onSelect: () => a.lock(s, "time"),
-        },
-      ]
-    : undefined;
-  return { leading, trailing };
 }
 
 type Lists = Record<string, BoardStop[]>;
@@ -337,12 +324,14 @@ export function RouteBoard({
   const dndId = useId();
 
   const sensors = useSensors(
-    // Drags start from the grip only. A mouse picks the job up once it moves a little; a
-    // finger after a short press (owner, 2026-10-20: drag and drop on phones again), so a
-    // flick that lands on the grip doesn't move a job. The grip doesn't scroll the page
-    // (touch-none), and while dragging the page scrolls near the screen's edges (autoScroll).
+    // A mouse picks a card up anywhere once it moves a little; a finger after a touch and
+    // hold, on the grip or anywhere on the card (docs/design/2026-10-21-schedule-card.md), so
+    // a plain drag on a card scrolls the page (owner, 2026-10-21: "I can't scroll on a
+    // Scheduling tile"). The grip doesn't scroll the page (touch-none), and while dragging the
+    // page scrolls near the screen's edges (autoScroll). The other cards in the day slide
+    // into their new places as one passes them (SORT_SLIDE), so the gap is where it lands.
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
@@ -754,7 +743,6 @@ export function RouteBoard({
                     optimizing={optimizingKey === c.key}
                     busy={optimizing}
                     onPlan={() => optimize(c.techId!, c.date)}
-                    onMove={setMoving}
                     maps={maps}
                     today={today}
                     lead={c.key === lead?.key}
@@ -782,7 +770,6 @@ export function RouteBoard({
                   days={weekDays ?? []}
                   workDates={workDates}
                   today={today}
-                  onMove={setMoving}
                   optimizingKey={optimizingKey}
                   busy={optimizing}
                   onPlan={optimize}
@@ -802,15 +789,8 @@ export function RouteBoard({
             </span>
           </div>
         ) : dragging ? (
-          <div className="card max-w-sm p-3 shadow-xl ring-2 ring-link">
-            {dragging.time ? (
-              <span className="block font-display text-[1.0625rem] font-bold">{dragging.time}</span>
-            ) : null}
-            <span className="block truncate font-semibold">{dragging.customer}</span>
-            <span className="block truncate text-[0.9375rem] text-text-muted">
-              {dragging.address}
-            </span>
-          </div>
+          // Carried: the card lifted off the list (its place stays an empty gap).
+          <LiftedCard stop={dragging} week={mode === "week"} />
         ) : null}
       </DragOverlay>
 
@@ -986,7 +966,6 @@ function DayColumn({
   busy,
   optimizing = false,
   onPlan,
-  onMove,
   maps,
   today,
   lead = false,
@@ -996,7 +975,6 @@ function DayColumn({
   busy: boolean;
   optimizing?: boolean;
   onPlan: () => void;
-  onMove: (s: BoardStop) => void;
   maps: { company: string; depot: LatLng | null } | null;
   today: string;
   /** Phones: the day's map, summary and buttons are in DayLead above Needs a Time. */
@@ -1047,7 +1025,7 @@ function DayColumn({
               {s.legMin != null && c.techId ? (
                 <Leg minutes={s.legMin} label={i === 0 ? startLegLabel(c.start.label) : "drive"} />
               ) : null}
-              <StopCard stop={s} position={i + 1} onMove={onMove} color={c.color} />
+              <StopCard stop={s} position={i + 1} color={c.color} />
             </li>
           ))}
           {c.techId && stops.length && c.backLegMin != null ? (
@@ -1129,7 +1107,7 @@ function StopBadge({
       aria-hidden="true"
       className={cx(
         "grid shrink-0 place-items-center rounded-full font-display font-bold",
-        small ? "size-6 text-[0.8125rem]" : "mt-1 size-8",
+        small ? "size-6 text-[0.8125rem]" : "size-8",
         done
           ? "bg-status-pass text-on-status"
           : status === "in_progress"
@@ -1156,227 +1134,108 @@ function StopBadge({
   );
 }
 
-function Chevron() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className="size-4 shrink-0"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M9 6l6 6-6 6" />
-    </svg>
-  );
+/** The street alone ("5024 W Las Palmaritas Dr"), without the city or ZIP. */
+function streetOf(address: string) {
+  return address.split(",")[0]!.trim();
 }
 
 /**
- * A stop on a tech's day, styled like Today's stops (owner, 2026-10-20: "Make the schedule cards
- * a little more appealing. Refer to what the today page looks like"): a soft card with the
- * stop's number in a circle, the time and the customer (a link to the job), Move… and the drag
- * grip on the same row, then the kind of visit as a pill, the address, and the access notes.
+ * Touch and hold on a card without moving it: its menu, as iOS lifts an item to show it (the
+ * hold that would drag it, ended where it began). `open` opens this card's menu.
  */
-function StopCard({
-  stop: s,
-  position,
-  onMove,
-  color,
-}: {
-  stop: BoardStop;
-  position: number;
-  onMove: (s: BoardStop) => void;
-  /** Whose route it's on: a stripe on the card's leading edge. */
-  color?: string | null;
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    setActivatorNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: s.id,
-    disabled: !s.draggable,
-    transition: reducedMotion() ? null : SORT_SLIDE,
+function useHoldMenu(id: string) {
+  const menu = useRef<RowActionsHandle>(null);
+  useDndMonitor({
+    onDragEnd(e) {
+      if (String(e.active.id) !== id) return;
+      const touch = typeof TouchEvent !== "undefined" && e.activatorEvent instanceof TouchEvent;
+      if (touch && Math.hypot(e.delta.x, e.delta.y) < 8) {
+        const t = (e.activatorEvent as TouchEvent).touches[0];
+        menu.current?.open(t ? { x: t.clientX, y: t.clientY } : undefined, true);
+      }
+    },
   });
-  const actions = use(BoardActions);
-  return (
-    <article
-      ref={setNodeRef}
-      style={{ transform: CSS.Translate.toString(transform), transition }}
-      data-testid="stop"
-      aria-label={`${s.time ?? "No time"}, ${s.customer}`}
-      className={cx("card relative overflow-hidden lg:rounded-xl", isDragging && "opacity-40")}
-    >
-      <CompactCard
-        stop={s}
-        position={position}
-        color={color}
-        listeners={listeners}
-        attributes={attributes}
-      />
-      {/* Swipe left for Move…, right for the locks; touch and hold or right-click for the
-          menu (gestures.md section 12). The visible Move… does the same for everyone else.
-          Computers get the one-line card above instead. */}
-      <RowActions
-        title={`${s.customer}${s.number ? ` · Job #${s.number}` : ""}`}
-        menu={stopMenu(s, actions)}
-        {...stopSwipes(s, actions)}
-        swipeClassName="rounded-[1.25rem]"
-        // Over the card's bottom corner, under Move… and the grip.
-        buttonClassName="absolute right-1.5 bottom-1.5"
-        className="rounded-[1.25rem] lg:hidden"
-      >
-        <div
-          className={cx(
-            "relative flex items-start gap-2 rounded-[1.25rem] bg-surface py-1.5 pl-3.5",
-            s.draggable ? "pr-1" : "pr-3",
-          )}
-        >
-          {color ? <TechStripe color={color} /> : null}
-          <StopBadge position={position} status={s.status} />
-          <div className="min-w-0 flex-1">
-            {/* The time, then the customer under it (always two lines, so the cards in a column
-              line up); both open the job. Move… and the grip sit at the end of the row, so the
-              lines under it keep the card's full width. */}
-            <div className="flex items-start">
-              <Link
-                href={`/jobs/${s.id}`}
-                className={cx(
-                  "flex min-h-11 min-w-0 flex-1 flex-col justify-center py-1",
-                  finished(s.status) && "opacity-70",
-                )}
-              >
-                <span className="font-display text-[1.0625rem] leading-snug font-bold whitespace-nowrap tabular-nums">
-                  {s.time ?? "Saving…"}
-                </span>
-                <span className="flex min-w-0 items-center gap-0.5 font-semibold text-link">
-                  <span className="truncate">{s.customer}</span>
-                  <Chevron />
-                </span>
-              </Link>
-              {s.draggable ? (
-                <>
-                  <button
-                    type="button"
-                    className={buttonClass("quiet", "shrink-0 px-2")}
-                    onClick={() => onMove(s)}
-                  >
-                    Move…
-                  </button>
-                  <Grip
-                    label={`Drag ${s.customer}`}
-                    ref={setActivatorNodeRef}
-                    {...attributes}
-                    {...listeners}
-                  />
-                </>
-              ) : null}
-            </div>
-            <div className={cx("space-y-1 pb-1.5", s.draggable && "pr-2")}>
-              {/* The kind of visit (or the second tech's note) as a pill, then any state worth
-                saying: most stops are Scheduled, so that badge is left out. */}
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="rounded-full bg-fill px-2.5 py-0.5 text-[0.8125rem] font-semibold text-text">
-                  {s.tag}
-                </span>
-                {s.status !== "scheduled" ? <StatusBadge status={s.status} /> : null}
-                {s.lock ? <LockTag lock={s.lock} /> : null}
-                {s.number ? (
-                  <span className="text-[0.8125rem] text-text-muted">#{s.number}</span>
-                ) : null}
-              </div>
-              {s.address ? (
-                // Not found on the map: a small warning symbol right after the address (owner,
-                // 2026-10-20: "Don't waste space with text").
-                <p className="flex min-w-0 items-center gap-1.5 text-[0.9375rem]">
-                  <span className="min-w-0 truncate">
-                    <AddressLink address={s.address} location={s.location} muted />
-                  </span>
-                  {s.notOnMap || !s.location ? <NotOnMapTag /> : null}
-                </p>
-              ) : null}
-              {s.access && !finished(s.status) ? (
-                <p className="flex items-start gap-1.5 text-[0.9375rem] font-medium text-text">
-                  <KeyIcon className="mt-0.5 size-[1.125rem] shrink-0 text-status-warning" />
-                  <span className="min-w-0 truncate">
-                    <span className="sr-only">Access: </span>
-                    {s.access}
-                  </span>
-                </p>
-              ) : null}
-              {s.cleanings?.length ? (
-                <ul className="flex flex-wrap gap-x-3 gap-y-0.5" aria-label="Cleanings due">
-                  {s.cleanings.map((c) => (
-                    <li
-                      key={c.name}
-                      className="inline-flex items-center gap-1 text-[0.9375rem] font-medium text-text"
-                    >
-                      <CleaningIcon kind={c.kind} className="size-[1.125rem] shrink-0" />
-                      {c.name}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      </RowActions>
-    </article>
-  );
+  return menu;
 }
 
 /**
- * A stop on a computer (≥ 1024 pt; owner, 2026-10-20: "the schedule cards are still way too
- * big"): one line, 36 pt tall, so about 12 stops fit on a day. The tech's color stripe, the stop
- * number, the customer in 15 pt semibold and the kind of visit in 13 pt, the lock and
- * not-on-map symbols, and the grip. Hovering shows the address and time; a click opens the job;
- * it drags from anywhere on the card, the grip included. Right-click for its menu.
+ * A schedule card (docs/design/2026-10-21-schedule-card.md; owner, 2026-10-21: "Redesign those
+ * tiles too. They look super busy"), the same on a phone and a computer, in Day, Week and
+ * Needs a Time: two lines. The tech's color stripe and the stop's number, then the time and
+ * the customer; under them the kind of visit and the street. Trailing, small icons only for
+ * exceptions (a lock, not on the map, a cleaning due), or the status when it isn't plain
+ * Scheduled; then "⋯" and the grip. The whole card opens the job. Move…, the locks, Take Off
+ * Schedule and Directions are in its menu: "⋯", right-click, or touch and hold.
  */
-function CompactCard({
+function ScheduleCard({
   stop: s,
   position,
   color,
   listeners,
   attributes,
+  menu,
   week = false,
+  tray = false,
+  trailing,
 }: {
   stop: BoardStop;
-  /** Its place in the day; null in a week cell, which lists by time. */
+  /** Its place in the day; null when it has none (Needs a Time). */
   position: number | null;
   color?: string | null;
-  /**
-   * In a week cell (about 10 rem): the customer's name takes the whole line (owner,
-   * 2026-10-21: the name was squeezed to nothing). The kind of visit moves to the tooltip and
-   * the screen reader, and "⋯" floats over the line's end on hover instead of keeping a place.
-   */
-  week?: boolean;
   listeners: ReturnType<typeof useSortable>["listeners"];
   attributes: ReturnType<typeof useSortable>["attributes"];
+  menu: Ref<RowActionsHandle>;
+  /** In a week cell (about 10 rem): tighter, the time without AM or PM. */
+  week?: boolean;
+  /** Needs a Time: no number; the note ("No tech yet · booked…") on the second line. */
+  tray?: boolean;
+  /** More buttons before the grip (Needs a Time's Actions). */
+  trailing?: ReactNode;
 }) {
   const actions = use(BoardActions);
-  // In a week cell "Two techs" goes with the kind of visit: into the tooltip and the screen
-  // reader, leaving the line to the name. Lock icons stay.
-  const twoTechs = week && s.lock?.kind === "two_techs" ? s.lock.label : null;
-  const hint = [s.time, week ? s.tag : null, twoTechs, s.address].filter(Boolean).join(" · ");
+  const twoTechs = s.lock?.kind === "two_techs" ? s.lock.label : null;
+  const street = s.address ? streetOf(s.address) : null;
+  const second = [tray ? s.note : twoTechs ? `${s.tag} · ${twoTechs}` : s.tag, street]
+    .filter(Boolean)
+    .join(" · ");
+  const time = s.time
+    ? week
+      ? s.time.replace(/\s?(AM|PM)$/, "")
+      : s.time
+    : tray
+      ? null
+      : "No time";
+  const cleaning = s.cleanings?.[0];
+  // The keyboard picks the card up from its grip only: Enter on the name still opens the job.
+  const drag =
+    s.draggable && listeners
+      ? {
+          ...listeners,
+          onKeyDown: (e: ReactKeyboardEvent) => {
+            if ((e.target as Element).closest("[data-grip]")) listeners.onKeyDown?.(e);
+          },
+        }
+      : {};
   return (
     <RowActions
       title={`${s.customer}${s.number ? ` · Job #${s.number}` : ""}`}
       menu={stopMenu(s, actions)}
-      // "⋯" in its own place before the grip, shown on hover and keyboard focus: over the
-      // card it covered the name in a narrow week cell.
+      handle={menu}
       button="none"
-      className="rounded-xl max-lg:hidden"
+      // A hold drags the card; one that ends where it began opens the menu (useHoldMenu).
+      longPress={!s.draggable}
+      className="rounded-[inherit]"
     >
       <div
-        {...(s.draggable ? listeners : {})}
-        title={hint || undefined}
+        {...drag}
         data-testid="stop-line"
+        // A finger's hold is the drag (and, held still, the menu): not the browser's own menu.
+        onContextMenuCapture={(e) => {
+          if ((e.nativeEvent as PointerEvent).pointerType === "touch" && s.draggable) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }}
         // A drag that ends on the card isn't a click on it.
         onClickCapture={(e) => {
           if (actions?.dragged()) {
@@ -1385,71 +1244,138 @@ function CompactCard({
           }
         }}
         className={cx(
-          "relative flex items-center gap-1.5 rounded-xl bg-surface pr-0.5 pl-2.5 select-none",
-          // A long name takes a second line in a week cell rather than being cut off.
-          week ? "min-h-9 py-1" : "h-9",
+          "relative flex items-center rounded-[inherit] bg-surface select-none [-webkit-touch-callout:none]",
+          week ? "min-h-14 gap-1.5 py-1.5 pl-2.5" : "min-h-16 gap-2.5 py-2 pl-3.5 lg:min-h-14",
+          s.draggable ? "pr-0.5" : "pr-2",
           s.draggable && "cursor-grab active:cursor-grabbing",
         )}
       >
         {color ? <TechStripe color={color} /> : null}
-        {position != null ? (
-          <StopBadge position={position} status={s.status} small />
-        ) : s.time ? (
-          <span className="shrink-0 text-[0.8125rem] font-semibold text-text-muted tabular-nums">
-            {s.time.replace(/\s?(AM|PM)$/, "")}
+        {position != null ? <StopBadge position={position} status={s.status} small={week} /> : null}
+        <div className={cx("min-w-0 flex-1", finished(s.status) && "opacity-70")}>
+          <p className="flex min-w-0 items-baseline gap-1.5 leading-snug">
+            {time ? (
+              <span
+                className={cx(
+                  "shrink-0 font-bold tabular-nums",
+                  week ? "text-[0.8125rem]" : "text-[1.0625rem] lg:text-[0.9375rem]",
+                )}
+              >
+                {time}
+              </span>
+            ) : null}
+            {/* The whole card opens the job (the link's area covers it). */}
+            <Link
+              href={`/jobs/${s.id}`}
+              draggable={false}
+              className={cx(
+                "min-w-0 truncate font-semibold text-text after:absolute after:inset-0 after:rounded-[inherit] after:content-[''] hover:underline",
+                week ? "text-[0.9375rem]" : "text-[1.0625rem] lg:text-[0.9375rem]",
+              )}
+            >
+              {s.customer}
+            </Link>
+          </p>
+          {second ? (
+            <p
+              className={cx(
+                "truncate text-text-muted",
+                week ? "text-[0.8125rem]" : "text-[0.9375rem] lg:text-[0.8125rem]",
+              )}
+              title={s.address ?? undefined}
+            >
+              {second}
+            </p>
+          ) : null}
+        </div>
+        {/* Exceptions only, as small icons; the status instead when it isn't plain Scheduled. */}
+        {s.status !== "scheduled" && s.status !== "unscheduled" && !tray ? (
+          <span className="relative shrink-0">
+            <StatusBadge status={s.status} />
           </span>
-        ) : null}
-        <Link
-          href={`/jobs/${s.id}`}
-          draggable={false}
-          className={cx(
-            "flex min-w-0 flex-1 items-baseline gap-1.5 hover:underline",
-            finished(s.status) && "opacity-70",
-          )}
-        >
-          <span
-            className={cx(
-              "text-[0.9375rem] font-semibold text-link",
-              // On Day the name keeps its width and the kind of visit gives way first.
-              week
-                ? "line-clamp-2 min-w-0 flex-1 leading-tight break-words"
-                : "max-w-full shrink-0 truncate",
-            )}
-          >
-            {s.customer}
+        ) : (
+          <span className="relative flex shrink-0 items-center gap-1 empty:hidden">
+            {s.lock && !twoTechs ? <LockTag lock={s.lock} /> : null}
+            {s.notOnMap || (s.address && !s.location) ? <NotOnMapTag /> : null}
+            {cleaning ? (
+              <span className="inline-flex text-text-muted" title={`${cleaning.name} due`}>
+                <CleaningIcon kind={cleaning.kind} className="size-[1.125rem]" />
+                <span className="sr-only">{`${cleaning.name} due`}</span>
+              </span>
+            ) : null}
           </span>
-          {week ? null : (
-            <span className="min-w-0 truncate text-[0.8125rem] text-text-muted">{s.tag}</span>
-          )}
-          <span className="sr-only">
-            {week ? `, ${s.tag}` : ""}
-            {twoTechs ? `, ${twoTechs}` : ""}
-            {s.time ? `, ${s.time}` : ""}
-            {s.address ? `, ${s.address}` : ""}
-          </span>
-        </Link>
-        {s.lock && !twoTechs ? (
-          <LockTag lock={s.lock} className="shrink-0 whitespace-nowrap" />
-        ) : null}
-        {s.notOnMap || !s.location ? <NotOnMapTag /> : null}
-        <RowMenuButton
-          className={
-            week
-              ? cx("absolute top-1/2 -translate-y-1/2 size-7!", s.draggable ? "right-6" : "right-1")
-              : "shrink-0 size-7!"
-          }
-        />
+        )}
+        {trailing}
+        <RowMenuButton visible className={cx("relative shrink-0", week ? "size-7!" : "size-9!")} />
         {s.draggable ? (
           <Grip
-            compact
+            compact={week}
             label={`Drag ${s.customer}`}
-            className={week ? "w-5!" : undefined}
+            className={cx("relative", week && "w-5!")}
             {...attributes}
-            {...listeners}
           />
         ) : null}
       </div>
     </RowActions>
+  );
+}
+
+/** The card as it's carried (DragOverlay): lifted, with a shadow. */
+function LiftedCard({ stop: s, week }: { stop: BoardStop; week: boolean }) {
+  const street = s.address ? streetOf(s.address) : null;
+  return (
+    <div
+      className={cx(
+        "card scale-[1.03] cursor-grabbing py-2 pr-3 pl-3.5 shadow-xl ring-1 ring-text/10 motion-reduce:scale-100",
+        week ? "max-w-48" : "max-w-sm",
+      )}
+    >
+      <p className="flex min-w-0 items-baseline gap-1.5">
+        {s.time ? <span className="shrink-0 font-bold tabular-nums">{s.time}</span> : null}
+        <span className="truncate font-semibold">{s.customer}</span>
+      </p>
+      <p className="truncate text-[0.9375rem] text-text-muted">
+        {[s.tag, street].filter(Boolean).join(" · ")}
+      </p>
+    </div>
+  );
+}
+
+/** A stop on a tech's day: the schedule card, sliding aside as another is dragged past it. */
+function StopCard({
+  stop: s,
+  position,
+  color,
+}: {
+  stop: BoardStop;
+  position: number;
+  /** Whose route it's on: a stripe on the card's leading edge. */
+  color?: string | null;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: s.id,
+    disabled: !s.draggable,
+    transition: reducedMotion() ? null : SORT_SLIDE,
+  });
+  const menu = useHoldMenu(s.id);
+  return (
+    <article
+      ref={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      data-testid="stop"
+      aria-label={`${s.time ?? "No time"}, ${s.customer}`}
+      // While carried, its place is an empty gap: never a card under the one being dragged.
+      className={cx("card relative overflow-hidden lg:rounded-xl", isDragging && "invisible")}
+    >
+      <ScheduleCard
+        stop={s}
+        position={position}
+        color={color}
+        listeners={listeners}
+        attributes={attributes}
+        menu={menu}
+      />
+    </article>
   );
 }
 
@@ -1623,7 +1549,6 @@ function WeekGrid({
   days,
   workDates,
   today,
-  onMove,
   optimizingKey,
   busy,
   onPlan,
@@ -1634,7 +1559,6 @@ function WeekGrid({
   /** The shop's work days; a day off with nothing on it is a narrow column. */
   workDates: string[];
   today: string;
-  onMove: (s: BoardStop) => void;
   optimizingKey: string | null;
   busy: boolean;
   onPlan: (techId: string, date: string) => void;
@@ -1766,13 +1690,7 @@ function WeekGrid({
                 const key = `${r.techId ?? "none"}|${d}`;
                 const col = columns.find((c) => c.key === key)!;
                 return (
-                  <WeekCell
-                    key={d}
-                    column={col}
-                    stops={lists[key] ?? []}
-                    today={d === today}
-                    onMove={onMove}
-                  />
+                  <WeekCell key={d} column={col} stops={lists[key] ?? []} today={d === today} />
                 );
               })}
             </tr>
@@ -1787,12 +1705,10 @@ function WeekCell({
   column: c,
   stops,
   today,
-  onMove,
 }: {
   column: BoardColumn;
   stops: BoardStop[];
   today: boolean;
-  onMove: (s: BoardStop) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: c.key, disabled: !c.open });
   return (
@@ -1809,7 +1725,7 @@ function WeekCell({
         <ul data-flip-list={c.key} className="min-h-12 space-y-1.5 lg:space-y-1">
           {stops.map((s, i) => (
             <li key={s.id} data-flip={s.id}>
-              <WeekChip stop={s} position={i + 1} color={c.color} onMove={onMove} />
+              <WeekChip stop={s} position={i + 1} color={c.color} />
             </li>
           ))}
         </ul>
@@ -1824,97 +1740,39 @@ function WeekCell({
   );
 }
 
-/**
- * A stop in a week cell: the time, the customer, and the kind of visit, as a small card. The
- * grip sits beside the time, so the name gets the cell's whole width.
- */
+/** A stop in a week cell: the schedule card, tighter. */
 function WeekChip({
   stop: s,
   position,
   color,
-  onMove,
 }: {
   stop: BoardStop;
   position: number;
   color?: string | null;
-  onMove: (s: BoardStop) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: s.id,
     disabled: !s.draggable,
     transition: reducedMotion() ? null : SORT_SLIDE,
   });
-  const actions = use(BoardActions);
+  const menu = useHoldMenu(s.id);
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       data-testid="stop"
-      className={cx(
-        "well relative overflow-hidden lg:rounded-xl lg:bg-transparent",
-        isDragging && "opacity-40",
-      )}
+      aria-label={`${s.time ?? "No time"}, ${s.customer}`}
+      className={cx("card relative overflow-hidden rounded-xl", isDragging && "invisible")}
     >
-      <CompactCard
+      <ScheduleCard
         stop={s}
         position={position}
         color={color}
         listeners={listeners}
         attributes={attributes}
+        menu={menu}
         week
       />
-      {/* Touch and hold or right-click for the stop's menu (gestures.md section 12); no swipes
-          in the week's small cells. */}
-      <RowActions
-        title={`${s.customer}${s.number ? ` · Job #${s.number}` : ""}`}
-        menu={stopMenu(s, actions)}
-        buttonClassName="absolute right-0.5 bottom-0.5"
-        className="rounded-[inherit] lg:hidden"
-      >
-        {color ? <TechStripe color={color} /> : null}
-        <Link
-          href={`/jobs/${s.id}`}
-          className={cx(
-            "block min-h-11 rounded-2xl pr-2 pb-2 pl-3 active:bg-text/[0.06]",
-            finished(s.status) && "opacity-70",
-          )}
-        >
-          <span
-            className={cx(
-              "flex min-h-11 items-center font-display text-[0.9375rem] font-bold tabular-nums",
-              s.draggable && "pr-10",
-            )}
-          >
-            {s.time ?? "Saving…"}
-          </span>
-          <span
-            className="line-clamp-2 block text-[0.9375rem] leading-snug font-semibold text-link"
-            title={s.customer}
-          >
-            {s.customer}
-          </span>
-          <span
-            className="mt-0.5 line-clamp-1 block text-[0.8125rem] text-text-muted"
-            title={s.tag}
-          >
-            {s.tag}
-          </span>
-          {s.lock ? <LockTag lock={s.lock} className="mt-0.5" /> : null}
-        </Link>
-        {s.draggable ? (
-          <>
-            <Grip
-              label={`Drag ${s.customer}`}
-              className="absolute top-0 right-0"
-              {...attributes}
-              {...listeners}
-            />
-            <button type="button" className="sr-only focus:not-sr-only" onClick={() => onMove(s)}>
-              Move…
-            </button>
-          </>
-        ) : null}
-      </RowActions>
     </div>
   );
 }
@@ -2018,18 +1876,13 @@ function TrayCard({
   onMove: (s: BoardStop) => void;
   onSuggestion: (job: string, s: Suggestion) => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    setActivatorNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: j.id, transition: reducedMotion() ? null : SORT_SLIDE });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: j.id,
+    transition: reducedMotion() ? null : SORT_SLIDE,
+  });
+  const menu = useHoldMenu(j.id);
   const [sheetOpen, setActions] = useState(false);
   const closeActions = useCallback(() => setActions(false), []);
-  const actions = use(BoardActions);
   return (
     <article
       ref={setNodeRef}
@@ -2038,60 +1891,37 @@ function TrayCard({
       className={cx(
         // Positioned, so nothing absolutely placed inside (screen-reader text) escapes the
         // sideways-scrolling list and widens the page.
-        "well relative flex items-center gap-1 py-1 pr-1 pl-3",
-        isDragging && "opacity-40",
+        "well relative overflow-hidden",
+        isDragging && "invisible",
       )}
     >
-      {/* Touch and hold or right-click for the job's menu (gestures.md section 12); its "…"
-          button keeps Suggest Times and Move…. No swipes: the list scrolls sideways. */}
-      <RowActions
-        title={`${j.customer}${j.number ? ` · Job #${j.number}` : ""}`}
-        menu={stopMenu(j, actions)}
-        button="none"
-        className="flex min-w-0 flex-1 items-center gap-1"
-      >
-        {/* Two lines, with the actions behind "…", so a long list stays short (owner,
-          2026-10-18: the cards were "a little too bulky"). */}
-        <Link href={`/jobs/${j.id}`} className="min-w-0 flex-1 py-1 hover:underline">
-          <span className="block truncate">
-            <span className="font-semibold">{j.customer}</span>
-            <span className="text-text-muted">{j.number ? ` · #${j.number}` : ""}</span>
-          </span>
-          <span className="flex min-w-0 items-center gap-1.5 text-[0.9375rem] text-text-muted">
-            {j.lock ? <LockTag lock={j.lock} className="shrink-0" /> : null}
-            {j.address ? <span className="min-w-0 truncate">{j.address}</span> : null}
-            {j.notOnMap || !j.location ? <NotOnMapTag /> : null}
-            {j.note ? (
-              <span className="min-w-0 truncate">
-                {j.address ? "· " : ""}
-                {j.note}
-              </span>
-            ) : null}
-          </span>
-        </Link>
-        <button
-          type="button"
-          aria-label={`Actions for ${j.customer}`}
-          title="Suggest Times or Move"
-          aria-haspopup="dialog"
-          onClick={() => setActions(true)}
-          className="grid size-11 shrink-0 place-items-center rounded-full text-link hover:bg-link/10"
-        >
-          <svg viewBox="0 0 24 24" className="size-6" fill="currentColor" aria-hidden="true">
-            <circle cx="6" cy="12" r="1.8" />
-            <circle cx="12" cy="12" r="1.8" />
-            <circle cx="18" cy="12" r="1.8" />
-          </svg>
-        </button>
-        {/* The grip at the card's trailing edge, as on every card that drags (owner, 2026-10-20:
-          "Schedule dragging should be on the right side of the card"). */}
-        <Grip
-          label={`Drag ${j.customer}`}
-          ref={setActivatorNodeRef}
-          {...attributes}
-          {...listeners}
-        />
-      </RowActions>
+      {/* The schedule card (docs/design/2026-10-21-schedule-card.md), with the note on its
+          second line; its "…" button keeps Suggest Times and Move…. No swipes: the list
+          scrolls sideways. */}
+      <ScheduleCard
+        stop={j}
+        position={null}
+        listeners={listeners}
+        attributes={attributes}
+        menu={menu}
+        tray
+        trailing={
+          <button
+            type="button"
+            aria-label={`Actions for ${j.customer}`}
+            title="Suggest Times or Move"
+            aria-haspopup="dialog"
+            onClick={() => setActions(true)}
+            className="relative grid size-11 shrink-0 place-items-center rounded-full text-link hover:bg-link/10"
+          >
+            <svg viewBox="0 0 24 24" className="size-6" fill="currentColor" aria-hidden="true">
+              <circle cx="6" cy="12" r="1.8" />
+              <circle cx="12" cy="12" r="1.8" />
+              <circle cx="18" cy="12" r="1.8" />
+            </svg>
+          </button>
+        }
+      />
       <Sheet open={sheetOpen} onClose={closeActions} title={j.customer}>
         <p className="mb-2 text-[0.9375rem] text-text-muted">
           {[j.number ? `#${j.number}` : null, j.address, j.note].filter(Boolean).join(" · ")}

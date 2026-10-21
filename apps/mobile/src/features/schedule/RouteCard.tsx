@@ -14,35 +14,27 @@ import {
 } from "@leakbook/core";
 import type { LockTagKind } from "../../lib/dayMap";
 import type { DragItem } from "../../lib/scheduleDrag";
-import { CleaningNames } from "../maintenance/Cleanings";
-import { Button, Card, StatusChip, T, useReduceMotion } from "../../ui/components";
-import { LockTag } from "../../ui/LockTag";
+import { Button, Card, T, useReduceMotion } from "../../ui/components";
 import type { RowGestures } from "../../ui/RowMenu";
-import { SwipeActions } from "../../ui/SwipeRow";
-import { AddressLine } from "../../ui/NotOnMap";
-import { Grip } from "../../ui/Grip";
-import { TechDot, TechStripe } from "../../ui/TechDot";
-import { WebIcon } from "../../ui/WebIcon";
+import { TechDot } from "../../ui/TechDot";
+import { cardShadow, color, MAX_TEXT_SCALE, shape, space, type } from "../../ui/theme";
 import {
-  cardShadow,
-  color,
-  face,
-  font,
-  MAX_TEXT_SCALE,
-  shape,
-  space,
-  tabular,
-  type,
-} from "../../ui/theme";
-import { dropTint, useDragHover, useDragSource, useDropZones } from "./ScheduleDrag";
-import { unlessSwiping } from "../../ui/swipeQuiet";
+  dropTint,
+  justDropped,
+  useDragHover,
+  useDragSource,
+  useDropZones,
+  useSlide,
+} from "./ScheduleDrag";
+import { cardLabel, ScheduleCardFace } from "./ScheduleCard";
 
 // Schedule › Day: one card per person's route (spec 5.6; the website's route-board.tsx
 // DayColumn and StopCard): the summary, Optimize and the maps button, then the stops with
 // the driving between them, drawn as Today's stops (owner, 2026-10-20: "make the schedule cards
 // a little more appealing. Refer to what the today page looks like"): a soft card with the
 // stop's number in a round badge, the time, the customer, the kind of stop as a pill, the
-// address, and the access notes. Move… (or a swipe left, or touch and hold to drag) moves it.
+// address, and the access notes; since 2026-10-21 the two-line schedule card
+// (ScheduleCard.tsx). Touch and hold drags it; Move… is in its menu.
 
 export interface Stop {
   id: string;
@@ -172,7 +164,6 @@ export function RouteCard({
   lead = false,
   onPlan,
   onMove,
-  onDirections,
   gesturesFor,
 }: {
   route: Route;
@@ -183,13 +174,13 @@ export function RouteCard({
   lead?: boolean;
   onPlan: () => void;
   onMove: (s: Stop) => void;
-  onDirections: (s: Stop) => void;
-  /** A stop's swipe actions (Move…, Lock…) and touch-and-hold menu (gestures spec section 12). */
+  /** A stop's touch-and-hold menu and TalkBack actions (Move…, Lock…; gestures spec 12). */
   gesturesFor?: (s: Stop) => RowGestures;
 }) {
   const { zoneRef } = useDropZones();
   const hover = useDragHover();
-  const slide = useReduceMotion() ? undefined : ROW_SLIDE;
+  // Just dropped, the stops are already in their new places (they slid there during the drag).
+  const slide = useReduceMotion() || hover.id != null || justDropped(hover) ? undefined : ROW_SLIDE;
   return (
     // The whole route takes a drop: between two stops, or last.
     <View
@@ -216,36 +207,37 @@ export function RouteCard({
         {c.stops.map((s, i) => (
           // A moved stop glides to its new place (owner, 2026-10-21: as smooth as Reorder
           // Techs); the move is saved on the phone at once, so the list changes right away.
-          <Reanimated.View key={s.id} style={styles.stopWrap} layout={slide}>
-            {s.legMin != null ? (
-              <Leg
-                text={`${durationLabel(s.legMin)} ${i === 0 ? startLegLabel(c.startLabel ?? "shop") : "drive"}`}
+          <Reanimated.View key={s.id} layout={slide}>
+            <Slide id={s.id} route={c.key} position={i}>
+              {s.legMin != null ? (
+                <Leg
+                  text={`${durationLabel(s.legMin)} ${i === 0 ? startLegLabel(c.startLabel ?? "shop") : "drive"}`}
+                />
+              ) : null}
+              <StopCard
+                stop={s}
+                n={i + 1}
+                item={
+                  s.movable
+                    ? {
+                        id: s.id,
+                        status: s.status,
+                        from: {
+                          kind: "route",
+                          route: c.key,
+                          tech: s.mainTech ?? c.techId,
+                          date: c.date,
+                          index: i,
+                        },
+                      }
+                    : null
+                }
+                route={c.key}
+                tech={c.color ?? null}
+                onMove={onMove}
+                gestures={gesturesFor?.(s)}
               />
-            ) : null}
-            <StopCard
-              stop={s}
-              n={i + 1}
-              item={
-                s.movable
-                  ? {
-                      id: s.id,
-                      status: s.status,
-                      from: {
-                        kind: "route",
-                        route: c.key,
-                        tech: s.mainTech ?? c.techId,
-                        date: c.date,
-                        index: i,
-                      },
-                    }
-                  : null
-              }
-              route={c.key}
-              tech={c.color ?? null}
-              onMove={onMove}
-              onDirections={onDirections}
-              gestures={gesturesFor?.(s)}
-            />
+            </Slide>
           </Reanimated.View>
         ))}
         {c.stops.length && c.backLegMin != null ? (
@@ -268,162 +260,11 @@ function TechTitle({ route: c }: { route: Route }) {
   );
 }
 
-/** The stop's number in a round badge (a green check when done, blue while it's going). */
-function Badge({ n, status, done }: { n: number; status: JobStatus; done: boolean }) {
-  const going = status === "in_progress" && !done;
-  return (
-    <View
-      style={[styles.badge, { backgroundColor: done ? color.pass : going ? color.link : color.bg }]}
-      accessibilityElementsHidden
-      importantForAccessibility="no"
-    >
-      {done ? (
-        <WebIcon name="check" size={16} color={color.onStatus} strokeWidth={3} />
-      ) : (
-        <Text
-          style={[styles.badgeText, tabular, { color: going ? color.onPrimary : color.text }]}
-          maxFontSizeMultiplier={1.6}
-        >
-          {n}
-        </Text>
-      )}
-    </View>
-  );
-}
-
 /**
- * What a stop shows, on the route and under the finger while it's dragged (`ghost`: no Move…
- * button, nothing to press).
+ * A stop on a tech's day: the schedule card (ScheduleCard.tsx). A plain drag on it scrolls the
+ * page (owner, 2026-10-21: "I can't scroll on a Scheduling tile"); touch and hold picks it up
+ * (or, let go without moving, opens its menu), and the other stops slide aside as it passes.
  */
-function StopFace({
-  stop: s,
-  n,
-  ghost = false,
-  onMove,
-  onDirections,
-  gestures,
-}: {
-  stop: Stop;
-  n: number;
-  ghost?: boolean;
-  onMove?: (s: Stop) => void;
-  onDirections?: (s: Stop) => void;
-  /** Its swipe actions and menu, for TalkBack and VoiceOver too. */
-  gestures?: RowGestures;
-}) {
-  const kind = s.tag;
-  return (
-    <View
-      style={[styles.face, { backgroundColor: color.surface }]}
-      accessible={false}
-      accessibilityActions={
-        gestures
-          ? gestures.accessibilityActions
-          : s.movable && onMove
-            ? [{ name: "move", label: "Move" }]
-            : undefined
-      }
-      onAccessibilityAction={(e) => (gestures ? gestures.onAccessibilityAction(e) : onMove?.(s))}
-    >
-      <View style={styles.top}>
-        <Badge n={n} status={s.status} done={s.done} />
-        <Pressable
-          accessibilityRole="link"
-          accessibilityLabel={`Stop ${n}, ${s.time ?? "no time"}, ${s.customer}, ${kind}${
-            s.done ? ", done" : ""
-          }`}
-          accessibilityHint="Opens the job"
-          disabled={ghost}
-          onPress={unlessSwiping(() => router.push(`/jobs/${s.id}`))}
-          onLongPress={s.movable ? undefined : gestures?.onLongPress}
-          style={({ pressed }) => [styles.open, pressed && { opacity: 0.6 }]}
-        >
-          <Text
-            style={[styles.time, tabular, { color: color.text }]}
-            maxFontSizeMultiplier={MAX_TEXT_SCALE}
-          >
-            {s.time ?? "Saving…"}
-            {s.number ? (
-              <Text style={[type.secondary, { color: color.textMuted }]}>{`  #${s.number}`}</Text>
-            ) : null}
-          </Text>
-          <Text
-            numberOfLines={1}
-            style={[type.bodyEmphasis, { color: color.text }]}
-            maxFontSizeMultiplier={MAX_TEXT_SCALE}
-          >
-            {s.customer}
-          </Text>
-        </Pressable>
-        {s.movable && !ghost && onMove ? (
-          <Button
-            kind="quiet"
-            title="Move…"
-            accessibilityLabel={`Move ${s.customer}`}
-            onPress={unlessSwiping(() => onMove(s))}
-            style={{ paddingHorizontal: 8 }}
-          />
-        ) : null}
-        {/* The drag grip at the trailing edge (owner, 2026-10-20); shown under the finger too. */}
-        {s.movable ? <Grip width={28} /> : null}
-      </View>
-      <View style={styles.body}>
-        <View style={styles.chips}>
-          <View style={[styles.pill, { backgroundColor: color.fill }]}>
-            <Text
-              style={[type.footnote, face.semiBold, { color: color.text }]}
-              maxFontSizeMultiplier={MAX_TEXT_SCALE}
-            >
-              {kind}
-            </Text>
-          </View>
-          {s.status !== "scheduled" ? <StatusChip status={s.status} /> : null}
-          {s.lock ? <LockTag lock={s.lock} /> : null}
-          {/* Not found on the map: a symbol after the address (below). */}
-          {!s.notOnMap && !s.location ? (
-            <Text
-              style={[type.footnote, face.semiBold, { color: color.warning }]}
-              maxFontSizeMultiplier={MAX_TEXT_SCALE}
-            >
-              No map location
-            </Text>
-          ) : null}
-        </View>
-        {s.address ? (
-          <AddressLine notOnMap={s.notOnMap} lineHeight={type.secondary.lineHeight!}>
-            <Text
-              accessibilityRole="link"
-              accessibilityLabel={`${s.address}, directions`}
-              onPress={ghost ? undefined : unlessSwiping(() => onDirections?.(s))}
-              numberOfLines={2}
-              style={[type.secondary, { color: color.link, alignSelf: "flex-start" }]}
-              maxFontSizeMultiplier={MAX_TEXT_SCALE}
-            >
-              {s.address}
-            </Text>
-          </AddressLine>
-        ) : null}
-        {/* Gate code, which gate, dogs, as on Today. */}
-        {s.access && !s.done ? (
-          <View accessible accessibilityLabel={`Access: ${s.access}`} style={styles.access}>
-            <View style={{ marginTop: 1 }}>
-              <WebIcon name="key" size={18} color={color.warning} />
-            </View>
-            <Text
-              numberOfLines={2}
-              style={[type.secondary, face.medium, { flex: 1, color: color.text }]}
-              maxFontSizeMultiplier={MAX_TEXT_SCALE}
-            >
-              {s.access}
-            </Text>
-          </View>
-        ) : null}
-        {s.cleanings?.length ? <CleaningNames list={s.cleanings} /> : null}
-      </View>
-    </View>
-  );
-}
-
 function StopCard({
   stop: s,
   n,
@@ -431,7 +272,6 @@ function StopCard({
   route,
   tech,
   onMove,
-  onDirections,
   gestures,
 }: {
   stop: Stop;
@@ -442,36 +282,19 @@ function StopCard({
   /** The route's tech color: a 4 pt stripe on the card's leading edge. */
   tech: string | null;
   onMove: (s: Stop) => void;
-  onDirections: (s: Stop) => void;
   gestures?: RowGestures;
 }) {
-  const hover = useDragHover();
   const { slotRef } = useDropZones();
-  // Held and let go without moving: the stop's menu; held and moved: dragged (section 12).
   const { gesture, ref } = useDragSource(
     item,
     () => (
       <View style={styles.clip}>
-        <StopFace stop={s} n={n} ghost />
-        <TechStripe tech={tech} />
+        <ScheduleCardFace stop={s} n={n} tech={tech} />
       </View>
     ),
     gestures?.onLongPress,
   );
   const slot = slotRef(s.id, route);
-  const content = (
-    <View>
-      <StopFace stop={s} n={n} onMove={onMove} onDirections={onDirections} gestures={gestures} />
-      <TechStripe tech={tech} />
-    </View>
-  );
-  // Swipe left for Move…, right for Lock… (a stop that can't move has neither).
-  const leading = gestures ? gestures.leading : null;
-  const trailing = gestures
-    ? gestures.trailing
-    : s.movable
-      ? [{ label: "Move", tint: color.link, onPress: () => onMove(s) }]
-      : [];
   return (
     <GestureDetector gesture={gesture}>
       <View
@@ -480,52 +303,59 @@ function StopCard({
           slot(node);
         }}
         collapsable={false}
-        // Left in place, faded, while it's held.
-        style={[styles.card, cardShadow(), hover.id === s.id && { opacity: 0.35 }]}
+        style={[styles.card, cardShadow()]}
       >
-        <View style={styles.clip}>
-          {leading || trailing.length ? (
-            <SwipeActions leading={leading} trailing={trailing}>
-              {content}
-            </SwipeActions>
-          ) : (
-            content
-          )}
-        </View>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={cardLabel(s, n)}
+          accessibilityHint="Opens the job"
+          accessibilityActions={
+            gestures
+              ? gestures.accessibilityActions
+              : s.movable
+                ? [{ name: "move", label: "Move" }]
+                : undefined
+          }
+          onAccessibilityAction={(e) => (gestures ? gestures.onAccessibilityAction(e) : onMove(s))}
+          onPress={() => router.push(`/jobs/${s.id}`)}
+          onLongPress={s.movable ? undefined : gestures?.onLongPress}
+          android_ripple={{ color: color.ripple }}
+          style={({ pressed }) => [styles.clip, pressed && { opacity: 0.85 }]}
+        >
+          <ScheduleCardFace stop={s} n={n} tech={tech} />
+        </Pressable>
       </View>
     </GestureDetector>
   );
 }
 
+/** A stop and the drive into it, sliding aside while another stop is carried past. */
+function Slide({
+  id,
+  route,
+  position,
+  children,
+}: {
+  id: string;
+  route: string;
+  position: number;
+  children: ReactNode;
+}) {
+  const style = useSlide(id, route, position);
+  // Carried: its place (and the drive into it) is an empty gap.
+  const carried = useDragHover().id === id;
+  return (
+    <Reanimated.View style={[styles.stopWrap, style, carried && { opacity: 0 }]}>
+      {children}
+    </Reanimated.View>
+  );
+}
+
+/** A Needs a Time card as it's carried. */
 export function GhostCard({ stop: s }: { stop: Stop }) {
   return (
-    <View style={[styles.face, styles.clip, { backgroundColor: color.surface, paddingRight: 36 }]}>
-      <Text
-        numberOfLines={1}
-        style={[type.bodyEmphasis, { color: color.text }]}
-        maxFontSizeMultiplier={MAX_TEXT_SCALE}
-      >
-        {s.customer}
-        {s.number ? <Text style={{ color: color.textMuted }}>{`  #${s.number}`}</Text> : null}
-      </Text>
-      <View style={styles.chips}>
-        <View style={[styles.pill, { backgroundColor: color.fill }]}>
-          <Text
-            style={[type.footnote, face.semiBold, { color: color.text }]}
-            maxFontSizeMultiplier={MAX_TEXT_SCALE}
-          >
-            {s.tag}
-          </Text>
-        </View>
-      </View>
-      {s.address ? (
-        <T variant="secondary" muted numberOfLines={1}>
-          {s.address}
-        </T>
-      ) : null}
-      <View style={styles.ghostGrip}>
-        <Grip width={28} />
-      </View>
+    <View style={styles.clip}>
+      <ScheduleCardFace stop={s} n={null} tech={null} tray />
     </View>
   );
 }
@@ -554,35 +384,4 @@ const styles = StyleSheet.create({
   empty: { borderRadius: shape.card, padding: space["4"] },
   card: { borderRadius: shape.card },
   clip: { borderRadius: shape.card, overflow: "hidden" },
-  face: {
-    gap: space["1"],
-    paddingHorizontal: space["3"],
-    paddingTop: space["2"],
-    paddingBottom: space["3"],
-  },
-  top: { flexDirection: "row", alignItems: "center", gap: space["2"] },
-  open: { flex: 1, minWidth: 0, minHeight: 44, justifyContent: "center" },
-  // Lined up with the time and name, beside the stop's number.
-  body: { gap: space["1"], paddingLeft: 32 + space["2"] },
-  badge: {
-    minWidth: 32,
-    minHeight: 32,
-    borderRadius: 999,
-    paddingHorizontal: 4,
-    alignItems: "center",
-    justifyContent: "center",
-    alignSelf: "flex-start",
-    marginTop: space["1"],
-  },
-  badgeText: { fontFamily: font.displayBold, fontSize: 17, lineHeight: 22 },
-  time: { fontFamily: font.displayBold, fontSize: 20, lineHeight: 26 },
-  chips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    gap: space["2"],
-  },
-  pill: { borderRadius: shape.pill, paddingHorizontal: 10, paddingVertical: 2 },
-  access: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
-  ghostGrip: { position: "absolute", right: 4, top: 0, bottom: 0, justifyContent: "center" },
 });

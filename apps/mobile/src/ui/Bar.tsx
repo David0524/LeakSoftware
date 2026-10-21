@@ -3,7 +3,6 @@ import { useSyncExternalStore } from "react";
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Glass } from "./Glass";
-import { BrandHeaderLeft } from "./SundeckLogo";
 import { color, minTap, type } from "./theme";
 import { WebIcon } from "./WebIcon";
 
@@ -13,8 +12,9 @@ import { WebIcon } from "./WebIcon";
 // once the large one scrolls under the bar, and the bar turns to glass once anything does.
 // iPhone uses the native bar with large titles instead.
 //
-// The tab roots have the logo where Back would be, level with the action, and the large title
-// on its own full-width row under the bar (owner, 2026-10-21), as on the website.
+// The tab roots keep only their buttons in the bar; the logo parks right above the large title
+// in the page and scrolls away with it (owner, 2026-10-21: "The logo needs to park over the
+// title"), as on the website.
 
 export const BAR_HEIGHT = 44;
 
@@ -162,15 +162,7 @@ export function DrawnHeader({ back, options, route, navigation }: NativeStackHea
               </Pressable>
             ) : null)}
         </View>
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.titleBox,
-            // The logo (a tab's own page) is wider than Back: the small title leaves it room.
-            options.headerLeft === BrandHeaderLeft && styles.titleBesideLogo,
-            { opacity: titleOpacity },
-          ]}
-        >
+        <Animated.View pointerEvents="none" style={[styles.titleBox, { opacity: titleOpacity }]}>
           <Text
             style={[type.barTitle, { color: color.text }]}
             numberOfLines={1}
@@ -230,7 +222,6 @@ const styles = StyleSheet.create({
   right: { justifyContent: "flex-end" },
   rightContent: { flexDirection: "row", alignItems: "center" },
   titleBox: { maxWidth: "55%", alignItems: "center" },
-  titleBesideLogo: { maxWidth: "28%" },
   back: {
     minHeight: minTap,
     flexDirection: "row",

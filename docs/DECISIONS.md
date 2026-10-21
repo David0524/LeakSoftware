@@ -2,6 +2,11 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-21 (owner: "The logo needs to park over the title"; "I can't scroll on a Scheduling tile"; "The cards should slide into new positions as I dangle the tile. Redesign those tiles too. They look super busy")
+- **The logo sits right above the large title** on the five tab pages and scrolls away with it; the bar keeps only its buttons. Every platform.
+- **Schedule scrolls from a card:** sideways gestures claim only clearly sideways drags; swipe actions on schedule cards are gone (their actions are in the card's menu); a card is picked up only from its grip or after a touch-and-hold.
+- **Two-line schedule cards** (`docs/design/2026-10-21-schedule-card.md`), and the other cards slide into place while one is dragged. The website keeps a small "⋯" on cards so mouse and keyboard users can reach the menu; desktop cards are two lines now too.
+
 ## 2026-10-21 (owner, TestFlight build 1016: logo "above the page title"; Findings and Wrap Up "the navigation bar should not shrink"; Today has "too many gestures" and freezes)
 - **The logo sits in the bar's top row, at the leading edge level with the round +** (28 pt), and the large title takes its own full-width row under it on Today, Jobs, Schedule, Messages and More.
 - **The job page keeps a fixed inline title that never collapses**, on every section (Details, Checklist, Findings, Photos, Wrap Up), since all of them sit on tiles and switching sections shouldn't move the bar.

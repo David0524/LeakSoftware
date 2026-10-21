@@ -645,7 +645,8 @@ export function ScheduleScreen() {
     });
   }
 
-  // Swipe actions and touch-and-hold menus on stops (gestures spec section 12): Move… and
+  // Touch-and-hold menus and TalkBack actions on stops (gestures spec section 12; no swipe
+  // actions on schedule cards since 2026-10-21, as on Today): Move… and
   // Take Off Schedule are the Move sheet's, the locks are the job page's Lock picker.
   function setLock(s: Stop, next: ReturnType<typeof jobLock>) {
     const j = byId.get(s.id);
@@ -943,6 +944,7 @@ export function ScheduleScreen() {
             Previous and Next above stay the visible way. */}
         <SwipePager
           page={`${view}|${date}`}
+          strict
           style={styles.pages}
           onPrevious={() => setDate(move(-1))}
           onNext={() => setDate(move(1))}
@@ -991,9 +993,6 @@ export function ScheduleScreen() {
                   lead={r.key === lead?.key}
                   onPlan={() => plan(r)}
                   onMove={openMove}
-                  onDirections={(s) =>
-                    openDirections({ address: s.address, location: s.location }, choice)
-                  }
                   gesturesFor={(s) => stopGestures(s)}
                   mapsButton={mapsButton(r)}
                 />

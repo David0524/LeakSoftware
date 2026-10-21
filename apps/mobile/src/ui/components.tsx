@@ -71,6 +71,7 @@ import {
   useBar,
 } from "./Bar";
 import { liquidGlass } from "./navigation";
+import { SundeckLogo } from "./SundeckLogo";
 import { haptics } from "./haptics";
 import { Icon, type IconName } from "./Icon";
 import { WebIcon, type WebIconName } from "./WebIcon";
@@ -208,9 +209,9 @@ export function useScreenChrome({
   useScrollToTop(ref);
   const bar = useBar(route.key);
   const large = Boolean(title);
-  // No Back (a tab's root, the first screen in its stack): the logo has the bar's row, level
-  // with the "+", and the large title its own full-width row under it (owner, 2026-10-21: the
-  // logo beside the title squeezed it).
+  // No Back (a tab's root, the first screen in its stack): the bar keeps only its buttons, and
+  // the logo parks right above the large title, scrolling away with it (owner, 2026-10-21:
+  // "The logo needs to park over the title").
   const first = useNavigationState((state) => state?.routes[0]?.key === route.key);
   const root = large && first && tabSpace > 0;
   // The page draws the large title: always with the drawn bar (Android), and on iPhone for a
@@ -220,7 +221,7 @@ export function useScreenChrome({
     setLargeTitle(route.key, ownTitle);
   }, [route.key, ownTitle]);
 
-  // iPhone, a tab's root: the native bar keeps its logo and buttons but shows no large title
+  // iPhone, a tab's root: the native bar keeps its buttons but shows no large title
   // (the page draws it under the bar); its small title fades in as on Android.
   const nativeOwn = ios && root;
   const options: NativeStackNavigationOptions = {
@@ -265,7 +266,7 @@ export function useScreenChrome({
       {hasOptions ? <Stack.Screen options={options} /> : null}
       {ownTitle || subtitle || headerActions ? (
         <View style={styles.titleBlock}>
-          {ownTitle ? <LargeTitle title={title!} /> : null}
+          {ownTitle ? <LargeTitle title={title!} logo={root} /> : null}
           {subtitle ? typeof subtitle === "string" ? <T muted>{subtitle}</T> : subtitle : null}
           {headerActions ? <View style={styles.headerActions}>{headerActions}</View> : null}
         </View>
@@ -301,9 +302,21 @@ export function useScreenChrome({
   };
 }
 
-/** The large title drawn in the page (spec 3.1), on its own full-width row under the bar. */
-function LargeTitle({ title }: { title: string }) {
-  return <T variant="largeTitle">{title}</T>;
+/**
+ * The large title drawn in the page (spec 3.1), on its own full-width row under the bar. On a
+ * tab's own page the logo sits right above it, left-aligned, and scrolls with it.
+ */
+function LargeTitle({ title, logo }: { title: string; logo: boolean }) {
+  return (
+    <View>
+      {logo ? (
+        <View style={styles.titleLogo}>
+          <SundeckLogo height={28} />
+        </View>
+      ) : null}
+      <T variant="largeTitle">{title}</T>
+    </View>
+  );
 }
 
 export function Screen({
@@ -1970,6 +1983,8 @@ const styles = StyleSheet.create({
   // Blocks on a screen are 24 apart (spec 2.4).
   stack: { gap: space["5"] },
   titleBlock: { gap: space["1"], marginBottom: -space["2"] },
+  // 6 above the large title (owner, 2026-10-21).
+  titleLogo: { marginBottom: 6, alignItems: "flex-start" },
   barRight: { flexDirection: "row", alignItems: "center" },
   headerActions: {
     flexDirection: "row",

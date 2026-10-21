@@ -9,7 +9,12 @@ import {
 } from "react";
 import { StyleSheet, Text, View, useWindowDimensions, type ScrollView } from "react-native";
 import { Gesture, type PanGesture } from "react-native-gesture-handler";
-import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  type SharedValue,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   autoScrollStep,
@@ -17,6 +22,7 @@ import {
   insertIndex,
   planDrop,
   scrolled,
+  slideFor,
   zoneAt,
   type DragItem,
   type DropPlan,
@@ -24,15 +30,21 @@ import {
   type Rect,
   type Slot,
 } from "../../lib/scheduleDrag";
-import { TabBarSpace, type ScrollMetrics } from "../../ui/components";
+import { TabBarSpace, useReduceMotion, type ScrollMetrics } from "../../ui/components";
 import { haptics } from "../../ui/haptics";
 import { color, face, MAX_TEXT_SCALE, shape, space, tint, type } from "../../ui/theme";
 
 // Schedule drag and drop (owner, 2026-10-20: "bring back drag/drop on mobile"; the website's
 // route board). Touch and hold a stop to pick it up (a firm tap is felt), drag it to a place in
 // a tech's day, a day in the week strip, or Needs a Time, and let go. The page scrolls by itself
-// near the top and bottom. Move… on every stop stays the visible and accessible way to do the
+// near the top and bottom. Move… in every stop's menu (and its TalkBack actions) does the
 // same, and both end in the same move (core moveJobChange, saved through the sync layer).
+//
+// While a stop is carried, the other stops in a day slide up or down into their new places as
+// it passes them (useSlide), so the gap is always where it will land, and its own place is an
+// empty gap: never a card under the one being dragged, and no insertion line (owner,
+// 2026-10-21: "The cards should slide into new positions as I dangle the tile";
+// docs/design/2026-10-21-schedule-card.md). Reduce Motion: they jump.
 
 /** How long a finger rests on a stop before it lifts, as iOS's drag and drop. */
 const HOLD_MS = 350;
@@ -65,6 +77,16 @@ export interface DragHover {
   zone: string | null;
   /** The drop would be refused there (a past day, Needs a Time for a started job). */
   refused: string | null;
+  /** Where it was picked up from, when that's a route: its place there. */
+  from: { route: string; index: number } | null;
+  /** Where it would land in a route: its place among the others there. */
+  target: { route: string; index: number } | null;
+  /** How far the stops after its old place move up to close it. */
+  closeGap: number;
+  /** How far the stops after its new place move down to open it. */
+  openGap: number;
+  /** When the last drag ended (ms), so the drop doesn't also glide the list. */
+  settledAt: number;
 }
 
 const noop = () => () => {};
@@ -77,7 +99,16 @@ const Api = createContext<DragApi>({
   end: () => {},
   cancel: () => {},
 });
-const NO_HOVER: DragHover = { id: null, zone: null, refused: null };
+const NO_HOVER: DragHover = {
+  id: null,
+  zone: null,
+  refused: null,
+  from: null,
+  target: null,
+  closeGap: 0,
+  openGap: 0,
+  settledAt: 0,
+};
 const Hover = createContext<DragHover>(NO_HOVER);
 
 export function useDragHover(): DragHover {
@@ -138,15 +169,9 @@ export function useScheduleDrag({
   const x = useSharedValue(0);
   const y = useSharedValue(0);
   const shown = useSharedValue(0);
-  const line = useSharedValue({ x: 0, y: 0, width: 0, on: 0 });
   const ghostStyle = useAnimatedStyle(() => ({
     opacity: shown.value,
     transform: [{ translateX: x.value }, { translateY: y.value }, { scale: 1.03 }],
-  }));
-  const lineStyle = useAnimatedStyle(() => ({
-    opacity: line.value.on,
-    width: line.value.width,
-    transform: [{ translateX: line.value.x }, { translateY: line.value.y }],
   }));
 
   const api = useMemo<DragApi>(() => {
@@ -164,6 +189,11 @@ export function useScheduleDrag({
       zone: DropZone | null;
       key: string;
       frame: number | null;
+      from: { route: string; index: number } | null;
+      /** The carried card's height and the room after it. */
+      gap: number;
+      /** Each route's distance from one stop to the next. */
+      pitch: Map<string, number>;
     } | null = null;
 
     function place() {
@@ -186,27 +216,6 @@ export function useScheduleDrag({
       });
       d.plan = plan;
       d.zone = zone;
-      // The line where it would land, between two stops.
-      if (zone?.kind === "route" && plan.kind === "move") {
-        const others = slots
-          .filter((s) => s.route === zone.id && s.id !== d.item.id)
-          .sort((a, b) => a.rect.y - b.rect.y);
-        const below = others[index];
-        const above = others[index - 1];
-        const at = below
-          ? below.rect.y - 6
-          : above
-            ? above.rect.y + above.rect.height + 6
-            : zone.rect.y + zone.rect.height - 12;
-        line.value = {
-          x: zone.rect.x + space["3"] - d.origin.x,
-          y: at - 1.5 - d.origin.y,
-          width: Math.max(0, zone.rect.width - space["3"] * 2),
-          on: 1,
-        };
-      } else if (line.value.on) {
-        line.value = { ...line.value, on: 0 };
-      }
       const key = `${zone?.id ?? ""}|${plan.kind === "move" ? plan.index : ""}|${plan.kind}`;
       if (key !== d.key) {
         if (d.key && plan.kind !== "none") haptics.selection();
@@ -215,6 +224,14 @@ export function useScheduleDrag({
           id: d.item.id,
           zone: zone?.id ?? null,
           refused: plan.kind === "refuse" ? plan.error : null,
+          from: d.from,
+          target:
+            zone?.kind === "route" && (plan.kind === "move" || plan.kind === "none")
+              ? { route: zone.id, index }
+              : null,
+          closeGap: d.gap,
+          openGap: zone?.kind === "route" ? (d.pitch.get(zone.id) ?? d.gap) : d.gap,
+          settledAt: 0,
         });
       }
     }
@@ -239,9 +256,8 @@ export function useScheduleDrag({
       if (drag?.frame != null) cancelAnimationFrame(drag.frame);
       drag = null;
       shown.value = 0;
-      line.value = { ...line.value, on: 0 };
       setGhost(null);
-      setHover(NO_HOVER);
+      setHover({ ...NO_HOVER, settledAt: Date.now() });
     }
 
     return {
@@ -270,9 +286,13 @@ export function useScheduleDrag({
           zone: null as DropZone | null,
           key: "",
           frame: null as number | null,
+          from:
+            item.from.kind === "route" ? { route: item.from.route, index: item.from.index } : null,
+          gap: 0,
+          pitch: new Map<string, number>(),
         };
         drag = d;
-        setHover({ id: item.id, zone: null, refused: null });
+        setHover({ ...NO_HOVER, id: item.id, from: d.from });
         const entries = [...nodes.current.entries()];
         void Promise.all([
           measure(node),
@@ -288,6 +308,24 @@ export function useScheduleDrag({
             if (e.zone) d.zones.push({ ...e.zone, rect } as DropZone);
             else if (e.slot) d.slots.push({ id: key.slice("slot:".length), route: e.slot, rect });
           });
+          // The carried card's room: from its top to the next stop's, or its height and the
+          // usual space after it.
+          const byRoute = new Map<string, Slot[]>();
+          for (const sl of d.slots) byRoute.set(sl.route, [...(byRoute.get(sl.route) ?? []), sl]);
+          for (const [route, list] of byRoute) {
+            list.sort((a, b) => a.rect.y - b.rect.y);
+            if (list.length > 1) d.pitch.set(route, list[1]!.rect.y - list[0]!.rect.y);
+          }
+          const own = d.from ? (byRoute.get(d.from.route) ?? []) : [];
+          const at = own.findIndex((sl) => sl.id === item.id);
+          const next = own[at + 1];
+          const prev = own[at - 1];
+          d.gap =
+            at >= 0 && next
+              ? next.rect.y - own[at]!.rect.y
+              : at >= 0 && prev
+                ? own[at]!.rect.y + own[at]!.rect.height - (prev.rect.y + prev.rect.height)
+                : card.height + space["1"];
           d.ready = true;
           setGhost({ node: ghostNode, width: card.width });
           place();
@@ -311,11 +349,10 @@ export function useScheduleDrag({
         if (drag) stop();
       },
     };
-  }, [x, y, shown, line]);
+  }, [x, y, shown]);
 
   const overlay = (
     <View ref={overlayRef} pointerEvents="none" style={StyleSheet.absoluteFill} collapsable={false}>
-      <Animated.View style={[styles.line, { backgroundColor: color.link }, lineStyle]} />
       {ghost ? (
         <Animated.View
           style={[
@@ -445,6 +482,30 @@ export function useDragSource(
   return { gesture, ref: box.attach };
 }
 
+/** A quick spring with no bounce, as Reorder Techs' rows. */
+const SLIDE = { duration: 300, dampingRatio: 1 } as const;
+
+/**
+ * A stop's slide while another is carried past it: a spring into its new place, so the gap is
+ * where the carried one will land. Let go, it's back at once (the list has its new order).
+ */
+export function useSlide(id: string, route: string | null, position: number) {
+  const hover = useDragHover();
+  const reduceMotion = useReduceMotion();
+  const shift = slideFor(hover, id, route, position);
+  const dy: SharedValue<number> = useSharedValue(0);
+  const carrying = hover.id != null;
+  useEffect(() => {
+    dy.value = carrying && !reduceMotion ? withSpring(shift, SLIDE) : shift;
+  }, [dy, shift, carrying, reduceMotion]);
+  return useAnimatedStyle(() => ({ transform: [{ translateY: dy.value }] }));
+}
+
+/** Just dropped: the list takes its new order in place, without gliding there again. */
+export function justDropped(hover: DragHover) {
+  return hover.id == null && Date.now() - hover.settledAt < 600;
+}
+
 /** The tint a zone takes while a stop is held over it. */
 export function dropTint(hover: DragHover, zone: string): string | undefined {
   if (hover.id == null || hover.zone !== zone) return undefined;
@@ -459,7 +520,6 @@ const styles = StyleSheet.create({
     gap: space["1"],
     borderRadius: shape.card,
   },
-  line: { position: "absolute", left: 0, top: 0, height: 3, borderRadius: 2 },
   refused: {
     alignSelf: "flex-start",
     borderRadius: shape.pill,

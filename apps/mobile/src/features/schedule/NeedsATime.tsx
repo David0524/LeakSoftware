@@ -1,15 +1,13 @@
 import { router } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from "react-native";
 import { GestureDetector } from "react-native-gesture-handler";
 import Svg, { Circle } from "react-native-svg";
 import { Card, T } from "../../ui/components";
-import { NotOnMapTag } from "../../ui/NotOnMap";
 import type { RowGestures } from "../../ui/RowMenu";
 import { useMenu } from "../../ui/Select";
-import { color, face, gutter, MAX_TEXT_SCALE, space, type } from "../../ui/theme";
-import { Grip } from "../../ui/Grip";
-import { LockTag } from "../../ui/LockTag";
+import { color, gutter, space } from "../../ui/theme";
 import { GhostCard, type Stop } from "./RouteCard";
+import { cardLabel, ScheduleCardFace } from "./ScheduleCard";
 import { dropTint, useDragHover, useDragSource, useDropZones } from "./ScheduleDrag";
 
 /** Needs a Time's drop zone id. */
@@ -113,73 +111,53 @@ function TrayCard({
         collapsable={false}
         style={[
           styles.card,
-          { width, backgroundColor: color.well },
-          hover.id === j.id && { opacity: 0.35 },
+          { width },
+          // Carried: its place is an empty gap.
+          hover.id === j.id && { opacity: 0 },
         ]}
       >
+        {/* The schedule card (ScheduleCard.tsx), with the note on its second line; "…" keeps
+            Suggest Times and Move…. */}
         <Pressable
           accessibilityRole="link"
-          accessibilityLabel={`${j.customer}${j.number ? `, #${j.number}` : ""}`}
+          accessibilityLabel={cardLabel(j, null, true)}
           accessibilityActions={gestures?.accessibilityActions}
           onAccessibilityAction={gestures?.onAccessibilityAction}
           onPress={() => router.push(`/jobs/${j.id}`)}
           onLongPress={j.movable ? undefined : onActions}
-          style={({ pressed }) => [{ flex: 1, paddingVertical: 4 }, pressed && { opacity: 0.6 }]}
+          style={({ pressed }) => [{ flex: 1 }, pressed && { opacity: 0.6 }]}
         >
-          <Text
-            numberOfLines={1}
-            style={[type.body, { color: color.text }]}
-            maxFontSizeMultiplier={MAX_TEXT_SCALE}
-          >
-            <Text style={face.semiBold}>{j.customer}</Text>
-            <Text style={{ color: color.textMuted }}>{j.number ? ` · #${j.number}` : ""}</Text>
-          </Text>
-          {/* The address, the not-on-map symbol right after it, then the note. */}
-          <View style={styles.addressLine}>
-            {j.address ? (
-              <T variant="secondary" muted numberOfLines={1} style={{ flexShrink: 1 }}>
-                {j.address}
-              </T>
-            ) : null}
-            {j.notOnMap ? <NotOnMapTag lineHeight={type.secondary.lineHeight!} /> : null}
-            {j.note ? (
-              <T variant="secondary" muted numberOfLines={1} style={{ flexShrink: 1 }}>
-                {j.address ? `· ${j.note}` : j.note}
-              </T>
-            ) : null}
-          </View>
-          {j.lock ? <LockTag lock={j.lock} /> : null}
+          <ScheduleCardFace
+            stop={j}
+            n={null}
+            tech={null}
+            tray
+            trailing={
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Actions for ${j.customer}`}
+                onPress={onActions}
+                style={({ pressed }) => [
+                  styles.more,
+                  pressed && { backgroundColor: color.iconTint },
+                ]}
+              >
+                <Svg width={24} height={24} viewBox="0 0 24 24" fill={color.link}>
+                  <Circle cx={6} cy={12} r={1.8} />
+                  <Circle cx={12} cy={12} r={1.8} />
+                  <Circle cx={18} cy={12} r={1.8} />
+                </Svg>
+              </Pressable>
+            }
+          />
         </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Actions for ${j.customer}`}
-          onPress={onActions}
-          style={({ pressed }) => [styles.more, pressed && { backgroundColor: color.iconTint }]}
-        >
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill={color.link}>
-            <Circle cx={6} cy={12} r={1.8} />
-            <Circle cx={12} cy={12} r={1.8} />
-            <Circle cx={18} cy={12} r={1.8} />
-          </Svg>
-        </Pressable>
-        {/* The drag grip at the trailing edge (owner, 2026-10-20). */}
-        {j.movable ? <Grip width={24} /> : null}
       </View>
     </GestureDetector>
   );
 }
 
 const styles = StyleSheet.create({
-  addressLine: { flexDirection: "row", alignItems: "center", gap: 4 },
-  card: {
-    borderRadius: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingLeft: space["3"],
-    paddingRight: 4,
-    paddingVertical: 4,
-  },
+  card: { borderRadius: 16, overflow: "hidden" },
   more: {
     width: 44,
     height: 44,
