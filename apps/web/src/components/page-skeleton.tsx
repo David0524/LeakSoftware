@@ -1,13 +1,16 @@
 import type { ReactNode } from "react";
 import { PageHeader, cx } from "./ui";
 
-/** A soft placeholder shape: no spinner, a slow pulse (none with Reduce Motion). */
+/**
+ * A soft placeholder shape: no spinner, a slow pulse (none with Reduce Motion). Never wider
+ * than its column, so a fixed width in rem can't push the page sideways at large text sizes.
+ */
 export function Bone({ className, onWater = false }: { className?: string; onWater?: boolean }) {
   return (
     <span
       aria-hidden="true"
       className={cx(
-        "block animate-pulse motion-reduce:animate-none",
+        "block max-w-full animate-pulse motion-reduce:animate-none",
         // Pills unless the caller gives a shape.
         !/(^|\s)rounded-/.test(className ?? "") && "rounded-full",
         onWater ? "bg-water/20" : "bg-text/[0.07]",
@@ -20,7 +23,7 @@ export function Bone({ className, onWater = false }: { className?: string; onWat
 export function PageSkeleton() {
   return (
     <div aria-label="Loading" aria-busy="true">
-      <div className="h-9 w-48 animate-pulse motion-reduce:animate-none rounded-md bg-surface" />
+      <div className="h-9 w-48 max-w-full animate-pulse motion-reduce:animate-none rounded-md bg-surface" />
       <div className="mt-6 h-64 animate-pulse motion-reduce:animate-none rounded-lg bg-surface" />
     </div>
   );

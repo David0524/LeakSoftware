@@ -1,5 +1,7 @@
 import { devices, expect, test, type Page } from "@playwright/test";
-import { TECH, signIn } from "./helpers";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { signedInClient } from "./backend";
+import { OWNER, RUN, TECH, signIn } from "./helpers";
 import { SAMPLE_JOB } from "./money";
 
 // Large text (owner, 2026-10-20): with the browser's text at 200%, or the page zoomed to 200%
@@ -68,6 +70,55 @@ async function checkJobPage(page: Page) {
   expect(await sideways(page)).toBeLessThanOrEqual(0);
 }
 
+/** The shop's date today (the demo shop is in Phoenix, UTC−7 all year). */
+function shopToday() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Phoenix" }).format(new Date());
+}
+
+// Today is checked with a stop on it, its card and row included, whatever the demo data has
+// today: one stop for the demo tech, removed afterwards.
+let owner: SupabaseClient;
+let stop: string | null = null;
+test.beforeAll(async () => {
+  owner = await signedInClient(OWNER.email, OWNER.password);
+  const { data: tech } = await owner.from("profile").select("id").eq("email", TECH.email).single();
+  const { data: who } = await owner.auth.getUser();
+  const { data: membership } = await owner
+    .from("membership")
+    .select("company_id")
+    .eq("user_id", who.user!.id)
+    .limit(1)
+    .single();
+  const start = `${shopToday()}T23:30:00-07:00`;
+  const { data: id, error } = await owner.rpc("create_job", {
+    target_company: membership!.company_id,
+    new_customer: { name: `Large Text ${RUN}`, phone: "602-555-0142" },
+    existing_customer: null,
+    new_property: {
+      address_line1: "455 N Galvin Pkwy",
+      city: "Phoenix",
+      state: "AZ",
+      postal_code: "85008",
+      has_spa: false,
+      access_notes: "Side gate code 4321; the dog stays inside.",
+    },
+    existing_property: null,
+    job: {
+      status: "scheduled",
+      scheduled_start: start,
+      scheduled_end: new Date(Date.parse(start) + 20 * 60_000).toISOString(),
+      assigned_user_id: tech!.id,
+    },
+    components: [],
+  });
+  if (error) throw error;
+  stop = id as string;
+});
+
+test.afterAll(async () => {
+  if (stop) await owner.from("job").update({ deleted_at: new Date().toISOString() }).eq("id", stop);
+});
+
 for (const [name, viewport, fontSize] of [
   ["text at 200%", { width: 390, height: 844 }, "200%"],
   ["zoomed to 200%", { width: 195, height: 422 }, null],
@@ -105,7 +156,11 @@ for (const [name, viewport, fontSize] of [
       if (fontSize) await page.addStyleTag({ content: `html { font-size: ${fontSize}; }` });
       const h1 = page.getByRole("heading", { level: 1 });
       await expect(h1).toBeVisible();
+      // While it loads (its placeholder screen) and once it has.
       expect(await sideways(page), `${path} scrolls sideways`).toBeLessThanOrEqual(0);
+      await expect(page.locator("[aria-busy=true]")).toHaveCount(0);
+      if (path === "/today") await expect(page.getByTestId("today-hero")).toBeVisible();
+      expect(await sideways(page), `${path} scrolls sideways once loaded`).toBeLessThanOrEqual(0);
       // No Back here, so the large title sits in the bar's row (owner, 2026-10-20): it wraps
       // before it reaches the "+", or takes its own row under the bar when a word can't fit.
       const plus = page.locator(".nav-main").getByRole("link", { name: "New Job" });

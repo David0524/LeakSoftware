@@ -185,6 +185,11 @@ body:has(.nav-accessory) .nav-main.glass-bar {
    becomes a scroller while it overflows, so normal sizes keep the thumb's shadow. */
 .segment-scroll {
   flex-wrap: nowrap;
+  /* Until the page's script has measured it (or between a text size change and the check), a
+     track that doesn't fit is clipped at its edge, not run past the page's: sideways only, and
+     the clip leaves room for the thumb's shadow. */
+  overflow-x: clip;
+  overflow-clip-margin: 0.75rem;
 }
 .segment-scroll[data-overflow] {
   overflow-x: auto;

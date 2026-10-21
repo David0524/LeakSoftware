@@ -354,7 +354,8 @@ export function TodayHeroCard({
         {startRow ? (
           <>
             {c.next ? <p className={cx("mt-3 text-[0.9375rem]", SOFT)}>{c.next}</p> : null}
-            <div className="mt-3 flex items-center gap-2" data-testid="hero-start-row">
+            {/* The round buttons go under Start when the text is too large for one row. */}
+            <div className="mt-3 flex flex-wrap items-center gap-2" data-testid="hero-start-row">
               {/* Fills the row on phones; a comfortable width, not the whole card, when wider. */}
               <div className="min-w-28 flex-1 sm:max-w-xs">
                 <Primary action="start_job" job={job!} inline />
@@ -365,16 +366,18 @@ export function TodayHeroCard({
         ) : (
           <>
             {c.next || contact ? (
-              <div className="mt-3 flex items-center gap-3">
-                <p className={cx("min-w-0 flex-1 text-[0.9375rem]", SOFT)}>{c.next}</p>
+              // The round buttons go under the Next line when the text is too large for one row.
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <p className={cx("min-w-0 flex-[1_1_5rem] text-[0.9375rem]", SOFT)}>{c.next}</p>
                 {contact}
               </div>
             ) : null}
 
-            {/* One row, equal widths: style, not size, marks the main action (buttons.md). */}
+            {/* One row, equal widths: style, not size, marks the main action (buttons.md);
+              stacked when the text is too large for two side by side. */}
             {(actions.primary && job) ||
             ((actions.complete || actions.undo) && job && (!job.done || job.undo)) ? (
-              <div className="mt-4 flex gap-2.5 [&>*]:min-w-0 [&>*]:flex-1">
+              <div className="mt-4 flex flex-wrap gap-2.5 [&>*]:min-w-0 [&>*]:flex-[1_1_7rem]">
                 {actions.primary && job ? (
                   <div>
                     <Primary action={actions.primary} job={job} />
@@ -479,7 +482,7 @@ function Detail({ icon, children }: { icon: React.ReactNode; children: React.Rea
  */
 function Contact({ job, message }: { job: HeroJob; message?: React.ReactNode }) {
   return (
-    <span className="flex shrink-0 gap-2">
+    <span className="flex max-w-full shrink-0 flex-wrap gap-2">
       {message ??
         (job.phone && job.textHref ? (
           <a href={job.textHref} aria-label={`Text ${job.customer}`} className={ROUND}>
