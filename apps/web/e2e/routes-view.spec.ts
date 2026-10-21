@@ -152,7 +152,11 @@ test("Customers to Add is in Week's sidebar: Move… puts one on Jake's Tuesday,
     await expect.poll(async () => (await planRow(owner, plan)).assigned_user_id).toBeNull();
 
     // The whole tile drags, not only its grip (section 8): from its name onto Jake's Wednesday.
-    const from = (await toAdd.getByText(NAME, { exact: true }).boundingBox())!;
+    // The sidebar scrolls on its own, and taking the tile out clamped its scroll, so the tile
+    // can come back below what it shows: scroll to it first, as a person would, then measure.
+    const name = toAdd.getByText(NAME, { exact: true });
+    await name.scrollIntoViewIfNeeded();
+    const from = (await name.boundingBox())!;
     const wednesday = page.getByRole("cell", { name: `Jake Turner, ${addDays(monday, 2)}` });
     const to = (await wednesday.boundingBox())!;
     await page.mouse.move(from.x + 10, from.y + from.height / 2);

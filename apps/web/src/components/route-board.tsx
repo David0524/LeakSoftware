@@ -1341,11 +1341,9 @@ function CompactCard({
     <RowActions
       title={`${s.customer}${s.number ? ` · Job #${s.number}` : ""}`}
       menu={stopMenu(s, actions)}
-      // "⋯" on hover and keyboard focus, just before the grip.
-      buttonClassName={cx(
-        "absolute top-1/2 -translate-y-1/2 size-7!",
-        s.draggable ? "right-8" : "right-1",
-      )}
+      // "⋯" in its own place before the grip, shown on hover and keyboard focus: over the
+      // card it covered the name in a narrow week cell.
+      button="none"
       className="rounded-xl max-lg:hidden"
     >
       <div
@@ -1389,6 +1387,7 @@ function CompactCard({
         </Link>
         {s.lock ? <LockTag lock={s.lock} /> : null}
         {s.notOnMap || !s.location ? <NotOnMapTag /> : null}
+        <RowMenuButton className="shrink-0 size-7!" />
         {s.draggable ? (
           <Grip compact label={`Drag ${s.customer}`} {...attributes} {...listeners} />
         ) : null}

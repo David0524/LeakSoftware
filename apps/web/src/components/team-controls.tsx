@@ -49,7 +49,9 @@ export function MemberSwitch({
     start(async () => {
       setOn(next);
       const r = await updateMember({}, formOf({ id, role, status: next ? "active" : "disabled" }));
-      bannerFor(r, next ? `${name} is on.` : `${name} is turned off.`);
+      // Say what changed, not the form's "Saved.".
+      bannerFor({ ...r, message: undefined }, next ? `${name} is on.` : `${name} is turned off.`);
+      if (r.error) setOn(!next);
     });
   }
   const input = (
