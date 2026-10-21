@@ -63,6 +63,7 @@ import {
 import { SideSectionTitle } from "./side-section";
 import { TechDot, TechStripe } from "./tech-dot";
 import { hasLock, toggleLock } from "@/lib/row-menu";
+import { TopScroller } from "./top-scroller";
 import { RowActions, RowMenuButton, formOf, type MenuEntry, type SwipeAction } from "./row-actions";
 import { DayMap } from "./day-map";
 import { CleaningIcon, KeyIcon } from "./icons";
@@ -341,7 +342,10 @@ export function RouteBoard({
 
   const where = (id: string) => Object.keys(lists).find((k) => lists[k]!.some((s) => s.id === id));
   /** Week with something to schedule: the sidebar (a tray above the board when narrower). */
-  const side = mode === "week" && (!!tray || !!plans);
+  // Day and Week on a computer: Needs a Time (and in Week, Customers to Add) in a sidebar on
+  // the left, listed down (owner, 2026-10-21: "needs a time is being moved to the left hand side
+  // as a vertical window").
+  const side = !!tray || (mode === "week" && !!plans);
 
   // The board as it is and as it's being dragged: lists that reorder slide into place.
   const board = useRef<HTMLDivElement>(null);
@@ -670,9 +674,10 @@ export function RouteBoard({
         <PlanDrop value={planDrops}>
           <div
             ref={board}
-            // Week on a computer or iPad (≥ 1024 pt): a 280 pt sidebar on the left with Needs a
-            // Time, then Customers to Add, scrolling on its own, and the board to its right
-            // (owner, 2026-10-20: where you pick and drag from, as in Mail and Calendar).
+            // Day and Week on a computer or iPad (≥ 1024 pt): a 280 pt sidebar on the left with
+            // Needs a Time, then Customers to Add, scrolling on its own, and the board to its
+            // right (owner, 2026-10-20: where you pick and drag from, as in Mail and Calendar).
+            // DayLead shows on phones only, so the grid holds the sidebar and the board.
             className={cx(
               side && "lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start lg:gap-5",
             )}
@@ -703,7 +708,7 @@ export function RouteBoard({
                     onSuggestion={(job, s) => moveTo(job, `${s.techId}|${s.date}`, s.position)}
                   />
                 ) : null}
-                {plans ? (
+                {plans && mode === "week" ? (
                   <CustomersToAdd
                     variant="sidebar"
                     plans={plans.list}
@@ -724,7 +729,7 @@ export function RouteBoard({
               // On a computer or tablet the techs sit side by side in one row that slides
               // sideways (owner, 2026-10-21: "make the techs slide horizontally instead of
               // doing multiple rows"); on phones they stack.
-              <div
+              <TopScroller
                 data-testid="day-columns"
                 className="grid grid-cols-[minmax(0,1fr)] gap-5 md:-mx-1 md:flex md:snap-x md:snap-proximity md:scroll-px-1 md:items-start md:overflow-x-auto md:overscroll-x-contain md:px-1 md:pb-2 md:[scrollbar-width:thin] md:[&>*]:w-[22rem] md:[&>*]:shrink-0 md:[&>*]:snap-start"
               >
@@ -742,7 +747,7 @@ export function RouteBoard({
                     lead={c.key === lead?.key}
                   />
                 ))}
-              </div>
+              </TopScroller>
             ) : (
               <div className="min-w-0">
                 <WeekMaps
