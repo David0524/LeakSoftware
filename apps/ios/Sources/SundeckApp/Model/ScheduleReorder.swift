@@ -71,3 +71,37 @@ public enum ScheduleReorder {
         return result
     }
 }
+
+// Letting go of a lifted Day stop (owner, 2026-10-21: "I can't drag jobs back into the 'Needs a
+// Time' box"): over Needs a Time it comes off its day, the same as Take Off Schedule; anywhere
+// else it goes to the place `target` gives.
+extension ScheduleReorder {
+    /// What letting go does.
+    public enum Release: Equatable, Sendable {
+        /// Back to its own place.
+        case stay
+        /// To this place in its day (its index in the new order).
+        case reorder(Int)
+        /// Off its day, to Needs a Time.
+        case takeOff
+    }
+
+    /// The finger (`finger`, global) is over Needs a Time (`tray`, its global frame; nil when it
+    /// isn't on screen).
+    public static func isOver(tray: CGRect?, finger: CGPoint?) -> Bool {
+        guard let tray, let finger, !tray.isEmpty else { return false }
+        return tray.contains(finger)
+    }
+
+    /// Let go `translation` points from its place with the finger at `finger`: over Needs a Time
+    /// (and it can come off the schedule) it comes off; else to its new place, or it stays.
+    public static func release(
+        from: Int, translation: Double, heights: [Double], spacing: Double, finger: CGPoint?, tray: CGRect?,
+        canTakeOff: Bool
+    ) -> Release {
+        if canTakeOff && isOver(tray: tray, finger: finger) { return .takeOff }
+        guard heights.indices.contains(from) else { return .stay }
+        let to = target(from: from, translation: translation, heights: heights, spacing: spacing)
+        return to == from ? .stay : .reorder(to)
+    }
+}
