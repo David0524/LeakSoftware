@@ -3,8 +3,9 @@ import { color, minTap, tint } from "./theme";
 
 /**
  * Six dots at a card's trailing edge: it can be dragged (owner, 2026-10-20: "Schedule
- * dragging should be on the right side of the card"). Decoration only; the whole card takes
- * the touch and hold, and Move… stays the visible alternative.
+ * dragging should be on the right side of the card"). Drawn only: the schedule card wraps it in
+ * a 44 × 44 touch area that alone drags the card (owner, 2026-10-21), and Move… stays the
+ * visible alternative.
  */
 export function Grip({ width = minTap }: { width?: number }) {
   return (

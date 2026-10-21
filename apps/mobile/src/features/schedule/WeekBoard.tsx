@@ -1,7 +1,6 @@
 import { router } from "expo-router";
 import { memo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { GestureDetector } from "react-native-gesture-handler";
 import Reanimated from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 import { durationLabel, formatDay, startLegLabel } from "@leakbook/core";
@@ -250,7 +249,7 @@ function WeekStop({
   const { slotRef } = useDropZones();
   // The schedule card (ScheduleCard.tsx); it slides aside while another stop is carried past.
   const slide = useSlide(s.id, route, n - 1);
-  // Held and let go without moving: the stop's menu; held and moved: dragged.
+  // The grip drags it at once; touch and hold on the body is its menu, never a drag.
   const { gesture, ref } = useDragSource(
     item,
     () => (
@@ -258,40 +257,52 @@ function WeekStop({
         <ScheduleCardFace stop={s} n={n} tech={tech} />
       </View>
     ),
-    gestures.onLongPress,
+    undefined,
+    "grip",
   );
   const slot = route ? slotRef(s.id, route) : null;
+  const open = () => router.push(`/jobs/${s.id}`);
   return (
-    <GestureDetector gesture={gesture}>
-      <Reanimated.View
-        ref={(node: View | null) => {
-          ref(node);
-          slot?.(node);
-        }}
-        collapsable={false}
-        style={[
-          !first && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.separator },
-          // Carried: its place is an empty gap.
-          hover.id === s.id && { opacity: 0 },
-          { backgroundColor: color.surface },
-          slide,
+    <Reanimated.View
+      ref={(node: View | null) => {
+        ref(node);
+        slot?.(node);
+      }}
+      collapsable={false}
+      style={[
+        !first && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color.separator },
+        // Carried: its place is an empty gap.
+        hover.id === s.id && { opacity: 0 },
+        { backgroundColor: color.surface },
+        slide,
+      ]}
+    >
+      {/* A tap on the body does nothing (only the name opens the job); TalkBack's double
+            tap opens it. */}
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel={cardLabel(s, n)}
+        accessibilityHint="Opens the job"
+        accessibilityActions={[
+          { name: "activate", label: "Open Job" },
+          ...gestures.accessibilityActions,
         ]}
+        onAccessibilityAction={(e) =>
+          e.nativeEvent.actionName === "activate" ? open() : gestures.onAccessibilityAction(e)
+        }
+        onLongPress={gestures.onLongPress}
+        style={{ backgroundColor: color.surface }}
       >
-        <Pressable
-          accessibilityRole="link"
-          accessibilityLabel={cardLabel(s, n)}
-          accessibilityHint="Opens the job"
-          accessibilityActions={gestures.accessibilityActions}
-          onAccessibilityAction={gestures.onAccessibilityAction}
-          onPress={() => router.push(`/jobs/${s.id}`)}
-          onLongPress={item ? undefined : gestures.onLongPress}
-          android_ripple={{ color: color.ripple }}
-          style={({ pressed }) => [{ backgroundColor: pressed ? color.rowPressed : color.surface }]}
-        >
-          <ScheduleCardFace stop={s} n={n} tech={tech} />
-        </Pressable>
-      </Reanimated.View>
-    </GestureDetector>
+        <ScheduleCardFace
+          stop={s}
+          n={n}
+          tech={tech}
+          onOpen={open}
+          onHold={gestures.onLongPress}
+          gripGesture={item ? gesture : undefined}
+        />
+      </Pressable>
+    </Reanimated.View>
   );
 }
 

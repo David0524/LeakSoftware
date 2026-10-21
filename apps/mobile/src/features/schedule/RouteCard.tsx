@@ -1,7 +1,6 @@
 import { router } from "expo-router";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { GestureDetector } from "react-native-gesture-handler";
 import Reanimated, { LinearTransition } from "react-native-reanimated";
 import {
   backLegLabel,
@@ -34,7 +33,7 @@ import { cardLabel, ScheduleCardFace } from "./ScheduleCard";
 // a little more appealing. Refer to what the today page looks like"): a soft card with the
 // stop's number in a round badge, the time, the customer, the kind of stop as a pill, the
 // address, and the access notes; since 2026-10-21 the two-line schedule card
-// (ScheduleCard.tsx). Touch and hold drags it; Move… is in its menu.
+// (ScheduleCard.tsx). Its grip drags it; touch and hold opens its menu, with Move….
 
 export interface Stop {
   id: string;
@@ -261,9 +260,10 @@ function TechTitle({ route: c }: { route: Route }) {
 }
 
 /**
- * A stop on a tech's day: the schedule card (ScheduleCard.tsx). A plain drag on it scrolls the
- * page (owner, 2026-10-21: "I can't scroll on a Scheduling tile"); touch and hold picks it up
- * (or, let go without moving, opens its menu), and the other stops slide aside as it passes.
+ * A stop on a tech's day: the schedule card (ScheduleCard.tsx). Its body never drags, so a
+ * page of cards always scrolls (owner, 2026-10-21: "I'm still struggling to scroll when I have
+ * a page full of job tiles"): the grip picks it up at once, and the other stops slide aside as
+ * it passes. Touch and hold on the body opens its menu; only the customer's name opens the job.
  */
 function StopCard({
   stop: s,
@@ -292,40 +292,51 @@ function StopCard({
         <ScheduleCardFace stop={s} n={n} tech={tech} />
       </View>
     ),
-    gestures?.onLongPress,
+    undefined,
+    "grip",
   );
   const slot = slotRef(s.id, route);
+  const open = () => router.push(`/jobs/${s.id}`);
   return (
-    <GestureDetector gesture={gesture}>
-      <View
-        ref={(node) => {
-          ref(node);
-          slot(node);
+    <View
+      ref={(node) => {
+        ref(node);
+        slot(node);
+      }}
+      collapsable={false}
+      style={[styles.card, cardShadow()]}
+    >
+      {/* A tap on the body does nothing; TalkBack's double tap opens the job. */}
+      <Pressable
+        accessibilityRole="link"
+        accessibilityLabel={cardLabel(s, n)}
+        accessibilityHint="Opens the job"
+        accessibilityActions={[
+          { name: "activate", label: "Open Job" },
+          ...(gestures
+            ? gestures.accessibilityActions
+            : s.movable
+              ? [{ name: "move", label: "Move" }]
+              : []),
+        ]}
+        onAccessibilityAction={(e) => {
+          if (e.nativeEvent.actionName === "activate") return open();
+          if (gestures) gestures.onAccessibilityAction(e);
+          else onMove(s);
         }}
-        collapsable={false}
-        style={[styles.card, cardShadow()]}
+        onLongPress={gestures?.onLongPress}
+        style={styles.clip}
       >
-        <Pressable
-          accessibilityRole="link"
-          accessibilityLabel={cardLabel(s, n)}
-          accessibilityHint="Opens the job"
-          accessibilityActions={
-            gestures
-              ? gestures.accessibilityActions
-              : s.movable
-                ? [{ name: "move", label: "Move" }]
-                : undefined
-          }
-          onAccessibilityAction={(e) => (gestures ? gestures.onAccessibilityAction(e) : onMove(s))}
-          onPress={() => router.push(`/jobs/${s.id}`)}
-          onLongPress={s.movable ? undefined : gestures?.onLongPress}
-          android_ripple={{ color: color.ripple }}
-          style={({ pressed }) => [styles.clip, pressed && { opacity: 0.85 }]}
-        >
-          <ScheduleCardFace stop={s} n={n} tech={tech} />
-        </Pressable>
-      </View>
-    </GestureDetector>
+        <ScheduleCardFace
+          stop={s}
+          n={n}
+          tech={tech}
+          onOpen={open}
+          onHold={gestures?.onLongPress}
+          gripGesture={item ? gesture : undefined}
+        />
+      </Pressable>
+    </View>
   );
 }
 

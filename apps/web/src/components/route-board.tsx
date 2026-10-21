@@ -5,10 +5,11 @@ import {
   DragOverlay,
   KeyboardSensor,
   MouseSensor,
+  PointerSensor,
   TouchSensor,
   closestCenter,
   pointerWithin,
-  useDndMonitor,
+  useDndContext,
   useDroppable,
   useSensor,
   useSensors,
@@ -36,7 +37,6 @@ import {
   useRef,
   useState,
   useTransition,
-  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
   type Ref,
 } from "react";
@@ -101,6 +101,36 @@ import { reducedMotion } from "./row-slide";
 // glides into its place. Reduce Motion: no slides.
 const SORT_SLIDE = { duration: 300, easing: "cubic-bezier(0.22, 1, 0.36, 1)" };
 const DROP_SLIDE = { duration: 250, easing: "cubic-bezier(0.22, 1, 0.36, 1)" };
+
+/** Whether a press began on a schedule card's grip (≡). */
+const onGrip = (e: Event) => !!(e.target as Element | null)?.closest?.("[data-grip]");
+
+// A schedule card drags from its grip only, at once, by any pointer (owner, 2026-10-21: "I'm
+// still struggling to scroll when I have a page full of job tiles"): its body never drags, so
+// a page of cards always scrolls. The pointer sensor listens on the document, so a drag still
+// ends if the card under the finger is re-rendered away mid-drag.
+class GripSensor extends PointerSensor {
+  static activators = PointerSensor.activators.map((a) => ({
+    ...a,
+    handler: (...args: Parameters<typeof a.handler>) =>
+      onGrip(args[0].nativeEvent) && a.handler(...args),
+  }));
+}
+// Customers to Add tiles (no grip) keep their own: a mouse anywhere, a finger after a hold.
+class TileMouseSensor extends MouseSensor {
+  static activators = MouseSensor.activators.map((a) => ({
+    ...a,
+    handler: (...args: Parameters<typeof a.handler>) =>
+      !onGrip(args[0].nativeEvent) && a.handler(...args),
+  }));
+}
+class TileTouchSensor extends TouchSensor {
+  static activators = TouchSensor.activators.map((a) => ({
+    ...a,
+    handler: (...args: Parameters<typeof a.handler>) =>
+      !onGrip(args[0].nativeEvent) && a.handler(...args),
+  }));
+}
 import { Button, StatusBadge, buttonClass, cx, pillClass } from "./ui";
 import { NO_CONNECTION, whenOffline } from "@/lib/offline";
 
@@ -324,16 +354,44 @@ export function RouteBoard({
   const dndId = useId();
 
   const sensors = useSensors(
-    // A mouse picks a card up anywhere once it moves a little; a finger after a touch and
-    // hold, on the grip or anywhere on the card (docs/design/2026-10-21-schedule-card.md), so
-    // a plain drag on a card scrolls the page (owner, 2026-10-21: "I can't scroll on a
-    // Scheduling tile"). The grip doesn't scroll the page (touch-none), and while dragging the
-    // page scrolls near the screen's edges (autoScroll). The other cards in the day slide
-    // into their new places as one passes them (SORT_SLIDE), so the gap is where it lands.
-    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+    // A schedule card from its grip only, at once (GripSensor; a couple of pixels, so a click
+    // on the grip isn't a drag); its body scrolls the page and never drags. The grip doesn't
+    // scroll the page (touch-none), and while dragging the page scrolls near the screen's
+    // edges (autoScroll). The other cards in the day slide into their new places as one passes
+    // them (SORT_SLIDE), so the gap is where it lands. Customers to Add tiles: a mouse anywhere
+    // once it moves a little, a finger after a touch and hold.
+    useSensor(GripSensor, { activationConstraint: { distance: 2 } }),
+    useSensor(TileMouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TileTouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+  // Never stuck mid-drag (owner, 2026-10-21: "it sometimes freezes up"): a pointer let go,
+  // cancelled or lost that the drag didn't hear (its card re-rendered away under the finger)
+  // cancels it, so no card stays lifted and the page always scrolls again.
+  const active = useRef(false);
+  const liveDrag = !!dragging || !!draggingPlan;
+  useEffect(() => {
+    if (!liveDrag) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const check = (e: Event) => {
+      // Another finger lifting isn't the dragging one letting go.
+      if (e instanceof PointerEvent && !e.isPrimary) return;
+      if (typeof TouchEvent !== "undefined" && e instanceof TouchEvent && e.touches.length) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (!active.current) return;
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape" }));
+      }, 0);
+    };
+    const kinds = ["pointerup", "pointercancel", "lostpointercapture", "touchend", "touchcancel"];
+    for (const k of kinds) window.addEventListener(k, check, true);
+    window.addEventListener("blur", check);
+    return () => {
+      clearTimeout(timer);
+      for (const k of kinds) window.removeEventListener(k, check, true);
+      window.removeEventListener("blur", check);
+    };
+  }, [liveDrag]);
 
   // Phones showing one tech's day: its map and buttons lead, above Needs a Time.
   const shownOnPhone = columns.filter((c) => !c.phoneHidden);
@@ -606,6 +664,7 @@ export function RouteBoard({
   };
 
   function onDragStart(e: DragStartEvent) {
+    active.current = true;
     const id = String(e.active.id);
     if (id.startsWith(PLAN_DRAG)) {
       setDraggingPlan((e.active.data.current as PlanDragData | undefined) ?? null);
@@ -619,6 +678,7 @@ export function RouteBoard({
   }
 
   function onDragEnd(e: DragEndEvent) {
+    active.current = false;
     setDragging(null);
     setDraggingPlan(null);
     dragEnd.current = Date.now();
@@ -661,6 +721,7 @@ export function RouteBoard({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onDragCancel={() => {
+        active.current = false;
         setDragging(null);
         setDraggingPlan(null);
       }}
@@ -1140,32 +1201,14 @@ function streetOf(address: string) {
 }
 
 /**
- * Touch and hold on a card without moving it: its menu, as iOS lifts an item to show it (the
- * hold that would drag it, ended where it began). `open` opens this card's menu.
- */
-function useHoldMenu(id: string) {
-  const menu = useRef<RowActionsHandle>(null);
-  useDndMonitor({
-    onDragEnd(e) {
-      if (String(e.active.id) !== id) return;
-      const touch = typeof TouchEvent !== "undefined" && e.activatorEvent instanceof TouchEvent;
-      if (touch && Math.hypot(e.delta.x, e.delta.y) < 8) {
-        const t = (e.activatorEvent as TouchEvent).touches[0];
-        menu.current?.open(t ? { x: t.clientX, y: t.clientY } : undefined, true);
-      }
-    },
-  });
-  return menu;
-}
-
-/**
  * A schedule card (docs/design/2026-10-21-schedule-card.md; owner, 2026-10-21: "Redesign those
  * tiles too. They look super busy"), the same on a phone and a computer, in Day, Week and
  * Needs a Time: two lines. The tech's color stripe and the stop's number, then the time and
  * the customer; under them the kind of visit and the street. Trailing, small icons only for
  * exceptions (a lock, not on the map, a cleaning due), or the status when it isn't plain
- * Scheduled; then "⋯" and the grip. The whole card opens the job. Move…, the locks, Take Off
- * Schedule and Directions are in its menu: "⋯", right-click, or touch and hold.
+ * Scheduled; then "⋯" and the grip, which alone drags it. Only the customer's name opens the
+ * job. Move…, the locks, Take Off Schedule and Directions are in its menu: "⋯", right-click,
+ * or touch and hold.
  */
 function ScheduleCard({
   stop: s,
@@ -1206,36 +1249,17 @@ function ScheduleCard({
       ? null
       : "No time";
   const cleaning = s.cleanings?.[0];
-  // The keyboard picks the card up from its grip only: Enter on the name still opens the job.
-  const drag =
-    s.draggable && listeners
-      ? {
-          ...listeners,
-          onKeyDown: (e: ReactKeyboardEvent) => {
-            if ((e.target as Element).closest("[data-grip]")) listeners.onKeyDown?.(e);
-          },
-        }
-      : {};
   return (
     <RowActions
       title={`${s.customer}${s.number ? ` · Job #${s.number}` : ""}`}
       menu={stopMenu(s, actions)}
       handle={menu}
       button="none"
-      // A hold drags the card; one that ends where it began opens the menu (useHoldMenu).
-      longPress={!s.draggable}
+      // Touch and hold on the card opens its menu, never a drag (the grip drags).
       className="rounded-[inherit]"
     >
       <div
-        {...drag}
         data-testid="stop-line"
-        // A finger's hold is the drag (and, held still, the menu): not the browser's own menu.
-        onContextMenuCapture={(e) => {
-          if ((e.nativeEvent as PointerEvent).pointerType === "touch" && s.draggable) {
-            e.preventDefault();
-            e.stopPropagation();
-          }
-        }}
         // A drag that ends on the card isn't a click on it.
         onClickCapture={(e) => {
           if (actions?.dragged()) {
@@ -1244,10 +1268,11 @@ function ScheduleCard({
           }
         }}
         className={cx(
-          "relative flex items-center rounded-[inherit] bg-surface select-none [-webkit-touch-callout:none]",
+          "relative flex items-center rounded-[inherit] select-none [-webkit-touch-callout:none]",
+          // Needs a Time's cards show their well, so the next one's edge reads as a card.
+          tray ? "bg-transparent" : "bg-surface",
           week ? "min-h-14 gap-1.5 py-1.5 pl-2.5" : "min-h-16 gap-2.5 py-2 pl-3.5 lg:min-h-14",
           s.draggable ? "pr-0.5" : "pr-2",
-          s.draggable && "cursor-grab active:cursor-grabbing",
         )}
       >
         {color ? <TechStripe color={color} /> : null}
@@ -1264,16 +1289,22 @@ function ScheduleCard({
                 {time}
               </span>
             ) : null}
-            {/* The whole card opens the job (the link's area covers it). */}
+            {/* Only the customer's name opens the job (owner, 2026-10-21: "I find myself
+                accidentally opening jobs all the time"): a link with "›", its hit area a
+                little bigger than the text. The card's body does nothing on a tap. */}
             <Link
               href={`/jobs/${s.id}`}
               draggable={false}
+              data-testid="stop-open"
               className={cx(
-                "min-w-0 truncate font-semibold text-text after:absolute after:inset-0 after:rounded-[inherit] after:content-[''] hover:underline",
+                "relative inline-flex min-w-0 items-baseline gap-0.5 font-semibold text-link after:absolute after:-inset-x-1.5 after:-inset-y-3 after:content-[''] hover:underline",
                 week ? "text-[0.9375rem]" : "text-[1.0625rem] lg:text-[0.9375rem]",
               )}
             >
-              {s.customer}
+              <span className="min-w-0 truncate">{s.customer}</span>
+              <span aria-hidden="true" className="shrink-0">
+                ›
+              </span>
             </Link>
           </p>
           {second ? (
@@ -1306,13 +1337,20 @@ function ScheduleCard({
           </span>
         )}
         {trailing}
-        <RowMenuButton visible className={cx("relative shrink-0", week ? "size-7!" : "size-9!")} />
+        {/* Needs a Time's own "⋯" (trailing) is its one More button, so the name has room. */}
+        {trailing ? null : (
+          <RowMenuButton
+            visible
+            className={cx("relative shrink-0", week ? "size-7!" : "size-9!")}
+          />
+        )}
         {s.draggable ? (
           <Grip
             compact={week}
             label={`Drag ${s.customer}`}
             className={cx("relative", week && "w-5!")}
             {...attributes}
+            {...listeners}
           />
         ) : null}
       </div>
@@ -1357,7 +1395,7 @@ function StopCard({
     disabled: !s.draggable,
     transition: reducedMotion() ? null : SORT_SLIDE,
   });
-  const menu = useHoldMenu(s.id);
+  const menu = useRef<RowActionsHandle>(null);
   return (
     <article
       ref={setNodeRef}
@@ -1755,7 +1793,7 @@ function WeekChip({
     disabled: !s.draggable,
     transition: reducedMotion() ? null : SORT_SLIDE,
   });
-  const menu = useHoldMenu(s.id);
+  const menu = useRef<RowActionsHandle>(null);
   return (
     <div
       ref={setNodeRef}
@@ -1793,7 +1831,13 @@ function Tray({
   /** In Week's sidebar: listed down on wide screens (a row above the board when narrower). */
   side?: boolean;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: TRAY });
+  const { setNodeRef, isOver: overBox } = useDroppable({ id: TRAY });
+  // Lit while a stop from a day hovers over the box or a card in it: let go and it comes off
+  // its schedule (the menu's Take Off Schedule).
+  const { active, over } = useDndContext();
+  const from = active ? String(active.id) : null;
+  const fromDay = !!from && !from.startsWith(PLAN_DRAG) && !jobs.some((j) => j.id === from);
+  const isOver = fromDay && (overBox || (!!over && jobs.some((j) => j.id === String(over.id))));
   const [all, setAll] = useState(false);
   const [open, setOpen] = useState(true);
   const listId = useId();
@@ -1802,7 +1846,8 @@ function Tray({
       ref={setNodeRef}
       aria-label="Needs a Time"
       data-testid="tray"
-      className={cx("card p-4", side ? "lg:p-3" : "mb-6", isOver && "ring-2 ring-link")}
+      data-drop-over={isOver ? "" : undefined}
+      className={cx("card p-4", side ? "lg:p-3" : "mb-6", isOver && "bg-link/5 ring-2 ring-link")}
     >
       <SideSectionTitle
         id={listId}
@@ -1850,10 +1895,18 @@ function Tray({
                 <li
                   key={j.id}
                   data-flip={j.id}
+                  // In the sideways row: whole cards and the edge of the next one (12 px,
+                  // less than its 14 px inset, so no text is cut): one on phones, two on
+                  // tablets, three wider. Opened as a grid (Show All) or listed down in the sidebar,
+                  // they take the column's width.
                   className={cx(
-                    "w-[88%] max-w-80 shrink-0 snap-start",
-                    all && "md:w-auto md:max-w-none",
-                    side && "lg:w-auto lg:max-w-none",
+                    "shrink-0 snap-start",
+                    "w-[calc(100%-0.5rem)]",
+                    all
+                      ? "md:w-auto"
+                      : side
+                        ? "md:w-[calc((100%-1.25rem)/2)] lg:w-auto"
+                        : "md:w-[calc((100%-1.25rem)/2)] xl:w-[calc((100%-2rem)/3)]",
                   )}
                 >
                   <TrayCard job={j} onMove={onMove} onSuggestion={onSuggestion} />
@@ -1880,7 +1933,7 @@ function TrayCard({
     id: j.id,
     transition: reducedMotion() ? null : SORT_SLIDE,
   });
-  const menu = useHoldMenu(j.id);
+  const menu = useRef<RowActionsHandle>(null);
   const [sheetOpen, setActions] = useState(false);
   const closeActions = useCallback(() => setActions(false), []);
   return (

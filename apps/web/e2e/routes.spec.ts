@@ -202,7 +202,11 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2, box.y - 20, { steps: 5 });
   await page.mouse.move(target.x + 40, target.y + target.height / 2, { steps: 15 });
+  // The box lights up while the card is over it (owner, 2026-10-21: "I can't drag jobs back
+  // into the 'Needs a Time' box").
+  await expect(tray).toHaveAttribute("data-drop-over", "");
   await page.mouse.up();
+  await expect(tray).not.toHaveAttribute("data-drop-over");
   await expect(page.getByText("Taken off the schedule.")).toBeVisible();
   await expect(route.getByTestId("stop")).toHaveCount(3);
   await expect(tray.getByTestId("tray-job").filter({ hasText: name("tempe") })).toHaveCount(1);
@@ -354,7 +358,19 @@ test("on a phone, a stop drags by its grip to another place in the day", async (
     expect((await routeNames(page, "Priya Shah"))[2]).toBe(name("tempe"));
   }
 
-  // Press and hold the grip, then drag it above the first stop (touch events, as a finger).
+  // A tap on the card's body doesn't open the job (owner, 2026-10-21: "I find myself
+  // accidentally opening jobs all the time"); only the customer's name does.
+  await tempe.evaluate((el) => el.scrollIntoView({ block: "center" }));
+  const body = (await tempe.getByTestId("stop-line").boundingBox())!;
+  // Its lower leading corner, by the stop number: well away from the name (a phone's touch
+  // adjustment gives a tap right beside a link to the link, as it should).
+  await page.touchscreen.tap(body.x + 20, body.y + body.height - 6);
+  await page.waitForTimeout(600);
+  expect(new URL(page.url()).pathname).toBe("/schedule");
+  await expect(page.getByRole("menu")).toHaveCount(0);
+
+  // The grip drags at once on touch down, no hold first; then drag it above the first stop
+  // (touch events, as a finger).
   // The first and last stops on screen together (touch points are in the viewport).
   await route
     .getByTestId("stop")
@@ -372,8 +388,6 @@ test("on a phone, a stop drags by its grip to another place in the day", async (
   const y0 = from.y + from.height / 2;
   const y1 = first.y + 8;
   await touch("touchStart", x, y0);
-  // Held past the touch-and-hold (250 ms) before moving.
-  await page.waitForTimeout(400);
   for (let i = 1; i <= 20; i++) {
     await touch("touchMove", x, y0 + ((y1 - y0) * i) / 20);
     await page.waitForTimeout(16);
@@ -383,6 +397,13 @@ test("on a phone, a stop drags by its grip to another place in the day", async (
   expect((await routeNames(page, "Priya Shah"))[0]).toBe(name("tempe"));
   // A drag from the grip isn't a swipe to the next day.
   expect(new URL(page.url()).searchParams.get("date")).toBe(day);
+  // Nothing stays lifted: the page scrolls again after the drop.
+  await expect(route.locator("[data-testid=stop].invisible")).toHaveCount(0);
+  // The customer's name opens the job.
+  const open = route.getByRole("link", { name: name("tempe"), exact: true });
+  await open.scrollIntoViewIfNeeded();
+  await open.tap();
+  await page.waitForURL(/\/jobs\/[0-9a-f-]+$/);
   await context.close();
 });
 

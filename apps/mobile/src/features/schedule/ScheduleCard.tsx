@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { GestureDetector, type PanGesture } from "react-native-gesture-handler";
 import { JOB_STATUS_LABELS, NOT_ON_MAP, type JobStatus } from "@leakbook/core";
 import { CleaningIcon } from "../maintenance/Cleanings";
 import { StatusChip } from "../../ui/components";
@@ -16,8 +17,10 @@ import type { Stop } from "./RouteCard";
 // and the iPhone app: two lines. The tech's color stripe and the stop's number, then the time
 // and the customer; under them the kind of visit and the street only. Trailing, small icons
 // only for exceptions (a lock, not on the map, a cleaning due), or the status when it isn't
-// plain Scheduled; then the grip. The whole card opens the job; Move…, the locks, Take Off
-// Schedule and Directions are in its touch-and-hold menu and its TalkBack actions.
+// plain Scheduled; then the grip, which alone drags it (at once, no hold). Only the customer's
+// name opens the job (owner, 2026-10-21: "I find myself accidentally opening jobs all the
+// time"), drawn as a link with "›". Move…, the locks, Take Off Schedule and Directions are in
+// its touch-and-hold menu and its TalkBack actions.
 
 /** The street alone ("5024 W Las Palmaritas Dr"), without the city or ZIP. */
 export function streetOf(address: string): string {
@@ -74,6 +77,9 @@ export function ScheduleCardFace({
   tech,
   tray = false,
   trailing,
+  onOpen,
+  onHold,
+  gripGesture,
 }: {
   stop: Stop;
   /** Its place in the day; null when it has none (Needs a Time). */
@@ -84,6 +90,12 @@ export function ScheduleCardFace({
   tray?: boolean;
   /** More buttons before the grip (Needs a Time's Actions). */
   trailing?: ReactNode;
+  /** Opens the job, from the customer's name (absent on the carried copy). */
+  onOpen?: () => void;
+  /** The card's touch-and-hold menu, from the name too (the body has it already). */
+  onHold?: () => void;
+  /** The drag, on the grip only (absent on the carried copy and stops that can't move). */
+  gripGesture?: PanGesture;
 }) {
   const twoTechs = s.lock?.kind === "two_techs" ? s.lock.label : null;
   const street = s.address ? streetOf(s.address) : null;
@@ -94,18 +106,38 @@ export function ScheduleCardFace({
   const cleaning = s.cleanings?.[0];
   const status = s.status !== "scheduled" && s.status !== "unscheduled" && !tray;
   return (
-    <View style={[styles.face, { backgroundColor: color.surface }]}>
+    // Needs a Time's cards sit on its card as wells, so the next one's edge reads as a card.
+    <View style={[styles.face, { backgroundColor: tray ? color.well : color.surface }]}>
       {tech !== null ? <TechStripe tech={tech} /> : null}
       {n != null ? <Badge n={n} status={s.status} done={s.done} /> : null}
       <View style={[styles.text, s.done && { opacity: 0.7 }]}>
-        <Text numberOfLines={1} maxFontSizeMultiplier={MAX_TEXT_SCALE}>
+        <View style={styles.line}>
           {time ? (
-            <Text style={[type.bodyEmphasis, styles.time, tabular, { color: color.text }]}>
-              {`${time}  `}
+            <Text
+              numberOfLines={1}
+              style={[type.bodyEmphasis, styles.time, tabular, { color: color.text }]}
+              maxFontSizeMultiplier={MAX_TEXT_SCALE}
+            >
+              {time}
             </Text>
           ) : null}
-          <Text style={[type.bodyEmphasis, { color: color.text }]}>{s.customer}</Text>
-        </Text>
+          {onOpen ? (
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={`Open ${s.customer}`}
+              onPress={onOpen}
+              onLongPress={onHold}
+              hitSlop={{ top: 12, bottom: 12, left: 6, right: 8 }}
+              style={({ pressed }) => [styles.name, pressed && { opacity: 0.5 }]}
+            >
+              <Name customer={s.customer} />
+            </Pressable>
+          ) : (
+            <View style={styles.name}>
+              <Name customer={s.customer} />
+            </View>
+          )}
+        </View>
         {second ? (
           <Text
             numberOfLines={1}
@@ -131,8 +163,38 @@ export function ScheduleCardFace({
         </View>
       )}
       {trailing}
-      {s.movable ? <Grip width={28} /> : null}
+      {s.movable && gripGesture ? (
+        <GestureDetector gesture={gripGesture}>
+          {/* 44 × 44 to touch; its own responder, so a touch here is never the card's tap or
+              touch and hold. */}
+          <View
+            collapsable={false}
+            testID="schedule-grip"
+            style={styles.gripHit}
+            onStartShouldSetResponder={() => true}
+            accessible={false}
+            importantForAccessibility="no-hide-descendants"
+          >
+            <Grip width={28} />
+          </View>
+        </GestureDetector>
+      ) : s.movable ? (
+        <Grip width={28} />
+      ) : null}
     </View>
+  );
+}
+
+/** The customer's name, as a link: "Rebecca Soto ›". */
+function Name({ customer }: { customer: string }) {
+  return (
+    <Text
+      numberOfLines={1}
+      style={[type.bodyEmphasis, { color: color.link }]}
+      maxFontSizeMultiplier={MAX_TEXT_SCALE}
+    >
+      {`${customer} ›`}
+    </Text>
   );
 }
 
@@ -157,5 +219,15 @@ const styles = StyleSheet.create({
   badgeText: { fontFamily: font.displayBold, fontSize: 15, lineHeight: 20 },
   time: { fontFamily: font.displayBold },
   text: { flex: 1, minWidth: 0, gap: 1 },
+  line: { flexDirection: "row", alignItems: "baseline", gap: 8, minWidth: 0 },
+  name: { flexShrink: 1, minWidth: 0 },
+  gripHit: {
+    width: 44,
+    height: 44,
+    marginLeft: -10,
+    marginRight: -4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   icons: { flexDirection: "row", alignItems: "center", gap: 4 },
 });

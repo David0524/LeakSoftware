@@ -7,7 +7,14 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { StyleSheet, Text, View, useWindowDimensions, type ScrollView } from "react-native";
+import {
+  AppState,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+  type ScrollView,
+} from "react-native";
 import { Gesture, type PanGesture } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
@@ -35,8 +42,11 @@ import { haptics } from "../../ui/haptics";
 import { color, face, MAX_TEXT_SCALE, shape, space, tint, type } from "../../ui/theme";
 
 // Schedule drag and drop (owner, 2026-10-20: "bring back drag/drop on mobile"; the website's
-// route board). Touch and hold a stop to pick it up (a firm tap is felt), drag it to a place in
-// a tech's day, a day in the week strip, or Needs a Time, and let go. The page scrolls by itself
+// route board). Put a finger on a stop's grip (≡) to pick it up at once (a firm tap is felt;
+// owner, 2026-10-21: "I'm still struggling to scroll when I have a page full of job tiles"),
+// drag it to a place in a tech's day, a day in the week strip, or Needs a Time, and let go. The
+// card's body never drags, so a page of cards always scrolls; touch and hold on it opens its
+// menu. Customers to Add tiles (no grip) still lift after a touch and hold. The page scrolls by itself
 // near the top and bottom. Move… in every stop's menu (and its TalkBack actions) does the
 // same, and both end in the same move (core moveJobChange, saved through the sync layer).
 //
@@ -299,7 +309,9 @@ export function useScheduleDrag({
           overlayRef.current ? measure(overlayRef.current) : Promise.resolve(null),
           ...entries.map(([, e]) => measure(e.node)),
         ]).then(([card, overlay, ...rects]) => {
-          if (drag !== d || !card) return;
+          if (drag !== d) return;
+          // The card went away before it was measured: nothing is carried.
+          if (!card) return stop();
           d.grab = { x: px - card.x, y: py - card.y };
           d.origin = overlay ? { x: overlay.x, y: overlay.y } : { x: 0, y: 0 };
           entries.forEach(([key, e], i) => {
@@ -350,6 +362,16 @@ export function useScheduleDrag({
       },
     };
   }, [x, y, shown]);
+
+  // Never stuck mid-drag (owner, 2026-10-21: "it sometimes freezes up"): leaving the app or
+  // the Schedule ends any drag, so the page never stays unscrollable.
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (s) => s !== "active" && api.cancel());
+    return () => {
+      sub.remove();
+      api.cancel();
+    };
+  }, [api]);
 
   const overlay = (
     <View ref={overlayRef} pointerEvents="none" style={StyleSheet.absoluteFill} collapsable={false}>
@@ -414,6 +436,8 @@ class SourceBox {
   node: View | null = null;
   /** The card's touch-and-hold menu, opened by a hold let go without moving. */
   hold: (() => void) | undefined = undefined;
+  /** This source's drag is the one carried. */
+  active = false;
   private at = { x: 0, y: 0 };
   private moved = false;
   set(item: DragItem | null, ghost: () => ReactNode, hold?: () => void) {
@@ -431,42 +455,57 @@ class SourceBox {
     if (Math.hypot(x - this.at.x, y - this.at.y) > HOLD_SLOP) this.moved = true;
   }
   /** Let go: the menu when it was only held (and there is one), else the drop. */
-  release(api: DragApi) {
-    if (this.moved || !this.hold) return api.end();
+  release(api: DragApi, holdMenu: boolean) {
+    this.active = false;
+    if (this.moved || !this.hold || !holdMenu) return api.end();
     api.cancel();
     this.hold();
+  }
+  /** The gesture ended without a drop (cancelled, interrupted, or finished). */
+  finish(api: DragApi) {
+    if (!this.active) return;
+    this.active = false;
+    api.cancel();
   }
   attach = (node: View | null) => {
     this.node = node;
   };
   start(api: DragApi, x: number, y: number) {
-    if (this.item && this.node) api.begin(this.item, this.node, this.ghost(), x, y);
+    if (!this.item || !this.node) return;
+    this.active = true;
+    api.begin(this.item, this.node, this.ghost(), x, y);
   }
 }
 
 /**
- * Touch and hold to drag: the gesture and the ref callback for a stop's card. `item` null: it
- * can't be dragged (a canceled job). `ghost` draws the card under the finger. `onHold` is the
- * card's touch-and-hold menu (gestures spec section 12): a card held and let go without moving
- * opens it, as iOS lifts an item and shows its menu; moved, it's dragged as before.
+ * The gesture and the ref callback for a stop's card. `item` null: it can't be dragged (a
+ * canceled job). `ghost` draws the card under the finger.
+ *
+ * `"grip"` (schedule cards): the gesture goes on the grip only and picks the card up at once
+ * on touch down, with no hold; the card's body scrolls the page, and its touch and hold is the
+ * card's menu (its own Pressable), never a drag. The ref goes on the whole card.
+ *
+ * `"hold"` (Customers to Add tiles): the gesture goes on the whole tile and lifts it after a
+ * touch and hold; `onHold` is its menu, opened by a hold let go without moving.
  */
 export function useDragSource(
   item: DragItem | null,
   ghost: () => ReactNode,
   onHold?: () => void,
+  mode: "grip" | "hold" = "hold",
 ): { gesture: PanGesture; ref: (node: View | null) => void } {
   const api = useContext(Api);
   const [box] = useState(() => new SourceBox());
   useEffect(() => {
     box.set(item, ghost, onHold);
   });
+  // A card that goes away mid-drag (its list re-rendered) ends the drag with it.
+  useEffect(() => () => box.finish(api), [api, box]);
   const enabled = api.enabled && item != null;
-  const gesture = useMemo(
-    () =>
-      Gesture.Pan()
-        .runOnJS(true)
-        .enabled(enabled)
-        .activateAfterLongPress(HOLD_MS)
+  const gesture = useMemo(() => {
+    const pan = Gesture.Pan().runOnJS(true).enabled(enabled).shouldCancelWhenOutside(false);
+    return (
+      (mode === "grip" ? pan.minDistance(0) : pan.activateAfterLongPress(HOLD_MS))
         .onStart((e) => {
           box.lift(e.absoluteX, e.absoluteY);
           box.start(api, e.absoluteX, e.absoluteY);
@@ -475,10 +514,12 @@ export function useDragSource(
           box.track(e.absoluteX, e.absoluteY);
           api.move(e.absoluteX, e.absoluteY);
         })
-        .onEnd(() => box.release(api))
-        .onFinalize(() => api.cancel()),
-    [api, enabled, box],
-  );
+        // Let go: the drop. Interrupted (another gesture or the system took the touch): nothing.
+        .onEnd((_, done) => (done ? box.release(api, mode === "hold") : box.finish(api)))
+        .onTouchesCancelled(() => box.finish(api))
+        .onFinalize(() => box.finish(api))
+    );
+  }, [api, enabled, box, mode]);
   return { gesture, ref: box.attach };
 }
 

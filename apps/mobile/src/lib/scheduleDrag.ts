@@ -1,7 +1,7 @@
 import { canMoveJob, canUnschedule } from "@leakbook/core";
 
 // Schedule drag and drop (owner, 2026-10-20: "bring back drag/drop on mobile"), as the
-// website's route board: hold a stop to pick it up, drop it at a place in a tech's day, on a
+// website's route board: pick a stop up by its grip, drop it at a place in a tech's day, on a
 // day in the week strip, or in Needs a Time. These are the rules with no I/O; the screen hands
 // the result to the same move the Move sheet uses (core moveJobChange, through the sync layer).
 
