@@ -104,7 +104,7 @@ export const leak: Cut = {
         {
           taps: [{ at: 2.6, x: 201, y: 807 }],
           camera: [
-            { at: 1.8, zoom: 1.45, x: 201, y: 600 },
+            { at: 1.8, zoom: 1.3, x: 155, y: 600 },
             { at: 2.4, zoom: 1, x: 201, y: 437 },
           ],
         },
