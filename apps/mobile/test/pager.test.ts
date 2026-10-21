@@ -21,11 +21,11 @@ describe("a page that follows the finger", () => {
     expect(rubberBand(-4000, 400)).toBeGreaterThan(-400);
   });
 
-  it("turns past a quarter on a slow drag, or on a flick the way the finger went", () => {
+  it("turns past a third on a slow drag, or on a flick the way the finger went", () => {
     expect(pagerStep(-200, 0, 400, true, true)).toBe(1);
     expect(pagerStep(150, 0, 400, true, true)).toBe(-1);
-    expect(pagerStep(-100, 0, 400, true, true)).toBe(0);
-    expect(pagerStep(-101, 0, 400, true, true)).toBe(1);
+    expect(pagerStep(-133, 0, 400, true, true)).toBe(0);
+    expect(pagerStep(-134, 0, 400, true, true)).toBe(1);
     expect(pagerStep(-30, -800, 400, true, true)).toBe(1);
     expect(pagerStep(-30, 800, 400, true, true)).toBe(0);
     expect(pagerStep(-20, -900, 400, true, true)).toBe(0);

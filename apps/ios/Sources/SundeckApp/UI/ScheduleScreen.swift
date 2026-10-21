@@ -251,7 +251,10 @@
         }
 
         @ViewBuilder private func notices(_ board: Board) -> some View {
-            if board.ctx.depot == nil {
+            // Only while someone shown starts at the shop (owner, 2026-10-21), as the website.
+            if board.ctx.depot == nil,
+                board.shownTechs.contains(where: { board.ctx.start(for: $0.id).label == .shop })
+            {
                 Notice(
                     kind: .warning,
                     text: "Routes start and end at the shop, which has no map location yet. "
@@ -1000,7 +1003,7 @@
     /// Swiping it moves a week (owner, 2026-10-21: "Should be able to drag it as fast or slow as
     /// you want, hold halfway, etc."; `PagerRule`): the weeks before and after sit beside this
     /// one, so the strip follows the finger 1:1 and shows the week coming in; it can be held
-    /// halfway and taken back. Let go past a quarter of its width or with a flick and it springs
+    /// halfway and taken back. Let go past a third of its width or with a flick and it springs
     /// on to that week, on the same weekday, at the finger's speed; otherwise it springs back. A
     /// new week from the arrows or Today slides in from its side. Up and down still scroll the
     /// page. With Reduce Motion the strip doesn't follow the finger and the week cross-fades.

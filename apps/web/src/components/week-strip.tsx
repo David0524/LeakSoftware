@@ -10,7 +10,7 @@ const weekday = dateFormat("en-US", { weekday: "short", timeZone: "UTC" });
 
 /**
  * Schedule › Day: the week's days in a strip. Swipe it sideways for the week before or after
- * (owner, 2026-10-18): the strip follows the finger, and letting go past a quarter of the way
+ * (owner, 2026-10-18): the strip follows the finger, and letting go past a third of the way
  * (or with a flick) settles on that week, on the same weekday, as iOS Calendar does.
  */
 export function WeekStrip({ date, today, tech }: { date: string; today: string; tech: string }) {
@@ -65,9 +65,9 @@ export function WeekStrip({ date, today, tech }: { date: string; today: string; 
     const width = box.current?.clientWidth ?? 320;
     const speed = dx / Math.max(1, e.timeStamp - t.t);
     const to =
-      dx < -width / 4 || (dx < -20 && speed < -0.4)
+      dx < -width / 3 || (dx < -20 && speed < -0.4)
         ? 1
-        : dx > width / 4 || (dx > 20 && speed > 0.4)
+        : dx > width / 3 || (dx > 20 && speed > 0.4)
           ? -1
           : 0;
     const still = matchMedia("(prefers-reduced-motion: reduce)").matches;

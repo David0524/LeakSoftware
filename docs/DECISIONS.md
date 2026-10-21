@@ -2,6 +2,12 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-21 (owner: "Thirds is prob fine. Keep the 6 customers. No team chat")
+- **Swipes turn a page past a third of the width** (was a quarter), or on a flick, on every platform: Today's cards, Schedule's pages and date strip.
+- **The six customers the owner typed in stay** in the demo; the demo reset keeps them.
+- **No internal team chat.** Not planned.
+- **"Routes start at the shop, which has no map location yet"** shows only while someone on the schedule starts from the shop (website, iPhone, Android).
+
 ## 2026-10-20 (owner: "Yes do your suggestion"; Apple Maps on the website)
 
 Plan: `docs/plans/apple-maps.md`.

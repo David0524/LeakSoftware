@@ -127,7 +127,7 @@ function clockNow(): number {
 /**
  * Swipe sideways between pages, the page following the finger (owner, 2026-10-21: "Should be
  * able to drag it as fast or slow as you want, hold halfway, etc."; lib/pager.ts): 1:1 while
- * held, so it can be held halfway and taken back; let go past a quarter of the width or with a
+ * held, so it can be held halfway and taken back; let go past a third of the width or with a
  * flick and it carries on out at the finger's speed, and the next page slides in from the other
  * side once it's there (`page` changes); otherwise it springs back. It gives like a rubber band
  * where there's no page that way. The direction is decided after 10 pt, so up and down still

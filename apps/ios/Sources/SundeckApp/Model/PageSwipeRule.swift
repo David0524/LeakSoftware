@@ -30,13 +30,13 @@ public enum PageSwipeRule {
 /// strip and its days, weeks and months. The website's rule (apps/web use-swipe.ts) and the
 /// Android app's (apps/mobile lib/pager.ts): a drag decides its direction after 10 points (up or
 /// down is the page's scrolling), the page moves 1:1 with the finger and gives like a rubber band
-/// where there's no page that way, and a release turns the page past a quarter of the width or on
+/// where there's no page that way, and a release turns the page past a third of the width or on
 /// a flick the same way; otherwise it springs back.
 public enum PagerRule {
     /// How far a finger moves before the drag is sideways or up-and-down.
     public static let lockDistance: CGFloat = 10
     /// The share of the width a slow drag must pass to turn the page.
-    public static let share: CGFloat = 0.25
+    public static let share: CGFloat = 1.0 / 3.0
     /// A flick: at least this fast (points a second) and this far, the same way as the drag.
     public static let flickSpeed: CGFloat = 500
     public static let flickDistance: CGFloat = 24

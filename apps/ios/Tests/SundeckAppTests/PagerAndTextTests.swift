@@ -27,15 +27,15 @@ import Testing
         #expect(PagerRule.rubberBand(50, width: 0) == 0)
     }
 
-    @Test func aSlowDragTurnsPastAQuarterAndAFlickTurnsEarly() {
+    @Test func aSlowDragTurnsPastAThirdAndAFlickTurnsEarly() {
         func turn(_ dx: CGFloat, _ v: CGFloat = 0, prev: Bool = true, next: Bool = true) -> Int {
             PagerRule.outcome(dx, velocity: v, width: 400, canPrevious: prev, canNext: next)
         }
-        // Held halfway and let go slowly: it turns; brought back under a quarter: it doesn't.
+        // Held halfway and let go slowly: it turns; brought back under a third: it doesn't.
         #expect(turn(-200) == 1)
         #expect(turn(150) == -1)
-        #expect(turn(-100) == 0)
-        #expect(turn(-101) == 1)
+        #expect(turn(-133) == 0)
+        #expect(turn(-134) == 1)
         // A quick flick turns from a short drag, but only the way the finger went.
         #expect(turn(-30, -800) == 1)
         #expect(turn(30, 800) == -1)

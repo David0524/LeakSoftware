@@ -20,7 +20,7 @@ const weekdayName = dateFormat("en-US", { weekday: "short", timeZone: "UTC" });
  * Swiping it moves a week (owner, 2026-10-21: "Should be able to drag it as fast or slow as you
  * want, hold halfway, etc."; lib/pager.ts): the weeks before and after sit beside this one, so
  * the strip follows the finger 1:1 and shows the week coming in, and it can be held halfway and
- * taken back. Let go past a quarter of its width or with a flick and it springs on to that week,
+ * taken back. Let go past a third of its width or with a flick and it springs on to that week,
  * on the same weekday, at the finger's speed; otherwise it springs back. A new week from the
  * arrows or Today slides in from its side. Up and down still scroll. With Reduce Motion it
  * doesn't follow the finger and the week just changes.

@@ -73,7 +73,7 @@
     }
 
     /// The page follows the finger (owner, 2026-10-21; `PagerRule`): 1:1 while held, so it can
-    /// be held halfway and taken back; let go past a quarter of the width or with a flick and the
+    /// be held halfway and taken back; let go past a third of the width or with a flick and the
     /// page carries on out the way it was going with a spring, and the next one comes in from the
     /// other side once it's there (`page` changes); otherwise it springs back. Rubber band where
     /// there's no page that way. The direction is decided after 10 points, so up and down still

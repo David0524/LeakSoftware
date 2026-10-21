@@ -33,7 +33,7 @@ export function rubberBand(dx: number, width: number, c = 0.55): number {
 
 /**
  * Where a released drag goes: 1 (the next page, a swipe to the left), -1 (the previous one) or 0
- * (back where it was). It turns past a quarter of the width, or on a quick flick the same way.
+ * (back where it was). It turns past a third of the width, or on a quick flick the same way.
  * `velocity` is in px per ms, negative to the left.
  */
 export function swipeOutcome(input: {
@@ -44,7 +44,7 @@ export function swipeOutcome(input: {
   canNext: boolean;
 }): -1 | 0 | 1 {
   const { dx, velocity, width, canPrev, canNext } = input;
-  const far = Math.abs(dx) > width * 0.25;
+  const far = Math.abs(dx) > width / 3;
   const flick =
     Math.abs(velocity) > 0.35 && Math.abs(dx) > 24 && Math.sign(velocity) === Math.sign(dx);
   if (!far && !flick) return 0;

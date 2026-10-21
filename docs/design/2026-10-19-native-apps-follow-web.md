@@ -1175,7 +1175,7 @@ Large title **"Schedule"**. Bar: "+" New Job (if allowed).
 4. Day view only: the **week strip**, edge to edge: Monday to Sunday, 7 equal cells (at least 48
    wide, 56 tall, radius 12, 4 apart, 16 side padding): weekday (body medium 13) over the day
    number (Barlow Bold 20). Chosen day: `text` fill with `bg` text (navy with near-white). Today
-   (when not chosen): `link` text. Swipe the strip sideways: it follows the finger; past a quarter
+   (when not chosen): `link` text. Swipe the strip sideways: it follows the finger; past a third
    of its width, or a flick, it moves to the week before or after on the same weekday.
 5. **Whose schedule** pills (when more than one person is visible): "Me", then teammates, then
    "Everyone". The default is the first person with work in view (you first).

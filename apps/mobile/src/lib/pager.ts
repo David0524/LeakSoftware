@@ -2,7 +2,7 @@
 // as you want, hold halfway, etc. All the stuff we built earlier for web app."): Schedule's week
 // strip and its days, weeks and months. The website's rule (apps/web use-swipe.ts) and the
 // iPhone app's (PagerRule): the page moves 1:1 with the finger, gives like a rubber band where
-// there's no page that way, and a release turns the page past a quarter of the width or on a
+// there's no page that way, and a release turns the page past a third of the width or on a
 // flick the same way; otherwise it springs back. Worklets, so they run with the finger.
 
 import { rubberBand } from "./heroBrowse";
@@ -12,7 +12,7 @@ export { rubberBand };
 /** How far a finger moves before the drag is sideways (ours) or up-and-down (the scroll). */
 export const PAGER_LOCK = 10;
 /** The share of the width a slow drag must pass to turn the page. */
-export const PAGER_SHARE = 0.25;
+export const PAGER_SHARE = 1 / 3;
 /** A flick: at least this fast (pt/s) and this far (pt), the same way as the drag. */
 export const PAGER_FLICK_SPEED = 500;
 export const PAGER_FLICK_DISTANCE = 24;

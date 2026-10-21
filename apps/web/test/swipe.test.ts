@@ -31,10 +31,10 @@ describe("rubberBand", () => {
 
 describe("swipeOutcome", () => {
   const base = { width: 400, canPrev: true, canNext: true, velocity: 0 };
-  it("turns past a quarter of the width", () => {
-    expect(swipeOutcome({ ...base, dx: -120 })).toBe(1);
-    expect(swipeOutcome({ ...base, dx: 120 })).toBe(-1);
-    expect(swipeOutcome({ ...base, dx: -60 })).toBe(0);
+  it("turns past a third of the width", () => {
+    expect(swipeOutcome({ ...base, dx: -140 })).toBe(1);
+    expect(swipeOutcome({ ...base, dx: 140 })).toBe(-1);
+    expect(swipeOutcome({ ...base, dx: -130 })).toBe(0);
   });
   it("turns on a quick flick the same way, not against it", () => {
     expect(swipeOutcome({ ...base, dx: -40, velocity: -0.8 })).toBe(1);

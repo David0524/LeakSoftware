@@ -881,7 +881,8 @@ export function ScheduleScreen() {
           />
         ) : null}
 
-        {!ctx.depot ? (
+        {/* Only while someone shown starts at the shop (owner, 2026-10-21), as the website. */}
+        {!ctx.depot && shown.some((t) => startOf(t.user_id).label === "shop") ? (
           <Notice tone="warning">
             <T style={{ flex: 1 }}>
               Routes start and end at the shop, which has no map location yet.{" "}
