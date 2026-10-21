@@ -25,8 +25,12 @@ export type Frame = {
   at: number;
   /** For a long page: scroll from one CSS-pixel offset to another over the frame's time. */
   scroll?: { from: number; to: number; start: number; end: number };
-  /** The phone's status bar while this frame shows, when it differs from the screen's. */
-  bar?: StatusBar;
+  /** The phone's status bar while this frame shows, when it differs from the screen's (null: none,
+   * as on the Lock Screen, whose capture brings its own). */
+  bar?: StatusBar | null;
+  /** A website capture: the page starts under the status bar, as in Safari. App captures
+   * leave room for it themselves. */
+  web?: boolean;
 };
 
 /** The camera on the screen: zoom and the CSS-pixel point at the middle of the view. */
@@ -134,7 +138,8 @@ function ScreenContent({
           if (t < f.at || (next && t > next.at + 0.3)) return null;
           // Never scroll past the page's end (the status bar covers `inset` of the view).
           const page = boxes(f.src).height;
-          const max = page ? Math.max(0, page - (screen.size.height - inset)) : Infinity;
+          const top = f.web ? inset : 0;
+          const max = page ? Math.max(0, page - (screen.size.height - top)) : Infinity;
           const y = f.scroll
             ? Math.min(
                 max,
@@ -151,7 +156,7 @@ function ScreenContent({
               style={{
                 position: "absolute",
                 left: 0,
-                top: -y,
+                top: top - y,
                 width: screen.size.width,
                 opacity: fadeIn,
               }}
@@ -286,11 +291,16 @@ export function Browser({
 export type StatusBar = { background: string; color: string };
 
 /** The iPhone's status bar, for website captures (the app's own screens bring theirs). */
-function StatusBarView({ bar, width }: { bar: StatusBar; width: number }) {
+function StatusBarView({ bar, width }: { bar: StatusBar | null; width: number }) {
   const s = width / 402;
+  if (!bar) return null;
   return (
     <div
       style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
         height: 54 * s,
         background: bar.background,
         color: bar.color,
@@ -338,10 +348,10 @@ function StatusBarView({ bar, width }: { bar: StatusBar; width: number }) {
   );
 }
 
-function activeBar(screen: Screen, fallback: StatusBar) {
+function activeBar(screen: Screen, fallback: StatusBar): StatusBar | null {
   const t = useCurrentFrame() / FPS;
   const current = [...screen.frames].reverse().find((f) => f.at <= t);
-  return current?.bar ?? fallback;
+  return current?.bar === undefined ? fallback : current.bar;
 }
 
 export function Phone({
@@ -384,10 +394,10 @@ export function Phone({
           position: "relative",
         }}
       >
+        <ScreenContent screen={screen} width={width - bezel * 2} inset={statusBar ? 54 : 0} />
         {statusBar && (
           <StatusBarView bar={activeBar(screen, statusBar)} width={width - bezel * 2} />
         )}
-        <ScreenContent screen={screen} width={width - bezel * 2} inset={statusBar ? 54 : 0} />
         {overlay}
         <div
           style={{
