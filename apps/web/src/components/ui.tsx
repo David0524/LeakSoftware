@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Fragment, useId, type ComponentProps, type CSSProperties, type ReactNode } from "react";
 import { JOB_STATUS_LABELS, type JobStatus } from "@leakbook/core";
-import { NavBar, TabLogo } from "./nav-bar";
+import { NavBar } from "./nav-bar";
 
 // Small, server-safe building blocks styled with the brand tokens (packages/tokens).
 
@@ -153,8 +153,6 @@ export function PageHeader({
         )}
       >
         <div className={cx("min-w-0", !back && "max-sm:basis-full")}>
-          {/* Phones, a tab's own page: the logo parks right above the title and scrolls with it. */}
-          {back ? null : <TabLogo />}
           {/* Phones: the iOS large title (34 pt); it hands off to the bar as it scrolls. Beside
               the bar's action, it keeps clear of it (NavBar measures it into --nav-action) and
               wraps instead (one line is 42.5 tall, centered on the bar's 44 pt row). */}

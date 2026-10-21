@@ -3,30 +3,75 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Logo } from "./logo";
 
 /**
- * The phone tab bar's pages. The logo parks right above their large title, in the page, and
- * scrolls away with it; the bar keeps only its buttons (owner, 2026-10-21: "The logo needs to
- * park over the title"). Pushed pages keep Back.
+ * The phone tab bar's pages. Their bars carry the logo at the leading edge, below the status
+ * bar and level with the "+"; the large title takes its own full-width row under the bar. As
+ * the page scrolls, the logo stays in the bar and collapses to the pin mark (owner,
+ * 2026-10-21: "It needs to sit below the time. Then just the logo (not the text) should slide
+ * down with the page on that top banner"). Pushed pages keep Back.
  */
 const TAB_ROOTS = ["/today", "/jobs", "/schedule", "/messages", "/more"];
 
 // Local helper: ui.tsx renders NavBar, so importing from it here would be circular.
 const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(" ");
 
+/** How far the wordmark takes to fade out as the page scrolls, in px. */
+const WORDMARK_FADE = 30;
+
 /**
- * Phones, a tab's own page: the logo above the large title, left-aligned with it (28 pt tall,
- * 6 pt above it), part of the title block so it scrolls away with it. The light or reverse
- * lockup follows the website's appearance; read once as "Sundeck Pro".
+ * Phones, a tab's own page: the lockup in the bar's leading edge, 28 pt tall. The pin mark
+ * stays; the "Sundeck Pro" wordmark fades out over the first 30 pt of scroll and comes back at
+ * the top. The mark takes the layout's width, so the faded wordmark never pushes the small
+ * title. Light or reverse art follows the website's appearance; read once as "Sundeck Pro".
  */
-export function TabLogo() {
-  const path = usePathname();
-  if (!TAB_ROOTS.includes(path)) return null;
+function BarLogo() {
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () =>
+      el.style.setProperty(
+        "--wordmark",
+        String(Math.max(0, 1 - Math.max(0, window.scrollY) / WORDMARK_FADE)),
+      );
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
+  // The lockup is 623.9 x 146.3 and its pin is the first 100 of it, the same as the mark's art
+  // (brand/logo): the wordmark layer is the lockup with the pin clipped off, over the mark.
+  const h = 28;
+  const lockup = Math.round((h * 623.9) / 146.3);
+  const mark = Math.round((h * 100) / 146.3);
+  const art = (light: string, dark: string, width: number, extra = "") => (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element -- static SVG */}
+      <img src={light} alt="" width={width} height={h} className={cx("dark:hidden", extra)} />
+      {/* eslint-disable-next-line @next/next/no-img-element -- static SVG */}
+      <img src={dark} alt="" width={width} height={h} className={cx("hidden dark:block", extra)} />
+    </>
+  );
   return (
-    <div data-tab-logo className="mb-1.5 flex h-7 items-center sm:hidden">
-      <Logo height={28} />
-    </div>
+    <span
+      ref={ref}
+      data-bar-logo
+      role="img"
+      aria-label="Sundeck Pro"
+      className="relative flex h-11 items-center pl-2"
+    >
+      <span data-bar-mark className="block" style={{ width: mark, height: h }}>
+        {art("/sundeck-mark.svg", "/sundeck-mark-reverse.svg", mark)}
+      </span>
+      <span
+        data-bar-wordmark
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 [clip-path:inset(0_0_0_16.1%)]"
+        style={{ width: lockup, height: h, opacity: "var(--wordmark, 1)" }}
+      >
+        {art("/sundeck-logo.svg", "/sundeck-logo-reverse.svg", lockup)}
+      </span>
+    </span>
   );
 }
 
@@ -59,13 +104,13 @@ export function useStillNavBar(on: boolean) {
  * Phones: the iOS navigation bar (toolbars.md › large titles). The page's large title sits in
  * the content; once it scrolls under the bar, a small centered title fades in on a frosted
  * bar. Back sits on the left ("‹ Jobs") and the page's main action on the right. The tab bar's
- * own pages (Today, Jobs, Schedule, Messages, More) show the logo above the large title, in
- * the page (TabLogo), never in the bar (owner, 2026-10-21).
+ * own pages (Today, Jobs, Schedule, Messages, More) show the logo there instead, collapsing
+ * to the pin mark once the page scrolls (BarLogo, owner 2026-10-21).
  *
  * Without Back and without the logo, the large title sits in the bar's row, left of the
  * action, as in Apple's App Store and Music (owner, 2026-10-20: "push up towards where the
- * plus button is"). On the tab bar's pages the bar's row holds only the buttons, and the logo
- * and the title sit under it with the page's full width (owner, 2026-10-21). The bar sets `--nav-action` on the title
+ * plus button is"). On the tab bar's pages the logo has that row, and the title sits under it
+ * with the page's full width (owner, 2026-10-21). The bar sets `--nav-action` on the title
  * to the action's width, so a long or enlarged title wraps between words before it reaches the
  * "+"; when one of its words is wider than the room left (very large text), the title moves to
  * its own row under the bar instead.
@@ -114,6 +159,26 @@ export function NavBar({
     return () => io.disconnect();
   }, [titleId, inline]);
   const collapsed = past && !still;
+  // A tab's own page: the bar turns to glass as soon as the large title reaches it, so the
+  // title passes under the frosted bar (and the logo), never behind a clear one; the small
+  // title still waits for the large one to have gone.
+  const barRef = useRef<HTMLDivElement>(null);
+  const [under, setUnder] = useState(false);
+  useEffect(() => {
+    const el = document.getElementById(titleId);
+    const barEl = barRef.current;
+    if (!brand || !el || !barEl) return;
+    const update = () =>
+      setUnder(el.getBoundingClientRect().top < barEl.getBoundingClientRect().bottom - 0.5);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [titleId, brand]);
+  const glass = collapsed || (brand && under && !still);
   useEffect(() => {
     const el = document.getElementById(titleId);
     const row = el?.closest<HTMLElement>("[data-page-header]");
@@ -122,7 +187,7 @@ export function NavBar({
     const measure = () => {
       const room = (el.parentElement ?? el).clientWidth - action.getBoundingClientRect().width;
       const words = [...el.children].map((w) => w.getBoundingClientRect().width);
-      // Under the logo, always its own row.
+      // Under the logo's row, always its own row.
       const stack = brand || Math.max(0, ...words) > room;
       setStacked(stack);
       row.toggleAttribute("data-stacked", stack);
@@ -144,10 +209,11 @@ export function NavBar({
 
   return (
     <div
+      ref={barRef}
       data-nav-brand={brand ? "" : undefined}
       className={cx(
         "nav-main fixed inset-x-0 top-0 z-30 pt-[env(safe-area-inset-top)] transition-colors sm:hidden",
-        collapsed ? "glass-bar" : "bg-transparent",
+        glass ? "glass-bar" : "bg-transparent",
       )}
     >
       {/* Large text (owner, 2026-10-20), as iOS does: the bar grows in height with the text,
@@ -177,6 +243,8 @@ export function NavBar({
               </svg>
               <span className="truncate @max-[3.5em]:hidden">{back.label}</span>
             </Link>
+          ) : brand ? (
+            <BarLogo />
           ) : null}
         </div>
         <p

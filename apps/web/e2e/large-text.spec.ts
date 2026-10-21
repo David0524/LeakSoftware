@@ -171,12 +171,40 @@ for (const [name, viewport, fontSize] of [
         };
         expect(intersects(plusEdges, text), `${path}: the title overlaps +`).toBe(false);
       }
-      // A tab's own page has the logo right above the title, in the page, left-aligned with
-      // it, and scrolling away with it (owner, 2026-10-21: "The logo needs to park over the
-      // title"); never in the bar, never over the title.
-      await expect(page.locator("[data-nav-brand] img:visible")).toHaveCount(0);
-      const logo = page.locator("[data-tab-logo] img:visible");
-      await expect(logo).toHaveCount(1);
+      // A tab's own page has the logo in the bar's row, below the status bar, level with the
+      // "+" and clear of it, and above the large title (owner, 2026-10-21: "It needs to sit
+      // below the time"). Scrolled, only the pin mark stays in the bar ("just the logo (not the
+      // text) should slide down with the page on that top banner").
+      await expect(page.locator("[data-tab-logo]")).toHaveCount(0);
+      const edges = (b: { x: number; y: number; width: number; height: number }) => ({
+        left: b.x,
+        right: b.x + b.width,
+        top: b.y,
+        bottom: b.y + b.height,
+      });
+      const barLogo = page.locator(".nav-main [data-bar-logo]");
+      await expect(barLogo).toHaveCount(1);
+      await expect(barLogo).toHaveAttribute("aria-label", "Sundeck Pro");
+      const mark = barLogo.locator("[data-bar-mark] img:visible");
+      const wordmark = barLogo.locator("[data-bar-wordmark]");
+      await expect(mark).toHaveCount(1);
+      await expect(wordmark.locator("img:visible")).toHaveCount(1);
+      await expect(wordmark).toHaveCSS("opacity", "1");
+      const lockup = edges((await wordmark.boundingBox())!);
+      const row = edges((await barLogo.boundingBox())!);
+      const bar = edges((await page.locator(".nav-main").boundingBox())!);
+      expect(lockup.top, `${path}: the logo is in the bar`).toBeGreaterThanOrEqual(bar.top);
+      expect(lockup.bottom, `${path}: the logo is in the bar`).toBeLessThanOrEqual(bar.bottom);
+      for (const button of await page
+        .locator(".nav-main a:visible, .nav-main button:visible")
+        .all()) {
+        const b = edges((await button.boundingBox())!);
+        expect(intersects(lockup, b), `${path}: the logo overlaps a bar button`).toBe(false);
+        expect(
+          Math.abs((b.top + b.bottom) / 2 - (lockup.top + lockup.bottom) / 2),
+          `${path}: the logo is level with the bar's buttons`,
+        ).toBeLessThanOrEqual(2);
+      }
       const titleText = () =>
         h1.evaluate((el) => {
           const range = document.createRange();
@@ -184,56 +212,26 @@ for (const [name, viewport, fontSize] of [
           const r = range.getBoundingClientRect();
           return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
         });
-      const edges = (b: { x: number; y: number; width: number; height: number }) => ({
-        left: b.x,
-        right: b.x + b.width,
-        top: b.y,
-        bottom: b.y + b.height,
-      });
-      const logoBox = (await logo.boundingBox())!;
       const text = await titleText();
-      const h1Box = (await h1.boundingBox())!;
-      expect(intersects(edges(logoBox), text), `${path}: the title overlaps the logo`).toBe(false);
-      expect(text.top, `${path}: the logo sits right above the title`).toBeGreaterThanOrEqual(
-        logoBox.y + logoBox.height,
+      expect(intersects(lockup, text), `${path}: the title overlaps the logo`).toBe(false);
+      expect(text.top, `${path}: the logo sits above the title`).toBeGreaterThanOrEqual(
+        Math.max(lockup.bottom, row.bottom) - 0.5,
       );
-      // 6 px apart; the title's line box adds its leading above the letters, which grows with
-      // the text size (about a third of the font size).
-      const titleSize = await h1.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
-      expect(
-        h1Box.y - (logoBox.y + logoBox.height),
-        `${path}: the logo parks on the title`,
-      ).toBeLessThanOrEqual(6 + titleSize * 0.35);
-      expect(
-        Math.abs(logoBox.x - h1Box.x),
-        `${path}: the logo lines up with the title`,
-      ).toBeLessThanOrEqual(2);
-      // Clear of the bar's row (the "+") at rest.
-      for (const button of await page
-        .locator(".nav-main a:visible, .nav-main button:visible")
-        .all()) {
-        const b = (await button.boundingBox())!;
-        expect(intersects(edges(logoBox), edges(b)), `${path}: the logo overlaps the bar`).toBe(
-          false,
+      // Scrolled 200 px: the wordmark has faded out, and the mark stays in the bar.
+      await page.evaluate(() => window.scrollTo(0, 200));
+      const scrolled = await page.evaluate(() => window.scrollY);
+      if (scrolled >= 30) {
+        await expect(wordmark).toHaveCSS("opacity", "0");
+        await expect(mark).toBeVisible();
+        const m = edges((await mark.boundingBox())!);
+        const barNow = edges((await page.locator(".nav-main").boundingBox())!);
+        expect(m.top, `${path}: the mark stays in the bar`).toBeGreaterThanOrEqual(barNow.top);
+        expect(m.bottom, `${path}: the mark stays in the bar`).toBeLessThanOrEqual(barNow.bottom);
+        expect(Math.abs(m.top - lockup.top), `${path}: the mark doesn't move`).toBeLessThanOrEqual(
+          1,
         );
-      }
-      // Scrolled a little, the logo moves with the title.
-      const scrollable = await page.evaluate(
-        () => document.documentElement.scrollHeight - window.innerHeight,
-      );
-      if (scrollable > 20) {
-        await page.evaluate(() => window.scrollBy(0, 20));
-        await expect
-          .poll(async () => (await logo.boundingBox())!.y - logoBox.y, {
-            message: `${path}: the logo scrolls with the title`,
-          })
-          .toBeLessThan(-10);
-        const moved = (await logo.boundingBox())!;
-        expect(
-          intersects(edges(moved), await titleText()),
-          `${path}: the title overlaps the logo when scrolled`,
-        ).toBe(false);
         await page.evaluate(() => window.scrollTo(0, 0));
+        await expect(wordmark).toHaveCSS("opacity", "1");
       }
     }
     await phone.close();

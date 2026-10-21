@@ -3,6 +3,7 @@ import { useSyncExternalStore } from "react";
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Glass } from "./Glass";
+import { BarLogo } from "./SundeckLogo";
 import { color, minTap, type } from "./theme";
 import { WebIcon } from "./WebIcon";
 
@@ -12,9 +13,11 @@ import { WebIcon } from "./WebIcon";
 // once the large one scrolls under the bar, and the bar turns to glass once anything does.
 // iPhone uses the native bar with large titles instead.
 //
-// The tab roots keep only their buttons in the bar; the logo parks right above the large title
-// in the page and scrolls away with it (owner, 2026-10-21: "The logo needs to park over the
-// title"), as on the website.
+// The tab roots have the logo where Back would be, below the status bar and level with the
+// action, and the large title on its own full-width row under the bar. Scrolled, the logo stays
+// in the bar as the pin mark only (owner, 2026-10-21: "It needs to sit below the time. Then
+// just the logo (not the text) should slide down with the page on that top banner"), as on
+// the website.
 
 export const BAR_HEIGHT = 44;
 
@@ -31,6 +34,8 @@ interface BarState {
    * job's Findings and Wrap-Up, which sit on a tile; owner, 2026-10-20 and 2026-10-21).
    */
   still: boolean;
+  /** A tab's own page: the logo at the bar's leading edge (BarLogo). */
+  logo: boolean;
 }
 const states = new Map<string, BarState>();
 const listeners = new Set<() => void>();
@@ -39,7 +44,14 @@ let version = 0;
 export function barState(key: string): BarState {
   let s = states.get(key);
   if (!s) {
-    s = { y: new Animated.Value(0), large: false, inline: false, right: 0, still: false };
+    s = {
+      y: new Animated.Value(0),
+      large: false,
+      inline: false,
+      right: 0,
+      still: false,
+      logo: false,
+    };
     states.set(key, s);
   }
   return s;
@@ -59,6 +71,14 @@ export function setLargeTitle(key: string, large: boolean, inline = false) {
   if (s.large === large && s.inline === inline) return;
   s.large = large;
   s.inline = inline;
+  changed();
+}
+
+/** A tab's own page puts the logo at the bar's leading edge. */
+export function setBarLogo(key: string, logo: boolean) {
+  const s = barState(key);
+  if (s.logo === logo) return;
+  s.logo = logo;
   changed();
 }
 
@@ -160,6 +180,8 @@ export function DrawnHeader({ back, options, route, navigation }: NativeStackHea
                   {back.title ?? "Back"}
                 </Text>
               </Pressable>
+            ) : s.logo ? (
+              <BarLogo y={s.y} />
             ) : null)}
         </View>
         <Animated.View pointerEvents="none" style={[styles.titleBox, { opacity: titleOpacity }]}>

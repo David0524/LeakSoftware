@@ -159,9 +159,8 @@ header:not(.glass-bar) :focus-visible {
     visibility: hidden;
   }
 }
-/* Phones, a tab's own page: the bar's row holds only its buttons; the logo and the large title
-   sit under it with the page's full width, the logo right above the title (owner, 2026-10-21),
-   from the first frame. */
+/* Phones, a tab's own page: the logo has the bar's row, and the large title its own full-width
+   row under it (owner, 2026-10-21), from the first frame. */
 @media (width < 40rem) {
   body:has([data-nav-brand]) [data-page-header] {
     margin-top: 0;
