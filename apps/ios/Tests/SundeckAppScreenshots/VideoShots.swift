@@ -275,10 +275,11 @@
                 .environment(\.drawsLiveMaps, false)
             let host = UIHostingController(rootView: AnyView(content))
             window.rootViewController = host
+            // Off screen there's no status bar or home indicator: leave their room, as an iPhone
+            // does, before the first layout (scroll views start at the top under the bar).
+            if scene == nil { host.additionalSafeAreaInsets = videoSafeArea }
             window.makeKeyAndVisible()
             window.layoutIfNeeded()
-            // Off screen there's no status bar or home indicator: leave their room, as an iPhone does.
-            if window.safeAreaInsets.top < 20 { host.additionalSafeAreaInsets = videoSafeArea }
         }
 
         /// Lets SwiftUI load (.task) and animate, laying out as it goes.
@@ -291,6 +292,7 @@
 
         func shot(_ name: String) async throws {
             window.layoutIfNeeded()
+            flattenBackdrops(window.layer)
             let format = UIGraphicsImageRendererFormat()
             format.scale = 3
             format.opaque = true
@@ -303,6 +305,16 @@
             }
             try save(name, image)
             #expect(!isBlank(image), "\(name) rendered blank")
+        }
+
+        /// Bar materials are a backdrop the off-screen renderer can't draw (it leaves them clear,
+        /// and the page shows through the bar): fill them with the light bar's flat color.
+        private func flattenBackdrops(_ layer: CALayer) {
+            let kind = String(describing: type(of: layer))
+            if kind.contains("Backdrop") {
+                layer.backgroundColor = UIColor(red: 0.976, green: 0.976, blue: 0.98, alpha: 0.96).cgColor
+            }
+            for sub in layer.sublayers ?? [] { flattenBackdrops(sub) }
         }
 
         func close() {
@@ -337,24 +349,43 @@
             return sorted
         }
 
-        /// Types into a field as the keyboard would.
+        /// Types into a field as the keyboard would. The test host has no UIApplication, so the
+        /// field's own editing events are sent to SwiftUI's handlers directly.
         func typeText(_ field: UITextField, _ text: String) async throws {
-            _ = field.becomeFirstResponder()
-            field.insertText(text)
-            if field.text != text {
-                field.text = text
-                field.sendActions(for: .editingChanged)
-                NotificationCenter.default.post(name: UITextField.textDidChangeNotification, object: field)
+            let delegate = field.delegate
+            _ = delegate?.textFieldShouldBeginEditing?(field)
+            delegate?.textFieldDidBeginEditing?(field)
+            let range = NSRange(location: 0, length: (field.text ?? "").utf16.count)
+            _ = delegate?.textField?(field, shouldChangeCharactersIn: range, replacementString: text)
+            field.text = text
+            for target in field.allTargets {
+                guard let object = target.base as? NSObject else { continue }
+                for name in field.actions(forTarget: object, forControlEvent: .editingChanged) ?? []
+                where name.filter({ $0 == ":" }).count <= 1 {
+                    _ = object.perform(NSSelectorFromString(name), with: field)
+                }
             }
-            try await Task.sleep(for: .milliseconds(150))
-            _ = field.resignFirstResponder()
-            try await wait(0.4)
+            NotificationCenter.default.post(name: UITextField.textDidChangeNotification, object: field)
+            delegate?.textFieldDidChangeSelection?(field)
+            _ = delegate?.textFieldShouldEndEditing?(field)
+            delegate?.textFieldDidEndEditing?(field)
+            try await wait(0.5)
+            print("video typed '\(text)': field now '\(field.text ?? "")'")
         }
 
         /// The page's scroll view (the largest one).
+        /// The page's vertical scroll view (not a sideways pager, not a text view).
         private var scroller: UIScrollView? {
-            all(UIScrollView.self, in: window).filter { !($0 is UITextView) }
-                .max { $0.bounds.width * $0.bounds.height < $1.bounds.width * $1.bounds.height }
+            let found = all(UIScrollView.self, in: window).filter {
+                !($0 is UITextView) && $0.bounds.width > 200 && $0.contentSize.height > $0.bounds.height + 1
+                    && $0.contentSize.width <= $0.bounds.width + 1
+            }
+            for s in found {
+                print(
+                    "video scroller \(type(of: s)): \(Int(s.bounds.width)) x \(Int(s.bounds.height)), "
+                        + "content \(Int(s.contentSize.width)) x \(Int(s.contentSize.height))")
+            }
+            return found.max { $0.bounds.width * $0.bounds.height < $1.bounds.width * $1.bounds.height }
         }
 
         private func scroll(to y: CGFloat) async throws {
@@ -539,7 +570,11 @@
         let over = Stage(
             ZStack(alignment: .top) {
                 NavigationStack { TodayScreen() }.app(env)
-                Island(state: state, logo: logo).padding(.horizontal, 11).padding(.top, 11)
+                VStack {
+                    Island(state: state, logo: logo).padding(.horizontal, 11).padding(.top, 11)
+                    Spacer()
+                }
+                .ignoresSafeArea()
             })
         try await over.wait()
         try await over.shot("\(prefix)-island-over-today")
@@ -667,7 +702,7 @@
         let returnLeak = try InspectionWrites.saveFinding(
             sync, companyId: "c1", jobId: work.job, existing: nil, title: "Return line leak under the deck",
             componentId: work.returns, severityKey: "major", location: "Return line, 6 ft from the pool wall",
-            pin: (0.9, 0.42), status: .open, notes: "Lost 8 PSI in 15 minutes.")
+            pin: (0.82, 0.42), status: .open, notes: "Lost 8 PSI in 15 minutes.")
         let niche = try InspectionWrites.saveFinding(
             sync, companyId: "c1", jobId: work.job, existing: nil, title: "Light niche conduit leak",
             componentId: work.light, severityKey: "major", location: "Light niche, deep end", pin: (0.52, 0.9),
@@ -958,11 +993,6 @@
             try await todayStage.shot("leak-02-today-on-my-way-sent")
             todayStage.close()
             try await liveActivityShots("leak-03-live-activity-driving", env, time: "9:09")
-            // The whole app, tab bar included, for comparison (off screen, iOS can't draw its glass).
-            let tabs = Stage(MainView().app(env))
-            try await tabs.wait(2)
-            try await tabs.shot("leak-02-today-on-my-way-sent-with-tab-bar")
-            tabs.close()
             try startStop(env, rebecca.job, at: 9 * 60 + 28)
             try await settleSync(env)
             let onSite = Stage(NavigationStack { TodayScreen() }.app(env))
