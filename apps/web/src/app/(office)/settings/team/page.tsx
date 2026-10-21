@@ -218,6 +218,7 @@ export default async function TeamSettingsPage() {
           <StartFromForm
             id={m.membership_id}
             user={m.user_id}
+            submit="Save Start"
             startFrom={startOf.get(m.user_id)?.start_from === "home" ? "home" : "shop"}
             homeAddress={startOf.get(m.user_id)?.home_address ?? ""}
             missing={homeMapStatus(startOf.get(m.user_id)) === "missing"}

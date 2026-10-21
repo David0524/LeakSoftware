@@ -20,6 +20,7 @@ export function StartFromForm({
   homeAddress,
   missing,
   id,
+  submit,
 }: {
   /** Someone else's (Team › their profile); left out for your own. */
   user?: string;
@@ -29,11 +30,13 @@ export function StartFromForm({
   missing: boolean;
   /** Unique on the page (Team has one per person). */
   id: string;
+  /** The button's words; Team's sheet names each section's ("Save Start", like "Save Role"). */
+  submit?: string;
 }) {
   const [from, setFrom] = useState<RouteStartLabel>(startFrom);
   return (
     <div data-testid="start-from">
-      <SettingsForm action={saveStartFrom} full>
+      <SettingsForm action={saveStartFrom} submit={submit} full>
         {user ? <input type="hidden" name="user" value={user} /> : null}
         <div className="px-4 sm:px-0">
           <Segmented
