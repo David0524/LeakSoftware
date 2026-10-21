@@ -944,14 +944,46 @@ public struct Landmark: Codable, Equatable, Sendable {
     public var y: Double
     public var s: Double?
     public var flip: Bool?
+    /// Quarter turns clockwise, 1 to 3 (the steps and the waterfall; owner, 2026-10-21).
+    public var turn: Int?
 
-    public init(kind: LandmarkKind, x: Double, y: Double, s: Double? = nil, flip: Bool? = nil) {
+    public init(
+        kind: LandmarkKind, x: Double, y: Double, s: Double? = nil, flip: Bool? = nil, turn: Int? = nil
+    ) {
         self.kind = kind
         self.x = x
         self.y = y
         self.s = s
         self.flip = flip
+        self.turn = turn
     }
+}
+
+/// What a tap on the selected landmark does: "turn" (the steps and the waterfall) or "mirror".
+/// Port of `landmarkTaps`.
+public func landmarkTaps(_ kind: LandmarkKind) -> String {
+    kind == .steps || kind == .waterfall ? "turn" : "mirror"
+}
+
+/// A landmark's quarter turns clockwise, 0 to 3; saved flipped before turning, the steps count
+/// as 2 and the waterfall as 0. Port of `landmarkTurn`.
+public func landmarkTurn(kind: LandmarkKind, flip: Bool?, turn: Int?) -> Int {
+    guard landmarkTaps(kind) == "turn" else { return 0 }
+    if let turn, (1...3).contains(turn) { return turn }
+    return flip == true && kind == .steps ? 2 : 0
+}
+
+/// A tap on the selected landmark: the steps and the waterfall turn a quarter clockwise, the
+/// others mirror. Port of `tapLandmark`.
+public func tapLandmark(_ l: Landmark) -> Landmark {
+    var out = Landmark(kind: l.kind, x: l.x, y: l.y, s: l.s)
+    if landmarkTaps(l.kind) == "turn" {
+        let next = (landmarkTurn(kind: l.kind, flip: l.flip, turn: l.turn) + 1) % 4
+        out.turn = next == 0 ? nil : next
+    } else {
+        out.flip = l.flip == true ? nil : true
+    }
+    return out
 }
 
 /// A drawn line this close to level or plumb (degrees) is drawn straight.
@@ -992,6 +1024,8 @@ public struct PoolDiagram: Codable, Equatable, Sendable {
         public var size: Double
         public var flip: Bool
         public var mirror: String
+        /// Quarter turns clockwise about cx, cy, around the box above: rotate(90 × turn).
+        public var turn: Int
         public var parts: [LandmarkPart]
     }
 
@@ -1147,7 +1181,13 @@ public func parseDiagramLayout(_ value: JSONValue?) -> DiagramLayout {
                 else { return nil }
                 var s: Double?
                 if case .number(let n) = l["s"], n >= landmarkMin, n <= landmarkMax { s = n }
-                return Landmark(kind: kind, x: x, y: y, s: s, flip: l["flip"] == .bool(true) ? true : nil)
+                let flip = l["flip"] == .bool(true)
+                var turn: Int?
+                if case .number(let n) = l["turn"] { turn = Int(exactly: n) }
+                let turned = landmarkTurn(kind: kind, flip: flip, turn: turn)
+                return Landmark(
+                    kind: kind, x: x, y: y, s: s, flip: flip && landmarkTaps(kind) == "mirror" ? true : nil,
+                    turn: turned == 0 ? nil : turned)
             }
             .prefix(landmarksMax))
         if !landmarks.isEmpty { layout.landmarks = landmarks }
@@ -1305,8 +1345,10 @@ public func poolDiagram(_ shape: DiagramShape?, _ hasSpa: Bool, _ layout: Diagra
             let half = size / 2
             return .init(
                 kind: l.kind, cx: min(diagramWidth - half, max(half, l.x * diagramWidth)),
-                cy: min(diagramHeight - half, max(half, l.y * diagramHeight)), size: size, flip: l.flip == true,
-                mirror: l.kind.mirrorAxis ?? "x", parts: l.kind.parts)
+                cy: min(diagramHeight - half, max(half, l.y * diagramHeight)), size: size,
+                flip: l.flip == true && landmarkTaps(l.kind) == "mirror",
+                mirror: l.kind.mirrorAxis ?? "x", turn: landmarkTurn(kind: l.kind, flip: l.flip, turn: l.turn),
+                parts: l.kind.parts)
         })
 }
 

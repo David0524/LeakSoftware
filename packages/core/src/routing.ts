@@ -277,6 +277,8 @@ export interface TechDay {
   labels?: Record<string, string>;
   /** On today's route, nothing can start before now. */
   notBeforeMin?: number | null;
+  /** Where this tech's day starts and ends (startFor), when not the shop passed as `depot`. */
+  start?: LatLng | null;
 }
 
 export interface SlotSuggestion {
@@ -309,7 +311,8 @@ export function suggestSlots(
 ): SlotSuggestion[] {
   const found: (SlotSuggestion & { score: number })[] = [];
   days.forEach((td) => {
-    const base = timeRoute(td.stops, depot, day, drive);
+    const from = td.start !== undefined ? td.start : depot;
+    const base = timeRoute(td.stops, from, day, drive);
     let best: (SlotSuggestion & { score: number }) | null = null;
     for (let p = 0; p <= td.stops.length; p++) {
       const candidate: RouteStop = {
@@ -319,7 +322,7 @@ export function suggestSlots(
         earliestMin: td.notBeforeMin ?? null,
       };
       const stops = [...td.stops.slice(0, p), candidate, ...td.stops.slice(p)];
-      const r = timeRoute(stops, depot, day, drive);
+      const r = timeRoute(stops, from, day, drive);
       if (r.overtimeMin > base.overtimeMin || r.lateMin > base.lateMin) continue;
       const added = r.driveMin - base.driveMin;
       const score = added + daysOut(days, td) * 2;

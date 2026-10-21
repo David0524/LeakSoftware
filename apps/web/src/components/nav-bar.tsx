@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { Logo } from "./logo";
+
+/** The phone tab bar's pages. Their bars carry the logo at the left; pushed pages keep Back. */
+const TAB_ROOTS = ["/today", "/jobs", "/schedule", "/messages", "/more"];
 
 // Local helper: ui.tsx renders NavBar, so importing from it here would be circular.
 const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(" ");
@@ -34,7 +39,9 @@ export function useStillNavBar(on: boolean) {
 /**
  * Phones: the iOS navigation bar (toolbars.md › large titles). The page's large title sits in
  * the content; once it scrolls under the bar, a small centered title fades in on a frosted
- * bar. Back sits on the left ("‹ Jobs") and the page's main action on the right.
+ * bar. Back sits on the left ("‹ Jobs") and the page's main action on the right. The tab bar's
+ * own pages (Today, Jobs, Schedule, Messages, More) show the logo there instead (owner,
+ * 2026-10-21: "Incorporate this logo with the text in the top left of each main page").
  */
 export function NavBar({
   title,
@@ -72,6 +79,8 @@ export function NavBar({
     return () => io.disconnect();
   }, [titleId]);
   const collapsed = past && !still;
+  const path = usePathname();
+  const brand = !back && TAB_ROOTS.includes(path);
 
   return (
     <div
@@ -101,6 +110,12 @@ export function NavBar({
               </svg>
               <span className="truncate">{back.label}</span>
             </Link>
+          ) : brand ? (
+            // 24 pt tall like the leading brand in Apple's own apps; the light or reverse
+            // lockup follows the website's appearance. Read once as "Sundeck Pro".
+            <span className="flex h-11 items-center pl-2">
+              <Logo height={24} />
+            </span>
           ) : null}
         </div>
         <p
@@ -109,7 +124,8 @@ export function NavBar({
             // The large title's face at 17 pt, so the title reads the same scrolled or not
             // (owner, 2026-10-20: "'Schedule' has different fonts depending on if the map is
             // hidden or not").
-            "max-w-[55vw] truncate font-display text-[1.0625rem] font-bold transition-opacity",
+            brand ? "max-w-[calc(100vw-15rem)]" : "max-w-[55vw]",
+            "truncate font-display text-[1.0625rem] font-bold transition-opacity",
             collapsed ? "opacity-100" : "opacity-0",
           )}
         >

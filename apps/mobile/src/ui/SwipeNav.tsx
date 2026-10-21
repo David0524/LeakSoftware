@@ -1,7 +1,26 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Reanimated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
+import { PAGER_LOCK, PAGER_SETTLE, pagerFollow, pagerStep } from "../lib/pager";
+import { useReduceMotion } from "./components";
 import { haptics } from "./haptics";
+import { swipeEnded, swipeStarted } from "./swipeQuiet";
 import { swipeDirection } from "./swipeRule";
 
 /**
@@ -74,6 +93,10 @@ export function SwipeNav({
         .activeOffsetX([-20, 20])
         .failOffsetY([-20, 20])
         .onBegin(() => clock.begin())
+        .onStart(() => {
+          if (!clock.guardedStart()) swipeStarted();
+        })
+        .onFinalize(() => swipeEnded())
         .onEnd((e) => {
           // The touch started on a field, slider, pad, or swipe row.
           if (clock.guardedStart()) return;
@@ -89,6 +112,186 @@ export function SwipeNav({
       <GestureDetector gesture={pan}>
         <View style={style} collapsable={false}>
           {children}
+        </View>
+      </GestureDetector>
+    </SwipeGuard.Provider>
+  );
+}
+
+/** The time on the gesture's thread (a worklet, so the pan can read it). */
+function clockNow(): number {
+  "worklet";
+  return Date.now();
+}
+
+/**
+ * Swipe sideways between pages, the page following the finger (owner, 2026-10-21: "Should be
+ * able to drag it as fast or slow as you want, hold halfway, etc."; lib/pager.ts): 1:1 while
+ * held, so it can be held halfway and taken back; let go past a quarter of the width or with a
+ * flick and it carries on out at the finger's speed, and the next page slides in from the other
+ * side once it's there (`page` changes); otherwise it springs back. It gives like a rubber band
+ * where there's no page that way. The direction is decided after 10 pt, so up and down still
+ * scroll. With Reduce Motion the page doesn't move with the finger and the next one fades in. A
+ * touch that starts on something guarded (useNoSwipe) never pages. Schedule's days, weeks and
+ * months.
+ */
+export function SwipePager({
+  page,
+  onPrevious,
+  onNext,
+  canPrevious = true,
+  canNext = true,
+  enabled = true,
+  style,
+  children,
+}: {
+  /** Names the page shown: when it changes after a swipe, the new page slides in. */
+  page: string;
+  onPrevious: () => void;
+  onNext: () => void;
+  canPrevious?: boolean;
+  canNext?: boolean;
+  enabled?: boolean;
+  style?: StyleProp<ViewStyle>;
+  children: ReactNode;
+}) {
+  const reduceMotion = useReduceMotion();
+  const [width, setWidth] = useState(0);
+  const x = useSharedValue(0);
+  const opacity = useSharedValue(1);
+  // When a guarded touch began (UI thread time), and whether this drag started on one.
+  const guardedAt = useSharedValue(0);
+  const blocked = useSharedValue(false);
+  const began = useSharedValue(0);
+  const [guard] = useState(() => () => guardedAt.set(Date.now()));
+  // A turn under way: which way, and whether the old page is out and the new one here.
+  const turn = useRef<{ dir: 1 | -1; out: boolean; arrived: boolean } | null>(null);
+  const latest = useRef({ onPrevious, onNext });
+  useEffect(() => {
+    latest.current = { onPrevious, onNext };
+  });
+
+  const pageStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateX: x.value }],
+  }));
+
+  /** Both the old page out and the new one here: it comes in from the other side. */
+  function bringIn() {
+    const t = turn.current;
+    if (!t || !t.out || !t.arrived) return;
+    turn.current = null;
+    if (reduceMotion || !width) {
+      x.set(0);
+      opacity.set(withTiming(1, { duration: 200 }));
+      return;
+    }
+    x.set(t.dir * (width + 16));
+    x.set(withSpring(0, PAGER_SETTLE));
+  }
+
+  // The new page is here (before paint, so the old one never shows in the new place).
+  useLayoutEffect(() => {
+    if (!turn.current) return;
+    turn.current.arrived = true;
+    bringIn();
+    // Runs when the page changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
+  const [onTurned] = useState(() => (dir: 1 | -1) => {
+    const t = { dir, out: false, arrived: false };
+    turn.current = t;
+    haptics.light();
+    if (dir === 1) latest.current.onNext();
+    else latest.current.onPrevious();
+    // The page didn't change (or is slow to): this one comes back.
+    setTimeout(() => {
+      if (turn.current !== t) return;
+      turn.current = null;
+      x.set(withSpring(0, PAGER_SETTLE));
+      opacity.set(withTiming(1, { duration: 200 }));
+    }, 1200);
+  });
+  const bringInRef = useRef(bringIn);
+  useEffect(() => {
+    bringInRef.current = bringIn;
+  });
+  const [onOut] = useState(() => () => {
+    if (!turn.current) return;
+    turn.current.out = true;
+    bringInRef.current();
+  });
+
+  const pan = useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(enabled)
+        // Sideways only: 10 pt across before it starts; up or down first is the scroll's.
+        .activeOffsetX([-PAGER_LOCK, PAGER_LOCK])
+        .failOffsetY([-PAGER_LOCK, PAGER_LOCK])
+        .onBegin(() => {
+          began.set(clockNow());
+        })
+        .onStart(() => {
+          blocked.set(Math.abs(guardedAt.get() - began.get()) < GUARD_WINDOW_MS);
+          if (!blocked.get()) scheduleOnRN(swipeStarted);
+        })
+        .onUpdate((e) => {
+          if (blocked.get() || reduceMotion) return;
+          x.set(pagerFollow(e.translationX, width || 300, canPrevious, canNext));
+        })
+        .onEnd((e) => {
+          if (blocked.get()) return;
+          const dir = pagerStep(e.translationX, e.velocityX, width || 300, canPrevious, canNext);
+          if (dir === 0) {
+            x.set(withSpring(0, PAGER_SETTLE));
+            return;
+          }
+          if (reduceMotion) {
+            opacity.set(
+              withTiming(0, { duration: 120 }, (done) => {
+                if (done) scheduleOnRN(onOut);
+              }),
+            );
+          } else {
+            // The old page carries on out the way the finger was going, at its speed.
+            x.set(
+              withSpring(
+                -dir * ((width || 300) + 16),
+                { ...PAGER_SETTLE, duration: 220, velocity: e.velocityX },
+                (done) => {
+                  if (done) scheduleOnRN(onOut);
+                },
+              ),
+            );
+          }
+          scheduleOnRN(onTurned, dir);
+        })
+        .onFinalize(() => {
+          scheduleOnRN(swipeEnded);
+        }),
+    [
+      enabled,
+      reduceMotion,
+      width,
+      canPrevious,
+      canNext,
+      x,
+      opacity,
+      guardedAt,
+      blocked,
+      began,
+      onTurned,
+      onOut,
+    ],
+  );
+
+  return (
+    <SwipeGuard.Provider value={guard}>
+      <GestureDetector gesture={pan}>
+        <View collapsable={false} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+          <Reanimated.View style={[style, pageStyle]}>{children}</Reanimated.View>
         </View>
       </GestureDetector>
     </SwipeGuard.Provider>

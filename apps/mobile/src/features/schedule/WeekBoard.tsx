@@ -27,6 +27,7 @@ import {
 } from "../../ui/theme";
 import type { Route, Stop } from "./RouteCard";
 import { dropTint, useDragHover, useDragSource, useDropZones } from "./ScheduleDrag";
+import { unlessSwiping } from "../../ui/swipeQuiet";
 
 // Schedule › Week with the routes in it (owner, 2026-10-20: "On routes, you can't optimize or
 // rearrange placement … Let's just build that all into Week"; docs/design/2026-10-20-team-week.md
@@ -324,7 +325,7 @@ function WeekStop({
       accessibilityHint="Opens the job"
       accessibilityActions={gestures.accessibilityActions}
       onAccessibilityAction={gestures.onAccessibilityAction}
-      onPress={() => router.push(`/jobs/${s.id}`)}
+      onPress={unlessSwiping(() => router.push(`/jobs/${s.id}`))}
       onLongPress={item ? undefined : gestures.onLongPress}
       android_ripple={{ color: color.ripple }}
       style={({ pressed }) => [{ backgroundColor: pressed ? color.rowPressed : color.surface }]}

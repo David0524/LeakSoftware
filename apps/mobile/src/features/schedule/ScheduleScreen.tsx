@@ -30,7 +30,6 @@ import {
   jobMinutes,
   localDate,
   localMinutes,
-  minutesLabel,
   moveJobChange,
   planDay,
   propertyLocation,
@@ -93,7 +92,7 @@ import { DragScope, useScheduleDrag } from "./ScheduleDrag";
 import { usePlanMove } from "./planMove";
 import { useCustomersToAdd } from "./CustomersToAdd";
 import { WeekDay } from "./WeekBoard";
-import { SwipeNav } from "../../ui/SwipeNav";
+import { SwipePager } from "../../ui/SwipeNav";
 import { WeekStrip } from "./WeekStrip";
 
 const VIEW_NAMES = { day: "Day", week: "Week", month: "Month" } as const;
@@ -329,7 +328,6 @@ export function ScheduleScreen() {
       ),
       driveMin: summary.driveMin,
       backLegMin: list.length ? summary.driveMin - legs : null,
-      back: summary.backMin != null ? minutesLabel(summary.backMin) : null,
       overtimeMin: summary.overtimeMin,
       open: d >= today,
     };
@@ -885,9 +883,11 @@ export function ScheduleScreen() {
           </T>
         ) : null}
 
-        {/* Swipe sideways for the day, week, or month before or after (owner, 2026-10-19);
+        {/* Swipe sideways for the day, week, or month before or after (owner, 2026-10-19), the
+            page following the finger (owner, 2026-10-21);
             Previous and Next above stay the visible way. */}
-        <SwipeNav
+        <SwipePager
+          page={`${view}|${date}`}
           style={styles.pages}
           onPrevious={() => setDate(move(-1))}
           onNext={() => setDate(move(1))}
@@ -999,7 +999,7 @@ export function ScheduleScreen() {
               {view === "day" ? "this day" : view === "week" ? "this week" : "this month"}.
             </T>
           ) : null}
-        </SwipeNav>
+        </SwipePager>
       </Screen>
 
       <ModalSheet visible={goTo} onClose={() => setGoTo(false)} title="Go to Date">

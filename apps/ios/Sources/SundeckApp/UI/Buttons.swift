@@ -39,6 +39,8 @@
         /// The glass tint on iOS 26 (the resting fill); nil for text-only buttons, which stay clear.
         var glass: Color? = nil
         var pressed = false
+        /// A page being swiped turns its buttons off without dimming them (`pagingSwipe`).
+        @Environment(\.pageSwiping) private var swiping
 
         func body(content: Content) -> some View {
             content
@@ -53,7 +55,7 @@
                 .modifier(PillBackground(background: background, glass: glass))
                 .contentShape(Capsule())
                 .pressScale(pressed)
-                .opacity(isEnabled ? 1 : 0.5)
+                .opacity(isEnabled || swiping ? 1 : 0.5)
         }
     }
 

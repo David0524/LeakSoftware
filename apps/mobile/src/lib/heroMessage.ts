@@ -1,4 +1,4 @@
-import { localDate, stopDone, type HeroMoment } from "@leakbook/core";
+import { localDate, stopDone, toE164, type HeroMoment } from "@leakbook/core";
 
 // On My Way lives in Message (owner, 2026-10-20: "the message button should default to the 'on
 // my way' text when you're actually on your [way], but the tech can always edit the message. So
@@ -92,8 +92,12 @@ export function readOnMyWayDraft(params: {
   };
 }
 
-/** The phone's own Messages with the text filled in ("?&body=" works on iPhone and Android). */
+/**
+ * The phone's own Messages with the text filled in ("?&body=" works on iPhone and Android),
+ * addressed to the customer's number in E.164 for a US number, so Messages opens on that person
+ * whatever it showed last (owner, 2026-10-21).
+ */
 export function smsUrl(phone: string, body?: string | null): string {
-  const number = phone.replace(/[^\d+]/g, "");
+  const number = toE164(phone) ?? phone.replace(/[^\d+]/g, "");
   return body ? `sms:${number}?&body=${encodeURIComponent(body)}` : `sms:${number}`;
 }

@@ -26,6 +26,7 @@ import {
   type,
 } from "../../ui/theme";
 import { dropTint, useDragHover, useDragSource, useDropZones } from "./ScheduleDrag";
+import { unlessSwiping } from "../../ui/swipeQuiet";
 
 // Schedule › Day: one card per person's route (spec 5.6; the website's route-board.tsx
 // DayColumn and StopCard): the summary, Optimize and the maps button, then the stops with
@@ -73,7 +74,6 @@ export interface Route {
   stops: Stop[];
   driveMin: number;
   backLegMin: number | null;
-  back: string | null;
   overtimeMin: number;
   /** Today or later: can be planned. */
   open: boolean;
@@ -114,7 +114,6 @@ export function RouteFacts({
     ? [
         `${c.stops.length} ${c.stops.length === 1 ? "stop" : "stops"}`,
         `${durationLabel(c.driveMin)} driving`,
-        c.back ? `back by ${c.back}` : null,
       ]
         .filter(Boolean)
         .join(" · ")
@@ -314,7 +313,7 @@ function StopFace({
           }`}
           accessibilityHint="Opens the job"
           disabled={ghost}
-          onPress={() => router.push(`/jobs/${s.id}`)}
+          onPress={unlessSwiping(() => router.push(`/jobs/${s.id}`))}
           onLongPress={s.movable ? undefined : gestures?.onLongPress}
           style={({ pressed }) => [styles.open, pressed && { opacity: 0.6 }]}
         >
@@ -340,7 +339,7 @@ function StopFace({
             kind="quiet"
             title="Move…"
             accessibilityLabel={`Move ${s.customer}`}
-            onPress={() => onMove(s)}
+            onPress={unlessSwiping(() => onMove(s))}
             style={{ paddingHorizontal: 8 }}
           />
         ) : null}
@@ -374,7 +373,7 @@ function StopFace({
             <Text
               accessibilityRole="link"
               accessibilityLabel={`${s.address}, directions`}
-              onPress={ghost ? undefined : () => onDirections?.(s)}
+              onPress={ghost ? undefined : unlessSwiping(() => onDirections?.(s))}
               numberOfLines={2}
               style={[type.secondary, { color: color.link, alignSelf: "flex-start" }]}
               maxFontSizeMultiplier={MAX_TEXT_SCALE}

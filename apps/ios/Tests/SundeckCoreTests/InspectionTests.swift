@@ -28,6 +28,8 @@ import Testing
             "optionsFromText",
             // Sorting the Jobs list.
             "JOB_SORTS", "jobSort", "sortJobs",
+            // Landmarks that turn on tap.
+            "tapLandmark", "landmarkTurn",
         ]
         #expect(Fixtures.rules(module) == checked)
     }
@@ -115,6 +117,15 @@ import Testing
             poolDiagram(
                 try c.arg(0, as: String?.self).flatMap(DiagramShape.init(rawValue:)), try c.arg(1),
                 try c.arg(2, as: DiagramLayout?.self))
+        }
+        checkRule(module, "tapLandmark") { c in tapLandmark(try c.arg(0, as: Landmark.self)) }
+        checkRule(module, "landmarkTurn") { c in
+            let l = try c.arg(0, as: JSONValue.self)
+            var turn: Int?
+            if case .number(let n) = l["turn"] { turn = Int(exactly: n) }
+            return landmarkTurn(
+                kind: try #require(l["kind"]?.string.flatMap(LandmarkKind.init(rawValue:))),
+                flip: l["flip"] == .bool(true), turn: turn)
         }
         checkRule(module, "mirrorPath") { c in mirrorPath(try c.arg(0)) }
         checkRule(module, "POOL_CENTER_OFFSET") { _ in poolCenterOffset }

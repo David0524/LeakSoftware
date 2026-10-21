@@ -154,8 +154,21 @@ test("Customers to Add is in Week's sidebar: Move… puts one on Jake's Tuesday,
     // The whole tile drags, not only its grip (section 8): from its name onto Jake's Wednesday.
     // The sidebar scrolls on its own, and taking the tile out clamped its scroll, so the tile
     // can come back below what it shows: scroll to it first, as a person would, then measure.
+    // The page just far enough that the sidebar sticks whole on screen, then the sidebar to the
+    // tile: scrolled into view any other way, Jake's week can end up above the screen, and
+    // dragging toward it scrolls the page back under the pointer.
+    // It drags once Undo has finished saving (the tile is dimmed until then).
+    await expect(toAdd.getByRole("button", { name: new RegExp(`^${NAME}`) })).not.toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
     const name = toAdd.getByText(NAME, { exact: true });
-    await name.scrollIntoViewIfNeeded();
+    await name.evaluate((el) => {
+      const side = el.closest<HTMLElement>("[data-testid=week-sidebar]")!;
+      // Where it starts to stick: the top of the board it sits in, less its 16 pt inset.
+      window.scrollTo(0, side.parentElement!.getBoundingClientRect().top + window.scrollY - 16);
+      side.scrollTop += el.getBoundingClientRect().top - side.getBoundingClientRect().top - 48;
+    });
     const from = (await name.boundingBox())!;
     const wednesday = page.getByRole("cell", { name: `Jake Turner, ${addDays(monday, 2)}` });
     const to = (await wednesday.boundingBox())!;

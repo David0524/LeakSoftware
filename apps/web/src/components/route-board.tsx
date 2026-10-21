@@ -767,6 +767,7 @@ export function RouteBoard({
                   columns={columns}
                   lists={lists}
                   days={weekDays ?? []}
+                  workDates={workDates}
                   today={today}
                   onMove={setMoving}
                   optimizingKey={optimizingKey}
@@ -835,13 +836,12 @@ interface DayHeaderProps {
   today: string;
 }
 
-/** "4 stops · 1 hr 29 min driving · back by 5:04 PM". */
+/** "4 stops · 1 hr 29 min driving" (no clock times: owner, 2026-10-21). */
 function daySummary(c: BoardColumn, stops: BoardStop[]): string | null {
   if (!c.techId || !stops.length) return null;
   return [
     `${stops.length} ${stops.length === 1 ? "stop" : "stops"}`,
     `${durationLabel(c.driveMin)} driving`,
-    c.back ? `back by ${c.back}` : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -1314,16 +1314,26 @@ function CompactCard({
   color,
   listeners,
   attributes,
+  week = false,
 }: {
   stop: BoardStop;
   /** Its place in the day; null in a week cell, which lists by time. */
   position: number | null;
   color?: string | null;
+  /**
+   * In a week cell (about 10 rem): the customer's name takes the whole line (owner,
+   * 2026-10-21: the name was squeezed to nothing). The kind of visit moves to the tooltip and
+   * the screen reader, and "⋯" floats over the line's end on hover instead of keeping a place.
+   */
+  week?: boolean;
   listeners: ReturnType<typeof useSortable>["listeners"];
   attributes: ReturnType<typeof useSortable>["attributes"];
 }) {
   const actions = use(BoardActions);
-  const hint = [s.time, s.address].filter(Boolean).join(" · ");
+  // In a week cell "Two techs" goes with the kind of visit: into the tooltip and the screen
+  // reader, leaving the line to the name. Lock icons stay.
+  const twoTechs = week && s.lock?.kind === "two_techs" ? s.lock.label : null;
+  const hint = [s.time, week ? s.tag : null, twoTechs, s.address].filter(Boolean).join(" · ");
   return (
     <RowActions
       title={`${s.customer}${s.number ? ` · Job #${s.number}` : ""}`}
@@ -1345,7 +1355,9 @@ function CompactCard({
           }
         }}
         className={cx(
-          "relative flex h-9 items-center gap-1.5 rounded-xl bg-surface pr-0.5 pl-2.5 select-none",
+          "relative flex items-center gap-1.5 rounded-xl bg-surface pr-0.5 pl-2.5 select-none",
+          // A long name takes a second line in a week cell rather than being cut off.
+          week ? "min-h-9 py-1" : "h-9",
           s.draggable && "cursor-grab active:cursor-grabbing",
         )}
       >
@@ -1365,18 +1377,46 @@ function CompactCard({
             finished(s.status) && "opacity-70",
           )}
         >
-          <span className="truncate text-[0.9375rem] font-semibold text-link">{s.customer}</span>
-          <span className="truncate text-[0.8125rem] text-text-muted">{s.tag}</span>
+          <span
+            className={cx(
+              "text-[0.9375rem] font-semibold text-link",
+              // On Day the name keeps its width and the kind of visit gives way first.
+              week
+                ? "line-clamp-2 min-w-0 flex-1 leading-tight break-words"
+                : "max-w-full shrink-0 truncate",
+            )}
+          >
+            {s.customer}
+          </span>
+          {week ? null : (
+            <span className="min-w-0 truncate text-[0.8125rem] text-text-muted">{s.tag}</span>
+          )}
           <span className="sr-only">
+            {week ? `, ${s.tag}` : ""}
+            {twoTechs ? `, ${twoTechs}` : ""}
             {s.time ? `, ${s.time}` : ""}
             {s.address ? `, ${s.address}` : ""}
           </span>
         </Link>
-        {s.lock ? <LockTag lock={s.lock} /> : null}
+        {s.lock && !twoTechs ? (
+          <LockTag lock={s.lock} className="shrink-0 whitespace-nowrap" />
+        ) : null}
         {s.notOnMap || !s.location ? <NotOnMapTag /> : null}
-        <RowMenuButton className="shrink-0 size-7!" />
+        <RowMenuButton
+          className={
+            week
+              ? cx("absolute top-1/2 -translate-y-1/2 size-7!", s.draggable ? "right-6" : "right-1")
+              : "shrink-0 size-7!"
+          }
+        />
         {s.draggable ? (
-          <Grip compact label={`Drag ${s.customer}`} {...attributes} {...listeners} />
+          <Grip
+            compact
+            label={`Drag ${s.customer}`}
+            className={week ? "w-5!" : undefined}
+            {...attributes}
+            {...listeners}
+          />
         ) : null}
       </div>
     </RowActions>
@@ -1473,53 +1513,68 @@ function WeekMaps({
         </nav>
       ) : null}
       {maps && tech ? (
-        <ol className="grid grid-cols-[repeat(auto-fill,minmax(11.5rem,1fr))] gap-3">
-          {shown.map(([d]) => {
-            const key = `${tech}|${d}`;
-            const col = columns.find((c) => c.key === key);
-            const stops = lists[key] ?? [];
-            const map = dayMap({ stops, depot: maps.depot, date: d, today });
-            const day = weekdayName(d);
-            return (
-              <li
-                key={d}
-                data-testid="week-map"
-                aria-label={day}
-                className={cx("card p-2", d === today && "ring-2 ring-link")}
-              >
-                <h3 className="flex items-baseline justify-between gap-2 px-1.5 pt-0.5 pb-2">
-                  <span className={cx("font-semibold", d === today && "text-link")}>
-                    {day}
-                    {d === today ? <span className="sr-only">, today</span> : null}
-                  </span>
-                  <span className="text-[0.8125rem] text-text-muted tabular-nums">
-                    {stops.length ? `${stops.length} ${stops.length === 1 ? "stop" : "stops"}` : ""}
-                  </span>
-                </h3>
-                <DayMap
-                  variant="week"
-                  company={maps.company}
-                  pins={map.pins}
-                  stops={stops}
-                  missing={map.missing}
-                  tech={name}
-                  day={day}
-                  action={
-                    stops.length ? (
-                      <OptimizeButton
-                        optimizing={optimizingKey === key}
-                        disabled={busy || !col?.open}
-                        onClick={() => onPlan(tech, d)}
-                        label={optimizingKey === key ? undefined : `Optimize ${day}’s Route`}
-                        className="min-w-0 flex-1 px-3 text-[0.9375rem]"
-                      />
-                    ) : null
-                  }
-                />
-              </li>
-            );
-          })}
-        </ol>
+        // One row (owner, 2026-10-21: Friday wrapped onto a line of its own): the work days fit
+        // across a computer's window, and slide sideways, with a scrollbar on top too, when
+        // they don't. At least five places, so a short week's maps don't stretch.
+        <TopScroller
+          data-testid="week-maps"
+          className="-m-1 overflow-x-auto overscroll-x-contain p-1 [scrollbar-width:thin]"
+        >
+          <ol
+            className="grid gap-3"
+            style={{
+              gridTemplateColumns: `repeat(${Math.max(shown.length, 5)}, minmax(10.5rem, 1fr))`,
+            }}
+          >
+            {shown.map(([d]) => {
+              const key = `${tech}|${d}`;
+              const col = columns.find((c) => c.key === key);
+              const stops = lists[key] ?? [];
+              const map = dayMap({ stops, depot: maps.depot, date: d, today });
+              const day = weekdayName(d);
+              return (
+                <li
+                  key={d}
+                  data-testid="week-map"
+                  aria-label={day}
+                  className={cx("card p-2", d === today && "ring-2 ring-link")}
+                >
+                  <h3 className="flex items-baseline justify-between gap-2 px-1.5 pt-0.5 pb-2">
+                    <span className={cx("font-semibold", d === today && "text-link")}>
+                      {day}
+                      {d === today ? <span className="sr-only">, today</span> : null}
+                    </span>
+                    <span className="text-[0.8125rem] text-text-muted tabular-nums">
+                      {stops.length
+                        ? `${stops.length} ${stops.length === 1 ? "stop" : "stops"}`
+                        : ""}
+                    </span>
+                  </h3>
+                  <DayMap
+                    variant="week"
+                    company={maps.company}
+                    pins={map.pins}
+                    stops={stops}
+                    missing={map.missing}
+                    tech={name}
+                    day={day}
+                    action={
+                      stops.length ? (
+                        <OptimizeButton
+                          optimizing={optimizingKey === key}
+                          disabled={busy || !col?.open}
+                          onClick={() => onPlan(tech, d)}
+                          label={optimizingKey === key ? undefined : `Optimize ${day}’s Route`}
+                          className="min-w-0 flex-1 px-3 text-[0.9375rem]"
+                        />
+                      ) : null
+                    }
+                  />
+                </li>
+              );
+            })}
+          </ol>
+        </TopScroller>
       ) : null}
     </section>
   );
@@ -1529,6 +1584,7 @@ function WeekGrid({
   columns,
   lists,
   days,
+  workDates,
   today,
   onMove,
   optimizingKey,
@@ -1538,6 +1594,8 @@ function WeekGrid({
   columns: BoardColumn[];
   lists: Lists;
   days: [string, string][];
+  /** The shop's work days; a day off with nothing on it is a narrow column. */
+  workDates: string[];
   today: string;
   onMove: (s: BoardStop) => void;
   optimizingKey: string | null;
@@ -1563,12 +1621,42 @@ function WeekGrid({
       { label: "Open Day", href: `/schedule?view=day&date=${d}` },
     ];
   };
+  // Each day at least 10.5 rem, so a stop's name reads (owner, 2026-10-21); a day off with
+  // nothing on it is 4.5 rem. When they don't all fit, the table slides sideways, with a
+  // second scrollbar on top, as on Day.
+  const narrow = new Set(
+    days
+      .map(([d]) => d)
+      .filter(
+        (d) =>
+          !workDates.includes(d) &&
+          d !== today &&
+          rows.every((r) => !(lists[`${r.techId ?? "none"}|${d}`] ?? []).length),
+      ),
+  );
+  const TECH_REM = 7;
+  const DAY_REM = 10.5;
+  const NARROW_REM = 4.5;
+  const minRem = TECH_REM + days.reduce((n, [d]) => n + (narrow.has(d) ? NARROW_REM : DAY_REM), 0);
   return (
-    <div className="card overflow-x-auto">
-      <table className="w-full min-w-[760px] table-fixed text-left">
+    <TopScroller
+      data-testid="week-grid"
+      className="card overflow-x-auto overscroll-x-contain [scrollbar-width:thin]"
+    >
+      <table className="w-full table-fixed text-left" style={{ minWidth: `${minRem}rem` }}>
+        {/* Days with no width share what's left equally. */}
+        <colgroup>
+          <col style={{ width: `${TECH_REM}rem` }} />
+          {days.map(([d]) => (
+            <col key={d} style={narrow.has(d) ? { width: `${NARROW_REM}rem` } : undefined} />
+          ))}
+        </colgroup>
         <thead className="border-b border-border">
           <tr>
-            <th scope="col" className="w-28 px-3 py-2 font-medium text-text-muted">
+            <th
+              scope="col"
+              className="sticky left-0 z-10 bg-surface px-3 py-2 font-medium text-text-muted"
+            >
               Tech
             </th>
             {days.map(([d, label]) => (
@@ -1589,9 +1677,18 @@ function WeekGrid({
                   <Link
                     href={`/schedule?view=day&date=${d}`}
                     aria-current={d === today ? "date" : undefined}
+                    title={narrow.has(d) ? label : undefined}
                     className="min-w-0 truncate py-1.5 underline-offset-4 hover:underline"
                   >
-                    {label}
+                    {/* A narrow day off: its short name ("Sat"); the full date in the title. */}
+                    {narrow.has(d) ? (
+                      <>
+                        <span aria-hidden="true">{label.split(",")[0]}</span>
+                        <span className="sr-only">{label}</span>
+                      </>
+                    ) : (
+                      label
+                    )}
                     {d === today ? " · Today" : ""}
                   </Link>
                   {optimizingKey?.endsWith(`|${d}`) ? (
@@ -1601,10 +1698,13 @@ function WeekGrid({
                       className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none"
                     />
                   ) : null}
-                  <RowMenuButton
-                    visible
-                    className="ml-auto grid size-8 shrink-0 place-items-center rounded-full text-link hover:bg-link/10 aria-expanded:bg-link/10"
-                  />
+                  {/* A narrow day off has nothing to optimize; its name opens the day. */}
+                  {narrow.has(d) ? null : (
+                    <RowMenuButton
+                      visible
+                      className="ml-auto grid size-8 shrink-0 place-items-center rounded-full text-link hover:bg-link/10 aria-expanded:bg-link/10"
+                    />
+                  )}
                 </RowActions>
               </th>
             ))}
@@ -1613,7 +1713,11 @@ function WeekGrid({
         <tbody>
           {rows.map((r) => (
             <tr key={r.techId ?? "none"} className="border-b border-border align-top last:border-0">
-              <th scope="row" className="px-3 py-2 font-semibold">
+              {/* The tech stays in view while the days slide sideways. */}
+              <th
+                scope="row"
+                className="sticky left-0 z-10 bg-surface py-2 pr-1.5 pl-3 font-semibold"
+              >
                 <span className="flex items-center gap-2">
                   <TechDot color={r.color} />
                   <span className="min-w-0 break-words">{r.title}</span>
@@ -1636,7 +1740,7 @@ function WeekGrid({
           ))}
         </tbody>
       </table>
-    </div>
+    </TopScroller>
   );
 }
 
@@ -1716,6 +1820,7 @@ function WeekChip({
         color={color}
         listeners={listeners}
         attributes={attributes}
+        week
       />
       {/* Touch and hold or right-click for the stop's menu (gestures.md section 12); no swipes
           in the week's small cells. */}

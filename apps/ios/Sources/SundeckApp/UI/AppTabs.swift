@@ -167,6 +167,8 @@
         private func stack<Root: View>(_ tab: AppTab, @ViewBuilder root: () -> Root) -> some View {
             NavigationStack(path: Binding(get: { paths[tab] ?? NavigationPath() }, set: { paths[tab] = $0 })) {
                 root()
+                    // The logo at the top left of each tab's own page (owner, 2026-10-21).
+                    .toolbar { BrandToolbarItem() }
                     .navigationDestination(for: Route.self) { route in
                         switch route {
                         case .job(let id): JobScreen(jobId: id).zoomDestination(id)

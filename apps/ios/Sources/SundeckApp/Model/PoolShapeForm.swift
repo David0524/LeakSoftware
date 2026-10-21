@@ -64,7 +64,7 @@ public struct PoolShapeForm: Equatable, Sendable {
     public static let noSpaHint = "Turn on Has a spa to put a spa on the drawing."
     public static let drawHint = "Drag on the drawing. Draw on a shape, or Clear and start from nothing."
     public static let landmarksHint =
-        "Pick one, then tap the drawing. Tap a landmark to select it: tap again to flip it, pinch or drag its corner to resize, or tap its X to delete it."
+        "Pick one, then tap the drawing. Tap a landmark to select it: tap again to turn it (steps and waterfall) or flip it, pinch or drag its corner to resize, or tap its X to delete it."
     public static let undo = "Undo"
     public static let clearTitle = "Clear the pool diagram?"
     public static let clearMessage = "The shape, spa, drawing, and landmarks are removed. Pins and markup stay."
@@ -193,7 +193,8 @@ public struct PoolShapeForm: Equatable, Sendable {
     /// A tap on the selected landmark mirrors it.
     public mutating func flipLandmark(_ index: Int) {
         guard landmarks.indices.contains(index) else { return }
-        landmarks[index].flip = landmarks[index].flip == true ? nil : true
+        // The steps and the waterfall turn a quarter; the others mirror (core tapLandmark).
+        landmarks[index] = tapLandmark(landmarks[index])
     }
 
     /// Tapping the spa switches it round and square.
@@ -292,6 +293,7 @@ public struct PoolShapeForm: Equatable, Sendable {
                     ]
                     if let size = l.s { o["s"] = .number(size) }
                     if l.flip == true { o["flip"] = .bool(true) }
+                    if let turn = l.turn { o["turn"] = .number(Double(turn)) }
                     return .object(o)
                 })
         }

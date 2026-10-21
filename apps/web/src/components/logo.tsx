@@ -28,3 +28,23 @@ export function Logo({ height = 36, onDark = false }: { height?: number; onDark?
     </>
   );
 }
+
+/** The drop-pin mark alone, decorative (its link names it), switching to the reverse on dark. */
+export function Mark({ height = 32 }: { height?: number }) {
+  // The mark is 100 x 146.3 (brand/logo/sundeck-mark.svg).
+  const width = Math.round((height * 100) / 146.3);
+  return (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element -- static SVG */}
+      <img src="/sundeck-mark.svg" alt="" width={width} height={height} className="dark:hidden" />
+      {/* eslint-disable-next-line @next/next/no-img-element -- static SVG */}
+      <img
+        src="/sundeck-mark-reverse.svg"
+        alt=""
+        width={width}
+        height={height}
+        className="hidden dark:block"
+      />
+    </>
+  );
+}

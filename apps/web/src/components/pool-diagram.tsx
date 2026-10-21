@@ -26,12 +26,15 @@ export function landmarkTransform(l: {
   size: number;
   flip: boolean;
   mirror?: "x" | "y";
+  /** Quarter turns clockwise about its center (the steps and the waterfall). */
+  turn?: number;
 }) {
   const k = l.size / 24;
-  if (!l.flip) return `translate(${l.cx - l.size / 2} ${l.cy - l.size / 2}) scale(${k})`;
+  const turn = l.turn ? `rotate(${90 * l.turn} ${l.cx} ${l.cy}) ` : "";
+  if (!l.flip) return `${turn}translate(${l.cx - l.size / 2} ${l.cy - l.size / 2}) scale(${k})`;
   return l.mirror === "y"
-    ? `translate(${l.cx - l.size / 2} ${l.cy + l.size / 2}) scale(${k} ${-k})`
-    : `translate(${l.cx + l.size / 2} ${l.cy - l.size / 2}) scale(${-k} ${k})`;
+    ? `${turn}translate(${l.cx - l.size / 2} ${l.cy + l.size / 2}) scale(${k} ${-k})`
+    : `${turn}translate(${l.cx + l.size / 2} ${l.cy - l.size / 2}) scale(${-k} ${k})`;
 }
 
 /**

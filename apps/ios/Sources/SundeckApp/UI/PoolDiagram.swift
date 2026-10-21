@@ -158,6 +158,7 @@
                 ForEach(Array(d.landmarks.enumerated()), id: \.offset) { _, l in
                     let side = l.size * scale
                     LandmarkArt(parts: l.parts, side: side, flip: l.flip, mirror: l.mirror)
+                        .rotationEffect(.degrees(Double(90 * l.turn)))
                         .offset(x: (l.cx - l.size / 2) * scale, y: (l.cy - l.size / 2) * scale)
                 }
             }

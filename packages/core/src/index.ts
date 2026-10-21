@@ -18,6 +18,7 @@ export * from "./dashboard";
 export * from "./billing";
 export * from "./routing";
 export * from "./route-plan";
+export * from "./route-start";
 export * from "./weather";
 export * from "./maintenance";
 export * from "./intl";

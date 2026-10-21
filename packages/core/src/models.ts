@@ -277,6 +277,22 @@ export interface Membership extends Base {
   disabled_at?: string | null;
 }
 
+/**
+ * Where a team member's day starts (owner, 2026-10-21; docs/design/2026-10-21-start-from-home.md).
+ * Synced, but read only by the person and by owners and admins: other techs never get it. No row
+ * means the shop. Read with routeStart / startFor.
+ */
+export interface MemberStart extends Base {
+  user_id: string;
+  start_from: "shop" | "home";
+  /** One line, as typed or picked from the suggestions. */
+  home_address?: string | null;
+  home_latitude?: number | null;
+  home_longitude?: number | null;
+  /** The address the coordinates were looked up for (or last tried, when not found). */
+  home_geocoded_address?: string | null;
+}
+
 export type CustomerKind =
   "homeowner" | "pool_company" | "builder" | "insurer" | "property_manager" | "other";
 

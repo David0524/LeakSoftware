@@ -16,6 +16,8 @@
         @ViewBuilder var content: Content
         @State private var offset: CGFloat = 0
         @State private var start: CGFloat = 0
+        /// A sideways drag is on: the row's own buttons don't take the lift as a tap.
+        @State private var swiping = false
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         private let width: CGFloat = 88
@@ -38,6 +40,7 @@
                     .accessibilityHidden(true)
                 }
                 content
+                    .swipeQuiet(swiping)
                     .background(Color.surface)
                     .offset(x: offset)
                     .overlay {
@@ -53,9 +56,11 @@
                 DragGesture(minimumDistance: 20)
                     .onChanged { value in
                         guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                        swiping = true
                         offset = min(0, start + value.translation.width)
                     }
                     .onEnded { value in
+                        releaseSwipe($swiping)
                         let end = start + value.translation.width
                         if end < -width * 2.5 {
                             close()
@@ -150,6 +155,10 @@
         @State private var rowWidth: CGFloat = 0
         @State private var offset: CGFloat = 0
         @State private var start: CGFloat = 0
+        /// A sideways drag is on: the row's address, name and buttons don't take the lift as a
+        /// tap (owner, 2026-10-21: "do not make the address clickable when swiping left/right on
+        /// a card").
+        @State private var swiping = false
         @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         private let width: CGFloat = 76
@@ -196,6 +205,7 @@
                     buttons(leading, shown: offset).frame(maxWidth: .infinity, alignment: .leading)
                 }
                 content
+                    .swipeQuiet(swiping)
                     .background(Color.surface)
                     .offset(x: offset)
                     .overlay {
@@ -214,11 +224,13 @@
                     .onChanged { value in
                         guard abs(value.translation.width) > abs(value.translation.height), startsOffGrip(value)
                         else { return }
+                        swiping = true
                         let low = actions.isEmpty ? 0 : open * 1.3
                         let high = leading.isEmpty ? 0 : openLeading * 1.3
                         offset = min(high, max(low, start + value.translation.width))
                     }
                     .onEnded { value in
+                        releaseSwipe($swiping)
                         guard startsOffGrip(value) else { return }
                         let end = start + value.translation.width
                         withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
@@ -241,6 +253,23 @@
         private func close() {
             withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { offset = 0 }
             start = 0
+        }
+    }
+
+    extension View {
+        /// While a row or page is dragged sideways its buttons and links are off, so the finger's
+        /// lift isn't a tap, without looking dimmed (as Today's card, 2026-10-20).
+        func swipeQuiet(_ swiping: Bool) -> some View {
+            disabled(swiping).environment(\.pageSwiping, swiping)
+        }
+    }
+
+    /// Buttons back on after the lift's tap would have landed.
+    @MainActor func releaseSwipe(_ swiping: Binding<Bool>) {
+        guard swiping.wrappedValue else { return }
+        Task {
+            try? await Task.sleep(for: .milliseconds(300))
+            swiping.wrappedValue = false
         }
     }
 

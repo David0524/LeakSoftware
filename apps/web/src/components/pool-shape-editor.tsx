@@ -20,6 +20,7 @@ import {
   type LandmarkKind,
   type SpaShape,
   centerLayout,
+  tapLandmark,
 } from "@leakbook/core";
 import { savePoolDiagram } from "@/app/actions/diagram";
 import { DiagramShapes, LandmarkArt } from "./pool-diagram";
@@ -246,9 +247,10 @@ export function PoolShapeEditor({
       // Tapping the spa switches it round and square (owner, 2026-10-19).
       setSpa({ ...spaNow, shape: spaNow.shape === "square" ? "round" : "square" });
     else if (now.what === "landmark" && !now.moved && now.index !== undefined) {
-      // A tap selects a landmark; a tap on the selected one mirrors it (owner, 2026-10-19).
+      // A tap selects a landmark; a tap on the selected one mirrors it (owner, 2026-10-19), or
+      // turns the steps and the waterfall a quarter (owner, 2026-10-21; core tapLandmark).
       if (now.index === selected)
-        setLandmarks(landmarks.map((l, i) => (i === now.index ? { ...l, flip: !l.flip } : l)));
+        setLandmarks(landmarks.map((l, i) => (i === now.index ? tapLandmark(l) : l)));
       else setSelected(now.index);
     }
     if (touches.current.size === 0)
@@ -271,8 +273,7 @@ export function PoolShapeEditor({
         "+": () => setLandmarkSize(selected, picked.size + 2),
         "=": () => setLandmarkSize(selected, picked.size + 2),
         "-": () => setLandmarkSize(selected, picked.size - 2),
-        Enter: () =>
-          setLandmarks(landmarks.map((l, i) => (i === selected ? { ...l, flip: !l.flip } : l))),
+        Enter: () => setLandmarks(landmarks.map((l, i) => (i === selected ? tapLandmark(l) : l))),
         Escape: () => setSelected(null),
       };
       if (act[e.key]) {
@@ -442,7 +443,7 @@ export function PoolShapeEditor({
           <p className="text-[0.9375rem] text-text-muted" aria-live="polite">
             {placing
               ? `Tap the drawing to put the ${LANDMARKS.find((l) => l.key === placing)!.label.toLowerCase()} there.`
-              : "Pick one, then tap the drawing. Tap a landmark to select it: tap again to flip it, pinch or drag its corner to resize, or tap its X to delete it."}
+              : "Pick one, then tap the drawing. Tap a landmark to select it: tap again to turn it (steps and waterfall) or flip it, pinch or drag its corner to resize, or tap its X to delete it."}
           </p>
         </div>
       ) : null}

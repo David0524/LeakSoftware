@@ -346,6 +346,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           </>
         }
       />
+      {/* Day and Week use the whole window on a computer (the office layout widens <main>). */}
+      {view !== "month" ? <span data-wide-page="" hidden /> : null}
       <Suspense fallback={null}>
         <ScreenTip screen="schedule" />
       </Suspense>

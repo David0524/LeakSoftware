@@ -3,6 +3,7 @@ import { useSyncExternalStore } from "react";
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Glass } from "./Glass";
+import { BrandHeaderLeft } from "./SundeckLogo";
 import { color, minTap, type } from "./theme";
 import { WebIcon } from "./WebIcon";
 
@@ -102,7 +103,15 @@ export function DrawnHeader({ back, options, route, navigation }: NativeStackHea
               </Pressable>
             ) : null)}
         </View>
-        <Animated.View pointerEvents="none" style={[styles.titleBox, { opacity: titleOpacity }]}>
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.titleBox,
+            // The logo (a tab's own page) is wider than Back: the small title leaves it room.
+            options.headerLeft === BrandHeaderLeft && styles.titleBesideLogo,
+            { opacity: titleOpacity },
+          ]}
+        >
           <Text
             style={[type.barTitle, { color: color.text }]}
             numberOfLines={1}
@@ -154,6 +163,7 @@ const styles = StyleSheet.create({
   side: { flex: 1, flexDirection: "row", alignItems: "center" },
   right: { justifyContent: "flex-end" },
   titleBox: { maxWidth: "55%", alignItems: "center" },
+  titleBesideLogo: { maxWidth: "36%" },
   back: {
     minHeight: minTap,
     flexDirection: "row",

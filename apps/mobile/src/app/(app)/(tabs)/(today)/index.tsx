@@ -14,7 +14,6 @@ import {
   onMyWayVia,
   stopDone,
   localMinutes,
-  minutesLabel,
   propertyLocation,
   routingSettings,
   workDay,
@@ -65,6 +64,7 @@ import { AddressLine } from "../../../../ui/NotOnMap";
 import { useRoutingOn } from "../../../../lib/routing";
 import { ScreenTip } from "../../../../ui/Tip";
 import { WebIcon } from "../../../../ui/WebIcon";
+import { unlessSwiping } from "../../../../ui/swipeQuiet";
 import {
   cardShadow,
   color,
@@ -394,7 +394,6 @@ export default function Today() {
             <T muted style={{ marginBottom: space["4"] - space["1"] }}>
               {stops.length} {stops.length === 1 ? "stop" : "stops"} ·{" "}
               {durationLabel(summary.driveMin)} driving
-              {summary.backMin != null ? ` · back by ${minutesLabel(summary.backMin)}` : ""}
             </T>
             {hero ? (
               <TodayHeroCard
@@ -582,7 +581,7 @@ const Stop = memo(function Stop({
             <Pressable
               accessibilityRole="link"
               accessibilityLabel={`Open the job for ${name}`}
-              onPress={() => router.push(`/jobs/${job.id}`)}
+              onPress={unlessSwiping(() => router.push(`/jobs/${job.id}`))}
               hitSlop={8}
               style={({ pressed }) => [styles.nameLink, pressed && { opacity: 0.5 }]}
             >
@@ -642,7 +641,7 @@ const Stop = memo(function Stop({
                 <Text
                   accessibilityRole="link"
                   accessibilityHint="Directions"
-                  onPress={() => onDirections(job)}
+                  onPress={unlessSwiping(() => onDirections(job))}
                   style={[type.secondary, { color: color.link, alignSelf: "flex-start" }]}
                   maxFontSizeMultiplier={MAX_TEXT_SCALE}
                 >

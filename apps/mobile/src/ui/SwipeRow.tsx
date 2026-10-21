@@ -11,7 +11,17 @@ import Animated, {
 import { scheduleOnRN } from "react-native-worklets";
 import { haptics } from "./haptics";
 import { useNoSwipe } from "./SwipeNav";
+import { swipeEnded, swipeStarted } from "./swipeQuiet";
 import { color, face } from "./theme";
+
+/**
+ * While a row is dragged sideways, and a moment after, the links and buttons on it don't take
+ * the lift as a tap (swipeQuiet; owner, 2026-10-21).
+ */
+const quiet = {
+  onSwipeableOpenStartDrag: swipeStarted,
+  onSwipeableCloseStartDrag: swipeStarted,
+} as const;
 
 /** Width of the revealed red button. */
 const ACTION_WIDTH = 88;
@@ -54,12 +64,15 @@ export function SwipeToDelete({
   return (
     <View {...noSwipe} onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}>
       <ReanimatedSwipeable
+        {...quiet}
+        onSwipeableWillClose={() => swipeEnded()}
         ref={ref}
         friction={1}
         rightThreshold={ACTION_WIDTH / 2}
         overshootRight
         dragOffsetFromRightEdge={12}
         onSwipeableWillOpen={() => {
+          swipeEnded();
           if (armed.current) act();
         }}
         onSwipeableClose={() => {
@@ -169,12 +182,15 @@ export function SwipeLeading({
   return (
     <View {...noSwipe} onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}>
       <ReanimatedSwipeable
+        {...quiet}
+        onSwipeableWillClose={() => swipeEnded()}
         ref={ref}
         friction={1}
         leftThreshold={ACTION_WIDTH / 2}
         overshootLeft
         dragOffsetFromLeftEdge={12}
         onSwipeableWillOpen={() => {
+          swipeEnded();
           if (armed.current) act();
         }}
         onSwipeableClose={() => {
@@ -286,6 +302,9 @@ export function SwipeActions({
   return (
     <View {...noSwipe}>
       <ReanimatedSwipeable
+        {...quiet}
+        onSwipeableWillClose={() => swipeEnded()}
+        onSwipeableWillOpen={() => swipeEnded()}
         ref={ref}
         friction={1.4}
         leftThreshold={ACTION_WIDTH / 2}

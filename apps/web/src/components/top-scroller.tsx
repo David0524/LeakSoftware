@@ -49,12 +49,16 @@ export function TopScroller({
     };
   }, []);
 
+  // One box for both bars, so in a grid (the schedule's sidebar layout) the top bar never
+  // takes a cell of its own and pushes the row under the sidebar.
   return (
-    <>
+    <div className="min-w-0">
       <div
         ref={top}
         aria-hidden="true"
         data-testid="top-scroller"
+        // Menus don't close for its scrolls (row-actions.tsx): it only follows the row.
+        data-scroll-mirror=""
         className={
           overflows
             ? "mb-2 hidden overflow-x-auto overflow-y-hidden [scrollbar-width:thin] md:block"
@@ -66,6 +70,6 @@ export function TopScroller({
       <div ref={row} className={className} {...rest}>
         {children}
       </div>
-    </>
+    </div>
   );
 }

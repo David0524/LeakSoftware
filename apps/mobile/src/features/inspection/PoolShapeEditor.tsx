@@ -22,6 +22,8 @@ import {
   type LandmarkKind,
   type Property,
   type SpaShape,
+  tapLandmark,
+  landmarkTaps,
 } from "@leakbook/core";
 import type { JsonValue } from "@leakbook/sync";
 import { useSession } from "../../state/session";
@@ -179,7 +181,7 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
       all.map((l, i) => (i === index ? { ...l, s: clampLandmarkSize(size) } : l)),
     );
   const flipLandmark = (index: number) =>
-    setLandmarks((all) => all.map((l, i) => (i === index ? { ...l, flip: !l.flip } : l)));
+    setLandmarks((all) => all.map((l, i) => (i === index ? tapLandmark(l) : l)));
   const removeLandmark = (index: number) => {
     setLandmarks((all) => all.filter((_, i) => i !== index));
     setSelected(null);
@@ -365,7 +367,13 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
       ? [
           { name: "landmarkLarger", label: `Make the ${pickedLabel} Larger` },
           { name: "landmarkSmaller", label: `Make the ${pickedLabel} Smaller` },
-          { name: "landmarkFlip", label: `Flip the ${pickedLabel}` },
+          {
+            name: "landmarkFlip",
+            label:
+              picked && landmarkTaps(picked.kind) === "turn"
+                ? `Turn the ${pickedLabel}`
+                : `Flip the ${pickedLabel}`,
+          },
           { name: "landmarkDelete", label: `Delete the ${pickedLabel}` },
         ]
       : [];
@@ -505,7 +513,7 @@ export function PoolShapeEditor({ property, onDone }: { property: Property; onDo
           <T variant="secondary" muted>
             {placing
               ? `Tap the drawing to put the ${LANDMARKS.find((l) => l.key === placing)!.label.toLowerCase()} there.`
-              : "Pick one, then tap the drawing. Tap a landmark to select it: tap again to flip it, pinch or drag its corner to resize, or tap its X to delete it."}
+              : "Pick one, then tap the drawing. Tap a landmark to select it: tap again to turn it (steps and waterfall) or flip it, pinch or drag its corner to resize, or tap its X to delete it."}
           </T>
         </View>
       ) : null}

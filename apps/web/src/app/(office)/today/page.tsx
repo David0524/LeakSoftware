@@ -5,7 +5,6 @@ import {
   formatAddress,
   formatDay,
   formatTime,
-  minutesLabel,
   propertyLocation,
   onMyWayVia,
   cleaningCountdown,
@@ -367,9 +366,6 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
               <p className="mb-4 text-text-muted" data-testid="today-summary">
                 {jobs.length} {jobs.length === 1 ? "stop" : "stops"} ·{" "}
                 {durationLabel(route!.summary.driveMin)} driving
-                {route!.summary.backMin != null
-                  ? ` · back by ${minutesLabel(route!.summary.backMin)}`
-                  : ""}
               </p>
               {hero ? (
                 <TodayHeroCard

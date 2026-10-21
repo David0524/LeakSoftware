@@ -328,12 +328,11 @@
                 stops: route.jobs.map { (place: $0.place, done: $0.doneOn(ctx.today)) })
         }
 
-        /// "3 stops · 1 hr 20 min driving · back by 4:30 PM"
+        /// "3 stops · 1 hr 20 min driving" (no clock times, owner 2026-10-21)
         var summaryText: String {
             guard let route else { return "" }
             let n = route.jobs.count
             return "\(n) \(n == 1 ? "stop" : "stops") · \(durationLabel(route.summary.driveMin)) driving"
-                + (route.summary.backMin.map { " · back by \(minutesLabel($0))" } ?? "")
         }
     }
 
@@ -356,7 +355,10 @@
             a.number == b.number && a.job == b.job && a.leg == b.leg && a.isNext == b.isNext && a.day == b.day
         }
         @State private var open: Bool?
+        /// Message's text from the phone, addressed to the customer (`StopText`).
+        @State private var phoneText: ComposeText?
         @Environment(AppEnvironment.self) private var app
+        @Environment(Session.self) private var session
         @Environment(\.openRoute) private var openRoute
         @Environment(\.openURL) private var openURL
         @Environment(SyncService.self) private var sync
@@ -378,6 +380,7 @@
             }
             // Touch and hold: Call, Message, Directions, Open (gestures spec section 5).
             .contextMenu { menu(done: done) }
+            .composeTextSheet($phoneText)
             .onChange(of: app.stopRequest, initial: true) { _, request in
                 guard let request, request.jobId == job.id else { return }
                 open = true
@@ -422,14 +425,24 @@
         @ViewBuilder private func menu(done: Bool) -> some View {
             if let phone = job.customerPhone {
                 Button("Call", systemImage: "phone") { call(phone) }
-                Button("Message", systemImage: "message") {
-                    if let url = OnMyWay.smsURL(phone, body: nil) { openURL(url) }
-                }
+                Button("Message", systemImage: "message") { message(phone) }
             }
             if !job.address.isEmpty {
                 Button("Directions", systemImage: "location") { directions() }
             }
             Button("Open Job", systemImage: "arrow.up.right") { openRoute(.job(job.id)) }
+        }
+
+        /// A blank text to this stop's customer, as the card's Message (`StopTextRoute`): their
+        /// conversation or New Message to them from the company number, else from the phone.
+        private func message(_ phone: String) {
+            guard let company = session.company else { return }
+            guard
+                let route = StopTextRoute.decide(
+                    lineActive: day.lineActive, customerId: job.customerId, phone: phone,
+                    conversations: day.lineActive ? conversations(sync.store, companyId: company.id) : [])
+            else { return }
+            StopText.open(route, openRoute: openRoute, openURL: openURL) { phoneText = $0 }
         }
 
         private func call(_ phone: String) {

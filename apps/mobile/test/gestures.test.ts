@@ -165,7 +165,7 @@ describe("On My Way lives in Message", () => {
   });
 
   it("fills in the phone's own Messages without the shop's number", () => {
-    expect(smsUrl("(480) 555-0188", "On my way")).toBe("sms:4805550188?&body=On%20my%20way");
+    expect(smsUrl("(480) 555-0188", "On my way")).toBe("sms:+14805550188?&body=On%20my%20way");
     expect(smsUrl("+14805550188")).toBe("sms:+14805550188");
   });
 });

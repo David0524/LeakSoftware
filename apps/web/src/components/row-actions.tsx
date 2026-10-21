@@ -103,9 +103,12 @@ export function ContextMenu({
     const away = () => close.current(false);
     window.addEventListener("resize", away);
     window.addEventListener("blur", away);
-    // Scrolling the page under it closes it (not scrolling a long menu itself).
+    // Scrolling the page under it closes it (not scrolling a long menu itself, nor a second
+    // scrollbar that only follows its row: TopScroller's echo arrives a frame later).
     const scroll = (e: Event) => {
-      if (!menu.current?.contains(e.target as Node)) away();
+      const t = e.target as Node;
+      if (t instanceof Element && t.hasAttribute("data-scroll-mirror")) return;
+      if (!menu.current?.contains(t)) away();
     };
     window.addEventListener("scroll", scroll, true);
     return () => {

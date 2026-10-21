@@ -43,10 +43,7 @@
 
         /// Messages with `body` filled in, to `phone`.
         static func smsURL(_ phone: String, body: String?) -> URL? {
-            let digits = phone.filter { $0.isNumber || $0 == "+" }
-            guard let body, !body.isEmpty else { return URL(string: "sms:\(digits)") }
-            let encoded = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? body
-            return URL(string: "sms:\(digits)&body=\(encoded)")
+            StopTextRoute.smsURL(phone, body: body)
         }
     }
 
