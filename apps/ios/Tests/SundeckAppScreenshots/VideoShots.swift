@@ -286,6 +286,8 @@
         func wait(_ seconds: Double = 1.4) async throws {
             for _ in 0..<Int(seconds * 10) {
                 try await Task.sleep(for: .milliseconds(100))
+                // Off before any scrolling too: a page scrolled with them on can stay undrawn.
+                hideEdgeEffects()
                 window.layoutIfNeeded()
             }
         }
