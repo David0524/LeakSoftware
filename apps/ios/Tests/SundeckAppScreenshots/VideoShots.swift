@@ -297,6 +297,8 @@
             window.layoutIfNeeded()
             flattenBackdrops(window.layer)
             let fade = edgeFade()
+            let left = portals(window.layer)
+            if !left.isEmpty { print("video portals in \(name): \(left)") }
             defer { fade?.removeFromSuperview() }
             let format = UIGraphicsImageRendererFormat()
             format.scale = 3
@@ -351,11 +353,25 @@
         /// iOS 26's scroll edge effects, off on every scroll view.
         private func hideEdgeEffects() {
             if #available(iOS 26, *) {
-                for s in all(UIScrollView.self, in: window) {
-                    s.topEdgeEffect.isHidden = true
-                    s.bottomEdgeEffect.isHidden = true
+                func walk(_ view: UIView) {
+                    if let s = view as? UIScrollView {
+                        s.topEdgeEffect.isHidden = true
+                        s.bottomEdgeEffect.isHidden = true
+                        s.leftEdgeEffect.isHidden = true
+                        s.rightEdgeEffect.isHidden = true
+                    }
+                    view.subviews.forEach(walk)
                 }
+                walk(window)
             }
+        }
+
+        /// Portal layers left on screen (each draws black off screen), by their size.
+        private func portals(_ layer: CALayer) -> [String] {
+            let here =
+                String(describing: type(of: layer)).contains("Portal") && !layer.isHidden
+                ? ["\(Int(layer.bounds.width))x\(Int(layer.bounds.height))"] : []
+            return here + (layer.sublayers ?? []).flatMap(portals)
         }
 
         /// The page at its top, under the bar (a page sometimes first lays out scrolled).
@@ -1147,7 +1163,11 @@
             try await settleSync(env)
             let marked = Stage(NavigationStack { JobScreen(jobId: work.job, section: .checklist) }.app(env))
             try await marked.wait(2)
-            try await marked.scroll(by: 560)
+            if let leak = marked.fields().first(where: { $0.text == "Return line under the deck" }) {
+                try await marked.scroll(showing: leak, at: 330)
+            } else {
+                try await marked.scroll(by: 300)
+            }
             try await marked.shot("leak-13-checklist-leaking")
             marked.close()
             let dye = Stage(TestEditor(jobId: work.job, testId: work.dye, typeId: nil, componentId: nil).app(env))
