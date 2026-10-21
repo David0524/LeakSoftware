@@ -14,13 +14,15 @@ import {
   onMyWayVia,
   stopDone,
   localMinutes,
-  minutesLabel,
   propertyLocation,
   routingSettings,
   workDay,
+  startLegLabel,
+  backLegLabel,
 } from "@leakbook/core";
 import { inRouteOrderViews, stopLockTag, useJobViews, type JobView } from "../../../../data/jobs";
 import { useDriveTimes, useTeam } from "../../../../data/schedule";
+import { useRouteStart } from "../../../../data/memberStarts";
 import { useLine } from "../../../../data/texting";
 import { useWeather } from "../../../../data/weather";
 import { GettingStarted } from "../../../../features/today/GettingStarted";
@@ -69,6 +71,7 @@ import { AddressLine } from "../../../../ui/NotOnMap";
 import { useRoutingOn } from "../../../../lib/routing";
 import { ScreenTip } from "../../../../ui/Tip";
 import { WebIcon } from "../../../../ui/WebIcon";
+import { unlessSwiping } from "../../../../ui/swipeQuiet";
 import {
   cardShadow,
   color,
@@ -158,12 +161,9 @@ export default function Today() {
   const myName = meProfile?.full_name || meProfile?.email || "your tech";
 
   const settings = useMemo(() => routingSettings(company.settings), [company.settings]);
-  const depotAt = company as { latitude?: number | null; longitude?: number | null };
-  const depot = useMemo(
-    () => propertyLocation(depotAt),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the shop's coordinates
-    [depotAt.latitude, depotAt.longitude],
-  );
+  // Where this tech's day starts and ends: the shop, or their home (owner, 2026-10-21).
+  const start = useRouteStart(company, shownTech);
+  const depot = start.at;
   const line = useLine(company.id);
   const weather = useWeather((company as { postal_code?: string | null }).postal_code);
   // Kept between renders (owner, 2026-10-20: smooth), so the card's rule and the day's drive
@@ -277,7 +277,9 @@ export default function Today() {
   function stopRow(j: JobView, withLeg: boolean) {
     const i = stops.indexOf(j);
     const leg = withLeg ? (
-      <Leg text={`${durationLabel(summary.legs[i] ?? 0)} ${i === 0 ? "from the shop" : "drive"}`} />
+      <Leg
+        text={`${durationLabel(summary.legs[i] ?? 0)} ${i === 0 ? startLegLabel(start.label) : "drive"}`}
+      />
     ) : null;
     const info = reorder.row(j.id);
     // Reorder's edit mode: a handle, Move Up and Move Down, or a lock and the reason.
@@ -425,12 +427,12 @@ export default function Today() {
           </Empty>
         ) : (
           <View style={styles.route}>
-            {/* "6 stops · 1 hr 15 min driving · back by 3:14 PM · Reorder" (Done while reordering). */}
+            {/* "6 stops · 1 hr 15 min driving · Reorder" (Done while reordering). */}
             <View style={styles.dayLine}>
               <T muted>
                 {stops.length} {stops.length === 1 ? "stop" : "stops"} ·{" "}
                 {durationLabel(summary.driveMin)} driving
-                {summary.backMin != null ? ` · back by ${minutesLabel(summary.backMin)}` : ""}
+                {start.label === "home" ? ` · ${startLegLabel("home")}` : ""}
                 {reorder.canReorder || reorder.editing ? " ·" : ""}
               </T>
               {reorder.canReorder || reorder.editing ? (
@@ -511,7 +513,7 @@ export default function Today() {
               ? doneStops.map((j) => stopRow(j, false))
               : null}
             {rest.map((j) => stopRow(j, true))}
-            <Leg text={`${durationLabel(backLeg)} back to the shop`} />
+            <Leg text={`${durationLabel(backLeg)} ${backLegLabel(start.label)}`} />
           </View>
         )}
       </SwipeNav>
@@ -656,7 +658,7 @@ const Stop = memo(function Stop({
             <Pressable
               accessibilityRole="link"
               accessibilityLabel={`Open the job for ${name}`}
-              onPress={() => router.push(`/jobs/${job.id}`)}
+              onPress={unlessSwiping(() => router.push(`/jobs/${job.id}`))}
               hitSlop={8}
               style={({ pressed }) => [styles.nameLink, pressed && { opacity: 0.5 }]}
             >
@@ -723,7 +725,7 @@ const Stop = memo(function Stop({
                 <Text
                   accessibilityRole="link"
                   accessibilityHint="Directions"
-                  onPress={() => onDirections(job)}
+                  onPress={unlessSwiping(() => onDirections(job))}
                   style={[type.secondary, { color: color.link, alignSelf: "flex-start" }]}
                   maxFontSizeMultiplier={MAX_TEXT_SCALE}
                 >

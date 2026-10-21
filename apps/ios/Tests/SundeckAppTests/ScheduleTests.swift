@@ -367,6 +367,30 @@ import Testing
         }
     }
 
+    /// Owner, 2026-10-21: "when you try to lock the time in the schedule, it removes almost
+    /// everyone from the routes." Locking a stop (alone, or through the Move sheet's Save with
+    /// its lock) keeps every stop on every tech's route.
+    @Test func lockingAStopsTimeKeepsEveryStopOnTheRoutes() throws {
+        let days = ["2026-10-20", "2026-10-21", "2026-10-22"]
+        func stops() -> [String: [String]] {
+            loadRoutes(jobs, ctx: ctx, dates: days, team: team, drive: DriveTimes()).routes
+                .mapValues { $0.jobs.map(\.id) }
+        }
+        let before = stops()
+        #expect(before.values.reduce(0) { $0 + $1.count } == 3)
+        try saveJobUpdates(sync, companyId: Self.company, lockOnlyChange(.time, jobId: id(1)).updates)
+        #expect(stops() == before)
+        #expect(jobs.first { $0.id == id(1) }?.lockTime == true)
+        // The Move sheet's Save with a lock, the stop staying where it is.
+        let saved = try scheduleWithLock(.both, jobId: id(3), jobs: jobs) { locked in
+            try moveJob(
+                id(3), tech: Self.sam, date: "2026-10-21", index: 0, jobs: locked, ctx: ctx, team: team,
+                drive: DriveTimes())
+        }
+        try saveJobUpdates(sync, companyId: Self.company, saved.updates)
+        #expect(stops() == before)
+    }
+
     @Test func draggingAStopMovesItLikeMove() throws {
         func drop(_ n: Int, _ target: ScheduleDrop) throws -> (updates: [JobUpdate], message: String)? {
             try dropJob(id(n), on: target, jobs: jobs, ctx: ctx, team: team, drive: DriveTimes())

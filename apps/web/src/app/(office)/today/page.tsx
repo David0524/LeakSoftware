@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
+  backLegLabel,
   durationLabel,
+  startLegLabel,
   formatAddress,
   formatDay,
   formatTime,
-  minutesLabel,
   propertyLocation,
   onMyWayVia,
   cleaningCountdown,
@@ -139,6 +140,8 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
     const jobs = route?.jobs ?? [];
     const legs = route?.summary.legs.reduce((a, b) => a + b, 0) ?? 0;
     const backLeg = route ? route.summary.driveMin - legs : 0;
+    // Home for someone who starts their day there, else the shop.
+    const startLabel = route?.start.label ?? "shop";
     const mine = dayTech === office.user.id;
     // The card at the top for the stop you're on (owner, 2026-10-20; docs/plans/today-hero.md):
     // the Live Activity's rule, so the phone and the website pick the same stop. The card
@@ -229,7 +232,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
           {withLeg ? (
             <p className="flex items-center gap-2 py-0.5 pl-4 text-[0.9375rem] text-text-muted">
               <span aria-hidden="true" className="h-4 border-l-2 border-dotted border-text-muted" />
-              {durationLabel(leg)} {i === 0 ? "from the shop" : "drive"}
+              {durationLabel(leg)} {i === 0 ? startLegLabel(startLabel) : "drive"}
             </p>
           ) : null}
           <TodayStop
@@ -407,9 +410,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
               <p className="mb-4 text-text-muted" data-testid="today-summary">
                 {jobs.length} {jobs.length === 1 ? "stop" : "stops"} ·{" "}
                 {durationLabel(route!.summary.driveMin)} driving
-                {route!.summary.backMin != null
-                  ? ` · back by ${minutesLabel(route!.summary.backMin)}`
-                  : ""}
+                {startLabel === "home" ? ` · ${startLegLabel("home")}` : null}
                 {anyMoves ? <ReorderToggle /> : null}
               </p>
               <ReorderStatus />
@@ -468,7 +469,7 @@ export default async function TodayPage({ searchParams }: PageProps<"/today">) {
                       aria-hidden="true"
                       className="h-4 border-l-2 border-dotted border-text-muted"
                     />
-                    {durationLabel(backLeg)} back to the shop
+                    {durationLabel(backLeg)} {backLegLabel(startLabel)}
                   </p>
                 </li>
               </ol>

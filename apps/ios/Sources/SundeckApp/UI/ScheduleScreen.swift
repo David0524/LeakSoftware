@@ -122,8 +122,10 @@
                         }
                     }
                     .frame(maxWidth: .infinity, minHeight: 240, alignment: .topLeading)
-                    .contentShape(Rectangle())
-                    .pageSwipe(
+                    // The page follows the finger (owner, 2026-10-21), and the next one slides in
+                    // when it's ready.
+                    .pagingSwipe(
+                        page: "\(board.view.rawValue)|\(board.date)",
                         previous: { date = step(board.date, -1) },
                         next: { date = step(board.date, 1) })
                 } else {
@@ -149,7 +151,7 @@
                 let ctx = scheduleContext(sync.store, company: company, userId: user.id)
                 drive = await cachedDriveTimes(
                     app, companyId: company.id,
-                    keys: routePoints(scheduleJobs(sync.store, companyId: company.id), depot: ctx.depot))
+                    keys: routePoints(scheduleJobs(sync.store, companyId: company.id), starts: ctx.startPoints))
             }
             .sheet(item: $moving) { target in
                 if let board {
@@ -362,6 +364,7 @@
                     Text(
                         route.map {
                             "\($0.jobs.count) \($0.jobs.count == 1 ? "stop" : "stops") · \(durationLabel($0.summary.driveMin))"
+                                + (board.ctx.start(for: t.id).label == .home ? " · \(startLegLabel(.home))" : "")
                         } ?? "Nothing scheduled"
                     )
                     .textRole(.secondary).foregroundStyle(Color.textMuted).monospacedDigit()
@@ -390,7 +393,9 @@
         }
 
         private func weekRows(_ items: [WeekItem], day d: String, tech: String?, _ board: Board) -> some View {
-            GroupedRows(items) { item in
+            // Not lazy: a lazy stack inside the page's lazy stack can leave rows undrawn after the
+            // board changes under it (the week's rows are a few a day).
+            GroupedRows(items, lazy: false) { item in
                 // Swipe left for Move…, right to lock; touch and hold for the menu, and drag from
                 // it to move (gestures spec section 12).
                 let actions = stopActions(item.job, from: "\(item.job.assignedUserId ?? "none")|\(d)")
@@ -486,8 +491,13 @@
 
         /// Lock Day or Lock Time (or Unlock): the lock alone, with no message (owner, 2026-10-20:
         /// "Don't do lock messages"); the card's lock icon and the haptic say it.
+        ///
+        /// Nothing moves, so the board swaps in without animating (owner, 2026-10-21: "when you
+        /// try to lock the time in the schedule, it removes almost everyone from the routes"):
+        /// an animated swap of every route while the row's menu or swipe was still closing left
+        /// the stacked rows undrawn until the app was reopened.
         private func lock(_ job: ScheduleJob, _ lock: JobLock) {
-            save(lockOnlyChange(lock, jobId: job.id).updates, nil)
+            saveTable(lockOnlyChange(lock, jobId: job.id).updates.map(TableUpdate.init), nil, animate: false)
         }
 
         /// Take Off Schedule, as the Move sheet's: back to Needs a Time.
@@ -754,12 +764,14 @@
         }
 
         @discardableResult
-        private func saveTable(_ updates: [TableUpdate], _ result: ResultBanner?, undo: PendingUndo? = nil) -> Bool {
+        private func saveTable(
+            _ updates: [TableUpdate], _ result: ResultBanner?, undo: PendingUndo? = nil, animate: Bool = true
+        ) -> Bool {
             guard let company = session.company else { return false }
             do {
                 try saveRows(sync, companyId: company.id, updates)
                 self.undo = undo
-                animateNext = !updates.isEmpty
+                animateNext = animate && !updates.isEmpty
                 if let result { banner = result }
                 saved += 1
                 return true
@@ -875,9 +887,10 @@
                 if view == .week { toAdd = customersToAdd(plans, techIds: team.filter(\.active).map(\.id)) }
             }
             if let route = leadRoute {
+                let start = ctx.start(for: route.techId)
                 leadMap = dayMapModel(
-                    jobs: route.jobs, depot: ctx.depot, date: self.date, today: ctx.today, tech: route.techName,
-                    timeZone: ctx.timeZone)
+                    jobs: route.jobs, depot: start.at, date: self.date, today: ctx.today, tech: route.techName,
+                    timeZone: ctx.timeZone, startLabel: start.label)
             }
         }
 
@@ -983,44 +996,77 @@
         }
     }
 
-    /// Day view's week strip (spec 5.6): Monday to Sunday; a swipe moves a week. A stop dragged
-    /// over a day opens that day after a moment (spring loading), and dropped on it goes there.
+    /// Day view's week strip (spec 5.6): Monday to Sunday. A stop dragged over a day opens that
+    /// day after a moment (spring loading), and dropped on it goes there.
+    ///
+    /// Swiping it moves a week (owner, 2026-10-21: "Should be able to drag it as fast or slow as
+    /// you want, hold halfway, etc."; `PagerRule`): the weeks before and after sit beside this
+    /// one, so the strip follows the finger 1:1 and shows the week coming in; it can be held
+    /// halfway and taken back. Let go past a quarter of its width or with a flick and it springs
+    /// on to that week, on the same weekday, at the finger's speed; otherwise it springs back. A
+    /// new week from the arrows or Today slides in from its side. Up and down still scroll the
+    /// page. With Reduce Motion the strip doesn't follow the finger and the week cross-fades.
     struct WeekStrip: View {
         var date: String
         var today: String
         var pick: (String) -> Void
         /// A stop dropped on a day (day, job id): true when it moved.
         var onDrop: ((String, String) -> Bool)?
-        @State private var drag: CGFloat = 0
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
         @State private var targeted: String?
+        /// The day the strip stands on while its swipe settles (the screen's date follows).
+        @State private var shown: String?
+        /// The day a swipe is springing on to.
+        @State private var pending: String?
+        @State private var offset: CGFloat = 0
+        @State private var axis: PagerRule.Axis?
+        @State private var width: CGFloat = 358
+        /// A sideways drag is on: a day's button doesn't take the lift as a tap.
+        @State private var swiping = false
+        @State private var turns = 0
+        @GestureState private var held = false
+
+        /// The space between weeks as they pass.
+        private let gap: CGFloat = 4
+        private var current: String { shown ?? date }
+        private var page: CGFloat { width + gap }
 
         var body: some View {
-            let start = (try? weekStart(date)) ?? date
-            GeometryReader { geo in
-                HStack(spacing: 4) {
-                    ForEach(0..<7, id: \.self) { i in
-                        let d = (try? addDays(start, i)) ?? start
-                        day(d)
-                    }
+            let start = (try? weekStart(current)) ?? current
+            ZStack(alignment: .topLeading) {
+                ForEach([-7, 0, 7], id: \.self) { shift in
+                    let first = (try? addDays(start, shift)) ?? start
+                    week(first)
+                        .frame(width: width)
+                        .offset(x: CGFloat(shift / 7) * page + offset)
+                        // Only this week is touched and read aloud; its neighbors are scenery.
+                        .allowsHitTesting(shift == 0)
+                        .accessibilityHidden(shift != 0)
+                        .id(reduceMotion && shift == 0 ? first : "\(shift)")
+                        .transition(.opacity)
                 }
-                .offset(x: drag)
-                .gesture(
-                    DragGesture(minimumDistance: 12)
-                        .onChanged {
-                            drag = abs($0.translation.width) > abs($0.translation.height) ? $0.translation.width : 0
-                        }
-                        .onEnded { value in
-                            let w = value.translation.width
-                            let flick = value.predictedEndTranslation.width - w
-                            withAnimation(.easeOut(duration: 0.2)) { drag = 0 }
-                            if w < -geo.size.width / 4 || flick < -200 {
-                                pick((try? addDays(date, 7)) ?? date)
-                            } else if w > geo.size.width / 4 || flick > 200 {
-                                pick((try? addDays(date, -7)) ?? date)
-                            }
-                        })
             }
-            .frame(height: 56)
+            .frame(maxWidth: .infinity, minHeight: 56, maxHeight: 56, alignment: .topLeading)
+            .onGeometryChange(for: CGFloat.self) {
+                $0.size.width
+            } action: {
+                width = max($0, 1)
+            }
+            .clipped()
+            .contentShape(Rectangle())
+            .simultaneousGesture(drag)
+            .sensoryFeedback(.impact(weight: .light), trigger: turns)
+            .onChange(of: date) { old, new in arrive(from: old, to: new) }
+            .onChange(of: held) { _, now in
+                guard !now else { return }
+                Task {
+                    try? await Task.sleep(for: .milliseconds(60))
+                    guard !held, axis != nil else { return }
+                    axis = nil
+                    release()
+                    withAnimation(.spring(duration: PagerRule.settle, bounce: 0)) { offset = 0 }
+                }
+            }
             // Seven days fill the row, so the strip stops growing at the largest standard size;
             // Large Content Viewer shows a day at full size, and each day's label is the full date.
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
@@ -1029,11 +1075,106 @@
             .accessibilityLabel("Week")
         }
 
+        private func week(_ first: String) -> some View {
+            HStack(spacing: 4) {
+                ForEach(0..<7, id: \.self) { i in
+                    day((try? addDays(first, i)) ?? first)
+                }
+            }
+        }
+
+        private var drag: some Gesture {
+            DragGesture(minimumDistance: PagerRule.lockDistance)
+                .updating($held) { _, state, _ in state = true }
+                .onChanged { value in
+                    if axis == nil {
+                        // The last swipe is still springing on (a third of a second).
+                        guard pending == nil, let locked = PagerRule.lock(value.translation) else { return }
+                        axis = locked
+                        if locked == .horizontal { swiping = true }
+                    }
+                    guard axis == .horizontal, !reduceMotion else { return }
+                    offset = PagerRule.follow(value.translation.width, width: width, canPrevious: true, canNext: true)
+                }
+                .onEnded { value in
+                    let wasOurs = axis == .horizontal
+                    axis = nil
+                    guard wasOurs else { return }
+                    release()
+                    let way = PagerRule.outcome(
+                        value.translation.width, velocity: value.velocity.width, width: width, canPrevious: true,
+                        canNext: true)
+                    guard way != 0 else {
+                        withAnimation(.spring(duration: PagerRule.settle, bounce: 0)) { offset = 0 }
+                        return
+                    }
+                    turn(way, velocity: value.velocity.width)
+                }
+        }
+
+        /// On to the week before (-1) or after (1), on the same weekday: the strip springs the
+        /// rest of the way at the finger's speed, then stands on it (no jump: that week was
+        /// already drawn beside this one).
+        private func turn(_ way: Int, velocity: CGFloat) {
+            let from = date
+            let target = (try? addDays(current, 7 * way)) ?? current
+            turns += 1
+            if reduceMotion {
+                withAnimation(.easeInOut(duration: 0.25)) { shown = target }
+                pick(target)
+                return
+            }
+            let end = -CGFloat(way) * page
+            let speed = PagerRule.springVelocity(velocity, from: offset, to: end)
+            shown = current
+            pending = target
+            withAnimation(.interpolatingSpring(duration: PagerRule.settle, bounce: 0, initialVelocity: speed)) {
+                offset = end
+            } completion: {
+                var instant = Transaction()
+                instant.disablesAnimations = true
+                withTransaction(instant) {
+                    pending = nil
+                    // Stand on the new week until the screen's date gets there.
+                    shown = date == from ? target : nil
+                    offset = 0
+                }
+            }
+            pick(target)
+        }
+
+        /// The screen's date changed. From this strip's swipe: it's already there. From the arrows,
+        /// Today or the date picker, into another week: that week slides in from its side.
+        private func arrive(from old: String, to new: String) {
+            // A swipe still settling stands on its own day when it's done.
+            guard pending == nil else { return }
+            if shown == new {
+                shown = nil
+                return
+            }
+            shown = nil
+            let before = (try? weekStart(old)) ?? old
+            let after = (try? weekStart(new)) ?? new
+            guard before != after, axis == nil, !reduceMotion else { return }
+            var instant = Transaction()
+            instant.disablesAnimations = true
+            withTransaction(instant) { offset = (after > before ? 1 : -1) * page }
+            withAnimation(.spring(duration: PagerRule.settle, bounce: 0)) { offset = 0 }
+        }
+
+        private func release() {
+            Task {
+                try? await Task.sleep(for: .milliseconds(300))
+                swiping = false
+            }
+        }
+
         @ViewBuilder private func day(_ d: String) -> some View {
-            let chosen = d == date
+            let chosen = d == current
             let over = targeted == d
             let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
             let button = Button {
+                guard !swiping else { return }
                 pick(d)
             } label: {
                 VStack(spacing: 0) {
@@ -1199,7 +1340,8 @@
                 if let route, !jobs.isEmpty {
                     ForEach(Array(jobs.enumerated()), id: \.element.id) { i, j in
                         LegLine(
-                            minutes: route.summary.legs[routeIndex: i] ?? 0, label: i == 0 ? "from the shop" : "drive",
+                            minutes: route.summary.legs[routeIndex: i] ?? 0,
+                            label: i == 0 ? startLegLabel(board.ctx.start(for: tech.id).label) : "drive",
                             short: route.summary.short[routeIndex: i] ?? 0, inset: 31)
                         ScheduleStopCard(
                             number: i + 1, job: j,
@@ -1211,7 +1353,9 @@
                         )
                         .scheduleDropTarget(cornerRadius: CGFloat(Radius.card)) { onDrop($0, i) }
                     }
-                    LegLine(minutes: route.summary.backLegMin, label: "back to the shop", short: 0, inset: 31)
+                    LegLine(
+                        minutes: route.summary.backLegMin, label: backLegLabel(board.ctx.start(for: tech.id).label),
+                        short: 0, inset: 31)
                 }
             }
             .accessibilityElement(children: .contain)
@@ -1253,8 +1397,8 @@
         }
     }
 
-    /// A tech's day in numbers, then what to do with it: "5 stops · 1 hr 10 min driving · back by
-    /// 3:40 PM", a warning when it runs past the end of the day, and Optimize (owner, 2026-10-20:
+    /// A tech's day in numbers, then what to do with it: "5 stops · 1 hr 10 min driving" (no clock
+    /// times, owner 2026-10-21), a warning when it runs past the end of the day, and Optimize (owner, 2026-10-20:
     /// "Plan Route" → "Optimize") beside the day in the maps app. The numbers roll to their new
     /// values after Optimize.
     struct RouteFacts: View {
@@ -1268,8 +1412,12 @@
             let jobs = route.jobs
             VStack(alignment: .leading, spacing: 4) {
                 Text(
-                    "\(jobs.count) \(jobs.count == 1 ? "stop" : "stops") · \(durationLabel(route.summary.driveMin)) driving"
-                        + (route.summary.backMin.map { " · back by \(minutesLabel($0))" } ?? "")
+                    [
+                        "\(jobs.count) \(jobs.count == 1 ? "stop" : "stops")",
+                        "\(durationLabel(route.summary.driveMin)) driving",
+                        // Someone who starts from home: their day's driving is counted from there.
+                        board.ctx.start(for: route.techId).label == .home ? startLegLabel(.home) : nil,
+                    ].compactMap { $0 }.joined(separator: " · ")
                 )
                 .textRole(.secondary).foregroundStyle(Color.textMuted)
                 .monospacedDigit()
@@ -1284,7 +1432,7 @@
                         .accessibilityHint("Puts the stops in driving order")
                     }
                     if let link = dayDirections(
-                        app: board.mapsApp, origin: board.ctx.origin,
+                        app: board.mapsApp, origin: board.ctx.origin(for: route.techId),
                         stops: jobs.map { (place: $0.place, done: $0.done) })
                     {
                         Button {

@@ -498,22 +498,33 @@
     /// radius 12, hairlines from 16 in.
     struct GroupedRows<Item: Identifiable, Row: View>: View {
         var items: [Item]
+        /// Long lists build rows as they scroll on; short ones inside another lazy stack don't.
+        var lazy = true
         @ViewBuilder var row: (Item) -> Row
 
-        init(_ items: [Item], @ViewBuilder row: @escaping (Item) -> Row) {
+        init(_ items: [Item], lazy: Bool = true, @ViewBuilder row: @escaping (Item) -> Row) {
             self.items = items
+            self.lazy = lazy
             self.row = row
         }
 
         var body: some View {
-            LazyVStack(spacing: 0) {
-                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                    if index > 0 { Hairline().padding(.leading, 16) }
-                    row(item)
+            Group {
+                if lazy {
+                    LazyVStack(spacing: 0) { rows }
+                } else {
+                    VStack(spacing: 0) { rows }
                 }
             }
             .background(Color.surface)
             .clipShape(RoundedRectangle(cornerRadius: CGFloat(Radius.grouped), style: .continuous))
+        }
+
+        private var rows: some View {
+            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                if index > 0 { Hairline().padding(.leading, 16) }
+                row(item)
+            }
         }
     }
 

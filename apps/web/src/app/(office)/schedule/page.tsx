@@ -59,6 +59,7 @@ import {
   routeKey,
   needsScheduling,
   shopToday,
+  techStart,
   type DayRoute,
   type RouteContext,
 } from "@/server/route-days";
@@ -159,8 +160,15 @@ function column(
 ): BoardColumn {
   const stops = route ? route.jobs.map((j, i) => toStop(j, ctx, route, i)) : [];
   const legs = route?.summary.legs.reduce((a, b) => a + b, 0) ?? 0;
+  // The day starts at the tech's home when they start there (never its street in the link:
+  // its map point), else at the shop.
+  const start = route?.start ?? techStart(ctx, techId);
   const origin =
-    ctx.depot || ctx.depotAddress ? { address: ctx.depotAddress, location: ctx.depot } : null;
+    start.label === "home"
+      ? { address: "", location: start.at }
+      : ctx.depot || ctx.depotAddress
+        ? { address: ctx.depotAddress, location: ctx.depot }
+        : null;
   const directions = route
     ? dayDirections(
         app,
@@ -178,6 +186,7 @@ function column(
     title,
     color,
     date,
+    start,
     stops,
     driveMin: route?.summary.driveMin ?? 0,
     backLegMin: route && route.jobs.length ? route.summary.driveMin - legs : null,
@@ -348,6 +357,8 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           </>
         }
       />
+      {/* Day and Week use the whole window on a computer (the office layout widens <main>). */}
+      {view !== "month" ? <span data-wide-page="" hidden /> : null}
       <Suspense fallback={null}>
         <ScreenTip screen="schedule" />
       </Suspense>
@@ -408,7 +419,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
           </nav>
         ) : null}
 
-        {!ctx.depot ? (
+        {!ctx.depot && columns.some((c) => c.start.label === "shop") ? (
           <div className="mb-4">
             <Notice tone="warning">
               Routes start and end at the shop, which has no map location yet.{" "}

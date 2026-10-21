@@ -149,7 +149,7 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
     name("goodyear"),
     name("scottsdale"),
   ]);
-  await expect(route.getByText(/^3 stops · .* driving · back by /)).toBeVisible();
+  await expect(route.getByText(/^3 stops · .* driving$/)).toBeVisible();
 
   // 1. Optimize (owner, 2026-10-20: was Plan Route): Goodyear no longer sits between the
   //    east-side stops, and the promised 2:00 PM stays. The result is a banner at the top of
@@ -209,10 +209,13 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
 
   // 3b. Taking a job away from its tech puts it in Needs a Time, keeping its booked time.
   // On a computer the stop is a one-line card (owner, 2026-10-20): Move… is in its menu.
-  await route
+  // Bring Priya's column back into view first: a scroll that lands after the menu opens
+  // closes it, as scrolling the page under any menu does.
+  const zooLine = route
     .getByRole("article", { name: new RegExp(name("zoo")) })
-    .getByTestId("stop-line")
-    .click({ button: "right" });
+    .getByTestId("stop-line");
+  await zooLine.scrollIntoViewIfNeeded();
+  await zooLine.click({ button: "right" });
   await page.getByRole("menu").getByRole("menuitem", { name: "Move…" }).click();
   const zooSheet = page.getByRole("dialog", { name: `Move ${name("zoo")}` });
   await zooSheet.getByLabel("Tech").selectOption({ label: "Nobody yet (waits in Needs a Time)" });

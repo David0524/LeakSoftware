@@ -1,0 +1,3157 @@
+{
+  "START_FROM_COPY": [
+    {
+      "args": [],
+      "result": {
+        "field": "Start My Day From",
+        "shop": "The Shop",
+        "home": "Home",
+        "homeAddress": "Home Address",
+        "footer": "Routes, drive times and Optimize start and end here.",
+        "pending": "Starting from the shop until the address is found on the map.",
+        "homePin": "Home"
+      }
+    }
+  ],
+  "homeLookupAddress": [
+    {
+      "args": [
+        null
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        ""
+      ],
+      "result": ""
+    },
+    {
+      "args": [
+        "  4 Elm St,\n  Phoenix, AZ  "
+      ],
+      "result": "4 Elm St, Phoenix, AZ"
+    },
+    {
+      "args": [
+        "4 Elm St"
+      ],
+      "result": "4 Elm St"
+    }
+  ],
+  "homeMapStatus": [
+    {
+      "args": [
+        null
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "id": "s1",
+          "company_id": "c1",
+          "user_id": "t1",
+          "start_from": "home",
+          "home_address": "4 Elm St, Phoenix, AZ",
+          "home_latitude": 33.69,
+          "home_longitude": -112,
+          "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+        }
+      ],
+      "result": "found"
+    },
+    {
+      "args": [
+        {
+          "id": "s1",
+          "company_id": "c1",
+          "user_id": "t1",
+          "start_from": "shop",
+          "home_address": "4 Elm St, Phoenix, AZ",
+          "home_latitude": 33.69,
+          "home_longitude": -112,
+          "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+        }
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        {
+          "id": "s1",
+          "company_id": "c1",
+          "user_id": "t1",
+          "start_from": "home",
+          "home_address": "4 Elm St, Phoenix, AZ",
+          "home_latitude": 33.69,
+          "home_longitude": -112,
+          "home_geocoded_address": null
+        }
+      ],
+      "result": "found"
+    },
+    {
+      "args": [
+        {
+          "id": "s1",
+          "company_id": "c1",
+          "user_id": "t1",
+          "start_from": "home",
+          "home_address": " 4 Elm St,  Phoenix, AZ ",
+          "home_latitude": 33.69,
+          "home_longitude": -112,
+          "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+        }
+      ],
+      "result": "found"
+    },
+    {
+      "args": [
+        {
+          "id": "s1",
+          "company_id": "c1",
+          "user_id": "t1",
+          "start_from": "home",
+          "home_address": "4 Elm St, Phoenix, AZ",
+          "home_latitude": 33.69,
+          "home_longitude": -112,
+          "home_geocoded_address": "1 Old Rd"
+        }
+      ],
+      "result": "missing"
+    },
+    {
+      "args": [
+        {
+          "id": "s1",
+          "company_id": "c1",
+          "user_id": "t1",
+          "start_from": "home",
+          "home_address": "4 Elm St, Phoenix, AZ",
+          "home_latitude": null,
+          "home_longitude": null,
+          "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+        }
+      ],
+      "result": "missing"
+    },
+    {
+      "args": [
+        {
+          "id": "s1",
+          "company_id": "c1",
+          "user_id": "t1",
+          "start_from": "home",
+          "home_address": null,
+          "home_latitude": 33.69,
+          "home_longitude": -112,
+          "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+        }
+      ],
+      "result": "missing"
+    },
+    {
+      "args": [
+        {
+          "id": "s1",
+          "company_id": "c1",
+          "user_id": "t1",
+          "start_from": "home",
+          "home_address": "  ",
+          "home_latitude": 33.69,
+          "home_longitude": -112,
+          "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+        }
+      ],
+      "result": "missing"
+    },
+    {
+      "args": [
+        {
+          "id": "s1",
+          "company_id": "c1",
+          "user_id": "t1",
+          "start_from": "home",
+          "home_address": "4 Elm St, Phoenix, AZ",
+          "home_latitude": 33.69,
+          "home_longitude": -112,
+          "home_geocoded_address": "4 Elm St, Phoenix, AZ",
+          "deleted_at": "2026-10-21T00:00:00Z"
+        }
+      ],
+      "result": null
+    }
+  ],
+  "routeStart": [
+    {
+      "args": [
+        null,
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        }
+      ],
+      "result": {
+        "at": {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        "label": "shop"
+      }
+    },
+    {
+      "args": [
+        null,
+        null
+      ],
+      "result": {
+        "at": null,
+        "label": "shop"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "s1",
+          "company_id": "c1",
+          "user_id": "t1",
+          "start_from": "home",
+          "home_address": "4 Elm St, Phoenix, AZ",
+          "home_latitude": 33.69,
+          "home_longitude": -112,
+          "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+        },
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        }
+      ],
+      "result": {
+        "at": {
+          "lat": 33.69,
+          "lng": -112
+        },
+        "label": "home"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "s1",
+          "company_id": "c1",
+          "user_id": "t1",
+          "start_from": "home",
+          "home_address": "4 Elm St, Phoenix, AZ",
+          "home_latitude": 33.69,
+          "home_longitude": -112,
+          "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+        },
+        null
+      ],
+      "result": {
+        "at": {
+          "lat": 33.69,
+          "lng": -112
+        },
+        "label": "home"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "s1",
+          "company_id": "c1",
+          "user_id": "t1",
+          "start_from": "shop",
+          "home_address": "4 Elm St, Phoenix, AZ",
+          "home_latitude": 33.69,
+          "home_longitude": -112,
+          "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+        },
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        }
+      ],
+      "result": {
+        "at": {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        "label": "shop"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "s1",
+          "company_id": "c1",
+          "user_id": "t1",
+          "start_from": "home",
+          "home_address": "4 Elm St, Phoenix, AZ",
+          "home_latitude": null,
+          "home_longitude": null,
+          "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+        },
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        }
+      ],
+      "result": {
+        "at": {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        "label": "shop"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "s1",
+          "company_id": "c1",
+          "user_id": "t1",
+          "start_from": "home",
+          "home_address": "4 Elm St, Phoenix, AZ",
+          "home_latitude": 33.69,
+          "home_longitude": -112,
+          "home_geocoded_address": "1 Old Rd"
+        },
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        }
+      ],
+      "result": {
+        "at": {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        "label": "shop"
+      }
+    },
+    {
+      "args": [
+        {
+          "id": "s1",
+          "company_id": "c1",
+          "user_id": "t1",
+          "start_from": "home",
+          "home_address": "4 Elm St, Phoenix, AZ",
+          "home_latitude": 33.69,
+          "home_longitude": -112,
+          "home_geocoded_address": "4 Elm St, Phoenix, AZ",
+          "deleted_at": "2026-10-21T00:00:00Z"
+        },
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        }
+      ],
+      "result": {
+        "at": {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        "label": "shop"
+      }
+    }
+  ],
+  "startFor": [
+    {
+      "args": [
+        "t1",
+        [
+          {
+            "id": "s1",
+            "company_id": "c1",
+            "user_id": "t1",
+            "start_from": "home",
+            "home_address": "4 Elm St, Phoenix, AZ",
+            "home_latitude": 33.69,
+            "home_longitude": -112,
+            "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+          },
+          {
+            "id": "s2",
+            "company_id": "c1",
+            "user_id": "t2",
+            "start_from": "shop",
+            "home_address": "4 Elm St, Phoenix, AZ",
+            "home_latitude": 33.69,
+            "home_longitude": -112,
+            "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        }
+      ],
+      "result": {
+        "at": {
+          "lat": 33.69,
+          "lng": -112
+        },
+        "label": "home"
+      }
+    },
+    {
+      "args": [
+        "t2",
+        [
+          {
+            "id": "s1",
+            "company_id": "c1",
+            "user_id": "t1",
+            "start_from": "home",
+            "home_address": "4 Elm St, Phoenix, AZ",
+            "home_latitude": 33.69,
+            "home_longitude": -112,
+            "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+          },
+          {
+            "id": "s2",
+            "company_id": "c1",
+            "user_id": "t2",
+            "start_from": "shop",
+            "home_address": "4 Elm St, Phoenix, AZ",
+            "home_latitude": 33.69,
+            "home_longitude": -112,
+            "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        }
+      ],
+      "result": {
+        "at": {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        "label": "shop"
+      }
+    },
+    {
+      "args": [
+        "t3",
+        [
+          {
+            "id": "s1",
+            "company_id": "c1",
+            "user_id": "t1",
+            "start_from": "home",
+            "home_address": "4 Elm St, Phoenix, AZ",
+            "home_latitude": 33.69,
+            "home_longitude": -112,
+            "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+          },
+          {
+            "id": "s2",
+            "company_id": "c1",
+            "user_id": "t2",
+            "start_from": "shop",
+            "home_address": "4 Elm St, Phoenix, AZ",
+            "home_latitude": 33.69,
+            "home_longitude": -112,
+            "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        }
+      ],
+      "result": {
+        "at": {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        "label": "shop"
+      }
+    },
+    {
+      "args": [
+        null,
+        [
+          {
+            "id": "s1",
+            "company_id": "c1",
+            "user_id": "t1",
+            "start_from": "home",
+            "home_address": "4 Elm St, Phoenix, AZ",
+            "home_latitude": 33.69,
+            "home_longitude": -112,
+            "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+          },
+          {
+            "id": "s2",
+            "company_id": "c1",
+            "user_id": "t2",
+            "start_from": "shop",
+            "home_address": "4 Elm St, Phoenix, AZ",
+            "home_latitude": 33.69,
+            "home_longitude": -112,
+            "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        }
+      ],
+      "result": {
+        "at": {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        "label": "shop"
+      }
+    },
+    {
+      "args": [
+        "t1",
+        null,
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        }
+      ],
+      "result": {
+        "at": {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        "label": "shop"
+      }
+    },
+    {
+      "args": [
+        "t1",
+        [
+          {
+            "id": "s1",
+            "company_id": "c1",
+            "user_id": "t1",
+            "start_from": "home",
+            "home_address": "4 Elm St, Phoenix, AZ",
+            "home_latitude": 33.69,
+            "home_longitude": -112,
+            "home_geocoded_address": "4 Elm St, Phoenix, AZ",
+            "deleted_at": "2026-10-21T00:00:00Z"
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        }
+      ],
+      "result": {
+        "at": {
+          "lat": 33.4152,
+          "lng": -111.8315
+        },
+        "label": "shop"
+      }
+    },
+    {
+      "args": [
+        "t1",
+        [
+          {
+            "id": "s1",
+            "company_id": "c1",
+            "user_id": "t1",
+            "start_from": "home",
+            "home_address": "4 Elm St, Phoenix, AZ",
+            "home_latitude": 33.69,
+            "home_longitude": -112,
+            "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+          },
+          {
+            "id": "s2",
+            "company_id": "c1",
+            "user_id": "t2",
+            "start_from": "shop",
+            "home_address": "4 Elm St, Phoenix, AZ",
+            "home_latitude": 33.69,
+            "home_longitude": -112,
+            "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+          }
+        ],
+        null
+      ],
+      "result": {
+        "at": {
+          "lat": 33.69,
+          "lng": -112
+        },
+        "label": "home"
+      }
+    }
+  ],
+  "startLegLabel": [
+    {
+      "args": [
+        "shop"
+      ],
+      "result": "from the shop"
+    },
+    {
+      "args": [
+        "home"
+      ],
+      "result": "from home"
+    }
+  ],
+  "backLegLabel": [
+    {
+      "args": [
+        "shop"
+      ],
+      "result": "back to the shop"
+    },
+    {
+      "args": [
+        "home"
+      ],
+      "result": "back home"
+    }
+  ],
+  "timeRoute": [
+    {
+      "args": [
+        [
+          {
+            "id": "n",
+            "location": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "durationMin": 60
+          },
+          {
+            "id": "near",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 60
+          }
+        ],
+        {
+          "lat": 33.69,
+          "lng": -112
+        }
+      ],
+      "result": {
+        "stops": [
+          {
+            "id": "n",
+            "driveMin": 5,
+            "arriveMin": 485,
+            "startMin": 485,
+            "endMin": 545,
+            "lateMin": 0,
+            "unlocated": false
+          },
+          {
+            "id": "near",
+            "driveMin": 47,
+            "arriveMin": 592,
+            "startMin": 592,
+            "endMin": 652,
+            "lateMin": 0,
+            "unlocated": false
+          }
+        ],
+        "driveMin": 98,
+        "backMin": 698,
+        "overtimeMin": 0,
+        "lateMin": 0
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "id": "n",
+            "location": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "durationMin": 60
+          },
+          {
+            "id": "near",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 60
+          }
+        ],
+        {
+          "lat": 33.4152,
+          "lng": -111.8315
+        }
+      ],
+      "result": {
+        "stops": [
+          {
+            "id": "n",
+            "driveMin": 48,
+            "arriveMin": 528,
+            "startMin": 528,
+            "endMin": 588,
+            "lateMin": 0,
+            "unlocated": false
+          },
+          {
+            "id": "near",
+            "driveMin": 47,
+            "arriveMin": 635,
+            "startMin": 635,
+            "endMin": 695,
+            "lateMin": 0,
+            "unlocated": false
+          }
+        ],
+        "driveMin": 100,
+        "backMin": 700,
+        "overtimeMin": 0,
+        "lateMin": 0
+      }
+    }
+  ],
+  "planDay": [
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        "t1",
+        "2026-10-21",
+        [
+          {
+            "id": "east",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T15:00:00.000Z",
+            "scheduled_end": "2026-10-21T16:00:00.000Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.4152,
+              "longitude": -111.6315
+            }
+          },
+          {
+            "id": "north",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T16:30:00.000Z",
+            "scheduled_end": "2026-10-21T17:30:00.000Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          },
+          {
+            "id": "west",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T18:00:00.000Z",
+            "scheduled_end": "2026-10-21T19:00:00.000Z",
+            "route_order": 3,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.45,
+              "longitude": -112.07
+            }
+          },
+          {
+            "id": "south",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T19:30:00.000Z",
+            "scheduled_end": "2026-10-21T20:30:00.000Z",
+            "route_order": 4,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.3,
+              "longitude": -111.9
+            }
+          }
+        ]
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "east",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T15:30:00.000Z",
+            "scheduled_end": "2026-10-21T16:30:00.000Z"
+          },
+          {
+            "id": "north",
+            "route_order": 2,
+            "scheduled_start": "2026-10-21T17:30:00.000Z",
+            "scheduled_end": "2026-10-21T18:30:00.000Z"
+          },
+          {
+            "id": "west",
+            "route_order": 3,
+            "scheduled_start": "2026-10-21T19:11:00.000Z",
+            "scheduled_end": "2026-10-21T20:11:00.000Z"
+          },
+          {
+            "id": "south",
+            "route_order": 4,
+            "scheduled_start": "2026-10-21T20:46:00.000Z",
+            "scheduled_end": "2026-10-21T21:46:00.000Z"
+          }
+        ],
+        "message": "Optimized · 3 hr 11 min driving"
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480,
+          "starts": [
+            {
+              "id": "s1",
+              "company_id": "c1",
+              "user_id": "t1",
+              "start_from": "home",
+              "home_address": "4 Elm St, Phoenix, AZ",
+              "home_latitude": 33.69,
+              "home_longitude": -112,
+              "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+            },
+            {
+              "id": "s2",
+              "company_id": "c1",
+              "user_id": "t2",
+              "start_from": "shop",
+              "home_address": "4 Elm St, Phoenix, AZ",
+              "home_latitude": 33.69,
+              "home_longitude": -112,
+              "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+            }
+          ]
+        },
+        "t1",
+        "2026-10-21",
+        [
+          {
+            "id": "east",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T15:00:00.000Z",
+            "scheduled_end": "2026-10-21T16:00:00.000Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.4152,
+              "longitude": -111.6315
+            }
+          },
+          {
+            "id": "north",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T16:30:00.000Z",
+            "scheduled_end": "2026-10-21T17:30:00.000Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          },
+          {
+            "id": "west",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T18:00:00.000Z",
+            "scheduled_end": "2026-10-21T19:00:00.000Z",
+            "route_order": 3,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.45,
+              "longitude": -112.07
+            }
+          },
+          {
+            "id": "south",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T19:30:00.000Z",
+            "scheduled_end": "2026-10-21T20:30:00.000Z",
+            "route_order": 4,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.3,
+              "longitude": -111.9
+            }
+          }
+        ]
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "north",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T15:05:00.000Z",
+            "scheduled_end": "2026-10-21T16:05:00.000Z"
+          },
+          {
+            "id": "east",
+            "route_order": 2,
+            "scheduled_start": "2026-10-21T17:05:00.000Z",
+            "scheduled_end": "2026-10-21T18:05:00.000Z"
+          },
+          {
+            "id": "south",
+            "route_order": 3,
+            "scheduled_start": "2026-10-21T18:45:00.000Z",
+            "scheduled_end": "2026-10-21T19:45:00.000Z"
+          },
+          {
+            "id": "west",
+            "route_order": 4,
+            "scheduled_start": "2026-10-21T20:20:00.000Z",
+            "scheduled_end": "2026-10-21T21:20:00.000Z"
+          }
+        ],
+        "message": "Optimized · 1 hr 13 min less driving"
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480,
+          "starts": [
+            {
+              "id": "s1",
+              "company_id": "c1",
+              "user_id": "t1",
+              "start_from": "home",
+              "home_address": "4 Elm St, Phoenix, AZ",
+              "home_latitude": 33.69,
+              "home_longitude": -112,
+              "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+            },
+            {
+              "id": "s2",
+              "company_id": "c1",
+              "user_id": "t2",
+              "start_from": "shop",
+              "home_address": "4 Elm St, Phoenix, AZ",
+              "home_latitude": 33.69,
+              "home_longitude": -112,
+              "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+            }
+          ]
+        },
+        "t2",
+        "2026-10-21",
+        [
+          {
+            "id": "east",
+            "status": "scheduled",
+            "assigned_user_id": "t2",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T15:00:00.000Z",
+            "scheduled_end": "2026-10-21T16:00:00.000Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.4152,
+              "longitude": -111.6315
+            }
+          },
+          {
+            "id": "north",
+            "status": "scheduled",
+            "assigned_user_id": "t2",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T16:30:00.000Z",
+            "scheduled_end": "2026-10-21T17:30:00.000Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          },
+          {
+            "id": "west",
+            "status": "scheduled",
+            "assigned_user_id": "t2",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T18:00:00.000Z",
+            "scheduled_end": "2026-10-21T19:00:00.000Z",
+            "route_order": 3,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.45,
+              "longitude": -112.07
+            }
+          },
+          {
+            "id": "south",
+            "status": "scheduled",
+            "assigned_user_id": "t2",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T19:30:00.000Z",
+            "scheduled_end": "2026-10-21T20:30:00.000Z",
+            "route_order": 4,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.3,
+              "longitude": -111.9
+            }
+          }
+        ]
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "east",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T15:30:00.000Z",
+            "scheduled_end": "2026-10-21T16:30:00.000Z"
+          },
+          {
+            "id": "north",
+            "route_order": 2,
+            "scheduled_start": "2026-10-21T17:30:00.000Z",
+            "scheduled_end": "2026-10-21T18:30:00.000Z"
+          },
+          {
+            "id": "west",
+            "route_order": 3,
+            "scheduled_start": "2026-10-21T19:11:00.000Z",
+            "scheduled_end": "2026-10-21T20:11:00.000Z"
+          },
+          {
+            "id": "south",
+            "route_order": 4,
+            "scheduled_start": "2026-10-21T20:46:00.000Z",
+            "scheduled_end": "2026-10-21T21:46:00.000Z"
+          }
+        ],
+        "message": "Optimized · 3 hr 11 min driving"
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": null,
+          "today": "2026-10-20",
+          "nowMin": 480,
+          "starts": [
+            {
+              "id": "s1",
+              "company_id": "c1",
+              "user_id": "t1",
+              "start_from": "home",
+              "home_address": "4 Elm St, Phoenix, AZ",
+              "home_latitude": 33.69,
+              "home_longitude": -112,
+              "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+            },
+            {
+              "id": "s2",
+              "company_id": "c1",
+              "user_id": "t2",
+              "start_from": "shop",
+              "home_address": "4 Elm St, Phoenix, AZ",
+              "home_latitude": 33.69,
+              "home_longitude": -112,
+              "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+            }
+          ]
+        },
+        "t1",
+        "2026-10-21",
+        [
+          {
+            "id": "east",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T15:00:00.000Z",
+            "scheduled_end": "2026-10-21T16:00:00.000Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.4152,
+              "longitude": -111.6315
+            }
+          },
+          {
+            "id": "north",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T16:30:00.000Z",
+            "scheduled_end": "2026-10-21T17:30:00.000Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          },
+          {
+            "id": "west",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T18:00:00.000Z",
+            "scheduled_end": "2026-10-21T19:00:00.000Z",
+            "route_order": 3,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.45,
+              "longitude": -112.07
+            }
+          },
+          {
+            "id": "south",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T19:30:00.000Z",
+            "scheduled_end": "2026-10-21T20:30:00.000Z",
+            "route_order": 4,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.3,
+              "longitude": -111.9
+            }
+          }
+        ]
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "north",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T15:05:00.000Z",
+            "scheduled_end": "2026-10-21T16:05:00.000Z"
+          },
+          {
+            "id": "east",
+            "route_order": 2,
+            "scheduled_start": "2026-10-21T17:05:00.000Z",
+            "scheduled_end": "2026-10-21T18:05:00.000Z"
+          },
+          {
+            "id": "south",
+            "route_order": 3,
+            "scheduled_start": "2026-10-21T18:45:00.000Z",
+            "scheduled_end": "2026-10-21T19:45:00.000Z"
+          },
+          {
+            "id": "west",
+            "route_order": 4,
+            "scheduled_start": "2026-10-21T20:20:00.000Z",
+            "scheduled_end": "2026-10-21T21:20:00.000Z"
+          }
+        ],
+        "message": "Optimized · 1 hr 13 min less driving"
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": null,
+          "today": "2026-10-20",
+          "nowMin": 480,
+          "starts": [
+            {
+              "id": "s1",
+              "company_id": "c1",
+              "user_id": "t1",
+              "start_from": "home",
+              "home_address": "4 Elm St, Phoenix, AZ",
+              "home_latitude": 33.69,
+              "home_longitude": -112,
+              "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+            },
+            {
+              "id": "s2",
+              "company_id": "c1",
+              "user_id": "t2",
+              "start_from": "shop",
+              "home_address": "4 Elm St, Phoenix, AZ",
+              "home_latitude": 33.69,
+              "home_longitude": -112,
+              "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+            }
+          ]
+        },
+        "t2",
+        "2026-10-21",
+        [
+          {
+            "id": "east",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T15:00:00.000Z",
+            "scheduled_end": "2026-10-21T16:00:00.000Z",
+            "route_order": 1,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.4152,
+              "longitude": -111.6315
+            }
+          },
+          {
+            "id": "north",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T16:30:00.000Z",
+            "scheduled_end": "2026-10-21T17:30:00.000Z",
+            "route_order": 2,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          },
+          {
+            "id": "west",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T18:00:00.000Z",
+            "scheduled_end": "2026-10-21T19:00:00.000Z",
+            "route_order": 3,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.45,
+              "longitude": -112.07
+            }
+          },
+          {
+            "id": "south",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": "2026-10-21T19:30:00.000Z",
+            "scheduled_end": "2026-10-21T20:30:00.000Z",
+            "route_order": 4,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.3,
+              "longitude": -111.9
+            }
+          }
+        ]
+      ],
+      "result": {
+        "updates": [],
+        "message": "Optimized · 20 min less driving",
+        "detail": "The shop has no location (Settings › Scheduling)."
+      }
+    }
+  ],
+  "moveJobChange": [
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "tech": "t1",
+          "date": "2026-10-21",
+          "index": 0,
+          "targetDay": [],
+          "fromDay": [],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "x",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "x",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T15:48:00.000Z",
+            "scheduled_end": "2026-10-21T18:18:00.000Z",
+            "assigned_user_id": "t1",
+            "status": "scheduled"
+          }
+        ],
+        "message": "Moved."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480,
+          "starts": [
+            {
+              "id": "s1",
+              "company_id": "c1",
+              "user_id": "t1",
+              "start_from": "home",
+              "home_address": "4 Elm St, Phoenix, AZ",
+              "home_latitude": 33.69,
+              "home_longitude": -112,
+              "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+            },
+            {
+              "id": "s2",
+              "company_id": "c1",
+              "user_id": "t2",
+              "start_from": "shop",
+              "home_address": "4 Elm St, Phoenix, AZ",
+              "home_latitude": 33.69,
+              "home_longitude": -112,
+              "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+            }
+          ]
+        },
+        {
+          "tech": "t1",
+          "date": "2026-10-21",
+          "index": 0,
+          "targetDay": [],
+          "fromDay": [],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "x",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "x",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T15:05:00.000Z",
+            "scheduled_end": "2026-10-21T17:35:00.000Z",
+            "assigned_user_id": "t1",
+            "status": "scheduled"
+          }
+        ],
+        "message": "Moved."
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480,
+          "starts": [
+            {
+              "id": "s1",
+              "company_id": "c1",
+              "user_id": "t1",
+              "start_from": "home",
+              "home_address": "4 Elm St, Phoenix, AZ",
+              "home_latitude": 33.69,
+              "home_longitude": -112,
+              "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+            },
+            {
+              "id": "s2",
+              "company_id": "c1",
+              "user_id": "t2",
+              "start_from": "shop",
+              "home_address": "4 Elm St, Phoenix, AZ",
+              "home_latitude": 33.69,
+              "home_longitude": -112,
+              "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+            }
+          ]
+        },
+        {
+          "tech": "t2",
+          "date": "2026-10-21",
+          "index": 0,
+          "targetDay": [],
+          "fromDay": [],
+          "seesAll": true,
+          "userId": "t1",
+          "job": {
+            "id": "x",
+            "status": "scheduled",
+            "assigned_user_id": "t1",
+            "second_tech_id": null,
+            "scheduled_start": null,
+            "scheduled_end": null,
+            "route_order": null,
+            "arrival_fixed": false,
+            "property": {
+              "latitude": 33.7,
+              "longitude": -112
+            }
+          }
+        }
+      ],
+      "result": {
+        "updates": [
+          {
+            "id": "x",
+            "route_order": 1,
+            "scheduled_start": "2026-10-21T15:48:00.000Z",
+            "scheduled_end": "2026-10-21T18:18:00.000Z",
+            "assigned_user_id": "t2",
+            "status": "scheduled"
+          }
+        ],
+        "message": "Moved."
+      }
+    }
+  ],
+  "suggestTimes": [
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480
+        },
+        {
+          "location": {
+            "lat": 33.7,
+            "lng": -112
+          },
+          "durationMin": 60
+        },
+        [
+          {
+            "techId": "t1",
+            "techName": "Ana",
+            "date": "2026-10-21",
+            "jobs": []
+          },
+          {
+            "techId": "t2",
+            "techName": "Ben",
+            "date": "2026-10-21",
+            "jobs": []
+          }
+        ]
+      ],
+      "result": {
+        "suggestions": [
+          {
+            "date": "2026-10-21",
+            "techId": "t1",
+            "techName": "Ana",
+            "position": 0,
+            "startMin": 528,
+            "addedDriveMin": 96,
+            "driveInMin": 48,
+            "near": "only job that day",
+            "dayLabel": "Wed, Oct 21",
+            "timeLabel": "8:48 AM"
+          },
+          {
+            "date": "2026-10-21",
+            "techId": "t2",
+            "techName": "Ben",
+            "position": 0,
+            "startMin": 528,
+            "addedDriveMin": 96,
+            "driveInMin": 48,
+            "near": "only job that day",
+            "dayLabel": "Wed, Oct 21",
+            "timeLabel": "8:48 AM"
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        {
+          "timeZone": "America/Phoenix",
+          "settings": {
+            "dayStart": "08:00",
+            "dayEnd": "17:00",
+            "windowMin": 0,
+            "jobMinutes": 150,
+            "workDays": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "today": "2026-10-20",
+          "nowMin": 480,
+          "starts": [
+            {
+              "id": "s1",
+              "company_id": "c1",
+              "user_id": "t1",
+              "start_from": "home",
+              "home_address": "4 Elm St, Phoenix, AZ",
+              "home_latitude": 33.69,
+              "home_longitude": -112,
+              "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+            },
+            {
+              "id": "s2",
+              "company_id": "c1",
+              "user_id": "t2",
+              "start_from": "shop",
+              "home_address": "4 Elm St, Phoenix, AZ",
+              "home_latitude": 33.69,
+              "home_longitude": -112,
+              "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+            }
+          ]
+        },
+        {
+          "location": {
+            "lat": 33.7,
+            "lng": -112
+          },
+          "durationMin": 60
+        },
+        [
+          {
+            "techId": "t1",
+            "techName": "Ana",
+            "date": "2026-10-21",
+            "jobs": []
+          },
+          {
+            "techId": "t2",
+            "techName": "Ben",
+            "date": "2026-10-21",
+            "jobs": []
+          }
+        ]
+      ],
+      "result": {
+        "suggestions": [
+          {
+            "date": "2026-10-21",
+            "techId": "t1",
+            "techName": "Ana",
+            "position": 0,
+            "startMin": 485,
+            "addedDriveMin": 10,
+            "driveInMin": 5,
+            "near": "only job that day",
+            "dayLabel": "Wed, Oct 21",
+            "timeLabel": "8:05 AM"
+          },
+          {
+            "date": "2026-10-21",
+            "techId": "t2",
+            "techName": "Ben",
+            "position": 0,
+            "startMin": 528,
+            "addedDriveMin": 96,
+            "driveInMin": 48,
+            "near": "only job that day",
+            "dayLabel": "Wed, Oct 21",
+            "timeLabel": "8:48 AM"
+          }
+        ]
+      }
+    }
+  ],
+  "suggestSlots": [
+    {
+      "args": [
+        {
+          "location": {
+            "lat": 33.7,
+            "lng": -112
+          },
+          "durationMin": 60
+        },
+        [
+          {
+            "date": "2026-10-21",
+            "techId": "t1",
+            "techName": "Ana",
+            "stops": [],
+            "start": {
+              "lat": 33.69,
+              "lng": -112
+            }
+          },
+          {
+            "date": "2026-10-21",
+            "techId": "t2",
+            "techName": "Ben",
+            "stops": []
+          },
+          {
+            "date": "2026-10-21",
+            "techId": "t3",
+            "techName": "Cy",
+            "stops": [],
+            "start": null
+          }
+        ]
+      ],
+      "result": [
+        {
+          "date": "2026-10-21",
+          "techId": "t3",
+          "techName": "Cy",
+          "position": 0,
+          "startMin": 480,
+          "addedDriveMin": 0,
+          "driveInMin": 0,
+          "near": "only job that day"
+        },
+        {
+          "date": "2026-10-21",
+          "techId": "t1",
+          "techName": "Ana",
+          "position": 0,
+          "startMin": 485,
+          "addedDriveMin": 10,
+          "driveInMin": 5,
+          "near": "only job that day"
+        },
+        {
+          "date": "2026-10-21",
+          "techId": "t2",
+          "techName": "Ben",
+          "position": 0,
+          "startMin": 528,
+          "addedDriveMin": 96,
+          "driveInMin": 48,
+          "near": "only job that day"
+        }
+      ]
+    }
+  ],
+  "planWeek": [
+    {
+      "args": [
+        [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stays": []
+          }
+        ],
+        [
+          {
+            "id": "e",
+            "location": {
+              "lat": 33.4152,
+              "lng": -111.6315
+            },
+            "durationMin": 60,
+            "techId": null,
+            "date": null,
+            "techs": [
+              "t1"
+            ]
+          },
+          {
+            "id": "n",
+            "location": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "durationMin": 60,
+            "techId": null,
+            "date": null,
+            "techs": [
+              "t1"
+            ]
+          },
+          {
+            "id": "w",
+            "location": {
+              "lat": 33.45,
+              "lng": -112.07
+            },
+            "durationMin": 60,
+            "techId": null,
+            "date": null,
+            "techs": [
+              "t1"
+            ]
+          },
+          {
+            "id": "s",
+            "location": {
+              "lat": 33.3,
+              "lng": -111.9
+            },
+            "durationMin": 60,
+            "techId": null,
+            "date": null,
+            "techs": [
+              "t1"
+            ]
+          }
+        ]
+      ],
+      "result": {
+        "placed": [
+          {
+            "id": "e",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "n",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "s",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "w",
+            "techId": "t1",
+            "date": "2026-10-26"
+          }
+        ],
+        "unplaced": [],
+        "skipped": [],
+        "days": [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "s",
+                "location": {
+                  "lat": 33.3,
+                  "lng": -111.9
+                },
+                "durationMin": 60,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "w",
+                "location": {
+                  "lat": 33.45,
+                  "lng": -112.07
+                },
+                "durationMin": 60,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "n",
+                "location": {
+                  "lat": 33.7,
+                  "lng": -112
+                },
+                "durationMin": 60,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "e",
+                "location": {
+                  "lat": 33.4152,
+                  "lng": -111.6315
+                },
+                "durationMin": 60,
+                "fixedStartMin": null,
+                "earliestMin": null
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "s",
+                  "driveMin": 25,
+                  "arriveMin": 505,
+                  "startMin": 505,
+                  "endMin": 565,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "w",
+                  "driveMin": 35,
+                  "arriveMin": 600,
+                  "startMin": 600,
+                  "endMin": 660,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "n",
+                  "driveMin": 41,
+                  "arriveMin": 701,
+                  "startMin": 701,
+                  "endMin": 761,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "e",
+                  "driveMin": 60,
+                  "arriveMin": 821,
+                  "startMin": 821,
+                  "endMin": 881,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 191,
+              "backMin": 911,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          }
+        ],
+        "driveBefore": 0,
+        "driveAfter": 191,
+        "moved": 4,
+        "split": [
+          {
+            "techId": "t1",
+            "jobs": 4,
+            "minutes": 240
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stays": [],
+            "start": {
+              "lat": 33.69,
+              "lng": -112
+            }
+          }
+        ],
+        [
+          {
+            "id": "e",
+            "location": {
+              "lat": 33.4152,
+              "lng": -111.6315
+            },
+            "durationMin": 60,
+            "techId": null,
+            "date": null,
+            "techs": [
+              "t1"
+            ]
+          },
+          {
+            "id": "n",
+            "location": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "durationMin": 60,
+            "techId": null,
+            "date": null,
+            "techs": [
+              "t1"
+            ]
+          },
+          {
+            "id": "w",
+            "location": {
+              "lat": 33.45,
+              "lng": -112.07
+            },
+            "durationMin": 60,
+            "techId": null,
+            "date": null,
+            "techs": [
+              "t1"
+            ]
+          },
+          {
+            "id": "s",
+            "location": {
+              "lat": 33.3,
+              "lng": -111.9
+            },
+            "durationMin": 60,
+            "techId": null,
+            "date": null,
+            "techs": [
+              "t1"
+            ]
+          }
+        ]
+      ],
+      "result": {
+        "placed": [
+          {
+            "id": "e",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "n",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "s",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "w",
+            "techId": "t1",
+            "date": "2026-10-26"
+          }
+        ],
+        "unplaced": [],
+        "skipped": [],
+        "days": [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "e",
+                "location": {
+                  "lat": 33.4152,
+                  "lng": -111.6315
+                },
+                "durationMin": 60,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "s",
+                "location": {
+                  "lat": 33.3,
+                  "lng": -111.9
+                },
+                "durationMin": 60,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "w",
+                "location": {
+                  "lat": 33.45,
+                  "lng": -112.07
+                },
+                "durationMin": 60,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "n",
+                "location": {
+                  "lat": 33.7,
+                  "lng": -112
+                },
+                "durationMin": 60,
+                "fixedStartMin": null,
+                "earliestMin": null
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "e",
+                  "driveMin": 59,
+                  "arriveMin": 539,
+                  "startMin": 539,
+                  "endMin": 599,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "s",
+                  "driveMin": 40,
+                  "arriveMin": 639,
+                  "startMin": 639,
+                  "endMin": 699,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "w",
+                  "driveMin": 35,
+                  "arriveMin": 734,
+                  "startMin": 734,
+                  "endMin": 794,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "n",
+                  "driveMin": 41,
+                  "arriveMin": 835,
+                  "startMin": 835,
+                  "endMin": 895,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 180,
+              "backMin": 900,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          }
+        ],
+        "driveBefore": 0,
+        "driveAfter": 180,
+        "moved": 4,
+        "split": [
+          {
+            "techId": "t1",
+            "jobs": 4,
+            "minutes": 240
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stays": [],
+            "start": {
+              "lat": 33.69,
+              "lng": -112
+            }
+          },
+          {
+            "techId": "t2",
+            "date": "2026-10-26",
+            "stays": []
+          }
+        ],
+        [
+          {
+            "id": "n1",
+            "location": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "durationMin": 60,
+            "techId": null,
+            "date": null,
+            "techs": [
+              "t1",
+              "t2"
+            ]
+          },
+          {
+            "id": "n2",
+            "location": {
+              "lat": 33.68,
+              "lng": -112.01
+            },
+            "durationMin": 60,
+            "techId": null,
+            "date": null,
+            "techs": [
+              "t1",
+              "t2"
+            ]
+          },
+          {
+            "id": "s",
+            "location": {
+              "lat": 33.3,
+              "lng": -111.9
+            },
+            "durationMin": 60,
+            "techId": null,
+            "date": null,
+            "techs": [
+              "t1",
+              "t2"
+            ]
+          },
+          {
+            "id": "near",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 60,
+            "techId": null,
+            "date": null,
+            "techs": [
+              "t1",
+              "t2"
+            ]
+          }
+        ],
+        false
+      ],
+      "result": {
+        "placed": [
+          {
+            "id": "n1",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "n2",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "near",
+            "techId": "t2",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "s",
+            "techId": "t2",
+            "date": "2026-10-26"
+          }
+        ],
+        "unplaced": [],
+        "skipped": [],
+        "days": [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "n2",
+                "location": {
+                  "lat": 33.68,
+                  "lng": -112.01
+                },
+                "durationMin": 60,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "n1",
+                "location": {
+                  "lat": 33.7,
+                  "lng": -112
+                },
+                "durationMin": 60,
+                "fixedStartMin": null,
+                "earliestMin": null
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "n2",
+                  "driveMin": 6,
+                  "arriveMin": 486,
+                  "startMin": 486,
+                  "endMin": 546,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "n1",
+                  "driveMin": 8,
+                  "arriveMin": 554,
+                  "startMin": 554,
+                  "endMin": 614,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 19,
+              "backMin": 619,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          },
+          {
+            "techId": "t2",
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "near",
+                "location": {
+                  "lat": 33.4252,
+                  "lng": -111.8315
+                },
+                "durationMin": 60,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "s",
+                "location": {
+                  "lat": 33.3,
+                  "lng": -111.9
+                },
+                "durationMin": 60,
+                "fixedStartMin": null,
+                "earliestMin": null
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "near",
+                  "driveMin": 5,
+                  "arriveMin": 485,
+                  "startMin": 485,
+                  "endMin": 545,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "s",
+                  "driveMin": 27,
+                  "arriveMin": 572,
+                  "startMin": 572,
+                  "endMin": 632,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 57,
+              "backMin": 657,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          }
+        ],
+        "driveBefore": 0,
+        "driveAfter": 76,
+        "moved": 4,
+        "split": [
+          {
+            "techId": "t1",
+            "jobs": 2,
+            "minutes": 120
+          },
+          {
+            "techId": "t2",
+            "jobs": 2,
+            "minutes": 120
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stays": [],
+            "start": {
+              "lat": 33.69,
+              "lng": -112
+            }
+          },
+          {
+            "techId": "t2",
+            "date": "2026-10-26",
+            "stays": []
+          }
+        ],
+        [
+          {
+            "id": "n1",
+            "location": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "durationMin": 60,
+            "techId": null,
+            "date": null,
+            "techs": [
+              "t1",
+              "t2"
+            ]
+          },
+          {
+            "id": "n2",
+            "location": {
+              "lat": 33.68,
+              "lng": -112.01
+            },
+            "durationMin": 60,
+            "techId": null,
+            "date": null,
+            "techs": [
+              "t1",
+              "t2"
+            ]
+          },
+          {
+            "id": "s",
+            "location": {
+              "lat": 33.3,
+              "lng": -111.9
+            },
+            "durationMin": 60,
+            "techId": null,
+            "date": null,
+            "techs": [
+              "t1",
+              "t2"
+            ]
+          },
+          {
+            "id": "near",
+            "location": {
+              "lat": 33.4252,
+              "lng": -111.8315
+            },
+            "durationMin": 60,
+            "techId": null,
+            "date": null,
+            "techs": [
+              "t1",
+              "t2"
+            ]
+          }
+        ],
+        true
+      ],
+      "result": {
+        "placed": [
+          {
+            "id": "n1",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "n2",
+            "techId": "t2",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "near",
+            "techId": "t1",
+            "date": "2026-10-26"
+          },
+          {
+            "id": "s",
+            "techId": "t2",
+            "date": "2026-10-26"
+          }
+        ],
+        "unplaced": [],
+        "skipped": [],
+        "days": [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "near",
+                "location": {
+                  "lat": 33.4252,
+                  "lng": -111.8315
+                },
+                "durationMin": 60,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "n1",
+                "location": {
+                  "lat": 33.7,
+                  "lng": -112
+                },
+                "durationMin": 60,
+                "fixedStartMin": null,
+                "earliestMin": null
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "near",
+                  "driveMin": 46,
+                  "arriveMin": 526,
+                  "startMin": 526,
+                  "endMin": 586,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "n1",
+                  "driveMin": 47,
+                  "arriveMin": 633,
+                  "startMin": 633,
+                  "endMin": 693,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 98,
+              "backMin": 698,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          },
+          {
+            "techId": "t2",
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "s",
+                "location": {
+                  "lat": 33.3,
+                  "lng": -111.9
+                },
+                "durationMin": 60,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "n2",
+                "location": {
+                  "lat": 33.68,
+                  "lng": -112.01
+                },
+                "durationMin": 60,
+                "fixedStartMin": null,
+                "earliestMin": null
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "s",
+                  "driveMin": 25,
+                  "arriveMin": 505,
+                  "startMin": 505,
+                  "endMin": 565,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "n2",
+                  "driveMin": 57,
+                  "arriveMin": 622,
+                  "startMin": 622,
+                  "endMin": 682,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 128,
+              "backMin": 728,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          }
+        ],
+        "driveBefore": 0,
+        "driveAfter": 226,
+        "moved": 4,
+        "split": [
+          {
+            "techId": "t1",
+            "jobs": 2,
+            "minutes": 120
+          },
+          {
+            "techId": "t2",
+            "jobs": 2,
+            "minutes": 120
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stays": [
+              {
+                "id": "kept",
+                "location": {
+                  "lat": 33.4252,
+                  "lng": -111.8315
+                },
+                "durationMin": 60
+              }
+            ],
+            "start": {
+              "lat": 33.69,
+              "lng": -112
+            }
+          }
+        ],
+        [
+          {
+            "id": "n",
+            "location": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "durationMin": 60,
+            "techId": null,
+            "date": null,
+            "techs": [
+              "t1"
+            ]
+          }
+        ]
+      ],
+      "result": {
+        "placed": [
+          {
+            "id": "n",
+            "techId": "t1",
+            "date": "2026-10-26"
+          }
+        ],
+        "unplaced": [],
+        "skipped": [],
+        "days": [
+          {
+            "techId": "t1",
+            "date": "2026-10-26",
+            "stops": [
+              {
+                "id": "n",
+                "location": {
+                  "lat": 33.7,
+                  "lng": -112
+                },
+                "durationMin": 60,
+                "fixedStartMin": null,
+                "earliestMin": null
+              },
+              {
+                "id": "kept",
+                "location": {
+                  "lat": 33.4252,
+                  "lng": -111.8315
+                },
+                "durationMin": 60
+              }
+            ],
+            "route": {
+              "stops": [
+                {
+                  "id": "n",
+                  "driveMin": 5,
+                  "arriveMin": 485,
+                  "startMin": 485,
+                  "endMin": 545,
+                  "lateMin": 0,
+                  "unlocated": false
+                },
+                {
+                  "id": "kept",
+                  "driveMin": 47,
+                  "arriveMin": 592,
+                  "startMin": 592,
+                  "endMin": 652,
+                  "lateMin": 0,
+                  "unlocated": false
+                }
+              ],
+              "driveMin": 98,
+              "backMin": 698,
+              "overtimeMin": 0,
+              "lateMin": 0
+            }
+          }
+        ],
+        "driveBefore": 92,
+        "driveAfter": 98,
+        "moved": 1,
+        "split": [
+          {
+            "techId": "t1",
+            "jobs": 1,
+            "minutes": 60
+          }
+        ]
+      }
+    }
+  ],
+  "suggestServiceDays": [
+    {
+      "args": [
+        {
+          "place": [
+            {
+              "id": "p1",
+              "techId": null,
+              "days": [],
+              "location": {
+                "lat": 33.7,
+                "lng": -112
+              },
+              "durationMin": 60
+            }
+          ],
+          "keep": [],
+          "techs": [
+            "t1",
+            "t2"
+          ],
+          "workDays": [
+            1
+          ],
+          "depot": {
+            "lat": 33.3,
+            "lng": -111.9
+          },
+          "starts": null,
+          "day": {
+            "startMin": 480,
+            "endMin": 1020
+          }
+        }
+      ],
+      "result": {
+        "suggestions": [
+          {
+            "id": "p1",
+            "techId": "t1",
+            "day": 1
+          }
+        ],
+        "left": []
+      }
+    },
+    {
+      "args": [
+        {
+          "place": [
+            {
+              "id": "p1",
+              "techId": null,
+              "days": [],
+              "location": {
+                "lat": 33.7,
+                "lng": -112
+              },
+              "durationMin": 60
+            }
+          ],
+          "keep": [],
+          "techs": [
+            "t1",
+            "t2"
+          ],
+          "workDays": [
+            1
+          ],
+          "depot": {
+            "lat": 33.3,
+            "lng": -111.9
+          },
+          "starts": [
+            {
+              "id": "s1",
+              "company_id": "c1",
+              "user_id": "t2",
+              "start_from": "home",
+              "home_address": "4 Elm St, Phoenix, AZ",
+              "home_latitude": 33.69,
+              "home_longitude": -112,
+              "home_geocoded_address": "4 Elm St, Phoenix, AZ"
+            }
+          ],
+          "day": {
+            "startMin": 480,
+            "endMin": 1020
+          }
+        }
+      ],
+      "result": {
+        "suggestions": [
+          {
+            "id": "p1",
+            "techId": "t2",
+            "day": 1
+          }
+        ],
+        "left": []
+      }
+    }
+  ],
+  "dayMapPins": [
+    {
+      "args": [
+        {
+          "stops": [
+            {
+              "id": "a",
+              "location": {
+                "lat": 33.7,
+                "lng": -112
+              },
+              "done": false
+            }
+          ],
+          "depot": {
+            "lat": 33.69,
+            "lng": -112
+          },
+          "startLabel": "home"
+        }
+      ],
+      "result": {
+        "pins": [
+          {
+            "label": "",
+            "at": {
+              "lat": 33.69,
+              "lng": -112
+            },
+            "tone": "shop",
+            "id": null,
+            "home": true
+          },
+          {
+            "label": "1",
+            "at": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "tone": "todo",
+            "id": "a"
+          }
+        ],
+        "missing": 0
+      }
+    },
+    {
+      "args": [
+        {
+          "stops": [
+            {
+              "id": "a",
+              "location": {
+                "lat": 33.7,
+                "lng": -112
+              },
+              "done": false
+            }
+          ],
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "startLabel": "shop"
+        }
+      ],
+      "result": {
+        "pins": [
+          {
+            "label": "",
+            "at": {
+              "lat": 33.4152,
+              "lng": -111.8315
+            },
+            "tone": "shop",
+            "id": null
+          },
+          {
+            "label": "1",
+            "at": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "tone": "todo",
+            "id": "a"
+          }
+        ],
+        "missing": 0
+      }
+    },
+    {
+      "args": [
+        {
+          "stops": [],
+          "depot": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          },
+          "startLabel": null
+        }
+      ],
+      "result": {
+        "pins": [
+          {
+            "label": "",
+            "at": {
+              "lat": 33.4152,
+              "lng": -111.8315
+            },
+            "tone": "shop",
+            "id": null
+          }
+        ],
+        "missing": 0
+      }
+    },
+    {
+      "args": [
+        {
+          "stops": [
+            {
+              "id": "a",
+              "location": {
+                "lat": 33.7,
+                "lng": -112
+              },
+              "done": true
+            }
+          ],
+          "depot": null,
+          "startLabel": "home"
+        }
+      ],
+      "result": {
+        "pins": [
+          {
+            "label": "1",
+            "at": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "tone": "done",
+            "id": "a"
+          }
+        ],
+        "missing": 0
+      }
+    }
+  ],
+  "encodePins": [
+    {
+      "args": [
+        [
+          {
+            "label": "",
+            "at": {
+              "lat": 33.69,
+              "lng": -112
+            },
+            "tone": "shop",
+            "id": null,
+            "home": true
+          },
+          {
+            "label": "1",
+            "at": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "tone": "todo",
+            "id": "a"
+          }
+        ]
+      ],
+      "result": "h:33.69000,-112.00000;t1:33.70000,-112.00000"
+    },
+    {
+      "args": [
+        [
+          {
+            "label": "1",
+            "at": {
+              "lat": 33.7,
+              "lng": -112
+            },
+            "tone": "todo",
+            "id": "a",
+            "home": true
+          }
+        ]
+      ],
+      "result": "t1:33.70000,-112.00000"
+    }
+  ],
+  "decodePins": [
+    {
+      "args": [
+        "h:33.69000,-112.00000;t1:33.7,-112"
+      ],
+      "result": [
+        {
+          "tone": "shop",
+          "label": "",
+          "at": {
+            "lat": 33.69,
+            "lng": -112
+          },
+          "home": true
+        },
+        {
+          "tone": "todo",
+          "label": "1",
+          "at": {
+            "lat": 33.7,
+            "lng": -112
+          }
+        }
+      ]
+    },
+    {
+      "args": [
+        "s:33.4152,-111.8315;h:33.69,-112"
+      ],
+      "result": [
+        {
+          "tone": "shop",
+          "label": "",
+          "at": {
+            "lat": 33.4152,
+            "lng": -111.8315
+          }
+        },
+        {
+          "tone": "shop",
+          "label": "",
+          "at": {
+            "lat": 33.69,
+            "lng": -112
+          },
+          "home": true
+        }
+      ]
+    },
+    {
+      "args": [
+        "h1:33.69,-112"
+      ],
+      "result": null
+    },
+    {
+      "args": [
+        "H:33.69,-112"
+      ],
+      "result": null
+    }
+  ]
+}

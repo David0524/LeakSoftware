@@ -6,6 +6,7 @@
 import { addDays } from "./office";
 import { upcomingVisitDates, planRepeat, type ServicePlan } from "./maintenance";
 import type { DriveFn, LatLng, WorkDay } from "./routing";
+import { startFor, type MemberStartFields } from "./route-start";
 import { planWeek } from "./week-plan";
 
 type PlanShape = Pick<
@@ -90,6 +91,8 @@ export function suggestServiceDays(input: {
   techs: string[];
   workDays: number[];
   depot: LatLng | null;
+  /** The shop's member_start rows: each tech's days start and end at their start (startFor). */
+  starts?: readonly (MemberStartFields & { user_id: string })[] | null;
   day: WorkDay;
   drive: DriveFn;
 }): { suggestions: DaySuggestion[]; left: string[] } {
@@ -97,6 +100,7 @@ export function suggestServiceDays(input: {
     input.workDays.map((d) => ({
       techId,
       date: String(d),
+      start: startFor(techId, input.starts, input.depot).at,
       stays: input.keep
         .filter((p) => p.techId === techId && p.days.includes(d))
         .map((p) => ({ id: p.id, location: p.location, durationMin: p.durationMin })),

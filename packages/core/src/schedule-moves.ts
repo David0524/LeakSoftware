@@ -35,12 +35,22 @@ import {
   type SlotSuggestion,
   type TechDay,
 } from "./routing";
+import { startFor, type MemberStartFields } from "./route-start";
+
+/** Where this tech's routes start and end in this context. */
+const startOf = (ctx: PlanContext, techId: string | null | undefined) =>
+  startFor(techId, ctx.starts, ctx.depot).at;
 
 export interface PlanContext {
   timeZone: string;
   settings: RoutingSettings;
-  /** The shop, where routes start and end. */
+  /** The shop, where routes start and end unless a tech starts from home (`starts`). */
   depot: LatLng | null;
+  /**
+   * The shop's member_start rows this person can read (their own, or everyone's for owners and
+   * admins). Each tech's day starts and ends at startFor(techId, starts, depot).
+   */
+  starts?: readonly (MemberStartFields & { user_id: string })[] | null;
   /** The shop's today ("2026-10-19") and minutes after midnight now. */
   today: string;
   nowMin: number;
@@ -102,8 +112,9 @@ export function planDay(
   if (jobs.length === 0) return { updates: [], error: "Nothing scheduled for this tech that day." };
   const stops = dayStops(ctx, techId, date, jobs);
   const hours = workDay(ctx.settings);
-  const before = timeRoute(stops, ctx.depot, hours, drive);
-  const { order, route } = optimizeRoute(stops, ctx.depot, hours, drive);
+  const start = startOf(ctx, techId);
+  const before = timeRoute(stops, start, hours, drive);
+  const { order, route } = optimizeRoute(stops, start, hours, drive);
   const planned = order.map((i) => stops[i]!);
   const updates = routeUpdates(date, ctx.timeZone, planned, route);
   const saved = before.driveMin - route.driveMin;
@@ -115,7 +126,7 @@ export function planDay(
   ].join(" · ");
   const detail = noteSentences([
     stops.some((s) => !s.location) ? "driving to pools not on the map isn’t counted" : null,
-    !ctx.depot ? "the shop has no location (Settings › Scheduling)" : null,
+    !start ? "the shop has no location (Settings › Scheduling)" : null,
   ]);
   return detail ? { updates, message, detail } : { updates, message };
 }
@@ -242,7 +253,7 @@ export function moveJobChange(ctx: PlanContext, input: MoveInput, drive: DriveFn
     Math.min(Number.isInteger(input.index) ? input.index : others.length, others.length),
   );
   stops.splice(index, 0, moved);
-  const route = timeRoute(stops, ctx.depot, workDay(ctx.settings), drive);
+  const route = timeRoute(stops, startOf(ctx, tech), workDay(ctx.settings), drive);
   const updates: JobChange[] = routeUpdates(date, ctx.timeZone, stops, route);
   const mine = updates.find((u) => u.id === job.id)!;
   mine.assigned_user_id = tech;
@@ -444,6 +455,7 @@ export function suggestTimes(
       stops,
       labels: Object.fromEntries(jobs.map((j) => [j.id, j.label ?? "the job before"])),
       notBeforeMin: r.date === ctx.today ? ctx.nowMin : null,
+      start: startOf(ctx, r.techId),
     };
   });
   const found = suggestSlots(

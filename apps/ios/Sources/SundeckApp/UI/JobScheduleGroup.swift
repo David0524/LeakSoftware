@@ -68,7 +68,7 @@
                 let ctx = scheduleContext(sync.store, company: company, userId: user.id)
                 drive = await cachedDriveTimes(
                     app, companyId: company.id,
-                    keys: routePoints(scheduleJobs(sync.store, companyId: company.id), depot: ctx.depot))
+                    keys: routePoints(scheduleJobs(sync.store, companyId: company.id), starts: ctx.startPoints))
             }
             .sheet(item: $moving) { target in
                 if let board {
@@ -254,7 +254,7 @@
                 let ctx = scheduleContext(sync.store, company: company, userId: user.id)
                 drive = await cachedDriveTimes(
                     app, companyId: company.id,
-                    keys: routePoints(scheduleJobs(sync.store, companyId: company.id), depot: ctx.depot))
+                    keys: routePoints(scheduleJobs(sync.store, companyId: company.id), starts: ctx.startPoints))
                 board = Board(
                     store: sync.store, kv: sync.kv, company: company, userId: user.id, view: .day,
                     date: start.map { localDay($0, timeZone: company.timeZone) }, tech: nil, drive: drive)

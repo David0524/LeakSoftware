@@ -93,7 +93,9 @@
                 let store = sync.store
                 let (zip, keys) = await Task.detached(priority: .utility) {
                     let ctx = scheduleContext(store, company: company, userId: user.id)
-                    return (ctx.shopZip, routePoints(scheduleJobs(store, companyId: company.id), depot: ctx.depot))
+                    return (
+                        ctx.shopZip, routePoints(scheduleJobs(store, companyId: company.id), starts: ctx.startPoints)
+                    )
                 }.value
                 async let w = app.api.weather(zip: zip)
                 drive = await cachedDriveTimes(app, companyId: company.id, keys: keys)
@@ -210,7 +212,8 @@
                     }
                     ForEach(left, id: \.element.id) { i, job in
                         LegLine(
-                            minutes: route.summary.legs[routeIndex: i] ?? 0, label: i == 0 ? "from the shop" : "drive",
+                            minutes: route.summary.legs[routeIndex: i] ?? 0,
+                            label: i == 0 ? startLegLabel(day.startLabel) : "drive",
                             short: route.summary.short[routeIndex: i] ?? 0, inset: 16)
                         TodayStopCard(
                             number: i + 1, job: job, day: day, leg: route.summary.legs[routeIndex: i] ?? 0,
@@ -218,7 +221,7 @@
                         )
                         .equatable()
                     }
-                    LegLine(minutes: route.summary.backLegMin, label: "back to the shop", short: 0, inset: 16)
+                    LegLine(minutes: route.summary.backLegMin, label: backLegLabel(day.startLabel), short: 0, inset: 16)
                 }
             } else {
                 EmptyState(
@@ -228,7 +231,7 @@
             }
         }
 
-        /// "6 stops · 1 hr 15 min driving · back by 3:14 PM · Reorder" (Done while reordering), and
+        /// "6 stops · 1 hr 15 min driving · Reorder" (Done while reordering), and
         /// the last move's message under it.
         private func summaryLine(_ day: TodayDay) -> some View {
             let button = reordering || day.reorderable
@@ -278,7 +281,8 @@
                         let lock = day.lock(job)
                         TodayReorderRow(
                             number: i + 1, job: job, timeZone: day.ctx.timeZone,
-                            leg: route.summary.legs[routeIndex: i] ?? 0, first: i == 0, lock: lock,
+                            leg: route.summary.legs[routeIndex: i] ?? 0, first: i == 0, start: day.startLabel,
+                            lock: lock,
                             canUp: day.canPlace(job, .up), canDown: day.canPlace(job, .down)
                         ) { place in
                             moveStop(job, place, from: .reorder)
@@ -291,7 +295,7 @@
                         moveStop(stops[first].element, .place(to > first ? to - 1 : to), from: .reorder)
                     }
                 } footer: {
-                    Text(verbatim: "\(durationLabel(route.summary.backLegMin)) back to the shop")
+                    Text(verbatim: "\(durationLabel(route.summary.backLegMin)) \(backLegLabel(day.startLabel))")
                         .textRole(.secondary)
                         .foregroundStyle(Color.textMuted)
                 }
@@ -456,7 +460,10 @@
             return route?.jobs.first { $0.id == id }
         }
 
-        /// The drive to a stop, from the shop or the stop before it.
+        /// Where this day starts and ends: home for someone who starts there, else the shop.
+        var startLabel: RouteStartLabel { ctx.start(for: techId).label }
+
+        /// The drive to a stop, from the day's start or the stop before it.
         func leg(_ job: ScheduleJob) -> Int {
             guard let route, let i = route.jobs.firstIndex(where: { $0.id == job.id }) else { return 0 }
             return route.summary.legs[routeIndex: i] ?? 0
@@ -465,7 +472,7 @@
         var directions: URL? {
             guard let route, !route.jobs.isEmpty else { return nil }
             return dayDirections(
-                app: mapsApp, origin: ctx.origin,
+                app: mapsApp, origin: ctx.origin(for: techId),
                 stops: route.jobs.map { (place: $0.place, done: $0.doneOn(ctx.today)) })
         }
 
@@ -487,12 +494,15 @@
             (route?.jobs ?? []).contains { canPlace($0, .later) || canPlace($0, .up) }
         }
 
-        /// "3 stops · 1 hr 20 min driving · back by 4:30 PM"
+        /// "3 stops · 1 hr 20 min driving" (no clock times, owner 2026-10-21)
         var summaryText: String {
             guard let route else { return "" }
             let n = route.jobs.count
-            return "\(n) \(n == 1 ? "stop" : "stops") · \(durationLabel(route.summary.driveMin)) driving"
-                + (route.summary.backMin.map { " · back by \(minutesLabel($0))" } ?? "")
+            // Someone who starts from home: their day's driving is counted from there.
+            return [
+                "\(n) \(n == 1 ? "stop" : "stops")", "\(durationLabel(route.summary.driveMin)) driving",
+                startLabel == .home ? startLegLabel(.home) : nil,
+            ].compactMap { $0 }.joined(separator: " · ")
         }
     }
 
@@ -522,7 +532,10 @@
                 && a.undoShown == b.undoShown
         }
         @State private var open: Bool?
+        /// Message's text from the phone, addressed to the customer (`StopText`).
+        @State private var phoneText: ComposeText?
         @Environment(AppEnvironment.self) private var app
+        @Environment(Session.self) private var session
         @Environment(\.openRoute) private var openRoute
         @Environment(\.openURL) private var openURL
         @Environment(SyncService.self) private var sync
@@ -544,6 +557,7 @@
             }
             // Touch and hold: Call, Message, Directions, Open (gestures spec section 5).
             .contextMenu { menu(done: done) }
+            .composeTextSheet($phoneText)
             .onChange(of: app.stopRequest, initial: true) { _, request in
                 guard let request, request.jobId == job.id else { return }
                 open = true
@@ -600,9 +614,7 @@
         @ViewBuilder private func menu(done: Bool) -> some View {
             if let phone = job.customerPhone {
                 Button("Call", systemImage: "phone") { call(phone) }
-                Button("Message", systemImage: "message") {
-                    if let url = OnMyWay.smsURL(phone, body: nil) { openURL(url) }
-                }
+                Button("Message", systemImage: "message") { message(phone) }
             }
             if !job.address.isEmpty {
                 Button("Directions", systemImage: "location") { directions() }
@@ -611,6 +623,18 @@
                 Button(TodayReorderText.doLater, systemImage: "clock.arrow.circlepath") { moves.doLater(job, .row) }
             }
             Button("Open Job", systemImage: "arrow.up.right") { openRoute(.job(job.id)) }
+        }
+
+        /// A blank text to this stop's customer, as the card's Message (`StopTextRoute`): their
+        /// conversation or New Message to them from the company number, else from the phone.
+        private func message(_ phone: String) {
+            guard let company = session.company else { return }
+            guard
+                let route = StopTextRoute.decide(
+                    lineActive: day.lineActive, customerId: job.customerId, phone: phone,
+                    conversations: day.lineActive ? conversations(sync.store, companyId: company.id) : [])
+            else { return }
+            StopText.open(route, openRoute: openRoute, openURL: openURL) { phoneText = $0 }
         }
 
         private func call(_ phone: String) {

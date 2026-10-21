@@ -118,8 +118,8 @@ public struct ServiceDaySuggestions: Codable, Equatable, Sendable {
 /// rest of each tech's plans stay on their days and count toward them. Nothing is saved: the
 /// owner presses Keep.
 public func suggestServiceDays(
-    place: [RoutePlan], keep: [RoutePlan], techs: [String], workDays: [Int], depot: LatLng?, day: WorkDay,
-    drive: DriveFn
+    place: [RoutePlan], keep: [RoutePlan], techs: [String], workDays: [Int], depot: LatLng?,
+    starts: [MemberStart]? = nil, day: WorkDay, drive: DriveFn
 ) -> ServiceDaySuggestions {
     let days = techs.flatMap { techId in
         workDays.map { d in
@@ -127,7 +127,7 @@ public func suggestServiceDays(
                 techId: techId, date: String(d),
                 stays: keep.filter { $0.techId == techId && $0.days.contains(d) }.map {
                     RouteStop(id: $0.id, location: $0.location, durationMin: $0.durationMin)
-                })
+                }, start: .some(startFor(techId, starts, shop: depot).at))
         }
     }
     let movable = place.filter { $0.days.count <= 1 && $0.location != nil }

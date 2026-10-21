@@ -642,6 +642,44 @@ export interface Landmark {
    * that's the same both ways across (LANDMARKS' `mirror`; owner, 2026-10-20, the steps).
    */
   flip?: boolean;
+  /**
+   * Quarter turns clockwise, 1 to 3 (a tap on the selected steps; owner, 2026-10-21: "Step
+   * landmark should rotate all 4 directions on tap. No mirror necessary").
+   */
+  turn?: 1 | 2 | 3;
+}
+
+/**
+ * A tap on the selected landmark: the steps and the waterfall turn a quarter clockwise (up,
+ * right, down, left); the others mirror.
+ */
+export function tapLandmark(l: Landmark): Landmark {
+  const { flip: _flip, turn: _turn, ...rest } = l;
+  void _flip;
+  void _turn;
+  if (landmarkTaps(l.kind) === "turn") {
+    const next = (landmarkTurn(l) + 1) % 4;
+    return next ? { ...rest, turn: next as 1 | 2 | 3 } : rest;
+  }
+  return l.flip ? rest : { ...rest, flip: true };
+}
+
+/**
+ * What a tap on the selected landmark does: "turn" (the steps and the waterfall; owner,
+ * 2026-10-21: "Waterfall 4 way rotate, no mirror") or "mirror".
+ */
+export function landmarkTaps(kind: LandmarkKind): "turn" | "mirror" {
+  return kind === "steps" || kind === "waterfall" ? "turn" : "mirror";
+}
+
+/**
+ * A landmark's quarter turns clockwise, 0 to 3. Saved flipped before turning: the steps (turned
+ * top to bottom) count as 2; the waterfall (mirrored left to right, the same drawing) as 0.
+ */
+export function landmarkTurn(l: Pick<Landmark, "kind" | "flip" | "turn">): number {
+  if (landmarkTaps(l.kind) !== "turn") return 0;
+  if (l.turn === 1 || l.turn === 2 || l.turn === 3) return l.turn;
+  return l.flip === true && l.kind === "steps" ? 2 : 0;
 }
 
 /**
@@ -727,7 +765,7 @@ export const LANDMARKS: {
   {
     key: "steps",
     label: "Steps",
-    // The same both ways across, so a tap turns them top to bottom.
+    // A tap turns them a quarter (tapLandmark); never mirrored.
     mirror: "y",
     parts: [
       { d: "M2.5 15.5 H21.5 V21.5 H2.5 Z", tone: "concrete" },
@@ -799,6 +837,8 @@ export interface PoolDiagram {
     size: number;
     flip: boolean;
     mirror: "x" | "y";
+    /** Quarter turns clockwise about cx, cy, applied around the box above: rotate(90 × turn). */
+    turn: number;
     parts: LandmarkPart[];
   }[];
 }
@@ -999,7 +1039,8 @@ export function parseDiagramLayout(value: unknown): DiagramLayout {
         ...(typeof l.s === "number" && l.s >= LANDMARK_MIN && l.s <= LANDMARK_MAX
           ? { s: l.s }
           : {}),
-        ...(l.flip === true ? { flip: true } : {}),
+        ...(l.flip === true && landmarkTaps(l.kind) === "mirror" ? { flip: true } : {}),
+        ...(landmarkTurn(l) ? { turn: landmarkTurn(l) as 1 | 2 | 3 } : {}),
       }))
       .slice(0, LANDMARKS_MAX);
     if (landmarks.length) layout.landmarks = landmarks;
@@ -1136,8 +1177,9 @@ export function poolDiagram(
         cx: Math.min(DIAGRAM_WIDTH - half, Math.max(half, l.x * DIAGRAM_WIDTH)),
         cy: Math.min(DIAGRAM_HEIGHT - half, Math.max(half, l.y * DIAGRAM_HEIGHT)),
         size,
-        flip: l.flip === true,
+        flip: l.flip === true && landmarkTaps(l.kind) === "mirror",
         mirror: LANDMARKS.find((k) => k.key === l.kind)!.mirror ?? "x",
+        turn: landmarkTurn(l),
         parts: LANDMARKS.find((k) => k.key === l.kind)!.parts,
       };
     }),

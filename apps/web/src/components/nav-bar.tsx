@@ -1,7 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { Logo } from "./logo";
+
+/** The phone tab bar's pages. Their bars carry the logo at the left; pushed pages keep Back. */
+const TAB_ROOTS = ["/today", "/jobs", "/schedule", "/messages", "/more"];
+/**
+ * Room the large title leaves for the logo in the bar's row: the logo (24 tall, 102 wide) and
+ * 8 px, both starting 16 from the edge. globals.css applies it before the page is interactive.
+ */
+const BRAND_LEAD = 110;
 
 // Local helper: ui.tsx renders NavBar, so importing from it here would be circular.
 const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(" ");
@@ -34,13 +44,16 @@ export function useStillNavBar(on: boolean) {
 /**
  * Phones: the iOS navigation bar (toolbars.md › large titles). The page's large title sits in
  * the content; once it scrolls under the bar, a small centered title fades in on a frosted
- * bar. Back sits on the left ("‹ Jobs") and the page's main action on the right.
+ * bar. Back sits on the left ("‹ Jobs") and the page's main action on the right. The tab bar's
+ * own pages (Today, Jobs, Schedule, Messages, More) show the logo there instead (owner,
+ * 2026-10-21: "Incorporate this logo with the text in the top left of each main page").
  *
  * Without Back (the tab roots), the large title sits in the bar's row, left of the action, as
  * in Apple's App Store and Music (owner, 2026-10-20: "push up towards where the plus button
- * is"). The bar sets `--nav-action` on the title to the action's width, so a long or enlarged
- * title wraps between words before it reaches the "+"; when one of its words is wider than the
- * room left (very large text), the title moves to its own row under the bar instead.
+ * is"), and right of the logo on the tab bar's pages. The bar sets `--nav-action` on the title
+ * to the action's width, so a long or enlarged title wraps between words before it reaches the
+ * "+"; when one of its words is wider than the room left (very large text), the title moves to
+ * its own row under the bar instead.
  */
 export function NavBar({
   title,
@@ -84,13 +97,17 @@ export function NavBar({
     return () => io.disconnect();
   }, [titleId, inline]);
   const collapsed = past && !still;
+  const path = usePathname();
+  const brand = !back && TAB_ROOTS.includes(path);
   useEffect(() => {
     const el = document.getElementById(titleId);
     const row = el?.closest<HTMLElement>("[data-page-header]");
     const action = actionRef.current;
     if (back || !el || !row || !action) return;
+    const lead = brand ? BRAND_LEAD : 0;
     const measure = () => {
-      const room = (el.parentElement ?? el).clientWidth - action.getBoundingClientRect().width;
+      const room =
+        (el.parentElement ?? el).clientWidth - action.getBoundingClientRect().width - lead;
       const words = [...el.children].map((w) => w.getBoundingClientRect().width);
       const stack = Math.max(0, ...words) > room;
       setStacked(stack);
@@ -109,10 +126,11 @@ export function NavBar({
       row.removeAttribute("data-stacked");
       el.style.removeProperty("--nav-action");
     };
-  }, [titleId, back]);
+  }, [titleId, back, brand]);
 
   return (
     <div
+      data-nav-brand={brand ? "" : undefined}
       className={cx(
         "nav-main fixed inset-x-0 top-0 z-30 pt-[env(safe-area-inset-top)] transition-colors sm:hidden",
         collapsed ? "glass-bar" : "bg-transparent",
@@ -145,6 +163,12 @@ export function NavBar({
               </svg>
               <span className="truncate @max-[3.5em]:hidden">{back.label}</span>
             </Link>
+          ) : brand ? (
+            // 24 pt tall like the leading brand in Apple's own apps; the light or reverse
+            // lockup follows the website's appearance. Read once as "Sundeck Pro".
+            <span className="flex h-11 items-center pl-2">
+              <Logo height={24} />
+            </span>
           ) : null}
         </div>
         <p
@@ -154,8 +178,13 @@ export function NavBar({
             // (owner, 2026-10-20: "'Schedule' has different fonts depending on if the map is
             // hidden or not").
             "truncate font-display text-[1.0625rem] font-bold transition-opacity",
-            // Hidden, it takes no room, so "‹ Jobs" shows in full above the large title.
-            collapsed ? "max-w-[55vw] opacity-100" : "max-w-0 opacity-0",
+            // Hidden, it takes no room, so "‹ Jobs" shows in full above the large title. Beside
+            // the logo, it leaves the logo its room.
+            collapsed
+              ? brand
+                ? "max-w-[calc(100vw-15rem)] opacity-100"
+                : "max-w-[55vw] opacity-100"
+              : "max-w-0 opacity-0",
           )}
         >
           {title}

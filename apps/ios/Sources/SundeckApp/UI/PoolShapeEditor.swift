@@ -447,7 +447,9 @@
             if let i = selected, form.landmarks.indices.contains(i) {
                 let kind = form.landmarks[i].kind
                 content
-                    .accessibilityAction(named: "Flip \(kind.label)") { form.flipLandmark(i) }
+                    .accessibilityAction(
+                        named: landmarkTaps(kind) == "turn" ? "Turn \(kind.label)" : "Flip \(kind.label)"
+                    ) { form.flipLandmark(i) }
                     .accessibilityAction(named: "Make the \(kind.label) Larger") {
                         form.setLandmarkSize(i, (form.landmarkSizeAt(i) ?? landmarkSize) + 2)
                     }

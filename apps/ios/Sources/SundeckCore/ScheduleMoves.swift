@@ -9,19 +9,29 @@ import Foundation
 public struct PlanContext: Codable, Sendable {
     public var timeZone: String
     public var settings: RoutingSettings
-    /// The shop, where routes start and end.
+    /// The shop, where routes start and end unless a tech starts from home (`starts`).
     public var depot: LatLng?
     /// The shop's today ("2026-10-19") and minutes after midnight now.
     public var today: String
     public var nowMin: Int
+    /// The shop's member_start rows this person can read (their own, or everyone's for owners
+    /// and admins). Each tech's day starts and ends at startFor(techId, starts, depot).
+    public var starts: [MemberStart]?
 
-    public init(timeZone: String, settings: RoutingSettings, depot: LatLng?, today: String, nowMin: Int) {
+    public init(
+        timeZone: String, settings: RoutingSettings, depot: LatLng?, today: String, nowMin: Int,
+        starts: [MemberStart]? = nil
+    ) {
         self.timeZone = timeZone
         self.settings = settings
         self.depot = depot
         self.today = today
         self.nowMin = nowMin
+        self.starts = starts
     }
+
+    /// Where this tech's routes start and end in this context.
+    func startOf(_ techId: String?) -> LatLng? { startFor(techId, starts, shop: depot).at }
 }
 
 public struct ScheduleChange: Encodable, Equatable, Sendable {
@@ -61,8 +71,9 @@ public func planDay<J: PlanJobFields>(
     if jobs.isEmpty { return .fail("Nothing scheduled for this tech that day.") }
     let stops = try dayStops(ctx, techId, date, jobs)
     let hours = workDay(ctx.settings)
-    let before = timeRoute(stops, depot: ctx.depot, day: hours, drive: drive)
-    let (order, route) = optimizeRoute(stops, depot: ctx.depot, day: hours, drive: drive)
+    let start = ctx.startOf(techId)
+    let before = timeRoute(stops, depot: start, day: hours, drive: drive)
+    let (order, route) = optimizeRoute(stops, depot: start, day: hours, drive: drive)
     let planned = order.map { stops[$0] }
     let updates = try routeUpdates(date, ctx.timeZone, planned, route)
     let saved = before.driveMin - route.driveMin
@@ -74,7 +85,7 @@ public func planDay<J: PlanJobFields>(
     ].joined(separator: " · ")
     let detail = noteSentences([
         stops.contains { $0.location == nil } ? "driving to pools not on the map isn’t counted" : nil,
-        ctx.depot == nil ? "the shop has no location (Settings › Scheduling)" : nil,
+        start == nil ? "the shop has no location (Settings › Scheduling)" : nil,
     ])
     return ScheduleChange(updates: updates, message: message, detail: detail)
 }
@@ -192,7 +203,7 @@ public func moveJobChange<J: PlanJobFields>(_ ctx: PlanContext, _ input: MoveInp
         earliestMin: date == ctx.today ? ctx.nowMin : nil, movable: fixedMin == nil, own: true)
     let index = max(0, min(input.index, others.count))
     stops.insert(moved, at: index)
-    let route = timeRoute(stops, depot: ctx.depot, day: workDay(ctx.settings), drive: drive)
+    let route = timeRoute(stops, depot: ctx.startOf(tech), day: workDay(ctx.settings), drive: drive)
     var updates = try routeUpdates(date, ctx.timeZone, stops, route)
     let mineAt = updates.firstIndex { $0.id == job.id }!
     var mine = updates.remove(at: mineAt)
@@ -290,7 +301,7 @@ public func suggestTimes<J: PlanJobFields>(
         for j in jobs { labels[j.id] = j.label ?? "the job before" }
         return TechDay(
             date: r.date, techId: r.techId, techName: r.techName, stops: stops, labels: labels,
-            notBeforeMin: r.date == ctx.today ? ctx.nowMin : nil)
+            notBeforeMin: r.date == ctx.today ? ctx.nowMin : nil, start: .some(ctx.startOf(r.techId)))
     }
     let found = suggestSlots(
         location: location, durationMin: durationMin, days: days, depot: ctx.depot, day: workDay(ctx.settings),

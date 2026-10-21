@@ -16216,6 +16216,188 @@
       }
     }
   ],
+  "tapLandmark": [
+    {
+      "args": [
+        {
+          "kind": "steps",
+          "x": 0.5,
+          "y": 0.5
+        }
+      ],
+      "result": {
+        "kind": "steps",
+        "x": 0.5,
+        "y": 0.5,
+        "turn": 1
+      }
+    },
+    {
+      "args": [
+        {
+          "kind": "steps",
+          "x": 0.5,
+          "y": 0.5,
+          "turn": 1
+        }
+      ],
+      "result": {
+        "kind": "steps",
+        "x": 0.5,
+        "y": 0.5,
+        "turn": 2
+      }
+    },
+    {
+      "args": [
+        {
+          "kind": "steps",
+          "x": 0.5,
+          "y": 0.5,
+          "turn": 3
+        }
+      ],
+      "result": {
+        "kind": "steps",
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    {
+      "args": [
+        {
+          "kind": "steps",
+          "x": 0.5,
+          "y": 0.5,
+          "flip": true
+        }
+      ],
+      "result": {
+        "kind": "steps",
+        "x": 0.5,
+        "y": 0.5,
+        "turn": 3
+      }
+    },
+    {
+      "args": [
+        {
+          "kind": "waterfall",
+          "x": 0.5,
+          "y": 0.2
+        }
+      ],
+      "result": {
+        "kind": "waterfall",
+        "x": 0.5,
+        "y": 0.2,
+        "turn": 1
+      }
+    },
+    {
+      "args": [
+        {
+          "kind": "waterfall",
+          "x": 0.5,
+          "y": 0.2,
+          "flip": true,
+          "turn": 3
+        }
+      ],
+      "result": {
+        "kind": "waterfall",
+        "x": 0.5,
+        "y": 0.2
+      }
+    },
+    {
+      "args": [
+        {
+          "kind": "tree",
+          "x": 0.2,
+          "y": 0.3
+        }
+      ],
+      "result": {
+        "kind": "tree",
+        "x": 0.2,
+        "y": 0.3,
+        "flip": true
+      }
+    },
+    {
+      "args": [
+        {
+          "kind": "tree",
+          "x": 0.2,
+          "y": 0.3,
+          "flip": true,
+          "s": 18
+        }
+      ],
+      "result": {
+        "kind": "tree",
+        "x": 0.2,
+        "y": 0.3,
+        "s": 18
+      }
+    }
+  ],
+  "landmarkTurn": [
+    {
+      "args": [
+        {
+          "kind": "steps"
+        }
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        {
+          "kind": "steps",
+          "turn": 2
+        }
+      ],
+      "result": 2
+    },
+    {
+      "args": [
+        {
+          "kind": "steps",
+          "flip": true
+        }
+      ],
+      "result": 2
+    },
+    {
+      "args": [
+        {
+          "kind": "rock",
+          "turn": 1
+        }
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        {
+          "kind": "waterfall",
+          "flip": true
+        }
+      ],
+      "result": 0
+    },
+    {
+      "args": [
+        {
+          "kind": "waterfall",
+          "turn": 2
+        }
+      ],
+      "result": 2
+    }
+  ],
   "poolDiagram": [
     {
       "args": [
@@ -16229,6 +16411,112 @@
         "spa": null,
         "drawing": [],
         "landmarks": []
+      }
+    },
+    {
+      "args": [
+        "oval",
+        false,
+        {
+          "landmarks": [
+            {
+              "kind": "steps",
+              "x": 0.5,
+              "y": 0.5,
+              "turn": 1
+            },
+            {
+              "kind": "steps",
+              "x": 0.3,
+              "y": 0.5,
+              "flip": true
+            },
+            {
+              "kind": "tree",
+              "x": 0.7,
+              "y": 0.5,
+              "flip": true
+            }
+          ]
+        }
+      ],
+      "result": {
+        "width": 160,
+        "height": 100,
+        "pool": "M70 15 C102 15 130 30 130 50 C130 70 102 85 70 85 C38 85 10 70 10 50 C10 30 38 15 70 15 Z",
+        "spa": null,
+        "drawing": [],
+        "landmarks": [
+          {
+            "kind": "steps",
+            "cx": 80,
+            "cy": 50,
+            "size": 20,
+            "flip": false,
+            "mirror": "y",
+            "turn": 1,
+            "parts": [
+              {
+                "d": "M2.5 15.5 H21.5 V21.5 H2.5 Z",
+                "tone": "concrete"
+              },
+              {
+                "d": "M5.5 9.5 H18.5 V15.5 H5.5 Z",
+                "tone": "concrete"
+              },
+              {
+                "d": "M8.5 3.5 H15.5 V9.5 H8.5 Z",
+                "tone": "concrete"
+              }
+            ]
+          },
+          {
+            "kind": "steps",
+            "cx": 48,
+            "cy": 50,
+            "size": 20,
+            "flip": false,
+            "mirror": "y",
+            "turn": 2,
+            "parts": [
+              {
+                "d": "M2.5 15.5 H21.5 V21.5 H2.5 Z",
+                "tone": "concrete"
+              },
+              {
+                "d": "M5.5 9.5 H18.5 V15.5 H5.5 Z",
+                "tone": "concrete"
+              },
+              {
+                "d": "M8.5 3.5 H15.5 V9.5 H8.5 Z",
+                "tone": "concrete"
+              }
+            ]
+          },
+          {
+            "kind": "tree",
+            "cx": 112,
+            "cy": 50,
+            "size": 20,
+            "flip": true,
+            "mirror": "x",
+            "turn": 0,
+            "parts": [
+              {
+                "d": "M10.6 15.5 H13.4 V22.5 H10.6 Z",
+                "tone": "trunk"
+              },
+              {
+                "d": "M12 1.5 C15.6 1.5 18.2 4 18.4 7.2 C20.6 8.2 21.8 10.4 21.4 12.8 C21 15.4 18.8 17.2 16.2 17 C15 17.8 13.6 18.2 12 18.2 C10.4 18.2 9 17.8 7.8 17 C5.2 17.2 3 15.4 2.6 12.8 C2.2 10.4 3.4 8.2 5.6 7.2 C5.8 4 8.4 1.5 12 1.5 Z",
+                "tone": "leaf"
+              },
+              {
+                "d": "M8.4 7.4 C9.4 6 11 5.4 12.6 5.6 C11.2 6.4 10.2 7.6 9.8 9.2 C9.2 8.8 8.7 8.2 8.4 7.4 Z",
+                "tone": "leafDark"
+              }
+            ]
+          }
+        ]
       }
     },
     {
@@ -16957,6 +17245,7 @@
             "size": 20,
             "flip": false,
             "mirror": "x",
+            "turn": 0,
             "parts": [
               {
                 "d": "M10.6 15.5 H13.4 V22.5 H10.6 Z",
@@ -16979,6 +17268,7 @@
             "size": 20,
             "flip": false,
             "mirror": "x",
+            "turn": 0,
             "parts": [
               {
                 "d": "M4.5 10.5 H19.5 V22 H4.5 Z",
@@ -17001,6 +17291,7 @@
             "size": 20,
             "flip": false,
             "mirror": "x",
+            "turn": 0,
             "parts": [
               {
                 "d": "M2 19.5 C2 15.5 4 11.6 7.6 9.6 C9.6 7.4 13.6 6.8 16.4 8.4 C19.8 10.2 22 14.2 22 19.5 Z",
@@ -17017,8 +17308,9 @@
             "cx": 20,
             "cy": 80,
             "size": 40,
-            "flip": true,
+            "flip": false,
             "mirror": "x",
+            "turn": 0,
             "parts": [
               {
                 "d": "M4.5 7 H19.5 V18 Q15.75 20.2 12 18 Q8.25 15.8 4.5 18 Z",
@@ -17045,6 +17337,7 @@
             "size": 12,
             "flip": false,
             "mirror": "y",
+            "turn": 0,
             "parts": [
               {
                 "d": "M2.5 15.5 H21.5 V21.5 H2.5 Z",

@@ -78,7 +78,13 @@ The mark was concepted as images (`logo/concept/tidemark-*.webp`, 2026-10-13; th
 ```
 python3 brand/scripts/build_logo.py   # SVGs (needs: pip install fonttools)
 node brand/scripts/export_png.mjs      # PNGs for the app, favicon, email
+node brand/scripts/export_logo_code.mjs # the horizontal logo as vector paths for the native apps
 ```
+
+The native apps draw the horizontal logo from those paths (`apps/ios/.../SundeckLogoArt.swift`,
+`apps/mobile/src/ui/sundeckLogoArt.ts`): at the top left of each tab's own page (Today, Jobs,
+Schedule, Messages, More; owner, 2026-10-21), 24 pt tall, the reverse lockup in dark mode. The
+website's phone bar uses the SVG files the same way.
 
 Copy the results into the apps: `apps/web/public/sundeck-{logo,logo-reverse,mark}.svg`,
 `apps/web/src/app/icon.svg` (favicon) and `apple-icon.png`, and `apps/mobile/assets/`

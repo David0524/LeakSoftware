@@ -146,7 +146,7 @@ public func suggestPlanDays(
     }
     return suggestServiceDays(
         place: toAdd.map(asPlan), keep: all.filter { !wanted.contains($0.planId) }.map(asPlan), techs: techs,
-        workDays: ctx.settings.workDays, depot: ctx.depot, day: ctx.workDay, drive: drive.drive)
+        workDays: ctx.settings.workDays, depot: ctx.depot, starts: ctx.starts, day: ctx.workDay, drive: drive.drive)
 }
 
 /// Why Suggest Days left some out: "2 have no map location · 1 is on several days a week".

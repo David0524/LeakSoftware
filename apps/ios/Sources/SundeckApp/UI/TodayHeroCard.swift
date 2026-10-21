@@ -42,6 +42,8 @@
         @State private var width: CGFloat = 400
         /// Message's On My Way compose sheet (from the company number).
         @State private var composing: ScheduleJob?
+        /// A text from the phone, addressed to the stop's customer (`StopText`).
+        @State private var phoneText: ComposeText?
 
         /// Secondary text on the card: white at 92% is 4.8:1 on water blue (85% was 4.3:1).
         static let soft = Color.white.opacity(0.92)
@@ -133,6 +135,7 @@
             .sheet(item: $composing) { job in
                 OnMyWaySheet(job: job, day: day, leg: day.leg(job))
             }
+            .composeTextSheet($phoneText)
         }
 
         /// Do Later on the card's stop, Up next and On the way (docs/plans/today-reorder.md): the
@@ -486,30 +489,26 @@
                 return
             }
             let leg = day.leg(job)
-            if let url = OnMyWay.smsURL(phone, body: OnMyWay.text(job, day: day, leg: leg)) {
-                OnMyWay.record(job, day: day, leg: leg, session: session, app: app)
-                openURL(url)
-            }
+            OnMyWay.record(job, day: day, leg: leg, session: session, app: app)
+            StopText.open(
+                .phone(StopTextRoute.smsNumber(phone)), body: OnMyWay.text(job, day: day, leg: leg),
+                openRoute: openRoute, openURL: openURL
+            ) { phoneText = $0 }
         }
 
-        /// A blank text: from the company number when the shop has one working (their
-        /// conversation, or New Message to them), else from the phone's own Messages app, as the
-        /// job page's Text button does.
+        /// A blank text to the card's customer, whoever's day it is (owner, 2026-10-21: an owner on
+        /// a tech's day landed in Messages, not on the customer): from the company number when
+        /// the shop has one working (their conversation, or New Message to them), else a text from
+        /// the phone addressed to them (`StopTextRoute`).
         private func text(_ job: ScheduleJob, phone: String) {
-            guard let company = session.company,
-                companyLine(sync.store, companyId: company.id)?.status == "active",
-                let customerId = job.customerId
-            else {
-                if let url = OnMyWay.smsURL(phone, body: nil) { openURL(url) }
-                return
-            }
-            if let thread = conversations(sync.store, companyId: company.id).first(where: {
-                $0.customerId == customerId
-            }) {
-                openRoute(.messages(.conversation(thread.id)))
-            } else {
-                openRoute(.messages(.newMessage(customerId: customerId)))
-            }
+            guard let company = session.company else { return }
+            let lineActive = companyLine(sync.store, companyId: company.id)?.status == "active"
+            guard
+                let route = StopTextRoute.decide(
+                    lineActive: lineActive, customerId: job.customerId, phone: phone,
+                    conversations: lineActive ? conversations(sync.store, companyId: company.id) : [])
+            else { return }
+            StopText.open(route, openRoute: openRoute, openURL: openURL) { phoneText = $0 }
         }
 
         /// One row, equal widths, 50 pt capsules: style, not size, marks the main action (white

@@ -323,10 +323,13 @@ public struct TechDay: Codable, Sendable {
     public var labels: [String: String]?
     /// On today's route, nothing can start before now.
     public var notBeforeMin: Int?
+    /// Where this tech's day starts and ends (`startFor`), when not the shop passed as `depot`.
+    /// nil: the shop; `.some(nil)`: no location.
+    public var start: LatLng??
 
     public init(
         date: String, techId: String, techName: String, stops: [RouteStop], labels: [String: String]? = nil,
-        notBeforeMin: Int? = nil
+        notBeforeMin: Int? = nil, start: LatLng?? = nil
     ) {
         self.date = date
         self.techId = techId
@@ -334,6 +337,20 @@ public struct TechDay: Codable, Sendable {
         self.stops = stops
         self.labels = labels
         self.notBeforeMin = notBeforeMin
+        self.start = start
+    }
+
+    enum CodingKeys: String, CodingKey { case date, techId, techName, stops, labels, notBeforeMin, start }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        date = try c.decode(String.self, forKey: .date)
+        techId = try c.decode(String.self, forKey: .techId)
+        techName = try c.decode(String.self, forKey: .techName)
+        stops = try c.decode([RouteStop].self, forKey: .stops)
+        labels = try c.decodeIfPresent([String: String].self, forKey: .labels)
+        notBeforeMin = try c.decodeIfPresent(Int.self, forKey: .notBeforeMin)
+        start = try c.contains(.start) ? .some(c.decodeIfPresent(LatLng.self, forKey: .start)) : nil
     }
 }
 
@@ -384,14 +401,15 @@ public func suggestSlots(
 ) -> [SlotSuggestion] {
     var found: [(slot: SlotSuggestion, score: Double)] = []
     for td in days {
-        let base = timeRoute(td.stops, depot: depot, day: day, drive: drive)
+        let from = td.start ?? depot
+        let base = timeRoute(td.stops, depot: from, day: day, drive: drive)
         var best: (slot: SlotSuggestion, score: Double)?
         for p in 0...td.stops.count {
             let candidate = RouteStop(
                 id: "__new", location: location, durationMin: durationMin, earliestMin: td.notBeforeMin)
             var stops = td.stops
             stops.insert(candidate, at: p)
-            let r = timeRoute(stops, depot: depot, day: day, drive: drive)
+            let r = timeRoute(stops, depot: from, day: day, drive: drive)
             if r.overtimeMin > base.overtimeMin || r.lateMin > base.lateMin { continue }
             let added = r.driveMin - base.driveMin
             let score = Double(added) + daysOut(days, td) * 2

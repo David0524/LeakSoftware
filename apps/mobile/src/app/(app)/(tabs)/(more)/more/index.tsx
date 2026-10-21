@@ -4,6 +4,7 @@ import {
   ACTIVITY_DETAIL,
   ACTIVITY_TITLE,
   MAPS_LABELS,
+  START_FROM_COPY,
   isManagerRole,
   offersPool,
 } from "@leakbook/core";
@@ -13,6 +14,7 @@ import { notificationSummary, useNotificationPrefs } from "../../../../../data/n
 import { call } from "../../../../../data/reports";
 import { useActivityUnread } from "../../../../../data/activity";
 import { API_URL } from "../../../../../lib/config";
+import { useMemberStart } from "../../../../../data/memberStarts";
 import { useSession, useSyncStatus } from "../../../../../state/session";
 import { useWalkthrough } from "../../../../../state/walkthrough";
 import { showGettingStartedAgain } from "../../../../../features/today/GettingStarted";
@@ -56,6 +58,7 @@ export default function More() {
   const status = useSyncStatus();
   const sync = syncSummary(status);
   const manager = isManagerRole(membership?.role);
+  const myStart = useMemberStart(company?.id ?? "", user?.id);
   const scheme = useSyncExternalStore(appearance.subscribe, () => appearance.scheme);
   const [directions, setDirections] = useDirectionsChoice();
   const team = services.sync.team();
@@ -124,6 +127,14 @@ export default function More() {
               onPress={() => open("/more/two-step")}
             />
           ) : null}
+          {/* Where your day starts (owner, 2026-10-21: "Techs/owners need to be able to set if
+              they start their day from home or from the shop"). */}
+          <ListRow
+            title="My Profile"
+            subtitle={START_FROM_COPY.field}
+            detail={myStart?.start_from === "home" ? START_FROM_COPY.home : START_FROM_COPY.shop}
+            onPress={() => router.push("/more/profile")}
+          />
           <ListRow title="My Mobile Number" onPress={() => router.push("/more/phone")} />
           {API_URL ? (
             <ListRow

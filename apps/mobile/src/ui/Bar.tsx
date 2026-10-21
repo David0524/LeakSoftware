@@ -3,6 +3,7 @@ import { useSyncExternalStore } from "react";
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Glass } from "./Glass";
+import { BrandHeaderLeft } from "./SundeckLogo";
 import { color, minTap, type } from "./theme";
 import { WebIcon } from "./WebIcon";
 
@@ -13,7 +14,8 @@ import { WebIcon } from "./WebIcon";
 // iPhone uses the native bar with large titles instead.
 //
 // Without Back (the tab roots), the large title sits in the bar's row, left of the screen's
-// action, as on the website (owner, 2026-10-20: "push up towards where the plus button is").
+// action, as on the website (owner, 2026-10-20: "push up towards where the plus button is"),
+// and right of the logo the tab roots have where Back would be (owner, 2026-10-21).
 // The bar reports its action's width (`right`) so the title keeps clear of it.
 
 export const BAR_HEIGHT = 44;
@@ -147,7 +149,15 @@ export function DrawnHeader({ back, options, route, navigation }: NativeStackHea
               </Pressable>
             ) : null)}
         </View>
-        <Animated.View pointerEvents="none" style={[styles.titleBox, { opacity: titleOpacity }]}>
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.titleBox,
+            // The logo (a tab's own page) is wider than Back: the small title leaves it room.
+            options.headerLeft === BrandHeaderLeft && styles.titleBesideLogo,
+            { opacity: titleOpacity },
+          ]}
+        >
           <Text
             style={[type.barTitle, { color: color.text }]}
             numberOfLines={1}
@@ -207,6 +217,7 @@ const styles = StyleSheet.create({
   right: { justifyContent: "flex-end" },
   rightContent: { flexDirection: "row", alignItems: "center" },
   titleBox: { maxWidth: "55%", alignItems: "center" },
+  titleBesideLogo: { maxWidth: "36%" },
   back: {
     minHeight: minTap,
     flexDirection: "row",

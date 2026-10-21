@@ -29,6 +29,19 @@ describe("map image", () => {
     expect(url).toContain("/auto/600x300@2x?padding=36&access_token=pk.test");
   });
 
+  it("draws a home start as a larger house, never anything else about it", () => {
+    const url = staticMapUrl(
+      [
+        { tone: "shop", label: "", at: { lat: 33.4, lng: -111.8 }, home: true },
+        { tone: "todo", label: "1", at: { lat: 33.5, lng: -112.1 } },
+      ],
+      { w: 600, h: 300 },
+      "pk.test",
+    );
+    expect(url).toContain(",pin-l-home+12263a(-111.80000,33.40000)");
+    expect(url).toContain(",pin-s-1+1f6fae(-112.10000,33.50000)");
+  });
+
   it("centers on a single pin and keeps sizes in range", () => {
     const url = staticMapUrl(
       [{ tone: "todo", label: "1", at: { lat: 33.5, lng: -112.1 } }],

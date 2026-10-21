@@ -43,7 +43,13 @@ import {
 import { getOffice, requireManager, type Office } from "@/lib/auth";
 import { getTeam } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
-import { loadRoutes, routeContext, routeKey, type RouteContext } from "@/server/route-days";
+import {
+  loadRoutes,
+  routeContext,
+  routeKey,
+  techStart,
+  type RouteContext,
+} from "@/server/route-days";
 import { geocodeAddress, routingConfigured } from "@/server/routing";
 import type { FormState } from "./auth";
 
@@ -117,8 +123,10 @@ export async function planRoute(techId: string, date: string): Promise<RouteResu
 
   const stops = dayStops(ctx, techId, date, day.jobs);
   const hours = workDay(ctx.settings);
-  const before = timeRoute(stops, ctx.depot, hours, drive);
-  const { order, route } = optimizeRoute(stops, ctx.depot, hours, drive);
+  // From this tech's start: their home when they start there, else the shop.
+  const start = day.start.at;
+  const before = timeRoute(stops, start, hours, drive);
+  const { order, route } = optimizeRoute(stops, start, hours, drive);
   const planned = order.map((i) => stops[i]!);
   const error = await save(
     await createClient(),
@@ -137,7 +145,7 @@ export async function planRoute(techId: string, date: string): Promise<RouteResu
   ].join(" · ");
   const detail = sentences([
     stops.some((s) => !s.location) ? "driving to pools not on the map isn’t counted" : null,
-    !ctx.depot ? "the shop has no location (Settings › Scheduling)" : null,
+    !start ? "the shop has no location (Settings › Scheduling)" : null,
   ]);
   return { message, detail };
 }
@@ -304,7 +312,7 @@ export async function moveJob(input: MoveInput): Promise<RouteResult> {
     Math.min(Number.isInteger(input.index) ? input.index : others.length, others.length),
   );
   stops.splice(index, 0, moved);
-  const route = timeRoute(stops, ctx.depot, workDay(ctx.settings), drive);
+  const route = timeRoute(stops, techStart(ctx, tech).at, workDay(ctx.settings), drive);
   const updates = routeUpdates(date, ctx.timeZone, stops, route);
   const mine: JobUpdate & {
     assigned_user_id?: string;
@@ -604,6 +612,8 @@ export async function suggestTimes(target: {
         stops,
         labels: Object.fromEntries(jobs.map((j) => [j.id, j.customer?.name ?? "the job before"])),
         notBeforeMin: date === ctx.today ? ctx.nowMin : null,
+        // Each tech's day from their own start (home or the shop).
+        start: techStart(ctx, t.user_id).at,
       });
     }
   }

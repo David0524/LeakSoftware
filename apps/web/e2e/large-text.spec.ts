@@ -181,6 +181,24 @@ for (const [name, viewport, fontSize] of [
         };
         expect(intersects(plusEdges, text), `${path}: the title overlaps +`).toBe(false);
       }
+      // A tab's own page has the logo at the bar's left (owner, 2026-10-21): the title sits
+      // beside it, or under the bar, never over it.
+      const logo = page.locator("[data-nav-brand] img:visible");
+      await expect(logo).toHaveCount(1);
+      const logoBox = (await logo.boundingBox())!;
+      const titleText = await h1.evaluate((el) => {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const r = range.getBoundingClientRect();
+        return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+      });
+      const logoEdges = {
+        left: logoBox.x,
+        right: logoBox.x + logoBox.width,
+        top: logoBox.y,
+        bottom: logoBox.y + logoBox.height,
+      };
+      expect(intersects(logoEdges, titleText), `${path}: the title overlaps the logo`).toBe(false);
     }
     await phone.close();
   });

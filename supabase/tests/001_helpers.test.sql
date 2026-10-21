@@ -107,6 +107,10 @@ begin
     values (c, 'No leak found ' || label, '{"summary": "We found no leak."}');
   insert into team_profile (company_id, user_id, name, phone, emergency_name, emergency_phone)
     values (c, t, 'Tech ' || label, '(602) 555-0101', 'Pat ' || label, '(602) 555-0102');
+  -- The owner's start, from home (so techs, who see only their own, read none here).
+  insert into member_start (company_id, user_id, start_from, home_address, home_latitude,
+                            home_longitude, home_geocoded_address)
+    values (c, o, 'home', '9 Home Ln ' || label, 33.5, -112.1, '9 Home Ln ' || label);
   -- Company texting: a number per shop, made unique by the label.
   insert into phone_line (company_id, number)
     values (c, '+1555' || lpad((abs(hashtext(label)) % 10000000)::text, 7, '0'));

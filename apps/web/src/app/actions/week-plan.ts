@@ -23,7 +23,13 @@ import {
 } from "@leakbook/core";
 import { requireManager } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { loadRoutes, needsScheduling, routeContext, routeKey } from "@/server/route-days";
+import {
+  loadRoutes,
+  needsScheduling,
+  routeContext,
+  routeKey,
+  techStart,
+} from "@/server/route-days";
 
 // Plan Week (owner, 2026-10-20, docs/plans/route-maps.md): a week's movable jobs on days and
 // techs for the least driving, each day then ordered as Optimize orders it, with one Undo.
@@ -125,6 +131,8 @@ export async function planWeek(input: {
         date,
         stays: [],
         earliestMin: date === ctx.today ? ctx.nowMin : null,
+        // The tech's own start: home when they start there, else the shop.
+        start: techStart(ctx, techId).at,
       };
       for (const j of day?.jobs ?? []) {
         const own = j.assigned_user_id === techId;

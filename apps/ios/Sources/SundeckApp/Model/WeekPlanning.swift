@@ -140,7 +140,10 @@ public func weekPlanInput(
     // Each tech's days: what stays, and what may move.
     for techId in techs {
         for date in dates {
-            var here = WeekDay(techId: techId, date: date, stays: [], earliestMin: date == ctx.today ? ctx.nowMin : nil)
+            // Each tech's day starts and ends at their start (home or the shop; owner, 2026-10-21).
+            var here = WeekDay(
+                techId: techId, date: date, stays: [], earliestMin: date == ctx.today ? ctx.nowMin : nil,
+                start: .some(ctx.start(for: techId).at))
             for j in routes[routeKey(techId, date)]?.jobs ?? [] {
                 let own = j.assignedUserId == techId
                 let lock = jobLock(j)

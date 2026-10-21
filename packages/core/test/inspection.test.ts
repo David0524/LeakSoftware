@@ -518,6 +518,7 @@ describe("pool diagram: draw, landmarks, the spa's size, clear", async () => {
         size: 20,
         flip: false,
         mirror: "x",
+        turn: 0,
         parts: core.LANDMARKS.find((l) => l.key === "house")!.parts,
       },
     ]);
@@ -718,5 +719,38 @@ describe("centered pools (owner, 2026-10-20)", () => {
     });
     expect(centerLayout(layout)).toBe(layout);
     expect(parseDiagramLayout({ centered: true, mirror: "yes" })).toEqual({ centered: true });
+  });
+});
+
+describe("the steps turn on tap (owner, 2026-10-21)", () => {
+  it("turns the steps a quarter clockwise each tap, and mirrors the others", async () => {
+    const { tapLandmark, landmarkTurn, poolDiagram } = await import("../src");
+    let steps: Parameters<typeof tapLandmark>[0] = { kind: "steps", x: 0.5, y: 0.5 };
+    const turns: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      steps = tapLandmark(steps);
+      turns.push(landmarkTurn(steps));
+    }
+    expect(turns).toEqual([1, 2, 3, 0, 1]);
+    expect("flip" in tapLandmark({ kind: "steps", x: 0.5, y: 0.5 })).toBe(false);
+    // Steps saved flipped (before turning) count as turned twice, and tap on to three.
+    expect(landmarkTurn({ kind: "steps", flip: true })).toBe(2);
+    expect(tapLandmark({ kind: "steps", x: 0.5, y: 0.5, flip: true })).toEqual({
+      kind: "steps",
+      x: 0.5,
+      y: 0.5,
+      turn: 3,
+    });
+    // The waterfall turns too; saved mirrored, it's the same drawing, so it starts unturned.
+    expect(landmarkTurn(tapLandmark({ kind: "waterfall", x: 0.5, y: 0.5 }))).toBe(1);
+    expect(landmarkTurn({ kind: "waterfall", flip: true })).toBe(0);
+    // A tree still mirrors.
+    const tree = tapLandmark({ kind: "tree", x: 0.5, y: 0.5 });
+    expect(tree.flip).toBe(true);
+    expect(tapLandmark(tree).flip).toBeUndefined();
+    const d = poolDiagram("oval", false, {
+      landmarks: [{ kind: "steps", x: 0.5, y: 0.5, turn: 1 }],
+    });
+    expect([d.landmarks[0]!.turn, d.landmarks[0]!.flip]).toEqual([1, false]);
   });
 });

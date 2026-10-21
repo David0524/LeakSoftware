@@ -27,6 +27,10 @@
     //
     // A title whose widest word can't fit beside the buttons (very large text) takes its own row
     // under the bar instead, where the system large title would be.
+    //
+    // A tab's own page has the logo at the bar's leading edge (owner, 2026-10-21; BrandLogo.swift):
+    // the title sits beside it in the same row, after `SundeckLogo.titleLead`, and stacks under
+    // the bar by the same rule when its widest word can't fit between the logo and the buttons.
 
     /// What the screen, its bar and its title row share.
     @MainActor @Observable
@@ -34,6 +38,8 @@
         var title = ""
         /// Round buttons on the bar's right, which the title keeps clear of.
         var trailingButtons = 1
+        /// Room kept clear on the left of the title for the bar's logo (a tab's own page).
+        var leadingRoom: CGFloat = 0
         /// The bottom of the navigation bar, and the page's whole top inset (the bar and anything
         /// pinned under it, such as the sync bar), in screen points.
         var barBottom: CGFloat = 0
@@ -80,6 +86,7 @@
         var title: String
         var trailingButtons: Int
         @State private var state = RootTitleState()
+        @Environment(\.brandInBar) private var brandInBar
 
         func body(content: Content) -> some View {
             content
@@ -111,6 +118,9 @@
                 .environment(state)
                 .onChange(of: title, initial: true) { _, now in state.title = now }
                 .onChange(of: trailingButtons, initial: true) { _, now in state.trailingButtons = now }
+                .onChange(of: brandInBar, initial: true) { _, now in
+                    state.leadingRoom = now ? SundeckLogo.titleLead : 0
+                }
         }
     }
 
@@ -183,6 +193,7 @@
                     .foregroundStyle(Color.text)
                     .accessibilityAddTraits(.isHeader)
                     .padding(.trailing, stacked ? 0 : state.trailingRoom)
+                    .padding(.leading, stacked ? 0 : state.leadingRoom)
                     .frame(maxWidth: .infinity, minHeight: stacked ? 0 : state.barRow, alignment: .leading)
                     .onGeometryChange(for: CGFloat.self) {
                         $0.size.width
@@ -205,7 +216,7 @@
 
         private var tighten: CGFloat { stackSpacing.map { 4 - $0 } ?? 0 }
 
-        /// Whether the widest word is wider than the room beside the bar's buttons.
+        /// Whether the widest word is wider than the room between the bar's logo and its buttons.
         private func stacks(_ state: RootTitleState) -> Bool {
             guard width > 0 else { return false }
             _ = typeSize  // Re-measured when the text size changes.
@@ -214,7 +225,7 @@
                 state.title.split(separator: " ").map {
                     (String($0) as NSString).size(withAttributes: [.font: font]).width
                 }.max() ?? 0
-            return widest > width - state.trailingRoom
+            return widest > width - state.trailingRoom - state.leadingRoom
         }
     }
 #endif

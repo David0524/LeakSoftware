@@ -70,6 +70,8 @@ import {
   normalizeTestData,
   planComponents,
   poolDiagram,
+  tapLandmark,
+  landmarkTurn,
   propertyLocation,
   validateFinding,
   validateNewJob,
@@ -742,12 +744,48 @@ export const inspection: ModuleCases = {
     ],
   ),
 
+  // The steps turn a quarter on each tap; the others mirror (owner, 2026-10-21).
+  tapLandmark: rule(
+    (l: Parameters<typeof tapLandmark>[0]) => tapLandmark(l),
+    [
+      [{ kind: "steps", x: 0.5, y: 0.5 }],
+      [{ kind: "steps", x: 0.5, y: 0.5, turn: 1 }],
+      [{ kind: "steps", x: 0.5, y: 0.5, turn: 3 }],
+      [{ kind: "steps", x: 0.5, y: 0.5, flip: true }],
+      [{ kind: "waterfall", x: 0.5, y: 0.2 }],
+      [{ kind: "waterfall", x: 0.5, y: 0.2, flip: true, turn: 3 }],
+      [{ kind: "tree", x: 0.2, y: 0.3 }],
+      [{ kind: "tree", x: 0.2, y: 0.3, flip: true, s: 18 }],
+    ],
+  ),
+  landmarkTurn: rule(
+    (l: Parameters<typeof landmarkTurn>[0]) => landmarkTurn(l),
+    [
+      [{ kind: "steps" }],
+      [{ kind: "steps", turn: 2 }],
+      [{ kind: "steps", flip: true }],
+      [{ kind: "rock", turn: 1 }],
+      [{ kind: "waterfall", flip: true }],
+      [{ kind: "waterfall", turn: 2 }],
+    ],
+  ),
   // An unknown shape (from an older or newer app) falls back to the rectangle.
   poolDiagram: rule(
     (shape: DiagramShape | null, hasSpa: boolean, layout?: DiagramLayout | null) =>
       poolDiagram(shape, hasSpa, layout),
     [
       ["rectangle", false],
+      [
+        "oval",
+        false,
+        {
+          landmarks: [
+            { kind: "steps", x: 0.5, y: 0.5, turn: 1 },
+            { kind: "steps", x: 0.3, y: 0.5, flip: true },
+            { kind: "tree", x: 0.7, y: 0.5, flip: true },
+          ],
+        },
+      ],
       ["oval", true],
       ["kidney", true],
       ["l_shape", false],

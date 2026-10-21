@@ -7,6 +7,7 @@ import {
   lockReason,
   type LatLng,
   type PlanJob,
+  type RouteStartLabel,
 } from "@leakbook/core";
 
 // Day maps on Schedule (owner, 2026-10-20, docs/plans/route-maps.md): the map image's address
@@ -27,7 +28,10 @@ export interface MapStop {
  */
 export function dayMap(input: {
   stops: MapStop[];
+  /** Where the day starts: the tech's start (home or the shop). */
   depot: LatLng | null;
+  /** "home" draws the start as a house labeled Home. */
+  startLabel?: RouteStartLabel | null;
   date: string;
   today: string;
 }): { pins: string | null; located: number; missing: number } {
@@ -37,7 +41,12 @@ export function dayMap(input: {
     done: !OPEN.has(s.status),
   }));
   const currentId = input.date === input.today ? (stops.find((s) => !s.done)?.id ?? null) : null;
-  const { pins, missing } = dayMapPins({ stops, depot: input.depot, currentId });
+  const { pins, missing } = dayMapPins({
+    stops,
+    depot: input.depot,
+    startLabel: input.startLabel,
+    currentId,
+  });
   const located = pins.filter((p) => p.tone !== "shop").length;
   return { pins: located ? encodePins(pins) : null, located, missing };
 }

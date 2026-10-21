@@ -29,6 +29,8 @@
         var timeZone: String
         var leg: Int
         var first: Bool
+        /// Where the day starts: the first stop's drive is "from home" or "from the shop".
+        var start: RouteStartLabel = .shop
         var lock: StopLock?
         var canUp: Bool
         var canDown: Bool
@@ -48,7 +50,7 @@
                             + Text(verbatim: "  ") + Text(job.customerName).font(.role(.bodyEmphasis)))
                             .monospacedDigit()
                             .foregroundStyle(Color.text)
-                        Text(verbatim: "\(durationLabel(leg)) \(first ? "from the shop" : "drive")")
+                        Text(verbatim: "\(durationLabel(leg)) \(first ? startLegLabel(start) : "drive")")
                             .textRole(.secondary)
                             .foregroundStyle(Color.textMuted)
                         if let lock {

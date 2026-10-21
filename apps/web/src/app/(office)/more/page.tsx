@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { ACTIVITY_DETAIL, NOTIFICATION_KINDS, notificationOn } from "@leakbook/core";
+import {
+  ACTIVITY_DETAIL,
+  NOTIFICATION_KINDS,
+  START_FROM_COPY,
+  notificationOn,
+} from "@leakbook/core";
 import { signOut } from "@/app/actions/auth";
 import { showTipsAgain } from "@/app/actions/walkthrough";
 import { DeleteAccount } from "@/components/delete-account";
@@ -16,6 +21,7 @@ import { activityUnread } from "@/lib/activity";
 import { Dot } from "@/components/nav-links";
 import { createClient } from "@/lib/supabase/server";
 import { CONTACT_EMAIL } from "@/lib/site";
+import { memberStartOf } from "@/server/member-start";
 
 export const metadata: Metadata = { title: "More · Sundeck Pro" };
 
@@ -25,15 +31,18 @@ export const metadata: Metadata = { title: "More · Sundeck Pro" };
  */
 export default async function MorePage() {
   const office = await getOffice();
-  const [company, dot] = await Promise.all([getCompany(office), activityUnread(office)]);
+  const db = await createClient();
+  const [company, dot, { data: profile }, start] = await Promise.all([
+    getCompany(office),
+    activityUnread(office),
+    db
+      .from("profile")
+      .select("two_step, notification_prefs")
+      .eq("id", office.user.id)
+      .maybeSingle(),
+    memberStartOf(db, office.company.id, office.user.id),
+  ]);
   const rest = officeLinks(office.isManager, company.settings, 0, dot).slice(4);
-  const { data: profile } = await (
-    await createClient()
-  )
-    .from("profile")
-    .select("two_step, notification_prefs")
-    .eq("id", office.user.id)
-    .maybeSingle();
   const twoStep = Boolean(profile?.two_step);
   const saved = (await cookies()).get("lb_maps")?.value;
   const maps = saved === "apple" || saved === "google" ? saved : "auto";
@@ -53,6 +62,12 @@ export default async function MorePage() {
           ))}
         </Grouped>
         <Grouped title="Your account">
+          <Row
+            href="/more/profile"
+            label="My Profile"
+            value={start?.start_from === "home" ? START_FROM_COPY.home : START_FROM_COPY.shop}
+            detail={START_FROM_COPY.field}
+          />
           <Row
             href="/more/notifications"
             label="Notifications"

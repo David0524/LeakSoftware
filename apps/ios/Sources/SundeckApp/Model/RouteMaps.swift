@@ -17,8 +17,10 @@ public struct DayMapAnnotation: Equatable, Sendable, Identifiable {
     public var label: String
     public var at: LatLng
     public var tone: PinTone
-    /// VoiceOver: "Stop 2, Grace Holloway", or "The shop".
+    /// VoiceOver: "Stop 2, Grace Holloway", "The shop", or "Home".
     public var spoken: String
+    /// The start pin of someone who starts from home: a house labeled Home, never the street.
+    public var home = false
 
     public var isShop: Bool { tone == .shop }
 }
@@ -66,12 +68,13 @@ public struct DayMapModel: Equatable, Sendable {
 /// the day (as the list is), toned done, current (the first stop not done, on today), or to do.
 /// Nil when the day has no stops.
 public func dayMapModel(
-    jobs: [ScheduleJob], depot: LatLng?, date: String, today: String, tech: String, timeZone: String
+    jobs: [ScheduleJob], depot: LatLng?, date: String, today: String, tech: String, timeZone: String,
+    startLabel: RouteStartLabel? = nil
 ) -> DayMapModel? {
     guard !jobs.isEmpty else { return nil }
     let stops = jobs.map { MapStop(id: $0.id, location: $0.location, done: !openStatuses.contains($0.status)) }
     let currentId = date == today ? stops.first(where: { !$0.done })?.id : nil
-    let found = dayMapPins(stops: stops, depot: depot, currentId: currentId)
+    let found = dayMapPins(stops: stops, depot: depot, currentId: currentId, startLabel: startLabel)
     let names = Dictionary(jobs.map { ($0.id, $0.customerName) }, uniquingKeysWith: { a, _ in a })
     let annotations = mapAnnotations(found.pins, customers: names)
     let located = annotations.filter { !$0.isShop }.count
@@ -94,13 +97,18 @@ public func mapAnnotations(_ pins: [MapPin], customers: [String: String]) -> [Da
     pins.map { p in
         let shop = p.tone == .shop
         let name = p.id.flatMap { customers[$0] }
+        let home = shop && p.home == true
         return DayMapAnnotation(
             id: p.id ?? "shop", label: p.label, at: p.at, tone: p.tone,
-            spoken: shop ? "The shop" : ["Stop \(p.label)", name].compactMap { $0 }.joined(separator: ", "))
+            spoken: home
+                ? StartFromCopy.homePin
+                : shop ? "The shop" : ["Stop \(p.label)", name].compactMap { $0 }.joined(separator: ", "),
+            home: home)
     }
 }
 
-/// The line through the day: from the shop, through each stop in order, and back.
+/// The line through the day: from the start (the shop or home), through each stop in order, and
+/// back.
 public func routeLine(_ annotations: [DayMapAnnotation]) -> [LatLng] {
     let shop = annotations.first(where: \.isShop)?.at
     let stops = annotations.filter { !$0.isShop }.map(\.at)

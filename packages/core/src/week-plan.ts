@@ -30,6 +30,11 @@ export interface WeekDay {
   stays: RouteStop[];
   /** Can't start before this (now, on today). */
   earliestMin?: number | null;
+  /**
+   * Where this tech's day starts and ends (startFor(techId, starts, shop).at) when it isn't the
+   * shop given as `depot`, for someone who starts from home.
+   */
+  start?: LatLng | null;
 }
 
 /** A job the week may move. */
@@ -115,6 +120,9 @@ export function planWeek(input: {
     (a, b) => a.date.localeCompare(b.date) || a.techId.localeCompare(b.techId),
   );
   const byKey = new Map(days.map((d) => [key(d.techId, d.date), d]));
+  /** Where a day's route starts and ends: the tech's start, else the shop. */
+  const from = (d: WeekDay) => (d.start !== undefined ? d.start : depot);
+  const fromKey = (k: string) => from(byKey.get(k)!);
   const jobs = [...input.jobs].sort((a, b) => a.id.localeCompare(b.id));
   const considered = jobs.slice(0, limit);
   const skipped = jobs.slice(limit).map((j) => j.id);
@@ -126,8 +134,11 @@ export function planWeek(input: {
     const d = k ? byKey.get(k) : null;
     if (d) now.get(k!)!.push(asStop(j, d.earliestMin));
   }
-  const driveOf = (stops: RouteStop[]) => timeRoute(stops, depot, day, drive).driveMin;
-  const driveBefore = [...now.values()].filter((s) => s.length).reduce((t, s) => t + driveOf(s), 0);
+  const driveOf = (k: string, stops: RouteStop[]) =>
+    timeRoute(stops, fromKey(k), day, drive).driveMin;
+  const driveBefore = [...now.entries()]
+    .filter(([, s]) => s.length)
+    .reduce((t, [k, s]) => t + driveOf(k, s), 0);
 
   // Hardest first: time locks (fewest places fit), then farthest from the shop.
   const away = (j: WeekJob) => (depot && j.location ? drive(depot, j.location) : 0);
@@ -145,11 +156,11 @@ export function planWeek(input: {
       if (!ok(d.techId)) return;
       const k = key(d.techId, d.date);
       const stops = planned.get(k)!;
-      const was = timeRoute(stops, depot, day, drive);
+      const was = timeRoute(stops, from(d), day, drive);
       const stop = asStop(j, d.earliestMin);
       for (let at = 0; at <= stops.length; at++) {
         const next = [...stops.slice(0, at), stop, ...stops.slice(at)];
-        const r = timeRoute(next, depot, day, drive);
+        const r = timeRoute(next, from(d), day, drive);
         // Never run a day later or longer than it was.
         if (r.lateMin > was.lateMin || r.overtimeMin > was.overtimeMin) continue;
         // Driving added, plus a little for how full the day already is, so near-ties spread
@@ -196,7 +207,7 @@ export function planWeek(input: {
         let cheapest = Infinity;
         for (let i = 0; i <= stops.length; i++) {
           const c = routeCost(
-            timeRoute([...stops.slice(0, i), stop, ...stops.slice(i)], depot, day, drive),
+            timeRoute([...stops.slice(0, i), stop, ...stops.slice(i)], from(home), day, drive),
           );
           if (c < cheapest - 1e-9) {
             cheapest = c;
@@ -223,7 +234,7 @@ export function planWeek(input: {
   for (const d of days) {
     const stops = planned.get(key(d.techId, d.date))!;
     if (!stops.length) continue;
-    const { order: o, route } = optimizeRoute(stops, depot, day, drive);
+    const { order: o, route } = optimizeRoute(stops, from(d), day, drive);
     driveAfter += route.driveMin;
     out.push({ techId: d.techId, date: d.date, stops: o.map((i) => stops[i]!), route });
   }

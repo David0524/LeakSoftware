@@ -70,6 +70,7 @@ import {
   TITLE_HANDOFF,
   useBar,
 } from "./Bar";
+import { BRAND_TITLE_LEAD } from "./SundeckLogo";
 import { liquidGlass } from "./navigation";
 import { haptics } from "./haptics";
 import { Icon, type IconName } from "./Icon";
@@ -280,6 +281,9 @@ export function useScreenChrome({
               title={title!}
               inline={inline}
               room={bar.right}
+              // The tab's logo at the bar's left (TabStack, owner 2026-10-21): the title sits
+              // beside it.
+              lead={root ? BRAND_TITLE_LEAD : 0}
               tryInline={root}
               onStacked={setStacked}
               // In the bar's row, the pinned sync bar (Android) floats under the title.
@@ -329,13 +333,14 @@ const INLINE_TITLE_SCROLLED = 22;
 
 /**
  * The large title drawn in the page (spec 3.1). Inline (in the bar's row), it keeps clear of
- * the bar's buttons (`room`, their width) and wraps between words; when its widest word can't
+ * the bar's logo (`lead`) and buttons (`room`, their width) and wraps between words; when its widest word can't
  * fit beside them (very large text), `onStacked` moves it to its own row under the bar.
  */
 function LargeTitle({
   title,
   inline,
   room,
+  lead,
   tryInline,
   onStacked,
   below,
@@ -343,6 +348,8 @@ function LargeTitle({
   title: string;
   inline: boolean;
   room: number;
+  /** Room kept on the left for the bar's logo. */
+  lead: number;
   tryInline: boolean;
   onStacked: (stacked: boolean) => void;
   /** Room kept under the title. */
@@ -353,11 +360,11 @@ function LargeTitle({
   const words = title.split(" ");
   const sizes = useRef<number[]>([]);
   useEffect(() => {
-    if (tryInline && width > 0 && widest > 0) onStacked(widest > width - room);
-  }, [tryInline, width, widest, room, onStacked]);
+    if (tryInline && width > 0 && widest > 0) onStacked(widest > width - room - lead);
+  }, [tryInline, width, widest, room, lead, onStacked]);
   return (
     <View style={{ marginBottom: below }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
-      <T variant="largeTitle" style={inline ? { paddingRight: room } : null}>
+      <T variant="largeTitle" style={inline ? { paddingRight: room, paddingLeft: lead } : null}>
         {title}
       </T>
       {tryInline ? (

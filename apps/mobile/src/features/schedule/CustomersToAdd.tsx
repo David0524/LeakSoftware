@@ -160,6 +160,8 @@ export function useCustomersToAdd({
               techs: forTechs.filter((id) => techIds.includes(id)),
               workDays,
               depot: ctx.depot,
+              // Each tech's days start and end at their own start (owner, 2026-10-21).
+              starts: ctx.starts,
               day: hours,
               drive: estimateDriveMinutes,
             });

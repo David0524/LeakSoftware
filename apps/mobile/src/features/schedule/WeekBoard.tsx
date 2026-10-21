@@ -3,7 +3,7 @@ import { memo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureDetector } from "react-native-gesture-handler";
 import Svg, { Circle } from "react-native-svg";
-import { durationLabel, formatDay } from "@leakbook/core";
+import { durationLabel, formatDay, startLegLabel } from "@leakbook/core";
 import type { DragItem } from "../../lib/scheduleDrag";
 import { StatusChip, T } from "../../ui/components";
 import { Grip } from "../../ui/Grip";
@@ -27,6 +27,7 @@ import {
 } from "../../ui/theme";
 import type { Route, Stop } from "./RouteCard";
 import { dropTint, useDragHover, useDragSource, useDropZones } from "./ScheduleDrag";
+import { unlessSwiping } from "../../ui/swipeQuiet";
 
 // Schedule › Week with the routes in it (owner, 2026-10-20: "On routes, you can't optimize or
 // rearrange placement … Let's just build that all into Week"; docs/design/2026-10-20-team-week.md
@@ -169,6 +170,8 @@ function WeekRoute({
     ? [
         r.stops.length === 1 ? "1 stop" : `${r.stops.length} stops`,
         r.driveMin ? `${durationLabel(r.driveMin)} driving` : null,
+        // Someone who starts from home: the day's driving is counted from there.
+        r.driveMin && r.startLabel === "home" ? startLegLabel("home") : null,
       ]
         .filter(Boolean)
         .join(" · ")
@@ -324,7 +327,7 @@ function WeekStop({
       accessibilityHint="Opens the job"
       accessibilityActions={gestures.accessibilityActions}
       onAccessibilityAction={gestures.onAccessibilityAction}
-      onPress={() => router.push(`/jobs/${s.id}`)}
+      onPress={unlessSwiping(() => router.push(`/jobs/${s.id}`))}
       onLongPress={item ? undefined : gestures.onLongPress}
       android_ripple={{ color: color.ripple }}
       style={({ pressed }) => [{ backgroundColor: pressed ? color.rowPressed : color.surface }]}

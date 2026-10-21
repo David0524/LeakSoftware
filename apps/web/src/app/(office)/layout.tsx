@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { Logo } from "@/components/logo";
+import { Logo, Mark } from "@/components/logo";
 import { DesktopNav, TabBar } from "@/components/nav-links";
 import { AccountMenu } from "@/components/account-menu";
 import { BannerHost } from "@/components/top-banner";
@@ -42,8 +42,9 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
             <span className="max-lg:hidden">
               <Logo height={26} />
             </span>
-            {/* eslint-disable-next-line @next/next/no-img-element -- static SVG */}
-            <img src="/sundeck-mark.svg" alt="" width={26} height={32} className="lg:hidden" />
+            <span className="lg:hidden">
+              <Mark height={32} />
+            </span>
           </Link>
           <Suspense fallback={<div className="h-11 flex-1" />}>
             <OfficeNav />
@@ -65,11 +66,13 @@ export default function OfficeLayout({ children }: LayoutProps<"/">) {
       <Suspense fallback={null}>
         <PullToRefresh />
       </Suspense>
-      {/* Room for the phone navigation bar above and the tab bar below. */}
+      {/* Room for the phone navigation bar above and the tab bar below. A page that marks
+          itself data-wide-page (Schedule's Day and Week boards) uses the whole window on a
+          computer, with 32 pt gutters (owner, 2026-10-21). */}
       <main
         id="main"
         tabIndex={-1}
-        className="mx-auto w-full max-w-7xl flex-1 px-4 pt-[calc(2.75rem+env(safe-area-inset-top))] pb-32 outline-none sm:py-8"
+        className="mx-auto w-full max-w-7xl flex-1 px-4 pt-[calc(2.75rem+env(safe-area-inset-top))] pb-32 outline-none sm:py-8 has-[[data-wide-page]]:max-w-none lg:has-[[data-wide-page]]:px-8"
       >
         {children}
       </main>

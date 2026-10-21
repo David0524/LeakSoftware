@@ -10,6 +10,7 @@ import {
   serviceDays,
   type DaySuggestion,
   type LatLng,
+  type RouteStartLabel,
   type ServicePlan,
   type WorkDay,
 } from "@leakbook/core";
@@ -231,7 +232,10 @@ export function routeDay(input: {
   plans: RoutePlanCard[];
   tech: string | null;
   day: number;
+  /** Where the tech's day starts: startFor(tech, starts, shop).at. */
   depot: LatLng | null;
+  /** "home" for someone who starts there: the map's start pin is a house labeled Home. */
+  startLabel?: RouteStartLabel | null;
   workDay: WorkDay;
 }): RouteDay {
   const mine = input.plans
@@ -252,6 +256,7 @@ export function routeDay(input: {
   const { pins, missing } = dayMapPins({
     stops: plans.map((p) => ({ id: p.planId, location: p.location, done: false })),
     depot: input.depot,
+    startLabel: input.startLabel,
   });
   const onMap = pins.some((p) => p.tone !== "shop");
   return {

@@ -11,12 +11,14 @@ const line = {
   phoneSettings: vi.fn(),
 };
 const locate = { locatePropertyWith: vi.fn(), locateCompanyWith: vi.fn() };
+const home = { locateHomeWith: vi.fn(), memberStartOf: vi.fn() };
 vi.mock("@/server/bearer", () => ({
   bearerSession: (r: Request) => session(r),
   jsonError: (message: string, status: number) => Response.json({ error: message }, { status }),
 }));
 vi.mock("@/server/phone-line", () => line);
 vi.mock("@/server/route-days", () => locate);
+vi.mock("@/server/member-start", () => home);
 vi.mock("@/server/routing", () => ({ routingConfigured: () => true }));
 vi.mock("@/lib/origin", () => ({ siteOrigin: async () => "https://sundeckpro.test" }));
 vi.mock("server-only", () => ({}));
@@ -134,6 +136,32 @@ describe("/api/locate (an address changed in the app)", () => {
     });
     session.mockResolvedValue({ db: db("tech", null), userId: "u2", email: "" });
     expect((await post(located.POST, { company_id: "c1", property_id: "p1" })).status).toBe(404);
+  });
+
+  it("looks up your own home address, or anyone's for owners and admins", async () => {
+    home.locateHomeWith.mockReset().mockResolvedValue({ lat: 33.4, lng: -111.8 });
+    session.mockResolvedValue({ db: db("tech"), userId: "u2", email: "" });
+    const res = await post(located.POST, { company_id: "c1", home_user_id: "u2" });
+    expect(await res.json()).toEqual({ latitude: 33.4, longitude: -111.8 });
+    expect(home.locateHomeWith).toHaveBeenCalledWith(expect.anything(), "c1", "u2");
+    // A tech can't look up a teammate's home.
+    home.locateHomeWith.mockClear();
+    expect((await post(located.POST, { company_id: "c1", home_user_id: "u3" })).status).toBe(403);
+    expect(home.locateHomeWith).not.toHaveBeenCalled();
+    session.mockResolvedValue({ db: db("admin"), userId: "u1", email: "" });
+    expect((await post(located.POST, { company_id: "c1", home_user_id: "u3" })).status).toBe(200);
+  });
+
+  it("gives the home pin it has when nothing changed, and 404 when none is found", async () => {
+    session.mockResolvedValue({ db: db("tech"), userId: "u2", email: "" });
+    home.locateHomeWith.mockReset().mockResolvedValue(null);
+    home.memberStartOf.mockReset().mockResolvedValue({ home_latitude: 1, home_longitude: 2 });
+    expect(
+      await (await post(located.POST, { company_id: "c1", home_user_id: "u2" })).json(),
+    ).toEqual({ latitude: 1, longitude: 2 });
+    home.memberStartOf.mockResolvedValue({ home_latitude: null, home_longitude: null });
+    expect((await post(located.POST, { company_id: "c1", home_user_id: "u2" })).status).toBe(404);
+    expect((await post(located.POST, { company_id: "c1", home_user_id: 5 })).status).toBe(400);
   });
 
   it("moves the shop only for owners and admins", async () => {

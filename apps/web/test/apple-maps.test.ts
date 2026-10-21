@@ -178,6 +178,20 @@ describe("Apple Snapshots", () => {
     expect(line.points[0]).toBe(line.points[4]);
   });
 
+  it("draws a home start as a house", () => {
+    const { keys } = throwaway();
+    const q = new URL(
+      appleSnapshotUrl([{ ...SHOP, home: true }, stop(1)], { w: 360, h: 240 }, keys),
+    ).searchParams;
+    const [start] = JSON.parse(q.get("annotations")!);
+    expect(start).toEqual({
+      point: "33.45000,-112.07000",
+      color: "12263a",
+      markerStyle: "large",
+      glyphText: "⌂",
+    });
+  });
+
   it("draws dark for dark mode, centers a single pin, and keeps Apple's size limits", () => {
     const { keys } = throwaway();
     const one = new URL(appleSnapshotUrl([stop(1)], { w: 360, h: 240 }, keys, "dark")).searchParams;
