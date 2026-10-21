@@ -40,7 +40,7 @@ owner in chat.
 
 - **Plan:** `docs/plans/demo-videos.md`, decided. Storyboards in sections 2 and 3, the look and
   pacing in section 1, the build approach in section 4.
-- **Music: first drafts done, waiting on the owner's ear.** `apps/video/audio/score.py`
+- **Music: drafts accepted for now** (owner: "I can't listen right now. Just go with it."); revise if they ask after listening. `apps/video/audio/score.py`
   (Python, numpy only; `python3 apps/video/audio/score.py`, about 10 s). It writes, gitignored,
   `apps/video/audio/out/{leak,pool}.wav` plus `{leak,pool}.timing.json`. Both drafts were sent
   to the owner as `.m4a` ("Sundeck music - leak/pool"). The previous chat couldn't listen to them;
@@ -57,11 +57,17 @@ owner in chat.
   - Leak: A minor (Am F C G), a little darker. Pool: D major (D A Bm G), brighter.
 - **Images:** all eight received from the owner and saved in `apps/video/assets/` (see
   `demo-videos.md` section 7). Real job photos can replace them later.
-- **Nothing else is built:** no `apps/video` app yet, no recordings, no video shops.
+- **Animatic built:** `apps/video` is a Remotion 4.0.534 project (`src/storyboard.ts` holds both
+  storyboards, `src/timing.ts` the bars, `src/Animatic.tsx` the scenes). `pnpm --filter
+  @leakbook/video render` makes the music, checks its timing matches `timing.ts`, and renders
+  `LeakWide`, `LeakTall`, `PoolWide`, `PoolTall` to `apps/video/out/` (gitignored) with the
+  session's Chromium headless shell. `pnpm --filter @leakbook/video studio` previews it.
+- **Not built yet:** recordings and the two video shops.
 
 ## What to do next
 
-1. **Music sign-off.** Get the owner's reaction to the drafts; revise `score.py`; re-send.
+1. **Pacing check.** The owner watches the animatics; adjust beats, captions and layouts in
+   `src/storyboard.ts` and `src/Animatic.tsx`.
 2. **The video project:** a Remotion app in `apps/video` (a pnpm workspace package, React and
    TypeScript like the rest; check Remotion's current version and its license: free for
    companies of up to 3 people). Read `timing.json` for every cut, so scenes and captions sit on

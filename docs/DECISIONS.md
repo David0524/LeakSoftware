@@ -2,6 +2,9 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-21 (owner, demo videos: "I can't listen right now. Just go with it.")
+- **The demo videos' music drafts stand as they are** (`apps/video/audio/score.py`); the video is built on their 24-bar grid. Changes to the music can still come after the owner listens.
+
 ## 2026-10-21 (owner: "The logo needs to park over the title"; "I can't scroll on a Scheduling tile"; "The cards should slide into new positions as I dangle the tile. Redesign those tiles too. They look super busy")
 - **The logo sits right above the large title** on the five tab pages and scrolls away with it; the bar keeps only its buttons. Every platform.
 - **Schedule scrolls from a card:** sideways gestures claim only clearly sideways drags; swipe actions on schedule cards are gone (their actions are in the card's menu); a card is picked up only from its grip or after a touch-and-hold.
