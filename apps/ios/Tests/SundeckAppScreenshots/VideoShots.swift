@@ -293,6 +293,7 @@
         func shot(_ name: String) async throws {
             window.layoutIfNeeded()
             flattenBackdrops(window.layer)
+            if name.contains("plumbing") { dumpLayers(window.layer, depth: 0) }
             let format = UIGraphicsImageRendererFormat()
             format.scale = 3
             format.opaque = true
@@ -311,10 +312,42 @@
         /// and the page shows through the bar): fill them with the light bar's flat color.
         private func flattenBackdrops(_ layer: CALayer) {
             let kind = String(describing: type(of: layer))
-            if kind.contains("Backdrop") {
+            // Only the bars along the bottom: at the top, the scroll edge stays clear, as it is
+            // over a page at rest.
+            let frame = layer.convert(layer.bounds, to: window.layer)
+            if kind.contains("Backdrop"), frame.minY > window.bounds.height * 0.6, frame.height < 200 {
                 layer.backgroundColor = UIColor(red: 0.976, green: 0.976, blue: 0.98, alpha: 0.96).cgColor
             }
             for sub in layer.sublayers ?? [] { flattenBackdrops(sub) }
+        }
+
+        /// The layer tree, for working out what the off-screen renderer can't draw.
+        private func dumpLayers(_ layer: CALayer, depth: Int) {
+            guard depth < 40 else { return }
+            let frame = layer.convert(layer.bounds, to: window.layer)
+            print(
+                "video layer " + String(repeating: ". ", count: depth) + "\(type(of: layer)) "
+                    + "\(Int(frame.minX)),\(Int(frame.minY)) \(Int(frame.width))x\(Int(frame.height))"
+                    + (layer.isHidden ? " hidden" : "") + (layer.opacity < 1 ? " opacity \(layer.opacity)" : "")
+                    + (layer.mask != nil ? " masked" : ""))
+            for sub in layer.sublayers ?? [] { dumpLayers(sub, depth: depth + 1) }
+        }
+
+        /// iOS 26's scroll edge effects, off on every scroll view (a test of what blanks a
+        /// scrolled page).
+        func hideEdgeEffects() {
+            if #available(iOS 26, *) {
+                for s in all(UIScrollView.self, in: window) {
+                    s.topEdgeEffect.isHidden = true
+                    s.bottomEdgeEffect.isHidden = true
+                }
+            }
+        }
+
+        /// The page at its top, under the bar (a page sometimes first lays out scrolled).
+        func scrollToTop() async throws {
+            guard let s = scroller, s.contentOffset.y > -s.adjustedContentInset.top + 1 else { return }
+            try await scroll(to: -s.adjustedContentInset.top)
         }
 
         func close() {
@@ -383,7 +416,8 @@
             for s in found {
                 print(
                     "video scroller \(type(of: s)): \(Int(s.bounds.width)) x \(Int(s.bounds.height)), "
-                        + "content \(Int(s.contentSize.width)) x \(Int(s.contentSize.height))")
+                        + "content \(Int(s.contentSize.width)) x \(Int(s.contentSize.height)), "
+                        + "offset \(Int(s.contentOffset.y)), inset \(Int(s.adjustedContentInset.top))")
             }
             return found.max { $0.bounds.width * $0.bounds.height < $1.bounds.width * $1.bounds.height }
         }
@@ -986,6 +1020,8 @@
             try await settleSync(env)
             let todayStage = Stage(NavigationStack { TodayScreen() }.app(env))
             try await todayStage.wait(2)
+            try await todayStage.shot("leak-01-today-as-laid-out")
+            try await todayStage.scrollToTop()
             try await todayStage.shot("leak-01-today")
             try leakOnTheWay(env, rebecca)
             try await settleSync(env)
@@ -1014,6 +1050,9 @@
             try await checklist.shot("leak-10-checklist")
             try await checklist.scroll(by: 560)
             try await checklist.shot("leak-10-checklist-plumbing")
+            checklist.hideEdgeEffects()
+            try await checklist.wait(0.6)
+            try await checklist.shot("leak-10-checklist-plumbing-no-edge")
             checklist.close()
 
             // Add Test from the Returns item: the pressure test typed in, then the end reading.
