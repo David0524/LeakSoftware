@@ -1689,15 +1689,18 @@
                     if showsTime {
                         Text(time).font(.custom(BrandFonts.Weight.bold.rawValue, size: 17, relativeTo: .body))
                             .foregroundStyle(Color.text).monospacedDigit()
+                            // Never squeezed by the name: a squeezed time stacked its letters
+                            // down the card and made it three times as tall.
+                            .lineLimit(1).fixedSize()
                     }
                     // The name gets the room it needs; the small icons give way first.
                     name
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .layoutPriority(1)
-                        // One line in Needs a Time's fixed-height cards, cut short only when it
-                        // runs past what the "⋯" and the grip leave.
-                        .lineLimit(showsStatus ? nil : 1)
+                        // One line, cut short only when it runs past what the time, the icons,
+                        // the "⋯" and the grip leave.
+                        .lineLimit(1)
                     StopExceptions(job: job, notOnMap: notOnMap, cleanings: cleanings, showsStatus: showsStatus)
                 }
                 let second = [note, street].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
@@ -1716,10 +1719,14 @@
         @ViewBuilder private var name: some View {
             if let onOpen {
                 Button(action: onOpen) {
-                    (Text(job.customerName) + Text(verbatim: " ›"))
-                        .font(.role(.bodyEmphasis))
-                        .foregroundStyle(Color.link)
-                        .contentShape(MinHeightHitArea(height: minTarget))
+                    // The "›" stays when a long name is cut short, as on the website.
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text(job.customerName).truncationMode(.tail)
+                        Text(verbatim: "›").fixedSize()
+                    }
+                    .font(.role(.bodyEmphasis))
+                    .foregroundStyle(Color.link)
+                    .contentShape(MinHeightHitArea(height: minTarget))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(job.customerName)
