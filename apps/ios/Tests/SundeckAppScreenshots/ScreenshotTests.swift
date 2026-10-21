@@ -542,6 +542,7 @@
         // Glass can't be drawn off screen, so screenshots show the flat look of iOS 18 to 25.
         let content = view.environment(\.dynamicTypeSize, largeText ? .accessibility2 : .large)
             .environment(\.drawsGlass, false)
+            .environment(\.drawsLiveMaps, false)
         window.rootViewController = UIHostingController(rootView: content)
         window.makeKeyAndVisible()
         // Let SwiftUI load data (.task) and settle, then lay out once more.

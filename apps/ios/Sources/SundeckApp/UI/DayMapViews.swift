@@ -73,7 +73,14 @@
 
     /// The map itself: the line, then the pins (the shop under the stops). `onPick` makes each
     /// pin a 44 pt button; without it the pins are pictures and the map's own tap is the action.
+    extension EnvironmentValues {
+        /// Draws MapKit's live map. Screenshot tests turn it off: drawing the window to an image
+        /// while MapKit is still loading its tiles crashes in CoreGraphics (CI, 2026-10-21).
+        @Entry var drawsLiveMaps = true
+    }
+
     struct DayMapCanvas: View {
+        @Environment(\.drawsLiveMaps) private var drawsLiveMaps
         var model: DayMapModel
         @Binding var position: MapCameraPosition
         var interactive: Bool
@@ -82,6 +89,15 @@
         var onPick: ((String) -> Void)?
 
         var body: some View {
+            if drawsLiveMaps {
+                live
+            } else {
+                // A still stand-in of the same size: the map's tint, no tiles.
+                Rectangle().fill(Color.water.opacity(0.1)).accessibilityHidden(true)
+            }
+        }
+
+        private var live: some View {
             Map(position: $position, interactionModes: interactive ? [.pan, .zoom, .rotate] : []) {
                 if model.line.count > 1 {
                     MapPolyline(coordinates: model.line.map(\.coordinate))
