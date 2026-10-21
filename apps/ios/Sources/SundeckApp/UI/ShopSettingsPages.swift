@@ -387,7 +387,8 @@
             let company = session.company
             let shop = shopLocationText(try? sync.store.get("company", company?.id ?? ""))
             ScreenScroll {
-                Text("Routes start and end at the shop, or at home for anyone who starts there.").textRole(.body).foregroundStyle(Color.textMuted)
+                Text("Routes start and end at the shop, or at home for anyone who starts there.").textRole(.body)
+                    .foregroundStyle(Color.textMuted)
                 VStack(alignment: .leading, spacing: 12) {
                     Grouped(label: "Working day") {
                         TimeFieldRow(label: "Day starts", clock: $form.dayStart)
