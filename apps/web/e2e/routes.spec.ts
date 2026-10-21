@@ -193,6 +193,9 @@ test("plan a tech's day, move jobs, suggest times, and give directions", async (
 
   // 3. Drag it back to the tray: off the schedule.
   const grip = route.getByRole("button", { name: `Drag ${name("tempe")}` });
+  // The techs sit side by side in a row that slides sideways (owner, 2026-10-21): bring
+  // Priya's column into view first, as a person would.
+  await grip.scrollIntoViewIfNeeded();
   const box = (await grip.boundingBox())!;
   const target = (await tray.getByRole("heading", { name: /^Needs a Time/ }).boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
