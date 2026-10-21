@@ -291,9 +291,13 @@
         }
 
         func shot(_ name: String) async throws {
+            // iOS 26's scroll edge effect is a portal of the page, which the off-screen renderer
+            // draws black: it's turned off, and drawn instead as the fade it is over a light page.
+            hideEdgeEffects()
             window.layoutIfNeeded()
             flattenBackdrops(window.layer)
-            if name.contains("plumbing") { dumpLayers(window.layer, depth: 0) }
+            let fade = edgeFade()
+            defer { fade?.removeFromSuperview() }
             let format = UIGraphicsImageRendererFormat()
             format.scale = 3
             format.opaque = true
@@ -315,27 +319,35 @@
             // Only the bars along the bottom: at the top, the scroll edge stays clear, as it is
             // over a page at rest.
             let frame = layer.convert(layer.bounds, to: window.layer)
-            if kind.contains("Backdrop"), frame.minY > window.bounds.height * 0.6, frame.height < 200 {
+            let portal = (layer.sublayers ?? []).contains { String(describing: type(of: $0)).contains("Portal") }
+            if kind.contains("Backdrop"), !portal, frame.height < 200 {
                 layer.backgroundColor = UIColor(red: 0.976, green: 0.976, blue: 0.98, alpha: 0.96).cgColor
             }
             for sub in layer.sublayers ?? [] { flattenBackdrops(sub) }
         }
 
-        /// The layer tree, for working out what the off-screen renderer can't draw.
-        private func dumpLayers(_ layer: CALayer, depth: Int) {
-            guard depth < 40 else { return }
-            let frame = layer.convert(layer.bounds, to: window.layer)
-            print(
-                "video layer " + String(repeating: ". ", count: depth) + "\(type(of: layer)) "
-                    + "\(Int(frame.minX)),\(Int(frame.minY)) \(Int(frame.width))x\(Int(frame.height))"
-                    + (layer.isHidden ? " hidden" : "") + (layer.opacity < 1 ? " opacity \(layer.opacity)" : "")
-                    + (layer.mask != nil ? " masked" : ""))
-            for sub in layer.sublayers ?? [] { dumpLayers(sub, depth: depth + 1) }
+        /// The soft scroll edge under the navigation bar, while the page is scrolled under it:
+        /// the page's color, fading out at the bar's bottom edge. Removed after the picture.
+        private func edgeFade() -> UIView? {
+            guard let bar = all(UINavigationBar.self, in: window).first, let s = scroller,
+                s.contentOffset.y > -s.adjustedContentInset.top + 2, let holder = s.superview
+            else { return nil }
+            let bottom = bar.convert(bar.bounds, to: window).maxY + 8
+            let view = UIView(
+                frame: holder.convert(CGRect(x: 0, y: 0, width: window.bounds.width, height: bottom), from: window))
+            view.isUserInteractionEnabled = false
+            let gradient = CAGradientLayer()
+            gradient.frame = view.bounds
+            let page = UIColor(Color.bg)
+            gradient.colors = [page.cgColor, page.withAlphaComponent(0.92).cgColor, page.withAlphaComponent(0).cgColor]
+            gradient.locations = [0, 0.7, 1]
+            view.layer.addSublayer(gradient)
+            holder.insertSubview(view, aboveSubview: s)
+            return view
         }
 
-        /// iOS 26's scroll edge effects, off on every scroll view (a test of what blanks a
-        /// scrolled page).
-        func hideEdgeEffects() {
+        /// iOS 26's scroll edge effects, off on every scroll view.
+        private func hideEdgeEffects() {
             if #available(iOS 26, *) {
                 for s in all(UIScrollView.self, in: window) {
                     s.topEdgeEffect.isHidden = true
@@ -467,6 +479,12 @@
         renderer.isOpaque = false
         let image = try #require(renderer.uiImage, "\(name) didn't render")
         try save(name, image)
+    }
+
+    /// Today as the Today tab shows it: the tab's own page, with the logo over its title.
+    @MainActor
+    func todayPage(_ env: AppEnvironment) -> some View {
+        NavigationStack { TodayScreen().environment(\.brandInBar, true) }.app(env)
     }
 
     // MARK: - The Live Activity
@@ -603,7 +621,7 @@
         // Touch and hold the island over Today: it opens over the app.
         let over = Stage(
             ZStack(alignment: .top) {
-                NavigationStack { TodayScreen() }.app(env)
+                todayPage(env)
                 VStack {
                     Island(state: state, logo: logo).padding(.horizontal, 11).padding(.top, 11)
                     Spacer()
@@ -1018,9 +1036,8 @@
             let env = try videoEnvironment(canyonState)
             let rebecca = try leakDay(env)
             try await settleSync(env)
-            let todayStage = Stage(NavigationStack { TodayScreen() }.app(env))
+            let todayStage = Stage(todayPage(env))
             try await todayStage.wait(2)
-            try await todayStage.shot("leak-01-today-as-laid-out")
             try await todayStage.scrollToTop()
             try await todayStage.shot("leak-01-today")
             try leakOnTheWay(env, rebecca)
@@ -1031,7 +1048,7 @@
             try await liveActivityShots("leak-03-live-activity-driving", env, time: "9:09")
             try startStop(env, rebecca.job, at: 9 * 60 + 28)
             try await settleSync(env)
-            let onSite = Stage(NavigationStack { TodayScreen() }.app(env))
+            let onSite = Stage(todayPage(env))
             try await onSite.wait(2)
             try await onSite.shot("leak-04-today-on-site")
             onSite.close()
@@ -1050,9 +1067,6 @@
             try await checklist.shot("leak-10-checklist")
             try await checklist.scroll(by: 560)
             try await checklist.shot("leak-10-checklist-plumbing")
-            checklist.hideEdgeEffects()
-            try await checklist.wait(0.6)
-            try await checklist.shot("leak-10-checklist-plumbing-no-edge")
             checklist.close()
 
             // Add Test from the Returns item: the pressure test typed in, then the end reading.
@@ -1172,7 +1186,7 @@
             let stops = try poolDay(env)
             _ = try poolVisit(env, stops[2])
             try await settleSync(env)
-            let todayStage = Stage(NavigationStack { TodayScreen() }.app(env))
+            let todayStage = Stage(todayPage(env))
             try await todayStage.wait(2)
             try await todayStage.shot("pool-01-today-stop-3")
             try StopWrites.recordOnMyWay(
@@ -1184,12 +1198,12 @@
             try await liveActivityShots("pool-03-live-activity-driving", env, time: "8:31")
             try startStop(env, stops[2].job, at: 8 * 60 + 41)
             try await settleSync(env)
-            let onSite = Stage(NavigationStack { TodayScreen() }.app(env))
+            let onSite = Stage(todayPage(env))
             try await onSite.wait(2)
             try await onSite.shot("pool-04-today-at-stop-3")
             onSite.close()
             try await liveActivityShots("pool-05-live-activity-on-site", env, time: "8:52")
-            let tall = Stage(height: 2600, NavigationStack { TodayScreen() }.app(env))
+            let tall = Stage(height: 2600, todayPage(env))
             try await tall.wait(2)
             try await tall.shot("pool-06-today-12-stops-tall")
             tall.close()
@@ -1297,7 +1311,7 @@
             }
 
             // Mark Complete on Today's card: Sofia done, the card moves on to Megan Price.
-            let todayStage = Stage(NavigationStack { TodayScreen() }.app(env))
+            let todayStage = Stage(todayPage(env))
             try await todayStage.wait(2)
             try await todayStage.shot("pool-20-today-mark-complete")
             let block = try StopWrites.mark(
