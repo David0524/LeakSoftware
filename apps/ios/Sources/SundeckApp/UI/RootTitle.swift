@@ -28,9 +28,11 @@
     // A title whose widest word can't fit beside the buttons (very large text) takes its own row
     // under the bar instead, where the system large title would be.
     //
-    // A tab's own page has the logo at the bar's leading edge (owner, 2026-10-21; BrandLogo.swift),
-    // level with the buttons: the title then always takes its own row under the bar, with the
-    // page's full width (owner, 2026-10-21, build 1016: "Today · Luis Ramirez" wrapped beside it).
+    // A tab's own page has the logo directly above its large title, left-aligned with it, as one
+    // block that scrolls away together (owner, 2026-10-21, build 1017: "The logo needs to park
+    // over the title"; BrandLogo.swift). The bar keeps only its buttons; the title takes its own
+    // row under the bar with the page's full width, the logo above it, and the bar's small title
+    // shows once the title reaches the bar.
 
     /// What the screen, its bar and its title row share.
     @MainActor @Observable
@@ -38,7 +40,7 @@
         var title = ""
         /// Round buttons on the bar's right, which the title keeps clear of.
         var trailingButtons = 1
-        /// The bar's row has the logo (a tab's own page): the title goes under the bar.
+        /// A tab's own page: the logo sits above the title, and both go under the bar.
         var titleBelowBar = false
         /// The bottom of the navigation bar, and the page's whole top inset (the bar and anything
         /// pinned under it, such as the sync bar), in screen points.
@@ -181,41 +183,66 @@
         @Environment(RootTitleState.self) private var state: RootTitleState?
         @Environment(\.dynamicTypeSize) private var typeSize
         @State private var width: CGFloat = 0
+        /// The logo's bottom edge on screen (above the title on a tab's own page).
+        @State private var logoBottom: CGFloat = .infinity
 
         var body: some View {
             if let state {
                 let stacked = stacks(state)
                 let statusBar = state.statusBar
-                // Under the bar, the title has gone once half of it is behind the bar.
-                let line = stacked ? state.barBottom : statusBar
-                Text(verbatim: state.title)
-                    .textRole(.largeTitle)
-                    .foregroundStyle(Color.text)
-                    .accessibilityAddTraits(.isHeader)
-                    .padding(.trailing, stacked ? 0 : state.trailingRoom)
-                    .frame(maxWidth: .infinity, minHeight: stacked ? 0 : state.barRow, alignment: .leading)
-                    .onGeometryChange(for: CGFloat.self) {
-                        $0.size.width
-                    } action: {
-                        width = $0
+                let logo = state.titleBelowBar
+                // Where the page goes under the bar (and the sync bar pinned under it).
+                let edge = max(state.barBottom, state.contentTop)
+                VStack(alignment: .leading, spacing: SundeckLogo.titleGap) {
+                    if logo {
+                        // Above the title and part of its block: it scrolls away with it, fading
+                        // as it reaches the bar, so it never shows under the bar's buttons or the
+                        // status bar (owner, 2026-10-21, build 1017).
+                        let fade = min(1, max(0, (logoBottom - edge) / SundeckLogo.titleHeight))
+                        SundeckLogo(height: SundeckLogo.titleHeight)
+                            .opacity(fade)
+                            .accessibilityHidden(fade == 0)
+                            .onGeometryChange(for: CGFloat.self) {
+                                $0.frame(in: .global).maxY
+                            } action: {
+                                logoBottom = $0
+                            }
                     }
-                    .onGeometryChange(for: Bool.self) {
-                        $0.frame(in: .global).midY >= line
-                    } action: {
-                        state.titleShowing = $0
-                    }
-                    .onAppear { state.titleShowing = true }
-                    .onDisappear { state.titleShowing = false }
-                    // In the bar's row from the top of the screen, then room for what's pinned
-                    // under the bar (the sync bar); stacked, under all of it.
-                    .padding(.top, stacked ? state.contentTop : statusBar)
-                    .padding(.bottom, (stacked ? 0 : max(0, state.contentTop - state.barBottom)) + tighten)
+                    Text(verbatim: state.title)
+                        .textRole(.largeTitle)
+                        .foregroundStyle(Color.text)
+                        .accessibilityAddTraits(.isHeader)
+                        .padding(.trailing, stacked ? 0 : state.trailingRoom)
+                        .frame(maxWidth: .infinity, minHeight: stacked ? 0 : state.barRow, alignment: .leading)
+                        .onGeometryChange(for: CGFloat.self) {
+                            $0.size.width
+                        } action: {
+                            width = $0
+                        }
+                        .onGeometryChange(for: Bool.self) {
+                            // Under the bar, the title has gone as soon as its top reaches the
+                            // bar, so the bar's small title and material take over before
+                            // anything overlaps; in the bar's row, once half of it is behind the
+                            // status bar.
+                            let frame = $0.frame(in: .global)
+                            return stacked ? frame.minY >= edge : frame.midY >= statusBar
+                        } action: {
+                            state.titleShowing = $0
+                        }
+                        .onAppear { state.titleShowing = true }
+                        .onDisappear { state.titleShowing = false }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                // In the bar's row from the top of the screen, then room for what's pinned
+                // under the bar (the sync bar); stacked, under all of it.
+                .padding(.top, stacked ? state.contentTop + (logo ? 4 : 0) : statusBar)
+                .padding(.bottom, (stacked ? 0 : max(0, state.contentTop - state.barBottom)) + tighten)
             }
         }
 
         private var tighten: CGFloat { stackSpacing.map { 4 - $0 } ?? 0 }
 
-        /// Whether the title goes under the bar: always beside the logo, else when its widest
+        /// Whether the title goes under the bar: always under the logo, else when its widest
         /// word is wider than the room beside the bar's buttons.
         private func stacks(_ state: RootTitleState) -> Bool {
             if state.titleBelowBar { return true }

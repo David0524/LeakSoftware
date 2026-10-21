@@ -3,8 +3,9 @@
 
     // The horizontal Sundeck Pro logo (drop pin and wordmark) at the leading edge of each tab's
     // own page: Today, Jobs, Schedule, Messages, More (owner, 2026-10-21: "Incorporate this logo
-    // with the text in the top left of each main page on the app"), in the bar's row above the
-    // large title (owner, 2026-10-21, build 1016). Pushed pages keep Back there.
+    // with the text in the top left of each main page on the app"). It is part of the large-title
+    // block, directly above the title, and scrolls away with it (owner, 2026-10-21, build 1017:
+    // "The logo needs to park over the title"); the bar keeps only its buttons (RootTitle.swift).
     // Drawn from the brand's vector geometry (SundeckLogoArt, generated from brand/logo), the
     // reverse lockup in dark mode. Same as the website's phone bar and the Expo app.
 
@@ -50,28 +51,15 @@
     }
 
     extension SundeckLogo {
-        /// The bar's logo height: 28 points, in the bar's 44-point row (owner, 2026-10-21).
-        static let barHeight: CGFloat = 28
+        /// The logo's height over a tab's large title: 28 points (owner, 2026-10-21).
+        static let titleHeight: CGFloat = 28
+        /// The gap between the logo and the large title under it.
+        static let titleGap: CGFloat = 7
     }
 
     extension EnvironmentValues {
-        /// The view is a tab's own page, whose bar has the logo at its leading edge (AppTabs). A
-        /// screen pushed onto the stack doesn't have it.
+        /// The view is a tab's own page, whose large title has the logo above it (AppTabs,
+        /// RootTitle.swift). A screen pushed onto the stack doesn't have it.
         @Entry var brandInBar = false
-    }
-
-    /// The logo at the leading edge of a tab's root navigation bar, level with the round + on the
-    /// right, and the large title on its own row under it with the page's full width (owner,
-    /// 2026-10-21: "above the page title", not beside it; RootTitle.swift). A picture, not a
-    /// button, so on iOS 26 it sits on the bar without a glass capsule.
-    struct BrandToolbarItem: ToolbarContent {
-        var body: some ToolbarContent {
-            if #available(iOS 26, *) {
-                ToolbarItem(placement: .topBarLeading) { SundeckLogo(height: SundeckLogo.barHeight) }
-                    .sharedBackgroundVisibility(.hidden)
-            } else {
-                ToolbarItem(placement: .topBarLeading) { SundeckLogo(height: SundeckLogo.barHeight) }
-            }
-        }
     }
 #endif

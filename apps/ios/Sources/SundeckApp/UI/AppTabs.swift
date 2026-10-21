@@ -202,10 +202,9 @@
         private func stack<Root: View>(_ tab: AppTab, @ViewBuilder root: () -> Root) -> some View {
             NavigationStack(path: Binding(get: { paths[tab] ?? NavigationPath() }, set: { paths[tab] = $0 })) {
                 root()
-                    // Only the tab's own page: screens pushed onto the stack have Back there.
+                    // Only the tab's own page: its large title has the logo above it
+                    // (RootTitle.swift). Screens pushed onto the stack don't.
                     .environment(\.brandInBar, true)
-                    // The logo at the top left of each tab's own page (owner, 2026-10-21).
-                    .toolbar { BrandToolbarItem() }
                     .navigationDestination(for: Route.self) { route in
                         switch route {
                         case .job(let id): JobScreen(jobId: id).zoomDestination(id)
