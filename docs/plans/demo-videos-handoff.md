@@ -55,8 +55,8 @@ owner in chat.
   - A riser and hit into scene 1, a whoosh ending on each scene change, a hit at the end card,
     the last chord fading to silence at 45 s.
   - Leak: A minor (Am F C G), a little darker. Pool: D major (D A Bm G), brighter.
-- **Images:** not received yet. Until they arrive, use placeholders. Real job photos can replace
-  them later.
+- **Images:** all eight received from the owner and saved in `apps/video/assets/` (see
+  `demo-videos.md` section 7). Real job photos can replace them later.
 - **Nothing else is built:** no `apps/video` app yet, no recordings, no video shops.
 
 ## What to do next

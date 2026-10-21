@@ -146,3 +146,9 @@ backyards: desert landscaping, block walls, palo verde trees, bright afternoon s
    the frame, room on the left for text."
 
 Send them as PNG or JPG; any of them can be swapped for real photos from a job.
+
+**Received (owner, 2026-10-21), all eight,** in `apps/video/assets/`: `shops/canyon-state-logo.png`
+and `shops/blue-mesa-logo.png` (transparent, trimmed), and `photos/leak-dye-light-niche.jpg`,
+`leak-dye-skimmer.jpg`, `equipment-pad.jpg`, `pool-before.jpg`, `pool-after.jpg` (same pool and
+angle as the before) and `hero-backyard.jpg`. The photos are 1536×1024 (the hero 1672×941), so
+they're used inside device frames and cards, not full-bleed at 1080p without a slight upscale.
