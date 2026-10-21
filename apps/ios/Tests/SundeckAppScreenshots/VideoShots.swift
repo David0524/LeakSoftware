@@ -297,7 +297,6 @@
             window.layoutIfNeeded()
             flattenBackdrops(window.layer)
             let fade = edgeFade()
-            if name.contains("pump-quote") { dumpLayers(window.layer, depth: 0) }
             let left = portals(window.layer)
             if !left.isEmpty { print("video portals in \(name): \(left)") }
             defer { fade?.removeFromSuperview() }
@@ -1383,7 +1382,9 @@
             try await photos.wait(2.5)
             try await photos.shot("pool-16-photos")
             try await photos.scroll(by: 420)
-            try await photos.shot("pool-16-before-after-photos")
+            try await photos.shot("pool-16-after-photo")
+            try await photos.scroll(by: 358)
+            try await photos.shot("pool-16-before-photo")
             photos.close()
 
             // The pump repair quoted on the visit (Details › Quotes), then sent.
@@ -1392,6 +1393,14 @@
                 try await settleSync(env)
                 let details = Stage(NavigationStack { JobScreen(jobId: sofia.job, section: .details) }.app(env))
                 try await details.wait(2.5)
+                if !sent {
+                    // Where the page stops drawing when scrolled (probe frames, removed once known).
+                    for step in 1...5 {
+                        try await details.scroll(by: 220)
+                        try await details.shot("probe-details-\(step * 220)")
+                    }
+                    try await details.scrollToTop()
+                }
                 if let line = details.fields().first(where: { $0.text?.hasPrefix("Replace pump motor") == true }) {
                     try await details.scroll(showing: line, at: 420)
                 } else {
