@@ -471,8 +471,14 @@
             guard let s = scroller else { return }
             let top = -s.adjustedContentInset.top
             let bottom = max(top, s.contentSize.height - s.bounds.height + s.adjustedContentInset.bottom)
-            s.setContentOffset(CGPoint(x: s.contentOffset.x, y: min(max(y, top), bottom)), animated: false)
-            try await wait(0.6)
+            let target = min(max(y, top), bottom)
+            // A step at a time, as a finger moves: one long jump leaves the page undrawn.
+            while abs(s.contentOffset.y - target) > 1 {
+                let step = max(-240, min(240, target - s.contentOffset.y))
+                s.setContentOffset(CGPoint(x: s.contentOffset.x, y: s.contentOffset.y + step), animated: false)
+                try await wait(0.3)
+            }
+            try await wait(0.4)
         }
 
         /// Scrolls so `view` sits `y` points under the top of the screen.
@@ -1393,14 +1399,6 @@
                 try await settleSync(env)
                 let details = Stage(NavigationStack { JobScreen(jobId: sofia.job, section: .details) }.app(env))
                 try await details.wait(2.5)
-                if !sent {
-                    // Where the page stops drawing when scrolled (probe frames, removed once known).
-                    for step in 1...5 {
-                        try await details.scroll(by: 220)
-                        try await details.shot("probe-details-\(step * 220)")
-                    }
-                    try await details.scrollToTop()
-                }
                 if let line = details.fields().first(where: { $0.text?.hasPrefix("Replace pump motor") == true }) {
                     try await details.scroll(showing: line, at: 420)
                 } else {
