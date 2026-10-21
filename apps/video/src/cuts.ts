@@ -23,7 +23,6 @@ const DESKTOP = { width: 1680, height: 1050 };
 const PHONE = { width: 402, height: 874 };
 const web = (name: string) => `generated/web/${name}.png`;
 const ios = (name: string) => `generated/ios/${name}.png`;
-const navyBar: StatusBar = { background: brand.navy, color: brand.paper };
 const lightBar: StatusBar = { background: neutral[50], color: brand.navy };
 
 /** The tech's iPhone: the app's own screens, with the status bar drawn over their top. */
