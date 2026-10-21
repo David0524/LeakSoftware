@@ -261,11 +261,7 @@
     final class Stage {
         let window: UIWindow
         private let scene: UIWindowScene?
-        /// A tab's own page (Today): see `lowerRootTitle`.
-        private let rootTitle: Bool
-
-        init(height: CGFloat? = nil, rootTitle: Bool = false, _ view: some View) {
-            self.rootTitle = rootTitle
+        init(height: CGFloat? = nil, _ view: some View) {
             Chrome.install()
             scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
             let frame = CGRect(
@@ -300,7 +296,6 @@
             hideEdgeEffects()
             window.layoutIfNeeded()
             flattenBackdrops(window.layer)
-            if rootTitle { lowerRootTitle() }
             let fade = edgeFade()
             defer { fade?.removeFromSuperview() }
             let format = UIGraphicsImageRendererFormat()
@@ -351,20 +346,6 @@
             view.layer.addSublayer(gradient)
             holder.insertSubview(view, aboveSubview: s)
             return view
-        }
-
-        /// A tab root's title block goes under the bar, `contentTop` below the top of the screen.
-        /// RootTitle measures that from the scene, which the test host doesn't have, and gets 0:
-        /// the page, which starts at the top of the screen, is moved down by the bar's bottom.
-        private func lowerRootTitle() {
-            guard let bar = all(UINavigationBar.self, in: window).first else { return }
-            let pages = all(UIScrollView.self, in: window).filter {
-                !($0 is UITextView) && $0.bounds.width > 200 && $0.adjustedContentInset.top < 1
-            }
-            guard let page = pages.max(by: { $0.bounds.height < $1.bounds.height }) else { return }
-            let top = bar.convert(bar.bounds, to: window).maxY
-            page.setContentOffset(CGPoint(x: page.contentOffset.x, y: -top), animated: false)
-            window.layoutIfNeeded()
         }
 
         /// iOS 26's scroll edge effects, off on every scroll view.
@@ -502,10 +483,15 @@
         try save(name, image)
     }
 
-    /// Today as the Today tab shows it: the tab's own page, with the logo over its title.
+    /// Today as the Today tab shows it: the tab's own page, with the logo over its title, under
+    /// the bar. RootTitle places that block by the safe area SwiftUI reports, which is 0 in the
+    /// test host (UIKit's is the iPhone's, 62): the status bar and the bar's row are given to it.
     @MainActor
     func todayPage(_ env: AppEnvironment) -> some View {
-        NavigationStack { TodayScreen().environment(\.brandInBar, true) }.app(env)
+        NavigationStack {
+            TodayScreen().environment(\.brandInBar, true).safeAreaPadding(.top, videoSafeArea.top + 54)
+        }
+        .app(env)
     }
 
     // MARK: - The Live Activity
@@ -641,7 +627,6 @@
         try cutout("\(prefix)-island-compact", width: 250, CompactIsland(state: state, logo: logo))
         // Touch and hold the island over Today: it opens over the app.
         let over = Stage(
-            rootTitle: true,
             ZStack(alignment: .top) {
                 todayPage(env)
                 VStack {
@@ -1102,7 +1087,7 @@
             let env = try videoEnvironment(canyonState)
             let rebecca = try leakDay(env)
             try await settleSync(env)
-            let todayStage = Stage(rootTitle: true, todayPage(env))
+            let todayStage = Stage(todayPage(env))
             try await todayStage.wait(2)
             try await todayStage.scrollToTop()
             try await todayStage.shot("leak-01-today")
@@ -1114,7 +1099,7 @@
             try await liveActivityShots("leak-03-live-activity-driving", env, time: "9:09")
             try startStop(env, rebecca.job, at: 9 * 60 + 28)
             try await settleSync(env)
-            let onSite = Stage(rootTitle: true, todayPage(env))
+            let onSite = Stage(todayPage(env))
             try await onSite.wait(2)
             try await onSite.shot("leak-04-today-on-site")
             onSite.close()
@@ -1256,7 +1241,7 @@
             let stops = try poolDay(env)
             _ = try poolVisit(env, stops[2])
             try await settleSync(env)
-            let todayStage = Stage(rootTitle: true, todayPage(env))
+            let todayStage = Stage(todayPage(env))
             try await todayStage.wait(2)
             try await todayStage.shot("pool-01-today-stop-3")
             try StopWrites.recordOnMyWay(
@@ -1268,12 +1253,12 @@
             try await liveActivityShots("pool-03-live-activity-driving", env, time: "8:31")
             try startStop(env, stops[2].job, at: 8 * 60 + 41)
             try await settleSync(env)
-            let onSite = Stage(rootTitle: true, todayPage(env))
+            let onSite = Stage(todayPage(env))
             try await onSite.wait(2)
             try await onSite.shot("pool-04-today-at-stop-3")
             onSite.close()
             try await liveActivityShots("pool-05-live-activity-on-site", env, time: "8:52")
-            let tall = Stage(height: 2600, rootTitle: true, todayPage(env))
+            let tall = Stage(height: 2600, todayPage(env))
             try await tall.wait(2)
             try await tall.shot("pool-06-today-12-stops-tall")
             tall.close()
@@ -1383,7 +1368,7 @@
             }
 
             // Mark Complete on Today's card: Sofia done, the card moves on to Megan Price.
-            let todayStage = Stage(rootTitle: true, todayPage(env))
+            let todayStage = Stage(todayPage(env))
             try await todayStage.wait(2)
             try await todayStage.shot("pool-20-today-mark-complete")
             let block = try StopWrites.mark(
