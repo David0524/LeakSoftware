@@ -29,15 +29,18 @@ Offline-first field app and office web app for pool leak detection shops.
 - `supabase/` migrations, `seed.sql`, pgTAP tests in `supabase/tests/`.
 
 ## Checks before every commit
-Run the checks the change can affect (owner, 2026-10-14):
+Run only the checks the change can affect (owner, 2026-10-14), and let CI do the slow ones (owner, 2026-10-21: "We need to speed up this process"):
 - Always: `pnpm format:check && pnpm lint && pnpm typecheck`.
-- Code with logic (web, app, core, sync): add `pnpm test`.
+- Code with logic (web, app, core, sync): add `pnpm test` (or `pnpm --filter <package> test` for the packages touched).
 - SQL, migrations, `seed.sql`, or `supabase/tests/`: add `pnpm test:db`.
+- Swift: `swift format lint --strict` only. `swift test` and the iPhone build run in CI; run them locally only to debug a CI failure.
 - Layout and wording only: the first line is enough.
 
-Do not commit with failing checks, and never skip or disable a test to get green. CI (`.github/workflows/ci.yml`) runs everything on every push, plus the web build and Playwright. Don't wait for it after pushing; check its result before the next push and fix anything red first. Wait for a green CI only before `pnpm db:deploy`.
+Do not commit with failing checks, and never skip or disable a test to get green. CI (`.github/workflows/ci.yml`) runs the jobs a change can affect (its "What changed" job; workflow, lockfile and script changes run everything). Watch a run with a one-minute poll and act the moment it finishes, never a long sleep. Wait for green on the website's jobs (Lint, typecheck, test, build; Database; Office web app) before `pnpm db:deploy`.
 
-**Merge finished work into the default branch yourself** (owner, 2026-10-21: "You got to start merging on your own going forward"). When a piece of work is committed, pushed, and CI is green on it, first merge the default branch into your branch (resolve, run the checks, push, green CI), then merge your branch into the default branch and push it, without asking. Never force-push the default branch. Session branches deploy migrations to the shared dev project too, so name new migrations after the latest prefix on the default branch and check `supabase_migrations.schema_migrations` for collisions before `pnpm db:deploy`.
+**Ship each request as soon as it's done** (owner, 2026-10-21): don't hold finished work to batch it with slower work.
+
+**Merge finished work into the default branch yourself** (owner, 2026-10-21: "You got to start merging on your own going forward"). When a piece of work is committed and pushed and the website's CI jobs are green on it (or skipped as unaffected), merge it into the default branch and push it, without asking; that puts it live. The iPhone jobs don't hold the website, but they must be green before a TestFlight upload, and a red one is fixed next. If the default branch has moved, merge it into your branch first (resolve, run the checks, push, green CI). Only one session merges into the default branch at a time (owner, 2026-10-21); when two sessions run, the owner says which one. Never force-push the default branch. Session branches deploy migrations to the shared dev project too, so name new migrations after the latest prefix on the default branch and check `supabase_migrations.schema_migrations` for collisions before `pnpm db:deploy`.
 
 `pnpm test:db` uses real Supabase in Docker when available (CI), otherwise local Postgres 16 with the shim in `supabase/test-shim/` (kept outside `supabase/tests/`, which `supabase test db` runs in full) (cloud sessions; `scripts/session-start.sh` installs pgTAP). Write SQL that works on both: only rely on `auth.uid()`, `auth.jwt()`, `auth.users`, and `storage.objects`/`storage.foldername()` from Supabase's schemas.
 

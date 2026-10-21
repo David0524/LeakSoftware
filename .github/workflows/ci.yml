@@ -9,6 +9,43 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # What this push can affect (owner, 2026-10-21: "We need to speed up this process"), so the
+  # slow jobs run only when they can: the iPhone jobs for Swift and core, the database for SQL
+  # and sync, the browser tests for the website. A branch is compared with the default branch,
+  # not the previous push, so nothing is missed when a newer push cancels a run. Workflow,
+  # lockfile, script, or root changes, and anything unclear, run everything.
+  changes:
+    name: What changed
+    runs-on: ubuntu-24.04
+    outputs:
+      ios: ${{ steps.pick.outputs.ios }}
+      db: ${{ steps.pick.outputs.db }}
+      web: ${{ steps.pick.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: pick
+        env:
+          DEFAULT: ${{ github.event.repository.default_branch }}
+          BEFORE: ${{ github.event.before }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          all() { echo "ios=true" >> "$GITHUB_OUTPUT"; echo "db=true" >> "$GITHUB_OUTPUT"; echo "web=true" >> "$GITHUB_OUTPUT"; echo "$1: everything runs"; exit 0; }
+          if [ -n "$PR_BASE" ]; then base=$PR_BASE
+          elif [ "$GITHUB_REF_NAME" != "$DEFAULT" ]; then base=$(git merge-base HEAD "origin/$DEFAULT" 2>/dev/null) || all "no merge base"
+          else base=$BEFORE; fi
+          git cat-file -e "$base^{commit}" 2>/dev/null || all "no base commit"
+          files=$(git diff --name-only "$base" HEAD)
+          echo "$files"
+          [ -z "$files" ] && all "no changed files"
+          if echo "$files" | grep -qE '^(\.github/|scripts/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|turbo\.json|tsconfig)'; then all "shared setup changed"; fi
+          has() { echo "$files" | grep -qE "$1" && echo true || echo false; }
+          echo "ios=$(has '^(apps/ios/|packages/core/)')" >> "$GITHUB_OUTPUT"
+          echo "db=$(has '^(supabase/|packages/sync/|packages/core/|apps/ios/)')" >> "$GITHUB_OUTPUT"
+          echo "web=$(has '^(apps/web/|packages/|supabase/|brand/)')" >> "$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
+
   checks:
     name: Lint, typecheck, test, build
     runs-on: ubuntu-24.04
@@ -34,6 +71,8 @@ jobs:
 
   ios-linux:
     name: iPhone app libraries (Swift on Linux)
+    needs: changes
+    if: needs.changes.outputs.ios == 'true'
     runs-on: ubuntu-24.04
     container: swift:6.4.1-noble
     steps:
@@ -43,6 +82,8 @@ jobs:
 
   ios-macos:
     name: iPhone app (Xcode)
+    needs: changes
+    if: needs.changes.outputs.ios == 'true'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -84,6 +125,8 @@ jobs:
 
   database:
     name: Database (Supabase + pgTAP)
+    needs: changes
+    if: needs.changes.outputs.db == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -101,6 +144,8 @@ jobs:
 
   e2e:
     name: Office web app (Playwright)
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4

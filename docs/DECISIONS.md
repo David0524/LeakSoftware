@@ -2,6 +2,13 @@
 
 Newest first. Each entry: date, decision, reason.
 
+## 2026-10-21 (owner: "We need to speed up this process. It's taking hours to commit"; "Ok let's do all 6 changes")
+- **CI runs only the jobs a change can affect** ("What changed" in `ci.yml`): iPhone jobs for `apps/ios` and `packages/core`, the database for SQL, sync and Swift, the browser tests for the website and packages. Workflow, lockfile and script changes run everything. A branch is compared with the default branch, so a cancelled run never hides a change.
+- **The website goes live once its own CI jobs pass**; the iPhone jobs must pass before TestFlight.
+- **Local checks are only what a change touches**; `swift test` and the iPhone build run in CI.
+- **Each request ships when it's done**, not batched; CI is watched minute by minute.
+- **One session merges into the default branch at a time.**
+
 ## 2026-10-21 (owner: "Make a way to reorder techs in the schedule.")
 - **Owners and admins set the order of techs** with **Reorder Techs** on the Schedule, on all four platforms: a sheet with the active techs (color dot, Move Up, Move Down, a grip to drag), Done saves and Cancel discards. Saved per shop in `membership.schedule_order`, like a tech's color. Spec: `docs/design/2026-10-21-tech-order.md`.
 - **The order is used everywhere techs are listed on the Schedule and Today:** Day columns, Week rows, Whose schedule, the Move sheet and Plan Week, and Today's Whose Day.
