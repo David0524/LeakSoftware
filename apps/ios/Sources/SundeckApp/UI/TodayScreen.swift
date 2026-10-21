@@ -53,8 +53,6 @@
                     page
                 }
             }
-            // The sync bar stays in view under the navigation bar (owner, 2026-10-20).
-            .pinnedSyncBar()
             .refreshable { await sync.syncNow() }
             .undoWindow($moved)
             .onChange(of: techId) { _, _ in
@@ -118,6 +116,9 @@
                     TodaySkeleton()
                 } else if let company = session.company, let day {
                     header(day)
+                    // In the page, under the date, as on the other tabs: pinned under the bar (a
+                    // top safe-area inset) it kept iOS from drawing the large title (2026-10-21).
+                    SyncBarRow()
                     // Getting Started is off on the phone for now: inside the tab view it stops Today
                     // drawing in the simulator screenshots, cause not found yet (docs/plans/swift-app.md).
                     if day.ctx.isManager && GettingStartedCard.enabled { GettingStartedCard(company: company) }
