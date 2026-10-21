@@ -1707,14 +1707,18 @@
                                 .opacity(driveHidden ? 0 : 1)
                                 .accessibilityHidden(driveHidden)
                         }
-                        if showsTime {
-                            Text(time).monospacedDigit()
-                                // Never squeezed by the rest of the line: a squeezed time stacked
-                                // its letters down the card and made it three times as tall.
-                                .lineLimit(1).fixedSize()
-                        }
-                        if !rest.isEmpty {
-                            Text(showsTime ? "· " + rest : rest).lineLimit(1)
+                        // The time and the rest as one run of text, so " · " is spaced like
+                        // text, not with the chip's gap.
+                        HStack(alignment: .firstTextBaseline, spacing: 0) {
+                            if showsTime {
+                                Text(time).monospacedDigit()
+                                    // Never squeezed by the rest of the line: a squeezed time stacked
+                                    // its letters down the card and made it three times as tall.
+                                    .lineLimit(1).fixedSize()
+                            }
+                            if !rest.isEmpty {
+                                Text(showsTime ? " · " + rest : rest).lineLimit(1)
+                            }
                         }
                     }
                     .textRole(.secondary).foregroundStyle(Color.textMuted)
